@@ -1,0 +1,29 @@
+set PGSSLMODE=require
+
+set PGPASSWORD=IBX6ieKGWnZ1XTRPjKo1cUCUMGAml6Ci
+
+"C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" -U gymapp_db_isz2_user -h dpg-cvjkpmq4d50c73djnrc0-a.frankfurt-postgres.render.com -d gymapp_db_isz2 -p 5432 --clean --if-exists --no-owner --verbose -f "C:\Users\danie\Desktop\gymapp_flutter\gymapp\backups\render\render_dump.sql"
+
+
+--neues CMD--
+
+set PGSSLMODE=disable
+
+"C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h 127.0.0.1 -d postgres -p 5432
+
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'gymapp' AND pid <> pg_backend_pid();
+
+\q
+
+
+"C:\Program Files\PostgreSQL\17\bin\dropdb.exe" -U postgres gymapp
+
+"C:\Program Files\PostgreSQL\17\bin\createdb.exe" -U postgres gymapp
+
+set PGSSLMODE=disable
+
+set PGPASSWORD=Test123!
+
+"C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h 127.0.0.1 -d gymapp -p 5432 -f "C:\Users\danie\Desktop\gymapp_flutter\gymapp\backups\render\render_dump.sql" 

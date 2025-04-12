@@ -1,0 +1,7 @@
+git add .
+
+git status
+
+git commit -m "Beschreibe kurz und prägnant die vorgenommenen Änderungen"
+
+git push origin main

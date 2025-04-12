@@ -1,0 +1,11 @@
+# Sensible Umgebungsvariablen
+.env
+
+# Node modules (Abhängigkeiten)
+node_modules/
+
+# Log-Dateien
+*.log
+
+# Build-Artefakte
+/build

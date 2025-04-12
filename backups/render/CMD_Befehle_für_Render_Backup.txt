@@ -1,0 +1,5 @@
+set PGSSLMODE=require
+
+set PGPASSWORD=IBX6ieKGWnZ1XTRPjKo1cUCUMGAml6Ci
+
+"C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" -U gymapp_db_isz2_user -h dpg-cvjkpmq4d50c73djnrc0-a.frankfurt-postgres.render.com -d gymapp_db_isz2 -p 5432 --verbose -f "C:\Users\danie\Desktop\gymapp_flutter\gymapp\backups\render\render_dump.sql"
