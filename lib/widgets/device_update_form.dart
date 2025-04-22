@@ -1,8 +1,10 @@
+// lib/widgets/device_update_form.dart
 import 'package:flutter/material.dart';
 import '../services/api_services.dart';
 
 class DeviceUpdateForm extends StatefulWidget {
-  final int deviceId;
+  /// Firestore-Dokument-ID des Geräts
+  final String documentId;
   final String currentName;
   final String currentExerciseMode;
   final String currentSecretCode;
@@ -10,7 +12,7 @@ class DeviceUpdateForm extends StatefulWidget {
 
   const DeviceUpdateForm({
     Key? key,
-    required this.deviceId,
+    required this.documentId,
     required this.currentName,
     required this.currentExerciseMode,
     required this.currentSecretCode,
@@ -23,62 +25,50 @@ class DeviceUpdateForm extends StatefulWidget {
 
 class _DeviceUpdateFormState extends State<DeviceUpdateForm> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _exerciseModeController;
-  late TextEditingController _secretCodeController;
-  String _message = '';
+  late final TextEditingController _nameController;
+  late final TextEditingController _modeController;
+  late final TextEditingController _secretController;
   bool _isSubmitting = false;
-  final ApiService _apiService = ApiService();
+  String _message = '';
+  final ApiService _api = ApiService();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.currentName);
-    _exerciseModeController = TextEditingController(text: widget.currentExerciseMode);
-    _secretCodeController = TextEditingController(text: widget.currentSecretCode);
+    _modeController = TextEditingController(text: widget.currentExerciseMode);
+    _secretController = TextEditingController(text: widget.currentSecretCode);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _exerciseModeController.dispose();
-    _secretCodeController.dispose();
+    _modeController.dispose();
+    _secretController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleUpdate() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final newName = _nameController.text.trim();
-    final newExerciseMode = _exerciseModeController.text.trim();
-    final newSecretCode = _secretCodeController.text.trim();
-
     setState(() {
       _isSubmitting = true;
       _message = '';
     });
 
     try {
-      final updatedDevice = await _apiService.updateDevice(
-        widget.deviceId,
-        newName,
-        newExerciseMode,
-        newSecretCode,
+      final updated = await _api.updateDevice(
+        widget.documentId,
+        _nameController.text.trim(),
+        _modeController.text.trim(),
+        _secretController.text.trim(),
       );
-      setState(() {
-        _message = 'Gerät erfolgreich aktualisiert!';
-      });
-      if (widget.onUpdated != null) {
-        widget.onUpdated!(updatedDevice);
-      }
-    } catch (error) {
-      setState(() {
-        _message = 'Fehler beim Aktualisieren.';
-      });
-      debugPrint('Update-Fehler: $error');
+      _message = 'Gerät wurde aktualisiert.';
+      if (widget.onUpdated != null) widget.onUpdated!(updated);
+    } catch (e) {
+      _message = 'Fehler beim Aktualisieren.';
+      debugPrint('Update-Fehler: $e');
     } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -88,70 +78,34 @@ class _DeviceUpdateFormState extends State<DeviceUpdateForm> {
     return Form(
       key: _formKey,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Neuer Gerätename:',
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Gib einen neuen Namen ein',
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Bitte einen Namen eingeben.';
-              }
-              return null;
-            },
+            decoration: const InputDecoration(labelText: 'Neuer Gerätename'),
+            validator: (v) => v!.trim().isEmpty ? 'Bitte Namen eingeben' : null,
           ),
           const SizedBox(height: 12),
-          Text(
-            'Neuer Exercise Mode:',
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
           TextFormField(
-            controller: _exerciseModeController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'z.B. single, multi oder custom',
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Bitte den Exercise Mode eingeben.';
-              }
-              return null;
-            },
+            controller: _modeController,
+            decoration: const InputDecoration(labelText: 'Neuer Exercise Mode'),
+            validator: (v) => v!.trim().isEmpty ? 'Bitte Mode eingeben' : null,
           ),
           const SizedBox(height: 12),
-          Text(
-            'Neuer Secret Code:',
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
           TextFormField(
-            controller: _secretCodeController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Gib den Secret Code ein',
-            ),
+            controller: _secretController,
+            decoration: const InputDecoration(labelText: 'Neuer Secret Code'),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: _isSubmitting ? null : _handleUpdate,
+            onPressed: _isSubmitting ? null : _submit,
             child: _isSubmitting
-                ? const CircularProgressIndicator()
-                : Text('Änderungen übernehmen', style: theme.textTheme.labelLarge),
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Änderungen übernehmen'),
           ),
-          if (_message.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(_message, style: theme.textTheme.bodyMedium),
-            ),
+          if (_message.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(_message, style: theme.textTheme.bodyMedium),
+          ],
         ],
       ),
     );

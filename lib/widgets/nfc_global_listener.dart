@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import '../services/nfc_service.dart';
-import '../main.dart'; // Importiere den globalen Navigator-Key
+import '../main.dart'; // Globaler Navigator-Key
 
 class NfcGlobalListener extends StatefulWidget {
   final Widget child;
   const NfcGlobalListener({Key? key, required this.child}) : super(key: key);
 
   @override
-  _NfcGlobalListenerState createState() => _NfcGlobalListenerState();
+  State<NfcGlobalListener> createState() => _NfcGlobalListenerState();
 }
 
-class _NfcGlobalListenerState extends State<NfcGlobalListener> with WidgetsBindingObserver {
+class _NfcGlobalListenerState extends State<NfcGlobalListener>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -36,10 +37,11 @@ class _NfcGlobalListenerState extends State<NfcGlobalListener> with WidgetsBindi
       final normalizedTagData = tagData.toLowerCase().trim();
       final navigator = navigatorKey.currentState;
       if (navigator == null) {
-        print("Navigator nicht verfügbar.");
+        debugPrint("Navigator nicht verfügbar.");
         return;
       }
       final theme = Theme.of(navigator.context);
+
       // Erwartetes Format: "id;secret_code;name"
       if (normalizedTagData.contains(";")) {
         final parts = normalizedTagData.split(";");
@@ -57,7 +59,6 @@ class _NfcGlobalListenerState extends State<NfcGlobalListener> with WidgetsBindi
                 'deviceName': deviceName,
               },
             );
-            return;
           } else {
             ScaffoldMessenger.of(navigator.context).showSnackBar(
               SnackBar(
@@ -67,13 +68,13 @@ class _NfcGlobalListenerState extends State<NfcGlobalListener> with WidgetsBindi
                 ),
               ),
             );
-            return;
           }
+          return;
         } else {
           ScaffoldMessenger.of(navigator.context).showSnackBar(
             SnackBar(
               content: Text(
-                "Unerwartetes Format: $tagData",
+                "Unerwartetes Tag-Format: $tagData",
                 style: theme.textTheme.bodyMedium,
               ),
             ),
@@ -82,7 +83,7 @@ class _NfcGlobalListenerState extends State<NfcGlobalListener> with WidgetsBindi
         }
       }
 
-      // Fallback: Falls kein Semikolon gefunden wird, anhand von Schlüsselwörtern navigieren.
+      // Fallback: Navigation anhand von Schlüsselwörtern
       if (normalizedTagData.contains("bankdruecken")) {
         navigator.pushNamed('/dashboard', arguments: {'exercise': 'bankdruecken'});
       } else if (normalizedTagData.contains("kniebeugen")) {

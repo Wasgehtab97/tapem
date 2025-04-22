@@ -27,13 +27,16 @@ class FeedbackOverviewState extends State<FeedbackOverview> {
       loading = true;
     });
     try {
-      List<String> queryParams = ['deviceId=${widget.deviceId}'];
+      // Baue die Query-Parameter zusammen
+      final List<String> queryParams = ['deviceId=${widget.deviceId}'];
       if (statusFilter.isNotEmpty) {
         queryParams.add('status=${Uri.encodeComponent(statusFilter)}');
       }
-      String queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
-      final response = await http.get(Uri.parse('$API_URL/api/feedback$queryString'));
-      final result = jsonDecode(response.body);
+      final String queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+      
+      final http.Response response = await http.get(Uri.parse('$API_URL/api/feedback$queryString'));
+      final Map<String, dynamic> result = jsonDecode(response.body);
+
       if (response.statusCode == 200 && result['data'] != null) {
         setState(() {
           feedbacks = result['data'];
@@ -52,12 +55,12 @@ class FeedbackOverviewState extends State<FeedbackOverview> {
 
   Future<void> _updateFeedbackStatus(int feedbackId, String newStatus) async {
     try {
-      final response = await http.put(
+      final http.Response response = await http.put(
         Uri.parse('$API_URL/api/feedback/$feedbackId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': newStatus}),
       );
-      final result = jsonDecode(response.body);
+      final Map<String, dynamic> result = jsonDecode(response.body);
       if (response.statusCode == 200) {
         setState(() {
           feedbacks = feedbacks.map((fb) {
@@ -77,8 +80,9 @@ class FeedbackOverviewState extends State<FeedbackOverview> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
+    final ThemeData theme = Theme.of(context);
+    final TextTheme textTheme = theme.textTheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -95,7 +99,7 @@ class FeedbackOverviewState extends State<FeedbackOverview> {
           Row(
             children: [
               Text(
-                "Status: ",
+                "Status:",
                 style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
               ),
               const SizedBox(width: 8),
@@ -159,9 +163,9 @@ class FeedbackOverviewState extends State<FeedbackOverview> {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: feedbacks.length,
                       itemBuilder: (context, index) {
-                        final fb = feedbacks[index];
-                        final createdAt = DateTime.tryParse(fb['created_at']?.toString() ?? '')?.toLocal() ?? DateTime.now();
-                        final formattedDate =
+                        final dynamic fb = feedbacks[index];
+                        final DateTime createdAt = DateTime.tryParse(fb['created_at']?.toString() ?? '')?.toLocal() ?? DateTime.now();
+                        final String formattedDate =
                             "${createdAt.day.toString().padLeft(2, '0')}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.year}";
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),

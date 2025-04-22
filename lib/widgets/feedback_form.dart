@@ -28,20 +28,19 @@ class _FeedbackFormState extends State<FeedbackForm> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    final feedbackText = _feedbackController.text.trim();
+    final String feedbackText = _feedbackController.text.trim();
 
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-    final token = prefs.getString('token');
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final int? userId = prefs.getInt('userId');
+    final String? token = prefs.getString('token');
+
     if (userId == null || token == null) {
-      setState(() {
-        _error = 'Benutzer nicht authentifiziert.';
-      });
+      setState(() => _error = 'Benutzer nicht authentifiziert.');
       return;
     }
 
     try {
-      final response = await http.post(
+      final http.Response response = await http.post(
         Uri.parse('$API_URL/api/feedback'),
         headers: {
           'Content-Type': 'application/json',
@@ -53,15 +52,17 @@ class _FeedbackFormState extends State<FeedbackForm> {
           'feedback_text': feedbackText,
         }),
       );
+
       debugPrint('Response status: ${response.statusCode}');
       debugPrint('Response body: ${response.body}');
-      final result = jsonDecode(response.body);
+      final Map<String, dynamic> result = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
         setState(() {
           _success = 'Feedback erfolgreich gesendet.';
           _error = '';
-          _feedbackController.clear();
         });
+        _feedbackController.clear();
         if (widget.onFeedbackSubmitted != null) {
           widget.onFeedbackSubmitted!(result['data']);
         }
@@ -69,14 +70,10 @@ class _FeedbackFormState extends State<FeedbackForm> {
           widget.onClose!();
         }
       } else {
-        setState(() {
-          _error = result['error'] ?? 'Fehler beim Absenden des Feedbacks.';
-        });
+        setState(() => _error = result['error'] ?? 'Fehler beim Absenden des Feedbacks.');
       }
     } catch (err) {
-      setState(() {
-        _error = 'Serverfehler beim Absenden des Feedbacks.';
-      });
+      setState(() => _error = 'Serverfehler beim Absenden des Feedbacks.');
       debugPrint('Fehler beim Absenden des Feedbacks: $err');
     }
   }
@@ -89,7 +86,7 @@ class _FeedbackFormState extends State<FeedbackForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final ThemeData theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: theme.dividerColor),

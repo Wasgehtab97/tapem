@@ -1,3 +1,5 @@
+// android/app/build.gradle.kts
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -8,7 +10,8 @@ plugins {
 android {
     namespace = "com.example.gymapp"
     compileSdk = flutter.compileSdkVersion
-    // Liest die NDK-Version aus gradle.properties oder verwendet den Standardwert, wenn nichts definiert ist.
+
+    // Liest die NDK-Version aus gradle.properties oder verwendet einen Standardwert, falls nicht definiert.
     ndkVersion = (project.findProperty("android.ndkVersion") ?: "27.0.12077973") as String
 
     compileOptions {
@@ -17,12 +20,13 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     defaultConfig {
         applicationId = "com.example.gymapp"
-        minSdk = flutter.minSdkVersion
+        // Setze minSdk explizit auf 23, wie von Firebase empfohlen.
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -30,7 +34,7 @@ android {
 
     buildTypes {
         release {
-            // Debug-Keys werden hier für den Release-Build verwendet – passe das für einen echten Release an.
+            // In diesem Beispiel wird debug signingConfig verwendet – passe das für einen echten Release an.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -39,3 +43,7 @@ android {
 flutter {
     source = "../.."
 }
+
+// Plugin für Google Services: Stellt sicher, dass die google-services.json angewendet wird.
+// Dieser Plugin-Aufruf sollte nach allen anderen Konfigurationen erfolgen.
+apply(plugin = "com.google.gms.google-services")

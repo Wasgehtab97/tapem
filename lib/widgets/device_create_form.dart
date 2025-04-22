@@ -3,6 +3,7 @@ import '../services/api_services.dart';
 
 class DeviceCreateForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onCreated;
+
   const DeviceCreateForm({Key? key, required this.onCreated}) : super(key: key);
 
   @override
@@ -14,19 +15,30 @@ class _DeviceCreateFormState extends State<DeviceCreateForm> {
   String _name = "";
   String _exerciseMode = "";
   bool _isSubmitting = false;
-  final ApiService apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+
     setState(() {
       _isSubmitting = true;
     });
+
     try {
-      final newDevice = await apiService.createDevice(_name, _exerciseMode);
+      // Erhalte den neuen Dokument-ID-String
+      final newDeviceId = await _apiService.createDevice(_name, _exerciseMode);
+      // Verpacke den Rückgabewert in eine Map, die dem erwarteten Typ entspricht.
+      final newDevice = {
+        'id': newDeviceId,
+        'name': _name,
+        'exercise_mode': _exerciseMode,
+      };
       widget.onCreated(newDevice);
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -46,6 +58,7 @@ class _DeviceCreateFormState extends State<DeviceCreateForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
+      backgroundColor: theme.scaffoldBackgroundColor,
       title: Text(
         "Neues Gerät hinzufügen",
         style: theme.textTheme.headlineMedium,
@@ -87,11 +100,12 @@ class _DeviceCreateFormState extends State<DeviceCreateForm> {
         ),
         ElevatedButton(
           onPressed: _isSubmitting ? null : _submit,
+          style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor),
           child: _isSubmitting
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : Text(
                   "Erstellen",

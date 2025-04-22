@@ -1,110 +1,176 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../config.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+/// Registrierung eines neuen Nutzers über Firebase Auth und Anlage eines Firestore-Dokuments.
 class RegistrationForm extends StatefulWidget {
   const RegistrationForm({Key? key}) : super(key: key);
-  
+
   @override
-  _RegistrationFormState createState() => _RegistrationFormState();
+  RegistrationFormState createState() => RegistrationFormState();
 }
 
-class _RegistrationFormState extends State<RegistrationForm> {
-  final _formKey = GlobalKey<FormState>();
+class RegistrationFormState extends State<RegistrationForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // Controller für Eingabefelder
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _membershipController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
-  
+
   String _error = '';
   String _success = '';
-  
+  bool _isSubmitting = false;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  /// Registriert einen neuen Benutzer und erstellt anschließend ein Dokument in Firestore.
   Future<void> _handleRegistration() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final membershipNumber = _membershipController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmController.text;
-    
+    print("=> Registrierung gestartet.");
+    if (!_formKey.currentState!.validate()) {
+      print("Formularvalidierung fehlgeschlagen.");
+      return;
+    }
+
+    setState(() {
+      _error = '';
+      _success = '';
+      _isSubmitting = true;
+    });
+
+    final String name = _nameController.text.trim();
+    final String email = _emailController.text.trim();
+    final String membershipNumber = _membershipController.text.trim();
+    final String password = _passwordController.text;
+    final String confirmPassword = _confirmController.text;
+
+    print("Eingegebene Daten: Name: $name, Email: $email, Mitgliedsnummer: $membershipNumber");
+
     if (password != confirmPassword) {
       setState(() {
         _error = 'Die Passwörter stimmen nicht überein.';
+        _isSubmitting = false;
       });
+      print("Fehler: Passwörter stimmen nicht überein.");
       return;
     }
-    
-    final memberNumInt = int.tryParse(membershipNumber);
-    if (memberNumInt == null || memberNumInt < 1 || memberNumInt > 3000) {
+
+    final int? memberNum = int.tryParse(membershipNumber);
+    if (memberNum == null || memberNum < 1 || memberNum > 3000) {
       setState(() {
         _error = 'Die Mitgliedsnummer muss zwischen 0001 und 3000 liegen.';
+        _isSubmitting = false;
       });
+      print("Fehler: Ungültige Mitgliedsnummer ($membershipNumber).");
       return;
     }
-    
+
     try {
-      final response = await http.post(
-        Uri.parse('$API_URL/api/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'membershipNumber': memberNumInt,
-          'password': password,
-        }),
+      // Registrierung über Firebase Auth
+      print("Firebase Auth: createUserWithEmailAndPassword wird aufgerufen...");
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-      final result = jsonDecode(response.body);
-      if (response.statusCode == 200) {
+      print("Firebase Auth: User erstellt mit UID: ${userCredential.user!.uid}");
+
+      // Firestore-Dokument erstellen
+      print("Firestore: Schreibe Nutzerdokument in die 'users'-Collection...");
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'membership_number': membershipNumber,
+        'current_streak': 0,
+        'role': 'user', // Standardrolle
+        'exp': 0,
+        'exp_progress': 0,
+        'division_number': 0,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      print("Firestore: Schreibvorgang abgeschlossen.");
+
+      // Direkt danach das neu angelegte Dokument abrufen zur Überprüfung:
+      DocumentSnapshot newUserDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+      final dynamic newData = newUserDoc.data();
+      print("DEBUG: Neues Nutzer-Dokument abgerufen: $newData");
+      print("DEBUG: Typ des Nutzer-Dokuments: ${newData.runtimeType}");
+
+      // Speichere wichtige Daten lokal in SharedPreferences
+      print("SharedPreferences: Speichere Token und Nutzerdaten lokal...");
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final idTokenResult = await userCredential.user!.getIdTokenResult();
+      final String token = idTokenResult.token!;
+      await prefs.setString('token', token);
+      await prefs.setString('userId', userCredential.user!.uid);
+      await prefs.setString('username', name);
+      await prefs.setString('role', 'user');
+      print("SharedPreferences: Daten gespeichert.");
+
+      setState(() {
+        _success = 'Registrierung erfolgreich!';
+        _error = '';
+      });
+
+      // Navigation zur Startseite
+      print("Navigation: Wechsle zur Startseite...");
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+
+      // Eingabefelder leeren
+      _nameController.clear();
+      _emailController.clear();
+      _membershipController.clear();
+      _passwordController.clear();
+      _confirmController.clear();
+      print("Registrierung abgeschlossen.");
+    } on FirebaseAuthException catch (e) {
+      print("FirebaseAuthException bei der Registrierung: ${e.code} - ${e.message}");
+      if (e.code == 'email-already-in-use') {
         setState(() {
-          _success = result['message'] ?? 'Registrierung erfolgreich!';
-          _error = '';
+          _error = 'Die E-Mail-Adresse wird bereits verwendet.';
         });
-        _nameController.clear();
-        _emailController.clear();
-        _membershipController.clear();
-        _passwordController.clear();
-        _confirmController.clear();
       } else {
         setState(() {
-          _error = result['error'] ?? 'Registrierung fehlgeschlagen.';
-          _success = '';
+          _error = e.message ?? 'Registrierung fehlgeschlagen.';
         });
       }
-    } catch (error) {
+    } catch (e) {
+      print("Exception bei der Registrierung: $e");
       setState(() {
         _error = 'Ein Fehler ist aufgetreten.';
-        _success = '';
       });
-      debugPrint('Registrierungsfehler: $error');
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+      print("=> Registrierung beendet.");
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
           'Registrierung',
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         if (_error.isNotEmpty)
-          Text(_error,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.red)),
+          Text(
+            _error,
+            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
+          ),
         if (_success.isNotEmpty)
-          Text(_success,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.green)),
+          Text(
+            _success,
+            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.green),
+          ),
         Form(
           key: _formKey,
           child: Column(
@@ -112,12 +178,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Bitte geben Sie Ihren Namen ein.';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Bitte geben Sie Ihren Namen ein.' : null,
               ),
               TextFormField(
                 controller: _emailController,
@@ -156,12 +218,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Passwort'),
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Bitte geben Sie ein Passwort ein.';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Bitte geben Sie ein Passwort ein.' : null,
               ),
               TextFormField(
                 controller: _confirmController,
@@ -179,9 +237,10 @@ class _RegistrationFormState extends State<RegistrationForm> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _handleRegistration,
-                child: Text('Registrieren',
-                    style: Theme.of(context).textTheme.bodyMedium),
+                onPressed: _isSubmitting ? null : _handleRegistration,
+                child: _isSubmitting
+                    ? const CircularProgressIndicator()
+                    : Text('Registrieren', style: theme.textTheme.bodyMedium),
               ),
             ],
           ),
@@ -189,7 +248,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
       ],
     );
   }
-  
+
   @override
   void dispose() {
     _nameController.dispose();

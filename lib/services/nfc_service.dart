@@ -1,7 +1,7 @@
 import 'package:nfc_manager/nfc_manager.dart';
 
 class NfcService {
-  // Singleton-Implementierung
+  // Singleton-Implementierung: Eine einzige Instanz von NfcService
   static final NfcService _instance = NfcService._internal();
   factory NfcService() => _instance;
   NfcService._internal();
@@ -23,12 +23,13 @@ class NfcService {
       onDiscovered: (NfcTag tag) async {
         String tagData = _extractTagData(tag);
         onTagScanned(tagData);
-        NfcManager.instance.stopSession();
+        // NFC-Sitzung beenden und Scanning-Flag zurücksetzen
+        await NfcManager.instance.stopSession();
         _isScanning = false;
       },
       onError: (error) async {
         print("NFC-Fehler: $error");
-        NfcManager.instance.stopSession(errorMessage: error.toString());
+        await NfcManager.instance.stopSession(errorMessage: error.toString());
         _isScanning = false;
       },
     );
@@ -43,7 +44,7 @@ class NfcService {
         if (payload.isNotEmpty) {
           // Das erste Byte gibt die Länge des Sprachcodes an.
           final languageCodeLength = payload[0];
-          // Überspringe das erste Byte und den Sprachcode.
+          // Überspringe das erste Byte und den Sprachcode; der Rest ist der Inhalt.
           return String.fromCharCodes(payload.sublist(1 + languageCodeLength));
         }
         return "";

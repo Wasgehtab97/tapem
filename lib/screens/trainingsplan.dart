@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_services.dart';
+
 
 class TrainingsplanScreen extends StatefulWidget {
   const TrainingsplanScreen({Key? key}) : super(key: key);
@@ -10,9 +11,7 @@ class TrainingsplanScreen extends StatefulWidget {
 }
 
 class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
-  bool isLoggedIn = false;
   bool isLoading = true;
-  final ApiService apiService = ApiService();
   List<Map<String, dynamic>> trainingPlans = [];
   int? userId;
 
@@ -25,10 +24,9 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
   Future<void> _checkLoginAndLoadPlans() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isLoggedIn = prefs.getString('token') != null;
       userId = prefs.getInt('userId');
     });
-    if (!isLoggedIn || userId == null) {
+    if (userId == null) {
       Navigator.pushReplacementNamed(context, '/auth');
     } else {
       await _loadTrainingPlans();
@@ -38,31 +36,57 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
     }
   }
 
+  /// Lädt alle Trainingspläne des aktuell eingeloggten Nutzers aus Firestore
   Future<void> _loadTrainingPlans() async {
     try {
-      List<dynamic> plans = await apiService.getTrainingPlans(userId!);
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('training_plans')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+      List<Map<String, dynamic>> plans = snapshot.docs.map((doc) {
+        // Füge die Dokument-ID als "id" hinzu.
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
       setState(() {
-        trainingPlans = List<Map<String, dynamic>>.from(plans);
+        trainingPlans = plans;
       });
     } catch (e) {
       debugPrint('Error loading training plans: $e');
     }
   }
 
+  /// Erstellt einen neuen Trainingsplan in Firestore.
   Future<void> _createNewPlan(String name) async {
     try {
-      final result = await apiService.createTrainingPlan(userId!, name);
+      DocumentReference docRef = await FirebaseFirestore.instance
+          .collection('training_plans')
+          .add({
+        'userId': userId,
+        'name': name,
+        'createdAt': FieldValue.serverTimestamp(),
+        'exercises': [],
+      });
+      DocumentSnapshot newDoc = await docRef.get();
+      Map<String, dynamic> newPlan = newDoc.data() as Map<String, dynamic>;
+      newPlan['id'] = newDoc.id;
       setState(() {
-        trainingPlans.add(Map<String, dynamic>.from(result['data']));
+        trainingPlans.add(newPlan);
       });
     } catch (e) {
       debugPrint('Error creating training plan: $e');
     }
   }
 
-  Future<void> _deletePlan(int planId) async {
+  /// Löscht einen Trainingsplan in Firestore.
+  Future<void> _deletePlan(String planId) async {
     try {
-      await apiService.deleteTrainingPlan(planId);
+      await FirebaseFirestore.instance
+          .collection('training_plans')
+          .doc(planId)
+          .delete();
       setState(() {
         trainingPlans.removeWhere((plan) => plan['id'] == planId);
       });
@@ -71,17 +95,27 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
     }
   }
 
-  Future<void> _startPlan(int planId) async {
+  /// Startet den Trainingsplan, indem er den Status aktualisiert und den Nutzer zum Dashboard navigiert.
+  Future<void> _startPlan(String planId) async {
     try {
-      final result = await apiService.startTrainingPlan(planId);
-      List<dynamic> exerciseOrder = result['data']['exerciseOrder'];
+      await FirebaseFirestore.instance
+          .collection('training_plans')
+          .doc(planId)
+          .update({'status': 'active'});
+      // Angenommen, dass im Trainingsplan ein Feld "exerciseOrder" enthalten ist
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('training_plans')
+          .doc(planId)
+          .get();
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      List<dynamic> exerciseOrder = data['exerciseOrder'] ?? [];
       if (exerciseOrder.isNotEmpty) {
         Navigator.pushNamed(context, '/dashboard', arguments: {
           'activeTrainingPlan': exerciseOrder,
           'currentIndex': 0,
         });
       } else {
-        debugPrint("exerciseOrder ist leer!");
+        debugPrint("exerciseOrder is empty!");
       }
     } catch (e) {
       debugPrint('Error starting training plan: $e');
@@ -147,7 +181,8 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
           plan: plan,
           onPlanUpdated: (updatedPlan) {
             setState(() {
-              int index = trainingPlans.indexWhere((p) => p['id'] == updatedPlan['id']);
+              int index =
+                  trainingPlans.indexWhere((p) => p['id'] == updatedPlan['id']);
               if (index != -1) {
                 trainingPlans[index] = updatedPlan;
               }
@@ -159,6 +194,7 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
   }
 
   Widget _buildPlanCard(Map<String, dynamic> plan) {
+    final String planId = plan['id'];
     return Card(
       color: Theme.of(context).cardColor,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -166,7 +202,7 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         title: Text(
-          plan['name'],
+          plan['name'] ?? "Unbenannter Plan",
           style: Theme.of(context)
               .textTheme
               .titleLarge
@@ -174,7 +210,7 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
         ),
         subtitle: Text(
           "Übungen: " +
-              (plan['exercises'] != null
+              ((plan['exercises'] != null && (plan['exercises'] as List).isNotEmpty)
                   ? (plan['exercises'] as List)
                       .map((e) => e['device_name'])
                       .join(", ")
@@ -187,9 +223,9 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
             if (value == 'edit') {
               _editPlan(plan);
             } else if (value == 'delete') {
-              _deletePlan(plan['id']);
+              _deletePlan(planId);
             } else if (value == 'start') {
-              _startPlan(plan['id']);
+              _startPlan(planId);
             }
           },
           itemBuilder: (context) => [
@@ -237,7 +273,6 @@ class _TrainingsplanScreenState extends State<TrainingsplanScreen> {
         centerTitle: true,
       ),
       body: Container(
-        // Hier wird der Gradient direkt definiert – alternativ zentral definierbar
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF0D0D0D), Color(0xFF1A1A1A)],
@@ -269,7 +304,6 @@ class EditTrainingPlanScreen extends StatefulWidget {
 }
 
 class _EditTrainingPlanScreenState extends State<EditTrainingPlanScreen> {
-  final ApiService apiService = ApiService();
   List<Map<String, dynamic>> exercises = [];
   List<dynamic> availableDevices = [];
   bool isLoading = true;
@@ -283,9 +317,17 @@ class _EditTrainingPlanScreenState extends State<EditTrainingPlanScreen> {
     _loadDevices();
   }
 
+  /// Lädt alle verfügbaren Geräte aus der Firestore-Collection 'devices'
   Future<void> _loadDevices() async {
     try {
-      availableDevices = await apiService.getDevices();
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('devices').get();
+      availableDevices = snapshot.docs
+          .map((doc) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id;
+            return data;
+          })
+          .toList();
       setState(() {
         isLoading = false;
       });
@@ -320,9 +362,15 @@ class _EditTrainingPlanScreenState extends State<EditTrainingPlanScreen> {
 
   Future<void> _savePlanChanges() async {
     try {
-      final updatedPlan = await apiService.updateTrainingPlan(widget.plan['id'], exercises);
+      await FirebaseFirestore.instance.collection('training_plans')
+          .doc(widget.plan['id'])
+          .update({'exercises': exercises});
+      DocumentSnapshot updatedDoc = await FirebaseFirestore.instance
+          .collection('training_plans')
+          .doc(widget.plan['id'])
+          .get();
       if (widget.onPlanUpdated != null) {
-        widget.onPlanUpdated!(updatedPlan['data']);
+        widget.onPlanUpdated!(updatedDoc.data() as Map<String, dynamic>);
       }
       Navigator.pop(context);
     } catch (e) {

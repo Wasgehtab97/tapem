@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Zentrale Farbkonstanten für die königsblau–schwarze App
+/// Zentrale Farbkonstanten für die App (Königsblau–schwarz)
 class AppColors {
   static const Color primary = Colors.black;
   static const Color accent = Color(0xFF4169E1); // Royal Blue
@@ -38,11 +38,19 @@ ThemeData appTheme() {
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      bodyLarge: TextStyle(color: AppColors.defaultText),   // Ersatz für bodyText1
-      bodyMedium: TextStyle(color: AppColors.defaultText),    // Ersatz für bodyText2
-      bodySmall: TextStyle(color: AppColors.defaultText, fontSize: 10), // Ersatz für caption
-      labelLarge: TextStyle(color: AppColors.accent),
-      // subtitle1 wurde entfernt – stattdessen können z. B. bodySmall genutzt werden.
+      bodyLarge: TextStyle(
+        color: AppColors.defaultText,
+      ), // Ersatz für bodyText1
+      bodyMedium: TextStyle(
+        color: AppColors.defaultText,
+      ), // Ersatz für bodyText2
+      bodySmall: TextStyle(
+        color: AppColors.defaultText,
+        fontSize: 10,
+      ), // Ersatz für caption
+      labelLarge: TextStyle(
+        color: AppColors.accent,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -60,7 +68,7 @@ ThemeData appTheme() {
       primary: AppColors.primary,
       secondary: AppColors.accent,
       background: AppColors.scaffoldBackground,
-      error: Colors.redAccent, // Für Fehlerzustände
+      error: Colors.redAccent,
     ),
   );
 }

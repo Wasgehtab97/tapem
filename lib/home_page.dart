@@ -1,3 +1,5 @@
+// lib/screens/home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/profile.dart';
@@ -8,139 +10,91 @@ import 'screens/affiliate_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  String? userRole;
-  bool _roleLoaded = false;
+  String? _role;
+  bool _loaded = false;
 
-  // Standardseiten für Nutzer mit der Rolle "user"
-  final List<Widget> _userPages = [
-    const ProfileScreen(),
-    const AffiliateScreen(),
+  // Seiten für normale Nutzer
+  static const _userPages = <Widget>[
+    ProfileScreen(),
+    AffiliateScreen(),
   ];
 
-  // Extra-Seiten für Admins
-  final List<Widget> _adminPages = [
-    const ProfileScreen(),
-    const ReportDashboardScreen(),
-    const AffiliateScreen(),
+  // Seiten für Coaches (nur coach-Role)
+  static const _coachPages = <Widget>[
+    ProfileScreen(),
+    AffiliateScreen(),
+    CoachDashboardScreen(),
+  ];
+
+  // Seiten für Admins (admin-Role), inkl. Coach-Page
+  static const _adminPages = <Widget>[
+    ProfileScreen(),
+    ReportDashboardScreen(),
+    AffiliateScreen(),
+    CoachDashboardScreen(),      // neu hinzugefügt
     AdminDashboardScreen(),
   ];
 
-  // Extra-Seiten für Coaches
-  final List<Widget> _coachPages = [
-    const ProfileScreen(),
-    const AffiliateScreen(),
-    const CoachDashboardScreen(),
-  ];
-
   List<Widget> get _pages {
-    if (userRole == 'admin') {
-      return _adminPages;
-    } else if (userRole == 'coach') {
-      return _coachPages;
-    } else if (userRole == 'user') {
-      return _userPages;
+    switch (_role) {
+      case 'admin':
+        return _adminPages;
+      case 'coach':
+        return _coachPages;
+      default:
+        return _userPages;
     }
-    // Falls keine Rolle gesetzt ist, wird standardmäßig die Nutzer-Variante genutzt
-    return _userPages;
   }
 
-  List<BottomNavigationBarItem> get _navigationItems {
-    if (userRole == 'admin') {
+  List<BottomNavigationBarItem> get _items {
+    if (_role == 'admin') {
       return const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Reporting',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.local_offer),
-          label: 'Deals',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.admin_panel_settings),
-          label: 'Admin',
-        ),
-      ];
-    } else if (userRole == 'coach') {
-      return const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.local_offer),
-          label: 'Deals',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.supervisor_account),
-          label: 'Coach',
-        ),
-      ];
-    } else if (userRole == 'user') {
-      return const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.local_offer),
-          label: 'Deals',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Reporting'),
+        BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
+        BottomNavigationBarItem(icon: Icon(Icons.supervisor_account), label: 'Coach'),
+        BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
       ];
     }
-    // Standardmäßig für den Fall, dass keine Rolle gesetzt ist:
+    if (_role == 'coach') {
+      return const [
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
+        BottomNavigationBarItem(icon: Icon(Icons.supervisor_account), label: 'Coach'),
+      ];
+    }
     return const [
-      BottomNavigationBarItem(
-        icon: Icon(Icons.person),
-        label: 'Profil',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.local_offer),
-        label: 'Deals',
-      ),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+      BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
     ];
-  }
-
-  Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? role = prefs.getString('role');
-    debugPrint('Geladene Rolle: $role');
-    setState(() {
-      userRole = role;
-      _roleLoaded = true;
-    });
   }
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
-  }
-
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        _role = prefs.getString('role');
+        _loaded = true;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_roleLoaded) {
+    if (!_loaded) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // Falls CurrentIndex außerhalb liegt, zurücksetzen
     if (_currentIndex >= _pages.length) {
       _currentIndex = 0;
     }
@@ -148,10 +102,10 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: _navigationItems,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: _items,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }

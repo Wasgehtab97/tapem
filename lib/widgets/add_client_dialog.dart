@@ -9,7 +9,7 @@ class AddClientDialog extends StatefulWidget {
 
 class _AddClientDialogState extends State<AddClientDialog> {
   final TextEditingController _membershipController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -30,7 +30,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
       backgroundColor: theme.scaffoldBackgroundColor,
       title: Text(
         "Neuen Klienten hinzufügen",
-        style: theme.textTheme.headlineMedium, // Statt headline6
+        style: theme.textTheme.headlineMedium,
       ),
       content: Form(
         key: _formKey,
@@ -40,11 +40,11 @@ class _AddClientDialogState extends State<AddClientDialog> {
           decoration: InputDecoration(
             labelText: "Mitgliedsnummer",
             hintText: "z.B. 0001",
-            labelStyle: theme.textTheme.bodyMedium, // Statt bodyText2
+            labelStyle: theme.textTheme.bodyMedium,
             hintStyle: theme.inputDecorationTheme.hintStyle,
             border: theme.inputDecorationTheme.border,
           ),
-          style: theme.textTheme.bodyMedium, // Statt bodyText2
+          style: theme.textTheme.bodyMedium,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Bitte Mitgliedsnummer eingeben';
@@ -61,7 +61,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             "Abbrechen",
-            style: theme.textTheme.bodyMedium, // Statt bodyText2
+            style: theme.textTheme.bodyMedium,
           ),
         ),
         ElevatedButton(
@@ -73,7 +73,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
             "Anfrage senden",
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.secondary,
-            ), // Statt bodyText2
+            ),
           ),
         ),
       ],

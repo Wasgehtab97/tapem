@@ -1,3 +1,5 @@
+// lib/widgets/full_screen_calendar.dart
+
 import 'package:flutter/material.dart';
 import 'calendar.dart';
 import '../screens/training_details_screen.dart';
@@ -5,17 +7,19 @@ import '../screens/training_details_screen.dart';
 class FullScreenCalendar extends StatelessWidget {
   final List<String> trainingDates;
 
-  const FullScreenCalendar({Key? key, required this.trainingDates}) : super(key: key);
+  const FullScreenCalendar({
+    Key? key,
+    required this.trainingDates,
+  }) : super(key: key);
 
-  /// Konvertiert ein Datum in die deutsche Zeitzone (Europe/Berlin)
-  /// unter Berücksichtigung eines einfachen DST-Checks und formatiert es als "YYYY-MM-DD".
-  String formatGermanDate(DateTime date) {
-    int offset = (date.month > 3 && date.month < 10) ? 2 : 1;
-    final germanDate = date.toUtc().add(Duration(hours: offset));
-    final year = germanDate.year.toString();
-    final month = germanDate.month.toString().padLeft(2, '0');
-    final day = germanDate.day.toString().padLeft(2, '0');
-    return "$year-$month-$day";
+  /// Formatiert deutsches Datum "YYYY-MM-DD".
+  String _formatGermanDate(DateTime date) {
+    final offset = (date.month >= 4 && date.month <= 10) ? 2 : 1;
+    final d = date.toUtc().add(Duration(hours: offset));
+    final y = d.year.toString();
+    final m = d.month.toString().padLeft(2, '0');
+    final da = d.day.toString().padLeft(2, '0');
+    return "$y-$m-$da";
   }
 
   @override
@@ -34,14 +38,13 @@ class FullScreenCalendar extends StatelessWidget {
             trainingDates: trainingDates,
             cellSize: 16.0,
             cellSpacing: 3.0,
-            // Beim Tippen auf einen Tag:
-            onDayTap: (DateTime day) {
-              String formatted = formatGermanDate(day);
-              if (trainingDates.contains(formatted)) {
+            onDayTap: (day) {
+              final f = _formatGermanDate(day);
+              if (trainingDates.contains(f)) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TrainingDetailsScreen(selectedDate: formatted),
+                    builder: (_) => TrainingDetailsScreen(selectedDate: f),
                   ),
                 );
               }

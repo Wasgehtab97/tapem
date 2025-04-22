@@ -4,14 +4,20 @@ class StreakBadge extends StatelessWidget {
   final int streak;
   final double size;
 
-  const StreakBadge({Key? key, required this.streak, this.size = 60}) : super(key: key);
+  const StreakBadge({
+    Key? key,
+    required this.streak,
+    this.size = 60,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Verwende zentrale Farben, hier wird das Icon explizit in einem feurigen Orange gezeichnet.
-    final borderColor = Theme.of(context).dividerColor;
-    final iconColor = Colors.deepOrange; // Realistischere Farbe für eine Flamme
-    final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+    // Hier wird die Farbe des Rahmens über das aktuelle Theme bezogen.
+    final Color borderColor = Theme.of(context).dividerColor;
+    // Für das Icon verwenden wir ein feuriges Orange, was gut zu "Streak" (Flamme) passt.
+    final Color iconColor = Colors.deepOrange;
+    // Der Textstil wird an die Badge-Größe angepasst.
+    final TextStyle? textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       fontSize: size * 0.33,
       fontWeight: FontWeight.bold,
     );

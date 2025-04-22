@@ -1,135 +1,234 @@
+// lib/screens/coach_dashboard.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../services/api_services.dart';
+import 'package:intl/intl.dart';
 import '../widgets/add_client_dialog.dart';
+import '../widgets/full_screen_calendar.dart';
 
 class CoachDashboardScreen extends StatefulWidget {
   const CoachDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  _CoachDashboardScreenState createState() => _CoachDashboardScreenState();
+  State<CoachDashboardScreen> createState() => _CoachDashboardScreenState();
 }
 
 class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
-  bool isLoading = true;
-  List<dynamic> clients = [];
-  final ApiService apiService = ApiService();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _clients = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchClients();
+    _loadClients();
   }
 
-  Future<void> _fetchClients() async {
+  Future<void> _loadClients() async {
+    setState(() => _isLoading = true);
     try {
-      final data = await apiService.getClientsForCoach();
+      final coachId = FirebaseAuth.instance.currentUser!.uid;
+      // angenommen: Unter users/{coachId}/clients liegen Dokumente mit clientId als ID
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(coachId)
+          .collection('clients')
+          .get();
+
+      final clients = await Future.wait(snap.docs.map((doc) async {
+        final clientId = doc.id;
+        // optional: stored join date
+        final joinedTs = (doc.data()['joined_at'] as Timestamp?);
+        final joined = joinedTs != null
+            ? DateFormat('dd.MM.yyyy')
+                .format(joinedTs.toDate().toUtc().add(const Duration(hours: 1)))
+            : '–';
+        // Name des Users aus users collection
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(clientId)
+            .get();
+        final name = userDoc.data()?['name'] as String? ?? 'Unbekannt';
+        return {
+          'id': clientId,
+          'name': name,
+          'joined': joined,
+        };
+      }));
+
       if (!mounted) return;
       setState(() {
-        clients = data;
-        isLoading = false;
+        _clients = clients;
       });
-    } catch (error) {
-      debugPrint('Fehler beim Abrufen der Klienten: $error');
-      setState(() {
-        isLoading = false;
-      });
+    } catch (e) {
+      debugPrint('Fehler beim Laden der Klienten: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _viewClientHistory(dynamic client) {
-    Navigator.pushNamed(
+  Future<void> _viewHistory(String clientId) async {
+    // holt alle Trainingstermine und zeigt den FullScreenCalendar
+    final snap = await FirebaseFirestore.instance
+        .collection('training_history')
+        .where('user_id', isEqualTo: clientId)
+        .get();
+    final dates = snap.docs
+        .map((d) => (d.data()['training_date'] as Timestamp).toDate()
+            .toUtc()
+            .add(const Duration(hours: 1)))
+        .map((dt) => DateFormat('yyyy-MM-dd').format(dt))
+        .toSet()
+        .toList();
+    if (!mounted) return;
+    Navigator.push(
       context,
-      '/dashboard',
-      arguments: {'clientId': client['id']},
+      MaterialPageRoute(
+        builder: (_) => FullScreenCalendar(trainingDates: dates),
+      ),
     );
   }
 
-  void _manageTrainingPlan(dynamic client) {
+  void _managePlan(String clientId) {
     Navigator.pushNamed(
       context,
       '/trainingsplan',
-      arguments: {'clientId': client['id']},
+      arguments: {'clientId': clientId},
     );
   }
 
-  // Öffnet den Dialog, um eine Membership Number einzugeben
-  void _showAddClientDialog() async {
-    final result = await showDialog<String>(
+  Future<void> _showAddClientDialog() async {
+    final membership = await showDialog<String>(
       context: context,
-      builder: (context) => const AddClientDialog(),
+      builder: (_) => const AddClientDialog(),
     );
-    if (result != null && result.isNotEmpty) {
-      await apiService.sendCoachingRequestByMembership(result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Coaching-Anfrage wurde gesendet',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      );
-      _fetchClients();
+    if (membership != null && membership.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('coaching_requests')
+            .add({
+          'membership_number': membership,
+          'coach_id': FirebaseAuth.instance.currentUser!.uid,
+          'status': 'pending',
+          'created_at': FieldValue.serverTimestamp(),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Coaching‑Anfrage gesendet')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      }
     }
+  }
+
+  void _openClientOptions(Map<String, dynamic> c) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Trainingshistorie'),
+            onTap: () {
+              Navigator.pop(context);
+              _viewHistory(c['id']);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('Trainingsplan bearbeiten'),
+            onTap: () {
+              Navigator.pop(context);
+              _managePlan(c['id']);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Coach Dashboard",
-          style: Theme.of(context).appBarTheme.titleTextStyle,
-        ),
+        title:
+            Text('Coach Dashboard', style: theme.appBarTheme.titleTextStyle),
       ),
-      body: isLoading
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : clients.isEmpty
+          : _clients.isEmpty
               ? Center(
                   child: Text(
-                    "Keine Klienten gefunden.",
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(fontSize: 16),
+                    'Keine Klienten gefunden.',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 16),
                   ),
                 )
-              : ListView.builder(
-                  itemCount: clients.length,
-                  itemBuilder: (context, index) {
-                    final client = clients[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                      color: Theme.of(context).cardColor,
-                      child: ListTile(
-                        title: Text(
-                          client['name'] ?? "Unbekannt",
-                          style: Theme.of(context).textTheme.bodyLarge,
+              : GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: _clients.length,
+                  itemBuilder: (_, i) {
+                    final c = _clients[i];
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _openClientOptions(c),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        subtitle: Text(
-                          "Mitglied seit: ${client['created_at'] ?? ''}",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'history') {
-                              _viewClientHistory(client);
-                            } else if (value == 'plan') {
-                              _manageTrainingPlan(client);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'history',
-                              child: Text(
-                                "Trainingshistorie",
-                                style: Theme.of(context).textTheme.bodyMedium,
+                        child: Stack(
+                          children: [
+                            // Icon + Name
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.person,
+                                      size: 48, color: Colors.white70),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    c['name'],
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyLarge
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
-                            PopupMenuItem(
-                              value: 'plan',
-                              child: Text(
-                                "Trainingsplan bearbeiten",
-                                style: Theme.of(context).textTheme.bodyMedium,
+                            // ID in der Ecke
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '#${c['id']}',
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: Colors.white70),
+                                ),
                               ),
                             ),
                           ],
@@ -140,11 +239,8 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
                 ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddClientDialog,
-        label: Text(
-          "Klient hinzufügen",
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.person_add),
+        label: const Text('Klient hinzufügen'),
       ),
     );
   }

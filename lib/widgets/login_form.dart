@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
@@ -12,55 +11,102 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  
   String _error = '';
   String _success = '';
+  bool _isSubmitting = false;
 
+  /// Authentifiziert den Nutzer über Firebase Auth und lädt die zugehörigen Firestore-Daten.
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
+    print("=> Login gestartet.");
+    if (!_formKey.currentState!.validate()) {
+      print("Login: Formularvalidierung fehlgeschlagen.");
+      return;
+    }
+    
+    setState(() {
+      _error = '';
+      _success = '';
+      _isSubmitting = true;
+    });
+    
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text.trim();
+    print("Login: Eingegebene Email: $email");
+    
     try {
-      final response = await http.post(
-        Uri.parse('$API_URL/api/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+      print("Firebase Auth: signInWithEmailAndPassword wird aufgerufen...");
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-      final result = jsonDecode(response.body);
-      if (response.statusCode == 200) {
+      print("Firebase Auth: User angemeldet mit UID: ${userCredential.user!.uid}");
+      
+      // Lade zusätzliche Nutzerdaten aus Firestore
+      print("Firestore: Lade Nutzerdokument von UID: ${userCredential.user!.uid}");
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+      
+      final dynamic rawData = userDoc.data();
+      print("DEBUG: Rohdaten aus Firestore: $rawData");
+      print("DEBUG: Typ der Firestore-Daten: ${rawData.runtimeType}");
+      
+      final Map<String, dynamic>? data = rawData as Map<String, dynamic>?;
+
+      if (data == null) {
+        print("Fehler: Es wurden keine Daten im Nutzer-Dokument gefunden.");
         setState(() {
-          _success = result['message'] ?? 'Login erfolgreich';
-          _error = '';
+          _error = 'Keine Nutzerdaten gefunden.';
         });
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', result['token']);
-        await prefs.setInt('userId', result['userId']);
-        await prefs.setString('username', result['username']);
-        if (result.containsKey('role')) {
-          await prefs.setString('role', result['role']);
-        }
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
       } else {
-        setState(() {
-          _error = result['error'] ?? 'Login fehlgeschlagen.';
-          _success = '';
-        });
+        print("Firestore: Nutzerdaten erfolgreich geladen: ${data.toString()}");
       }
-    } catch (error) {
+
+      // Speichere Daten in SharedPreferences
+      print("SharedPreferences: Speichere Nutzerdaten lokal...");
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userId', userCredential.user!.uid);
+      await prefs.setString('username', data?['name'] ?? '');
+      await prefs.setString('role', data?['role'] ?? 'user');
+      print("SharedPreferences: Daten erfolgreich gespeichert.");
+      
+      setState(() {
+        _success = 'Login erfolgreich!';
+        _error = '';
+      });
+      
+      print("Navigation: Wechsle zur Startseite...");
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      print("=> Login beendet.");
+    } on FirebaseAuthException catch (e) {
+      print("FirebaseAuthException beim Login: ${e.code} - ${e.message}");
+      setState(() {
+        _error = e.message ?? 'Login fehlgeschlagen.';
+        _success = '';
+      });
+    } catch (e) {
+      print("Exception beim Login: $e");
       setState(() {
         _error = 'Ein Fehler ist aufgetreten.';
         _success = '';
       });
-      debugPrint('Loginfehler: $error');
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+      print("=> Login-Prozess abgeschlossen.");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final ThemeData theme = Theme.of(context);
     return Column(
       children: [
         Text(
@@ -90,6 +136,10 @@ class _LoginFormState extends State<LoginForm> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Bitte geben Sie eine E-Mail ein.';
                   }
+                  final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                  if (!emailRegex.hasMatch(value.trim())) {
+                    return 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+                  }
                   return null;
                 },
               ),
@@ -98,20 +148,15 @@ class _LoginFormState extends State<LoginForm> {
                 decoration: const InputDecoration(labelText: 'Passwort'),
                 obscureText: true,
                 textInputAction: TextInputAction.done,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Bitte geben Sie ein Passwort ein.';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Bitte geben Sie ein Passwort ein.' : null,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _handleLogin,
-                child: Text(
-                  'Login',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                onPressed: _isSubmitting ? null : _handleLogin,
+                child: _isSubmitting
+                    ? const CircularProgressIndicator()
+                    : Text('Login', style: theme.textTheme.bodyMedium),
               ),
             ],
           ),

@@ -33,7 +33,7 @@ class ExpBadge extends StatelessWidget {
   // Für jede Division wird anhand des Modulo-4 die römische Zahl gewählt:
   static const List<String> romanNumerals = ['IV', 'III', 'II', 'I'];
 
-  // Bestimmt die Farbe je Division:
+  /// Bestimmt die Farbe der Division anhand des Index.
   Color _getDivisionColor() {
     if (divisionIndex < 4) {
       return const Color(0xFFCD7F32); // Bronze
@@ -48,15 +48,16 @@ class ExpBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Entfernt: final division = ... (nicht genutzt)
-    final roman = romanNumerals[divisionIndex % 4];
-    final divisionColor = _getDivisionColor();
-    // Berechne den Fortschrittsanteil (0.0 bis 1.0)
-    final progressFraction = (expProgress.clamp(0, 1000)) / 1000.0;
+    final String roman = romanNumerals[divisionIndex % romanNumerals.length];
+    final Color divisionColor = _getDivisionColor();
+
+    // Berechnung des Fortschrittsanteils (0.0 bis 1.0)
+    // Der Clamp-Wert wird als double gecastet.
+    final double progressFraction = (expProgress.clamp(0, 1000) as int) / 1000.0;
     const double strokeWidth = 6.0;
 
     // Basis-Badge
-    final badge = Container(
+    final Widget badge = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -76,8 +77,8 @@ class ExpBadge extends StatelessWidget {
       ),
     );
 
-    // Mit CustomPaint wird der Fortschrittsrand gezeichnet
-    final paintedBadge = CustomPaint(
+    // Das Badge mit dem Fortschrittsrand zeichnen
+    final Widget paintedBadge = CustomPaint(
       painter: _ExpBadgePainter(
         progress: progressFraction,
         color: divisionColor,
@@ -102,7 +103,7 @@ class _ExpBadgePainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  _ExpBadgePainter({
+  const _ExpBadgePainter({
     required this.progress,
     required this.color,
     this.strokeWidth = 6.0,
@@ -110,20 +111,22 @@ class _ExpBadgePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) - (strokeWidth / 2);
-    final backgroundPaint = Paint()
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    final double radius = (size.width / 2) - (strokeWidth / 2);
+    final Paint backgroundPaint = Paint()
       ..color = Colors.grey.shade800
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
-    final foregroundPaint = Paint()
+    final Paint foregroundPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
+    // Hintergrundkreis
     canvas.drawCircle(center, radius, backgroundPaint);
-    final sweepAngle = 2 * pi * progress;
+    // Fortschrittsarc, beginnend bei -pi/2 (oben)
+    final double sweepAngle = 2 * pi * progress;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -pi / 2,

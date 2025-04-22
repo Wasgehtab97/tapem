@@ -7,6 +7,7 @@ class RankScreen extends StatelessWidget {
 
   Future<List<dynamic>> _fetchUsers() async {
     final apiService = ApiService();
+    // Wir erwarten, dass getAllUsers() bereits eine Liste von Benutzer-Daten (von Cloud Firestore) liefert.
     return await apiService.getAllUsers();
   }
 
@@ -29,7 +30,10 @@ class RankScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'Fehler: ${snapshot.error}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.red),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.red),
               ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -40,6 +44,7 @@ class RankScreen extends StatelessWidget {
               ),
             );
           }
+
           final users = snapshot.data!;
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -52,7 +57,7 @@ class RankScreen extends StatelessWidget {
                 childAspectRatio: 1,
               ),
               itemBuilder: (context, index) {
-                final user = users[index];
+                final user = users[index] as Map<String, dynamic>;
                 return Card(
                   color: Theme.of(context).cardColor,
                   elevation: 4,
@@ -70,10 +75,14 @@ class RankScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         user["name"] ?? "Unbekannt",
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        ExpBadge.divisionNames[(user["division_index"] ?? 0) % ExpBadge.divisionNames.length],
+                        ExpBadge.divisionNames[
+                            (user["division_index"] ?? 0) % ExpBadge.divisionNames.length],
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],

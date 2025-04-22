@@ -1,3 +1,5 @@
+// lib/widgets/calendar.dart
+
 import 'package:flutter/material.dart';
 
 class Calendar extends StatelessWidget {
@@ -5,7 +7,7 @@ class Calendar extends StatelessWidget {
   final double cellSize;
   final int rows;
   final double cellSpacing;
-  final Function(DateTime)? onDayTap;
+  final void Function(DateTime)? onDayTap;
 
   const Calendar({
     Key? key,
@@ -18,133 +20,104 @@ class Calendar extends StatelessWidget {
 
   /// Formatiert ein Datum als "YYYY-MM-DD".
   String _formatDate(DateTime date) {
-    final year = date.year.toString();
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return "$year-$month-$day";
+    final y = date.year.toString();
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return "$y-$m-$d";
   }
 
-  /// Konvertiert ein Datum in die deutsche Zeitzone (Europe/Berlin)
-  /// unter Berücksichtigung eines einfachen DST-Checks und gibt es als "YYYY-MM-DD" zurück.
+  /// Konvertiert in deutsche Zeitzone, gibt "YYYY-MM-DD".
   String _formatGermanDate(DateTime date) {
-    int offset = (date.month > 3 && date.month < 10) ? 2 : 1;
-    final germanDate = date.toUtc().add(Duration(hours: offset));
-    return _formatDate(germanDate);
+    final offset = (date.month >= 4 && date.month <= 10) ? 2 : 1;
+    return _formatDate(date.toUtc().add(Duration(hours: offset)));
   }
 
-  /// Erzeugt eine Liste aller Tage des aktuellen Jahres.
-  List<DateTime> _getAllDaysOfYear() {
-    final currentYear = DateTime.now().year;
-    final firstDay = DateTime(currentYear, 1, 1);
-    final lastDay = DateTime(currentYear, 12, 31);
-    final totalDays = lastDay.difference(firstDay).inDays + 1;
-    return List.generate(totalDays, (index) => firstDay.add(Duration(days: index)));
+  /// Alle Tage des aktuellen Jahres.
+  List<DateTime> _allDaysOfYear() {
+    final y = DateTime.now().year;
+    final first = DateTime(y, 1, 1);
+    final last = DateTime(y, 12, 31);
+    final count = last.difference(first).inDays + 1;
+    return List.generate(count, (i) => first.add(Duration(days: i)));
   }
 
-  /// Prüft, ob an einem Datum trainiert wurde (unter Verwendung der deutschen Zeit).
-  bool _isTrainingDay(DateTime date) {
-    return trainingDates.contains(_formatGermanDate(date));
-  }
+  bool _isTrainingDay(DateTime date) => trainingDates.contains(_formatGermanDate(date));
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final allDays = _getAllDaysOfYear();
-    // Offset: Leere Zellen, damit der 1. Januar in die richtige Woche fällt.
-    final int firstWeekdayOffset = DateTime(allDays.first.year, 1, 1).weekday - 1;
-    final List<DateTime?> cells = List<DateTime?>.filled(firstWeekdayOffset, null, growable: true)
-      ..addAll(allDays);
-    // Auffüllen, sodass die Gesamtanzahl ein Vielfaches von 7 ist.
-    final int remainder = cells.length % rows;
-    if (remainder != 0) {
-      cells.addAll(List<DateTime?>.filled(rows - remainder, null));
-    }
-    final int columns = (cells.length / rows).ceil();
-    final double totalWidth = columns * (cellSize + cellSpacing);
+    final allDays = _allDaysOfYear();
+    final offset = DateTime(allDays.first.year, 1, 1).weekday - 1;
+    final cells = <DateTime?>[
+      ...List<DateTime?>.filled(offset, null),
+      ...allDays,
+    ];
+    final rem = cells.length % rows;
+    if (rem != 0) cells.addAll(List<DateTime?>.filled(rows - rem, null));
+    final cols = (cells.length / rows).ceil();
+    final totalW = cols * (cellSize + cellSpacing);
 
-    // Header: Monatskürzel
-    final double headerCellWidth = totalWidth / 12;
-    final List<String> monthLabels = ["Ja", "Fe", "M", "A", "Ma", "Jun", "Jul", "Au", "S", "O", "N", "D"];
-    final List<Widget> headerCells = List.generate(12, (index) {
-      return SizedBox(
-        width: headerCellWidth,
-        child: Center(
-          child: Text(
-            monthLabels[index],
-            style: theme.textTheme.bodySmall?.copyWith(fontSize: 8, color: Colors.white),
-          ),
-        ),
-      );
-    });
+    const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    final header = months.map((m) => SizedBox(
+          width: totalW / 12,
+          child: Center(child: Text(m, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white, fontSize: 8))),
+        ));
 
-    final String todayString = _formatGermanDate(DateTime.now());
-
-    final List<TableRow> tableRows = [];
-    for (int r = 0; r < rows; r++) {
-      final List<Widget> rowCells = [];
-      for (int c = 0; c < columns; c++) {
-        final int index = c * rows + r;
-        if (index < cells.length && cells[index] != null) {
-          final DateTime day = cells[index]!;
-          final bool isTraining = _isTrainingDay(day);
-          final bool isToday = _formatGermanDate(day) == todayString;
-          Widget cell = Padding(
-            padding: EdgeInsets.all(cellSpacing / 2),
-            child: SizedBox(
+    final today = _formatGermanDate(DateTime.now());
+    final rowsWidgets = <TableRow>[];
+    for (var r = 0; r < rows; r++) {
+      final row = <Widget>[];
+      for (var c = 0; c < cols; c++) {
+        final idx = c * rows + r;
+        Widget cell;
+        if (idx < cells.length && cells[idx] != null) {
+          final d = cells[idx]!;
+          final isTrain = _isTrainingDay(d);
+          final isTodayCell = _formatGermanDate(d) == today;
+          cell = GestureDetector(
+            onTap: onDayTap == null ? null : () => onDayTap!(d),
+            child: Container(
+              margin: EdgeInsets.all(cellSpacing / 2),
               width: cellSize,
               height: cellSize,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isTraining ? Colors.blue : Colors.transparent,
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(
-                    width: isToday ? 1.5 : 1.0,
-                    color: isToday ? Colors.red : Colors.white,
-                  ),
+              decoration: BoxDecoration(
+                color: isTrain ? theme.colorScheme.secondary : Colors.transparent,
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(
+                  width: isTodayCell ? 1.5 : 1.0,
+                  color: isTodayCell ? theme.colorScheme.error : Colors.white,
                 ),
               ),
             ),
           );
-          if (onDayTap != null) {
-            cell = GestureDetector(
-              onTap: () => onDayTap!(day),
-              child: cell,
-            );
-          }
-          rowCells.add(cell);
         } else {
-          rowCells.add(Padding(
-            padding: EdgeInsets.all(cellSpacing / 2),
-            child: SizedBox(width: cellSize, height: cellSize),
-          ));
+          cell = SizedBox(width: cellSize, height: cellSize);
         }
+        row.add(cell);
       }
-      tableRows.add(TableRow(children: rowCells));
+      rowsWidgets.add(TableRow(children: row));
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return FittedBox(
-          fit: BoxFit.contain,
-          child: Container(
-            width: totalWidth,
-            color: theme.scaffoldBackgroundColor,
-            padding: EdgeInsets.all(cellSpacing),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: headerCells),
-                const SizedBox(height: 4),
-                Table(
-                  defaultColumnWidth: FixedColumnWidth(cellSize + cellSpacing),
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: tableRows,
-                ),
-              ],
-            ),
+    return LayoutBuilder(builder: (_, constraints) {
+      return FittedBox(
+        fit: BoxFit.contain,
+        child: Container(
+          width: totalW,
+          padding: EdgeInsets.all(cellSpacing),
+          color: theme.scaffoldBackgroundColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: header.toList()),
+              SizedBox(height: 4),
+              Table(
+                defaultColumnWidth: FixedColumnWidth(cellSize + cellSpacing),
+                children: rowsWidgets,
+              ),
+            ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 }

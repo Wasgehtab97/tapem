@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/api_services.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -11,10 +12,10 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  List<dynamic> historyData = [];
+  List<Map<String, dynamic>> historyData = [];
   bool isLoading = true;
-  int? userId;
-  int? deviceId;
+  String? userId;
+  String? deviceId;
   String? exercise;
 
   @override
@@ -26,105 +27,91 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _loadUserAndFetchHistory() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() {
-      userId = prefs.getInt('userId');
-    });
+    userId = prefs.getString('userId');
+
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is Map) {
-      deviceId = args['deviceId'];
-      if (args.containsKey('exercise')) {
-        exercise = args['exercise'];
-      }
-    } else if (args is int) {
-      deviceId = args;
+    if (args is Map<String, dynamic>) {
+      deviceId = args['deviceId']?.toString();
+      exercise = args['exercise']?.toString();
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Ungültige Geräte-ID")),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ungültige Geräte-/Übungsparameter")),
+      );
       return;
     }
+
     if (userId != null) {
       await _fetchHistory();
     }
   }
 
-  /// Parst das Datum, rechnet in UTC+1 um und formatiert als "YYYY-MM-DD".
-  String _formatLocalDate(dynamic dateInput) {
-    DateTime d;
-    if (dateInput is String) {
-      d = DateTime.parse(dateInput).toUtc().add(const Duration(hours: 1));
-    } else if (dateInput is DateTime) {
-      d = dateInput.toUtc().add(const Duration(hours: 1));
-    } else {
-      d = DateTime.now().toUtc().add(const Duration(hours: 1));
-    }
-    String pad(int n) => n.toString().padLeft(2, '0');
-    return "${d.year}-${pad(d.month)}-${pad(d.day)}";
-  }
-
-  Map<String, List<dynamic>> _groupHistoryByDate() {
-    Map<String, List<dynamic>> grouped = {};
-    for (var entry in historyData) {
-      String dateFormatted = _formatLocalDate(entry['training_date']);
-      grouped.putIfAbsent(dateFormatted, () => []).add(entry);
-    }
-    return grouped;
-  }
-
-  List<String> _getSortedDates(Map<String, List<dynamic>> grouped) {
-    List<String> dates = grouped.keys.toList();
-    dates.sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
-    return dates;
-  }
-
   Future<void> _fetchHistory() async {
     try {
-      final data = await ApiService().getHistory(
-        userId!,
+      final data = await ApiService().getTrainingSessions(
+        userId: userId!,
         deviceId: deviceId,
         exercise: exercise,
       );
       if (!mounted) return;
       setState(() {
-        historyData = data;
+        historyData = data.map((e) => Map<String, dynamic>.from(e)).toList();
         isLoading = false;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
       debugPrint("Fehler beim Abrufen der Trainingshistorie: $error");
     }
   }
 
+  String _formatLocalDate(dynamic raw) {
+    DateTime d;
+    if (raw is Timestamp) {
+      d = raw.toDate();
+    } else if (raw is DateTime) {
+      d = raw;
+    } else {
+      d = DateTime.parse(raw.toString());
+    }
+    d = d.toUtc().add(const Duration(hours: 1));
+    String pad(int n) => n.toString().padLeft(2, '0');
+    return "${d.year}-${pad(d.month)}-${pad(d.day)}";
+  }
+
+  Map<String, List<Map<String, dynamic>>> _groupByDate() {
+    final out = <String, List<Map<String, dynamic>>>{};
+    for (var session in historyData) {
+      final key = _formatLocalDate(session['training_date']);
+      out.putIfAbsent(key, () => []).add(session);
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final groupedData = _groupHistoryByDate();
-    final sortedDates = _getSortedDates(groupedData);
-    List<String> chartLabels = sortedDates;
-    List<double> chartDataPoints = sortedDates.map((date) {
-      final sessions = groupedData[date]!;
-      double totalWeighted1RM = 0.0;
-      int totalReps = 0;
-      for (var entry in sessions) {
-        double weight = double.tryParse(entry['weight'].toString()) ?? 0.0;
-        int reps = int.tryParse(entry['reps'].toString()) ?? 0;
-        totalWeighted1RM += weight * (1 + reps / 30) * reps;
-        totalReps += reps;
+    final grouped = _groupByDate();
+    final dates = grouped.keys.toList()
+      ..sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
+
+    final chartValues = dates.map((date) {
+      final sessions = grouped[date]!;
+      double weightedSum = 0;
+      int repSum = 0;
+      for (var sess in sessions) {
+        for (var s in sess['data'] as List<dynamic>) {
+          final w = double.tryParse(s['weight'].toString()) ?? 0;
+          final r = int.tryParse(s['reps'].toString()) ?? 0;
+          weightedSum += w * (1 + r / 30) * r;
+          repSum += r;
+        }
       }
-      return totalReps > 0 ? totalWeighted1RM / totalReps : 0.0;
+      return repSum > 0 ? weightedSum / repSum : 0.0;
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Trainingshistorie',
-          style: Theme.of(context).appBarTheme.titleTextStyle,
-        ),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: Text('Trainingshistorie',
+            style: Theme.of(context).appBarTheme.titleTextStyle),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -137,26 +124,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Leistungsverlauf',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                    Text('Leistungsverlauf',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondary)),
                     const SizedBox(height: 16),
                     Card(
-                      elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 8),
+                          borderRadius: BorderRadius.circular(12)),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: SizedBox(
@@ -168,23 +154,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   sideTitles: SideTitles(
                                     showTitles: true,
                                     interval: 1,
-                                    getTitlesWidget: (value, meta) {
-                                      int index = value.toInt();
-                                      if (index >= 0 && index < chartLabels.length) {
+                                    getTitlesWidget: (val, meta) {
+                                      final idx = val.toInt();
+                                      if (idx >= 0 && idx < dates.length) {
                                         return SideTitleWidget(
                                           meta: meta,
                                           space: 4,
-                                          child: Text(
-                                            chartLabels[index],
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: 10,
-                                                  color: Theme.of(context)
-                                                      .colorScheme.secondary,
-                                                ),
-                                          ),
+                                          child: Text(dates[idx],
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      fontSize: 10,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .secondary)),
                                         );
                                       }
                                       return const SizedBox.shrink();
@@ -195,42 +179,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   sideTitles: SideTitles(
                                     showTitles: true,
                                     interval: 10,
-                                    getTitlesWidget: (value, meta) => Text(
-                                      value.toInt().toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            fontSize: 10,
-                                            color: Theme.of(context)
-                                                .colorScheme.secondary,
-                                          ),
-                                    ),
+                                    getTitlesWidget: (val, meta) => Text(
+                                        val.toInt().toString(),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                                fontSize: 10,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary)),
                                   ),
                                 ),
                                 topTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
+                                    sideTitles: SideTitles(showTitles: false)),
                                 rightTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
+                                    sideTitles: SideTitles(showTitles: false)),
                               ),
                               gridData: FlGridData(show: true),
                               borderData: FlBorderData(show: true),
                               lineBarsData: [
                                 LineChartBarData(
                                   spots: List.generate(
-                                    chartDataPoints.length,
-                                    (index) => FlSpot(
-                                      index.toDouble(),
-                                      chartDataPoints[index],
-                                    ),
-                                  ),
+                                      chartValues.length,
+                                      (i) =>
+                                          FlSpot(i.toDouble(), chartValues[i])),
                                   isCurved: true,
-                                  color: Colors.teal,
                                   barWidth: 3,
                                   dotData: FlDotData(show: true),
-                                ),
+                                )
                               ],
                             ),
                           ),
@@ -238,119 +215,100 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    if (groupedData.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: sortedDates.map((date) {
-                          List<dynamic> sessions = groupedData[date]!;
-                          return Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    date,
+                    if (grouped.isNotEmpty)
+                      ...dates.map((date) {
+                        final allSets = <Map<String, dynamic>>[];
+                        for (var sess in grouped[date]!) {
+                          for (var s in sess['data'] as List<dynamic>) {
+                            allSets.add(Map<String, dynamic>.from(s));
+                          }
+                        }
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(date,
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleLarge
                                         ?.copyWith(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondary,
-                                        ),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondary)),
+                                const SizedBox(height: 8),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: DataTable(
+                                    columns: [
+                                      DataColumn(
+                                          label: Text('Satz',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      fontSize: 10,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .secondary))),
+                                      DataColumn(
+                                          label: Text('Kg',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      fontSize: 10,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .secondary))),
+                                      DataColumn(
+                                          label: Text('Wdh',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      fontSize: 10,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .secondary))),
+                                    ],
+                                    rows: allSets.map((setMap) {
+                                      return DataRow(cells: [
+                                        DataCell(Text(
+                                            setMap['sets'].toString(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium)),
+                                        DataCell(Text(
+                                            setMap['weight'].toString(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium)),
+                                        DataCell(Text(
+                                            setMap['reps'].toString(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium)),
+                                      ]);
+                                    }).toList(),
                                   ),
-                                  const SizedBox(height: 8),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: DataTable(
-                                      columns: [
-                                        DataColumn(
-                                          label: Text(
-                                            'Satz',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: 10,
-                                                  color: Theme.of(context)
-                                                      .colorScheme.secondary,
-                                                ),
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            'Kg',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: 10,
-                                                  color: Theme.of(context)
-                                                      .colorScheme.secondary,
-                                                ),
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            'Wdh',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontSize: 10,
-                                                  color: Theme.of(context)
-                                                      .colorScheme.secondary,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                      rows: sessions.map<DataRow>((entry) {
-                                        return DataRow(
-                                          cells: [
-                                            DataCell(Text(
-                                              entry['sets'].toString(),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium,
-                                            )),
-                                            DataCell(Text(
-                                              entry['weight'].toString(),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium,
-                                            )),
-                                            DataCell(Text(
-                                              entry['reps'].toString(),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium,
-                                            )),
-                                          ],
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        }).toList(),
-                      )
+                          ),
+                        );
+                      }).toList()
                     else
                       Center(
-                        child: Text(
-                          "Keine Trainingshistorie vorhanden.",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
+                          child: Text("Keine Trainingshistorie vorhanden.",
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium)),
                   ],
                 ),
               ),

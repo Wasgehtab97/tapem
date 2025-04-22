@@ -1,35 +1,33 @@
+// lib/screens/profile.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_services.dart';
 import '../widgets/registration_form.dart';
 import '../widgets/login_form.dart';
 import '../widgets/streak_badge.dart';
 import '../widgets/exp_badge.dart';
-import '../widgets/calendar.dart'; // Altes Kalender-Widget
-import '../widgets/full_screen_calendar.dart'; // Vollbildkalender-Popup
+import '../widgets/calendar.dart';
+import '../widgets/full_screen_calendar.dart';
 import 'gym.dart';
 import 'rank.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
-
+  const ProfileScreen({Key? key}) : super(key: key);
   @override
   ProfileScreenState createState() => ProfileScreenState();
 }
 
 class ProfileScreenState extends State<ProfileScreen> {
   String storedUsername = "BeispielNutzer";
-  String? token;
-  int? userId;
+  String? uid;
   int expProgress = 0;
-  int divisionIndex = 0;
+  int divisionNumber = 0;
+  int streak = 0;
   List<String> trainingDates = [];
   bool loadingDates = true;
-  int streak = 0;
   bool loadingCoachingRequest = true;
   Map<String, dynamic>? coachingRequest;
-
-  final ApiService apiService = ApiService();
 
   @override
   void initState() {
@@ -37,143 +35,150 @@ class ProfileScreenState extends State<ProfileScreen> {
     _loadUserInfo();
   }
 
-  /// Konvertiert ein Datum in die deutsche Zeitzone (GMT+1) und formatiert als "YYYY-MM-DD".
-  String getGermanDateString(DateTime date) {
-    final germanDate = date.toUtc().add(const Duration(hours: 1));
-    final year = germanDate.year.toString();
-    final month = germanDate.month.toString().padLeft(2, '0');
-    final day = germanDate.day.toString().padLeft(2, '0');
-    return "$year-$month-$day";
-  }
-
   Future<void> _loadUserInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      storedUsername = prefs.getString('username') ?? "BeispielNutzer";
-      token = prefs.getString('token');
-      userId = prefs.getInt('userId');
-      expProgress = prefs.getInt('exp_progress') ?? 0;
-      divisionIndex = prefs.getInt('division_index') ?? 0;
-    });
-    if (userId != null) {
-      await Future.wait([
-        _fetchStreak(),
-        _fetchTrainingDates(),
-        _fetchCoachingRequest(),
-      ]);
-      try {
-        final userData = await apiService.getUserData(userId!);
-        setState(() {
-          expProgress = userData['data']['exp_progress'] ?? 0;
-          divisionIndex = userData['data']['division_index'] ?? 0;
-          storedUsername = userData['data']['name'] ?? storedUsername;
-        });
-        await prefs.setInt('exp_progress', expProgress);
-        await prefs.setInt('division_index', divisionIndex);
-        await prefs.setString('username', storedUsername);
-      } catch (e) {
-        debugPrint("Fehler beim Abrufen der Benutzerdaten: $e");
-      }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => uid = null);
+      return;
     }
-  }
+    uid = user.uid;
 
-  Future<void> _fetchStreak() async {
-    try {
-      final response = await apiService.getDataFromUrl('/api/streak/${userId!}');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userId', uid!);
+
+    // Profil-Daten laden
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    if (userDoc.exists) {
+      final data = userDoc.data()!;
       setState(() {
-        streak = response['data']['current_streak'] ?? 0;
+        storedUsername = data['name'] ?? storedUsername;
+        expProgress = data['exp_progress'] ?? 0;
+        divisionNumber = data['division_number'] ?? 0;
+        streak = data['current_streak'] ?? 0;
       });
-    } catch (error) {
-      debugPrint("Fehler beim Abrufen des Streaks: $error");
     }
+
+    // Trainingsdaten & Coaching-Request parallel laden
+    await Future.wait([
+      _fetchTrainingDates(),
+      _fetchCoachingRequest(),
+    ]);
   }
 
   Future<void> _fetchTrainingDates() async {
+    if (uid == null) return;
     try {
-      final response = await apiService.getDataFromUrl('/api/history/${userId!}');
-      if (response['data'] != null) {
-        final dates = (response['data'] as List)
-            .map<String>((entry) {
-              DateTime d = DateTime.parse(entry['training_date']);
-              return getGermanDateString(d);
-            })
-            .toSet()
-            .toList();
-        setState(() {
-          trainingDates = dates;
-        });
-      }
-    } catch (error) {
-      debugPrint("Fehler beim Abrufen der Trainingsdaten: $error");
+      final snap = await FirebaseFirestore.instance
+          .collection('training_history')
+          .where('user_id', isEqualTo: uid)
+          .get();
+      final dates = snap.docs
+          .map((d) => _formatGermanDate(d.data()['training_date']))
+          .toSet()
+          .toList();
+      setState(() => trainingDates = dates);
+    } catch (e) {
+      debugPrint("Fehler beim Abrufen der Trainingsdaten: $e");
     } finally {
-      setState(() {
-        loadingDates = false;
-      });
+      setState(() => loadingDates = false);
     }
   }
 
   Future<void> _fetchCoachingRequest() async {
+    if (uid == null) return;
+    setState(() => loadingCoachingRequest = true);
     try {
-      final response = await apiService.getDataFromUrl('/api/coaching/request?clientId=$userId');
-      if (response['data'] != null && (response['data'] as List).isNotEmpty) {
-        setState(() {
-          coachingRequest = (response['data'] as List)[0];
-        });
+      // NUR pending‑Requests abfragen
+      final snap = await FirebaseFirestore.instance
+          .collection('coaching_requests')
+          .where('client_id', isEqualTo: uid)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        final doc = snap.docs.first;
+        final data = doc.data()..['id'] = doc.id;
+        setState(() => coachingRequest = data);
+      } else {
+        setState(() => coachingRequest = null);
       }
-    } catch (error) {
-      debugPrint("Fehler beim Abrufen der Coaching-Anfrage: $error");
+    } catch (e) {
+      debugPrint("Fehler beim Abrufen der Coaching-Anfrage: $e");
+      setState(() => coachingRequest = null);
     } finally {
-      setState(() {
-        loadingCoachingRequest = false;
-      });
+      setState(() => loadingCoachingRequest = false);
     }
   }
 
   Future<void> _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await FirebaseAuth.instance.signOut();
     if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
     }
   }
 
-  Future<void> _acceptCoachingRequest() async {
+  Future<void> _respondToRequest(bool accept) async {
     if (coachingRequest == null) return;
     try {
-      await apiService.respondCoachingRequest(coachingRequest!['id'], true);
-      setState(() {
-        coachingRequest = null;
-      });
-    } catch (error) {
-      debugPrint("Fehler beim Annehmen der Coaching-Anfrage: $error");
+      final reqId = coachingRequest!['id'] as String;
+      // Status updaten
+      await FirebaseFirestore.instance
+          .collection('coaching_requests')
+          .doc(reqId)
+          .update({'status': accept ? 'accepted' : 'rejected'});
+
+      // Wenn angenommen, füge client zur Coach‑Liste hinzu:
+      if (accept) {
+        final coachId = coachingRequest!['coach_id'] as String;
+        final clientId = coachingRequest!['client_id'] as String;
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(coachId)
+            .collection('clients')
+            .doc(clientId)
+            .set({'joined_at': Timestamp.now()});
+      }
+
+      // Lokalen State zurücksetzen und neu laden
+      setState(() => coachingRequest = null);
+    } catch (e) {
+      debugPrint("Fehler beim Beantworten der Anfrage: $e");
     }
   }
 
-  Future<void> _declineCoachingRequest() async {
-    if (coachingRequest == null) return;
-    try {
-      await apiService.respondCoachingRequest(coachingRequest!['id'], false);
-      setState(() {
-        coachingRequest = null;
-      });
-    } catch (error) {
-      debugPrint("Fehler beim Ablehnen der Coaching-Anfrage: $error");
+  String _formatGermanDate(dynamic dateInput) {
+    DateTime d;
+    if (dateInput is Timestamp) {
+      d = dateInput.toDate();
+    } else if (dateInput is String) {
+      d = DateTime.parse(dateInput);
+    } else if (dateInput is DateTime) {
+      d = dateInput;
+    } else {
+      d = DateTime.now();
     }
+    d = d.toUtc().add(const Duration(hours: 1));
+    final y = d.year.toString();
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return "$y-$m-$day";
   }
 
   @override
   Widget build(BuildContext context) {
-    if (token == null || token!.isEmpty) {
+    if (uid == null) {
       return Scaffold(
         appBar: AppBar(
           title: Text(
             "Anmeldung / Registrierung",
             style: Theme.of(context).appBarTheme.titleTextStyle,
           ),
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: const [
               LoginForm(),
@@ -187,27 +192,15 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Profil",
-          style: Theme.of(context).appBarTheme.titleTextStyle,
-        ),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: Text("Profil", style: Theme.of(context).appBarTheme.titleTextStyle),
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Theme.of(context).iconTheme.color),
-            onSelected: (value) {
-              if (value == 'logout') {
-                _handleLogout();
-              }
+            onSelected: (v) {
+              if (v == 'logout') _handleLogout();
             },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'logout',
-                child: Text(
-                  'Abmelden',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'logout', child: Text('Abmelden')),
             ],
           ),
         ],
@@ -228,13 +221,16 @@ class ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    if (coachingRequest != null)
+                    // Coaching‑Anfrage nur anzeigen, solange status == pending
+                    if (loadingCoachingRequest)
+                      const CircularProgressIndicator()
+                    else if (coachingRequest != null) ...[
                       Card(
                         color: Colors.blueGrey.shade800,
                         elevation: 4,
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.all(12),
                           child: Column(
                             children: [
                               Text(
@@ -249,25 +245,13 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   ElevatedButton(
-                                    onPressed: _acceptCoachingRequest,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).primaryColor,
-                                    ),
-                                    child: Text(
-                                      "Annehmen",
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
+                                    onPressed: () => _respondToRequest(true),
+                                    child: const Text("Annehmen"),
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton(
-                                    onPressed: _declineCoachingRequest,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).primaryColor,
-                                    ),
-                                    child: Text(
-                                      "Ablehnen",
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
+                                    onPressed: () => _respondToRequest(false),
+                                    child: const Text("Ablehnen"),
                                   ),
                                 ],
                               ),
@@ -275,20 +259,17 @@ class ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
+                    ],
                     const SizedBox(height: 20),
-                    // Kalender-Widget (klein) – beim Tippen öffnet sich ein Popup mit FullScreenCalendar
+                    // Kalender etc...
                     GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return Dialog(
-                              insetPadding: const EdgeInsets.all(16),
-                              child: FullScreenCalendar(trainingDates: trainingDates),
-                            );
-                          },
-                        );
-                      },
+                      onTap: () => showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          insetPadding: const EdgeInsets.all(16),
+                          child: FullScreenCalendar(trainingDates: trainingDates),
+                        ),
+                      ),
                       child: Calendar(
                         trainingDates: trainingDates,
                         cellSize: 12.0,
@@ -302,18 +283,12 @@ class ProfileScreenState extends State<ProfileScreen> {
                         backgroundColor: Theme.of(context).primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const GymScreen()),
-                        );
-                      },
-                      child: Center(
-                        child: Text(
-                          "Gym",
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
-                        ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const GymScreen()),
                       ),
+                      child: Text("Gym",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18)),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -321,42 +296,15 @@ class ProfileScreenState extends State<ProfileScreen> {
                         backgroundColor: Theme.of(context).primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/trainingsplan');
-                      },
-                      child: Center(
-                        child: Text(
-                          "Plans",
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
-                        ),
-                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/trainingsplan'),
+                      child: Text("Plans",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18)),
                     ),
                   ],
                 ),
               ),
             ),
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StreakBadge(streak: streak, size: 60),
-                  const SizedBox(width: 8),
-                  ExpBadge(
-                    expProgress: expProgress,
-                    divisionIndex: divisionIndex,
-                    size: 60,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RankScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            // Badges und Name oben
             Positioned(
               top: 16,
               left: 16,
@@ -365,13 +313,26 @@ class ProfileScreenState extends State<ProfileScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Row(
+                children: [
+                  StreakBadge(streak: streak, size: 60),
+                  const SizedBox(width: 8),
+                  ExpBadge(
+                    expProgress: expProgress,
+                    divisionIndex: divisionNumber,
+                    size: 60,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RankScreen())),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 50,
-        color: Theme.of(context).primaryColor,
-      ),
+      bottomNavigationBar: Container(height: 50, color: Theme.of(context).primaryColor),
     );
   }
 }
