@@ -3,16 +3,28 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // Das Flutter Gradle Plugin muss nach den Android- und Kotlin-Plugins angewendet werden.
+    // Flutter Gradle Plugin muss nach Android- und Kotlin-Plugins angewendet werden
     id("dev.flutter.flutter-gradle-plugin")
+    // Google Services Plugin für Firebase
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.gymapp"
+    // Paket- und Namespace umbenannt von gymapp auf tapem
+    namespace = "com.example.tapem"
     compileSdk = flutter.compileSdkVersion
 
-    // Liest die NDK-Version aus gradle.properties oder verwendet einen Standardwert, falls nicht definiert.
+    // NDK-Version aus gradle.properties lesen oder Default nutzen
     ndkVersion = (project.findProperty("android.ndkVersion") ?: "27.0.12077973") as String
+
+    defaultConfig {
+        // Application ID anpassen
+        applicationId = "com.example.tapem"
+        minSdk = 23                                   // Firebase empfiehlt mindestens 23
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,29 +33,29 @@ android {
 
     kotlinOptions {
         jvmTarget = "11"
-    }
-
-    defaultConfig {
-        applicationId = "com.example.gymapp"
-        // Setze minSdk explizit auf 23, wie von Firebase empfohlen.
-        minSdk = 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // Optional: JVM Default Compatibility für Interfaces
+        freeCompilerArgs += listOf("-Xjvm-default=compatibility")
     }
 
     buildTypes {
-        release {
-            // In diesem Beispiel wird debug signingConfig verwendet – passe das für einen echten Release an.
+        debug {
+            // Zum Testen weiter Debug-Signing nutzen
             signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            // TODO: Release-SigningConfig hier eintragen, sobald vorhanden
+            signingConfig = signingConfigs.getByName("debug")
+            // ProGuard/R8 aktivieren für Minifizierung und Optimierung
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
 
 flutter {
+    // Standard-Pfad zur Flutter-Modul-Integration
     source = "../.."
 }
-
-// Plugin für Google Services: Stellt sicher, dass die google-services.json angewendet wird.
-// Dieser Plugin-Aufruf sollte nach allen anderen Konfigurationen erfolgen.
-apply(plugin = "com.google.gms.google-services")

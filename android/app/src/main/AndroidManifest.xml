@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.gymapp">
+    package="com.example.tapem">
 
     <!-- NFC Berechtigung hinzufügen -->
     <uses-permission android:name="android.permission.NFC"/>

@@ -1,24 +1,37 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-# gymapp
+# Tap’em
 
-A new Flutter project.
+**NFC-basiertes Gym-Tracking & -Management**
+
+Tap’em ist eine modular aufgebaute Flutter-App, die es Fitnessstudios ermöglicht, ihr Geräteangebot per NFC-Tap nahtlos zu verwalten und Mitglieder-Trainingsdaten zentral zu erfassen. White-Label-fähig und Multi-Tenant-bereit für individuelle Studio-Brandings und Datenisolation.
+
+---
+
+## Features
+
+- **NFC-Integration**: Direktes Navigieren zum passenden Trainings-Dashboard per Tap am Gerät  
+- **Multi-Tenant-Architektur**: Jedes Studio bekommt seine eigene Konfiguration & Datenbank-Segmente  
+- **Firebase-Backend**: Authentifizierung, Firestore-Datenhaltung, Cloud Functions (optional)  
+- **Dynamisches Branding**: Farbschema, Logos und App-Namen pro Studio konfigurierbar  
+- **State Management**: Provider / optional Riverpod oder BLoC für skalierbare Business-Logik  
+- **Visualisierung**: Kalender-Übersicht, Charts (fl_chart), Streak-Badges, Trainingshistorie  
+- **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung  
+- **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors  
+
+---
+
+## Voraussetzungen
+
+- Flutter SDK ≥ 3.7.0  
+- Android Studio oder VS Code  
+- Xcode (macOS, für iOS-Builds)  
+- Ein Firebase-Projekt pro Studio (je Flavor) mit `google-services.json` und `GoogleService-Info.plist`  
+- Git ≥ 2.20 für Branch- und Remote-Management  
+
+---
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
-# gymapp
->>>>>>> 584519d6d423fdddcd4e0ffff189333f18b03e0d
-=======
-# gymapp_firebase_test
->>>>>>> e70d51c1dc91c3de57b19b754f9f8ab9c9dfd918
+1. **Repository klonen**  
+   ```bash
+   git clone git@github.com:<DeinUser>/tapem.git
+   cd tapem
