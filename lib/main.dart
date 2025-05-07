@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'core/utils/logger.dart';
 import 'core/tenant/tenant_service.dart';
@@ -25,21 +26,26 @@ final navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Umgebungsvariablen laden (.env.dev oder .env.prod)
-  await dotenv.load(
-    fileName: kReleaseMode ? '.env.prod' : '.env.dev',
-  );
+  // 1) Umgebungsvariablen laden (.env.dev oder .env.prod)
+  await dotenv.load(fileName: kReleaseMode ? '.env.prod' : '.env.dev');
   AppLogger.log('Environment loaded: ${dotenv.env}');
 
-  // Firebase initialisieren
+  // 2) Firebase initialisieren
   await Firebase.initializeApp();
   AppLogger.log('Firebase initialized');
 
-  // Initialen Tenant setzen (DEFAULT_GYM_ID aus .env, ansonsten 'defaultGym')
+  // 3) Firestore Offline-Persistence aktivieren
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+  AppLogger.log('Firestore offline persistence enabled');
+
+  // 4) Initialen Tenant setzen (DEFAULT_GYM_ID aus .env, ansonsten 'defaultGym')
   final defaultGymId = dotenv.env['DEFAULT_GYM_ID'] ?? 'defaultGym';
   await TenantService().init(defaultGymId);
   AppLogger.log('Tenant initialized: $defaultGymId');
 
+  // 5) App starten
   runApp(const TapemApp());
 }
 
