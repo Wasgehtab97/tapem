@@ -11,7 +11,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_dotenv: ^5.0.2
-
+  json_annotation: ^4.8.0
+  
   # State management
   provider: ^6.0.5
 
