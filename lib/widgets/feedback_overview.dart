@@ -1,195 +1,88 @@
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../config.dart';
+// lib/widgets/feedback_overview.dart
 
-class FeedbackOverview extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/tenant/tenant_service.dart';
+
+class FeedbackOverview extends StatelessWidget {
   final int deviceId;
   const FeedbackOverview({Key? key, required this.deviceId}) : super(key: key);
 
   @override
-  FeedbackOverviewState createState() => FeedbackOverviewState();
-}
-
-class FeedbackOverviewState extends State<FeedbackOverview> {
-  List<dynamic> feedbacks = [];
-  bool loading = false;
-  String statusFilter = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchFeedbacks();
-  }
-
-  Future<void> _fetchFeedbacks() async {
-    setState(() {
-      loading = true;
-    });
-    try {
-      // Baue die Query-Parameter zusammen
-      final List<String> queryParams = ['deviceId=${widget.deviceId}'];
-      if (statusFilter.isNotEmpty) {
-        queryParams.add('status=${Uri.encodeComponent(statusFilter)}');
-      }
-      final String queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
-      
-      final http.Response response = await http.get(Uri.parse('$API_URL/api/feedback$queryString'));
-      final Map<String, dynamic> result = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && result['data'] != null) {
-        setState(() {
-          feedbacks = result['data'];
-        });
-      } else {
-        debugPrint(result['error']?.toString());
-      }
-    } catch (error) {
-      debugPrint('Fehler beim Abrufen des Feedbacks: $error');
-    } finally {
-      setState(() {
-        loading = false;
-      });
-    }
-  }
-
-  Future<void> _updateFeedbackStatus(int feedbackId, String newStatus) async {
-    try {
-      final http.Response response = await http.put(
-        Uri.parse('$API_URL/api/feedback/$feedbackId'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': newStatus}),
-      );
-      final Map<String, dynamic> result = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        setState(() {
-          feedbacks = feedbacks.map((fb) {
-            if (fb['id'] == feedbackId) {
-              fb['status'] = newStatus;
-            }
-            return fb;
-          }).toList();
-        });
-      } else {
-        debugPrint(result['error']?.toString());
-      }
-    } catch (error) {
-      debugPrint('Fehler beim Aktualisieren des Feedback-Status: $error');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextTheme textTheme = theme.textTheme;
+    final theme = Theme.of(context);
+    final gymId = TenantService().gymId;
+    if (gymId == null) {
+      return Center(child: Text('Studio nicht ausgewählt.'));
+    }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Feedback Übersicht',
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.secondary,
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('gyms')
+          .doc(gymId)
+          .collection('feedback')
+          .where('deviceId', isEqualTo: deviceId)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (ctx, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return Center(
+            child: Text(
+              'Kein Feedback vorhanden.',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.secondary),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                "Status:",
-                style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-              ),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: statusFilter.isNotEmpty ? statusFilter : null,
-                hint: Text(
-                  "Alle",
-                  style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
+            final id = docs[index].id;
+            final status = data['status'] as String? ?? 'neu';
+            final ts =
+                (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+            final formattedDate =
+                '${ts.day.toString().padLeft(2, '0')}.${ts.month.toString().padLeft(2, '0')}.${ts.year}';
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                title: Text(
+                  data['text'] ?? '',
+                  style:
+                      theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
                 ),
-                items: [
-                  DropdownMenuItem(
-                    value: '',
-                    child: Text(
-                      "Alle",
-                      style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'neu',
-                    child: Text(
-                      "Neu",
-                      style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'in Bearbeitung',
-                    child: Text(
-                      "In Bearbeitung",
-                      style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'erledigt',
-                    child: Text(
-                      "Erledigt",
-                      style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    statusFilter = value ?? '';
-                  });
-                  _fetchFeedbacks();
-                },
+                subtitle: Text(
+                  'Status: $status • $formattedDate',
+                  style:
+                      theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.secondary),
+                ),
+                trailing: status != 'erledigt'
+                    ? IconButton(
+                        icon: Icon(Icons.check, color: theme.colorScheme.primary),
+                        onPressed: () async {
+                          await FirebaseFirestore.instance
+                              .collection('gyms')
+                              .doc(gymId)
+                              .collection('feedback')
+                              .doc(id)
+                              .update({'status': 'erledigt'});
+                        },
+                      )
+                    : null,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          loading
-              ? const Center(child: CircularProgressIndicator())
-              : feedbacks.isEmpty
-                  ? Center(
-                      child: Text(
-                        "Kein Feedback vorhanden.",
-                        style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: feedbacks.length,
-                      itemBuilder: (context, index) {
-                        final dynamic fb = feedbacks[index];
-                        final DateTime createdAt = DateTime.tryParse(fb['created_at']?.toString() ?? '')?.toLocal() ?? DateTime.now();
-                        final String formattedDate =
-                            "${createdAt.day.toString().padLeft(2, '0')}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.year}";
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          child: ListTile(
-                            title: Text(
-                              fb['feedback_text'] ?? '',
-                              style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                            ),
-                            subtitle: Text(
-                              'Status: ${fb['status']} • $formattedDate',
-                              style: textTheme.bodySmall?.copyWith(color: theme.colorScheme.secondary),
-                            ),
-                            trailing: fb['status'] != 'erledigt'
-                                ? IconButton(
-                                    icon: Icon(Icons.check, color: theme.colorScheme.secondary),
-                                    onPressed: () => _updateFeedbackStatus(fb['id'], 'erledigt'),
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

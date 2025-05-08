@@ -1,13 +1,14 @@
-import 'dart:convert';
+// lib/widgets/feedback_form.dart
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../core/tenant/tenant_service.dart';
 
 class FeedbackForm extends StatefulWidget {
   final int deviceId;
   final VoidCallback? onClose;
-  final Function(Map<String, dynamic>)? onFeedbackSubmitted;
+  final Function(DocumentReference)? onFeedbackSubmitted;
 
   const FeedbackForm({
     Key? key,
@@ -28,53 +29,39 @@ class _FeedbackFormState extends State<FeedbackForm> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    final String feedbackText = _feedbackController.text.trim();
+    final feedbackText = _feedbackController.text.trim();
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int? userId = prefs.getInt('userId');
-    final String? token = prefs.getString('token');
-
-    if (userId == null || token == null) {
-      setState(() => _error = 'Benutzer nicht authentifiziert.');
+    final user = FirebaseAuth.instance.currentUser;
+    final gymId = TenantService().gymId;
+    if (user == null || gymId == null) {
+      setState(() => _error = 'Bitte zuerst anmelden und Studio auswählen.');
       return;
     }
 
     try {
-      final http.Response response = await http.post(
-        Uri.parse('$API_URL/api/feedback'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'userId': userId,
-          'deviceId': widget.deviceId,
-          'feedback_text': feedbackText,
-        }),
-      );
+      final ref = await FirebaseFirestore.instance
+          .collection('gyms')
+          .doc(gymId)
+          .collection('feedback')
+          .add({
+        'userId': user.uid,
+        'deviceId': widget.deviceId,
+        'text': feedbackText,
+        'status': 'neu',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
-      final Map<String, dynamic> result = jsonDecode(response.body);
+      setState(() {
+        _success = 'Feedback erfolgreich gesendet.';
+        _error = '';
+      });
+      _feedbackController.clear();
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _success = 'Feedback erfolgreich gesendet.';
-          _error = '';
-        });
-        _feedbackController.clear();
-        if (widget.onFeedbackSubmitted != null) {
-          widget.onFeedbackSubmitted!(result['data']);
-        }
-        if (widget.onClose != null) {
-          widget.onClose!();
-        }
-      } else {
-        setState(() => _error = result['error'] ?? 'Fehler beim Absenden des Feedbacks.');
-      }
-    } catch (err) {
-      setState(() => _error = 'Serverfehler beim Absenden des Feedbacks.');
-      debugPrint('Fehler beim Absenden des Feedbacks: $err');
+      widget.onFeedbackSubmitted?.call(ref);
+      widget.onClose?.call();
+    } catch (e) {
+      setState(() => _error = 'Fehler beim Absenden des Feedbacks.');
+      debugPrint('Feedback error: $e');
     }
   }
 
@@ -86,11 +73,9 @@ class _FeedbackFormState extends State<FeedbackForm> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final theme = Theme.of(context);
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: theme.dividerColor)),
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(top: 16),
       child: Form(
@@ -111,7 +96,8 @@ class _FeedbackFormState extends State<FeedbackForm> {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   _error,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.error),
                 ),
               ),
             if (_success.isNotEmpty)
@@ -119,21 +105,21 @@ class _FeedbackFormState extends State<FeedbackForm> {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   _success,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.green),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: Colors.green),
                 ),
               ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _feedbackController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
                 hintText: 'Bitte geben Sie Ihr Feedback ein...',
-                hintStyle: theme.inputDecorationTheme.hintStyle,
               ),
               maxLines: 4,
               validator: (value) {
                 if (value == null || value.trim().length < 10) {
-                  return 'Bitte geben Sie ein Feedback mit mindestens 10 Zeichen ein.';
+                  return 'Mindestens 10 Zeichen erforderlich.';
                 }
                 return null;
               },
@@ -143,22 +129,15 @@ class _FeedbackFormState extends State<FeedbackForm> {
               children: [
                 ElevatedButton(
                   onPressed: _handleSubmit,
-                  style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor),
-                  child: Text(
-                    'Absenden',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                  ),
+                  child: const Text('Absenden'),
                 ),
-                if (widget.onClose != null) const SizedBox(width: 8),
-                if (widget.onClose != null)
+                if (widget.onClose != null) ...[
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: widget.onClose,
-                    style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor),
-                    child: Text(
-                      'Abbrechen',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
+                    child: const Text('Abbrechen'),
                   ),
+                ],
               ],
             ),
           ],
