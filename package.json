@@ -1,0 +1,31 @@
+{
+  "name": "tapem",
+  "version": "1.0.0",
+  "description": "**NFC-basiertes Gym-Tracking & -Management**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wasgehtab97/tapem.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Wasgehtab97/tapem/issues"
+  },
+  "homepage": "https://github.com/Wasgehtab97/tapem#readme",
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "chai": "^5.2.0",
+    "firebase-tools": "^14.3.0",
+    "mocha": "^11.2.2"
+  }
+}

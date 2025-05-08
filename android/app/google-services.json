@@ -1,32 +1,13 @@
 {
   "project_info": {
-    "project_number": "206516974620",
-    "project_id": "gymapp-539b9",
-    "storage_bucket": "gymapp-539b9.firebasestorage.app"
+    "project_number": "380604353667",
+    "project_id": "tap-em",
+    "storage_bucket": "tap-em.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:206516974620:android:c53a1c97c773a2f3f55bd9",
-        "android_client_info": {
-          "package_name": "com.example.gymapp"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBY7OGeZD5OJcPAfo28Nx_i8qZxz9Y863U"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:206516974620:android:220a4d0f4966ddf0f55bd9",
+        "mobilesdk_app_id": "1:380604353667:android:80ef6b092bf11358229fb6",
         "android_client_info": {
           "package_name": "com.example.tapem"
         }
@@ -34,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBY7OGeZD5OJcPAfo28Nx_i8qZxz9Y863U"
+          "current_key": "AIzaSyBNYRaw6lq3tqaIYZaHsrJ5phtXKFiMaSc"
         }
       ],
       "services": {
