@@ -8,8 +8,7 @@ class TrainingDetailsScreen extends StatefulWidget {
       : super(key: key);
 
   @override
-  _TrainingDetailsScreenState createState() =>
-      _TrainingDetailsScreenState();
+  _TrainingDetailsScreenState createState() => _TrainingDetailsScreenState();
 }
 
 class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
@@ -32,9 +31,14 @@ class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
 
   String _toGermanDate(dynamic inDate) {
     DateTime d;
-    if (inDate is Timestamp) d = inDate.toDate();
-    else if (inDate is DateTime) d = inDate;
-    else d = DateTime.parse(inDate.toString());
+    if (inDate is Timestamp) {
+      d = inDate.toDate();
+    } else if (inDate is DateTime) {
+      d = inDate;
+    } else {
+      d = DateTime.parse(inDate.toString());
+    }
+
     final offset = (d.month >= 4 && d.month <= 9) ? 2 : 1;
     final gd = d.toUtc().add(Duration(hours: offset));
     return _formatDate(gd);
@@ -83,7 +87,9 @@ class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
   Widget build(BuildContext context) {
     final groups = _groupByExercise();
     return Scaffold(
-      appBar: AppBar(title: Text("Training am ${widget.selectedDate}")),
+      appBar: AppBar(
+        title: Text("Training am ${widget.selectedDate}"),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : groups.isEmpty
@@ -100,18 +106,24 @@ class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
                       });
                       return Card(
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
-                              Text(e.key,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                e.key,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                        fontWeight:
+                                            FontWeight.bold),
+                              ),
                               const SizedBox(height: 8),
                               SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
@@ -122,11 +134,19 @@ class _TrainingDetailsScreenState extends State<TrainingDetailsScreen> {
                                     DataColumn(label: Text('Wdh')),
                                   ],
                                   rows: list.map((row) {
-                                    return DataRow(cells: [
-                                      DataCell(Text(row['sets'].toString())),
-                                      DataCell(Text(row['weight'].toString())),
-                                      DataCell(Text(row['reps'].toString())),
-                                    ]);
+                                    return DataRow(
+                                      cells: [
+                                        DataCell(Text(
+                                            row['sets']
+                                                .toString())),
+                                        DataCell(Text(
+                                            row['weight']
+                                                .toString())),
+                                        DataCell(Text(
+                                            row['reps']
+                                                .toString())),
+                                      ],
+                                    );
                                   }).toList(),
                                 ),
                               ),

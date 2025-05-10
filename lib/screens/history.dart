@@ -110,13 +110,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Trainingshistorie',
-            style: Theme.of(context).appBarTheme.titleTextStyle),
+        title: Text(
+          'Trainingshistorie',
+          style: Theme.of(context).appBarTheme.titleTextStyle,
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D0D0D), Color(0xFF1A1A1A), Color(0xFF333333)],
+            colors: [
+              Color(0xFF0D0D0D),
+              Color(0xFF1A1A1A),
+              Color(0xFF333333),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -128,21 +134,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Leistungsverlauf',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .secondary)),
+                    Text(
+                      'Leistungsverlauf',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                Theme.of(context).colorScheme.secondary,
+                          ),
+                    ),
                     const SizedBox(height: 16),
                     Card(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: SizedBox(
@@ -156,19 +165,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     interval: 1,
                                     getTitlesWidget: (val, meta) {
                                       final idx = val.toInt();
-                                      if (idx >= 0 && idx < dates.length) {
+                                      if (idx >= 0 &&
+                                          idx < dates.length) {
                                         return SideTitleWidget(
                                           meta: meta,
                                           space: 4,
-                                          child: Text(dates[idx],
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      fontSize: 10,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .secondary)),
+                                          child: Text(
+                                            dates[idx],
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontSize: 10,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .secondary,
+                                                ),
+                                          ),
                                         );
                                       }
                                       return const SizedBox.shrink();
@@ -179,35 +192,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   sideTitles: SideTitles(
                                     showTitles: true,
                                     interval: 10,
-                                    getTitlesWidget: (val, meta) => Text(
-                                        val.toInt().toString(),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                                fontSize: 10,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .secondary)),
+                                    getTitlesWidget: (val, meta) =>
+                                        Text(
+                                      val.toInt().toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontSize: 10,
+                                            color: Theme.of(context)
+                                                .colorScheme.secondary,
+                                          ),
+                                    ),
                                   ),
                                 ),
                                 topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false)),
+                                  sideTitles:
+                                      SideTitles(showTitles: false),
+                                ),
                                 rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false)),
+                                  sideTitles:
+                                      SideTitles(showTitles: false),
+                                ),
                               ),
                               gridData: FlGridData(show: true),
                               borderData: FlBorderData(show: true),
                               lineBarsData: [
                                 LineChartBarData(
                                   spots: List.generate(
-                                      chartValues.length,
-                                      (i) =>
-                                          FlSpot(i.toDouble(), chartValues[i])),
+                                    chartValues.length,
+                                    (i) => FlSpot(
+                                      i.toDouble(),
+                                      chartValues[i],
+                                    ),
+                                  ),
                                   isCurved: true,
                                   barWidth: 3,
                                   dotData: FlDotData(show: true),
-                                )
+                                ),
                               ],
                             ),
                           ),
@@ -225,77 +247,105 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         }
                         return Card(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           margin: const EdgeInsets.only(bottom: 16),
                           child: Padding(
                             padding: const EdgeInsets.all(12),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
                               children: [
-                                Text(date,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondary)),
+                                Text(
+                                  date,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context)
+                                            .colorScheme.secondary,
+                                      ),
+                                ),
                                 const SizedBox(height: 8),
                                 SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   child: DataTable(
                                     columns: [
                                       DataColumn(
-                                          label: Text('Satz',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      fontSize: 10,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .secondary))),
+                                        label: Text(
+                                          'Satz',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontSize: 10,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
+                                        ),
+                                      ),
                                       DataColumn(
-                                          label: Text('Kg',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      fontSize: 10,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .secondary))),
+                                        label: Text(
+                                          'Kg',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontSize: 10,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
+                                        ),
+                                      ),
                                       DataColumn(
-                                          label: Text('Wdh',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      fontSize: 10,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .secondary))),
+                                        label: Text(
+                                          'Wdh',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontSize: 10,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
+                                        ),
+                                      ),
                                     ],
                                     rows: allSets.map((setMap) {
-                                      return DataRow(cells: [
-                                        DataCell(Text(
-                                            setMap['sets'].toString(),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium)),
-                                        DataCell(Text(
-                                            setMap['weight'].toString(),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium)),
-                                        DataCell(Text(
-                                            setMap['reps'].toString(),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium)),
-                                      ]);
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(
+                                            Text(
+                                              setMap['sets'].toString(),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              setMap['weight']
+                                                  .toString(),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              setMap['reps'].toString(),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                          ),
+                                        ],
+                                      );
                                     }).toList(),
                                   ),
                                 ),
@@ -303,12 +353,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ),
                         );
-                      }).toList()
+                      })
                     else
                       Center(
-                          child: Text("Keine Trainingshistorie vorhanden.",
-                              style:
-                                  Theme.of(context).textTheme.bodyMedium)),
+                        child: Text(
+                          "Keine Trainingshistorie vorhanden.",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
                   ],
                 ),
               ),

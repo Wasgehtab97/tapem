@@ -1,5 +1,3 @@
-// lib/screens/report_dashboard.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -41,8 +39,10 @@ class _ReportDashboardScreenState extends State<ReportDashboardScreen> {
     } catch (e) {
       debugPrint("Initialisierung fehlgeschlagen: $e");
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      // kein `return` mehr im finally
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -57,24 +57,23 @@ class _ReportDashboardScreenState extends State<ReportDashboardScreen> {
     if (mounted) setState(() {});
   }
 
-  /// 2) Ein einziger Request auf feedback, danach gruppieren wir client‑seitig
+  /// 2) Ein einziger Request auf feedback, danach gruppieren wir client-seitig
   Future<void> _fetchAllFeedbackStatus() async {
     final snap = await FirebaseFirestore.instance.collection('feedback').get();
-    // deviceId → Liste aller Feedback‐Dokumente
     final Map<String, List<QueryDocumentSnapshot>> byDevice = {};
     for (var doc in snap.docs) {
       final data = doc.data() as Map<String, dynamic>;
       final id = data['device_id'].toString();
       byDevice.putIfAbsent(id, () => []).add(doc);
     }
-    // Farben bestimmen
     for (var dev in _devices) {
       final id = dev['id'] as String;
       final list = byDevice[id] ?? [];
       Color c;
       if (list.isEmpty) {
         c = Colors.yellow;
-      } else if (list.any((d) => (d.data() as Map<String, dynamic>)['status'] == 'neu')) {
+      } else if (list.any((d) =>
+          (d.data() as Map<String, dynamic>)['status'] == 'neu')) {
         c = Colors.red;
       } else {
         c = Colors.green;
