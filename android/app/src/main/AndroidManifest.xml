@@ -1,41 +1,51 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.tapem">
 
-    <!-- NFC Berechtigung hinzufügen -->
+    <!-- NFC-Berechtigungen -->
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="false"/>
 
     <application
-        android:label="gymapp"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:label="Tap’em"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:theme="@style/LaunchTheme">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- NormalTheme-Metadaten -->
+
+            <!-- Flutter-Standard-Theme (nach Splash) -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme" />
-            <!-- Standard-Launcher-Intent-Filter -->
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+
+            <!-- Launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!--
-            Deep-Link Intent-Filter entfernt, damit das System den NFC-Tag nicht als Deep Link behandelt.
-            -->
+
+            <!-- Deep-Link: tapem://invite/<gymId> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="tapem"
+                    android:host="invite"/>
+            </intent-filter>
         </activity>
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
+
+        <!-- Flutter embedding -->
+        <meta-data android:name="flutterEmbedding" android:value="2"/>
     </application>
-    <!-- Erforderlich, um Aktivitäten zu erkennen, die Text verarbeiten -->
+
+    <!-- Erlaubt Text-Sharing Intents -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

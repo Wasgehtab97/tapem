@@ -1,50 +1,70 @@
 // lib/core/tenant/tenant_service.dart
 
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/dto/gym_config_dto.dart';
+import '../models/dto/device_dto.dart';
 import '../models/domain/gym_config.dart';
 import '../models/domain/device.dart';
 import '../models/domain/mappers.dart';
-import '../models/dto/device_dto.dart';
 import 'interfaces/tenant_repository.dart';
 import 'services/firestore_tenant_repository.dart';
 
-/// Verwaltet den aktuellen Gym-Kontext (Tenant).
+/// Verwaltet den aktuellen Gym-Kontext (Tenant) inkl. Offline-Caching.
 class TenantService {
-  // Singleton-Instanz
+  // --- Singleton ---
   static final TenantService _instance = TenantService._internal();
   factory TenantService() => _instance;
   TenantService._internal();
 
-  static const _gymIdKey = 'currentGymId';
-  String? _gymId;
+  // --- Keys für SharedPreferences ---
+  static const String gymIdKey = 'currentGymId';
+  static const String configKeyPrefix = 'gymConfig_';
+
+  String?    _gymId;
   GymConfig? _config;
   final TenantRepository _repo = FirestoreTenantRepository();
 
-  /// Initialisiert den Tenant mit der angegebenen gymId und lädt die Konfiguration.
+  /// Lädt und cached die GymConfig für [gymId].
   Future<void> init(String gymId) async {
     _gymId = gymId;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_gymIdKey, gymId);
+    await prefs.setString(gymIdKey, gymId);
 
-    // Konfiguration aus Firestore holen und in Domain-Model mappen
-    final dto = await _repo.fetchConfig(gymId);
+    GymConfigDto dto;
+    try {
+      // 1) Konfiguration aus Firestore holen
+      dto = await _repo.fetchConfig(gymId);
+      // 2) DTO als JSON cachen
+      final rawJson = jsonEncode(dto.toJson());
+      await prefs.setString('$configKeyPrefix$gymId', rawJson);
+    } catch (e) {
+      // 3) Fallback: aus lokalem Cache laden
+      final cached = prefs.getString('$configKeyPrefix$gymId');
+      if (cached == null) {
+        rethrow; // kein Cache → tatsächlicher Fehler
+      }
+      final map = jsonDecode(cached) as Map<String, dynamic>;
+      dto = GymConfigDto.fromJson(map);
+    }
+
+    // 4) Mapping ins Domain-Model
     _config = toDomain(dto);
   }
 
   /// Aktuell gesetzte Gym-ID
   String? get gymId => _gymId;
 
-  /// Gym-spezifische Konfiguration
+  /// Aktuell geladene Gym-Konfiguration
   GymConfig? get config => _config;
 
-  /// Gym wechseln und neue Konfiguration laden
-  Future<void> switchGym(String newGymId) async {
-    await init(newGymId);
-  }
+  /// Wechsel zu einem anderen Gym (erneutes Laden)
+  Future<void> switchGym(String newGymId) => init(newGymId);
 
-  /// Gibt alle Geräte des aktuellen Gyms als Domain-Modelle per Stream zurück.
+  /// Stream aller Geräte des aktuellen Gyms als Domain-Modelle
   Stream<List<Device>> getDeviceStream() {
     if (_gymId == null) {
       throw Exception('GymId ist nicht initialisiert');

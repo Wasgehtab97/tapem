@@ -1,5 +1,3 @@
-// lib/core/tenant/interfaces/tenant_repository.dart
-
 import '../../models/dto/gym_config_dto.dart';
 
 /// Abstrakte Schnittstelle zum Laden der Gym-Konfiguration.

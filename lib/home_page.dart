@@ -1,13 +1,15 @@
-// lib/screens/home_page.dart
+// lib/home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'screens/profile.dart';
+import 'screens/affiliate_screen.dart';
+import 'screens/coach_dashboard.dart';
 import 'screens/report_dashboard.dart';
 import 'screens/admin_dashboard.dart';
-import 'screens/coach_dashboard.dart';
-import 'screens/affiliate_screen.dart';
 
+/// HomePage mit BottomNavigation je nach User-Rolle.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -19,25 +21,22 @@ class _HomePageState extends State<HomePage> {
   String? _role;
   bool _loaded = false;
 
-  // Seiten für normale Nutzer
   static const _userPages = <Widget>[
     ProfileScreen(),
     AffiliateScreen(),
   ];
 
-  // Seiten für Coaches (nur coach-Role)
   static const _coachPages = <Widget>[
     ProfileScreen(),
     AffiliateScreen(),
     CoachDashboardScreen(),
   ];
 
-  // Seiten für Admins (admin-Role), inkl. Coach-Page
   static const _adminPages = <Widget>[
     ProfileScreen(),
     ReportDashboardScreen(),
     AffiliateScreen(),
-    CoachDashboardScreen(),      // neu hinzugefügt
+    CoachDashboardScreen(),
     AdminDashboardScreen(),
   ];
 
@@ -53,26 +52,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<BottomNavigationBarItem> get _items {
-    if (_role == 'admin') {
-      return const [
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Reporting'),
-        BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
-        BottomNavigationBarItem(icon: Icon(Icons.supervisor_account), label: 'Coach'),
-        BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
-      ];
+    switch (_role) {
+      case 'admin':
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Reporting'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Coach'),
+          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+        ];
+      case 'coach':
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Coach'),
+        ];
+      default:
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
+        ];
     }
-    if (_role == 'coach') {
-      return const [
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
-        BottomNavigationBarItem(icon: Icon(Icons.supervisor_account), label: 'Coach'),
-      ];
-    }
-    return const [
-      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-      BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Deals'),
-    ];
   }
 
   @override
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     SharedPreferences.getInstance().then((prefs) {
       setState(() {
-        _role = prefs.getString('role');
+        _role = prefs.getString('role') ?? 'user';
         _loaded = true;
       });
     });
@@ -94,7 +94,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Falls CurrentIndex außerhalb liegt, zurücksetzen
     if (_currentIndex >= _pages.length) {
       _currentIndex = 0;
     }

@@ -2,38 +2,46 @@
 
 import 'package:flutter/material.dart';
 import '../tenant/tenant_service.dart';
+import '../utils/logger.dart';
 
-/// Lädt dynamisch ein Theme basierend auf der im TenantService gespeicherten GymConfig.
+/// Lädt dynamisch ein Theme basierend auf der im TenantService
+/// gespeicherten Gym-Config.
 class ThemeLoader {
-  /// Holt aktuelle Config aus TenantService und erstellt ein ThemeData.
+  /// Holt die aktuell geladene Gym-Config und erstellt ein ThemeData.
   static Future<ThemeData> loadTheme() async {
-    final config = TenantService().config;
+    final cfg = TenantService().config;
 
-    // Fallback auf Standard-Light-Theme, wenn noch keine Config geladen
-    if (config == null) {
+    // 1) Fallback auf Standard-Theme, wenn noch keine GymConfig geladen
+    if (cfg == null) {
+      AppLogger.log('No GymConfig found, using light fallback');
       return ThemeData.light();
     }
 
-    // Primäre Farbe direkt aus dem gespeicherten int-Wert verwenden
-    final Color primaryColor = Color(config.primaryColorValue);
+    AppLogger.log('Applying GymConfig theme for "${cfg.displayName}"');
 
-    return ThemeData(
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: Colors.white,
+    // 2) Basis-Theme anpassen
+    final base = ThemeData.dark();
+    return base.copyWith(
+      primaryColor: cfg.primaryColor,
+      scaffoldBackgroundColor: base.scaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
-        backgroundColor: primaryColor,
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
+        backgroundColor: cfg.primaryColor,
+        titleTextStyle: TextStyle(
+          color: cfg.accentColor,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: cfg.accentColor),
       ),
-      colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
+      colorScheme: base.colorScheme.copyWith(
+        primary: cfg.primaryColor,
+        secondary: cfg.accentColor,
+        background: base.colorScheme.background,
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: cfg.primaryColor,
+          foregroundColor: cfg.accentColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
