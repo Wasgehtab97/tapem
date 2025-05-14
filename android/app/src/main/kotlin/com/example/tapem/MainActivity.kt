@@ -1,4 +1,4 @@
-package com.example.gymapp
+package com.example.tapem
 
 import io.flutter.embedding.android.FlutterActivity
 

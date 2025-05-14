@@ -1,14 +1,16 @@
 // lib/core/utils/logger.dart
 
+/// Einfache Logging-Klasse für Debug- und Fehlerausgaben.
 class AppLogger {
+  /// Gibt eine Info-Nachricht mit Zeitstempel auf der Konsole aus.
   static void log(String message) {
-    final time = DateTime.now().toIso8601String();
-    // Hier könntest du erweitern: file logging, log levels, …
-    print('[$time] $message');
+    final timestamp = DateTime.now().toIso8601String();
+    print('[$timestamp] INFO: $message');
   }
 
+  /// Gibt eine Fehlermeldung mit Zeitstempel auf der Konsole aus.
   static void error(String message, [Object? error]) {
-    final time = DateTime.now().toIso8601String();
-    print('[$time] ERROR: $message ${error ?? ''}');
+    final timestamp = DateTime.now().toIso8601String();
+    print('[$timestamp] ERROR: $message ${error ?? ''}');
   }
 }

@@ -1,55 +1,48 @@
 // lib/core/theme/theme_loader.dart
 
 import 'package:flutter/material.dart';
-import '../tenant/tenant_service.dart';
-import '../utils/logger.dart';
+import 'package:tapem/domain/models/gym_config.dart'; // Stelle sicher, dass diese Datei existiert
 
-/// Lädt dynamisch ein Theme basierend auf der im TenantService
-/// gespeicherten Gym-Config.
+/// Lädt ein dynamisches Theme.
+/// Aktuell liefert es das helle Material-Theme mit Material 3.
+/// Über [loadThemeFromConfig] kannst du später ein konfiguriertes Theme erzeugen.
 class ThemeLoader {
-  /// Holt die aktuell geladene Gym-Config und erstellt ein ThemeData.
+  /// Gibt aktuell ein einfaches Light-Theme zurück.
   static Future<ThemeData> loadTheme() async {
-    final cfg = TenantService().config;
+    return ThemeData.light().copyWith(useMaterial3: true);
+  }
 
-    // 1) Fallback auf Standard-Theme, wenn noch keine GymConfig geladen
-    if (cfg == null) {
-      AppLogger.log('No GymConfig found, using light fallback');
-      return ThemeData.light();
-    }
+  /// Erzeugt ein Theme auf Basis einer GymConfig (farblich anpassbar).
+  static ThemeData loadThemeFromConfig(GymConfig config) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: config.primaryColor,
+      primary: config.primaryColor,
+      secondary: config.accentColor,
+    );
 
-    AppLogger.log('Applying GymConfig theme for "${cfg.displayName}"');
-
-    // 2) Basis-Theme anpassen
-    final base = ThemeData.dark();
-    return base.copyWith(
-      primaryColor: cfg.primaryColor,
-      scaffoldBackgroundColor: base.scaffoldBackgroundColor,
+    return ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
       appBarTheme: AppBarTheme(
-        backgroundColor: cfg.primaryColor,
-        titleTextStyle: TextStyle(
-          color: cfg.accentColor,
+        backgroundColor: scheme.primary,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
         ),
-        iconTheme: IconThemeData(color: cfg.accentColor),
-      ),
-      colorScheme: base.colorScheme.copyWith(
-        primary: cfg.primaryColor,
-        secondary: cfg.accentColor,
-        background: base.colorScheme.background,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: cfg.primaryColor,
-          foregroundColor: cfg.accentColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          backgroundColor: scheme.secondary,
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+      textTheme: const TextTheme(
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontFamily: 'Roboto',
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontFamily: 'Roboto',
         ),
       ),
     );

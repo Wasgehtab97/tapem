@@ -9,68 +9,59 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
 
-  # Environment Variables
-  flutter_dotenv: ^5.0.2
-
-  # State Management
+  # State Management & Utilities
+  bloc: ^8.1.0
+  equatable: ^2.0.5
+  flutter_bloc: ^8.1.2
   provider: ^6.0.5
+  uuid: ^3.0.0
 
-  # Firebase Core & Services
+  # Firebase
   firebase_core: ^3.13.0
   firebase_auth: ^5.5.2
   cloud_firestore: ^5.6.6
 
-  # Persistence & Utilities
-  shared_preferences: ^2.1.1
-
-  # Asset Caching (remote Logos)
+  # UI
+  cupertino_icons: ^1.0.8
   cached_network_image: ^3.2.3
+  fl_chart: ^0.70.0
+  flutter_staggered_grid_view: ^0.6.2
+  table_calendar: ^3.0.8
 
-  # Internationalization & URL
+  # Utilities
+  flutter_dotenv: ^5.0.2
   intl: ^0.20.2
+  json_annotation: ^4.9.0
   url_launcher: ^6.1.7
 
-  # UI & Visualization
-  fl_chart: ^0.70.0
-  table_calendar: ^3.0.8
-  flutter_staggered_grid_view: ^0.6.2
-
   # NFC
-  nfc_manager: ^3.5.0
+  # nfc_manager: ^3.5.0
+  # flutter_nfc_kit: ^3.0.1
 
-  #json
-  json_annotation: ^4.8.0
+  # Persistence
+  shared_preferences: ^2.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-
-  # Code Generation
   build_runner: ^2.4.6
   json_serializable: ^6.7.0
-
-  # Launcher Icons Generator
   flutter_launcher_icons: ^0.11.0
-
-
 
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: assets/images/logo.png
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/images/logo.png"
+  adaptive_icon_foreground: assets/images/logo.png
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
-    - assets/logos/
     - .env.dev
     - .env.prod
-
-
+    - assets/images/
+    - assets/logos/

@@ -1,10 +1,11 @@
 // lib/core/utils/error_mapper.dart
 
+/// Ordnet verschiedene Exception-Typen zu benutzerfreundlichen Meldungen zu.
 String mapExceptionToMessage(Exception e) {
-  // Beispiel-Switch, je nach Typ der Exception
-  if (e.toString().contains('Network')) {
+  final msg = e.toString();
+  if (msg.contains('Network')) {
     return 'Netzwerkfehler – bitte Internetverbindung prüfen.';
   }
-  // Default-Fall
-  return 'Es ist ein Fehler aufgetreten: ${e.toString()}';
+  // Weitere Typen lassen sich hier ergänzen…
+  return 'Ein unerwarteter Fehler ist aufgetreten: $msg';
 }
