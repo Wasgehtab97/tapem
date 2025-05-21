@@ -1,0 +1,70 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
+import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
+
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AuthScreen> createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends State<AuthScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProv = context.watch<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(loc.authTitle),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: loc.loginButton),
+            Tab(text: loc.registerButton),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildFormStack(const LoginForm(), authProv.isLoading),
+          _buildFormStack(const RegistrationForm(), authProv.isLoading),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormStack(Widget form, bool isLoading) {
+    return Stack(
+      children: [
+        form,
+        if (isLoading)
+          Container(
+            color: Colors.black45,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
+  }
+}
