@@ -1,29 +1,34 @@
 # ==================================================
 # Flutter / Dart / Pub
 # ==================================================
-**/doc/api/                      # generated docs
-.dart_tool/                      # Dart tool cache
-.packages
-.pub-cache/
-.pub/
-build/                           # Flutter build output
-.flutter-plugins
-.flutter-plugins-dependencies
+# Build outputs
+build/
+**/build/
 
-# plugin registrant
+# Dart tool cache
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+
+# Generated plugin registrant
 generated_plugin_registrant.dart
 
-# Environment files
-.env.*                           # alle env-Dateien
-!.env.example                    # Ausnahme: Beispiel-Env
-
+# ==================================================
 # Firebase service account keys & config
-/scripts/*.json                  # Service-Account-Keys
+# ==================================================
+# Eigene Admin-SDK JSONs
+/scripts/*.json
+# Google-Services
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
 
+# Environment files
+.env*
+!.env.example
+
 # ==================================================
-# IDEs & editors
+# IDEs & Editors
 # ==================================================
 # IntelliJ / Android Studio
 *.iml
@@ -40,20 +45,33 @@ generated_plugin_registrant.dart
 *.pyc
 *.swp
 .DS_Store
-.history
+.history/
 
 # ==================================================
-# iOS
+# Android
 # ==================================================
+# Gradle
+android/local.properties
+**/android/app/build/
+**/android/.gradle/
+**/android/gradle/
+**/android/gradlew*
+**/android/gradle-wrapper.*
+# Keystores
+**/*.jks
+**/*.keystore
+
+# ==================================================
+# iOS / Xcode
+# ==================================================
+# Flutter frameworks & pods
 ios/Flutter/.last_build_id
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
-ios/Flutter/engine
-ios/Flutter/flutter_export_environment.sh
+ios/Flutter/engine/
 ios/Pods/
 ios/Runner.xcworkspace/
 ios/Podfile.lock
-ios/Podfile
 
 # Xcode
 *.xcworkspace
@@ -62,35 +80,20 @@ ios/Podfile
 DerivedData/
 
 # ==================================================
-# Android
+# Node / JS (falls du node_modules hast)
 # ==================================================
-android/*.iml
-android/local.properties
-**/android/app/build/
-**/android/gradle/
-**/android/gradlew*
-**/android/gradle-wrapper.jar
-**/android/gradle-wrapper.properties
-
-# Keystore
-**/*.jks
-**/*.keystore
+node_modules/
 
 # ==================================================
-# Testing / Coverage
+# Testing / Coverage / Reports
 # ==================================================
 coverage/
 lcov.info
+*.out
+*.html
 
 # ==================================================
-# Miscellaneous
+# Obfuscation / symbolication
 # ==================================================
-.atom/
-.build/
-.buildlog/
-.history/
-.migrate_working_dir/
-
-# Symbolication / mapping
 app.*.symbols
 app.*.map.json
