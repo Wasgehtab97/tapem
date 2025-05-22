@@ -1,68 +1,96 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==================================================
+# Flutter / Dart / Pub
+# ==================================================
+**/doc/api/                      # generated docs
+.dart_tool/                      # Dart tool cache
+.packages
+.pub-cache/
+.pub/
+build/                           # Flutter build output
+.flutter-plugins
+.flutter-plugins-dependencies
 
+# plugin registrant
+generated_plugin_registrant.dart
+
+# Environment files
+.env.*                           # alle env-Dateien
+!.env.example                    # Ausnahme: Beispiel-Env
+
+# Firebase service account keys & config
+/scripts/*.json                  # Service-Account-Keys
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+
+# ==================================================
+# IDEs & editors
+# ==================================================
 # IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# VS Code settings (uncomment to include)
-// .vscode/
+# VS Code
+.vscode/
 
-# Flutter / Dart / Pub
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-build/
+# Misc
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.history
 
-# Generated plugin registrant
-generated_plugin_registrant.dart
-
+# ==================================================
 # iOS
+# ==================================================
+ios/Flutter/.last_build_id
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Flutter/engine
 ios/Flutter/flutter_export_environment.sh
 ios/Pods/
 ios/Runner.xcworkspace/
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
 ios/Podfile.lock
+ios/Podfile
 
+# Xcode
+*.xcworkspace
+*.xcuserdata
+*.xcuserstate
+DerivedData/
+
+# ==================================================
 # Android
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ==================================================
+android/*.iml
+android/local.properties
 **/android/app/build/
+**/android/gradle/
+**/android/gradlew*
+**/android/gradle-wrapper.jar
+**/android/gradle-wrapper.properties
 
-# Environment files
-.env.*
-!.env.example
+# Keystore
+**/*.jks
+**/*.keystore
 
-# Firebase config (optional: exclude if you commit google-services.json)
-/android/app/google-services.json
-/ios/Runner/GoogleService-Info.plist
-
-# Coverage & reports
+# ==================================================
+# Testing / Coverage
+# ==================================================
 coverage/
 lcov.info
 
-# Obfuscation / symbolication
+# ==================================================
+# Miscellaneous
+# ==================================================
+.atom/
+.build/
+.buildlog/
+.history/
+.migrate_working_dir/
+
+# Symbolication / mapping
 app.*.symbols
 app.*.map.json
