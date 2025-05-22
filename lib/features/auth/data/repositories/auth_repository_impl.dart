@@ -1,5 +1,7 @@
-import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
+// lib/features/auth/data/repositories/auth_repository_impl.dart
+
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
+import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
 
@@ -11,14 +13,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserData> login(String email, String password) async {
-    final dto = await _source.login(email, password);
+    final UserDataDto dto = await _source.login(email, password);
     return dto.toModel();
   }
 
   @override
   Future<UserData> register(
       String email, String password, String gymId) async {
-    final dto = await _source.register(email, password, gymId);
+    final UserDataDto dto = await _source.register(email, password, gymId);
     return dto.toModel();
   }
 
@@ -26,6 +28,8 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() => _source.logout();
 
   @override
-  Future<UserData?> getCurrentUser() =>
-      _source.getCurrentUser().then((dto) => dto?.toModel());
+  Future<UserData?> getCurrentUser() async {
+    final UserDataDto? dto = await _source.getCurrentUser();
+    return dto?.toModel();
+  }
 }

@@ -1,52 +1,49 @@
+// lib/features/auth/data/dtos/user_data_dto.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:json_annotation/json_annotation.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 
-part 'user_data_dto.g.dart';
-
-@JsonSerializable()
 class UserDataDto {
-  @JsonKey(ignore: true)
-  late String userId;
-
+  String userId;
   final String email;
-  @JsonKey(name: 'gymCode')
   final String gymCode;
   final String role;
-  @JsonKey(
-    fromJson: _timestampToDate,
-    toJson: _dateToTimestamp,
-  )
   final DateTime createdAt;
 
   UserDataDto({
+    required this.userId,
     required this.email,
     required this.gymCode,
     required this.role,
     required this.createdAt,
   });
 
-  factory UserDataDto.fromJson(Map<String, dynamic> json) =>
-      _$UserDataDtoFromJson(json);
-
-  Map<String, dynamic> toJson() => _$UserDataDtoToJson(this);
-
-  factory UserDataDto.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data()! as Map<String, dynamic>;
-    final dto = UserDataDto.fromJson(data);
-    dto.userId = doc.id;
-    return dto;
+  factory UserDataDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return UserDataDto(
+      userId: doc.id,
+      email: data['email'] as String,
+      gymCode: data['gymCode'] as String,
+      role: data['role'] as String,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
   }
 
-  UserData toModel() => UserData(
-        id: userId,
-        email: email,
-        gymId: gymCode,
-        role: role,
-        createdAt: createdAt,
-      );
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'gymCode': gymCode,
+        'role': role,
+        'createdAt': Timestamp.fromDate(createdAt),
+      };
 
-  static DateTime _timestampToDate(Timestamp ts) => ts.toDate();
-  static Timestamp _dateToTimestamp(DateTime date) =>
-      Timestamp.fromDate(date);
+  /// Wandelt dieses DTO in das Domain-Model um
+  UserData toModel() {
+    return UserData(
+      id: userId,
+      email: email,
+      gymId: gymCode,
+      role: role,
+      createdAt: createdAt,
+    );
+  }
 }

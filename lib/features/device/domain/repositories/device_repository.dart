@@ -1,7 +1,9 @@
-// lib/features/device/domain/repositories/device_repository.dart
 import '../models/device.dart';
 
-/// Liefert alle Geräte eines Gyms
 abstract class DeviceRepository {
-  Future<List<Device>> getDevices(String gymId);
+  Future<List<Device>> getDevicesForGym(String gymId);
+  Future<void> createDevice(String gymId, Device device);
+
+  /// Suche ein einzelnes Gerät per NFC-Code
+  Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode);
 }

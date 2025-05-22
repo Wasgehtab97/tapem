@@ -1,4 +1,5 @@
 // lib/features/home/presentation/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +15,10 @@ import 'package:tapem/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
-  const HomeScreen({Key? key, this.initialIndex = 0}) : super(key: key);
+  const HomeScreen({
+    Key? key,
+    this.initialIndex = 0,
+  }) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -22,7 +26,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
-  static const _pages = [
+
+  // Nicht const, weil die einzelnen Screens nicht alle const-Konstruktoren haben
+  static final List<Widget> _pages = [
     GymScreen(),
     ProfileScreen(),
     ReportDashboardScreen(),
@@ -52,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               authProv.logout();
               appProv.logout();
-              Navigator.of(context).pushReplacementNamed(AppRouter.auth);
+              Navigator.of(context)
+                  .pushReplacementNamed(AppRouter.auth);
             },
           ),
         ],
@@ -63,11 +70,26 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(icon: Icon(Icons.insert_chart), label: 'Report'),
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Gym',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_chart),
+            label: 'Report',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.admin_panel_settings),
+            label: 'Admin',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: 'Affiliate',
+          ),
         ],
       ),
     );

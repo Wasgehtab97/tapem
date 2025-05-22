@@ -1,5 +1,7 @@
+// lib/core/providers/auth_provider.dart
+
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/usecases/get_current_user.dart';
@@ -25,12 +27,14 @@ class AuthProvider extends ChangeNotifier {
     _loadCurrentUser();
   }
 
-  bool get isLoading => _isLoading;
-  bool get isLoggedIn => _user != null;
-  String? get userEmail => _user?.email;
-  String? get gymCode => _user?.gymId;
-  String? get userId => _user?.id;
-  String? get error => _error;
+  bool get isLoading   => _isLoading;
+  bool get isLoggedIn  => _user != null;
+  String? get userEmail=> _user?.email;
+  String? get gymCode  => _user?.gymId;
+  String? get userId   => _user?.id;
+  String? get error    => _error;
+  String? get role     => _user?.role;
+  bool get isAdmin     => role == 'admin';
 
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
@@ -48,7 +52,14 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     try {
       _user = await _loginUC.execute(email, password);
-    } on FirebaseAuthException catch (e) {
+
+      // Nach Login: ID-Token erneuern, damit Custom Claims verfügbar sind
+      final fb_auth.User? user = fb_auth.FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.getIdToken(true);
+      }
+
+    } on fb_auth.FirebaseAuthException catch (e) {
       _error = e.message;
     } catch (e) {
       _error = e.toString();
@@ -63,7 +74,12 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     try {
       _user = await _registerUC.execute(email, password, gymCode);
-    } on FirebaseAuthException catch (e) {
+      // Token-Refresh auch hier
+      final fb_auth.User? user = fb_auth.FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.getIdToken(true);
+      }
+    } on fb_auth.FirebaseAuthException catch (e) {
       _error = e.message;
     } catch (e) {
       _error = e.toString();
