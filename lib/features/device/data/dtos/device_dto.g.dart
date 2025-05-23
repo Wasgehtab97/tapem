@@ -11,6 +11,7 @@ DeviceDto _$DeviceDtoFromJson(Map<String, dynamic> json) => DeviceDto(
   name: json['name'] as String,
   description: json['description'] as String? ?? '',
   nfcCode: json['nfcCode'] as String?,
+  isMulti: json['isMulti'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$DeviceDtoToJson(DeviceDto instance) => <String, dynamic>{
@@ -18,4 +19,5 @@ Map<String, dynamic> _$DeviceDtoToJson(DeviceDto instance) => <String, dynamic>{
   'name': instance.name,
   'description': instance.description,
   'nfcCode': instance.nfcCode,
+  'isMulti': instance.isMulti,
 };

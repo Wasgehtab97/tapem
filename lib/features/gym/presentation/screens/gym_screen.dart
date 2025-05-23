@@ -1,4 +1,3 @@
-// lib/features/gym/presentation/screens/gym_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -32,31 +31,23 @@ class _GymScreenState extends State<GymScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context)!;
-    final gymProv = context.watch<GymProvider>();
+    final loc      = AppLocalizations.of(context)!;
+    final authProv = context.read<AuthProvider>();
+    final gymProv  = context.watch<GymProvider>();
+    final gymCode  = authProv.gymCode!;
 
     final appBar = AppBar(title: Text(loc.gymTitle));
 
     if (gymProv.isLoading) {
-      return Scaffold(
-        appBar: appBar,
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(appBar: appBar, body: const Center(child: CircularProgressIndicator()));
     }
-
     if (gymProv.error != null) {
-      return Scaffold(
-        appBar: appBar,
-        body: Center(child: Text('${loc.errorPrefix}: ${gymProv.error}')),
-      );
+      return Scaffold(appBar: appBar, body: Center(child: Text('${loc.errorPrefix}: ${gymProv.error}')));
     }
 
     final devices = gymProv.devices;
     if (devices.isEmpty) {
-      return Scaffold(
-        appBar: appBar,
-        body: Center(child: Text(loc.gymNoDevices)),
-      );
+      return Scaffold(appBar: appBar, body: Center(child: Text(loc.gymNoDevices)));
     }
 
     return Scaffold(
@@ -65,13 +56,17 @@ class _GymScreenState extends State<GymScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         itemCount: devices.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final Device device = devices[index];
+        itemBuilder: (ctx, i) {
+          final device = devices[i];
           return DeviceCard(
             device: device,
-            onTap: () => Navigator.of(context).pushNamed(
+            onTap: () => Navigator.of(ctx).pushNamed(
               AppRouter.device,
-              arguments: device.id,
+              arguments: <String, String>{
+                'gymId':      gymCode,
+                'deviceId':   device.id,
+                'exerciseId': device.id, // für Single initial = device.id
+              },
             ),
           );
         },

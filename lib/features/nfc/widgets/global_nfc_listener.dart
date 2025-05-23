@@ -1,47 +1,60 @@
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart' as auth;
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
-import 'package:tapem/app_router.dart';
-import 'package:nfc_manager/nfc_manager.dart';
 
 import '../../../main.dart'; // für navigatorKey
 
 class GlobalNfcListener extends StatefulWidget {
   final Widget child;
-  const GlobalNfcListener({ required this.child, super.key });
+  const GlobalNfcListener({required this.child, super.key});
 
   @override
   State<GlobalNfcListener> createState() => _GlobalNfcListenerState();
 }
 
 class _GlobalNfcListenerState extends State<GlobalNfcListener> {
+  late final ReadNfcCode _reader;
   late final GetDeviceByNfcCode _getDevice;
   late final auth.AuthProvider _auth;
-  late final Stream<String> _nfcStream;
-  bool _subscribed = false;
+  bool _listening = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_subscribed) {
-      _subscribed = true;
+    if (!_listening) {
+      _listening = true;
+      _reader    = context.read<ReadNfcCode>();
+      _getDevice = context.read<GetDeviceByNfcCode>();
+      _auth      = context.read<auth.AuthProvider>();
 
-      // UseCases / Provider holen
-      _nfcStream = context.read<ReadNfcCode>().execute();
-      _getDevice = GetDeviceByNfcCode(context.read());
-      _auth = context.read<auth.AuthProvider>();
-
-      // Auf jeden neuen NFC-String hören
-      _nfcStream.listen((code) async {
+      _reader.execute().listen((code) async {
         if (code.isEmpty) return;
         final gymId = _auth.gymCode;
         if (gymId == null) return;
-        final device = await _getDevice.execute(gymId, code);
-        if (device != null) {
-          navigatorKey.currentState
-              ?.pushNamed(AppRouter.device, arguments: device.id);
+        final dev = await _getDevice.execute(gymId, code);
+        if (dev == null) return;
+
+        if (dev.isMulti) {
+          navigatorKey.currentState?.pushNamed(
+            AppRouter.exerciseList,
+            arguments: {
+              'gymId':    gymId,
+              'deviceId': dev.id,
+            },
+          );
+        } else {
+          navigatorKey.currentState?.pushNamed(
+            AppRouter.device,
+            arguments: {
+              'gymId':      gymId,
+              'deviceId':   dev.id,
+              'exerciseId': dev.id,
+            },
+          );
         }
       });
     }

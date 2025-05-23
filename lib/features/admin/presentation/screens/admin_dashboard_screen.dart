@@ -1,10 +1,12 @@
+// lib/features/admin/presentation/screens/admin_dashboard_screen.dart
+
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
-import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
@@ -27,10 +29,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final repo     = context.read<DeviceRepository>();
-    _createUC      = CreateDeviceUseCase(repo);
-    _getUC         = GetDevicesForGym(repo);
-    _writeNfcUC    = context.read<WriteNfcTagUseCase>();
+    // Use-Cases aus dem Provider-Kontext holen
+    _createUC   = context.read<CreateDeviceUseCase>();
+    _getUC      = context.read<GetDevicesForGym>();
+    _writeNfcUC = context.read<WriteNfcTagUseCase>();
     _loadDevices();
   }
 
@@ -46,47 +48,68 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final nameCtr = TextEditingController();
     final descCtr = TextEditingController();
     final id      = const Uuid().v4();
+    bool  isMulti = false;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Neues Gerät anlegen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtr,
-              decoration: const InputDecoration(labelText: 'Name'),
+      builder: (_) => StatefulBuilder(builder: (ctx, setSt) {
+        return AlertDialog(
+          title: const Text('Neues Gerät anlegen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtr,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: descCtr,
+                decoration: const InputDecoration(labelText: 'Beschreibung'),
+              ),
+              Row(
+                children: [
+                  const Text('Mehrere Übungen?'),
+                  Switch(
+                    value: isMulti,
+                    onChanged: (v) => setSt(() => isMulti = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('Device ID: $id',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
             ),
-            TextField(
-              controller: descCtr,
-              decoration: const InputDecoration(labelText: 'Beschreibung'),
+            ElevatedButton(
+              onPressed: () async {
+                // Token neu laden, damit Custom-Claim aktuell ist
+                final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+                if (fbUser != null) {
+                  await fbUser.getIdToken(true);
+                }
+                final device = Device(
+                  id:          id,
+                  name:        nameCtr.text.trim(),
+                  description: descCtr.text.trim(),
+                );
+                await _createUC.execute(
+                  gymId:   gymId,
+                  device:  device,
+                  isMulti: isMulti,
+                );
+                Navigator.pop(context);
+                await _loadDevices();
+              },
+              child: const Text('Erstellen'),
             ),
-            const SizedBox(height: 8),
-            Text('Device ID: $id',
-                style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final device = Device(
-                id: id,
-                name: nameCtr.text.trim(),
-                description: descCtr.text.trim(),
-              );
-              await _createUC.execute(gymId, device);
-              Navigator.pop(context);
-              await _loadDevices();
-            },
-            child: const Text('Erstellen'),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 
@@ -116,40 +139,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin-Dashboard')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Gerät anlegen'),
-                    onPressed: _showCreateDialog,
+        ? const Center(child: CircularProgressIndicator())
+        : Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Gerät anlegen'),
+                  onPressed: _showCreateDialog,
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _devices.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (_, i) {
+                      final d = _devices[i];
+                      return ListTile(
+                        title: Text(d.name),
+                        subtitle: Text(d.description),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.nfc),
+                          tooltip: 'NFC-Tag beschreiben',
+                          onPressed:
+                            d.nfcCode != null ? () => _writeTag(d.nfcCode!) : null,
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _devices.length,
-                      separatorBuilder: (_, __) => const Divider(),
-                      itemBuilder: (_, i) {
-                        final d = _devices[i];
-                        return ListTile(
-                          title: Text(d.name),
-                          subtitle: Text(d.description),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.nfc),
-                            tooltip: 'NFC-Tag beschreiben',
-                            onPressed: d.nfcCode != null
-                                ? () => _writeTag(d.nfcCode!)
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
     );
   }
 }

@@ -17,12 +17,14 @@ class DeviceProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  final List<Map<String, String>> _sets = [];
+  List<Map<String, String>> _sets = [];
   String _note = '';
 
   List<Map<String, String>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
+
+  late String _currentExerciseId;
 
   DeviceProvider({
     GetDevicesForGym? getDevicesForGym,
@@ -31,101 +33,67 @@ class DeviceProvider extends ChangeNotifier {
             GetDevicesForGym(DeviceRepositoryImpl(FirestoreDeviceSource())),
         _firestore = firestore ?? FirebaseFirestore.instance;
 
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  Device? get device => _device;
-  List<Map<String, String>> get sets => List.unmodifiable(_sets);
-  String get note => _note;
-  List<Map<String, String>> get lastSessionSets =>
-      List.unmodifiable(_lastSessionSets);
-  DateTime? get lastSessionDate => _lastSessionDate;
-  String get lastSessionNote => _lastSessionNote;
+  bool get isLoading         => _isLoading;
+  String? get error          => _error;
+  Device? get device         => _device;
+  List<Map<String, String>> get sets            => List.unmodifiable(_sets);
+  String get note            => _note;
+  List<Map<String, String>> get lastSessionSets => List.unmodifiable(_lastSessionSets);
+  DateTime? get lastSessionDate                => _lastSessionDate;
+  String get lastSessionNote                  => _lastSessionNote;
 
   Future<void> loadDevice({
     required String gymId,
     required String deviceId,
+    required String exerciseId,
     required String userId,
   }) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
+    _isLoading = true; _error = null; notifyListeners();
     try {
-      // 1) Gerätedaten laden
       final all = await _getDevices.execute(gymId);
-      _device = all.firstWhere((d) => d.id == deviceId);
+      _device             = all.firstWhere((d) => d.id == deviceId);
+      _currentExerciseId  = exerciseId;
 
-      // 2) Neue Session initialisieren
-      _sets
-        ..clear()
-        ..add({'number': '1', 'weight': '', 'reps': ''});
-
-      // 3) Letzte Session und Note zurücksetzen
+      // Init neuer Session
+      _sets = [{'number': '1', 'weight': '', 'reps': ''}];
       _lastSessionSets = [];
       _lastSessionDate = null;
       _lastSessionNote = '';
       notifyListeners();
 
-      // 4) Letzte Session & Note laden
-      await _loadLastSession(
-        gymId: gymId,
-        deviceId: deviceId,
-        userId: userId,
-      );
-      await _loadUserNote(
-        gymId: gymId,
-        deviceId: deviceId,
-        userId: userId,
-      );
+      // Laden
+      await _loadLastSession(gymId, deviceId, exerciseId, userId);
+      await _loadUserNote(gymId, deviceId, userId);
     } catch (e, st) {
       _error = e.toString();
       debugPrintStack(label: 'DeviceProvider.loadDevice', stackTrace: st);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading = false; notifyListeners();
     }
   }
 
-  void addSet() {
-    _sets.add({
-      'number': '${_sets.length + 1}',
-      'weight': '',
-      'reps': '',
-    });
-    notifyListeners();
-  }
-
-  void updateSet(int i, String weight, String reps) {
-    _sets[i]['weight'] = weight;
-    _sets[i]['reps'] = reps;
-    notifyListeners();
-  }
-
+  void addSet()    { _sets.add({'number':'${_sets.length+1}','weight':'','reps':''}); notifyListeners(); }
+  void updateSet(int i, String w, String r) { _sets[i]['weight']=w; _sets[i]['reps']=r; notifyListeners(); }
   void removeSet(int i) {
     _sets.removeAt(i);
     for (var j = 0; j < _sets.length; j++) {
-      _sets[j]['number'] = '${j + 1}';
+      _sets[j]['number'] = '${j+1}';
     }
     notifyListeners();
   }
-
-  void setNote(String text) {
-    _note = text;
-    notifyListeners();
-  }
+  void setNote(String text) { _note = text; notifyListeners(); }
 
   Future<void> saveSession({
     required String gymId,
     required String userId,
   }) async {
     if (_device == null) return;
-
     final today = DateTime.now();
     if (_lastSessionDate != null &&
-        _lastSessionDate!.year == today.year &&
+        _lastSessionDate!.year  == today.year &&
         _lastSessionDate!.month == today.month &&
-        _lastSessionDate!.day == today.day) {
-      throw Exception('Heute wurde bereits gespeichert.');
+        _lastSessionDate!.day   == today.day) {
+      throw Exception('Heute bereits gespeichert.');
     }
 
     final sessionId = _uuid.v4();
@@ -133,91 +101,74 @@ class DeviceProvider extends ChangeNotifier {
     final ts = Timestamp.now();
     final savedSets = List<Map<String, String>>.from(_sets);
 
-    // 5) Logs schreiben
+    // Logs
     for (var set in savedSets) {
       final doc = _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(_device!.id)
-          .collection('logs')
-          .doc();
+        .collection('gyms').doc(gymId)
+        .collection('devices').doc(_device!.id)
+        .collection('logs').doc();
       batch.set(doc, {
-        'userId': userId,
-        'timestamp': ts,
-        'weight': int.parse(set['weight']!),
-        'reps': int.parse(set['reps']!),
-        'sessionId': sessionId,
-        'note': _note,
+        'userId':      userId,
+        'exerciseId':  _currentExerciseId,
+        'sessionId':   sessionId,
+        'timestamp':   ts,
+        'weight':      int.parse(set['weight']!),
+        'reps':        int.parse(set['reps']!),
+        'note':        _note,
       });
     }
 
-    // 6) User-Note schreiben
+    // User-Note
     final noteDoc = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(_device!.id)
-        .collection('userNotes')
-        .doc(userId);
-    batch.set(noteDoc, {
-      'note': _note,
-      'updatedAt': ts,
-    });
+      .collection('gyms').doc(gymId)
+      .collection('devices').doc(_device!.id)
+      .collection('userNotes').doc(userId);
+    batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
 
     await batch.commit();
 
-    // 7) Lokale Anzeige aktualisieren
+    // Lokal aktualisieren
     _lastSessionSets = savedSets;
     _lastSessionDate = ts.toDate();
     _lastSessionNote = _note;
-    _sets
-      ..clear()
-      ..add({'number': '1', 'weight': '', 'reps': ''});
+    _sets = [{'number':'1','weight':'','reps':''}];
     notifyListeners();
   }
 
-  /// Lädt die letzte komplette Session (alle Sets) des Nutzers
-  Future<void> _loadLastSession({
-    required String gymId,
-    required String deviceId,
-    required String userId,
-  }) async {
+  Future<void> _loadLastSession(
+    String gymId, String deviceId, String exerciseId, String userId
+  ) async {
     final col = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('logs');
+      .collection('gyms').doc(gymId)
+      .collection('devices').doc(deviceId)
+      .collection('logs');
 
-    // a) Letzten Log-Eintrag des Users holen
     final lastSnap = await col
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .limit(1)
-        .get();
-
+      .where('userId', isEqualTo: userId)
+      .where('exerciseId', isEqualTo: exerciseId)
+      .orderBy('timestamp', descending: true)
+      .limit(1)
+      .get();
     if (lastSnap.docs.isEmpty) return;
 
     final data = lastSnap.docs.first.data();
-    final sid = data['sessionId'] as String;
-    final ts = (data['timestamp'] as Timestamp).toDate();
-    final n = data['note'] as String? ?? '';
+    final sid  = data['sessionId'] as String;
+    final ts   = (data['timestamp'] as Timestamp).toDate();
+    final n    = data['note'] as String? ?? '';
 
-    // b) **Jetzt auch hier** nach userId filtern, sonst PERMISSION_DENIED
     final sessionDocs = await col
-        .where('userId', isEqualTo: userId)
-        .where('sessionId', isEqualTo: sid)
-        .orderBy('timestamp')
-        .get();
+      .where('userId', isEqualTo: userId)
+      .where('exerciseId', isEqualTo: exerciseId)
+      .where('sessionId', isEqualTo: sid)
+      .orderBy('timestamp')
+      .get();
 
-    // c) Zu Map umformen
     _lastSessionSets = sessionDocs.docs.asMap().entries.map((e) {
       final m = e.value.data();
       return {
-        'number': '${e.key + 1}',
+        'number': '${e.key+1}',
         'weight': '${m['weight']}',
-        'reps': '${m['reps']}',
+        'reps':   '${m['reps']}',
       };
     }).toList();
 
@@ -226,20 +177,14 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Lädt die persistente User-Note (falls vorhanden)
-  Future<void> _loadUserNote({
-    required String gymId,
-    required String deviceId,
-    required String userId,
-  }) async {
+  Future<void> _loadUserNote(
+    String gymId, String deviceId, String userId
+  ) async {
     final snap = await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('userNotes')
-        .doc(userId)
-        .get();
+      .collection('gyms').doc(gymId)
+      .collection('devices').doc(deviceId)
+      .collection('userNotes').doc(userId)
+      .get();
     if (snap.exists) {
       _note = snap.data()?['note'] as String? ?? '';
       notifyListeners();

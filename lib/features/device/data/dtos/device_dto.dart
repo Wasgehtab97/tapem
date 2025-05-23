@@ -1,3 +1,4 @@
+// lib/features/device/data/dtos/device_dto.dart
 import 'package:json_annotation/json_annotation.dart';
 part 'device_dto.g.dart';
 
@@ -5,18 +6,18 @@ part 'device_dto.g.dart';
 class DeviceDto {
   final String id;
   final String name;
-
   @JsonKey(defaultValue: '')
   final String description;
-
-  @JsonKey(name: 'nfcCode') // optionales Feld im Firestore-Dokument
   final String? nfcCode;
+  @JsonKey(defaultValue: false)
+  final bool isMulti;
 
   DeviceDto({
     required this.id,
     required this.name,
     this.description = '',
     this.nfcCode,
+    this.isMulti = false,
   });
 
   factory DeviceDto.fromJson(Map<String, dynamic> json) =>

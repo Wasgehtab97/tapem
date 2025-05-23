@@ -1,5 +1,3 @@
-// lib/core/providers/auth_provider.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
@@ -20,27 +18,45 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
 
   AuthProvider({AuthRepositoryImpl? repo})
-      : _loginUC = LoginUseCase(repo ?? AuthRepositoryImpl()),
-        _registerUC = RegisterUseCase(repo ?? AuthRepositoryImpl()),
-        _logoutUC = LogoutUseCase(repo ?? AuthRepositoryImpl()),
-        _currentUC = GetCurrentUserUseCase(repo ?? AuthRepositoryImpl()) {
+      : _loginUC = LoginUseCase(repo),
+        _registerUC = RegisterUseCase(repo),
+        _logoutUC = LogoutUseCase(repo),
+        _currentUC = GetCurrentUserUseCase(repo) {
     _loadCurrentUser();
   }
 
-  bool get isLoading   => _isLoading;
-  bool get isLoggedIn  => _user != null;
-  String? get userEmail=> _user?.email;
-  String? get gymCode  => _user?.gymId;
-  String? get userId   => _user?.id;
-  String? get error    => _error;
-  String? get role     => _user?.role;
-  bool get isAdmin     => role == 'admin';
+  bool get isLoading => _isLoading;
+  bool get isLoggedIn => _user != null;
+  String? get userEmail => _user?.email;
+  String? get gymCode => _user?.gymId;
+  String? get userId => _user?.id;
+  String? get role => _user?.role;
+  bool get isAdmin => role == 'admin';
+  String? get error => _error;
 
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
+    _error = null;
     try {
-      _user = await _currentUC.execute();
-    } catch (_) {
+      final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+      if (fbUser != null) {
+        await fbUser.reload();
+        final claims =
+            (await fbUser.getIdTokenResult(true)).claims ?? <String, dynamic>{};
+        final dto = await _currentUC.execute();
+        if (dto != null) {
+          // neues Modell mit ggf. überschriebenem Claim
+          _user = UserData(
+            id: dto.id,
+            email: dto.email,
+            gymId: dto.gymId,
+            role: claims['role'] as String? ?? dto.role,
+            createdAt: dto.createdAt,
+          );
+        }
+      }
+    } catch (e) {
+      _error = e.toString();
       _user = null;
     } finally {
       _setLoading(false);
@@ -51,19 +67,13 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      _user = await _loginUC.execute(email, password);
-
-      // Nach Login: ID-Token erneuern, damit Custom Claims verfügbar sind
-      final fb_auth.User? user = fb_auth.FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await user.getIdToken(true);
-      }
-
-    } on fb_auth.FirebaseAuthException catch (e) {
-      _error = e.message;
+      await _loginUC.execute(email, password);
+      await _loadCurrentUser();
     } catch (e) {
-      _error = e.toString();
-    } finally {
+      _error = e is fb_auth.FirebaseAuthException
+          ? e.message
+          : e.toString();
+      _user = null;
       _setLoading(false);
     }
   }
@@ -73,17 +83,13 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      _user = await _registerUC.execute(email, password, gymCode);
-      // Token-Refresh auch hier
-      final fb_auth.User? user = fb_auth.FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await user.getIdToken(true);
-      }
-    } on fb_auth.FirebaseAuthException catch (e) {
-      _error = e.message;
+      await _registerUC.execute(email, password, gymCode);
+      await _loadCurrentUser();
     } catch (e) {
-      _error = e.toString();
-    } finally {
+      _error = e is fb_auth.FirebaseAuthException
+          ? e.message
+          : e.toString();
+      _user = null;
       _setLoading(false);
     }
   }
@@ -92,14 +98,14 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await _logoutUC.execute();
-      _user = null;
     } finally {
+      _user = null;
       _setLoading(false);
     }
   }
 
-  void _setLoading(bool value) {
-    _isLoading = value;
+  void _setLoading(bool v) {
+    _isLoading = v;
     notifyListeners();
   }
 }
