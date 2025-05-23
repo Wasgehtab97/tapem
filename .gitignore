@@ -97,3 +97,5 @@ lcov.info
 # ==================================================
 app.*.symbols
 app.*.map.json
+# Flutter build outputs
+/build/
