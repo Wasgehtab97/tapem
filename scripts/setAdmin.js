@@ -1,23 +1,22 @@
 // scripts/setAdmin.js
+
 const admin = require('firebase-admin');
 
-// Pfad zum JSON-Key im selben Verzeichnis:
-const serviceAccount = require(
-  './tap-em-firebase-adminsdk-fbsvc-6b462e1c12.json'
-);
+// Keyfile aus dem selben Ordner:
+const serviceAccount = require('./23_05.json');
 
-// Admin SDK initialisieren
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// Hier deine Test-User-UID eintragen:
-const TEST_UID = 'DrzaD8BdIcOwumgmuYSVMj0ESAC3';
+// UID des Nutzers, der Admin werden soll:
+const TEST_UID = '80l73ay9uiW82pckh1f6EwWwIcO2';
 
 async function makeAdmin() {
   try {
+    // wir schreiben genau das Claim, das die Rules erwarten:
     await admin.auth().setCustomUserClaims(TEST_UID, { role: 'admin' });
-    console.log(`✅ User ${TEST_UID} wurde zum Admin ernannt.`);
+    console.log(`✅ User ${TEST_UID} ist jetzt Admin (role: 'admin').`);
     process.exit(0);
   } catch (err) {
     console.error('❌ Fehler beim Setzen des Admin-Claims:', err);

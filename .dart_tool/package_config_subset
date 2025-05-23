@@ -1,3 +1,7 @@
+nfc_manager_ndef
+3.7
+file:///C:/Users/danie/AppData/Local/Pub/Cache/git/flutter-nfc-manager-437f883234f0fd1af362242465fe0a9b8dd19101/packages/nfc_manager_ndef/
+file:///C:/Users/danie/AppData/Local/Pub/Cache/git/flutter-nfc-manager-437f883234f0fd1af362242465fe0a9b8dd19101/packages/nfc_manager_ndef/lib/
 _fe_analyzer_shared
 3.5
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/_fe_analyzer_shared-82.0.0/
@@ -194,6 +198,10 @@ flutter_lints
 3.5
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-5.0.0/
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-5.0.0/lib/
+flutter_nfc_kit
+3.5
+file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_nfc_kit-3.6.0/
+file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_nfc_kit-3.6.0/lib/
 flutter_staggered_grid_view
 2.12
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_staggered_grid_view-0.7.0/
@@ -282,6 +290,10 @@ mime
 3.2
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/mime-2.0.0/
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/mime-2.0.0/lib/
+ndef
+2.12
+file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/ndef-0.3.4/
+file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/ndef-0.3.4/lib/
 ndef_record
 3.7
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/ndef_record-1.2.1/
@@ -294,10 +306,6 @@ nfc_manager
 3.7
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/nfc_manager-4.0.2/
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/nfc_manager-4.0.2/lib/
-nfc_manager_ndef
-3.7
-file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/nfc_manager_ndef-1.0.1/
-file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/nfc_manager_ndef-1.0.1/lib/
 octo_image
 3.0
 file:///C:/Users/danie/AppData/Local/Pub/Cache/hosted/pub.dev/octo_image-2.1.0/

@@ -1,70 +1,91 @@
 // lib/main.dart
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'package:tapem/core/theme/theme_loader.dart';
-import 'package:tapem/core/providers/app_provider.dart' as app;
-import 'package:tapem/core/providers/auth_provider.dart' as auth;
-import 'package:tapem/core/providers/gym_provider.dart';
-import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/core/providers/history_provider.dart';
-import 'package:tapem/core/providers/profile_provider.dart';
+import 'app_router.dart';
+import 'core/providers/app_provider.dart';
+import 'core/providers/auth_provider.dart';
+import 'core/providers/device_provider.dart';
+import 'core/providers/gym_provider.dart';
+import 'core/providers/history_provider.dart';
+import 'core/providers/profile_provider.dart';
+import 'core/theme/theme_loader.dart';
 
-import 'package:tapem/features/nfc/data/nfc_service.dart';
-import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
-import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
-import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
-import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'features/device/data/repositories/device_repository_impl.dart';
+import 'features/device/data/sources/firestore_device_source.dart';
+import 'features/device/domain/repositories/device_repository.dart';
+import 'features/device/domain/usecases/create_device_usecase.dart';
+import 'features/device/domain/usecases/get_devices_for_gym.dart';
+import 'features/device/domain/usecases/get_device_by_nfc_code.dart';
 
-import 'package:tapem/app_router.dart';
-import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
-import 'package:tapem/features/nfc/widgets/global_nfc_listener.dart';
+import 'features/nfc/data/nfc_service.dart';
+import 'features/nfc/domain/usecases/read_nfc_code.dart';
+import 'features/nfc/domain/usecases/write_nfc_tag.dart';
+import 'features/nfc/widgets/global_nfc_listener.dart';
 
-/// Globale navigatorKey, damit du aus jedem Kontext navigieren kannst.
+import 'features/splash/presentation/screens/splash_screen.dart';
+
+/// Damit wir auch aus dem GlobalNfcListener navigieren können
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env.dev').catchError((_) {});
+
+  // .env laden (dev, fallback leer)
+  try {
+    await dotenv.load(fileName: '.env.dev');
+  } catch (_) {}
+
+  // Firebase initialisieren
   await Firebase.initializeApp();
   fb_auth.FirebaseAuth.instance
       .setSettings(appVerificationDisabledForTesting: true);
+
+  // Intl-Daten laden
   await initializeDateFormatting();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        // NFC-Service + UseCase
-        Provider<NfcService>(create: (_) => NfcService()),
-        Provider<ReadNfcCode>(
-          create: (ctx) => ReadNfcCode(ctx.read<NfcService>()),
-        ),
+  runApp(const AppEntry());
+}
 
-        // Device-Repository
+class AppEntry extends StatelessWidget {
+  const AppEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        // —— NFC ——————————————————————————————————
+        Provider(create: (_) => NfcService()),
+        Provider(create: (ctx) => ReadNfcCode(ctx.read<NfcService>())),
+        Provider(create: (ctx) => WriteNfcTagUseCase()),
+        // —— Device ——————————————————————————————
         Provider<DeviceRepository>(
           create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
         ),
-
-        // App-State
+        Provider(create: (ctx) => CreateDeviceUseCase(ctx.read<DeviceRepository>())),
+        Provider(create: (ctx) => GetDevicesForGym(ctx.read<DeviceRepository>())),
+        Provider(create: (ctx) => GetDeviceByNfcCode(ctx.read<DeviceRepository>())),
+        // —— App-State ————————————————————————————
         ChangeNotifierProvider(create: (_) => ThemeLoader()..loadDefault()),
-        ChangeNotifierProvider(create: (_) => app.AppProvider()),
-        ChangeNotifierProvider(create: (_) => auth.AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
       ],
       child: const MyApp(),
-    ),
-  );
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -72,16 +93,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeLoader = context.watch<ThemeLoader>();
-    final appProv = context.watch<app.AppProvider>();
+    final theme  = context.watch<ThemeLoader>().theme;
+    final locale = context.watch<AppProvider>().locale;
 
     return GlobalNfcListener(
       child: MaterialApp(
-        navigatorKey: navigatorKey, // ← hier setzen
-        title: dotenv.env['APP_NAME'] ?? "Tap'em",
+        navigatorKey: navigatorKey,
+        title: dotenv.env['APP_NAME'] ?? 'Tap’em',
         debugShowCheckedModeBanner: false,
-        theme: themeLoader.theme,
-        locale: appProv.locale,
+        theme: theme,
+        locale: locale,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -91,8 +112,9 @@ class MyApp extends StatelessWidget {
         ],
         initialRoute: AppRouter.splash,
         onGenerateRoute: AppRouter.onGenerateRoute,
-        onUnknownRoute: (_) =>
-            MaterialPageRoute(builder: (_) => const SplashScreen()),
+        onUnknownRoute: (_) => MaterialPageRoute(
+          builder: (_) => const SplashScreen(),
+        ),
       ),
     );
   }
