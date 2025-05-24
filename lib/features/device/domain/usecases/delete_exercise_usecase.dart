@@ -5,6 +5,12 @@ class DeleteExerciseUseCase {
   final ExerciseRepository _repo;
   DeleteExerciseUseCase(this._repo);
 
-  Future<void> execute(String gymId, String deviceId, String exId) =>
-    _repo.deleteExercise(gymId, deviceId, exId);
+  Future<void> execute(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+  ) {
+    return _repo.deleteExercise(gymId, deviceId, exerciseId, userId);
+  }
 }

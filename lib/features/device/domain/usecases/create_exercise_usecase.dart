@@ -8,7 +8,12 @@ class CreateExerciseUseCase {
   final Uuid _uuid = const Uuid();
   CreateExerciseUseCase(this._repo);
 
-  Future<void> execute(String gymId, String deviceId, String name, String userId) {
+  Future<void> execute(
+    String gymId,
+    String deviceId,
+    String name,
+    String userId,
+  ) {
     final ex = Exercise(id: _uuid.v4(), name: name, userId: userId);
     return _repo.createExercise(gymId, deviceId, ex);
   }

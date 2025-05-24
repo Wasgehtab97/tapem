@@ -6,6 +6,11 @@ class GetExercisesForDevice {
   final ExerciseRepository _repo;
   GetExercisesForDevice(this._repo);
 
-  Future<List<Exercise>> execute(String gymId, String deviceId) =>
-    _repo.getExercises(gymId, deviceId);
+  Future<List<Exercise>> execute(
+    String gymId,
+    String deviceId,
+    String userId,
+  ) {
+    return _repo.getExercises(gymId, deviceId, userId);
+  }
 }

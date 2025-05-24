@@ -8,14 +8,31 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   ExerciseRepositoryImpl(this._src);
 
   @override
-  Future<List<Exercise>> getExercises(String gymId, String deviceId) =>
-      _src.getExercises(gymId, deviceId);
+  Future<List<Exercise>> getExercises(
+    String gymId,
+    String deviceId,
+    String userId,
+  ) {
+    return _src.getExercises(gymId, deviceId, userId);
+  }
 
   @override
-  Future<void> createExercise(String gymId, String deviceId, Exercise ex) =>
-      _src.createExercise(gymId, deviceId, ex);
+  Future<void> createExercise(
+    String gymId,
+    String deviceId,
+    Exercise ex,
+  ) {
+    return _src.createExercise(gymId, deviceId, ex);
+  }
 
   @override
-  Future<void> deleteExercise(String gymId, String deviceId, String exId) =>
-      _src.deleteExercise(gymId, deviceId, exId);
+  Future<void> deleteExercise(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+  ) {
+    // Firestore Rules stellen sicher, dass only owner can delete
+    return _src.deleteExercise(gymId, deviceId, exerciseId);
+  }
 }

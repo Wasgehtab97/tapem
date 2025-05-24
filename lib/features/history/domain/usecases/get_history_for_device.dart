@@ -1,14 +1,30 @@
 // lib/features/history/domain/usecases/get_history_for_device.dart
+
 import '../models/workout_log.dart';
-import '../repositories/history_repository.dart';
 
-/// Use Case: Holt die Workout-Historie für ein Gerät für den aktuellen User.
+/// Repository-Interface ohne exerciseId
+abstract class GetHistoryForDeviceRepository {
+  Future<List<WorkoutLog>> getHistory({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  });
+}
+
+/// Use-Case ohne exerciseId
 class GetHistoryForDevice {
-  final HistoryRepository _repository;
-  GetHistoryForDevice(this._repository);
+  final GetHistoryForDeviceRepository _repo;
+  GetHistoryForDevice(this._repo);
 
-  Future<List<WorkoutLog>> execute(
-      String gymId, String deviceId, String userId) {
-    return _repository.getHistory(gymId, deviceId, userId);
+  Future<List<WorkoutLog>> execute({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) {
+    return _repo.getHistory(
+      gymId: gymId,
+      deviceId: deviceId,
+      userId: userId,
+    );
   }
 }

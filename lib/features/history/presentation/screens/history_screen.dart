@@ -24,7 +24,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HistoryProvider>().loadHistory(context, widget.deviceId);
+      // jetzt mit benannten Parametern
+      context.read<HistoryProvider>().loadHistory(
+        context: context,
+        deviceId: widget.deviceId,
+      );
     });
   }
 
@@ -46,29 +50,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    // 1) Gruppiere Logs pro Session:
+    // Gruppieren und Chart-Logik wie gehabt...
     final sessionsMap = <String, List<WorkoutLog>>{};
     for (var log in prov.logs) {
       sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
     }
     final sessionEntries = sessionsMap.entries.toList()
       ..sort((a, b) {
-        final ta = a.value.first.timestamp;
-        final tb = b.value.first.timestamp;
-        return tb.compareTo(ta);
+        return b.value.first.timestamp
+            .compareTo(a.value.first.timestamp);
       });
 
-    // 2) Berechne für jede Session Datum + Epley-1RM
-    final dates  = <DateTime>[];
+    final dates = <DateTime>[];
     final values = <double>[];
     for (var e in sessionEntries) {
-      final logs = e.value..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final logs = [...e.value]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
       dates.add(logs.first.timestamp);
       final e1rms = logs.map((l) => l.weight * (1 + l.reps / 30));
       values.add(e1rms.reduce(max));
     }
 
-    // Fallback, wenn überhaupt keine Sessions
     if (values.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
@@ -76,7 +77,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    // 3) Chart-Spots und Y-Span
     final spots = values
         .asMap()
         .entries
@@ -92,14 +92,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // — Chart-Titel
-            Text(
-              loc.historyChartTitle,
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text(loc.historyChartTitle,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            // — Line Chart
             SizedBox(
               height: 200,
               child: LineChart(
@@ -126,8 +122,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             padding: const EdgeInsets.only(top: 6),
                             child: Text(
                               DateFormat.Md(
-                                      Localizations.localeOf(context).toString())
-                                  .format(d),
+                                Localizations.localeOf(context).toString(),
+                              ).format(d),
                               style: theme.textTheme.bodySmall,
                             ),
                           );
@@ -145,10 +141,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ),
                     ),
-                    topTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   lineBarsData: [
                     LineChartBarData(
@@ -166,18 +160,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // — Liste der Sessions
-            Text(
-              loc.historyListTitle,
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text(loc.historyListTitle,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(
                 itemCount: sessionEntries.length,
                 itemBuilder: (_, idx) {
-                  final logs = sessionEntries[idx].value
+                  final logs = [...sessionEntries[idx].value]
                     ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
                   final titleDate = DateFormat.yMMMMd(
                     Localizations.localeOf(context).toString(),
@@ -186,16 +177,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: ExpansionTile(
-                      title: Text(
-                        titleDate,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      children: [
-                        for (var log in logs)
-                          ListTile(
-                            title: Text('${log.weight} kg × ${log.reps} Wdh.'),
-                          ),
-                      ],
+                      title: Text(titleDate,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      children: logs
+                          .map((log) => ListTile(
+                                title: Text('${log.weight} kg × ${log.reps} Wdh.'),
+                              ))
+                          .toList(),
                     ),
                   );
                 },

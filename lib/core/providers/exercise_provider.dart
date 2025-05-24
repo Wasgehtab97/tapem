@@ -1,8 +1,8 @@
 // lib/core/providers/exercise_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
-import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
+import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
 
 class ExerciseProvider extends ChangeNotifier {
@@ -26,26 +26,41 @@ class ExerciseProvider extends ChangeNotifier {
   bool get isLoading    => _isLoading;
   String? get error     => _error;
 
-  Future<void> loadExercises(String gymId, String deviceId) async {
-    _isLoading = true; _error = null; notifyListeners();
+  Future<void> loadExercises(
+    String gymId,
+    String deviceId,
+    String userId,
+  ) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
     try {
-      _exercises = await _getEx.execute(gymId, deviceId);
+      _exercises = await _getEx.execute(gymId, deviceId, userId);
     } catch (e) {
       _error = e.toString();
     } finally {
-      _isLoading = false; notifyListeners();
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<void> addExercise(String gymId, String deviceId,
-                            String name, String userId) async {
+  Future<void> addExercise(
+    String gymId,
+    String deviceId,
+    String name,
+    String userId,
+  ) async {
     await _createEx.execute(gymId, deviceId, name, userId);
-    await loadExercises(gymId, deviceId);
+    await loadExercises(gymId, deviceId, userId);
   }
 
-  Future<void> removeExercise(String gymId, String deviceId,
-                              String exId) async {
-    await _deleteEx.execute(gymId, deviceId, exId);
-    await loadExercises(gymId, deviceId);
+  Future<void> removeExercise(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+  ) async {
+    await _deleteEx.execute(gymId, deviceId, exerciseId, userId);
+    await loadExercises(gymId, deviceId, userId);
   }
 }

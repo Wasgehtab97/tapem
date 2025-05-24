@@ -1,4 +1,4 @@
-// lib/main.dart
+// ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
 
@@ -118,7 +118,7 @@ class AppEntry extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(
           create: (ctx) => ExerciseProvider(
-            getEx:    ctx.read<GetExercisesForDevice>(),
+            getEx: ctx.read<GetExercisesForDevice>(),
             createEx: ctx.read<CreateExerciseUseCase>(),
             deleteEx: ctx.read<DeleteExerciseUseCase>(),
           ),
@@ -134,7 +134,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme  = context.watch<ThemeLoader>().theme;
+    final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
 
     return GlobalNfcListener(

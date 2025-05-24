@@ -1,17 +1,24 @@
 // lib/features/history/data/repositories/history_repository_impl.dart
-import '../../domain/models/workout_log.dart';
-import '../../domain/repositories/history_repository.dart';
-import '../dtos/workout_log_dto.dart';
-import '../sources/firestore_history_source.dart';
 
-class HistoryRepositoryImpl implements HistoryRepository {
+import '../sources/firestore_history_source.dart';
+import '../../domain/models/workout_log.dart';
+import '../../domain/usecases/get_history_for_device.dart';
+
+class HistoryRepositoryImpl implements GetHistoryForDeviceRepository {
   final FirestoreHistorySource _source;
   HistoryRepositoryImpl(this._source);
 
   @override
-  Future<List<WorkoutLog>> getHistory(
-      String gymId, String deviceId, String userId) async {
-    final dtos = await _source.getLogs(gymId, deviceId, userId);
-    return dtos.map((dto) => dto.toModel()).toList();
+  Future<List<WorkoutLog>> getHistory({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) async {
+    final dtos = await _source.getLogs(
+      gymId: gymId,
+      deviceId: deviceId,
+      userId: userId,
+    );
+    return dtos.map((d) => d.toModel()).toList();
   }
 }

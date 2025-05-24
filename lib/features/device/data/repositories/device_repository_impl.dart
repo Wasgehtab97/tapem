@@ -1,3 +1,6 @@
+// lib/features/device/data/repositories/device_repository_impl.dart
+
+import '../dtos/device_dto.dart';
 import '../sources/firestore_device_source.dart';
 import '../../domain/models/device.dart';
 import '../../domain/repositories/device_repository.dart';
@@ -7,18 +10,21 @@ class DeviceRepositoryImpl implements DeviceRepository {
   DeviceRepositoryImpl(this._source);
 
   @override
-  Future<List<Device>> getDevicesForGym(String gymId) =>
-      _source.getDevicesForGym(gymId);
+  Future<List<Device>> getDevicesForGym(String gymId) async {
+    final dtos = await _source.getDevicesForGym(gymId);
+    return dtos.map((dto) => dto.toModel()).toList();
+  }
 
   @override
-  Future<void> createDevice(String gymId, Device device) =>
-      _source.createDevice(gymId, device);
+  Future<void> createDevice(String gymId, Device device) {
+    return _source.createDevice(gymId, device);
+  }
 
   @override
   Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode) async {
-    final devices = await getDevicesForGym(gymId);
+    final all = await getDevicesForGym(gymId);
     try {
-      return devices.firstWhere((d) => d.nfcCode == nfcCode);
+      return all.firstWhere((d) => d.nfcCode == nfcCode);
     } catch (_) {
       return null;
     }

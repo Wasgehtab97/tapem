@@ -1,27 +1,41 @@
 // lib/features/device/data/dtos/device_dto.dart
-import 'package:json_annotation/json_annotation.dart';
-part 'device_dto.g.dart';
 
-@JsonSerializable()
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/features/device/domain/models/device.dart';
+
 class DeviceDto {
-  final String id;
+  late final String id;
   final String name;
-  @JsonKey(defaultValue: '')
   final String description;
   final String? nfcCode;
-  @JsonKey(defaultValue: false)
   final bool isMulti;
 
   DeviceDto({
     required this.id,
     required this.name,
-    this.description = '',
+    required this.description,
     this.nfcCode,
-    this.isMulti = false,
+    required this.isMulti,
   });
 
-  factory DeviceDto.fromJson(Map<String, dynamic> json) =>
-      _$DeviceDtoFromJson(json);
+  factory DeviceDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return DeviceDto(
+      id: doc.id,
+      name: data['name'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      nfcCode: data['nfcCode'] as String?,
+      // if the field is missing or null, default to false
+      isMulti: (data['isMulti'] as bool?) ?? false,
+    );
+  }
 
-  Map<String, dynamic> toJson() => _$DeviceDtoToJson(this);
+  /// Convert to your domain model
+  Device toModel() => Device(
+    id: id,
+    name: name,
+    description: description,
+    nfcCode: nfcCode,
+    isMulti: isMulti,
+  );
 }

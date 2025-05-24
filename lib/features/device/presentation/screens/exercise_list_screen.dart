@@ -1,3 +1,4 @@
+// lib/features/device/presentation/screens/exercise_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
@@ -14,7 +15,7 @@ class ExerciseListScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ExerciseListScreen> createState() => _ExerciseListScreenState();
+  _ExerciseListScreenState createState() => _ExerciseListScreenState();
 }
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
@@ -23,10 +24,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   @override
   void initState() {
     super.initState();
+    final userId = context.read<AuthProvider>().userId!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExerciseProvider>().loadExercises(
         widget.gymId,
         widget.deviceId,
+        userId,
       );
     });
   }
@@ -34,31 +37,26 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   @override
   Widget build(BuildContext context) {
     final userId = context.read<AuthProvider>().userId!;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Übung wählen')),
       body: Consumer<ExerciseProvider>(
         builder: (_, prov, __) {
           if (prov.isLoading) return const Center(child: CircularProgressIndicator());
           if (prov.error != null) return Center(child: Text('Fehler: ${prov.error}'));
-
           return ListView(
             children: [
-              // vorhandene Übungen
               for (var ex in prov.exercises)
                 ListTile(
                   title: Text(ex.name),
                   onTap: () => Navigator.of(context).pushNamed(
                     AppRouter.device,
-                    arguments: <String, String>{
-                      'gymId':      widget.gymId,
-                      'deviceId':   widget.deviceId,
+                    arguments: {
+                      'gymId': widget.gymId,
+                      'deviceId': widget.deviceId,
                       'exerciseId': ex.id,
                     },
                   ),
                 ),
-
-              // neue Übung erstellen
               ListTile(
                 leading: const Icon(Icons.add),
                 title: const Text('Neue Übung'),
