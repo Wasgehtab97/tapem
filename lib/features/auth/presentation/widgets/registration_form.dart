@@ -10,6 +10,7 @@ import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 
 class RegistrationForm extends StatefulWidget {
   const RegistrationForm({Key? key}) : super(key: key);
+
   @override
   State<RegistrationForm> createState() => _RegistrationFormState();
 }
@@ -35,24 +36,22 @@ class _RegistrationFormState extends State<RegistrationForm> {
   }
 
   Future<void> _submit() async {
-    final authProv = context.read<AuthProvider>();
-    final loc = AppLocalizations.of(context)!;
-
     if (_isLocked) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
     setState(() => _gymError = null);
 
     final validator = ValidateGymCode(
       GymRepositoryImpl(FirestoreGymSource()),
     );
+
     try {
       await validator.execute(_gymCode);
     } on GymNotFoundException {
       if (!mounted) return;
       setState(() {
         _attempts++;
-        _gymError = loc.gymCodeInvalid;
+        _gymError = AppLocalizations.of(context)!.gymCodeInvalid;
       });
       if (_attempts >= _maxAttempts) {
         setState(() => _isLocked = true);
@@ -65,9 +64,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(loc.gymCodeLockedMessage),
+            content: Text(AppLocalizations.of(context)!.gymCodeLockedMessage),
             action: SnackBarAction(
-              label: loc.gymCodeHelpLabel,
+              label: AppLocalizations.of(context)!.gymCodeHelpLabel,
               onPressed: () {},
             ),
           ),
@@ -76,6 +75,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
       return;
     }
 
+    final authProv = context.read<AuthProvider>();
     await authProv.register(_email, _password, _gymCode);
     if (authProv.error != null) {
       if (!mounted) return;
@@ -97,29 +97,28 @@ class _RegistrationFormState extends State<RegistrationForm> {
     final authProv = context.watch<AuthProvider>();
     final loc = AppLocalizations.of(context)!;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              decoration:
-                  InputDecoration(labelText: loc.emailFieldLabel),
+              decoration: InputDecoration(labelText: loc.emailFieldLabel),
               keyboardType: TextInputType.emailAddress,
-              onSaved: (v) => _email = v?.trim() ?? '',
+              onSaved: (v) => _email = v!.trim(),
               validator: (v) =>
-                  (v == null || !v.contains('@')) ? loc.emailInvalid : null,
+                  v != null && v.contains('@') ? null : loc.emailInvalid,
             ),
             const SizedBox(height: 12),
             TextFormField(
-              decoration:
-                  InputDecoration(labelText: loc.passwordFieldLabel),
+              decoration: InputDecoration(labelText: loc.passwordFieldLabel),
               obscureText: true,
               onSaved: (v) => _password = v ?? '',
-              validator: (v) => (v == null || v.length < 6)
-                  ? loc.passwordTooShort
-                  : null,
+              validator: (v) =>
+                  v != null && v.length >= 6 ? null : loc.passwordTooShort,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -129,20 +128,18 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 errorText: _gymError,
               ),
               enabled: !_isLocked,
-              onSaved: (v) => _gymCode = v?.trim() ?? '',
+              onSaved: (v) => _gymCode = v!.trim(),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? loc.gymCodeRequired : null,
+                  v != null && v.trim().isNotEmpty ? null : loc.gymCodeRequired,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed:
-                  authProv.isLoading || _isLocked ? null : _submit,
+              onPressed: authProv.isLoading || _isLocked ? null : _submit,
               child: authProv.isLoading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(loc.registerButton),
             ),

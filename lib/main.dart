@@ -1,15 +1,17 @@
+// lib/main.dart
+
 // ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart'; // für initializeDateFormatting
+import 'package:provider/provider.dart';
 
 import 'app_router.dart';
 import 'core/theme/theme_loader.dart';
@@ -20,6 +22,7 @@ import 'core/providers/device_provider.dart';
 import 'core/providers/history_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'core/providers/exercise_provider.dart';
+import 'core/providers/report_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -32,6 +35,7 @@ import 'features/device/domain/repositories/device_repository.dart';
 import 'features/device/domain/usecases/create_device_usecase.dart';
 import 'features/device/domain/usecases/get_devices_for_gym.dart';
 import 'features/device/domain/usecases/get_device_by_nfc_code.dart';
+import 'features/device/domain/usecases/delete_device_usecase.dart';
 
 import 'features/device/data/sources/firestore_exercise_source.dart';
 import 'features/device/data/repositories/exercise_repository_impl.dart';
@@ -40,87 +44,103 @@ import 'features/device/domain/usecases/get_exercises_for_device.dart';
 import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 
+import 'features/report/data/repositories/report_repository_impl.dart';
+import 'features/report/domain/usecases/get_device_usage_stats.dart';
+import 'features/report/domain/usecases/get_all_log_timestamps.dart';
+
 import 'features/splash/presentation/screens/splash_screen.dart';
 
-/// Damit wir aus dem GlobalNfcListener navigieren können
+/// Globale Navigator-Key, damit der NFC-Listener navigieren kann
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env laden (dev, fallback ignorieren)
+  // .env laden
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
-
   // Firebase initialisieren
   await Firebase.initializeApp();
   fb_auth.FirebaseAuth.instance
-    .setSettings(appVerificationDisabledForTesting: true);
-
-  // Intl-Daten laden
+      .setSettings(appVerificationDisabledForTesting: true);
+  // Intl-Daten für DE/EN laden
   await initializeDateFormatting();
 
   runApp(const AppEntry());
 }
 
 class AppEntry extends StatelessWidget {
-  const AppEntry({super.key});
+  const AppEntry({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Reporting: Repository + UseCases
+    final reportRepo = ReportRepositoryImpl();
+    final usageUC    = GetDeviceUsageStats(reportRepo);
+    final logsUC     = GetAllLogTimestamps(reportRepo);
+
     return MultiProvider(
       providers: [
-        // —— NFC ——————————————————————————————————
+        // —— NFC Stack ——————————————————
         Provider<NfcService>(create: (_) => NfcService()),
-        Provider<ReadNfcCode>(
-          create: (ctx) => ReadNfcCode(ctx.read<NfcService>()),
-        ),
-        Provider<WriteNfcTagUseCase>(
-          create: (_) => WriteNfcTagUseCase(),
-        ),
+        Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),
+        Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
 
-        // —— Device ——————————————————————————————
+        // —— Device Stack —————————————
         Provider<DeviceRepository>(
           create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
         ),
         Provider<CreateDeviceUseCase>(
-          create: (ctx) => CreateDeviceUseCase(ctx.read<DeviceRepository>()),
-        ),
+            create: (c) => CreateDeviceUseCase(c.read<DeviceRepository>())),
         Provider<GetDevicesForGym>(
-          create: (ctx) => GetDevicesForGym(ctx.read<DeviceRepository>()),
-        ),
+            create: (c) => GetDevicesForGym(c.read<DeviceRepository>())),
         Provider<GetDeviceByNfcCode>(
-          create: (ctx) => GetDeviceByNfcCode(ctx.read<DeviceRepository>()),
-        ),
+            create: (c) => GetDeviceByNfcCode(c.read<DeviceRepository>())),
+        Provider<DeleteDeviceUseCase>(
+            create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>())),
 
-        // —— Exercises ————————————————————————————
+        // —— Exercises Stack ——————————
         Provider<ExerciseRepository>(
           create: (_) => ExerciseRepositoryImpl(FirestoreExerciseSource()),
         ),
         Provider<GetExercisesForDevice>(
-          create: (ctx) => GetExercisesForDevice(ctx.read<ExerciseRepository>()),
-        ),
+            create: (c) => GetExercisesForDevice(c.read<ExerciseRepository>())),
         Provider<CreateExerciseUseCase>(
-          create: (ctx) => CreateExerciseUseCase(ctx.read<ExerciseRepository>()),
-        ),
+            create: (c) => CreateExerciseUseCase(c.read<ExerciseRepository>())),
         Provider<DeleteExerciseUseCase>(
-          create: (ctx) => DeleteExerciseUseCase(ctx.read<ExerciseRepository>()),
-        ),
+            create: (c) => DeleteExerciseUseCase(c.read<ExerciseRepository>())),
 
-        // —— App-State ————————————————————————————
-        ChangeNotifierProvider(
-          create: (_) => ThemeLoader()..loadDefault(),
-        ),
+        // —— App-State ———————————————
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // —— ThemeLoader gymabhängig —————
+        ChangeNotifierProxyProvider<AuthProvider, ThemeLoader>(
+          create: (_) => ThemeLoader()..loadDefault(),
+          update: (context, auth, previous) {
+            final loader = previous ?? (ThemeLoader()..loadDefault());
+            loader.loadGymTheme(auth.gymCode ?? '');
+            return loader;
+          },
+        ),
+
+        // —— Weitere State-Provider ——————
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(
-          create: (ctx) => ExerciseProvider(
-            getEx: ctx.read<GetExercisesForDevice>(),
-            createEx: ctx.read<CreateExerciseUseCase>(),
-            deleteEx: ctx.read<DeleteExerciseUseCase>(),
+          create: (c) => ExerciseProvider(
+            getEx:    c.read<GetExercisesForDevice>(),
+            createEx: c.read<CreateExerciseUseCase>(),
+            deleteEx: c.read<DeleteExerciseUseCase>(),
+          ),
+        ),
+
+        // —— Reporting ————————————————
+        ChangeNotifierProvider(
+          create: (_) => ReportProvider(
+            getUsageStats:    usageUC,
+            getLogTimestamps: logsUC,
           ),
         ),
       ],
@@ -130,11 +150,11 @@ class AppEntry extends StatelessWidget {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.watch<ThemeLoader>().theme;
+    final theme  = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
 
     return GlobalNfcListener(

@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
+
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
@@ -17,8 +18,7 @@ class _LoginFormState extends State<LoginForm> {
 
   Future<void> _submit() async {
     final authProv = context.read<AuthProvider>();
-
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
     await authProv.login(_email, _password);
@@ -42,29 +42,28 @@ class _LoginFormState extends State<LoginForm> {
     final authProv = context.watch<AuthProvider>();
     final loc = AppLocalizations.of(context)!;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              decoration:
-                  InputDecoration(labelText: loc.emailFieldLabel),
+              decoration: InputDecoration(labelText: loc.emailFieldLabel),
               keyboardType: TextInputType.emailAddress,
-              onSaved: (v) => _email = v?.trim() ?? '',
+              onSaved: (v) => _email = v!.trim(),
               validator: (v) =>
-                  (v == null || !v.contains('@')) ? loc.emailInvalid : null,
+                  v != null && v.contains('@') ? null : loc.emailInvalid,
             ),
             const SizedBox(height: 12),
             TextFormField(
-              decoration:
-                  InputDecoration(labelText: loc.passwordFieldLabel),
+              decoration: InputDecoration(labelText: loc.passwordFieldLabel),
               obscureText: true,
               onSaved: (v) => _password = v ?? '',
-              validator: (v) => (v == null || v.length < 6)
-                  ? loc.passwordTooShort
-                  : null,
+              validator: (v) =>
+                  v != null && v.length >= 6 ? null : loc.passwordTooShort,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -73,8 +72,7 @@ class _LoginFormState extends State<LoginForm> {
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(loc.loginButton),
             ),

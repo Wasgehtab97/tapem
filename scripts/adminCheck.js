@@ -1,6 +1,6 @@
 // adminCheck.js
 const admin = require('firebase-admin');
-const serviceAccount = require('./24_05_gym02.json');
+const serviceAccount = require('./admin.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -8,7 +8,7 @@ admin.initializeApp({
   // projectId: 'dein-firebase-projekt-id',
 });
 
-const uid = '3IK8kmaZfpX7ec1fng744H2px5y1';
+const uid = 'BdEMGJkrE6MjGC9i3uH909MKCim1';
 admin.auth().getUser(uid)
   .then(userRec => {
     console.log('Custom Claims:', userRec.customClaims);

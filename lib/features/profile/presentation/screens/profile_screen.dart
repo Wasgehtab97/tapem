@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
 import '../widgets/calendar.dart';
@@ -10,7 +10,6 @@ import '../widgets/calendar_popup.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -19,7 +18,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Lade nach dem ersten Frame die Trainingstage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
     });
@@ -28,7 +26,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLanguageDialog() {
     final appProv = context.read<app.AppProvider>();
     final currentLocale = appProv.locale ?? Localizations.localeOf(context);
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -67,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openCalendarPopup(List<String> trainingDates) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -111,7 +108,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
+                        // öffnet nur hier das Popup
                         child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () => _openCalendarPopup(prov.trainingDates),
                           child: Calendar(
                             trainingDates: prov.trainingDates,

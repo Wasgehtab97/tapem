@@ -6,10 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/admin/presentation/widgets/device_list_item.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
-import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -19,21 +19,25 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  // UseCases werden nur einmal initialisiert
   late final CreateDeviceUseCase _createUC;
-  late final GetDevicesForGym    _getUC;
-  late final WriteNfcTagUseCase  _writeNfcUC;
+  late final GetDevicesForGym _getUC;
+  bool _dependenciesLoaded = false;
 
+  final _uuid = const Uuid();
   List<Device> _devices = [];
-  bool         _loading = true;
+  bool _loading = true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Use-Cases aus dem Provider-Kontext holen
-    _createUC   = context.read<CreateDeviceUseCase>();
-    _getUC      = context.read<GetDevicesForGym>();
-    _writeNfcUC = context.read<WriteNfcTagUseCase>();
-    _loadDevices();
+    if (!_dependenciesLoaded) {
+      // Why? didChangeDependencies kann mehrfach aufgerufen werden
+      _createUC = context.read<CreateDeviceUseCase>();
+      _getUC = context.read<GetDevicesForGym>();
+      _loadDevices();
+      _dependenciesLoaded = true;
+    }
   }
 
   Future<void> _loadDevices() async {
@@ -44,28 +48,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _showCreateDialog() {
-    final gymId   = context.read<AuthProvider>().gymCode!;
-    final nameCtr = TextEditingController();
-    final descCtr = TextEditingController();
-    final id      = const Uuid().v4();
-    bool  isMulti = false;
+    final gymId = context.read<AuthProvider>().gymCode!;
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final newId = _uuid.v4();
+    bool isMulti = false;
 
-    showDialog(
+    showDialog<bool>(
       context: context,
-      builder: (_) => StatefulBuilder(builder: (ctx, setSt) {
-        return AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setSt) => AlertDialog(
           title: const Text('Neues Gerät anlegen'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: nameCtr,
+                controller: nameCtrl,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
+              const SizedBox(height: 8),
               TextField(
-                controller: descCtr,
+                controller: descCtrl,
                 decoration: const InputDecoration(labelText: 'Beschreibung'),
               ),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   const Text('Mehrere Übungen?'),
@@ -76,54 +82,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Device ID: $id',
+              Text('Device ID: $newId',
                   style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(ctx2).pop(false),
               child: const Text('Abbrechen'),
             ),
             ElevatedButton(
               onPressed: () async {
-                // Token neu laden, damit Custom-Claim aktuell ist
+                // Token neu laden, damit Custom-Claims aktuell sind
                 final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
                 if (fbUser != null) {
                   await fbUser.getIdToken(true);
                 }
+
                 final device = Device(
-                  id:          id,
-                  name:        nameCtr.text.trim(),
-                  description: descCtr.text.trim(),
-                );
-                await _createUC.execute(
-                  gymId:   gymId,
-                  device:  device,
+                  id: newId,
+                  name: nameCtrl.text.trim(),
+                  description: descCtrl.text.trim(),
                   isMulti: isMulti,
                 );
-                Navigator.pop(context);
+                await _createUC.execute(
+                  gymId: gymId,
+                  device: device,
+                  isMulti: isMulti,
+                );
+                Navigator.of(ctx2).pop(true);
                 await _loadDevices();
               },
               child: const Text('Erstellen'),
             ),
           ],
-        );
-      }),
+        ),
+      ),
     );
-  }
-
-  Future<void> _writeTag(String nfcCode) async {
-    try {
-      await _writeNfcUC.execute(nfcCode);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('NFC-Tag erfolgreich beschrieben')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler beim Schreiben: $e')),
-      );
-    }
   }
 
   @override
@@ -139,39 +134,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin-Dashboard')),
       body: _loading
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Gerät anlegen'),
-                  onPressed: _showCreateDialog,
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _devices.length,
-                    separatorBuilder: (_, __) => const Divider(),
-                    itemBuilder: (_, i) {
-                      final d = _devices[i];
-                      return ListTile(
-                        title: Text(d.name),
-                        subtitle: Text(d.description),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.nfc),
-                          tooltip: 'NFC-Tag beschreiben',
-                          onPressed:
-                            d.nfcCode != null ? () => _writeTag(d.nfcCode!) : null,
-                        ),
-                      );
-                    },
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Gerät anlegen'),
+                    onPressed: _showCreateDialog,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: _devices.length,
+                      separatorBuilder: (_, __) => const Divider(),
+                      itemBuilder: (_, i) {
+                        final device = _devices[i];
+                        return DeviceListItem(
+                          device: device,
+                          onDeleted: _loadDevices,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
     );
   }
 }

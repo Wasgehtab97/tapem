@@ -28,11 +28,11 @@ class DeviceScreen extends StatefulWidget {
 
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _redirected = false;
 
   @override
   void initState() {
     super.initState();
-    // Device + Session-Daten für diese Übung laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       context.read<DeviceProvider>().loadDevice(
@@ -50,9 +50,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final locale = Localizations.localeOf(context).toString();
 
     if (prov.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (prov.error != null || prov.device == null) {
@@ -62,22 +60,24 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     }
 
-    // — Nur beim reinen Multi-Device-Entry (noch keine Übung gewählt)
-    if (prov.device!.isMulti && widget.exerciseId == widget.deviceId) {
+    // **Nur** Multi + initialId==deviceId => ExerciseList
+    if (!_redirected
+        && prov.device!.isMulti
+        && widget.exerciseId == widget.deviceId) {
+      _redirected = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(
-          context,
+        Navigator.of(context).pushReplacementNamed(
           AppRouter.exerciseList,
-          arguments: <String, String>{
+          arguments: {
             'gymId':    widget.gymId,
             'deviceId': widget.deviceId,
           },
         );
       });
-      return const Scaffold();
+      return const Scaffold(); 
     }
 
-    // — Jetzt echte Single-Exercise-View —
+    // Single-Übung: hier bleiben
     return Scaffold(
       appBar: AppBar(
         title: Text(prov.device!.name),
@@ -105,16 +105,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Beschreibung
                     if (prov.device!.description.isNotEmpty) ...[
-                      Text(
-                        prov.device!.description,
-                        style: const TextStyle(color: Colors.black54),
-                      ),
+                      Text(prov.device!.description,
+                        style: const TextStyle(color: Colors.black54)),
                       const SizedBox(height: 16),
                     ],
-
-                    // — Letzte Session —
                     if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -148,17 +143,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                     ],
-
                     const Divider(),
-
-                    // — Neue Session —
                     const Text(
                       'Neue Session',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-
-                    // Eingabefelder für Sets
                     for (var entry in prov.sets.asMap().entries)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -169,13 +159,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             Expanded(
                               child: TextFormField(
                                 initialValue: entry.value['weight'],
-                                decoration: const InputDecoration(
-                                  labelText: 'kg',
-                                  isDense: true,
-                                ),
+                                decoration: const InputDecoration(labelText: 'kg', isDense: true),
                                 keyboardType: TextInputType.number,
-                                onChanged: (v) =>
-                                    prov.updateSet(entry.key, v, entry.value['reps']!),
+                                onChanged: (v) => prov.updateSet(entry.key, v, entry.value['reps']!),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'Gewicht?';
                                   if (double.tryParse(v) == null) return 'Zahl eingeben';
@@ -187,13 +173,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             Expanded(
                               child: TextFormField(
                                 initialValue: entry.value['reps'],
-                                decoration: const InputDecoration(
-                                  labelText: 'x',
-                                  isDense: true,
-                                ),
+                                decoration: const InputDecoration(labelText: 'x', isDense: true),
                                 keyboardType: TextInputType.number,
-                                onChanged: (v) =>
-                                    prov.updateSet(entry.key, entry.value['weight']!, v),
+                                onChanged: (v) => prov.updateSet(entry.key, entry.value['weight']!, v),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'Wdh.?';
                                   if (int.tryParse(v) == null) return 'Ganzzahl';
@@ -208,13 +190,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ],
                         ),
                       ),
-
                     TextButton.icon(
                       onPressed: prov.addSet,
                       icon: const Icon(Icons.add),
                       label: const Text('Set hinzufügen'),
                     ),
-
                     const Divider(),
                     const RestTimerWidget(),
                   ],
@@ -222,8 +202,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
             ),
           ),
-
-          // Footer: Abbrechen / Speichern
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(

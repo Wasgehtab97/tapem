@@ -13,16 +13,21 @@ class FirestoreDeviceSource {
       .collection('devices')
       .orderBy('name')
       .get();
-    return snap.docs
-      .map((doc) => DeviceDto.fromDocument(doc))
-      .toList();
+    return snap.docs.map((doc) => DeviceDto.fromDocument(doc)).toList();
   }
 
-  /// Accepts your domain-level Device model and writes it to Firestore
   Future<void> createDevice(String gymId, Device device) {
     return _firestore
       .collection('gyms').doc(gymId)
       .collection('devices').doc(device.id)
       .set(device.toJson());
+  }
+
+  // Neu: Gerät löschen
+  Future<void> deleteDevice(String gymId, String deviceId) {
+    return _firestore
+      .collection('gyms').doc(gymId)
+      .collection('devices').doc(deviceId)
+      .delete();
   }
 }

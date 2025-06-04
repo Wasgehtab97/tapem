@@ -1,3 +1,5 @@
+// lib/app_router.dart
+
 import 'package:flutter/material.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
@@ -6,7 +8,7 @@ import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
-import 'package:tapem/features/report/presentation/screens/report_dashboard_screen.dart';
+import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 
@@ -62,7 +64,7 @@ class AppRouter {
         );
 
       case report:
-        return MaterialPageRoute(builder: (_) => const ReportDashboardScreen());
+        return MaterialPageRoute(builder: (_) => const ReportScreen());
 
       case admin:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());

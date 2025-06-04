@@ -1,3 +1,5 @@
+// lib/core/providers/auth_provider.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
@@ -28,7 +30,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   String? get userEmail => _user?.email;
+
+  /// Gym-Code (aus dem User-Dokument), unverändert
   String? get gymCode => _user?.gymId;
+
   String? get userId => _user?.id;
   String? get role => _user?.role;
   bool get isAdmin => role == 'admin';
@@ -42,10 +47,9 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims =
-            (await fbUser.getIdTokenResult(true)).claims ?? <String, dynamic>{};
+            (await fbUser.getIdTokenResult(true)).claims ?? {};
         final dto = await _currentUC.execute();
         if (dto != null) {
-          // neues Modell mit ggf. überschriebenem Claim
           _user = UserData(
             id: dto.id,
             email: dto.email,

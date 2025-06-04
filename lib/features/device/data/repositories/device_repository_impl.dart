@@ -29,4 +29,10 @@ class DeviceRepositoryImpl implements DeviceRepository {
       return null;
     }
   }
+
+  // Neu: Gerät löschen
+  @override
+  Future<void> deleteDevice(String gymId, String deviceId) {
+    return _source.deleteDevice(gymId, deviceId);
+  }
 }

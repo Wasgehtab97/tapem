@@ -1,4 +1,5 @@
 // lib/core/providers/gym_provider.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/data/repositories/gym_repository_impl.dart';
@@ -16,25 +17,23 @@ class GymProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  GymConfig? get gym => _gym;
+  GymConfig? get gym       => _gym;
   List<Device> get devices => _devices;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  bool get isLoading        => _isLoading;
+  String? get error         => _error;
 
-  /// Validiert [gymCode], lädt die GymConfig und anschließend alle Geräte.
+  /// Document-ID des Gyms für Queries (leer, bis loadGymData aufgerufen wurde)
+  String get currentGymId => _gym?.id ?? '';
+
+  /// Validiert [gymCode] und lädt die GymConfig (mit Gym-ID in dto.id) und Geräte.
   Future<void> loadGymData(String gymCode) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
     try {
-      // GymConfig validieren und laden
       final gymRepo = GymRepositoryImpl(FirestoreGymSource());
       _gym = await ValidateGymCode(gymRepo).execute(gymCode);
-
-      // Geräte zu diesem Gym laden
-      final deviceRepo =
-          DeviceRepositoryImpl(FirestoreDeviceSource());
+      final deviceRepo = DeviceRepositoryImpl(FirestoreDeviceSource());
       _devices = await GetDevicesForGym(deviceRepo).execute(_gym!.id);
     } catch (e, st) {
       _error = 'Fehler beim Laden: ${e.toString()}';

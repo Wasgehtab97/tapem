@@ -1,31 +1,26 @@
-// lib/core/theme/theme_loader.dart
-
 import 'package:flutter/material.dart';
 import 'theme.dart';
 
-/// Mit diesem Provider kannst du später dynamisch Themes wechseln,
-/// z.B. je nach Gym oder Nutzer-Einstellungen.
+/// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
   ThemeData _currentTheme = AppTheme.darkTheme;
   ThemeData get theme => _currentTheme;
 
-  /// Lädt das Standard-Dark-Theme
+  /// Setzt Standard-Dark-Theme (Blau).
   void loadDefault() {
     _currentTheme = AppTheme.darkTheme;
     notifyListeners();
   }
 
-  /// Beispiel: unterschiedliche Themes pro Gym laden.
+  /// Lädt je nach gymId entweder Blau- oder Grün-Theme.
   void loadGymTheme(String gymId) {
-    if (gymId == 'blueGym') {
-      // Wir kopieren über colorScheme.copyWith
-      final scheme = AppTheme.darkTheme.colorScheme.copyWith(
-        primary: Colors.blueAccent,
-        secondary: Colors.lightBlueAccent,
-      );
-      _currentTheme = AppTheme.darkTheme.copyWith(colorScheme: scheme);
-    } else {
-      _currentTheme = AppTheme.darkTheme;
+    switch (gymId) {
+      case 'gym_02':
+        _currentTheme = AppTheme.greenDarkTheme;
+        break;
+      case 'gym_01':
+      default:
+        _currentTheme = AppTheme.darkTheme;
     }
     notifyListeners();
   }
