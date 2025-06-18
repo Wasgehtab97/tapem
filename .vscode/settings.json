@@ -1,9 +1,3 @@
 {
-  // Pfad zum Flutter-SDK (übergeordnetes Verzeichnis, nicht bin):
-  "flutter.sdkPath": "C:\\src\\flutter\\flutter_windows_3.29.3-stable\\flutter",
-
-  // Für den Dart-Analyzer:
-  "dart.flutterSdkPath": "C:\\src\\flutter\\flutter_windows_3.29.3-stable\\flutter",
-  // Falls gewünscht (normal nicht nötig, weil flutter.sdkPath reicht):
-  "dart.sdkPath": "C:\\src\\flutter\\flutter_windows_3.29.3-stable\\flutter\\bin\\cache\\dart-sdk"
+  "dart.flutterSdkPath": ".fvm/versions/3.29.3"
 }

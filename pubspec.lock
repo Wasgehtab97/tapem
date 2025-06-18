@@ -632,10 +632,11 @@ packages:
   nfc_manager:
     dependency: "direct main"
     description:
-      name: nfc_manager
-      sha256: "164cc0223dee528d4d05a542da921f0b3a31ca0312400701c93ebf4ce757f676"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/nfc_manager"
+      ref: HEAD
+      resolved-ref: "437f883234f0fd1af362242465fe0a9b8dd19101"
+      url: "https://github.com/okadan/flutter-nfc-manager.git"
+    source: git
     version: "4.0.2"
   nfc_manager_ndef:
     dependency: "direct main"

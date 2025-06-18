@@ -99,3 +99,6 @@ app.*.symbols
 app.*.map.json
 # Flutter build outputs
 /build/
+
+# FVM Version Cache
+.fvm/

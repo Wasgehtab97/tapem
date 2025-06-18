@@ -1,0 +1,52 @@
+platform :ios, '13.0'
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug'   => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  raise "#{generated} not found" unless File.exist?(generated)
+  File.foreach(generated) do |line|
+    return $1.strip if line =~ /FLUTTER_ROOT\=(.*)/
+  end
+  raise "FLUTTER_ROOT not in #{generated}"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+# → hier vor dem target block!
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if ['BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'].include?(pod.name)
+      def pod.build_type; Pod::BuildType.static_library; end
+    end
+  end
+end
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_modular_headers!
+  use_frameworks! :linkage => :static
+
+  flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |t|
+    flutter_additional_ios_build_settings(t)
+    # iOS 13+ und Simulator-arm64 ausschließen
+    t.build_configurations.each do |c|
+      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    end
+  end
+end

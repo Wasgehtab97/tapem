@@ -1,1 +1,5 @@
+// Pod-Einstellungen für Release übernehmen
+#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+
+// Flutter-Variablen (durch Generated.xcconfig erzeugt)
 #include "Generated.xcconfig"
