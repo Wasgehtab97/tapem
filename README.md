@@ -35,3 +35,14 @@ Tap’em ist eine modular aufgebaute Flutter-App, die es Fitnessstudios ermögli
    ```bash
    git clone git@github.com:<DeinUser>/tapem.git
    cd tapem
+2. **Umgebungsdatei kopieren**
+   ```bash
+   cp .env.example .env.dev
+   # Werte entsprechend deinem Firebase-Projekt setzen
+   ```
+
+3. **Abhängigkeiten installieren**
+   ```bash
+   flutter pub get
+   ```
+

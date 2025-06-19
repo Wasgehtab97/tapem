@@ -8,7 +8,7 @@
       "port": 8080
     },
     "ui": {
-      "enalbed": true
+      "enabled": true
     },
     "singleProjectMode": true
   }
