@@ -125,6 +125,19 @@ class DeviceProvider extends ChangeNotifier {
       .collection('userNotes').doc(userId);
     batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
 
+    // XP hochzählen für Single-Geräte
+    if (!_device!.isMulti) {
+      final xpDoc = _firestore
+          .collection('gyms').doc(gymId)
+          .collection('devices').doc(_device!.id)
+          .collection('userXp').doc(userId);
+      batch.set(
+        xpDoc,
+        {'xp': FieldValue.increment(1)},
+        SetOptions(merge: true),
+      );
+    }
+
     await batch.commit();
 
     // Lokal aktualisieren

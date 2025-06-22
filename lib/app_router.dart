@@ -8,6 +8,7 @@ import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
+import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
@@ -19,6 +20,7 @@ class AppRouter {
   static const device          = '/device';
   static const exerciseList    = '/exercise_list';
   static const history         = '/history';
+  static const rank            = '/rank';
   static const report          = '/report';
   static const admin           = '/admin';
   static const affiliate       = '/affiliate';
@@ -61,6 +63,15 @@ class AppRouter {
         final deviceId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
           builder: (_) => HistoryScreen(deviceId: deviceId),
+        );
+
+      case rank:
+        final args = settings.arguments as Map<String, String>;
+        return MaterialPageRoute(
+          builder: (_) => RankScreen(
+            gymId: args['gymId']!,
+            deviceId: args['deviceId']!,
+          ),
         );
 
       case report:
