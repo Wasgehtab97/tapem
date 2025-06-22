@@ -14,8 +14,9 @@ Tap’em ist eine modular aufgebaute Flutter-App, die es Fitnessstudios ermögli
 - **Dynamisches Branding**: Farbschema, Logos und App-Namen pro Studio konfigurierbar  
 - **State Management**: Provider / optional Riverpod oder BLoC für skalierbare Business-Logik  
 - **Visualisierung**: Kalender-Übersicht, Charts (fl_chart), Streak-Badges, Trainingshistorie  
-- **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung  
-- **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors  
+- **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung
+- **Geräte-XP**: Erfahrungspunkte pro Gerät werden in `userXp/{userId}` gespeichert
+- **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors
 
 ---
 
@@ -45,4 +46,10 @@ Tap’em ist eine modular aufgebaute Flutter-App, die es Fitnessstudios ermögli
    ```bash
    flutter pub get
    ```
+
+## XP & Rangliste
+
+Bei jedem Abschluss einer Single-Geräte-Session erhöht die App automatisch
+das Dokument `gyms/{gymId}/devices/{deviceId}/userXp/{userId}` um einen Punkt.
+Diese Werte können in einer Rangliste pro Gerät eingesehen werden.
 

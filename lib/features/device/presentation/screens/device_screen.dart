@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/rank_provider.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 
@@ -40,6 +41,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
         deviceId:   widget.deviceId,
         exerciseId: widget.exerciseId,
         userId:     auth.userId!,
+      );
+      context.read<RankProvider>().loadUserXp(
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
+        userId: auth.userId!,
       );
     });
   }
@@ -91,6 +97,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
               arguments: widget.deviceId,
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.leaderboard),
+            tooltip: 'Rangliste',
+            onPressed: () => Navigator.of(context).pushNamed(
+              AppRouter.rank,
+              arguments: {
+                'gymId': widget.gymId,
+                'deviceId': widget.deviceId,
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -110,6 +127,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         style: const TextStyle(color: Colors.black54)),
                       const SizedBox(height: 16),
                     ],
+                    Consumer<RankProvider>(
+                      builder: (_, rp, __) => Text(
+                        'XP: ${rp.userXp?.xp ?? 0}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -224,6 +248,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Session gespeichert')),
+                          );
+                          await context.read<RankProvider>().loadUserXp(
+                            gymId: widget.gymId,
+                            deviceId: widget.deviceId,
+                            userId: context.read<AuthProvider>().userId!,
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(

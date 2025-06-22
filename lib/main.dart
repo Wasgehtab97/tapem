@@ -23,6 +23,7 @@ import 'core/providers/gym_provider.dart';
 import 'core/providers/device_provider.dart';
 import 'core/providers/history_provider.dart';
 import 'core/providers/profile_provider.dart';
+import 'core/providers/rank_provider.dart';
 import 'core/providers/exercise_provider.dart';
 import 'core/providers/report_provider.dart';
 
@@ -148,6 +149,7 @@ class AppEntry extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(
           create:
               (c) => ExerciseProvider(
