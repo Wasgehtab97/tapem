@@ -1,5 +1,3 @@
-// lib/core/providers/auth_provider.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
@@ -20,10 +18,10 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
 
   AuthProvider({AuthRepositoryImpl? repo})
-      : _loginUC = LoginUseCase(repo),
-        _registerUC = RegisterUseCase(repo),
-        _logoutUC = LogoutUseCase(repo),
-        _currentUC = GetCurrentUserUseCase(repo) {
+    : _loginUC = LoginUseCase(repo),
+      _registerUC = RegisterUseCase(repo),
+      _logoutUC = LogoutUseCase(repo),
+      _currentUC = GetCurrentUserUseCase(repo) {
     _loadCurrentUser();
   }
 
@@ -31,12 +29,21 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   String? get userEmail => _user?.email;
 
-  /// Gym-Code (aus dem User-Dokument), unverändert
-  String? get gymCode => _user?.gymId;
+  /// Liste der Gym-Codes, die diesem Nutzer zugeordnet sind
+  List<String>? get gymCodes => _user?.gymCodes;
 
+  /// Erster Gym-Code (für Single-Gym-Flow)
+  String? get gymCode =>
+      (_user?.gymCodes.isNotEmpty == true) ? _user!.gymCodes.first : null;
+
+  /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
   String? get role => _user?.role;
   bool get isAdmin => role == 'admin';
+
+  /// Opt-out für Leaderboard
+  bool? get showInLeaderboard => _user?.showInLeaderboard;
+
   String? get error => _error;
 
   Future<void> _loadCurrentUser() async {
@@ -46,14 +53,14 @@ class AuthProvider extends ChangeNotifier {
       final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
       if (fbUser != null) {
         await fbUser.reload();
-        final claims =
-            (await fbUser.getIdTokenResult(true)).claims ?? {};
+        final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
         final dto = await _currentUC.execute();
         if (dto != null) {
           _user = UserData(
-            id: dto.id,
+            id: dto.userId,
             email: dto.email,
-            gymId: dto.gymId,
+            gymCodes: dto.gymCodes,
+            showInLeaderboard: dto.showInLeaderboard,
             role: claims['role'] as String? ?? dto.role,
             createdAt: dto.createdAt,
           );
@@ -74,25 +81,24 @@ class AuthProvider extends ChangeNotifier {
       await _loginUC.execute(email, password);
       await _loadCurrentUser();
     } catch (e) {
-      _error = e is fb_auth.FirebaseAuthException
-          ? e.message
-          : e.toString();
+      _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
       _user = null;
       _setLoading(false);
     }
   }
 
   Future<void> register(
-      String email, String password, String gymCode) async {
+    String email,
+    String password,
+    String initialGymCode,
+  ) async {
     _setLoading(true);
     _error = null;
     try {
-      await _registerUC.execute(email, password, gymCode);
+      await _registerUC.execute(email, password, initialGymCode);
       await _loadCurrentUser();
     } catch (e) {
-      _error = e is fb_auth.FirebaseAuthException
-          ? e.message
-          : e.toString();
+      _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
       _user = null;
       _setLoading(false);
     }
