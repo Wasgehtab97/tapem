@@ -1,5 +1,5 @@
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
-import 'package:tapem/features/rank/domain/repositories/rank_repository.dart';
+import 'package:tapem/features/rank/domain/rank_repository.dart';
 
 class RankRepositoryImpl implements RankRepository {
   final FirestoreRankSource _source;

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:tapem/features/rank/domain/repositories/rank_repository.dart';
+import 'package:tapem/features/rank/domain/rank_repository.dart';
 
 class RankProvider extends ChangeNotifier {
   final RankRepository _repository;

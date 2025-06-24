@@ -54,15 +54,15 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
-        final dto = await _currentUC.execute();
-        if (dto != null) {
+        final user = await _currentUC.execute();
+        if (user != null) {
           _user = UserData(
-            id: dto.userId,
-            email: dto.email,
-            gymCodes: dto.gymCodes,
-            showInLeaderboard: dto.showInLeaderboard,
-            role: claims['role'] as String? ?? dto.role,
-            createdAt: dto.createdAt,
+            id: user.id,
+            email: user.email,
+            gymCodes: user.gymCodes,
+            showInLeaderboard: user.showInLeaderboard,
+            role: claims['role'] as String? ?? user.role,
+            createdAt: user.createdAt,
           );
         }
       }
