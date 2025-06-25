@@ -7,8 +7,18 @@ class RankRepositoryImpl implements RankRepository {
   RankRepositoryImpl(this._source);
 
   @override
-  Future<void> addXp(String gymId, String userId, String deviceId) {
-    return _source.addXp(gymId: gymId, userId: userId, deviceId: deviceId);
+  Future<void> addXp(
+    String gymId,
+    String userId,
+    String deviceId,
+    bool showInLeaderboard,
+  ) {
+    return _source.addXp(
+      gymId: gymId,
+      userId: userId,
+      deviceId: deviceId,
+      showInLeaderboard: showInLeaderboard,
+    );
   }
 
   @override

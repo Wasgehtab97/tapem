@@ -12,6 +12,7 @@ import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
+import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -23,10 +24,9 @@ class AppRouter {
   static const report = '/report';
   static const admin = '/admin';
   static const affiliate = '/affiliate';
+  static const rank = '/rank';
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
-  static const deviceLeaderboardList = '/leaderboard_list';
-  static const rankScreen = '/rank';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -77,6 +77,10 @@ class AppRouter {
 
       case affiliate:
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
+
+      case rank:
+        final gymId = settings.arguments as String? ?? '';
+        return MaterialPageRoute(builder: (_) => RankScreen(gymId: gymId));
 
       case selectGym:
         return MaterialPageRoute(builder: (_) => const SelectGymScreen());

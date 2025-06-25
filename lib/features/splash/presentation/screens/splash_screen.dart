@@ -36,6 +36,13 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
         ).pushReplacementNamed(AppRouter.home, arguments: 1);
       }
+      if ((authProv.gymCodes?.length ?? 0) > 1) {
+        Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
+      } else {
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRouter.home, arguments: 1);
+      }
     } else {
       Navigator.of(context).pushReplacementNamed(AppRouter.auth);
     }

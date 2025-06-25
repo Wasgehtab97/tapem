@@ -266,6 +266,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           await prov.saveSession(
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
+                            showInLeaderboard:
+                                context
+                                    .read<AuthProvider>()
+                                    .showInLeaderboard ??
+                                true,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

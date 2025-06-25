@@ -11,6 +11,7 @@ import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -22,13 +23,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
-  static final List<Widget> _pages = [
-    GymScreen(),
-    ProfileScreen(),
-    ReportScreen(),
-    AdminDashboardScreen(),
-    AffiliateScreen(),
-  ];
+
+  List<Widget> _buildPages(BuildContext context) {
+    final gymId = context.watch<GymProvider>().currentGymId;
+    return [
+      const GymScreen(),
+      const ProfileScreen(),
+      const ReportScreen(),
+      const AdminDashboardScreen(),
+      RankScreen(gymId: gymId),
+      const AffiliateScreen(),
+    ];
+  }
 
   @override
   void initState() {
@@ -36,10 +42,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentIndex = widget.initialIndex;
     // Nach Login Gym laden und Report triggern
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProv   = context.read<AuthProvider>();
-      final gymProv    = context.read<GymProvider>();
+      final authProv = context.read<AuthProvider>();
+      final gymProv = context.read<GymProvider>();
       final reportProv = context.read<ReportProvider>();
-      final code       = authProv.gymCode;
+      final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
         gymProv.loadGymData(code).then((_) {
           final id = gymProv.currentGymId;
@@ -65,16 +71,26 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _pages[_currentIndex],
+      body: _buildPages(context)[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Gym'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Gym',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(icon: Icon(Icons.insert_chart), label: 'Report'),
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_chart),
+            label: 'Report',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.admin_panel_settings),
+            label: 'Admin',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Rank'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
         ],
       ),

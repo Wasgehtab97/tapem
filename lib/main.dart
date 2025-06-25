@@ -25,6 +25,7 @@ import 'core/providers/history_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'core/providers/exercise_provider.dart';
 import 'core/providers/report_provider.dart';
+import 'core/providers/rank_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -169,6 +170,7 @@ class AppEntry extends StatelessWidget {
                 getLogTimestamps: logsUC,
               ),
         ),
+        ChangeNotifierProvider(create: (_) => RankProvider()),
       ],
       child: const MyApp(),
     );
