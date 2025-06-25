@@ -36,17 +36,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       context.read<DeviceProvider>().loadDevice(
-        gymId:      widget.gymId,
-        deviceId:   widget.deviceId,
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
-        userId:     auth.userId!,
+        userId: auth.userId!,
       );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final prov   = context.watch<DeviceProvider>();
+    final prov = context.watch<DeviceProvider>();
     final locale = Localizations.localeOf(context).toString();
 
     if (prov.isLoading) {
@@ -61,20 +61,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
 
     // **Nur** Multi + initialId==deviceId => ExerciseList
-    if (!_redirected
-        && prov.device!.isMulti
-        && widget.exerciseId == widget.deviceId) {
+    if (!_redirected &&
+        prov.device!.isMulti &&
+        widget.exerciseId == widget.deviceId) {
       _redirected = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed(
           AppRouter.exerciseList,
-          arguments: {
-            'gymId':    widget.gymId,
-            'deviceId': widget.deviceId,
-          },
+          arguments: {'gymId': widget.gymId, 'deviceId': widget.deviceId},
         );
       });
-      return const Scaffold(); 
+      return const Scaffold();
     }
 
     // Single-Übung: hier bleiben
@@ -86,10 +83,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Verlauf',
-            onPressed: () => Navigator.of(context).pushNamed(
-              AppRouter.history,
-              arguments: widget.deviceId,
-            ),
+            onPressed:
+                () => Navigator.of(
+                  context,
+                ).pushNamed(AppRouter.history, arguments: widget.deviceId),
           ),
         ],
       ),
@@ -106,8 +103,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (prov.device!.description.isNotEmpty) ...[
-                      Text(prov.device!.description,
-                        style: const TextStyle(color: Colors.black54)),
+                      Text(
+                        prov.device!.description,
+                        style: const TextStyle(color: Colors.black54),
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (prov.lastSessionSets.isNotEmpty) ...[
@@ -121,15 +120,22 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               Text(
                                 'Letzte Session: '
                                 '${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               for (var set in prov.lastSessionSets)
                                 Row(
                                   children: [
-                                    SizedBox(width: 24, child: Text(set['number']!)),
+                                    SizedBox(
+                                      width: 24,
+                                      child: Text(set['number']!),
+                                    ),
                                     const SizedBox(width: 16),
-                                    Expanded(child: Text('${set['weight']} kg')),
+                                    Expanded(
+                                      child: Text('${set['weight']} kg'),
+                                    ),
                                     const SizedBox(width: 16),
                                     Text('${set['reps']} x'),
                                   ],
@@ -146,7 +152,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     const Divider(),
                     const Text(
                       'Neue Session',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     for (var entry in prov.sets.asMap().entries)
@@ -154,17 +163,29 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
-                            SizedBox(width: 24, child: Text(entry.value['number']!)),
+                            SizedBox(
+                              width: 24,
+                              child: Text(entry.value['number']!),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: TextFormField(
                                 initialValue: entry.value['weight'],
-                                decoration: const InputDecoration(labelText: 'kg', isDense: true),
+                                decoration: const InputDecoration(
+                                  labelText: 'kg',
+                                  isDense: true,
+                                ),
                                 keyboardType: TextInputType.number,
-                                onChanged: (v) => prov.updateSet(entry.key, v, entry.value['reps']!),
+                                onChanged:
+                                    (v) => prov.updateSet(
+                                      entry.key,
+                                      v,
+                                      entry.value['reps']!,
+                                    ),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'Gewicht?';
-                                  if (double.tryParse(v) == null) return 'Zahl eingeben';
+                                  if (double.tryParse(v) == null)
+                                    return 'Zahl eingeben';
                                   return null;
                                 },
                               ),
@@ -173,12 +194,21 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             Expanded(
                               child: TextFormField(
                                 initialValue: entry.value['reps'],
-                                decoration: const InputDecoration(labelText: 'x', isDense: true),
+                                decoration: const InputDecoration(
+                                  labelText: 'x',
+                                  isDense: true,
+                                ),
                                 keyboardType: TextInputType.number,
-                                onChanged: (v) => prov.updateSet(entry.key, entry.value['weight']!, v),
+                                onChanged:
+                                    (v) => prov.updateSet(
+                                      entry.key,
+                                      entry.value['weight']!,
+                                      v,
+                                    ),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'Wdh.?';
-                                  if (int.tryParse(v) == null) return 'Ganzzahl';
+                                  if (int.tryParse(v) == null)
+                                    return 'Ganzzahl';
                                   return null;
                                 },
                               ),
@@ -221,14 +251,21 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           await prov.saveSession(
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
+                            showInLeaderboard:
+                                context
+                                    .read<AuthProvider>()
+                                    .showInLeaderboard ??
+                                true,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Session gespeichert')),
+                            const SnackBar(
+                              content: Text('Session gespeichert'),
+                            ),
                           );
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Fehler: $e')),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
                         }
                       }
                     },

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -18,6 +19,7 @@ class DeviceProvider extends ChangeNotifier {
   Device? _device;
   bool _isLoading = false;
   String? _error;
+  String? _selectedGymCode;
 
   List<Map<String, String>> _sets = [];
   String _note = '';

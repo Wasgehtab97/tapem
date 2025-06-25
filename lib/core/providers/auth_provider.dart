@@ -9,17 +9,15 @@ import 'package:tapem/features/auth/domain/usecases/logout.dart';
 import 'package:tapem/features/auth/domain/usecases/register.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const _prefsKey = 'activeGymCode';
-
   final LoginUseCase _loginUC;
   final RegisterUseCase _registerUC;
   final LogoutUseCase _logoutUC;
   final GetCurrentUserUseCase _currentUC;
 
   UserData? _user;
-  String? _activeGymCode;
   bool _isLoading = false;
   String? _error;
+  String? _selectedGymCode;
 
   AuthProvider({AuthRepositoryImpl? repo})
     : _loginUC = LoginUseCase(repo),
@@ -33,34 +31,21 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   String? get userEmail => _user?.email;
 
+  /// Liste der Gym-Codes, die diesem Nutzer zugeordnet sind
   List<String>? get gymCodes => _user?.gymCodes;
 
-  /// Gibt den aktuell gespeicherten Gym-Code zurück oder den ersten
-  String? get gymCode {
-    if (_activeGymCode != null &&
-        _user?.gymCodes.contains(_activeGymCode) == true) {
-      return _activeGymCode;
-    }
-    if (_user?.gymCodes.isNotEmpty == true) {
-      return _user!.gymCodes.first;
-    }
-    return null;
-  }
+  /// Ausgewählter Gym-Code (wird in SharedPreferences gespeichert)
+  String? get gymCode => _selectedGymCode;
 
   /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
   String? get role => _user?.role;
   bool get isAdmin => role == 'admin';
-  bool? get showInLeaderboard => _user?.showInLeaderboard;
-  String? get error => _error;
 
-  /// Nutzer wählt ein Gym → persistieren
-  Future<void> setGymCode(String code) async {
-    _activeGymCode = code;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, code);
-    notifyListeners();
-  }
+  /// Opt-out für Leaderboard
+  bool? get showInLeaderboard => _user?.showInLeaderboard;
+
+  String? get error => _error;
 
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
@@ -70,22 +55,24 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
-        final dto = await _currentUC.execute();
-        if (dto != null) {
+        final user = await _currentUC.execute();
+        if (user != null) {
           _user = UserData(
-            id: dto.id, // <-- dto.id statt dto.userId
-            email: dto.email,
-            gymCodes: dto.gymCodes,
-            showInLeaderboard: dto.showInLeaderboard,
-            role: claims['role'] as String? ?? dto.role,
-            createdAt: dto.createdAt,
+            id: user.id,
+            email: user.email,
+            gymCodes: user.gymCodes,
+            showInLeaderboard: user.showInLeaderboard,
+            role: claims['role'] as String? ?? user.role,
+            createdAt: user.createdAt,
           );
-        }
-        // gespeicherten Gym-Code laden
-        final prefs = await SharedPreferences.getInstance();
-        final saved = prefs.getString(_prefsKey);
-        if (saved != null && _user?.gymCodes.contains(saved) == true) {
-          _activeGymCode = saved;
+          final prefs = await SharedPreferences.getInstance();
+          final stored = prefs.getString('selectedGymCode');
+          if (stored != null && user.gymCodes.contains(stored)) {
+            _selectedGymCode = stored;
+          } else if (user.gymCodes.isNotEmpty) {
+            _selectedGymCode = user.gymCodes.first;
+            await prefs.setString('selectedGymCode', _selectedGymCode!);
+          }
         }
       }
     } catch (e) {
@@ -109,11 +96,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> register(String email, String password, String gymCode) async {
+  Future<void> register(
+    String email,
+    String password,
+    String initialGymCode,
+  ) async {
     _setLoading(true);
     _error = null;
     try {
-      await _registerUC.execute(email, password, gymCode);
+      await _registerUC.execute(email, password, initialGymCode);
       await _loadCurrentUser();
     } catch (e) {
       _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
@@ -126,13 +117,22 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await _logoutUC.execute();
-      _activeGymCode = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_prefsKey);
     } finally {
       _user = null;
+      _selectedGymCode = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selectedGymCode');
       _setLoading(false);
     }
+  }
+
+  /// Wählt ein Gym aus und speichert die Auswahl persistent
+  Future<void> selectGym(String code) async {
+    if (_user == null || !_user!.gymCodes.contains(code)) return;
+    _selectedGymCode = code;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedGymCode', code);
+    notifyListeners();
   }
 
   void _setLoading(bool v) {
