@@ -1,4 +1,5 @@
 // lib/features/device/presentation/screens/device_screen.dart
+// ignore_for_file: use_super_parameters
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -83,10 +84,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Verlauf',
-            onPressed:
-                () => Navigator.of(
-                  context,
-                ).pushNamed(AppRouter.history, arguments: widget.deviceId),
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).pushNamed(AppRouter.history, arguments: widget.deviceId);
+            },
           ),
         ],
       ),
@@ -118,8 +120,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'Letzte Session: '
-                                '${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
+                                'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -176,16 +177,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                   isDense: true,
                                 ),
                                 keyboardType: TextInputType.number,
-                                onChanged:
-                                    (v) => prov.updateSet(
-                                      entry.key,
-                                      v,
-                                      entry.value['reps']!,
-                                    ),
+                                onChanged: (v) {
+                                  prov.updateSet(
+                                    entry.key,
+                                    v,
+                                    entry.value['reps']!,
+                                  );
+                                },
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Gewicht?';
-                                  if (double.tryParse(v) == null)
+                                  if (v == null || v.isEmpty) {
+                                    return 'Gewicht?';
+                                  }
+                                  if (double.tryParse(v) == null) {
                                     return 'Zahl eingeben';
+                                  }
                                   return null;
                                 },
                               ),
@@ -199,29 +204,37 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                   isDense: true,
                                 ),
                                 keyboardType: TextInputType.number,
-                                onChanged:
-                                    (v) => prov.updateSet(
-                                      entry.key,
-                                      entry.value['weight']!,
-                                      v,
-                                    ),
+                                onChanged: (v) {
+                                  prov.updateSet(
+                                    entry.key,
+                                    entry.value['weight']!,
+                                    v,
+                                  );
+                                },
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Wdh.?';
-                                  if (int.tryParse(v) == null)
+                                  if (v == null || v.isEmpty) {
+                                    return 'Wdh.?';
+                                  }
+                                  if (int.tryParse(v) == null) {
                                     return 'Ganzzahl';
+                                  }
                                   return null;
                                 },
                               ),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: () => prov.removeSet(entry.key),
+                              onPressed: () {
+                                prov.removeSet(entry.key);
+                              },
                             ),
                           ],
                         ),
                       ),
                     TextButton.icon(
-                      onPressed: prov.addSet,
+                      onPressed: () {
+                        prov.addSet();
+                      },
                       icon: const Icon(Icons.add),
                       label: const Text('Set hinzufügen'),
                     ),
@@ -238,7 +251,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     child: const Text('Abbrechen'),
                   ),
                 ),
@@ -251,11 +266,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           await prov.saveSession(
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
-                            showInLeaderboard:
-                                context
-                                    .read<AuthProvider>()
-                                    .showInLeaderboard ??
-                                true,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

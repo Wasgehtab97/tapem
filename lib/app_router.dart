@@ -25,6 +25,8 @@ class AppRouter {
   static const affiliate = '/affiliate';
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
+  static const deviceLeaderboardList = '/leaderboard_list';
+  static const rankScreen = '/rank';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
