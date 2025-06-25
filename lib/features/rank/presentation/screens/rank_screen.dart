@@ -27,6 +27,9 @@ class _RankScreenState extends State<RankScreen> {
       body: Consumer<RankProvider>(
         builder: (context, prov, _) {
           final entries = prov.entries;
+          if (entries.isEmpty) {
+            return const Center(child: Text('Keine Daten'));
+          }
           return ListView.builder(
             itemCount: entries.length,
             itemBuilder: (context, i) {
