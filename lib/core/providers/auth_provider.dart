@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/usecases/get_current_user.dart';
@@ -16,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   UserData? _user;
   bool _isLoading = false;
   String? _error;
+  String? _selectedGymCode;
 
   AuthProvider({AuthRepositoryImpl? repo})
     : _loginUC = LoginUseCase(repo),
@@ -32,9 +34,8 @@ class AuthProvider extends ChangeNotifier {
   /// Liste der Gym-Codes, die diesem Nutzer zugeordnet sind
   List<String>? get gymCodes => _user?.gymCodes;
 
-  /// Erster Gym-Code (für Single-Gym-Flow)
-  String? get gymCode =>
-      (_user?.gymCodes.isNotEmpty == true) ? _user!.gymCodes.first : null;
+  /// Ausgewählter Gym-Code (wird in SharedPreferences gespeichert)
+  String? get gymCode => _selectedGymCode;
 
   /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
@@ -54,17 +55,25 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
-        final dto = await _currentUC.execute();
-        if (dto != null) {
-          _user = UserData(
-            id: dto.userId,
-            email: dto.email,
-            gymCodes: dto.gymCodes,
-            showInLeaderboard: dto.showInLeaderboard,
-            role: claims['role'] as String? ?? dto.role,
-            createdAt: dto.createdAt,
-          );
-        }
+          final user = await _currentUC.execute();
+          if (user != null) {
+            _user = UserData(
+              id: user.id,
+              email: user.email,
+              gymCodes: user.gymCodes,
+              showInLeaderboard: user.showInLeaderboard,
+              role: claims['role'] as String? ?? user.role,
+              createdAt: user.createdAt,
+            );
+            final prefs = await SharedPreferences.getInstance();
+            final stored = prefs.getString('selectedGymCode');
+            if (stored != null && user.gymCodes.contains(stored)) {
+              _selectedGymCode = stored;
+            } else if (user.gymCodes.isNotEmpty) {
+              _selectedGymCode = user.gymCodes.first;
+              await prefs.setString('selectedGymCode', _selectedGymCode!);
+            }
+          }
       }
     } catch (e) {
       _error = e.toString();
@@ -110,8 +119,20 @@ class AuthProvider extends ChangeNotifier {
       await _logoutUC.execute();
     } finally {
       _user = null;
+      _selectedGymCode = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selectedGymCode');
       _setLoading(false);
     }
+  }
+
+  /// Wählt ein Gym aus und speichert die Auswahl persistent
+  Future<void> selectGym(String code) async {
+    if (_user == null || !_user!.gymCodes.contains(code)) return;
+    _selectedGymCode = code;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedGymCode', code);
+    notifyListeners();
   }
 
   void _setLoading(bool v) {

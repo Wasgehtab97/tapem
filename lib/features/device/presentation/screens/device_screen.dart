@@ -218,9 +218,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         try {
-                          await prov.saveSession(
+                          await prov.saveWorkoutSession(
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
+                            showInLeaderboard:
+                                context.read<AuthProvider>().showInLeaderboard ?? true,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Session gespeichert')),

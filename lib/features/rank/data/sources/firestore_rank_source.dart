@@ -10,6 +10,7 @@ class FirestoreRankSource {
     required String gymId,
     required String userId,
     required String deviceId,
+    required bool showInLeaderboard,
   }) async {
     final now = DateTime.now();
     final dateStr = now.toIso8601String().split('T').first;
@@ -25,7 +26,11 @@ class FirestoreRankSource {
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
       if (!lbSnap.exists) {
-        tx.set(lbRef, {'xp': 0, 'updatedAt': FieldValue.serverTimestamp()});
+        tx.set(lbRef, {
+          'xp': 0,
+          'showInLeaderboard': showInLeaderboard,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
       final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {

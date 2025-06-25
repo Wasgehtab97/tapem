@@ -108,9 +108,10 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   /// Speichert die Session-Logs, die User-Note und updated das Leaderboard
-  Future<void> saveSession({
+  Future<void> saveWorkoutSession({
     required String gymId,
     required String userId,
+    required bool showInLeaderboard,
   }) async {
     if (_device == null) return;
 
@@ -167,8 +168,10 @@ class DeviceProvider extends ChangeNotifier {
 
     await batch.commit();
 
-    // Leaderboard aktualisieren
-    await _updateLeaderboard(gymId, userId);
+    // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
+    if (!_device!.isMulti && showInLeaderboard) {
+      await _updateLeaderboard(gymId, userId, showInLeaderboard);
+    }
 
     // Lokalen State zurücksetzen
     _lastSessionSets = savedSets;
@@ -180,7 +183,11 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateLeaderboard(String gymId, String userId) async {
+  Future<void> _updateLeaderboard(
+    String gymId,
+    String userId,
+    bool showInLeaderboard,
+  ) async {
     final now = DateTime.now();
     final dateStr =
         '${now.year.toString().padLeft(4, '0')}-'
@@ -200,7 +207,11 @@ class DeviceProvider extends ChangeNotifier {
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
       if (!lbSnap.exists) {
-        tx.set(lbRef, {'xp': 0, 'updatedAt': FieldValue.serverTimestamp()});
+        tx.set(lbRef, {
+          'xp': 0,
+          'showInLeaderboard': showInLeaderboard,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
       final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
