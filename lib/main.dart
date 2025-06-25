@@ -1,5 +1,4 @@
 // lib/main.dart
-
 // ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
@@ -7,11 +6,12 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/date_symbol_data_local.dart'; // for initializeDateFormatting
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -58,10 +58,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
+  // Load .env
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  // Initialize Firebase (ignore duplicate-app errors)
+  // Firebase init
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -69,18 +69,21 @@ Future<void> main() async {
       );
     }
   } on FirebaseException catch (e) {
-    if (e.code != 'duplicate-app') {
-      rethrow;
-    }
+    if (e.code != 'duplicate-app') rethrow;
   }
 
-  // Disable reCAPTCHA for FirebaseAuth testing
+  // Disable reCAPTCHA for tests
   fb_auth.FirebaseAuth.instance.setSettings(
     appVerificationDisabledForTesting: true,
   );
 
-  // Initialize localization formatting
+  // Date formatting
   await initializeDateFormatting();
+
+  // Offline persistence
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
 
   runApp(const AppEntry());
 }
@@ -97,12 +100,12 @@ class AppEntry extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        // NFC stack
+        // NFC
         Provider<NfcService>(create: (_) => NfcService()),
         Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),
         Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
 
-        // Device stack
+        // Device
         Provider<DeviceRepository>(
           create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
         ),
@@ -119,7 +122,7 @@ class AppEntry extends StatelessWidget {
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
 
-        // Exercise stack
+        // Exercise
         Provider<ExerciseRepository>(
           create: (_) => ExerciseRepositoryImpl(FirestoreExerciseSource()),
         ),
@@ -133,13 +136,13 @@ class AppEntry extends StatelessWidget {
           create: (c) => DeleteExerciseUseCase(c.read<ExerciseRepository>()),
         ),
 
-        // App state providers
+        // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, ThemeLoader>(
           create: (_) => ThemeLoader()..loadDefault(),
-          update: (context, auth, previous) {
-            final loader = previous ?? (ThemeLoader()..loadDefault());
+          update: (ctx, auth, prev) {
+            final loader = prev ?? (ThemeLoader()..loadDefault());
             loader.loadGymTheme(auth.gymCode ?? '');
             return loader;
           },
@@ -177,16 +180,15 @@ class MyApp extends StatelessWidget {
     final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
 
-    // Android: global NFC listener; iOS: manual trigger
     final child =
         Platform.isAndroid
-            ? GlobalNfcListener(child: _buildMaterialApp(theme, locale))
-            : _buildMaterialApp(theme, locale);
+            ? GlobalNfcListener(child: _buildApp(theme, locale))
+            : _buildApp(theme, locale);
 
     return child;
   }
 
-  MaterialApp _buildMaterialApp(ThemeData theme, Locale? locale) {
+  MaterialApp _buildApp(ThemeData theme, Locale? locale) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: dotenv.env['APP_NAME'] ?? 'Tap’em',

@@ -14,3 +14,9 @@ android:
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	fvm flutter run --release -d 519e8f06
+
+# git push
+push:
+	git add .
+	git commit -m "newest push"
+	git push
