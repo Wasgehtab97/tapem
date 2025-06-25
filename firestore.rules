@@ -5,7 +5,8 @@ service cloud.firestore {
     return request.auth != null
       && (
            request.auth.token.role == 'admin'
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        || get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.role == 'admin'
       );
   }
 
@@ -26,10 +27,13 @@ service cloud.firestore {
       match /devices/{deviceId} {
         allow read:   if true;
         allow create: if isAdmin()
-          && request.resource.data.keys().hasOnly(['name','description','nfcCode','isMulti'])
+          && request.resource.data.keys().hasOnly(
+               ['name', 'description', 'nfcCode', 'isMulti']
+             )
           && request.resource.data.name        is string
           && request.resource.data.description is string
-          && (request.resource.data.nfcCode is string || request.resource.data.nfcCode == null)
+          && (request.resource.data.nfcCode is string
+              || request.resource.data.nfcCode == null)
           && request.resource.data.isMulti     is bool;
         allow update: if isAdmin()
           && request.resource.data.keys().hasOnly(['nfcCode'])
@@ -54,11 +58,17 @@ service cloud.firestore {
             && request.resource.data.reps       is int
             && request.resource.data.sessionId  is string
             && request.resource.data.timestamp  is timestamp
-            && (request.resource.data.note      is string || request.resource.data.note == null);
+            && (
+                 request.resource.data.note is string
+                 || request.resource.data.note == null
+               );
           allow read:
             if isAdmin()
             || isMemberOfGym(gymId)
-            || (request.auth != null && resource.data.userId == request.auth.uid);
+            || (
+                 request.auth != null
+                 && resource.data.userId == request.auth.uid
+               );
           allow update, delete: if false;
         }
 
@@ -71,29 +81,41 @@ service cloud.firestore {
 
       // Leaderboard
       match /leaderboard/{userId} {
+        // Einträge dürfen Admins, der Besitzer selbst und Mitglieder
+        // des Gyms lesen.
         allow read: if isAdmin()
           || (
                request.auth != null
-            && (
-                 request.auth.uid == userId
-              || isMemberOfGym(gymId)
-               )
+               && (
+                    request.auth.uid == userId
+                    || isMemberOfGym(gymId)
+                  )
              );
+
+        // Nur der Nutzer selbst darf seinen XP-Wert anlegen/aktualisieren.
         allow create, update: if request.auth != null
           && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['xp','updatedAt','showInLeaderboard'])
+          && request.resource.data.keys().hasOnly(
+               ['xp', 'updatedAt', 'showInLeaderboard']
+             )
           && request.resource.data.xp                is int
-          && request.resource.data.showInLeaderboard  is bool
+          && request.resource.data.showInLeaderboard is bool
           && request.resource.data.updatedAt         is timestamp;
         allow delete: if false;
 
-        // Eintrag pro Tag/Gerät
+        // Eintrag pro Tag und Gerät
         match /dailySessions/{sessionId} {
           allow create: if request.auth != null
             && request.auth.uid == userId
-            && !exists(/databases/$(database)/documents/gyms/$(gymId)/leaderboard/$(userId)/dailySessions/$(sessionId))
-            && get(/databases/$(database)/documents/gyms/$(gymId)/devices/$(request.resource.data.deviceId)).data.isMulti == false
-            && request.resource.data.keys().hasOnly(['deviceId','date'])
+            // pro Tag/Gerät nur ein Dokument
+            && !exists(/databases/$(database)/documents
+                       /gyms/$(gymId)/leaderboard/$(userId)
+                       /dailySessions/$(sessionId))
+            // nur Einzelgeräte werden gezählt
+            && get(/databases/$(database)/documents
+                    /gyms/$(gymId)/devices
+                    /$(request.resource.data.deviceId)).data.isMulti == false
+            && request.resource.data.keys().hasOnly(['deviceId', 'date'])
             && request.resource.data.deviceId is string
             && request.resource.data.date     is string;
           allow read:   if request.auth != null && request.auth.uid == userId;
@@ -104,17 +126,27 @@ service cloud.firestore {
 
     // --- User-Dokumente ---
     match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['email','gymCodes','showInLeaderboard','role','createdAt'])
+      // Anlage eines Users mit den Standardfeldern.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(
+             ['email', 'gymCodes', 'showInLeaderboard', 'role', 'createdAt']
+           )
         && request.resource.data.email             is string
         && request.resource.data.gymCodes          is list
         && request.resource.data.showInLeaderboard is bool
-        && request.resource.data.role in ['member','admin']
+        && request.resource.data.role in ['member', 'admin']
         && request.resource.data.createdAt         is timestamp;
-      allow read:   if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId
+
+      // Lesen nur durch den Nutzer selbst.
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Nutzer kann lediglich seinen showInLeaderboard-Wert ändern.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['showInLeaderboard'])
         && request.resource.data.showInLeaderboard is bool;
+
       allow delete: if false;
     }
   }
