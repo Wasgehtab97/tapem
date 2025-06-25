@@ -25,6 +25,8 @@ class AppRouter {
   static const admin = '/admin';
   static const affiliate = '/affiliate';
   static const rank = '/rank';
+  // Deprecated alias for backward compatibility
+  static const rankScreen = rank;
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
 

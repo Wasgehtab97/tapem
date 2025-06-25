@@ -109,7 +109,7 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   /// Speichert die Session-Logs, die User-Note und updated das Leaderboard
-  Future<void> saveSession({
+  Future<void> saveWorkoutSession({
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
@@ -184,11 +184,11 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveSession({
-    required String gymId,
-    required String userId,
-    required bool showInLeaderboard,
-  }) async {
+  Future<void> _updateLeaderboard(
+    String gymId,
+    String userId,
+    bool showInLeaderboard,
+  ) async {
     final now = DateTime.now();
     final dateStr =
         '${now.year.toString().padLeft(4, '0')}-'

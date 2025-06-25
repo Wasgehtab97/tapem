@@ -16,16 +16,16 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'app_router.dart';
-import 'core/theme/theme_loader.dart';
-import 'core/providers/app_provider.dart';
-import 'core/providers/auth_provider.dart';
-import 'core/providers/gym_provider.dart';
-import 'core/providers/device_provider.dart';
-import 'core/providers/history_provider.dart';
-import 'core/providers/profile_provider.dart';
-import 'core/providers/exercise_provider.dart';
-import 'core/providers/report_provider.dart';
-import 'core/providers/rank_provider.dart';
+import 'package:tapem/core/theme/theme_loader.dart';
+import 'package:tapem/core/providers/app_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/history_provider.dart';
+import 'package:tapem/core/providers/profile_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/report_provider.dart';
+import 'package:tapem/core/providers/rank_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
