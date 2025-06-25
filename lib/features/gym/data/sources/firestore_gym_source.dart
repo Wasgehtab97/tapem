@@ -7,14 +7,22 @@ class FirestoreGymSource {
 
   /// Sucht in 'gyms' nach dem Dokument mit Feld 'code' == [code].
   Future<GymConfig?> getGymByCode(String code) async {
-    final query = await _firestore
-        .collection('gyms')
-        .where('code', isEqualTo: code)
-        .limit(1)
-        .get();
+    final query =
+        await _firestore
+            .collection('gyms')
+            .where('code', isEqualTo: code)
+            .limit(1)
+            .get();
 
     if (query.docs.isEmpty) return null;
     final doc = query.docs.first;
     return GymConfig.fromMap(doc.id, doc.data());
+  }
+
+  /// Liefert das Gym-Dokument mit der angegebenen [id].
+  Future<GymConfig?> getGymById(String id) async {
+    final doc = await _firestore.collection('gyms').doc(id).get();
+    if (!doc.exists) return null;
+    return GymConfig.fromMap(doc.id, doc.data()!);
   }
 }

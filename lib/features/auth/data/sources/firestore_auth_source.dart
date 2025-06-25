@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
+import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 
 class FirestoreAuthSource {
   final FirebaseAuth _auth;
@@ -31,11 +32,17 @@ class FirestoreAuthSource {
       password: password,
     );
     final uid = cred.user!.uid;
+
+    // Gym anhand des Codes suchen und dessen ID speichern
+    final gymSrc = FirestoreGymSource();
+    final gym = await gymSrc.getGymByCode(initialGymCode);
+    if (gym == null) throw Exception('Gym code not found');
+
     final now = DateTime.now();
     final dto = UserDataDto(
       userId: uid,
       email: email,
-      gymCodes: [initialGymCode],
+      gymCodes: [gym.id],
       showInLeaderboard: true,
       role: 'member',
       createdAt: now,

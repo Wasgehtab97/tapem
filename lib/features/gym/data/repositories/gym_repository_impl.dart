@@ -12,4 +12,9 @@ class GymRepositoryImpl implements GymRepository {
   Future<GymConfig?> getGymByCode(String code) {
     return _source.getGymByCode(code);
   }
+
+  @override
+  Future<GymConfig?> getGymById(String id) {
+    return _source.getGymById(id);
+  }
 }
