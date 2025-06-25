@@ -174,9 +174,6 @@ class DeviceProvider extends ChangeNotifier {
       await _updateLeaderboard(gymId, userId, showInLeaderboard);
     }
 
-    // Leaderboard aktualisieren
-    await _updateLeaderboard(gymId, userId);
-
     // Lokalen State zurücksetzen
     _lastSessionSets = savedSets;
     _lastSessionDate = ts.toDate();
@@ -187,11 +184,11 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateLeaderboard(
-    String gymId,
-    String userId,
-    bool showInLeaderboard,
-  ) async {
+  Future<void> saveSession({
+    required String gymId,
+    required String userId,
+    required bool showInLeaderboard,
+  }) async {
     final now = DateTime.now();
     final dateStr =
         '${now.year.toString().padLeft(4, '0')}-'
