@@ -29,6 +29,7 @@ class AppRouter {
   static const rankScreen = rank;
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
+  static const planOverview = '/plan_overview';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -92,6 +93,9 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => TrainingDetailsScreen(date: date),
         );
+
+      case planOverview:
+        return MaterialPageRoute(builder: (_) => const PlanOverviewScreen());
 
       default:
         return MaterialPageRoute(

@@ -16,6 +16,8 @@ class DeviceProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
   final Uuid _uuid = const Uuid();
 
+  List<Device> _devices = [];
+
   Device? _device;
   bool _isLoading = false;
   String? _error;
@@ -41,12 +43,18 @@ class DeviceProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   Device? get device => _device;
+  List<Device> get devices => List.unmodifiable(_devices);
   List<Map<String, String>> get sets => List.unmodifiable(_sets);
   String get note => _note;
   List<Map<String, String>> get lastSessionSets =>
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
+
+  Future<void> loadDevices(String gymId) async {
+    _devices = await _getDevicesForGym.execute(gymId);
+    notifyListeners();
+  }
 
   /// Lädt Gerätedaten, letzte Session und Notiz
   Future<void> loadDevice({
