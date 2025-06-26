@@ -260,15 +260,14 @@ class DeviceProvider extends ChangeNotifier {
             .orderBy('timestamp')
             .get();
 
-    _lastSessionSets =
-        sessionDocs.docs.map((doc) {
-          final m = doc.data();
-          return {
-            'number': '${sessionDocs.docs.indexOf(doc) + 1}',
-            'weight': '${m['weight']}',
-            'reps': '${m['reps']}',
-          };
-        }).toList();
+    _lastSessionSets = [
+      for (var entry in sessionDocs.docs.asMap().entries)
+        {
+          'number': '${entry.key + 1}',
+          'weight': '${entry.value.data()['weight']}',
+          'reps': '${entry.value.data()['reps']}',
+        },
+    ];
     _lastSessionDate = ts;
     _lastSessionNote = note;
     notifyListeners();
