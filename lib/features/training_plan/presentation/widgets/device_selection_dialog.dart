@@ -29,7 +29,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
     if (devices.isNotEmpty) selectedDevice = devices.first;
   }
 
-  if (selectedDevice != null && selectedDevice.isMulti) {
+  if (selectedDevice?.isMulti == true) {
     await exProv.loadExercises(gymId, selectedDevice.id, userId);
     final exList = exProv.exercises;
     try {
@@ -65,7 +65,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                         });
                       },
                     ),
-                    if (selectedDevice != null && selectedDevice.isMulti)
+                    if (selectedDevice?.isMulti == true)
                       FutureBuilder<List<Exercise>>(
                         future: exProv
                             .loadExercises(gymId, selectedDevice.id, userId)
