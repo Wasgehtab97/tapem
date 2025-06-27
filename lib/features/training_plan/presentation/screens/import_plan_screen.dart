@@ -45,10 +45,11 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Plan importieren')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
+      body: Consumer<TrainingPlanProvider>(
+        builder: (context, prov, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
             ElevatedButton(
               onPressed: _pickFile,
               child: const Text('CSV-Datei wählen'),
@@ -63,15 +64,18 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                final csv = const CsvToListConverter(
-                  eol: '\n',
-                ).convert(_csvCtr.text);
-                _handleCsv(context, csv);
-              },
-              child: const Text('Importieren'),
-            ),
+            if (prov.isSaving)
+              const CircularProgressIndicator()
+            else
+              ElevatedButton(
+                onPressed: () {
+                  final csv = const CsvToListConverter(
+                    eol: '\n',
+                  ).convert(_csvCtr.text);
+                  _handleCsv(context, csv);
+                },
+                child: const Text('Importieren'),
+              ),
           ],
         ),
       ),

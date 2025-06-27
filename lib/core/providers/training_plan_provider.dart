@@ -16,6 +16,7 @@ class TrainingPlanProvider extends ChangeNotifier {
   List<TrainingPlan> plans = [];
   TrainingPlan? currentPlan;
   bool isLoading = false;
+  bool isSaving = false;
   String? error;
 
   TrainingPlanProvider({TrainingPlanRepository? repo})
@@ -65,10 +66,38 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateExercise(int week, String day, int index, ExerciseEntry entry) {
+    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
+    if (w == null) return;
+    final d = w.days.firstWhere((e) => e.day == day);
+    if (index < 0 || index >= d.exercises.length) return;
+    d.exercises[index] = entry;
+    notifyListeners();
+  }
+
+  void removeExercise(int week, String day, int index) {
+    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
+    if (w == null) return;
+    final d = w.days.firstWhere((e) => e.day == day);
+    if (index < 0 || index >= d.exercises.length) return;
+    d.exercises.removeAt(index);
+    notifyListeners();
+  }
+
   void notify() => notifyListeners();
 
   Future<void> saveCurrentPlan(String gymId) async {
     if (currentPlan == null) return;
-    await _repo.savePlan(gymId, currentPlan!);
+    isSaving = true;
+    error = null;
+    notifyListeners();
+    try {
+      await _repo.savePlan(gymId, currentPlan!);
+    } catch (e) {
+      error = 'Fehler beim Speichern: ' + e.toString();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
   }
 }

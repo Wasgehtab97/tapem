@@ -43,6 +43,8 @@ Tap’em ist eine modular aufgebaute Flutter-App, die es Fitnessstudios ermögli
 
 3. **Abhängigkeiten installieren**
    ```bash
-   flutter pub get
-   ```
+  flutter pub get
+  ```
 
+Weitere Hinweise zum eingesetzten State-Management und den vorhandenen Providern finden sich in
+[docs/provider_structure.md](docs/provider_structure.md).
