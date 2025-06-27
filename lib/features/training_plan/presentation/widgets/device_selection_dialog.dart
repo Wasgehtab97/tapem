@@ -29,8 +29,8 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
     if (devices.isNotEmpty) selectedDevice = devices.first;
   }
 
-  if (selectedDevice != null && selectedDevice!.isMulti) {
-    await exProv.loadExercises(gymId, selectedDevice!.id, userId);
+  if (selectedDevice != null && selectedDevice.isMulti) {
+    await exProv.loadExercises(gymId, selectedDevice.id, userId);
     final exList = exProv.exercises;
     try {
       selectedExercise = exList.firstWhere((e) => e.id == entry.exerciseId);
@@ -65,10 +65,10 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                         });
                       },
                     ),
-                    if (selectedDevice != null && selectedDevice!.isMulti)
+                    if (selectedDevice != null && selectedDevice.isMulti)
                       FutureBuilder<List<Exercise>>(
                         future: exProv
-                            .loadExercises(gymId, selectedDevice!.id, userId)
+                            .loadExercises(gymId, selectedDevice.id, userId)
                             .then((_) => exProv.exercises),
                         builder: (ctx, snapshot) {
                           final exList = snapshot.data ?? [];

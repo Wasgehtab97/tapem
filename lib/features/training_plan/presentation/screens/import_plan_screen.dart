@@ -150,8 +150,6 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   Future<void> _assignDevices(BuildContext context) async {
     final prov = context.read<TrainingPlanProvider>();
     final plan = prov.currentPlan!;
-    final gymId = context.read<AuthProvider>().gymCode!;
-    final userId = context.read<AuthProvider>().userId!;
 
     for (var week in plan.weeks) {
       for (var day in week.days) {
