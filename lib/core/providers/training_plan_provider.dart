@@ -59,6 +59,8 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void notify() => notifyListeners();
+
   Future<void> saveCurrentPlan(String gymId) async {
     if (currentPlan == null) return;
     await _repo.savePlan(gymId, currentPlan!);
