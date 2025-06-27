@@ -76,7 +76,7 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
           final week = plan.weeks[_weekController.index].weekNumber;
           final day = await _pickDay(context);
           if (day == null) return;
-          final entry = await _editEntry(context);
+          final entry = await showEditEntryDialog(context);
           if (entry != null) {
             prov.addExercise(week, day, entry);
           }
@@ -111,164 +111,163 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
     BuildContext context, {
     ExerciseEntry? entry,
   }) async {
-    final gymId = context.read<AuthProvider>().gymCode!;
-    final userId = context.read<AuthProvider>().userId!;
-    await context.read<DeviceProvider>().loadDevices(gymId);
-    final devices = context.read<DeviceProvider>().devices;
-    Device? selectedDevice =
-        entry == null
-            ? null
-            : devices.firstWhere(
-              (d) => d.id == entry.deviceId,
-              orElse: () => devices.isNotEmpty ? devices.first : null,
-            );
-    Exercise? selectedExercise;
-    final setTypeCtr = TextEditingController(text: entry?.setType ?? '');
-    final setsCtr = TextEditingController(
-      text: entry?.totalSets.toString() ?? '',
-    );
-    final workCtr = TextEditingController(
-      text: entry?.workSets.toString() ?? '',
-    );
-    final repsCtr = TextEditingController(text: entry?.reps.toString() ?? '');
-    final rirCtr = TextEditingController(text: entry?.rir.toString() ?? '');
-    final restCtr = TextEditingController(
-      text: entry?.restInSeconds.toString() ?? '',
-    );
-    final notesCtr = TextEditingController(text: entry?.notes ?? '');
-
-    return showDialog<ExerciseEntry>(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(
-              entry == null ? 'Übung hinzufügen' : 'Übung bearbeiten',
-            ),
-            content: StatefulBuilder(
-              builder:
-                  (ctx, setState) => SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        DropdownButton<Device>(
-                          value: selectedDevice,
-                          hint: const Text('Gerät wählen'),
-                          isExpanded: true,
-                          items: [
-                            for (var d in devices)
-                              DropdownMenuItem(value: d, child: Text(d.name)),
-                          ],
-                          onChanged:
-                              (d) => setState(() {
-                                selectedDevice = d;
-                                selectedExercise = null;
-                              }),
-                        ),
-                        if (selectedDevice != null && selectedDevice!.isMulti)
-                          FutureBuilder<List<Exercise>>(
-                            future: context
-                                .read<ExerciseProvider>()
-                                .loadExercises(
-                                  gymId,
-                                  selectedDevice!.id,
-                                  userId,
-                                )
-                                .then(
-                                  (_) =>
-                                      context
-                                          .read<ExerciseProvider>()
-                                          .exercises,
-                                ),
-                            builder: (context, snapshot) {
-                              final exList = snapshot.data ?? [];
-                              return DropdownButton<Exercise>(
-                                value: selectedExercise,
-                                hint: const Text('Übung wählen'),
-                                isExpanded: true,
-                                items: [
-                                  for (var ex in exList)
-                                    DropdownMenuItem(
-                                      value: ex,
-                                      child: Text(ex.name),
-                                    ),
-                                ],
-                                onChanged:
-                                    (e) => setState(() => selectedExercise = e),
-                              );
-                            },
-                          ),
-                        TextField(
-                          controller: setTypeCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Satzart',
-                          ),
-                        ),
-                        TextField(
-                          controller: setsCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Gesamt-Sätze',
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                        TextField(
-                          controller: workCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Arbeitssätze',
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                        TextField(
-                          controller: repsCtr,
-                          decoration: const InputDecoration(labelText: 'Wdh'),
-                          keyboardType: TextInputType.number,
-                        ),
-                        TextField(
-                          controller: rirCtr,
-                          decoration: const InputDecoration(labelText: 'RIR'),
-                          keyboardType: TextInputType.number,
-                        ),
-                        TextField(
-                          controller: restCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Pause (s)',
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                        TextField(
-                          controller: notesCtr,
-                          decoration: const InputDecoration(labelText: 'Notiz'),
-                        ),
-                      ],
-                    ),
-                  ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (selectedDevice == null) return;
-                  final entry = ExerciseEntry(
-                    deviceId: selectedDevice!.id,
-                    exerciseId: selectedExercise?.id ?? selectedDevice!.id,
-                    setType: setTypeCtr.text,
-                    totalSets: int.tryParse(setsCtr.text) ?? 0,
-                    workSets: int.tryParse(workCtr.text) ?? 0,
-                    reps: int.tryParse(repsCtr.text) ?? 0,
-                    rir: int.tryParse(rirCtr.text) ?? 0,
-                    restInSeconds: int.tryParse(restCtr.text) ?? 0,
-                    notes: notesCtr.text.isEmpty ? null : notesCtr.text,
-                  );
-                  Navigator.pop(context, entry);
-                },
-                child: const Text('Speichern'),
-              ),
-            ],
-          ),
-    );
+    return showEditEntryDialog(context, entry: entry);
   }
+}
+
+Future<ExerciseEntry?> showEditEntryDialog(
+  BuildContext context, {
+  ExerciseEntry? entry,
+}) async {
+  final gymId = context.read<AuthProvider>().gymCode!;
+  final userId = context.read<AuthProvider>().userId!;
+  await context.read<DeviceProvider>().loadDevices(gymId);
+  final devices = context.read<DeviceProvider>().devices;
+  Device? selectedDevice =
+      entry == null
+          ? null
+          : devices.firstWhere(
+            (d) => d.id == entry.deviceId,
+            orElse:
+                () =>
+                    devices.isNotEmpty
+                        ? devices.first
+                        : Device(id: '', name: ''),
+          );
+  Exercise? selectedExercise;
+  final setTypeCtr = TextEditingController(text: entry?.setType ?? '');
+  final setsCtr = TextEditingController(
+    text: entry?.totalSets.toString() ?? '',
+  );
+  final workCtr = TextEditingController(text: entry?.workSets.toString() ?? '');
+  final repsCtr = TextEditingController(text: entry?.reps.toString() ?? '');
+  final rirCtr = TextEditingController(text: entry?.rir.toString() ?? '');
+  final restCtr = TextEditingController(
+    text: entry?.restInSeconds.toString() ?? '',
+  );
+  final notesCtr = TextEditingController(text: entry?.notes ?? '');
+
+  return showDialog<ExerciseEntry>(
+    context: context,
+    builder:
+        (_) => AlertDialog(
+          title: Text(entry == null ? 'Übung hinzufügen' : 'Übung bearbeiten'),
+          content: StatefulBuilder(
+            builder:
+                (ctx, setState) => SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButton<Device>(
+                        value: selectedDevice,
+                        hint: const Text('Gerät wählen'),
+                        isExpanded: true,
+                        items: [
+                          for (var d in devices)
+                            DropdownMenuItem(value: d, child: Text(d.name)),
+                        ],
+                        onChanged:
+                            (d) => setState(() {
+                              selectedDevice = d;
+                              selectedExercise = null;
+                            }),
+                      ),
+                      if (selectedDevice != null && selectedDevice!.isMulti)
+                        FutureBuilder<List<Exercise>>(
+                          future: context
+                              .read<ExerciseProvider>()
+                              .loadExercises(gymId, selectedDevice!.id, userId)
+                              .then(
+                                (_) =>
+                                    context.read<ExerciseProvider>().exercises,
+                              ),
+                          builder: (context, snapshot) {
+                            final exList = snapshot.data ?? [];
+                            return DropdownButton<Exercise>(
+                              value: selectedExercise,
+                              hint: const Text('Übung wählen'),
+                              isExpanded: true,
+                              items: [
+                                for (var ex in exList)
+                                  DropdownMenuItem(
+                                    value: ex,
+                                    child: Text(ex.name),
+                                  ),
+                              ],
+                              onChanged:
+                                  (e) => setState(() => selectedExercise = e),
+                            );
+                          },
+                        ),
+                      TextField(
+                        controller: setTypeCtr,
+                        decoration: const InputDecoration(labelText: 'Satzart'),
+                      ),
+                      TextField(
+                        controller: setsCtr,
+                        decoration: const InputDecoration(
+                          labelText: 'Gesamt-Sätze',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: workCtr,
+                        decoration: const InputDecoration(
+                          labelText: 'Arbeitssätze',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: repsCtr,
+                        decoration: const InputDecoration(labelText: 'Wdh'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: rirCtr,
+                        decoration: const InputDecoration(labelText: 'RIR'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: restCtr,
+                        decoration: const InputDecoration(
+                          labelText: 'Pause (s)',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: notesCtr,
+                        decoration: const InputDecoration(labelText: 'Notiz'),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedDevice == null) return;
+                final entryRes = ExerciseEntry(
+                  deviceId: selectedDevice!.id,
+                  exerciseId: selectedExercise?.id ?? selectedDevice!.id,
+                  setType: setTypeCtr.text,
+                  totalSets: int.tryParse(setsCtr.text) ?? 0,
+                  workSets: int.tryParse(workCtr.text) ?? 0,
+                  reps: int.tryParse(repsCtr.text) ?? 0,
+                  rir: int.tryParse(rirCtr.text) ?? 0,
+                  restInSeconds: int.tryParse(restCtr.text) ?? 0,
+                  notes: notesCtr.text.isEmpty ? null : notesCtr.text,
+                );
+                Navigator.pop(context, entryRes);
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+  );
 }
 
 class _WeekView extends StatefulWidget {
@@ -327,7 +326,10 @@ class _WeekViewState extends State<_WeekView>
                         title: Text('${ex.exerciseId} (${ex.setType})'),
                         subtitle: Text('${ex.reps}×${ex.workSets}'),
                         onTap: () async {
-                          final updated = await _editEntry(context, entry: ex);
+                          final updated = await showEditEntryDialog(
+                            context,
+                            entry: ex,
+                          );
                           if (updated != null && mounted) {
                             prov.updateExercise(
                               weekNumber,
