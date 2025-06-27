@@ -46,38 +46,40 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Plan importieren')),
       body: Consumer<TrainingPlanProvider>(
-        builder: (context, prov, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-            ElevatedButton(
-              onPressed: _pickFile,
-              child: const Text('CSV-Datei wählen'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _csvCtr,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                labelText: 'CSV-Daten einfügen',
-                border: OutlineInputBorder(),
+        builder:
+            (context, prov, _) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickFile,
+                    child: const Text('CSV-Datei wählen'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _csvCtr,
+                    maxLines: 8,
+                    decoration: const InputDecoration(
+                      labelText: 'CSV-Daten einfügen',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (prov.isSaving)
+                    const CircularProgressIndicator()
+                  else
+                    ElevatedButton(
+                      onPressed: () {
+                        final csv = const CsvToListConverter(
+                          eol: '\n',
+                        ).convert(_csvCtr.text);
+                        _handleCsv(context, csv);
+                      },
+                      child: const Text('Importieren'),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            if (prov.isSaving)
-              const CircularProgressIndicator()
-            else
-              ElevatedButton(
-                onPressed: () {
-                  final csv = const CsvToListConverter(
-                    eol: '\n',
-                  ).convert(_csvCtr.text);
-                  _handleCsv(context, csv);
-                },
-                child: const Text('Importieren'),
-              ),
-          ],
-        ),
       ),
     );
   }
