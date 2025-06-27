@@ -12,22 +12,23 @@ class TrainingPlanDto {
 
   TrainingPlanDto({required this.id, required this.name, required this.weeks});
 
-  factory TrainingPlanDto.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory TrainingPlanDto.fromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc, {
+    List<WeekBlock>? weeks,
+  }) {
     final data = doc.data()!;
     return TrainingPlanDto(
       id: doc.id,
       name: data['name'] as String? ?? '',
       weeks:
+          weeks ??
           (data['weeks'] as List<dynamic>? ?? [])
               .map((w) => WeekBlock.fromMap(w as Map<String, dynamic>))
               .toList(),
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'weeks': weeks.map((w) => w.toMap()).toList(),
-  };
+  Map<String, dynamic> toMap() => {'name': name};
 
   TrainingPlan toModel() => TrainingPlan(id: id, name: name, weeks: weeks);
 
