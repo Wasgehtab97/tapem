@@ -85,11 +85,6 @@ Future<void> main() async {
   // Date formatting
   await initializeDateFormatting();
 
-  // Offline persistence
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-  );
-
   runApp(const AppEntry());
 }
 

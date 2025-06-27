@@ -76,7 +76,11 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             onPressed: () async {
               final name = await _askName(context);
               if (name != null && context.mounted) {
-                context.read<TrainingPlanProvider>().createNewPlan(name);
+                final userId = context.read<AuthProvider>().userId!;
+                context.read<TrainingPlanProvider>().createNewPlan(
+                  name,
+                  userId,
+                );
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const PlanEditorScreen()),
                 );

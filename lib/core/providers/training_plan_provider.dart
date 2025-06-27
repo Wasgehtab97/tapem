@@ -35,9 +35,15 @@ class TrainingPlanProvider extends ChangeNotifier {
     }
   }
 
-  void createNewPlan(String name) {
+  void createNewPlan(String name, String createdBy) {
     final weeks = [for (var i = 1; i <= 13; i++) _emptyWeek(i)];
-    currentPlan = TrainingPlan(id: _uuid.v4(), name: name, weeks: weeks);
+    currentPlan = TrainingPlan(
+      id: _uuid.v4(),
+      name: name,
+      createdAt: DateTime.now(),
+      createdBy: createdBy,
+      weeks: weeks,
+    );
     notifyListeners();
   }
 

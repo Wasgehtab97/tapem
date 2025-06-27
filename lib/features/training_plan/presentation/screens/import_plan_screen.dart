@@ -110,7 +110,8 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     final dayIdx = headerMap['tag']!;
     final repsIdx = headerMap['reps']!;
     final prov = context.read<TrainingPlanProvider>();
-    prov.createNewPlan('Import');
+    final userId = context.read<AuthProvider>().userId!;
+    prov.createNewPlan('Import', userId);
     for (var row in data.skip(1)) {
       final week = int.tryParse(row[weekIdx].toString()) ?? 1;
       final day = row[dayIdx].toString();

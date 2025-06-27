@@ -1,21 +1,34 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'week_block.dart';
 
 /// Domain model for a training plan consisting of multiple weeks.
 class TrainingPlan {
   final String id;
   final String name;
+  final DateTime createdAt;
+  final String createdBy;
   final List<WeekBlock> weeks;
 
   TrainingPlan({
     required this.id,
     required this.name,
+    required this.createdAt,
+    required this.createdBy,
     required List<WeekBlock> weeks,
   }) : weeks = List.from(weeks);
 
-  TrainingPlan copyWith({String? id, String? name, List<WeekBlock>? weeks}) {
+  TrainingPlan copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    String? createdBy,
+    List<WeekBlock>? weeks,
+  }) {
     return TrainingPlan(
       id: id ?? this.id,
       name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
       weeks: weeks ?? this.weeks,
     );
   }
@@ -24,6 +37,8 @@ class TrainingPlan {
       TrainingPlan(
         id: id,
         name: map['name'] as String? ?? '',
+        createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        createdBy: map['createdBy'] as String? ?? '',
         weeks:
             (map['weeks'] as List<dynamic>? ?? [])
                 .map((e) => WeekBlock.fromMap(e as Map<String, dynamic>))
@@ -32,6 +47,8 @@ class TrainingPlan {
 
   Map<String, dynamic> toMap() => {
     'name': name,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'createdBy': createdBy,
     'weeks': weeks.map((w) => w.toMap()).toList(),
   };
 }
