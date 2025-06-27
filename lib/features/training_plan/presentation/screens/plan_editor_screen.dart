@@ -106,13 +106,6 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
           ),
     );
   }
-
-  Future<ExerciseEntry?> _editEntry(
-    BuildContext context, {
-    ExerciseEntry? entry,
-  }) async {
-    return showEditEntryDialog(context, entry: entry);
-  }
 }
 
 Future<ExerciseEntry?> showEditEntryDialog(
