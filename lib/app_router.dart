@@ -13,6 +13,8 @@ import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
+import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
+import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 
 class AppRouter {
   static const splash = '/';

@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/device_provider.dart';
+import '../../../../core/providers/exercise_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
+import '../../domain/models/week_block.dart';
 
 class PlanEditorScreen extends StatefulWidget {
   const PlanEditorScreen({super.key});
@@ -80,7 +82,8 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
   }
 
   Future<ExerciseEntry?> _editEntry(BuildContext context) async {
-    final gymId = context.read<AuthProvider>().gymId!;
+    final gymId = context.read<AuthProvider>().gymCode!;
+    final userId = context.read<AuthProvider>().userId!;
     await context.read<DeviceProvider>().loadDevices(gymId);
     final devices = context.read<DeviceProvider>().devices;
     Device? selectedDevice;
@@ -121,8 +124,18 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
                         if (selectedDevice != null && selectedDevice!.isMulti)
                           FutureBuilder<List<Exercise>>(
                             future: context
-                                .read<DeviceProvider>()
-                                .loadExercises(gymId, selectedDevice!.id),
+                                .read<ExerciseProvider>()
+                                .loadExercises(
+                                  gymId,
+                                  selectedDevice!.id,
+                                  userId,
+                                )
+                                .then(
+                                  (_) =>
+                                      context
+                                          .read<ExerciseProvider>()
+                                          .exercises,
+                                ),
                             builder: (context, snapshot) {
                               final exList = snapshot.data ?? [];
                               return DropdownButton<Exercise>(

@@ -83,7 +83,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       );
       prov.addExercise(week, day, entry);
     }
-    final gymId = context.read<AuthProvider>().gymId!;
+    final gymId = context.read<AuthProvider>().gymCode!;
     prov.saveCurrentPlan(gymId);
     Navigator.pop(context);
   }

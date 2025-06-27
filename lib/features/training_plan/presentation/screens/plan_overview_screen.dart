@@ -17,7 +17,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
   @override
   void initState() {
     super.initState();
-    final gymId = context.read<AuthProvider>().gymId;
+    final gymId = context.read<AuthProvider>().gymCode;
     if (gymId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<TrainingPlanProvider>().loadPlans(gymId);
