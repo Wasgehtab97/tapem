@@ -13,6 +13,7 @@ import '../../../../core/providers/exercise_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
+import '../widgets/device_selection_dialog.dart';
 
 class ImportPlanScreen extends StatefulWidget {
   const ImportPlanScreen({super.key});
@@ -152,21 +153,12 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     final gymId = context.read<AuthProvider>().gymCode!;
     final userId = context.read<AuthProvider>().userId!;
 
-    final deviceProv = context.read<DeviceProvider>();
-    await deviceProv.loadDevices(gymId);
-    final devices = deviceProv.devices;
-    final exProv = context.read<ExerciseProvider>();
-
     for (var week in plan.weeks) {
       for (var day in week.days) {
         for (var i = 0; i < day.exercises.length; i++) {
-          final updated = await _selectDevice(
+          final updated = await showDeviceSelectionDialog(
             context,
             day.exercises[i],
-            devices,
-            exProv,
-            gymId,
-            userId,
           );
           if (updated != null) {
             day.exercises[i] = updated;
@@ -175,98 +167,5 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       }
     }
     prov.notify();
-  }
-
-  Future<ExerciseEntry?> _selectDevice(
-    BuildContext context,
-    ExerciseEntry entry,
-    List<Device> devices,
-    ExerciseProvider exProv,
-    String gymId,
-    String userId,
-  ) async {
-    Device? selectedDevice;
-    Exercise? selectedExercise;
-
-    return showDialog<ExerciseEntry>(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => AlertDialog(
-            title: Text('Gerät für ${entry.exerciseId} wählen'),
-            content: StatefulBuilder(
-              builder:
-                  (ctx, setState) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DropdownButton<Device>(
-                        value: selectedDevice,
-                        isExpanded: true,
-                        hint: const Text('Gerät wählen'),
-                        items: [
-                          for (var d in devices)
-                            DropdownMenuItem(value: d, child: Text(d.name)),
-                        ],
-                        onChanged:
-                            (d) => setState(() {
-                              selectedDevice = d;
-                              selectedExercise = null;
-                            }),
-                      ),
-                      if (selectedDevice != null && selectedDevice!.isMulti)
-                        FutureBuilder<List<Exercise>>(
-                          future: exProv
-                              .loadExercises(gymId, selectedDevice!.id, userId)
-                              .then((_) => exProv.exercises),
-                          builder: (ctx, snapshot) {
-                            final exList = snapshot.data ?? [];
-                            return DropdownButton<Exercise>(
-                              value: selectedExercise,
-                              isExpanded: true,
-                              hint: const Text('Übung wählen'),
-                              items: [
-                                for (var ex in exList)
-                                  DropdownMenuItem(
-                                    value: ex,
-                                    child: Text(ex.name),
-                                  ),
-                              ],
-                              onChanged:
-                                  (e) => setState(() => selectedExercise = e),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (selectedDevice == null) return;
-                  final newEntry = ExerciseEntry(
-                    deviceId: selectedDevice!.id,
-                    exerciseId:
-                        selectedDevice!.isMulti
-                            ? (selectedExercise?.id ?? '')
-                            : selectedDevice!.id,
-                    setType: entry.setType,
-                    totalSets: entry.totalSets,
-                    workSets: entry.workSets,
-                    reps: entry.reps,
-                    rir: entry.rir,
-                    restInSeconds: entry.restInSeconds,
-                    notes: entry.notes,
-                  );
-                  Navigator.pop(context, newEntry);
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
   }
 }

@@ -9,6 +9,7 @@ import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/week_block.dart';
+import '../widgets/device_selection_dialog.dart';
 
 class PlanEditorScreen extends StatefulWidget {
   const PlanEditorScreen({super.key});
@@ -112,22 +113,22 @@ Future<ExerciseEntry?> showEditEntryDialog(
   BuildContext context, {
   ExerciseEntry? entry,
 }) async {
-  final gymId = context.read<AuthProvider>().gymCode!;
-  final userId = context.read<AuthProvider>().userId!;
-  await context.read<DeviceProvider>().loadDevices(gymId);
-  final devices = context.read<DeviceProvider>().devices;
-  Device? selectedDevice =
-      entry == null
-          ? null
-          : devices.firstWhere(
-            (d) => d.id == entry.deviceId,
-            orElse:
-                () =>
-                    devices.isNotEmpty
-                        ? devices.first
-                        : Device(id: '', name: ''),
-          );
-  Exercise? selectedExercise;
+  final base =
+      entry ??
+      ExerciseEntry(
+        deviceId: '',
+        exerciseId: '',
+        setType: '',
+        totalSets: 0,
+        workSets: 0,
+        reps: 0,
+        rir: 0,
+        restInSeconds: 0,
+      );
+  final selected = await showDeviceSelectionDialog(context, base);
+  if (selected == null) return null;
+  final selectedDeviceId = selected.deviceId;
+  final selectedExerciseId = selected.exerciseId;
   final setTypeCtr = TextEditingController(text: entry?.setType ?? '');
   final setsCtr = TextEditingController(
     text: entry?.totalSets.toString() ?? '',
@@ -151,47 +152,6 @@ Future<ExerciseEntry?> showEditEntryDialog(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DropdownButton<Device>(
-                        value: selectedDevice,
-                        hint: const Text('Gerät wählen'),
-                        isExpanded: true,
-                        items: [
-                          for (var d in devices)
-                            DropdownMenuItem(value: d, child: Text(d.name)),
-                        ],
-                        onChanged:
-                            (d) => setState(() {
-                              selectedDevice = d;
-                              selectedExercise = null;
-                            }),
-                      ),
-                      if (selectedDevice != null && selectedDevice!.isMulti)
-                        FutureBuilder<List<Exercise>>(
-                          future: context
-                              .read<ExerciseProvider>()
-                              .loadExercises(gymId, selectedDevice!.id, userId)
-                              .then(
-                                (_) =>
-                                    context.read<ExerciseProvider>().exercises,
-                              ),
-                          builder: (context, snapshot) {
-                            final exList = snapshot.data ?? [];
-                            return DropdownButton<Exercise>(
-                              value: selectedExercise,
-                              hint: const Text('Übung wählen'),
-                              isExpanded: true,
-                              items: [
-                                for (var ex in exList)
-                                  DropdownMenuItem(
-                                    value: ex,
-                                    child: Text(ex.name),
-                                  ),
-                              ],
-                              onChanged:
-                                  (e) => setState(() => selectedExercise = e),
-                            );
-                          },
-                        ),
                       TextField(
                         controller: setTypeCtr,
                         decoration: const InputDecoration(labelText: 'Satzart'),
@@ -242,10 +202,10 @@ Future<ExerciseEntry?> showEditEntryDialog(
             ),
             ElevatedButton(
               onPressed: () {
-                if (selectedDevice == null) return;
+                if (selectedDeviceId.isEmpty) return;
                 final entryRes = ExerciseEntry(
-                  deviceId: selectedDevice!.id,
-                  exerciseId: selectedExercise?.id ?? selectedDevice!.id,
+                  deviceId: selectedDeviceId,
+                  exerciseId: selectedExerciseId,
                   setType: setTypeCtr.text,
                   totalSets: int.tryParse(setsCtr.text) ?? 0,
                   workSets: int.tryParse(workCtr.text) ?? 0,
