@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../domain/models/training_plan.dart';
-import '../../domain/models/week_block.dart';
-import '../../domain/models/day_entry.dart';
-import '../../domain/models/exercise_entry.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
+import 'package:tapem/features/training_plan/domain/models/week_block.dart';
+import 'package:tapem/features/training_plan/domain/models/day_entry.dart';
+import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 
 class TrainingPlanDto {
   final String id;

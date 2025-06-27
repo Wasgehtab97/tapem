@@ -26,6 +26,7 @@ import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
+import 'package:tapem/core/providers/training_plan_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -153,6 +154,7 @@ class AppEntry extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
+        ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(

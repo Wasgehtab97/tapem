@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../features/training_plan/data/repositories/training_plan_repository_impl.dart';
-import '../../features/training_plan/data/sources/firestore_training_plan_source.dart';
-import '../../features/training_plan/domain/models/exercise_entry.dart';
-import '../../features/training_plan/domain/models/training_plan.dart';
-import '../../features/training_plan/domain/models/week_block.dart';
-import '../../features/training_plan/domain/models/day_entry.dart';
-import '../../features/training_plan/domain/repositories/training_plan_repository.dart';
+import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
+import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
+import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
+import 'package:tapem/features/training_plan/domain/models/week_block.dart';
+import 'package:tapem/features/training_plan/domain/models/day_entry.dart';
+import 'package:tapem/features/training_plan/domain/repositories/training_plan_repository.dart';
 
 class TrainingPlanProvider extends ChangeNotifier {
   final TrainingPlanRepository _repo;
