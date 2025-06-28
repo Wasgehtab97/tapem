@@ -14,6 +14,7 @@ import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../widgets/device_selection_dialog.dart';
+import 'package:intl/intl.dart';
 
 class ImportPlanScreen extends StatefulWidget {
   const ImportPlanScreen({super.key});
@@ -127,7 +128,15 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     );
     for (var row in data.skip(1)) {
       final week = int.tryParse(row[weekIdx].toString()) ?? 1;
-      final day = row[dayIdx].toString();
+      final dayRaw = row[dayIdx].toString();
+      DateTime? day;
+      day = DateTime.tryParse(dayRaw);
+      if (day == null) {
+        try {
+          day = DateFormat('dd.MM.yyyy').parse(dayRaw);
+        } catch (_) {}
+      }
+      if (day == null) continue;
       final entry = ExerciseEntry(
         deviceId: '',
         exerciseId: row[headerMap['übung']!].toString(),
