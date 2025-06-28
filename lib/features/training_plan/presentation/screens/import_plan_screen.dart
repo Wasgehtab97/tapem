@@ -122,9 +122,9 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     prov.createNewPlan(
       'Import',
       userId,
-      startDate: DateTime.now(),
       weeks: 4,
-      week1Dates: [DateTime.now()],
+      // startDate and week1Dates parameters were removed from
+      // TrainingPlanProvider.createNewPlan
     );
     for (var row in data.skip(1)) {
       final week = int.tryParse(row[weekIdx].toString()) ?? 1;
