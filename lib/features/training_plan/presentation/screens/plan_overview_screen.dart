@@ -28,6 +28,14 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     }
   }
 
+  Future<void> _reload() async {
+    final gymId = context.read<AuthProvider>().gymCode;
+    final userId = context.read<AuthProvider>().userId;
+    if (gymId != null && userId != null) {
+      await context.read<TrainingPlanProvider>().loadPlans(gymId, userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,14 +52,42 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             children: [
               for (var plan in prov.plans)
                 ListTile(
-                  title: Text(plan.name),
-                  onTap: () {
+                  leading: Checkbox(
+                    value: prov.activePlanId == plan.id,
+                    onChanged: (_) => prov.setActivePlan(plan.id),
+                  ),
+                  title: Text(plan.name,
+                      style: prov.activePlanId == plan.id
+                          ? const TextStyle(fontWeight: FontWeight.bold)
+                          : null),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      final gymId = context.read<AuthProvider>().gymCode!;
+                      if (value == 'rename') {
+                        final newName = await _askRename(context, plan.name);
+                        if (newName != null) {
+                          await prov.renamePlan(gymId, plan.id, newName);
+                        }
+                      } else if (value == 'delete') {
+                        final ok = await _confirmDelete(context);
+                        if (ok) {
+                          await prov.deletePlan(gymId, plan.id);
+                        }
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
+                      PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                    ],
+                  ),
+                  onTap: () async {
                     prov.currentPlan = plan;
-                    Navigator.of(context).push(
+                    await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const PlanEditorScreen(),
                       ),
                     );
+                    if (context.mounted) await _reload();
                   },
                 ),
             ],
@@ -66,9 +102,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             icon: const Icon(Icons.upload_file),
             label: const Text('Importieren'),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ImportPlanScreen()),
-              );
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const ImportPlanScreen()))
+                  .then((_) => _reload());
             },
           ),
           const SizedBox(height: 12),
@@ -85,9 +121,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   userId,
                   weeks: cfg.weeks,
                 );
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PlanEditorScreen()),
-                );
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (_) => const PlanEditorScreen()))
+                    .then((_) => _reload());
               }
             },
           ),
@@ -144,6 +180,52 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
         ),
       ),
     );
+  }
+
+  Future<String?> _askRename(BuildContext context, String current) async {
+    final ctr = TextEditingController(text: current);
+    return showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Plan umbenennen'),
+        content: TextField(
+          controller: ctr,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(context, ctr.text.trim().isEmpty ? null : ctr.text.trim()),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Plan löschen?'),
+            content: const Text('Dieser Vorgang kann nicht rückgängig gemacht werden.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Abbrechen'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Löschen'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
 }

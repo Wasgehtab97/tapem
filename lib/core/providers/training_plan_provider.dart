@@ -156,11 +156,36 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.savePlan(gymId, currentPlan!);
+      plans = await _repo.getPlans(gymId, currentPlan!.createdBy);
     } catch (e) {
       error = 'Fehler beim Speichern: ' + e.toString();
     } finally {
       isSaving = false;
       notifyListeners();
     }
+  }
+
+  Future<void> renamePlan(
+    String gymId,
+    String planId,
+    String newName,
+  ) async {
+    await _repo.renamePlan(gymId, planId, newName);
+    final idx = plans.indexWhere((p) => p.id == planId);
+    if (idx >= 0) {
+      plans[idx] = plans[idx].copyWith(name: newName);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deletePlan(String gymId, String planId) async {
+    await _repo.deletePlan(gymId, planId);
+    plans.removeWhere((p) => p.id == planId);
+    if (activePlanId == planId) {
+      activePlanId = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('activePlanId');
+    }
+    notifyListeners();
   }
 }
