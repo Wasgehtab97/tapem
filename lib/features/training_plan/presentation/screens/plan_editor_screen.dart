@@ -90,19 +90,24 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
   }
 
   Future<DateTime?> _pickDay(BuildContext context, WeekBlock week) async {
+    if (week.days.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte zuerst einen Tag hinzufügen')),
+      );
+      return null;
+    }
     return showDialog<DateTime>(
       context: context,
-      builder:
-          (_) => SimpleDialog(
-            title: const Text('Trainingstag wählen'),
-            children: [
-              for (var d in week.days)
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, d.date),
-                  child: Text(DateFormat.yMd().add_E().format(d.date)),
-                ),
-            ],
-          ),
+      builder: (_) => SimpleDialog(
+        title: const Text('Trainingstag wählen'),
+        children: [
+          for (var d in week.days)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, d.date),
+              child: Text(DateFormat.yMd().add_E().format(d.date)),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -132,7 +137,12 @@ Future<ExerciseEntry?> showEditEntryDialog(
     text: entry?.totalSets.toString() ?? '',
   );
   final workCtr = TextEditingController(text: entry?.workSets.toString() ?? '');
-  final repsCtr = TextEditingController(text: entry?.reps.toString() ?? '');
+  final weightCtr = TextEditingController(
+    text: entry?.weight?.toString() ?? '',
+  );
+  final repsCtr = TextEditingController(
+    text: entry?.reps?.toString() ?? '',
+  );
   final rirCtr = TextEditingController(text: entry?.rir.toString() ?? '');
   final restCtr = TextEditingController(
     text: entry?.restInSeconds.toString() ?? '',
@@ -166,6 +176,11 @@ Future<ExerciseEntry?> showEditEntryDialog(
                         decoration: const InputDecoration(
                           labelText: 'Arbeitssätze',
                         ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: weightCtr,
+                        decoration: const InputDecoration(labelText: 'Gewicht (kg)'),
                         keyboardType: TextInputType.number,
                       ),
                       TextField(
@@ -207,7 +222,8 @@ Future<ExerciseEntry?> showEditEntryDialog(
                   setType: setTypeCtr.text,
                   totalSets: int.tryParse(setsCtr.text) ?? 0,
                   workSets: int.tryParse(workCtr.text) ?? 0,
-                  reps: int.tryParse(repsCtr.text) ?? 0,
+                  weight: double.tryParse(weightCtr.text),
+                  reps: int.tryParse(repsCtr.text),
                   rir: int.tryParse(rirCtr.text) ?? 0,
                   restInSeconds: int.tryParse(restCtr.text) ?? 0,
                   notes: notesCtr.text.isEmpty ? null : notesCtr.text,
@@ -243,6 +259,19 @@ class _WeekViewState extends State<_WeekView>
   }
 
   @override
+  void didUpdateWidget(covariant _WeekView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.week.days.length != widget.week.days.length) {
+      _dayController.dispose();
+      _dayController = TabController(
+        length: widget.week.days.length,
+        vsync: this,
+      );
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
     _dayController.dispose();
     super.dispose();
@@ -252,15 +281,36 @@ class _WeekViewState extends State<_WeekView>
   Widget build(BuildContext context) {
     final prov = context.read<TrainingPlanProvider>();
     final weekNumber = widget.week.weekNumber;
-    return Column(
-      children: [
-        TabBar(
-          controller: _dayController,
-          tabs: [
-            for (var d in widget.week.days)
-              Tab(text: DateFormat.Md().add_E().format(d.date))
-          ],
-        ),
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  controller: _dayController,
+                  tabs: [
+                    for (var d in widget.week.days)
+                      Tab(text: DateFormat.Md().add_E().format(d.date))
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    prov.addDay(weekNumber, picked);
+                  }
+                },
+                icon: const Icon(Icons.add),
+                tooltip: 'Tag hinzufügen',
+              ),
+            ],
+          ),
         Expanded(
           child: TabBarView(
             controller: _dayController,
@@ -278,7 +328,10 @@ class _WeekViewState extends State<_WeekView>
                               prov.removeExercise(weekNumber, day.date, index),
                       child: ListTile(
                         title: Text('${ex.exerciseId} (${ex.setType})'),
-                        subtitle: Text('${ex.reps}×${ex.workSets}'),
+                        subtitle: Text(
+                          '${ex.reps ?? '-'}×${ex.workSets}' +
+                              (ex.weight != null ? ' @ ${ex.weight}kg' : ''),
+                        ),
                         onTap: () async {
                           final updated = await showEditEntryDialog(
                             context,

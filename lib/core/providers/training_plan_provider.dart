@@ -55,30 +55,40 @@ class TrainingPlanProvider extends ChangeNotifier {
   void createNewPlan(
     String name,
     String createdBy, {
-    required DateTime startDate,
     required int weeks,
-    required List<DateTime> week1Dates,
   }) {
-    final sorted = List<DateTime>.from(week1Dates)..sort();
-    final base = sorted.isEmpty ? [startDate] : sorted;
-    final start = base.first;
-    final weekBlocks = <WeekBlock>[];
-    for (var i = 0; i < weeks; i++) {
-      final days = [
-        for (final d in base)
-          DayEntry(date: d.add(Duration(days: 7 * i)), exercises: [])
-      ];
-      weekBlocks.add(WeekBlock(weekNumber: i + 1, days: days));
-    }
+    final weekBlocks = [
+      for (var i = 0; i < weeks; i++)
+        WeekBlock(weekNumber: i + 1, days: [])
+    ];
 
     currentPlan = TrainingPlan(
       id: _uuid.v4(),
       name: name,
       createdAt: DateTime.now(),
       createdBy: createdBy,
-      startDate: start,
+      startDate: DateTime.now(),
       weeks: weekBlocks,
     );
+    notifyListeners();
+  }
+
+  void addDay(int week, DateTime date) {
+    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
+    if (w == null) return;
+    final exists = w.days.any((d) =>
+        d.date.year == date.year && d.date.month == date.month && d.date.day == date.day);
+    if (exists) return;
+    w.days.add(DayEntry(date: date, exercises: []));
+    w.days.sort((a, b) => a.date.compareTo(b.date));
+    notifyListeners();
+  }
+
+  void removeDay(int week, DateTime date) {
+    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
+    if (w == null) return;
+    w.days.removeWhere((d) =>
+        d.date.year == date.year && d.date.month == date.month && d.date.day == date.day);
     notifyListeners();
   }
 

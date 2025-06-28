@@ -83,9 +83,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                 context.read<TrainingPlanProvider>().createNewPlan(
                   cfg.name,
                   userId,
-                  startDate: cfg.startDate,
                   weeks: cfg.weeks,
-                  week1Dates: cfg.week1Dates,
                 );
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const PlanEditorScreen()),
@@ -101,7 +99,6 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
   Future<_PlanCfg?> _askConfig(BuildContext context) async {
     final nameCtr = TextEditingController();
     final weeksCtr = TextEditingController(text: '4');
-    final List<DateTime> dates = [];
 
     return showDialog<_PlanCfg>(
       context: context,
@@ -122,23 +119,6 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   decoration: const InputDecoration(labelText: 'Wochen'),
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 8),
-                for (var d in dates)
-                  Text(DateFormat.yMd().format(d)),
-                TextButton(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      setState(() => dates.add(picked));
-                    }
-                  },
-                  child: const Text('Tag hinzufügen'),
-                ),
               ],
             ),
           ),
@@ -149,13 +129,12 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (nameCtr.text.trim().isEmpty || dates.isEmpty) return;
+                if (nameCtr.text.trim().isEmpty) return;
                 Navigator.pop(
                   context,
                   _PlanCfg(
                     nameCtr.text.trim(),
                     int.tryParse(weeksCtr.text) ?? 4,
-                    dates,
                   ),
                 );
               },
@@ -172,7 +151,6 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
 class _PlanCfg {
   final String name;
   final int weeks;
-  final List<DateTime> week1Dates;
-  DateTime get startDate => week1Dates.first;
-  _PlanCfg(this.name, this.weeks, this.week1Dates);
+
+  _PlanCfg(this.name, this.weeks);
 }
