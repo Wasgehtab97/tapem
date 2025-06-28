@@ -182,6 +182,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       children: logs
                           .map((log) => ListTile(
                                 title: Text('${log.weight} kg × ${log.reps} Wdh.'),
+                                subtitle: Row(
+                                  children: [
+                                    if (log.rir != null) Text('RIR ${log.rir}'),
+                                    if (log.note != null && log.note!.isNotEmpty) ...[
+                                      if (log.rir != null) const SizedBox(width: 8),
+                                      Expanded(child: Text(log.note!)),
+                                    ],
+                                  ],
+                                ),
                               ))
                           .toList(),
                     ),
