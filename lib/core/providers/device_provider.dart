@@ -76,7 +76,13 @@ class DeviceProvider extends ChangeNotifier {
 
       // Session initialisieren
       _sets = [
-        {'number': '1', 'weight': '', 'reps': ''},
+        {
+          'number': '1',
+          'weight': '',
+          'reps': '',
+          'rir': '',
+          'note': '',
+        },
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
@@ -94,12 +100,30 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void addSet() {
-    _sets.add({'number': '${_sets.length + 1}', 'weight': '', 'reps': ''});
+    _sets.add({
+      'number': '${_sets.length + 1}',
+      'weight': '',
+      'reps': '',
+      'rir': '',
+      'note': '',
+    });
     notifyListeners();
   }
 
-  void updateSet(int index, String weight, String reps) {
-    _sets[index] = {'number': '${index + 1}', 'weight': weight, 'reps': reps};
+  void updateSet(
+    int index, {
+    String? weight,
+    String? reps,
+    String? rir,
+    String? note,
+  }) {
+    final current = Map<String, String>.from(_sets[index]);
+    if (weight != null) current['weight'] = weight;
+    if (reps != null) current['reps'] = reps;
+    if (rir != null) current['rir'] = rir;
+    if (note != null) current['note'] = note;
+    current['number'] = '${index + 1}';
+    _sets[index] = current;
     notifyListeners();
   }
 
@@ -154,7 +178,7 @@ class DeviceProvider extends ChangeNotifier {
               .doc(_device!.id)
               .collection('logs')
               .doc();
-      batch.set(logDoc, {
+      final data = <String, dynamic>{
         'userId': userId,
         'exerciseId': _currentExerciseId,
         'sessionId': sessionId,
@@ -162,7 +186,14 @@ class DeviceProvider extends ChangeNotifier {
         'weight': int.parse(set['weight']!),
         'reps': int.parse(set['reps']!),
         'note': _note,
-      });
+      };
+      if (set['rir'] != null && set['rir']!.isNotEmpty) {
+        data['rir'] = int.parse(set['rir']!);
+      }
+      if (set['note'] != null && set['note']!.isNotEmpty) {
+        data['setNote'] = set['note'];
+      }
+      batch.set(logDoc, data);
     }
 
     // User-Note schreiben
@@ -187,7 +218,13 @@ class DeviceProvider extends ChangeNotifier {
     _lastSessionDate = ts.toDate();
     _lastSessionNote = _note;
     _sets = [
-      {'number': '1', 'weight': '', 'reps': ''},
+      {
+        'number': '1',
+        'weight': '',
+        'reps': '',
+        'rir': '',
+        'note': '',
+      },
     ];
     notifyListeners();
   }
@@ -215,6 +252,8 @@ class DeviceProvider extends ChangeNotifier {
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
+      final sessSnap = await tx.get(sessionRef);
+
       if (!lbSnap.exists) {
         tx.set(lbRef, {
           'xp': 0,
@@ -222,7 +261,6 @@ class DeviceProvider extends ChangeNotifier {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
-      final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
         tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
         tx.update(lbRef, {
@@ -274,6 +312,8 @@ class DeviceProvider extends ChangeNotifier {
           'number': '${entry.key + 1}',
           'weight': '${entry.value.data()['weight']}',
           'reps': '${entry.value.data()['reps']}',
+          'rir': '${entry.value.data()['rir'] ?? ''}',
+          'note': '${entry.value.data()['setNote'] ?? ''}',
         },
     ];
     _lastSessionDate = ts;

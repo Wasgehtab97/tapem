@@ -13,6 +13,8 @@ WorkoutLogDto _$WorkoutLogDtoFromJson(Map<String, dynamic> json) =>
       timestamp: WorkoutLogDto._timestampToDate(json['timestamp'] as Timestamp),
       weight: (json['weight'] as num).toInt(),
       reps: (json['reps'] as num).toInt(),
+      rir: json['rir'] as int?,
+      note: json['setNote'] as String?,
     );
 
 Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
@@ -22,4 +24,6 @@ Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
       'timestamp': WorkoutLogDto._dateToTimestamp(instance.timestamp),
       'weight': instance.weight,
       'reps': instance.reps,
+      if (instance.rir != null) 'rir': instance.rir,
+      if (instance.note != null) 'setNote': instance.note,
     };

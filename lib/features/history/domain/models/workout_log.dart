@@ -8,6 +8,8 @@ class WorkoutLog {
   final DateTime timestamp;
   final int weight;
   final int reps;
+  final int? rir;
+  final String? note;
 
   WorkoutLog({
     required this.id,
@@ -16,5 +18,7 @@ class WorkoutLog {
     required this.timestamp,
     required this.weight,
     required this.reps,
+    this.rir,
+    this.note,
   });
 }

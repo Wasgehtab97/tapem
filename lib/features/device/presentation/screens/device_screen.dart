@@ -130,6 +130,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               const SizedBox(height: 8),
                               for (var set in prov.lastSessionSets)
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SizedBox(
                                       width: 24,
@@ -141,6 +142,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                     ),
                                     const SizedBox(width: 16),
                                     Text('${set['reps']} x'),
+                                    if (set['rir'] != null && set['rir']!.isNotEmpty) ...[
+                                      const SizedBox(width: 16),
+                                      Text('RIR ${set['rir']}'),
+                                    ],
+                                    if (set['note'] != null && set['note']!.isNotEmpty) ...[
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Text(set['note']!),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               if (prov.lastSessionNote.isNotEmpty) ...[
@@ -198,8 +209,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 onChanged: (v) {
                                   prov.updateSet(
                                     entry.key,
-                                    v,
-                                    entry.value['reps']!,
+                                    weight: v,
                                   );
                                 },
                                 validator: (v) {
@@ -225,8 +235,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 onChanged: (v) {
                                   prov.updateSet(
                                     entry.key,
-                                    entry.value['weight']!,
-                                    v,
+                                    reps: v,
                                   );
                                 },
                                 validator: (v) {
@@ -237,6 +246,40 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                     return 'Ganzzahl';
                                   }
                                   return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: entry.value['rir'],
+                                decoration: const InputDecoration(
+                                  labelText: 'RIR',
+                                  isDense: true,
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (v) {
+                                  prov.updateSet(
+                                    entry.key,
+                                    rir: v,
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                initialValue: entry.value['note'],
+                                decoration: const InputDecoration(
+                                  labelText: 'Notiz',
+                                  isDense: true,
+                                ),
+                                onChanged: (v) {
+                                  prov.updateSet(
+                                    entry.key,
+                                    note: v,
+                                  );
                                 },
                               ),
                             ),
