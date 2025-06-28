@@ -50,13 +50,18 @@ class FirestoreTrainingPlanSource {
   Future<List<DayEntry>> _loadDays(
     DocumentReference<Map<String, dynamic>> weekRef,
   ) async {
-    final daySnap = await weekRef.collection('days').orderBy('day').get();
+    final daySnap = await weekRef.collection('days').orderBy('date').get();
     final List<DayEntry> days = [];
     for (final dayDoc in daySnap.docs) {
       final exSnap = await dayDoc.reference.collection('exercises').get();
       final exercises =
           exSnap.docs.map((e) => ExerciseEntry.fromMap(e.data())).toList();
-      days.add(DayEntry(day: dayDoc.id, exercises: exercises));
+      days.add(
+        DayEntry(
+          date: (dayDoc.data()['date'] as Timestamp).toDate(),
+          exercises: exercises,
+        ),
+      );
     }
     return days;
   }
@@ -71,8 +76,10 @@ class FirestoreTrainingPlanSource {
           .doc(week.weekNumber.toString());
       await weekRef.set({'weekNumber': week.weekNumber});
       for (final day in week.days) {
-        final dayRef = weekRef.collection('days').doc(day.day);
-        await dayRef.set({'day': day.day});
+        final id =
+            '${day.date.year}-${day.date.month.toString().padLeft(2, '0')}-${day.date.day.toString().padLeft(2, '0')}';
+        final dayRef = weekRef.collection('days').doc(id);
+        await dayRef.set({'date': Timestamp.fromDate(day.date)});
         final exCol = dayRef.collection('exercises');
         for (var i = 0; i < day.exercises.length; i++) {
           final ex = day.exercises[i];

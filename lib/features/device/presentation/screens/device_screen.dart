@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/training_plan_provider.dart';
+import '../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 
@@ -151,6 +153,31 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                     ],
                     const Divider(),
+                    if (context.read<TrainingPlanProvider>().entryForDate(
+                            widget.deviceId,
+                            widget.exerciseId,
+                            DateTime.now(),
+                          ) !=
+                        null) ...[
+                      const Text(
+                        'Heute dran',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _PlannedTable(
+                        entry: context
+                            .read<TrainingPlanProvider>()
+                            .entryForDate(
+                              widget.deviceId,
+                              widget.exerciseId,
+                              DateTime.now(),
+                            )!,
+                      ),
+                      const Divider(),
+                    ],
                     const Text(
                       'Neue Session',
                       style: TextStyle(
@@ -292,6 +319,35 @@ class _DeviceScreenState extends State<DeviceScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PlannedTable extends StatelessWidget {
+  final ExerciseEntry entry;
+
+  const _PlannedTable({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Table(
+      columnWidths: const {
+        0: IntrinsicColumnWidth(),
+        1: FlexColumnWidth(),
+      },
+      children: [
+        for (var i = 0; i < entry.totalSets; i++)
+          TableRow(children: [
+            Padding(
+              padding: const EdgeInsets.all(4),
+              child: Text(entry.setType),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(4),
+              child: Text('Pause ${entry.restInSeconds}s RIR ${entry.rir}'),
+            ),
+          ])
+      ],
     );
   }
 }

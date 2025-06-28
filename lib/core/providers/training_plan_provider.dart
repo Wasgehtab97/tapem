@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
@@ -15,12 +16,27 @@ class TrainingPlanProvider extends ChangeNotifier {
 
   List<TrainingPlan> plans = [];
   TrainingPlan? currentPlan;
+  String? activePlanId;
   bool isLoading = false;
   bool isSaving = false;
   String? error;
 
   TrainingPlanProvider({TrainingPlanRepository? repo})
-    : _repo = repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource());
+    : _repo = repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
+    _loadActivePlanId();
+  }
+
+  Future<void> _loadActivePlanId() async {
+    final prefs = await SharedPreferences.getInstance();
+    activePlanId = prefs.getString('activePlanId');
+  }
+
+  Future<void> setActivePlan(String id) async {
+    activePlanId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('activePlanId', id);
+    notifyListeners();
+  }
 
   Future<void> loadPlans(String gymId, String userId) async {
     isLoading = true;
@@ -36,55 +52,93 @@ class TrainingPlanProvider extends ChangeNotifier {
     }
   }
 
-  void createNewPlan(String name, String createdBy) {
-    final weeks = [for (var i = 1; i <= 13; i++) _emptyWeek(i)];
+  void createNewPlan(
+    String name,
+    String createdBy, {
+    required DateTime startDate,
+    required int weeks,
+    required List<DateTime> week1Dates,
+  }) {
+    final sorted = List<DateTime>.from(week1Dates)..sort();
+    final base = sorted.isEmpty ? [startDate] : sorted;
+    final start = base.first;
+    final weekBlocks = <WeekBlock>[];
+    for (var i = 0; i < weeks; i++) {
+      final days = [
+        for (final d in base)
+          DayEntry(date: d.add(Duration(days: 7 * i)), exercises: [])
+      ];
+      weekBlocks.add(WeekBlock(weekNumber: i + 1, days: days));
+    }
+
     currentPlan = TrainingPlan(
       id: _uuid.v4(),
       name: name,
       createdAt: DateTime.now(),
       createdBy: createdBy,
-      weeks: weeks,
+      startDate: start,
+      weeks: weekBlocks,
     );
     notifyListeners();
   }
-
-  WeekBlock _emptyWeek(int number) {
-    return WeekBlock(
-      weekNumber: number,
-      days: [
-        DayEntry(day: 'Mo', exercises: []),
-        DayEntry(day: 'Do', exercises: []),
-      ],
-    );
   }
 
-  void addExercise(int week, String day, ExerciseEntry entry) {
+  void addExercise(int week, DateTime day, ExerciseEntry entry) {
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
-    final d = w.days.firstWhere((e) => e.day == day);
+    final d = w.days.firstWhere((e) => e.date == day);
     d.exercises.add(entry);
     notifyListeners();
   }
 
-  void updateExercise(int week, String day, int index, ExerciseEntry entry) {
+  void updateExercise(int week, DateTime day, int index, ExerciseEntry entry) {
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
-    final d = w.days.firstWhere((e) => e.day == day);
+    final d = w.days.firstWhere((e) => e.date == day);
     if (index < 0 || index >= d.exercises.length) return;
     d.exercises[index] = entry;
     notifyListeners();
   }
 
-  void removeExercise(int week, String day, int index) {
+  void removeExercise(int week, DateTime day, int index) {
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
-    final d = w.days.firstWhere((e) => e.day == day);
+    final d = w.days.firstWhere((e) => e.date == day);
     if (index < 0 || index >= d.exercises.length) return;
     d.exercises.removeAt(index);
     notifyListeners();
   }
 
   void notify() => notifyListeners();
+
+  ExerciseEntry? entryForDate(
+    String deviceId,
+    String exerciseId,
+    DateTime date,
+  ) {
+    if (activePlanId == null) return null;
+    TrainingPlan? plan;
+    try {
+      plan = plans.firstWhere((p) => p.id == activePlanId);
+    } catch (_) {
+      plan = currentPlan;
+    }
+    if (plan == null) return null;
+    for (final week in plan.weeks) {
+      for (final day in week.days) {
+        final d = DateTime(day.date.year, day.date.month, day.date.day);
+        final target = DateTime(date.year, date.month, date.day);
+        if (d == target) {
+          try {
+            return day.exercises.firstWhere(
+              (e) => e.deviceId == deviceId && e.exerciseId == exerciseId,
+            );
+          } catch (_) {}
+        }
+      }
+    }
+    return null;
+  }
 
   Future<void> saveCurrentPlan(String gymId) async {
     if (currentPlan == null) return;

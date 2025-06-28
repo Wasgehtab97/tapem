@@ -1,21 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'exercise_entry.dart';
 
 class DayEntry {
-  final String day; // z.B. 'Mo', 'Do'
+  final DateTime date;
   final List<ExerciseEntry> exercises;
 
-  DayEntry({required this.day, required List<ExerciseEntry> exercises})
+  DayEntry({required this.date, required List<ExerciseEntry> exercises})
       : exercises = List.from(exercises);
 
   factory DayEntry.fromMap(Map<String, dynamic> map) => DayEntry(
-        day: map['day'] as String? ?? '',
+        date: (map['date'] as Timestamp).toDate(),
         exercises: (map['exercises'] as List<dynamic>? ?? [])
             .map((e) => ExerciseEntry.fromMap(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toMap() => {
-        'day': day,
+        'date': Timestamp.fromDate(date),
         'exercises': exercises.map((e) => e.toMap()).toList(),
       };
 }
