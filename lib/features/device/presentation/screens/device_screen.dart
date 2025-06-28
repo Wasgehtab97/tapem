@@ -9,7 +9,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
-import '../../training_plan/domain/models/exercise_entry.dart';
+import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 
