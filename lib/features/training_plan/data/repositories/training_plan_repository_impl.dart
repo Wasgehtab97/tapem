@@ -19,4 +19,18 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
     final dto = TrainingPlanDto.fromModel(plan);
     await _source.savePlan(gymId, dto);
   }
+
+  @override
+  Future<void> renamePlan(
+    String gymId,
+    String planId,
+    String newName,
+  ) async {
+    await _source.renamePlan(gymId, planId, newName);
+  }
+
+  @override
+  Future<void> deletePlan(String gymId, String planId) async {
+    await _source.deletePlan(gymId, planId);
+  }
 }

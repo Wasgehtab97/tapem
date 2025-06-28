@@ -88,4 +88,16 @@ class FirestoreTrainingPlanSource {
       }
     }
   }
+
+  Future<void> renamePlan(
+    String gymId,
+    String planId,
+    String newName,
+  ) async {
+    await _plansCol(gymId).doc(planId).update({'name': newName});
+  }
+
+  Future<void> deletePlan(String gymId, String planId) async {
+    await _plansCol(gymId).doc(planId).delete();
+  }
 }
