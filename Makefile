@@ -20,3 +20,9 @@ push:
 	git add .
 	git commit -m "newest push"
 	git push
+
+# iOS Dev: inkrementeller Debug-Build ohne clean und Pods
+ios-dev:
+	fvm flutter pub get
+	fvm flutter gen-l10n
+	fvm flutter run -d 00008030-001E59420191802E
