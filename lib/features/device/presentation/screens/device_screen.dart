@@ -158,15 +158,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             widget.exerciseId,
                             DateTime.now(),
                           ) !=
-                        null) ...[
-                      const Text(
-                        'Heute dran',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                        null)
                       _PlannedTable(
                         entry: context
                             .read<TrainingPlanProvider>()
@@ -175,23 +167,22 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               widget.exerciseId,
                               DateTime.now(),
                             )!,
+                      )
+                    else ...[
+                      const Text(
+                        'Neue Session',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const Divider(),
-                    ],
-                    const Text(
-                      'Neue Session',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    for (var entry in prov.sets.asMap().entries)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
+                      const SizedBox(height: 8),
+                      for (var entry in prov.sets.asMap().entries)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              SizedBox(
                               width: 24,
                               child: Text(entry.value['number']!),
                             ),
@@ -267,6 +258,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     ),
                     const Divider(),
                     const RestTimerWidget(),
+                    ],
                   ],
                 ),
               ),
@@ -330,23 +322,98 @@ class _PlannedTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Table(
-      columnWidths: const {
-        0: IntrinsicColumnWidth(),
-        1: FlexColumnWidth(),
-      },
+    final prov = context.watch<DeviceProvider>();
+
+    if (prov.sets.length < entry.totalSets) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        while (prov.sets.length < entry.totalSets) {
+          prov.addSet();
+        }
+      });
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < entry.totalSets; i++)
-          TableRow(children: [
-            Padding(
-              padding: const EdgeInsets.all(4),
-              child: Text(entry.setType),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(4),
-              child: Text('Pause ${entry.restInSeconds}s RIR ${entry.rir}'),
-            ),
-          ])
+        const Text(
+          'Heute dran',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Table(
+          columnWidths: const {
+            0: IntrinsicColumnWidth(),
+            1: IntrinsicColumnWidth(),
+            2: IntrinsicColumnWidth(),
+            3: FlexColumnWidth(),
+            4: FlexColumnWidth(),
+          },
+          children: [
+            for (var i = 0; i < entry.totalSets; i++)
+              TableRow(children: [
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Text(entry.setType),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Text('${entry.restInSeconds}s'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Text('RIR ${entry.rir}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: TextFormField(
+                    initialValue: prov.sets[i]['weight'],
+                    decoration: const InputDecoration(
+                      labelText: 'kg',
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) => prov.updateSet(
+                      i,
+                      v,
+                      prov.sets[i]['reps']!,
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Gewicht?';
+                      if (double.tryParse(v) == null) return 'Zahl eingeben';
+                      return null;
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: TextFormField(
+                    initialValue: prov.sets[i]['reps'],
+                    decoration: const InputDecoration(
+                      labelText: 'x',
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) => prov.updateSet(
+                      i,
+                      prov.sets[i]['weight']!,
+                      v,
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Wdh.?';
+                      if (int.tryParse(v) == null) return 'Ganzzahl';
+                      return null;
+                    },
+                  ),
+                ),
+              ])
+          ],
+        ),
+        if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('Notiz: ${entry.notes!}'),
+        ],
+        const Divider(),
+        const RestTimerWidget(),
       ],
     );
   }
