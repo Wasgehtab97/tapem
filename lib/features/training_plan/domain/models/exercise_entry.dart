@@ -4,7 +4,8 @@ class ExerciseEntry {
   final String setType; // z.B. Warmup, Arbeits-Satz
   final int totalSets;
   final int workSets;
-  final int reps;
+  final int? reps;
+  final double? weight;
   final int rir;
   final int restInSeconds;
   final String? notes;
@@ -15,7 +16,8 @@ class ExerciseEntry {
     required this.setType,
     required this.totalSets,
     required this.workSets,
-    required this.reps,
+    this.reps,
+    this.weight,
     required this.rir,
     required this.restInSeconds,
     this.notes,
@@ -27,7 +29,8 @@ class ExerciseEntry {
     setType: map['setType'] as String? ?? '',
     totalSets: (map['totalSets'] as num?)?.toInt() ?? 0,
     workSets: (map['workSets'] as num?)?.toInt() ?? 0,
-    reps: (map['reps'] as num?)?.toInt() ?? 0,
+    reps: (map['reps'] as num?)?.toInt(),
+    weight: (map['weight'] as num?)?.toDouble(),
     rir: (map['rir'] as num?)?.toInt() ?? 0,
     restInSeconds: (map['restInSeconds'] as num?)?.toInt() ?? 0,
     notes: map['notes'] as String?,
@@ -39,7 +42,8 @@ class ExerciseEntry {
     'setType': setType,
     'totalSets': totalSets,
     'workSets': workSets,
-    'reps': reps,
+    if (reps != null) 'reps': reps,
+    if (weight != null) 'weight': weight,
     'rir': rir,
     'restInSeconds': restInSeconds,
     if (notes != null) 'notes': notes,
