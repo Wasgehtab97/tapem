@@ -81,7 +81,6 @@ class TrainingPlanProvider extends ChangeNotifier {
     );
     notifyListeners();
   }
-  }
 
   void addExercise(int week, DateTime day, ExerciseEntry entry) {
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
