@@ -417,8 +417,8 @@ class _PlannedTable extends StatelessWidget {
                     keyboardType: TextInputType.number,
                     onChanged: (v) => prov.updateSet(
                       i,
-                      v,
-                      prov.sets[i]['reps']!,
+                      weight: v,
+                      reps: prov.sets[i]['reps']!,
                     ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Gewicht?';
@@ -438,8 +438,8 @@ class _PlannedTable extends StatelessWidget {
                     keyboardType: TextInputType.number,
                     onChanged: (v) => prov.updateSet(
                       i,
-                      prov.sets[i]['weight']!,
-                      v,
+                      weight: prov.sets[i]['weight']!,
+                      reps: v,
                     ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Wdh.?';
