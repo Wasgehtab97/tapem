@@ -22,12 +22,12 @@ class TrainingPlanProvider extends ChangeNotifier {
   TrainingPlanProvider({TrainingPlanRepository? repo})
     : _repo = repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource());
 
-  Future<void> loadPlans(String gymId) async {
+  Future<void> loadPlans(String gymId, String userId) async {
     isLoading = true;
     error = null;
     notifyListeners();
     try {
-      plans = await _repo.getPlans(gymId);
+      plans = await _repo.getPlans(gymId, userId);
     } catch (e) {
       error = e.toString();
     } finally {

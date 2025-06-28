@@ -14,8 +14,11 @@ class FirestoreTrainingPlanSource {
   CollectionReference<Map<String, dynamic>> _plansCol(String gymId) =>
       _firestore.collection('gyms').doc(gymId).collection('trainingPlans');
 
-  Future<List<TrainingPlanDto>> getPlans(String gymId) async {
-    final snap = await _plansCol(gymId).orderBy('name').get();
+  Future<List<TrainingPlanDto>> getPlans(String gymId, String userId) async {
+    final snap = await _plansCol(gymId)
+        .where('createdBy', isEqualTo: userId)
+        .orderBy('name')
+        .get();
     final List<TrainingPlanDto> plans = [];
     for (final doc in snap.docs) {
       final weeks = await _loadWeeks(doc.reference);

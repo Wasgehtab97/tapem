@@ -9,8 +9,8 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
   TrainingPlanRepositoryImpl(this._source);
 
   @override
-  Future<List<TrainingPlan>> getPlans(String gymId) async {
-    final dtos = await _source.getPlans(gymId);
+  Future<List<TrainingPlan>> getPlans(String gymId, String userId) async {
+    final dtos = await _source.getPlans(gymId, userId);
     return dtos.map((d) => d.toModel()).toList();
   }
 
