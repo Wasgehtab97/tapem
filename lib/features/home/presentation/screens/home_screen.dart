@@ -12,6 +12,7 @@ import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
+import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const AdminDashboardScreen(),
       RankScreen(gymId: gymId),
       const AffiliateScreen(),
+      const PlanOverviewScreen(),
     ];
   }
 
@@ -92,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Rank'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
+          BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'Pläne'),
         ],
       ),
     );
