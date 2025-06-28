@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
 import 'plan_editor_screen.dart';
@@ -75,12 +77,15 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             icon: const Icon(Icons.add),
             label: const Text('Neu'),
             onPressed: () async {
-              final name = await _askName(context);
-              if (name != null && context.mounted) {
+              final cfg = await _askConfig(context);
+              if (cfg != null && context.mounted) {
                 final userId = context.read<AuthProvider>().userId!;
                 context.read<TrainingPlanProvider>().createNewPlan(
-                  name,
+                  cfg.name,
                   userId,
+                  startDate: cfg.startDate,
+                  weeks: cfg.weeks,
+                  week1Dates: cfg.week1Dates,
                 );
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const PlanEditorScreen()),
@@ -93,28 +98,81 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     );
   }
 
-  Future<String?> _askName(BuildContext context) async {
-    final ctr = TextEditingController();
-    return showDialog<String>(
+  Future<_PlanCfg?> _askConfig(BuildContext context) async {
+    final nameCtr = TextEditingController();
+    final weeksCtr = TextEditingController(text: '4');
+    final List<DateTime> dates = [];
+
+    return showDialog<_PlanCfg>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Planname'),
-            content: TextField(
-              controller: ctr,
-              decoration: const InputDecoration(labelText: 'Name'),
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Neuer Plan'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtr,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                TextField(
+                  controller: weeksCtr,
+                  decoration: const InputDecoration(labelText: 'Wochen'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                for (var d in dates)
+                  Text(DateFormat.yMd().format(d)),
+                TextButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() => dates.add(picked));
+                    }
+                  },
+                  child: const Text('Tag hinzufügen'),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, ctr.text.trim()),
-                child: const Text('OK'),
-              ),
-            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameCtr.text.trim().isEmpty || dates.isEmpty) return;
+                Navigator.pop(
+                  context,
+                  _PlanCfg(
+                    nameCtr.text.trim(),
+                    int.tryParse(weeksCtr.text) ?? 4,
+                    dates,
+                  ),
+                );
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
     );
   }
+
+}
+
+class _PlanCfg {
+  final String name;
+  final int weeks;
+  final List<DateTime> week1Dates;
+  DateTime get startDate => week1Dates.first;
+  _PlanCfg(this.name, this.weeks, this.week1Dates);
 }

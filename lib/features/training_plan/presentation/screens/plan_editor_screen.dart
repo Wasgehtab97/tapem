@@ -7,6 +7,7 @@ import '../../../../core/providers/exercise_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
+import 'package:intl/intl.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/week_block.dart';
 import '../widgets/device_selection_dialog.dart';
@@ -75,7 +76,7 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final week = plan.weeks[_weekController.index].weekNumber;
-          final day = await _pickDay(context);
+          final day = await _pickDay(context, plan.weeks[_weekController.index]);
           if (day == null) return;
           final entry = await showEditEntryDialog(context);
           if (entry != null) {
@@ -88,21 +89,18 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
     );
   }
 
-  Future<String?> _pickDay(BuildContext context) async {
-    return showDialog<String>(
+  Future<DateTime?> _pickDay(BuildContext context, WeekBlock week) async {
+    return showDialog<DateTime>(
       context: context,
       builder:
           (_) => SimpleDialog(
             title: const Text('Trainingstag wählen'),
             children: [
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, 'Mo'),
-                child: const Text('Montag'),
-              ),
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, 'Do'),
-                child: const Text('Donnerstag'),
-              ),
+              for (var d in week.days)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, d.date),
+                  child: Text(DateFormat.yMd().add_E().format(d.date)),
+                ),
             ],
           ),
     );
@@ -258,7 +256,10 @@ class _WeekViewState extends State<_WeekView>
       children: [
         TabBar(
           controller: _dayController,
-          tabs: [for (var d in widget.week.days) Tab(text: d.day)],
+          tabs: [
+            for (var d in widget.week.days)
+              Tab(text: DateFormat.Md().add_E().format(d.date))
+          ],
         ),
         Expanded(
           child: TabBarView(
@@ -270,11 +271,11 @@ class _WeekViewState extends State<_WeekView>
                   itemBuilder: (context, index) {
                     final ex = day.exercises[index];
                     return Dismissible(
-                      key: ValueKey('${day.day}-$index'),
+                      key: ValueKey('${day.date}-$index'),
                       background: Container(color: Colors.red),
                       onDismissed:
                           (_) =>
-                              prov.removeExercise(weekNumber, day.day, index),
+                              prov.removeExercise(weekNumber, day.date, index),
                       child: ListTile(
                         title: Text('${ex.exerciseId} (${ex.setType})'),
                         subtitle: Text('${ex.reps}×${ex.workSets}'),
@@ -286,7 +287,7 @@ class _WeekViewState extends State<_WeekView>
                           if (updated != null && mounted) {
                             prov.updateExercise(
                               weekNumber,
-                              day.day,
+                              day.date,
                               index,
                               updated,
                             );
