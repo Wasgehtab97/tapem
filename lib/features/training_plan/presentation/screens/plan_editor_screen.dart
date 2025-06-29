@@ -34,26 +34,50 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
   Widget build(BuildContext context) {
     final prov = context.watch<TrainingPlanProvider>();
     final plan = prov.currentPlan!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(plan.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: plan.startDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
-                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-              );
-              if (picked != null) {
-                final monday = picked.subtract(Duration(days: picked.weekday - 1));
-                prov.setStartDate(monday);
-              }
-            },
-          ),
-        ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(plan.name),
+          actions: [
+            IconButton(
+              icon: prov.isSaving
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check),
+              tooltip: 'Speichern',
+              onPressed: prov.isSaving
+                  ? null
+                  : () async {
+                      final gymId = context.read<AuthProvider>().gymCode!;
+                      await prov.saveCurrentPlan(gymId);
+                      if (context.mounted) {
+                        final msg = prov.error ?? 'Plan gespeichert';
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(msg)));
+                      }
+                    },
+            ),
+            IconButton(
+              icon: const Icon(Icons.calendar_today),
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: plan.startDate,
+                  firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                  lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                );
+                if (picked != null) {
+                  final monday = picked.subtract(Duration(days: picked.weekday - 1));
+                  prov.setStartDate(monday);
+                }
+              },
+            ),
+          ],
         bottom: TabBar(
           controller: _weekController,
           isScrollable: true,
@@ -63,32 +87,6 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
       body: TabBarView(
         controller: _weekController,
         children: [for (var w in plan.weeks) _WeekView(week: w)],
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton(
-          onPressed:
-              prov.isSaving
-                  ? null
-                  : () async {
-                    final gymId = context.read<AuthProvider>().gymCode!;
-                    await prov.saveCurrentPlan(gymId);
-                    if (context.mounted) {
-                      final msg = prov.error ?? 'Plan gespeichert';
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(msg)));
-                    }
-                  },
-          child:
-              prov.isSaving
-                  ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                  : const Text('Speichern'),
-        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
