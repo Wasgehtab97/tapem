@@ -322,7 +322,9 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.entry.exerciseId,
+                    widget.entry.exerciseName.isNotEmpty
+                        ? widget.entry.exerciseName
+                        : widget.entry.exerciseId,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
