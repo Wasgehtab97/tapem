@@ -36,9 +36,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
-      context.read<DeviceProvider>().loadDevice(
+      await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
@@ -46,8 +46,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
       final planProv = context.read<TrainingPlanProvider>();
       if (planProv.plans.isEmpty && !planProv.isLoading) {
-        planProv.loadPlans(widget.gymId, auth.userId!);
+        await planProv.loadPlans(widget.gymId, auth.userId!);
       }
+      if (planProv.activePlanId == null && planProv.plans.isNotEmpty) {
+        await planProv.setActivePlan(planProv.plans.first.id);
+      }
+      setState(() {});
     });
   }
 
