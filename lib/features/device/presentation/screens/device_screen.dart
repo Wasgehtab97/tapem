@@ -356,7 +356,10 @@ class _PlannedTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
 
-    if (prov.sets.length < entry.totalSets) {
+    final needsPrefill = prov.sets.any(
+      (s) => (s['reps'] ?? '').isEmpty || (s['rir'] ?? '').isEmpty,
+    );
+    if (prov.sets.length < entry.totalSets || needsPrefill) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         while (prov.sets.length < entry.totalSets) {
           prov.addSet();
@@ -390,6 +393,9 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
+                    key: ValueKey(
+                      'w-${entrySet.key}-${entrySet.value['weight']}',
+                    ),
                     initialValue: entrySet.value['weight'],
                     decoration: const InputDecoration(
                       labelText: 'kg',
@@ -402,6 +408,9 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
+                    key: ValueKey(
+                      'r-${entrySet.key}-${entrySet.value['reps']}',
+                    ),
                     initialValue: entrySet.value['reps'],
                     decoration: const InputDecoration(
                       labelText: 'x',
@@ -414,6 +423,9 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
+                    key: ValueKey(
+                      'rir-${entrySet.key}-${entrySet.value['rir']}',
+                    ),
                     initialValue: entrySet.value['rir'],
                     decoration: const InputDecoration(
                       labelText: 'RIR',
@@ -427,6 +439,9 @@ class _PlannedTable extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
+                    key: ValueKey(
+                      'n-${entrySet.key}-${entrySet.value['note']}',
+                    ),
                     initialValue: entrySet.value['note'],
                     decoration: const InputDecoration(
                       labelText: 'Notiz',
