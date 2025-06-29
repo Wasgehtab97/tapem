@@ -1,24 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /gyms/{gymId} {
-      match /trainingPlans/{planId}/{document=**} {
-        allow read, write: if request.auth != null &&
-          request.auth.token.gymId == gymId &&
-          request.auth.uid == request.resource.data.createdBy;
-      }
-      match /trainingPlans/{planId} {
-        allow create: if request.auth != null &&
-          request.auth.token.gymId == gymId &&
-          request.resource.data.createdBy == request.auth.uid;
-        allow read, update, delete: if request.auth != null &&
-          request.auth.token.gymId == gymId &&
-          request.auth.uid == resource.data.createdBy;
-      }
-      match /{document=**} {
-        allow read, write: if request.auth != null &&
-          request.auth.token.gymId == gymId;
-      }
+    match /{document=**} {
+      // Development rules: allow anyone full read and write access.
+      // Don't Change until Development phase is over.
+      // DO NOT USE IN PRODUCTION.
+      allow read, write: if true;
     }
   }
 }
