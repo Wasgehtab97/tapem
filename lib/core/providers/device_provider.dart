@@ -210,7 +210,11 @@ class DeviceProvider extends ChangeNotifier {
 
     // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
     if (!_device!.isMulti && showInLeaderboard) {
-      await _updateLeaderboard(gymId, userId, showInLeaderboard);
+      try {
+        await _updateLeaderboard(gymId, userId, showInLeaderboard);
+      } catch (e, st) {
+        debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
+      }
     }
 
     // Lokalen State zurücksetzen
