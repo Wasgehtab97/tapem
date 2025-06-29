@@ -33,7 +33,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
   if (selectedDevice?.isMulti == true) {
     exerciseFuture =
         exProv.loadExercises(gymId, selectedDevice!.id, userId).then((_) => exProv.exercises);
-    final exList = await exerciseFuture!;
+    final exList = await exerciseFuture;
     try {
       selectedExercise = exList.firstWhere((e) => e.id == entry.exerciseId);
     } catch (_) {
