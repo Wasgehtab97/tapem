@@ -44,6 +44,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
         exerciseId: widget.exerciseId,
         userId: auth.userId!,
       );
+      final planProv = context.read<TrainingPlanProvider>();
+      if (planProv.plans.isEmpty && !planProv.isLoading) {
+        planProv.loadPlans(widget.gymId, auth.userId!);
+      }
     });
   }
 
@@ -51,6 +55,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final locale = Localizations.localeOf(context).toString();
+    final planProv = context.watch<TrainingPlanProvider>();
+    final plannedEntry = planProv.entryForDate(
+      widget.deviceId,
+      widget.exerciseId,
+      DateTime.now(),
+    );
 
     if (prov.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -164,21 +174,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                     ],
                     const Divider(),
-                    if (context.read<TrainingPlanProvider>().entryForDate(
-                            widget.deviceId,
-                            widget.exerciseId,
-                            DateTime.now(),
-                          ) !=
-                        null)
-                      _PlannedTable(
-                        entry: context
-                            .read<TrainingPlanProvider>()
-                            .entryForDate(
-                              widget.deviceId,
-                              widget.exerciseId,
-                              DateTime.now(),
-                            )!,
-                      )
+                    if (plannedEntry != null)
+                      _PlannedTable(entry: plannedEntry)
                     else ...[
                       const Text(
                         'Neue Session',
