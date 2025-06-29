@@ -108,6 +108,7 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
             final base = ExerciseEntry(
               deviceId: '',
               exerciseId: '',
+              exerciseName: '',
               setType: '',
               totalSets: 0,
               workSets: 0,
@@ -294,6 +295,7 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
       ExerciseEntry(
         deviceId: widget.entry.deviceId,
         exerciseId: widget.entry.exerciseId,
+        exerciseName: widget.entry.exerciseName,
         setType: '',
         totalSets: int.tryParse(_setsCtr.text) ?? 0,
         workSets: int.tryParse(_setsCtr.text) ?? 0,

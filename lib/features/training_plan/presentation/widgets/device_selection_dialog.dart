@@ -112,6 +112,9 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                       selectedDevice!.isMulti
                           ? (selectedExercise?.id ?? '')
                           : selectedDevice!.id,
+                  exerciseName: selectedDevice!.isMulti
+                      ? (selectedExercise?.name ?? selectedDevice!.name)
+                      : selectedDevice!.name,
                   setType: entry.setType,
                   totalSets: entry.totalSets,
                   workSets: entry.workSets,

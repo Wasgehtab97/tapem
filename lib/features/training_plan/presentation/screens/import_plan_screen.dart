@@ -135,6 +135,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       final entry = ExerciseEntry(
         deviceId: '',
         exerciseId: row[headerMap['übung']!].toString(),
+        exerciseName: row[headerMap['übung']!].toString(),
         setType: row[headerMap['art des satzes']!].toString(),
         totalSets:
             int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
