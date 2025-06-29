@@ -19,12 +19,13 @@ class FirestoreTrainingPlanSource {
         .where('createdBy', isEqualTo: userId)
         .orderBy('name')
         .get();
-    final List<TrainingPlanDto> plans = [];
-    for (final doc in snap.docs) {
-      final weeks = await _loadWeeks(doc.reference);
-      plans.add(TrainingPlanDto.fromDoc(doc, weeks: weeks));
-    }
-    return plans;
+    final futures = [
+      for (final doc in snap.docs)
+        _loadWeeks(doc.reference).then(
+          (weeks) => TrainingPlanDto.fromDoc(doc, weeks: weeks),
+        )
+    ];
+    return Future.wait(futures);
   }
 
   Future<List<WeekBlock>> _loadWeeks(
@@ -32,38 +33,36 @@ class FirestoreTrainingPlanSource {
   ) async {
     final weekSnap =
         await planRef.collection('weeks').orderBy('weekNumber').get();
-    final List<WeekBlock> weeks = [];
-    for (final weekDoc in weekSnap.docs) {
-      final days = await _loadDays(weekDoc.reference);
-      weeks.add(
-        WeekBlock(
-          weekNumber:
-              (weekDoc.data()['weekNumber'] as num?)?.toInt() ??
-              int.parse(weekDoc.id),
-          days: days,
-        ),
-      );
-    }
-    return weeks;
+    final futures = [
+      for (final weekDoc in weekSnap.docs)
+        _loadDays(weekDoc.reference).then(
+          (days) => WeekBlock(
+            weekNumber:
+                (weekDoc.data()['weekNumber'] as num?)?.toInt() ??
+                int.parse(weekDoc.id),
+            days: days,
+          ),
+        )
+    ];
+    return Future.wait(futures);
   }
 
   Future<List<DayEntry>> _loadDays(
     DocumentReference<Map<String, dynamic>> weekRef,
   ) async {
     final daySnap = await weekRef.collection('days').orderBy('date').get();
-    final List<DayEntry> days = [];
-    for (final dayDoc in daySnap.docs) {
-      final exSnap = await dayDoc.reference.collection('exercises').get();
-      final exercises =
-          exSnap.docs.map((e) => ExerciseEntry.fromMap(e.data())).toList();
-      days.add(
-        DayEntry(
-          date: (dayDoc.data()['date'] as Timestamp).toDate(),
-          exercises: exercises,
-        ),
-      );
-    }
-    return days;
+    final futures = [
+      for (final dayDoc in daySnap.docs)
+        dayDoc.reference.collection('exercises').get().then((exSnap) {
+          final exercises =
+              exSnap.docs.map((e) => ExerciseEntry.fromMap(e.data())).toList();
+          return DayEntry(
+            date: (dayDoc.data()['date'] as Timestamp).toDate(),
+            exercises: exercises,
+          );
+        })
+    ];
+    return Future.wait(futures);
   }
 
   Future<void> savePlan(String gymId, TrainingPlanDto plan) async {

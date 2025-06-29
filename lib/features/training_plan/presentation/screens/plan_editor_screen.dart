@@ -300,10 +300,10 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
         totalSets: int.tryParse(_setsCtr.text) ?? 0,
         workSets: int.tryParse(_setsCtr.text) ?? 0,
         reps: int.tryParse(_repsCtr.text),
-        weight: null,
-        rir: int.tryParse(_rirCtr.text) ?? 0,
+        weight: widget.entry.weight,
+        rir: int.tryParse(_rirCtr.text) ?? widget.entry.rir,
         restInSeconds: widget.entry.restInSeconds,
-        notes: null,
+        notes: widget.entry.notes,
         sets: widget.entry.sets,
       ),
     );
