@@ -296,15 +296,15 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
         deviceId: widget.entry.deviceId,
         exerciseId: widget.entry.exerciseId,
         exerciseName: widget.entry.exerciseName,
-        setType: '',
+        setType: widget.entry.setType,
         totalSets: int.tryParse(_setsCtr.text) ?? 0,
         workSets: int.tryParse(_setsCtr.text) ?? 0,
         reps: int.tryParse(_repsCtr.text),
         weight: null,
         rir: int.tryParse(_rirCtr.text) ?? 0,
-        restInSeconds: 0,
+        restInSeconds: widget.entry.restInSeconds,
         notes: null,
-        sets: const [],
+        sets: widget.entry.sets,
       ),
     );
   }
