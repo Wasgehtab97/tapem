@@ -383,73 +383,86 @@ class _PlannedTable extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        Table(
-          columnWidths: const {
-            0: IntrinsicColumnWidth(),
-            1: IntrinsicColumnWidth(),
-            2: IntrinsicColumnWidth(),
-            3: FlexColumnWidth(),
-            4: FlexColumnWidth(),
-          },
-          children: [
-            for (var i = 0; i < entry.totalSets; i++)
-              TableRow(children: [
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Text(entry.setType),
+        for (final entrySet in prov.sets.asMap().entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Text(entrySet.value['number']!),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Text('${entry.restInSeconds}s'),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Text('RIR ${entry.rir}'),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(4),
+                const SizedBox(width: 12),
+                Expanded(
                   child: TextFormField(
-                    initialValue: prov.sets[i]['weight'],
+                    initialValue: entrySet.value['weight'],
                     decoration: const InputDecoration(
                       labelText: 'kg',
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (v) => prov.updateSet(
-                      i,
+                      entrySet.key,
                       weight: v,
-                      reps: prov.sets[i]['reps']!,
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Gewicht?';
-                      if (double.tryParse(v) == null) return 'Zahl eingeben';
-                      return null;
-                    },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(4),
+                const SizedBox(width: 12),
+                Expanded(
                   child: TextFormField(
-                    initialValue: prov.sets[i]['reps'],
+                    initialValue: entrySet.value['reps'],
                     decoration: const InputDecoration(
                       labelText: 'x',
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (v) => prov.updateSet(
-                      i,
-                      weight: prov.sets[i]['weight']!,
+                      entrySet.key,
                       reps: v,
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Wdh.?';
-                      if (int.tryParse(v) == null) return 'Ganzzahl';
-                      return null;
-                    },
                   ),
                 ),
-              ])
-          ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    initialValue: entrySet.value['rir'],
+                    decoration: const InputDecoration(
+                      labelText: 'RIR',
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) => prov.updateSet(
+                      entrySet.key,
+                      rir: v,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    initialValue: entrySet.value['note'],
+                    decoration: const InputDecoration(
+                      labelText: 'Notiz',
+                      isDense: true,
+                    ),
+                    onChanged: (v) => prov.updateSet(
+                      entrySet.key,
+                      note: v,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => prov.removeSet(entrySet.key),
+                ),
+              ],
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () => prov.addSet(),
+          icon: const Icon(Icons.add),
+          label: const Text('Set hinzufügen'),
         ),
         if (entry.notes != null && entry.notes!.isNotEmpty) ...[
           const SizedBox(height: 8),
