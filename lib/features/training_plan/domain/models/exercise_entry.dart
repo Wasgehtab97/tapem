@@ -3,6 +3,7 @@ import 'planned_set.dart';
 class ExerciseEntry {
   final String deviceId;
   final String exerciseId;
+  final String exerciseName;
   final String setType; // z.B. Warmup, Arbeits-Satz
   final int totalSets;
   final int workSets;
@@ -16,6 +17,7 @@ class ExerciseEntry {
   ExerciseEntry({
     required this.deviceId,
     required this.exerciseId,
+    required this.exerciseName,
     required this.setType,
     required this.totalSets,
     required this.workSets,
@@ -30,6 +32,7 @@ class ExerciseEntry {
   factory ExerciseEntry.fromMap(Map<String, dynamic> map) => ExerciseEntry(
     deviceId: map['deviceId'] as String,
     exerciseId: map['exerciseId'] as String,
+    exerciseName: map['exerciseName'] as String? ?? '',
     setType: map['setType'] as String? ?? '',
     totalSets: (map['totalSets'] as num?)?.toInt() ?? 0,
     workSets: (map['workSets'] as num?)?.toInt() ?? 0,
@@ -46,6 +49,7 @@ class ExerciseEntry {
   Map<String, dynamic> toMap() => {
     'deviceId': deviceId,
     'exerciseId': exerciseId,
+    'exerciseName': exerciseName,
     'setType': setType,
     'totalSets': totalSets,
     'workSets': workSets,
