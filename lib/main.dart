@@ -2,7 +2,8 @@
 // ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform, kIsWeb;
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -182,10 +183,10 @@ class MyApp extends StatelessWidget {
     final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
 
-    final child =
-        Platform.isAndroid
-            ? GlobalNfcListener(child: _buildApp(theme, locale))
-            : _buildApp(theme, locale);
+    final child = (!kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.android)
+        ? GlobalNfcListener(child: _buildApp(theme, locale))
+        : _buildApp(theme, locale);
 
     return child;
   }
