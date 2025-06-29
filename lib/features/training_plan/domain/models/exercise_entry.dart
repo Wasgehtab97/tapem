@@ -1,3 +1,5 @@
+import 'planned_set.dart';
+
 class ExerciseEntry {
   final String deviceId;
   final String exerciseId;
@@ -9,6 +11,7 @@ class ExerciseEntry {
   final int rir;
   final int restInSeconds;
   final String? notes;
+  final List<PlannedSet> sets;
 
   ExerciseEntry({
     required this.deviceId,
@@ -21,7 +24,8 @@ class ExerciseEntry {
     required this.rir,
     required this.restInSeconds,
     this.notes,
-  });
+    List<PlannedSet>? sets,
+  }) : sets = List.from(sets ?? []);
 
   factory ExerciseEntry.fromMap(Map<String, dynamic> map) => ExerciseEntry(
     deviceId: map['deviceId'] as String,
@@ -34,6 +38,9 @@ class ExerciseEntry {
     rir: (map['rir'] as num?)?.toInt() ?? 0,
     restInSeconds: (map['restInSeconds'] as num?)?.toInt() ?? 0,
     notes: map['notes'] as String?,
+    sets: (map['sets'] as List<dynamic>? ?? [])
+        .map((e) => PlannedSet.fromMap(e as Map<String, dynamic>))
+        .toList(),
   );
 
   Map<String, dynamic> toMap() => {
@@ -47,5 +54,6 @@ class ExerciseEntry {
     'rir': rir,
     'restInSeconds': restInSeconds,
     if (notes != null) 'notes': notes,
+    'sets': sets.map((s) => s.toMap()).toList(),
   };
 }
