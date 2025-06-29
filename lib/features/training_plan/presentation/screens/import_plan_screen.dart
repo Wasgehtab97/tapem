@@ -13,6 +13,7 @@ import '../../../../core/providers/exercise_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
+import '../../domain/models/planned_set.dart';
 import '../widgets/device_selection_dialog.dart';
 import 'package:intl/intl.dart';
 
@@ -119,11 +120,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     final repsIdx = headerMap['reps']!;
     final prov = context.read<TrainingPlanProvider>();
     final userId = context.read<AuthProvider>().userId!;
-    prov.createNewPlan(
-      'Import',
-      userId,
-      weeks: 4,
-    );
+    prov.createNewPlan('Import', userId, weeks: 4);
     for (var row in data.skip(1)) {
       final week = int.tryParse(row[weekIdx].toString()) ?? 1;
       final dayRaw = row[dayIdx].toString();
@@ -152,15 +149,18 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                 : '',
         sets: [
           PlannedSet(
-            weight: headerMap.containsKey('gewicht')
-                ? double.tryParse(row[headerMap['gewicht']!].toString()) ?? 0
-                : 0,
+            weight:
+                headerMap.containsKey('gewicht')
+                    ? double.tryParse(row[headerMap['gewicht']!].toString()) ??
+                        0
+                    : 0,
             reps: int.tryParse(row[repsIdx].toString()) ?? 0,
             rir: int.tryParse(row[headerMap['rir']!].toString()),
-            note: headerMap.containsKey('setnotiz')
-                ? row[headerMap['setnotiz']!].toString()
-                : null,
-          )
+            note:
+                headerMap.containsKey('setnotiz')
+                    ? row[headerMap['setnotiz']!].toString()
+                    : null,
+          ),
         ],
       );
       prov.addExercise(week, day, entry);

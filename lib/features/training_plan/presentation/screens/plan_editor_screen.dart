@@ -42,25 +42,28 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
           title: Text(plan.name),
           actions: [
             IconButton(
-              icon: prov.isSaving
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check),
+              icon:
+                  prov.isSaving
+                      ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.check),
               tooltip: 'Speichern',
-              onPressed: prov.isSaving
-                  ? null
-                  : () async {
-                      final gymId = context.read<AuthProvider>().gymCode!;
-                      await prov.saveCurrentPlan(gymId);
-                      if (context.mounted) {
-                        final msg = prov.error ?? 'Plan gespeichert';
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(msg)));
-                      }
-                    },
+              onPressed:
+                  prov.isSaving
+                      ? null
+                      : () async {
+                        final gymId = context.read<AuthProvider>().gymCode!;
+                        await prov.saveCurrentPlan(gymId);
+                        if (context.mounted) {
+                          final msg = prov.error ?? 'Plan gespeichert';
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(msg)));
+                        }
+                      },
             ),
             IconButton(
               icon: const Icon(Icons.calendar_today),
@@ -68,48 +71,58 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: plan.startDate,
-                  firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                  firstDate: DateTime.now().subtract(
+                    const Duration(days: 365 * 5),
+                  ),
                   lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                 );
                 if (picked != null) {
-                  final monday = picked.subtract(Duration(days: picked.weekday - 1));
+                  final monday = picked.subtract(
+                    Duration(days: picked.weekday - 1),
+                  );
                   prov.setStartDate(monday);
                 }
               },
             ),
           ],
-        bottom: TabBar(
-          controller: _weekController,
-          isScrollable: true,
-          tabs: [for (var w in plan.weeks) Tab(text: 'Woche ${w.weekNumber}')],
+          bottom: TabBar(
+            controller: _weekController,
+            isScrollable: true,
+            tabs: [
+              for (var w in plan.weeks) Tab(text: 'Woche ${w.weekNumber}'),
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _weekController,
-        children: [for (var w in plan.weeks) _WeekView(week: w)],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final week = plan.weeks[_weekController.index].weekNumber;
-          final day = await _pickDay(context, plan.weeks[_weekController.index]);
-          if (day == null) return;
-          final base = ExerciseEntry(
-            deviceId: '',
-            exerciseId: '',
-            setType: '',
-            totalSets: 0,
-            workSets: 0,
-            reps: 0,
-            rir: 0,
-            restInSeconds: 0,
-          );
-          final entry = await showDeviceSelectionDialog(context, base);
-          if (entry != null) {
-            prov.addExercise(week, day, entry);
-          }
-        },
-        label: const Text('Übung hinzufügen'),
-        icon: const Icon(Icons.add),
+        body: TabBarView(
+          controller: _weekController,
+          children: [for (var w in plan.weeks) _WeekView(week: w)],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () async {
+            final week = plan.weeks[_weekController.index].weekNumber;
+            final day = await _pickDay(
+              context,
+              plan.weeks[_weekController.index],
+            );
+            if (day == null) return;
+            final base = ExerciseEntry(
+              deviceId: '',
+              exerciseId: '',
+              setType: '',
+              totalSets: 0,
+              workSets: 0,
+              reps: 0,
+              rir: 0,
+              restInSeconds: 0,
+            );
+            final entry = await showDeviceSelectionDialog(context, base);
+            if (entry != null) {
+              prov.addExercise(week, day, entry);
+            }
+          },
+          label: const Text('Übung hinzufügen'),
+          icon: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -123,20 +136,20 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
     }
     return showDialog<DateTime>(
       context: context,
-      builder: (_) => SimpleDialog(
-        title: const Text('Trainingstag wählen'),
-        children: [
-          for (var d in week.days)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, d.date),
-              child: Text(DateFormat.yMd().add_E().format(d.date)),
-            ),
-        ],
-      ),
+      builder:
+          (_) => SimpleDialog(
+            title: const Text('Trainingstag wählen'),
+            children: [
+              for (var d in week.days)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, d.date),
+                  child: Text(DateFormat.yMd().add_E().format(d.date)),
+                ),
+            ],
+          ),
     );
   }
 }
-
 
 class _WeekView extends StatefulWidget {
   final WeekBlock week;
@@ -177,19 +190,19 @@ class _WeekViewState extends State<_WeekView>
     final prov = context.read<TrainingPlanProvider>();
     final weekNumber = widget.week.weekNumber;
     return Column(
-        children: [
-          TabBar(
-            controller: _dayController,
-            tabs: const [
-              Tab(text: 'Mo'),
-              Tab(text: 'Di'),
-              Tab(text: 'Mi'),
-              Tab(text: 'Do'),
-              Tab(text: 'Fr'),
-              Tab(text: 'Sa'),
-              Tab(text: 'So'),
-            ],
-          ),
+      children: [
+        TabBar(
+          controller: _dayController,
+          tabs: const [
+            Tab(text: 'Mo'),
+            Tab(text: 'Di'),
+            Tab(text: 'Mi'),
+            Tab(text: 'Do'),
+            Tab(text: 'Fr'),
+            Tab(text: 'Sa'),
+            Tab(text: 'So'),
+          ],
+        ),
         Expanded(
           child: TabBarView(
             controller: _dayController,
@@ -202,16 +215,18 @@ class _WeekViewState extends State<_WeekView>
                     return Dismissible(
                       key: ValueKey('${day.date}-$index'),
                       background: Container(color: Colors.red),
-                      onDismissed: (_) =>
-                          prov.removeExercise(weekNumber, day.date, index),
+                      onDismissed:
+                          (_) =>
+                              prov.removeExercise(weekNumber, day.date, index),
                       child: _PlanEntryEditor(
                         entry: ex,
-                        onChanged: (updated) => prov.updateExercise(
-                          weekNumber,
-                          day.date,
-                          index,
-                          updated,
-                        ),
+                        onChanged:
+                            (updated) => prov.updateExercise(
+                              weekNumber,
+                              day.date,
+                              index,
+                              updated,
+                            ),
                         onSelectDevice: () async {
                           final updated = await showDeviceSelectionDialog(
                             context,
@@ -362,5 +377,3 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
     );
   }
 }
-
-
