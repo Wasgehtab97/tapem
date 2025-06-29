@@ -25,8 +25,8 @@ class _GymScreenState extends State<GymScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = context.read<AuthProvider>();
-      final gymProv  = context.read<GymProvider>();
-      final gymCode  = authProv.gymCode;
+      final gymProv = context.read<GymProvider>();
+      final gymCode = authProv.gymCode;
       if (gymCode != null && gymCode.isNotEmpty) {
         gymProv.loadGymData(gymCode);
       }
@@ -35,15 +35,18 @@ class _GymScreenState extends State<GymScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc      = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
     final authProv = context.read<AuthProvider>();
-    final gymProv  = context.watch<GymProvider>();
-    final gymCode  = authProv.gymCode!;
+    final gymProv = context.watch<GymProvider>();
+    final gymCode = authProv.gymCode!;
 
     final appBar = AppBar(title: Text(loc.gymTitle));
 
     if (gymProv.isLoading) {
-      return Scaffold(appBar: appBar, body: const Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: appBar,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (gymProv.error != null) {
       return Scaffold(
@@ -54,15 +57,19 @@ class _GymScreenState extends State<GymScreen> {
 
     final devices = gymProv.devices;
     if (devices.isEmpty) {
-      return Scaffold(appBar: appBar, body: Center(child: Text(loc.gymNoDevices)));
+      return Scaffold(
+        appBar: appBar,
+        body: Center(child: Text(loc.gymNoDevices)),
+      );
     }
 
     // Filtert Geräte nach Name und Beschreibung
-    final filteredDevices = devices.where((device) {
-      final q = _searchQuery.toLowerCase();
-      return device.name.toLowerCase().contains(q) ||
-             device.description.toLowerCase().contains(q);
-    }).toList();
+    final filteredDevices =
+        devices.where((device) {
+          final q = _searchQuery.toLowerCase();
+          return device.name.toLowerCase().contains(q) ||
+              device.description.toLowerCase().contains(q);
+        }).toList();
 
     return Scaffold(
       appBar: appBar,
@@ -85,28 +92,37 @@ class _GymScreenState extends State<GymScreen> {
 
           // Liste oder Hinweis, wenn keine Treffer
           Expanded(
-            child: filteredDevices.isEmpty
-                ? const Center(child: Text('Keine passenden Geräte gefunden'))
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    itemCount: filteredDevices.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) {
-                      final device = filteredDevices[i];
-                      return DeviceCard(
-                        device: device,
-                        onTap: () {
-                          final args = {
-                            'gymId': gymCode,
-                            'deviceId': device.id,
-                            // Bei Single-Geräten entspricht exerciseId der deviceId
-                            'exerciseId': device.isMulti ? device.id : device.id,
-                          };
-                          Navigator.of(ctx).pushNamed(AppRouter.device, arguments: args);
-                        },
-                      );
-                    },
-                  ),
+            child:
+                filteredDevices.isEmpty
+                    ? const Center(
+                      child: Text('Keine passenden Geräte gefunden'),
+                    )
+                    : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      itemCount: filteredDevices.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (ctx, i) {
+                        final device = filteredDevices[i];
+                        return DeviceCard(
+                          device: device,
+                          onTap: () {
+                            final args = {
+                              'gymId': gymCode,
+                              'deviceId': device.id,
+                              // Bei Single-Geräten entspricht exerciseId der deviceId
+                              'exerciseId':
+                                  device.isMulti ? device.id : device.id,
+                            };
+                            Navigator.of(
+                              ctx,
+                            ).pushNamed(AppRouter.device, arguments: args);
+                          },
+                        );
+                      },
+                    ),
           ),
         ],
       ),

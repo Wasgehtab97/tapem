@@ -25,4 +25,4 @@ push:
 ios-dev:
 	fvm flutter pub get
 	fvm flutter gen-l10n
-	fvm flutter run -d 00008030-001E59420191802E
+	fvm flutter run -v -d 00008030-001E59420191802E

@@ -31,8 +31,9 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
   }
 
   if (selectedDevice?.isMulti == true) {
-    exerciseFuture =
-        exProv.loadExercises(gymId, selectedDevice!.id, userId).then((_) => exProv.exercises);
+    exerciseFuture = exProv
+        .loadExercises(gymId, selectedDevice!.id, userId)
+        .then((_) => exProv.exercises);
     final exList = await exerciseFuture;
     try {
       selectedExercise = exList.firstWhere((e) => e.id == entry.exerciseId);
@@ -66,7 +67,11 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                           selectedExercise = null;
                           if (selectedDevice?.isMulti == true) {
                             exerciseFuture = exProv
-                                .loadExercises(gymId, selectedDevice!.id, userId)
+                                .loadExercises(
+                                  gymId,
+                                  selectedDevice!.id,
+                                  userId,
+                                )
                                 .then((_) => exProv.exercises);
                           } else {
                             exerciseFuture = null;
@@ -112,9 +117,10 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                       selectedDevice!.isMulti
                           ? (selectedExercise?.id ?? '')
                           : selectedDevice!.id,
-                  exerciseName: selectedDevice!.isMulti
-                      ? (selectedExercise?.name ?? selectedDevice!.name)
-                      : selectedDevice!.name,
+                  exerciseName:
+                      selectedDevice!.isMulti
+                          ? (selectedExercise?.name ?? selectedDevice!.name)
+                          : selectedDevice!.name,
                   setType: entry.setType,
                   totalSets: entry.totalSets,
                   workSets: entry.workSets,

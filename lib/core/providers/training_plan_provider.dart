@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-
 import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
@@ -13,7 +12,6 @@ import 'package:tapem/features/training_plan/domain/repositories/training_plan_r
 class TrainingPlanProvider extends ChangeNotifier {
   final TrainingPlanRepository _repo;
   final Uuid _uuid = const Uuid();
-
   List<TrainingPlan> plans = [];
   TrainingPlan? currentPlan;
   String? activePlanId;
@@ -22,7 +20,8 @@ class TrainingPlanProvider extends ChangeNotifier {
   String? error;
 
   TrainingPlanProvider({TrainingPlanRepository? repo})
-    : _repo = repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
+    : _repo =
+          repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
     _loadActivePlanId();
   }
 
@@ -40,27 +39,30 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   Future<void> loadPlans(String gymId, String userId) async {
+    debugPrint('📥 TrainingPlanProvider.loadPlans gymId=$gymId userId=$userId');
     isLoading = true;
     error = null;
     notifyListeners();
     try {
       plans = await _repo.getPlans(gymId, userId);
-    } catch (e) {
+      debugPrint('ℹ️ Loaded ${plans.length} plans');
+    } catch (e, st) {
       error = e.toString();
+      debugPrintStack(label: 'loadPlans failed', stackTrace: st);
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  void createNewPlan(
-    String name,
-    String createdBy, {
-    required int weeks,
-  }) {
+  void createNewPlan(String name, String createdBy, {required int weeks}) {
+    debugPrint('➕ createNewPlan name=$name weeks=$weeks');
     final now = DateTime.now();
-    final monday = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
     final weekBlocks = [
       for (var i = 0; i < weeks; i++)
         WeekBlock(
@@ -70,9 +72,9 @@ class TrainingPlanProvider extends ChangeNotifier {
               DayEntry(
                 date: monday.add(Duration(days: i * 7 + d)),
                 exercises: [],
-              )
+              ),
           ],
-        )
+        ),
     ];
 
     currentPlan = TrainingPlan(
@@ -83,12 +85,14 @@ class TrainingPlanProvider extends ChangeNotifier {
       startDate: monday,
       weeks: weekBlocks,
     );
+    debugPrint('✅ Created plan ${currentPlan!.id}');
     notifyListeners();
   }
 
   void setStartDate(DateTime monday) {
     final plan = currentPlan;
     if (plan == null) return;
+    debugPrint('🗓 setStartDate $monday for plan ${plan.id}');
     for (final week in plan.weeks) {
       for (var i = 0; i < week.days.length; i++) {
         final day = week.days[i];
@@ -103,10 +107,15 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   void addDay(int week, DateTime date) {
+    debugPrint('➕ addDay week=$week date=$date');
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
-    final exists = w.days.any((d) =>
-        d.date.year == date.year && d.date.month == date.month && d.date.day == date.day);
+    final exists = w.days.any(
+      (d) =>
+          d.date.year == date.year &&
+          d.date.month == date.month &&
+          d.date.day == date.day,
+    );
     if (exists) return;
     w.days.add(DayEntry(date: date, exercises: []));
     w.days.sort((a, b) => a.date.compareTo(b.date));
@@ -114,14 +123,20 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   void removeDay(int week, DateTime date) {
+    debugPrint('➖ removeDay week=$week date=$date');
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
-    w.days.removeWhere((d) =>
-        d.date.year == date.year && d.date.month == date.month && d.date.day == date.day);
+    w.days.removeWhere(
+      (d) =>
+          d.date.year == date.year &&
+          d.date.month == date.month &&
+          d.date.day == date.day,
+    );
     notifyListeners();
   }
 
   void addExercise(int week, DateTime day, ExerciseEntry entry) {
+    debugPrint('➕ addExercise week=$week day=$day ex=${entry.exerciseName}');
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
     final d = w.days.firstWhere((e) => e.date == day);
@@ -130,6 +145,7 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   void updateExercise(int week, DateTime day, int index, ExerciseEntry entry) {
+    debugPrint('✏️ updateExercise week=$week day=$day index=$index');
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
     final d = w.days.firstWhere((e) => e.date == day);
@@ -139,6 +155,7 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   void removeExercise(int week, DateTime day, int index) {
+    debugPrint('🗑 removeExercise week=$week day=$day index=$index');
     final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
     if (w == null) return;
     final d = w.days.firstWhere((e) => e.date == day);
@@ -154,6 +171,9 @@ class TrainingPlanProvider extends ChangeNotifier {
     String exerciseId,
     DateTime date,
   ) {
+    debugPrint(
+      '🔎 entryForDate device=$deviceId exercise=$exerciseId date=$date',
+    );
     if (activePlanId == null) return null;
     TrainingPlan? plan;
     try {
@@ -180,25 +200,25 @@ class TrainingPlanProvider extends ChangeNotifier {
 
   Future<void> saveCurrentPlan(String gymId) async {
     if (currentPlan == null) return;
+    debugPrint('💾 saveCurrentPlan plan=${currentPlan!.id} gymId=$gymId');
     isSaving = true;
     error = null;
     notifyListeners();
     try {
       await _repo.savePlan(gymId, currentPlan!);
+      debugPrint('✅ Plan saved');
       plans = await _repo.getPlans(gymId, currentPlan!.createdBy);
     } catch (e) {
       error = 'Fehler beim Speichern: ' + e.toString();
+      debugPrint('❌ saveCurrentPlan failed: $e');
     } finally {
       isSaving = false;
       notifyListeners();
     }
   }
 
-  Future<void> renamePlan(
-    String gymId,
-    String planId,
-    String newName,
-  ) async {
+  Future<void> renamePlan(String gymId, String planId, String newName) async {
+    debugPrint('✏️ renamePlan id=$planId newName=$newName');
     await _repo.renamePlan(gymId, planId, newName);
     final idx = plans.indexWhere((p) => p.id == planId);
     if (idx >= 0) {
@@ -208,6 +228,7 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   Future<void> deletePlan(String gymId, String planId) async {
+    debugPrint('🗑 deletePlan $planId');
     await _repo.deletePlan(gymId, planId);
     plans.removeWhere((p) => p.id == planId);
     if (activePlanId == planId) {
