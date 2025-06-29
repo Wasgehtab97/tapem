@@ -29,6 +29,7 @@ class TrainingPlanProvider extends ChangeNotifier {
   Future<void> _loadActivePlanId() async {
     final prefs = await SharedPreferences.getInstance();
     activePlanId = prefs.getString('activePlanId');
+    notifyListeners();
   }
 
   Future<void> setActivePlan(String id) async {
