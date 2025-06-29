@@ -91,6 +91,7 @@ coverage/
 lcov.info
 *.out
 *.html
+!site/*.html
 
 # ==================================================
 # Obfuscation / symbolication
