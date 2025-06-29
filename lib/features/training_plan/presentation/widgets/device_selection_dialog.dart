@@ -21,6 +21,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
 
   Device? selectedDevice;
   Exercise? selectedExercise;
+  Future<List<Exercise>>? exerciseFuture;
 
   // Vorbelegung basierend auf vorhandenem Eintrag
   try {
@@ -30,8 +31,9 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
   }
 
   if (selectedDevice?.isMulti == true) {
-    await exProv.loadExercises(gymId, selectedDevice!.id, userId);
-    final exList = exProv.exercises;
+    exerciseFuture =
+        exProv.loadExercises(gymId, selectedDevice!.id, userId).then((_) => exProv.exercises);
+    final exList = await exerciseFuture!;
     try {
       selectedExercise = exList.firstWhere((e) => e.id == entry.exerciseId);
     } catch (_) {
@@ -62,14 +64,19 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                         setState(() {
                           selectedDevice = d;
                           selectedExercise = null;
+                          if (selectedDevice?.isMulti == true) {
+                            exerciseFuture = exProv
+                                .loadExercises(gymId, selectedDevice!.id, userId)
+                                .then((_) => exProv.exercises);
+                          } else {
+                            exerciseFuture = null;
+                          }
                         });
                       },
                     ),
                     if (selectedDevice?.isMulti == true)
                       FutureBuilder<List<Exercise>>(
-                        future: exProv
-                            .loadExercises(gymId, selectedDevice!.id, userId)
-                            .then((_) => exProv.exercises),
+                        future: exerciseFuture,
                         builder: (ctx, snapshot) {
                           final exList = snapshot.data ?? [];
                           return DropdownButton<Exercise>(
