@@ -112,6 +112,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                   rir: entry.rir,
                   restInSeconds: entry.restInSeconds,
                   notes: entry.notes,
+                  sets: entry.sets,
                 );
                 Navigator.pop(context, result);
               },

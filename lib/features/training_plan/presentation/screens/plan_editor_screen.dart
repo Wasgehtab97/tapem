@@ -138,10 +138,7 @@ class _WeekViewState extends State<_WeekView>
   @override
   void initState() {
     super.initState();
-    _dayController = TabController(
-      length: widget.week.days.length,
-      vsync: this,
-    );
+    _dayController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -149,10 +146,7 @@ class _WeekViewState extends State<_WeekView>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.week.days.length != widget.week.days.length) {
       _dayController.dispose();
-      _dayController = TabController(
-        length: widget.week.days.length,
-        vsync: this,
-      );
+      _dayController = TabController(length: 7, vsync: this);
       setState(() {});
     }
   }
@@ -167,34 +161,18 @@ class _WeekViewState extends State<_WeekView>
   Widget build(BuildContext context) {
     final prov = context.read<TrainingPlanProvider>();
     final weekNumber = widget.week.weekNumber;
-      return Column(
+    return Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TabBar(
-                  controller: _dayController,
-                  tabs: [
-                    for (var d in widget.week.days)
-                      Tab(text: DateFormat.Md().add_E().format(d.date))
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) {
-                    prov.addDay(weekNumber, picked);
-                  }
-                },
-                icon: const Icon(Icons.add),
-                tooltip: 'Tag hinzufügen',
-              ),
+          TabBar(
+            controller: _dayController,
+            tabs: const [
+              Tab(text: 'Mo'),
+              Tab(text: 'Di'),
+              Tab(text: 'Mi'),
+              Tab(text: 'Do'),
+              Tab(text: 'Fr'),
+              Tab(text: 'Sa'),
+              Tab(text: 'So'),
             ],
           ),
         Expanded(
@@ -262,58 +240,71 @@ class _PlanEntryEditor extends StatefulWidget {
 
 class _PlanEntryEditorState extends State<_PlanEntryEditor> {
   late TextEditingController _setTypeCtr;
-  late TextEditingController _setsCtr;
-  late TextEditingController _workCtr;
-  late TextEditingController _weightCtr;
-  late TextEditingController _repsCtr;
-  late TextEditingController _rirCtr;
   late TextEditingController _restCtr;
   late TextEditingController _notesCtr;
+  late List<_SetControllers> _setCtrs;
 
   @override
   void initState() {
     super.initState();
     _setTypeCtr = TextEditingController(text: widget.entry.setType);
-    _setsCtr =
-        TextEditingController(text: widget.entry.totalSets.toString());
-    _workCtr =
-        TextEditingController(text: widget.entry.workSets.toString());
-    _weightCtr =
-        TextEditingController(text: widget.entry.weight?.toString() ?? '');
-    _repsCtr =
-        TextEditingController(text: widget.entry.reps?.toString() ?? '');
-    _rirCtr = TextEditingController(text: widget.entry.rir.toString());
     _restCtr =
         TextEditingController(text: widget.entry.restInSeconds.toString());
     _notesCtr = TextEditingController(text: widget.entry.notes ?? '');
+    _setCtrs = [
+      if (widget.entry.sets.isNotEmpty)
+        for (var s in widget.entry.sets)
+          _SetControllers(
+            weight: s.weight.toString(),
+            reps: s.reps.toString(),
+            rir: s.rir?.toString() ?? '',
+            note: s.note ?? '',
+          )
+      else
+        _SetControllers(
+          weight: widget.entry.weight?.toString() ?? '',
+          reps: widget.entry.reps?.toString() ?? '',
+          rir: widget.entry.rir.toString(),
+          note: '',
+        ),
+    ];
   }
 
   @override
   void dispose() {
     _setTypeCtr.dispose();
-    _setsCtr.dispose();
-    _workCtr.dispose();
-    _weightCtr.dispose();
-    _repsCtr.dispose();
-    _rirCtr.dispose();
     _restCtr.dispose();
     _notesCtr.dispose();
+    for (final ctr in _setCtrs) {
+      ctr.dispose();
+    }
     super.dispose();
   }
 
   void _emitUpdate() {
+    final sets = [
+      for (final ctr in _setCtrs)
+        PlannedSet(
+          weight: double.tryParse(ctr.weight.text) ?? 0,
+          reps: int.tryParse(ctr.reps.text) ?? 0,
+          rir: int.tryParse(ctr.rir.text),
+          note: ctr.note.text.isEmpty ? null : ctr.note.text,
+        )
+    ];
+
     widget.onChanged(
       ExerciseEntry(
         deviceId: widget.entry.deviceId,
         exerciseId: widget.entry.exerciseId,
         setType: _setTypeCtr.text,
-        totalSets: int.tryParse(_setsCtr.text) ?? 0,
-        workSets: int.tryParse(_workCtr.text) ?? 0,
-        weight: double.tryParse(_weightCtr.text),
-        reps: int.tryParse(_repsCtr.text),
-        rir: int.tryParse(_rirCtr.text) ?? 0,
+        totalSets: sets.length,
+        workSets: sets.length,
+        reps: sets.isNotEmpty ? sets.first.reps : null,
+        weight: sets.isNotEmpty ? sets.first.weight : null,
+        rir: sets.isNotEmpty ? (sets.first.rir ?? 0) : 0,
         restInSeconds: int.tryParse(_restCtr.text) ?? 0,
         notes: _notesCtr.text.isEmpty ? null : _notesCtr.text,
+        sets: sets,
       ),
     );
   }
@@ -343,108 +334,113 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
               ],
             ),
             const SizedBox(height: 4),
-            Table(
-              columnWidths: const {
-                0: IntrinsicColumnWidth(),
-                1: IntrinsicColumnWidth(),
-                2: IntrinsicColumnWidth(),
-                3: FlexColumnWidth(),
-                4: FlexColumnWidth(),
-              },
+            Row(
               children: [
-                TableRow(children: [
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _setTypeCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'Satzart',
-                        isDense: true,
-                      ),
-                      onChanged: (_) => _emitUpdate(),
+                Expanded(
+                  child: TextFormField(
+                    controller: _setTypeCtr,
+                    decoration: const InputDecoration(
+                      labelText: 'Satzart',
+                      isDense: true,
                     ),
+                    onChanged: (_) => _emitUpdate(),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _setsCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'Sätze',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _restCtr,
+                    decoration: const InputDecoration(
+                      labelText: 'Pause (s)',
+                      isDense: true,
                     ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _emitUpdate(),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _rirCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'RIR',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _restCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'Pause (s)',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
-                    ),
-                  ),
-                  const SizedBox.shrink(),
-                ]),
-                TableRow(children: [
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _weightCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'kg',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _repsCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'x',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: TextFormField(
-                      controller: _workCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'Arbeitssätze',
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _emitUpdate(),
-                    ),
-                  ),
-                  const SizedBox.shrink(),
-                  const SizedBox.shrink(),
-                ]),
+                ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
+            for (final entry in _setCtrs.asMap().entries)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: Text('${entry.key + 1}'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: entry.value.weight,
+                        decoration: const InputDecoration(
+                          labelText: 'kg',
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => _emitUpdate(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: entry.value.reps,
+                        decoration: const InputDecoration(
+                          labelText: 'x',
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => _emitUpdate(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: entry.value.rir,
+                        decoration: const InputDecoration(
+                          labelText: 'RIR',
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => _emitUpdate(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: entry.value.note,
+                        decoration: const InputDecoration(
+                          labelText: 'Notiz',
+                          isDense: true,
+                        ),
+                        onChanged: (_) => _emitUpdate(),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        setState(() {
+                          _setCtrs.removeAt(entry.key);
+                        });
+                        _emitUpdate();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _setCtrs.add(_SetControllers());
+                });
+                _emitUpdate();
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Set hinzufügen'),
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _notesCtr,
               decoration: const InputDecoration(
@@ -459,3 +455,23 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
     );
   }
 }
+
+class _SetControllers {
+  final TextEditingController weight;
+  final TextEditingController reps;
+  final TextEditingController rir;
+  final TextEditingController note;
+  _SetControllers({String weight = "", String reps = "", String rir = "", String note = ""})
+      : weight = TextEditingController(text: weight),
+        reps = TextEditingController(text: reps),
+        rir = TextEditingController(text: rir),
+        note = TextEditingController(text: note);
+  void dispose() {
+    weight.dispose();
+    reps.dispose();
+    rir.dispose();
+    note.dispose();
+  }
+}
+
+

@@ -57,9 +57,20 @@ class TrainingPlanProvider extends ChangeNotifier {
     String createdBy, {
     required int weeks,
   }) {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
     final weekBlocks = [
       for (var i = 0; i < weeks; i++)
-        WeekBlock(weekNumber: i + 1, days: [])
+        WeekBlock(
+          weekNumber: i + 1,
+          days: [
+            for (var d = 0; d < 7; d++)
+              DayEntry(
+                date: monday.add(Duration(days: i * 7 + d)),
+                exercises: [],
+              )
+          ],
+        )
     ];
 
     currentPlan = TrainingPlan(
