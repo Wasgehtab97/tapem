@@ -37,6 +37,23 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(plan.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: plan.startDate,
+                firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+              );
+              if (picked != null) {
+                final monday = picked.subtract(Duration(days: picked.weekday - 1));
+                prov.setStartDate(monday);
+              }
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _weekController,
           isScrollable: true,
@@ -239,72 +256,40 @@ class _PlanEntryEditor extends StatefulWidget {
 }
 
 class _PlanEntryEditorState extends State<_PlanEntryEditor> {
-  late TextEditingController _setTypeCtr;
-  late TextEditingController _restCtr;
-  late TextEditingController _notesCtr;
-  late List<_SetControllers> _setCtrs;
+  late TextEditingController _setsCtr;
+  late TextEditingController _repsCtr;
+  late TextEditingController _rirCtr;
 
   @override
   void initState() {
     super.initState();
-    _setTypeCtr = TextEditingController(text: widget.entry.setType);
-    _restCtr =
-        TextEditingController(text: widget.entry.restInSeconds.toString());
-    _notesCtr = TextEditingController(text: widget.entry.notes ?? '');
-    _setCtrs = [
-      if (widget.entry.sets.isNotEmpty)
-        for (var s in widget.entry.sets)
-          _SetControllers(
-            weight: s.weight.toString(),
-            reps: s.reps.toString(),
-            rir: s.rir?.toString() ?? '',
-            note: s.note ?? '',
-          )
-      else
-        _SetControllers(
-          weight: widget.entry.weight?.toString() ?? '',
-          reps: widget.entry.reps?.toString() ?? '',
-          rir: widget.entry.rir.toString(),
-          note: '',
-        ),
-    ];
+    _setsCtr = TextEditingController(text: widget.entry.workSets.toString());
+    _repsCtr = TextEditingController(text: widget.entry.reps?.toString() ?? '');
+    _rirCtr = TextEditingController(text: widget.entry.rir.toString());
   }
 
   @override
   void dispose() {
-    _setTypeCtr.dispose();
-    _restCtr.dispose();
-    _notesCtr.dispose();
-    for (final ctr in _setCtrs) {
-      ctr.dispose();
-    }
+    _setsCtr.dispose();
+    _repsCtr.dispose();
+    _rirCtr.dispose();
     super.dispose();
   }
 
   void _emitUpdate() {
-    final sets = [
-      for (final ctr in _setCtrs)
-        PlannedSet(
-          weight: double.tryParse(ctr.weight.text) ?? 0,
-          reps: int.tryParse(ctr.reps.text) ?? 0,
-          rir: int.tryParse(ctr.rir.text),
-          note: ctr.note.text.isEmpty ? null : ctr.note.text,
-        )
-    ];
-
     widget.onChanged(
       ExerciseEntry(
         deviceId: widget.entry.deviceId,
         exerciseId: widget.entry.exerciseId,
-        setType: _setTypeCtr.text,
-        totalSets: sets.length,
-        workSets: sets.length,
-        reps: sets.isNotEmpty ? sets.first.reps : null,
-        weight: sets.isNotEmpty ? sets.first.weight : null,
-        rir: sets.isNotEmpty ? (sets.first.rir ?? 0) : 0,
-        restInSeconds: int.tryParse(_restCtr.text) ?? 0,
-        notes: _notesCtr.text.isEmpty ? null : _notesCtr.text,
-        sets: sets,
+        setType: '',
+        totalSets: int.tryParse(_setsCtr.text) ?? 0,
+        workSets: int.tryParse(_setsCtr.text) ?? 0,
+        reps: int.tryParse(_repsCtr.text),
+        weight: null,
+        rir: int.tryParse(_rirCtr.text) ?? 0,
+        restInSeconds: 0,
+        notes: null,
+        sets: const [],
       ),
     );
   }
@@ -338,20 +323,33 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _setTypeCtr,
+                    controller: _setsCtr,
                     decoration: const InputDecoration(
-                      labelText: 'Satzart',
+                      labelText: 'Arbeitssätze',
                       isDense: true,
                     ),
+                    keyboardType: TextInputType.number,
                     onChanged: (_) => _emitUpdate(),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    controller: _restCtr,
+                    controller: _repsCtr,
                     decoration: const InputDecoration(
-                      labelText: 'Pause (s)',
+                      labelText: 'Wdh',
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _emitUpdate(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _rirCtr,
+                    decoration: const InputDecoration(
+                      labelText: 'RIR',
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -360,117 +358,10 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            for (final entry in _setCtrs.asMap().entries)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      child: Text('${entry.key + 1}'),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: entry.value.weight,
-                        decoration: const InputDecoration(
-                          labelText: 'kg',
-                          isDense: true,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) => _emitUpdate(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: entry.value.reps,
-                        decoration: const InputDecoration(
-                          labelText: 'x',
-                          isDense: true,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) => _emitUpdate(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: entry.value.rir,
-                        decoration: const InputDecoration(
-                          labelText: 'RIR',
-                          isDense: true,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) => _emitUpdate(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: entry.value.note,
-                        decoration: const InputDecoration(
-                          labelText: 'Notiz',
-                          isDense: true,
-                        ),
-                        onChanged: (_) => _emitUpdate(),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        setState(() {
-                          _setCtrs.removeAt(entry.key);
-                        });
-                        _emitUpdate();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _setCtrs.add(_SetControllers());
-                });
-                _emitUpdate();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Set hinzufügen'),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _notesCtr,
-              decoration: const InputDecoration(
-                labelText: 'Notiz',
-                isDense: true,
-              ),
-              onChanged: (_) => _emitUpdate(),
-            ),
           ],
         ),
       ),
     );
-  }
-}
-
-class _SetControllers {
-  final TextEditingController weight;
-  final TextEditingController reps;
-  final TextEditingController rir;
-  final TextEditingController note;
-  _SetControllers({String weight = "", String reps = "", String rir = "", String note = ""})
-      : weight = TextEditingController(text: weight),
-        reps = TextEditingController(text: reps),
-        rir = TextEditingController(text: rir),
-        note = TextEditingController(text: note);
-  void dispose() {
-    weight.dispose();
-    reps.dispose();
-    rir.dispose();
-    note.dispose();
   }
 }
 

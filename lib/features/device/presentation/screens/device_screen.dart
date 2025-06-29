@@ -372,6 +372,15 @@ class _PlannedTable extends StatelessWidget {
         while (prov.sets.length < entry.totalSets) {
           prov.addSet();
         }
+        for (var i = 0; i < prov.sets.length; i++) {
+          final set = prov.sets[i];
+          if ((set['reps'] ?? '').isEmpty) {
+            prov.updateSet(i, reps: entry.reps?.toString() ?? '');
+          }
+          if ((set['rir'] ?? '').isEmpty) {
+            prov.updateSet(i, rir: entry.rir.toString());
+          }
+        }
       });
     }
 

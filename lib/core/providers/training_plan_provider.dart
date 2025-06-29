@@ -58,7 +58,8 @@ class TrainingPlanProvider extends ChangeNotifier {
     required int weeks,
   }) {
     final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final monday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
     final weekBlocks = [
       for (var i = 0; i < weeks; i++)
         WeekBlock(
@@ -78,9 +79,25 @@ class TrainingPlanProvider extends ChangeNotifier {
       name: name,
       createdAt: DateTime.now(),
       createdBy: createdBy,
-      startDate: DateTime.now(),
+      startDate: monday,
       weeks: weekBlocks,
     );
+    notifyListeners();
+  }
+
+  void setStartDate(DateTime monday) {
+    final plan = currentPlan;
+    if (plan == null) return;
+    for (final week in plan.weeks) {
+      for (var i = 0; i < week.days.length; i++) {
+        final day = week.days[i];
+        week.days[i] = DayEntry(
+          date: monday.add(Duration(days: (week.weekNumber - 1) * 7 + i)),
+          exercises: day.exercises,
+        );
+      }
+    }
+    currentPlan = plan.copyWith(startDate: monday);
     notifyListeners();
   }
 
