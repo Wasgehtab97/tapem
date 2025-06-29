@@ -78,7 +78,17 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
           final week = plan.weeks[_weekController.index].weekNumber;
           final day = await _pickDay(context, plan.weeks[_weekController.index]);
           if (day == null) return;
-          final entry = await showEditEntryDialog(context);
+          final base = ExerciseEntry(
+            deviceId: '',
+            exerciseId: '',
+            setType: '',
+            totalSets: 0,
+            workSets: 0,
+            reps: 0,
+            rir: 0,
+            restInSeconds: 0,
+          );
+          final entry = await showDeviceSelectionDialog(context, base);
           if (entry != null) {
             prov.addExercise(week, day, entry);
           }
@@ -112,130 +122,6 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
   }
 }
 
-Future<ExerciseEntry?> showEditEntryDialog(
-  BuildContext context, {
-  ExerciseEntry? entry,
-}) async {
-  final base =
-      entry ??
-      ExerciseEntry(
-        deviceId: '',
-        exerciseId: '',
-        setType: '',
-        totalSets: 0,
-        workSets: 0,
-        reps: 0,
-        rir: 0,
-        restInSeconds: 0,
-      );
-  final selected = await showDeviceSelectionDialog(context, base);
-  if (selected == null) return null;
-  final selectedDeviceId = selected.deviceId;
-  final selectedExerciseId = selected.exerciseId;
-  final setTypeCtr = TextEditingController(text: entry?.setType ?? '');
-  final setsCtr = TextEditingController(
-    text: entry?.totalSets.toString() ?? '',
-  );
-  final workCtr = TextEditingController(text: entry?.workSets.toString() ?? '');
-  final weightCtr = TextEditingController(
-    text: entry?.weight?.toString() ?? '',
-  );
-  final repsCtr = TextEditingController(
-    text: entry?.reps?.toString() ?? '',
-  );
-  final rirCtr = TextEditingController(text: entry?.rir.toString() ?? '');
-  final restCtr = TextEditingController(
-    text: entry?.restInSeconds.toString() ?? '',
-  );
-  final notesCtr = TextEditingController(text: entry?.notes ?? '');
-
-  return showDialog<ExerciseEntry>(
-    context: context,
-    builder:
-        (_) => AlertDialog(
-          title: Text(entry == null ? 'Übung hinzufügen' : 'Übung bearbeiten'),
-          content: StatefulBuilder(
-            builder:
-                (ctx, setState) => SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: setTypeCtr,
-                        decoration: const InputDecoration(labelText: 'Satzart'),
-                      ),
-                      TextField(
-                        controller: setsCtr,
-                        decoration: const InputDecoration(
-                          labelText: 'Gesamt-Sätze',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: workCtr,
-                        decoration: const InputDecoration(
-                          labelText: 'Arbeitssätze',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: weightCtr,
-                        decoration: const InputDecoration(labelText: 'Gewicht (kg)'),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: repsCtr,
-                        decoration: const InputDecoration(labelText: 'Wdh'),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: rirCtr,
-                        decoration: const InputDecoration(labelText: 'RIR'),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: restCtr,
-                        decoration: const InputDecoration(
-                          labelText: 'Pause (s)',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: notesCtr,
-                        decoration: const InputDecoration(labelText: 'Notiz'),
-                      ),
-                    ],
-                  ),
-                ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (selectedDeviceId.isEmpty) return;
-                final entryRes = ExerciseEntry(
-                  deviceId: selectedDeviceId,
-                  exerciseId: selectedExerciseId,
-                  setType: setTypeCtr.text,
-                  totalSets: int.tryParse(setsCtr.text) ?? 0,
-                  workSets: int.tryParse(workCtr.text) ?? 0,
-                  weight: double.tryParse(weightCtr.text),
-                  reps: int.tryParse(repsCtr.text),
-                  rir: int.tryParse(rirCtr.text) ?? 0,
-                  restInSeconds: int.tryParse(restCtr.text) ?? 0,
-                  notes: notesCtr.text.isEmpty ? null : notesCtr.text,
-                );
-                Navigator.pop(context, entryRes);
-              },
-              child: const Text('Speichern'),
-            ),
-          ],
-        ),
-  );
-}
 
 class _WeekView extends StatefulWidget {
   final WeekBlock week;
@@ -323,21 +209,22 @@ class _WeekViewState extends State<_WeekView>
                     return Dismissible(
                       key: ValueKey('${day.date}-$index'),
                       background: Container(color: Colors.red),
-                      onDismissed:
-                          (_) =>
-                              prov.removeExercise(weekNumber, day.date, index),
-                      child: ListTile(
-                        title: Text('${ex.exerciseId} (${ex.setType})'),
-                        subtitle: Text(
-                          '${ex.reps ?? '-'}×${ex.workSets}' +
-                              (ex.weight != null ? ' @ ${ex.weight}kg' : ''),
+                      onDismissed: (_) =>
+                          prov.removeExercise(weekNumber, day.date, index),
+                      child: _PlanEntryEditor(
+                        entry: ex,
+                        onChanged: (updated) => prov.updateExercise(
+                          weekNumber,
+                          day.date,
+                          index,
+                          updated,
                         ),
-                        onTap: () async {
-                          final updated = await showEditEntryDialog(
+                        onSelectDevice: () async {
+                          final updated = await showDeviceSelectionDialog(
                             context,
-                            entry: ex,
+                            ex,
                           );
-                          if (updated != null && mounted) {
+                          if (updated != null) {
                             prov.updateExercise(
                               weekNumber,
                               day.date,
@@ -354,6 +241,221 @@ class _WeekViewState extends State<_WeekView>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PlanEntryEditor extends StatefulWidget {
+  final ExerciseEntry entry;
+  final ValueChanged<ExerciseEntry> onChanged;
+  final VoidCallback onSelectDevice;
+
+  const _PlanEntryEditor({
+    required this.entry,
+    required this.onChanged,
+    required this.onSelectDevice,
+  });
+
+  @override
+  State<_PlanEntryEditor> createState() => _PlanEntryEditorState();
+}
+
+class _PlanEntryEditorState extends State<_PlanEntryEditor> {
+  late TextEditingController _setTypeCtr;
+  late TextEditingController _setsCtr;
+  late TextEditingController _workCtr;
+  late TextEditingController _weightCtr;
+  late TextEditingController _repsCtr;
+  late TextEditingController _rirCtr;
+  late TextEditingController _restCtr;
+  late TextEditingController _notesCtr;
+
+  @override
+  void initState() {
+    super.initState();
+    _setTypeCtr = TextEditingController(text: widget.entry.setType);
+    _setsCtr =
+        TextEditingController(text: widget.entry.totalSets.toString());
+    _workCtr =
+        TextEditingController(text: widget.entry.workSets.toString());
+    _weightCtr =
+        TextEditingController(text: widget.entry.weight?.toString() ?? '');
+    _repsCtr =
+        TextEditingController(text: widget.entry.reps?.toString() ?? '');
+    _rirCtr = TextEditingController(text: widget.entry.rir.toString());
+    _restCtr =
+        TextEditingController(text: widget.entry.restInSeconds.toString());
+    _notesCtr = TextEditingController(text: widget.entry.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _setTypeCtr.dispose();
+    _setsCtr.dispose();
+    _workCtr.dispose();
+    _weightCtr.dispose();
+    _repsCtr.dispose();
+    _rirCtr.dispose();
+    _restCtr.dispose();
+    _notesCtr.dispose();
+    super.dispose();
+  }
+
+  void _emitUpdate() {
+    widget.onChanged(
+      ExerciseEntry(
+        deviceId: widget.entry.deviceId,
+        exerciseId: widget.entry.exerciseId,
+        setType: _setTypeCtr.text,
+        totalSets: int.tryParse(_setsCtr.text) ?? 0,
+        workSets: int.tryParse(_workCtr.text) ?? 0,
+        weight: double.tryParse(_weightCtr.text),
+        reps: int.tryParse(_repsCtr.text),
+        rir: int.tryParse(_rirCtr.text) ?? 0,
+        restInSeconds: int.tryParse(_restCtr.text) ?? 0,
+        notes: _notesCtr.text.isEmpty ? null : _notesCtr.text,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.entry.exerciseId,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  onPressed: widget.onSelectDevice,
+                  icon: const Icon(Icons.edit),
+                  tooltip: 'Gerät ändern',
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Table(
+              columnWidths: const {
+                0: IntrinsicColumnWidth(),
+                1: IntrinsicColumnWidth(),
+                2: IntrinsicColumnWidth(),
+                3: FlexColumnWidth(),
+                4: FlexColumnWidth(),
+              },
+              children: [
+                TableRow(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _setTypeCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'Satzart',
+                        isDense: true,
+                      ),
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _setsCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'Sätze',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _rirCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'RIR',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _restCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'Pause (s)',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  const SizedBox.shrink(),
+                ]),
+                TableRow(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _weightCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'kg',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _repsCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'x',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: TextFormField(
+                      controller: _workCtr,
+                      decoration: const InputDecoration(
+                        labelText: 'Arbeitssätze',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _emitUpdate(),
+                    ),
+                  ),
+                  const SizedBox.shrink(),
+                  const SizedBox.shrink(),
+                ]),
+              ],
+            ),
+            const SizedBox(height: 4),
+            TextFormField(
+              controller: _notesCtr,
+              decoration: const InputDecoration(
+                labelText: 'Notiz',
+                isDense: true,
+              ),
+              onChanged: (_) => _emitUpdate(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
