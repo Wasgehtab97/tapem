@@ -74,16 +74,24 @@ class FirestoreTrainingPlanSource {
       final weekRef = planRef
           .collection('weeks')
           .doc(week.weekNumber.toString());
-      await weekRef.set({'weekNumber': week.weekNumber});
+      await weekRef.set({
+        'weekNumber': week.weekNumber,
+        'createdBy': plan.createdBy,
+      });
       for (final day in week.days) {
         final id =
             '${day.date.year}-${day.date.month.toString().padLeft(2, '0')}-${day.date.day.toString().padLeft(2, '0')}';
         final dayRef = weekRef.collection('days').doc(id);
-        await dayRef.set({'date': Timestamp.fromDate(day.date)});
+        await dayRef.set({
+          'date': Timestamp.fromDate(day.date),
+          'createdBy': plan.createdBy,
+        });
         final exCol = dayRef.collection('exercises');
         for (var i = 0; i < day.exercises.length; i++) {
           final ex = day.exercises[i];
-          await exCol.doc('$i').set(ex.toMap());
+          final data = ex.toMap();
+          data['createdBy'] = plan.createdBy;
+          await exCol.doc('$i').set(data);
         }
       }
     }
