@@ -44,6 +44,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
         exerciseId: widget.exerciseId,
         userId: auth.userId!,
       );
+      final planProv = context.read<TrainingPlanProvider>();
+      if (planProv.plans.isEmpty && !planProv.isLoading) {
+        planProv.loadPlans(widget.gymId, auth.userId!);
+      }
     });
   }
 
@@ -142,15 +146,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                     ),
                                     const SizedBox(width: 16),
                                     Text('${set['reps']} x'),
-                                    if (set['rir'] != null && set['rir']!.isNotEmpty) ...[
+                                    if (set['rir'] != null &&
+                                        set['rir']!.isNotEmpty) ...[
                                       const SizedBox(width: 16),
                                       Text('RIR ${set['rir']}'),
                                     ],
-                                    if (set['note'] != null && set['note']!.isNotEmpty) ...[
+                                    if (set['note'] != null &&
+                                        set['note']!.isNotEmpty) ...[
                                       const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Text(set['note']!),
-                                      ),
+                                      Expanded(child: Text(set['note']!)),
                                     ],
                                   ],
                                 ),
@@ -165,15 +169,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     ],
                     const Divider(),
                     if (context.read<TrainingPlanProvider>().entryForDate(
-                            widget.deviceId,
-                            widget.exerciseId,
-                            DateTime.now(),
-                          ) !=
+                          widget.deviceId,
+                          widget.exerciseId,
+                          DateTime.now(),
+                        ) !=
                         null)
                       _PlannedTable(
-                        entry: context
-                            .read<TrainingPlanProvider>()
-                            .entryForDate(
+                        entry:
+                            context.read<TrainingPlanProvider>().entryForDate(
                               widget.deviceId,
                               widget.exerciseId,
                               DateTime.now(),
@@ -194,113 +197,101 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           child: Row(
                             children: [
                               SizedBox(
-                              width: 24,
-                              child: Text(entry.value['number']!),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: entry.value['weight'],
-                                decoration: const InputDecoration(
-                                  labelText: 'kg',
-                                  isDense: true,
+                                width: 24,
+                                child: Text(entry.value['number']!),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: entry.value['weight'],
+                                  decoration: const InputDecoration(
+                                    labelText: 'kg',
+                                    isDense: true,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (v) {
+                                    prov.updateSet(entry.key, weight: v);
+                                  },
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) {
+                                      return 'Gewicht?';
+                                    }
+                                    if (double.tryParse(v) == null) {
+                                      return 'Zahl eingeben';
+                                    }
+                                    return null;
+                                  },
                                 ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) {
-                                  prov.updateSet(
-                                    entry.key,
-                                    weight: v,
-                                  );
-                                },
-                                validator: (v) {
-                                  if (v == null || v.isEmpty) {
-                                    return 'Gewicht?';
-                                  }
-                                  if (double.tryParse(v) == null) {
-                                    return 'Zahl eingeben';
-                                  }
-                                  return null;
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: entry.value['reps'],
+                                  decoration: const InputDecoration(
+                                    labelText: 'x',
+                                    isDense: true,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (v) {
+                                    prov.updateSet(entry.key, reps: v);
+                                  },
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) {
+                                      return 'Wdh.?';
+                                    }
+                                    if (int.tryParse(v) == null) {
+                                      return 'Ganzzahl';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: entry.value['rir'],
+                                  decoration: const InputDecoration(
+                                    labelText: 'RIR',
+                                    isDense: true,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (v) {
+                                    prov.updateSet(entry.key, rir: v);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: TextFormField(
+                                  initialValue: entry.value['note'],
+                                  decoration: const InputDecoration(
+                                    labelText: 'Notiz',
+                                    isDense: true,
+                                  ),
+                                  onChanged: (v) {
+                                    prov.updateSet(entry.key, note: v);
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () {
+                                  prov.removeSet(entry.key);
                                 },
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: entry.value['reps'],
-                                decoration: const InputDecoration(
-                                  labelText: 'x',
-                                  isDense: true,
-                                ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) {
-                                  prov.updateSet(
-                                    entry.key,
-                                    reps: v,
-                                  );
-                                },
-                                validator: (v) {
-                                  if (v == null || v.isEmpty) {
-                                    return 'Wdh.?';
-                                  }
-                                  if (int.tryParse(v) == null) {
-                                    return 'Ganzzahl';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: entry.value['rir'],
-                                decoration: const InputDecoration(
-                                  labelText: 'RIR',
-                                  isDense: true,
-                                ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) {
-                                  prov.updateSet(
-                                    entry.key,
-                                    rir: v,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                initialValue: entry.value['note'],
-                                decoration: const InputDecoration(
-                                  labelText: 'Notiz',
-                                  isDense: true,
-                                ),
-                                onChanged: (v) {
-                                  prov.updateSet(
-                                    entry.key,
-                                    note: v,
-                                  );
-                                },
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () {
-                                prov.removeSet(entry.key);
-                              },
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                      TextButton.icon(
+                        onPressed: () {
+                          prov.addSet();
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Set hinzufügen'),
                       ),
-                    TextButton.icon(
-                      onPressed: () {
-                        prov.addSet();
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Set hinzufügen'),
-                    ),
-                    const Divider(),
-                    const RestTimerWidget(),
+                      const Divider(),
+                      const RestTimerWidget(),
                     ],
                   ],
                 ),
@@ -397,10 +388,7 @@ class _PlannedTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                SizedBox(
-                  width: 24,
-                  child: Text(entrySet.value['number']!),
-                ),
+                SizedBox(width: 24, child: Text(entrySet.value['number']!)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
@@ -410,10 +398,7 @@ class _PlannedTable extends StatelessWidget {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) => prov.updateSet(
-                      entrySet.key,
-                      weight: v,
-                    ),
+                    onChanged: (v) => prov.updateSet(entrySet.key, weight: v),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -425,10 +410,7 @@ class _PlannedTable extends StatelessWidget {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) => prov.updateSet(
-                      entrySet.key,
-                      reps: v,
-                    ),
+                    onChanged: (v) => prov.updateSet(entrySet.key, reps: v),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -440,10 +422,7 @@ class _PlannedTable extends StatelessWidget {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) => prov.updateSet(
-                      entrySet.key,
-                      rir: v,
-                    ),
+                    onChanged: (v) => prov.updateSet(entrySet.key, rir: v),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -455,10 +434,7 @@ class _PlannedTable extends StatelessWidget {
                       labelText: 'Notiz',
                       isDense: true,
                     ),
-                    onChanged: (v) => prov.updateSet(
-                      entrySet.key,
-                      note: v,
-                    ),
+                    onChanged: (v) => prov.updateSet(entrySet.key, note: v),
                   ),
                 ),
                 IconButton(
