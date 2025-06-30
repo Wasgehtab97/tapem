@@ -4,6 +4,7 @@ import 'package:tapem/features/auth/domain/models/user_data.dart';
 class UserDataDto {
   final String userId;
   final String email;
+  final String emailLower;
   final List<String> gymCodes;
   final bool showInLeaderboard;
   final String role;
@@ -12,6 +13,7 @@ class UserDataDto {
   UserDataDto({
     required this.userId,
     required this.email,
+    required this.emailLower,
     required this.gymCodes,
     required this.showInLeaderboard,
     required this.role,
@@ -23,6 +25,8 @@ class UserDataDto {
     return UserDataDto(
       userId: doc.id,
       email: data['email'] as String,
+      emailLower: data['emailLower'] as String? ??
+          (data['email'] as String).toLowerCase(),
       gymCodes: List<String>.from(data['gymCodes'] ?? []),
       showInLeaderboard: data['showInLeaderboard'] as bool? ?? true,
       role: data['role'] as String,
@@ -32,6 +36,7 @@ class UserDataDto {
 
   Map<String, dynamic> toJson() => {
     'email': email,
+    'emailLower': emailLower,
     'gymCodes': gymCodes,
     'showInLeaderboard': showInLeaderboard,
     'role': role,

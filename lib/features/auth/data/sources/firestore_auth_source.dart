@@ -42,12 +42,25 @@ class FirestoreAuthSource {
     final dto = UserDataDto(
       userId: uid,
       email: email,
+      emailLower: email.toLowerCase(),
       gymCodes: [gym.id],
       showInLeaderboard: true,
       role: 'member',
       createdAt: now,
     );
     await _firestore.collection('users').doc(uid).set(dto.toJson());
+
+    // Nutzer zusätzlich unterhalb des Gyms referenzieren
+    await _firestore
+        .collection('gyms')
+        .doc(gym.id)
+        .collection('users')
+        .doc(uid)
+        .set({
+      'role': 'member',
+      'createdAt': Timestamp.fromDate(now),
+    });
+
     return dto;
   }
 
