@@ -1,5 +1,13 @@
 {
-    "indexes": [],
-    "fieldOverrides": []
-  }
+  "indexes": [
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "emailLower", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
   
