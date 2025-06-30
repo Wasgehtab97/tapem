@@ -66,10 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final authProv = context.watch<AuthProvider>();
     final loc = AppLocalizations.of(context)!;
-    final userDisplay = authProv.userName ?? authProv.userEmail ?? loc.genericUser;
+    final userDisplay =
+        authProv.userName ?? authProv.userEmail ?? loc.genericUser;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.homeWelcome.replaceFirst('{user}', userDisplay)),
+        title: Text(loc.homeWelcome(userDisplay)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

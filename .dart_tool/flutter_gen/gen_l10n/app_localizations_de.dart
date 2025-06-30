@@ -201,4 +201,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get englishLanguage => 'Englisch';
+
+  @override
+  String get usernameDialogTitle => 'Nutzernamen wählen';
+
+  @override
+  String get usernameFieldLabel => 'Nutzername';
+
+  @override
+  String get usernameTaken => 'Dieser Nutzername ist bereits vergeben.';
 }

@@ -466,6 +466,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'English'**
   String get englishLanguage;
+
+  /// Title of the username dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose username'**
+  String get usernameDialogTitle;
+
+  /// Label for username field
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameFieldLabel;
+
+  /// Error when username exists
+  ///
+  /// In en, this message translates to:
+  /// **'This username is already taken.'**
+  String get usernameTaken;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
