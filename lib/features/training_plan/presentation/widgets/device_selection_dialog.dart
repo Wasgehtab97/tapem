@@ -25,14 +25,14 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
 
   // Vorbelegung basierend auf vorhandenem Eintrag
   try {
-    selectedDevice = devices.firstWhere((d) => d.id == entry.deviceId);
+    selectedDevice = devices.firstWhere((d) => d.uid == entry.deviceId);
   } catch (_) {
     if (devices.isNotEmpty) selectedDevice = devices.first;
   }
 
   if (selectedDevice?.isMulti == true) {
     exerciseFuture = exProv
-        .loadExercises(gymId, selectedDevice!.id, userId)
+        .loadExercises(gymId, selectedDevice!.uid, userId)
         .then((_) => exProv.exercises);
     final exList = await exerciseFuture;
     try {
@@ -69,7 +69,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
                             exerciseFuture = exProv
                                 .loadExercises(
                                   gymId,
-                                  selectedDevice!.id,
+                                  selectedDevice!.uid,
                                   userId,
                                 )
                                 .then((_) => exProv.exercises);
@@ -112,11 +112,11 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
               onPressed: () {
                 if (selectedDevice == null) return;
                 final result = ExerciseEntry(
-                  deviceId: selectedDevice!.id,
+                  deviceId: selectedDevice!.uid,
                   exerciseId:
                       selectedDevice!.isMulti
                           ? (selectedExercise?.id ?? '')
-                          : selectedDevice!.id,
+                          : selectedDevice!.uid,
                   exerciseName:
                       selectedDevice!.isMulti
                           ? (selectedExercise?.name ?? selectedDevice!.name)

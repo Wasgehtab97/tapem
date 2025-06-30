@@ -1,13 +1,15 @@
 // lib/features/device/domain/models/device.dart
 
 class Device {
-  final String id;
+  final String uid;
+  final int id;
   final String name;
   final String description;
   final String? nfcCode;
   final bool isMulti;
 
   Device({
+    required this.uid,
     required this.id,
     required this.name,
     this.description = '',
@@ -16,12 +18,14 @@ class Device {
   });
 
   Device copyWith({
-    String? id,
+    String? uid,
+    int? id,
     String? name,
     String? description,
     String? nfcCode,
     bool? isMulti,
   }) => Device(
+    uid:         uid         ?? this.uid,
     id:          id          ?? this.id,
     name:        name        ?? this.name,
     description: description ?? this.description,
@@ -30,7 +34,8 @@ class Device {
   );
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
-    id:          json['id']        as String,
+    uid:         json['uid']       as String,
+    id:          json['id']        as int? ?? 0,
     name:        json['name']      as String,
     description: json['description'] as String? ?? '',
     nfcCode:     json['nfcCode']   as String?,
@@ -38,6 +43,7 @@ class Device {
   );
 
   Map<String, dynamic> toJson() => {
+    'id':          id,
     'name':        name,
     'description': description,
     'nfcCode':     nfcCode,

@@ -3,6 +3,7 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import 'package:uuid/uuid.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -51,7 +52,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final gymId = context.read<AuthProvider>().gymCode!;
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
-    final newId = _uuid.v4();
+    final newUid = _uuid.v4();
+    final newId =
+        _devices.isEmpty ? 1 : _devices.map((d) => d.id).reduce(max) + 1;
     bool isMulti = false;
 
     showDialog<bool>(
@@ -100,6 +103,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 }
 
                 final device = Device(
+                  uid: newUid,
                   id: newId,
                   name: nameCtrl.text.trim(),
                   description: descCtrl.text.trim(),

@@ -69,7 +69,7 @@ class DeviceProvider extends ChangeNotifier {
     try {
       final devices = await _getDevicesForGym.execute(gymId);
       _device = devices.firstWhere(
-        (d) => d.id == deviceId,
+        (d) => d.uid == deviceId,
         orElse: () => throw Exception('Device not found'),
       );
       _currentExerciseId = exerciseId;
@@ -175,7 +175,7 @@ class DeviceProvider extends ChangeNotifier {
               .collection('gyms')
               .doc(gymId)
               .collection('devices')
-              .doc(_device!.id)
+              .doc(_device!.uid)
               .collection('logs')
               .doc();
       final data = <String, dynamic>{
@@ -201,7 +201,7 @@ class DeviceProvider extends ChangeNotifier {
         .collection('gyms')
         .doc(gymId)
         .collection('devices')
-        .doc(_device!.id)
+        .doc(_device!.uid)
         .collection('userNotes')
         .doc(userId);
     batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
@@ -243,7 +243,7 @@ class DeviceProvider extends ChangeNotifier {
         '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
-    final deviceId = _device!.id;
+    final deviceId = _device!.uid;
 
     final lbRef = _firestore
         .collection('gyms')

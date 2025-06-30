@@ -46,7 +46,7 @@ class ProfileProvider extends ChangeNotifier {
         // Hier nutzen wir jetzt die benannten Parameter:
         final logs = await _getHistory.execute(
           gymId: gymId,
-          deviceId: device.id,
+          deviceId: device.uid,
           userId: userId,
         );
         for (final log in logs) {
