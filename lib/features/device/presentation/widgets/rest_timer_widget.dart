@@ -70,9 +70,21 @@ class _RestTimerWidgetState extends State<RestTimerWidget> {
     final loc = AppLocalizations.of(context)!;
     final progress = _remaining / _duration;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        IconButton(
+          onPressed: _toggleTimer,
+          icon: Icon(_running ? Icons.pause : Icons.play_arrow),
+          tooltip: _running ? loc.timerStop : loc.timerStart,
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: _resetTimer,
+          icon: const Icon(Icons.replay),
+          tooltip: loc.timerReset,
+        ),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: _cycleDuration,
           child: SizedBox(
@@ -89,22 +101,6 @@ class _RestTimerWidgetState extends State<RestTimerWidget> {
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            IconButton(
-              onPressed: _toggleTimer,
-              icon: Icon(_running ? Icons.pause : Icons.play_arrow),
-              tooltip: _running ? loc.timerStop : loc.timerStart,
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: _resetTimer,
-              icon: const Icon(Icons.replay),
-              tooltip: loc.timerReset,
-            ),
-          ],
         ),
       ],
     );
