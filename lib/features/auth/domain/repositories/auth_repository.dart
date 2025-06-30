@@ -6,4 +6,6 @@ abstract class AuthRepository {
       String email, String password, String gymId);
   Future<void> logout();
   Future<UserData?> getCurrentUser();
+  Future<void> setUsername(String userId, String username);
+  Future<bool> isUsernameAvailable(String username);
 }

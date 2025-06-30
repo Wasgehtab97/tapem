@@ -313,5 +313,11 @@
   "englishLanguage": "English",
   "@englishLanguage": {
     "description": "Label for English language"
-  }
+  },
+  "usernameDialogTitle": "Choose username",
+  "@usernameDialogTitle": {"description": "Title of the username dialog"},
+  "usernameFieldLabel": "Username",
+  "@usernameFieldLabel": {"description": "Label for username field"},
+  "usernameTaken": "This username is already taken.",
+  "@usernameTaken": {"description": "Error when username exists"}
 }

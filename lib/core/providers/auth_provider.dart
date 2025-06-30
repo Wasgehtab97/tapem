@@ -7,12 +7,16 @@ import 'package:tapem/features/auth/domain/usecases/get_current_user.dart';
 import 'package:tapem/features/auth/domain/usecases/login.dart';
 import 'package:tapem/features/auth/domain/usecases/logout.dart';
 import 'package:tapem/features/auth/domain/usecases/register.dart';
+import 'package:tapem/features/auth/domain/usecases/set_username.dart';
+import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
   final RegisterUseCase _registerUC;
   final LogoutUseCase _logoutUC;
   final GetCurrentUserUseCase _currentUC;
+  final SetUsernameUseCase _setUsernameUC;
+  final CheckUsernameAvailable _checkUsernameUC;
 
   UserData? _user;
   bool _isLoading = false;
@@ -23,13 +27,16 @@ class AuthProvider extends ChangeNotifier {
     : _loginUC = LoginUseCase(repo),
       _registerUC = RegisterUseCase(repo),
       _logoutUC = LogoutUseCase(repo),
-      _currentUC = GetCurrentUserUseCase(repo) {
+      _currentUC = GetCurrentUserUseCase(repo),
+      _setUsernameUC = SetUsernameUseCase(repo),
+      _checkUsernameUC = CheckUsernameAvailable(repo) {
     _loadCurrentUser();
   }
 
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   String? get userEmail => _user?.email;
+  String? get userName => _user?.userName;
 
   /// Liste der Gym-Codes, die diesem Nutzer zugeordnet sind
   List<String>? get gymCodes => _user?.gymCodes;
@@ -60,6 +67,7 @@ class AuthProvider extends ChangeNotifier {
           _user = UserData(
             id: user.id,
             email: user.email,
+            userName: user.userName,
             gymCodes: user.gymCodes,
             showInLeaderboard: user.showInLeaderboard,
             role: claims['role'] as String? ?? user.role,
@@ -122,6 +130,27 @@ class AuthProvider extends ChangeNotifier {
       _selectedGymCode = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('selectedGymCode');
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> setUsername(String username) async {
+    if (_user == null) return false;
+    _setLoading(true);
+    _error = null;
+    try {
+      final available = await _checkUsernameUC.execute(username);
+      if (!available) {
+        _error = 'Username already taken';
+        return false;
+      }
+      await _setUsernameUC.execute(_user!.id, username);
+      _user = _user!.copyWith(userName: username);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
       _setLoading(false);
     }
   }

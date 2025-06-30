@@ -43,6 +43,8 @@ class FirestoreAuthSource {
       userId: uid,
       email: email,
       emailLower: email.toLowerCase(),
+      userName: null,
+      userNameLower: null,
       gymCodes: [gym.id],
       showInLeaderboard: true,
       role: 'member',
@@ -72,5 +74,23 @@ class FirestoreAuthSource {
     final doc = await _firestore.collection('users').doc(user.uid).get();
     if (!doc.exists) return null;
     return UserDataDto.fromDocument(doc);
+  }
+
+  Future<bool> isUsernameAvailable(String username) async {
+    final lower = username.toLowerCase();
+    final query = await _firestore
+        .collection('users')
+        .where('usernameLower', isEqualTo: lower)
+        .limit(1)
+        .get();
+    return query.docs.isEmpty;
+  }
+
+  Future<void> setUsername(String userId, String username) async {
+    final lower = username.toLowerCase();
+    await _firestore.collection('users').doc(userId).update({
+      'username': username,
+      'usernameLower': lower,
+    });
   }
 }
