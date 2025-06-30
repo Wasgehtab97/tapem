@@ -11,7 +11,7 @@ class FirestoreDeviceSource {
     final snap = await _firestore
       .collection('gyms').doc(gymId)
       .collection('devices')
-      .orderBy('name')
+      .orderBy('id')
       .get();
     return snap.docs.map((doc) => DeviceDto.fromDocument(doc)).toList();
   }
@@ -19,7 +19,7 @@ class FirestoreDeviceSource {
   Future<void> createDevice(String gymId, Device device) {
     return _firestore
       .collection('gyms').doc(gymId)
-      .collection('devices').doc(device.id)
+      .collection('devices').doc(device.uid)
       .set(device.toJson());
   }
 

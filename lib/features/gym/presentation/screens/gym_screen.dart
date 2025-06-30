@@ -111,10 +111,10 @@ class _GymScreenState extends State<GymScreen> {
                           onTap: () {
                             final args = {
                               'gymId': gymCode,
-                              'deviceId': device.id,
+                              'deviceId': device.uid,
                               // Bei Single-Geräten entspricht exerciseId der deviceId
                               'exerciseId':
-                                  device.isMulti ? device.id : device.id,
+                                  device.isMulti ? device.uid : device.uid,
                             };
                             Navigator.of(
                               ctx,

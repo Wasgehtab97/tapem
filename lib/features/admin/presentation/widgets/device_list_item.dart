@@ -26,6 +26,7 @@ class DeviceListItem extends StatelessWidget {
     final gymId    = context.read<AuthProvider>().gymCode!;
 
     return ListTile(
+      leading: Text('${device.id}'),
       title: Text(device.name),
       subtitle: Text(device.description),
       trailing: Row(
@@ -79,7 +80,7 @@ class DeviceListItem extends StatelessWidget {
               final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
               if (fbUser != null) await fbUser.getIdToken(true);
 
-              await deleteUC.execute(gymId: gymId, deviceId: device.id);
+              await deleteUC.execute(gymId: gymId, deviceId: device.uid);
               onDeleted();
 
               ScaffoldMessenger.of(context).showSnackBar(

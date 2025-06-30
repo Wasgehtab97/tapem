@@ -8,7 +8,7 @@ class DeviceUsageChart extends StatelessWidget {
   /// Liste aller Geräte im aktuellen Gym
   final List<Device> devices;
 
-  /// Nutzungszahlen, key = device.id, value = Anzahl aller Sessions
+  /// Nutzungszahlen, key = device.uid, value = Anzahl aller Sessions
   final Map<String, int> usageCounts;
 
   const DeviceUsageChart({
@@ -23,7 +23,7 @@ class DeviceUsageChart extends StatelessWidget {
     final bars = <BarChartGroupData>[];
     for (var i = 0; i < devices.length; i++) {
       final device   = devices[i];
-      final count    = usageCounts[device.id] ?? 0;
+      final count    = usageCounts[device.uid] ?? 0;
       final barColor = Theme.of(context).colorScheme.primary;
 
       bars.add(

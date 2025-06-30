@@ -21,8 +21,18 @@ class CreateDeviceUseCase {
     required Device device,
     required bool isMulti,
   }) async {
+    final existing = await _repo.getDevicesForGym(gymId);
+    final maxId = existing.isEmpty
+        ? 0
+        : existing.map((d) => d.id).reduce((a, b) => a > b ? a : b);
+    final nextId = maxId + 1;
+
     final code   = _generateNfcCode();
-    final toSave = device.copyWith(nfcCode: code, isMulti: isMulti);
+    final toSave = device.copyWith(
+      id: nextId,
+      nfcCode: code,
+      isMulti: isMulti,
+    );
     await _repo.createDevice(gymId, toSave);
   }
 }
