@@ -50,6 +50,15 @@ class _RestTimerWidgetState extends State<RestTimerWidget> {
     });
   }
 
+  void _cycleDuration() {
+    final currentIndex = _presetDurations.indexOf(_duration);
+    final nextIndex = (currentIndex + 1) % _presetDurations.length;
+    setState(() {
+      _duration = _presetDurations[nextIndex];
+      _remaining = _duration;
+    });
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -64,51 +73,36 @@ class _RestTimerWidgetState extends State<RestTimerWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          height: 80,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: 1 - progress,
-                strokeWidth: 6,
-              ),
-              Text('$_remaining${loc.secondsAbbreviation}'),
-            ],
+        GestureDetector(
+          onTap: _cycleDuration,
+          child: SizedBox(
+            width: 150,
+            height: 150,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: 1 - progress,
+                  strokeWidth: 6,
+                ),
+                Text('$_remaining${loc.secondsAbbreviation}'),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Text('${loc.timerDuration}:'),
-            const SizedBox(width: 8),
-            DropdownButton<int>(
-              value: _duration,
-              items: [
-                for (final d in _presetDurations)
-                  DropdownMenuItem(
-                    value: d,
-                    child: Text('$d${loc.secondsAbbreviation}'),
-                  ),
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() {
-                  _duration = v;
-                  _remaining = v;
-                });
-              },
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton(
+            IconButton(
               onPressed: _toggleTimer,
-              child: Text(_running ? loc.timerStop : loc.timerStart),
+              icon: Icon(_running ? Icons.pause : Icons.play_arrow),
+              tooltip: _running ? loc.timerStop : loc.timerStart,
             ),
             const SizedBox(width: 8),
-            OutlinedButton(
+            IconButton(
               onPressed: _resetTimer,
-              child: Text(loc.timerReset),
+              icon: const Icon(Icons.replay),
+              tooltip: loc.timerReset,
             ),
           ],
         ),
