@@ -41,18 +41,20 @@ class ProfileProvider extends ChangeNotifier {
         throw Exception('Kein Benutzer oder Gym gefunden');
       }
 
-      final datesSet = <String>{};
-      for (final device in devices) {
-        // Hier nutzen wir jetzt die benannten Parameter:
-        final logs = await _getHistory.execute(
+      final futures = devices.map((d) {
+        return _getHistory.execute(
           gymId: gymId,
-          deviceId: device.uid,
+          deviceId: d.uid,
           userId: userId,
         );
+      });
+
+      final results = await Future.wait(futures);
+      final datesSet = <String>{};
+      for (final logs in results) {
         for (final log in logs) {
           final dt = log.timestamp;
-          final key =
-              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
           datesSet.add(key);
         }
       }
