@@ -295,6 +295,16 @@
     "description": "Abkürzung für Sekunden"
   },
 
+  "timerReset": "Zurücksetzen",
+  "@timerReset": {
+    "description": "Beschriftung für Timer-Zurücksetzen-Button"
+  },
+
+  "timerDuration": "Dauer",
+  "@timerDuration": {
+    "description": "Beschriftung für Auswahl der Timer-Dauer"
+  },
+
   "userNotFound": "Nutzer nicht gefunden.",
   "@userNotFound": {
     "description": "Fehlermeldung, wenn Nutzer nicht gefunden wurde"

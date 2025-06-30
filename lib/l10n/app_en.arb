@@ -295,6 +295,16 @@
     "description": "Abbreviation for seconds"
   },
 
+  "timerReset": "Reset",
+  "@timerReset": {
+    "description": "Label for timer reset button"
+  },
+
+  "timerDuration": "Duration",
+  "@timerDuration": {
+    "description": "Label for timer duration dropdown"
+  },
+
   "userNotFound": "User not found.",
   "@userNotFound": {
     "description": "Error when no user is found"
