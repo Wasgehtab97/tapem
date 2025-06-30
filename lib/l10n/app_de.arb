@@ -313,5 +313,11 @@
   "englishLanguage": "Englisch",
   "@englishLanguage": {
     "description": "Bezeichnung für englische Sprache"
-  }
+  },
+  "usernameDialogTitle": "Nutzernamen wählen",
+  "@usernameDialogTitle": {"description": "Titel des Dialogs zur Wahl des Nutzernamens"},
+  "usernameFieldLabel": "Nutzername",
+  "@usernameFieldLabel": {"description": "Beschriftung für das Nutzername-Feld"},
+  "usernameTaken": "Dieser Nutzername ist bereits vergeben.",
+  "@usernameTaken": {"description": "Fehler wenn Nutzername existiert"}
 }

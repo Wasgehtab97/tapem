@@ -13,6 +13,8 @@ import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.d
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
+import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -54,15 +56,20 @@ class _HomeScreenState extends State<HomeScreen> {
           reportProv.loadReport(id);
         });
       }
+      if (authProv.userName == null || authProv.userName!.isEmpty) {
+        showUsernameDialog(context);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final userEmail = context.watch<AuthProvider>().userEmail ?? 'Gast';
+    final authProv = context.watch<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
+    final userDisplay = authProv.userName ?? authProv.userEmail ?? loc.genericUser;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Willkommen, $userEmail'),
+        title: Text(loc.homeWelcome(userDisplay)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

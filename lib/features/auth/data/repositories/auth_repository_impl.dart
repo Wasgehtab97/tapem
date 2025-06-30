@@ -32,4 +32,14 @@ class AuthRepositoryImpl implements AuthRepository {
     final UserDataDto? dto = await _source.getCurrentUser();
     return dto?.toModel();
   }
+
+  @override
+  Future<void> setUsername(String userId, String username) {
+    return _source.setUsername(userId, username);
+  }
+
+  @override
+  Future<bool> isUsernameAvailable(String username) {
+    return _source.isUsernameAvailable(username);
+  }
 }
