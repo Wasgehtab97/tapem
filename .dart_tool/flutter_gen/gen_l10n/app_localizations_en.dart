@@ -191,6 +191,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secondsAbbreviation => 's';
 
   @override
+  String get timerReset => 'Reset';
+
+  @override
+  String get timerDuration => 'Duration';
+
+  @override
   String get userNotFound => 'User not found.';
 
   @override

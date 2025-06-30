@@ -443,6 +443,18 @@ abstract class AppLocalizations {
   /// **'s'**
   String get secondsAbbreviation;
 
+  /// Label for timer reset button
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get timerReset;
+
+  /// Label for timer duration dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get timerDuration;
+
   /// Error when no user is found
   ///
   /// In en, this message translates to:

@@ -191,6 +191,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get secondsAbbreviation => 's';
 
   @override
+  String get timerReset => 'Zurücksetzen';
+
+  @override
+  String get timerDuration => 'Dauer';
+
+  @override
   String get userNotFound => 'Nutzer nicht gefunden.';
 
   @override
