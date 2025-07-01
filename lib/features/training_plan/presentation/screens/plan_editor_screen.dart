@@ -9,6 +9,7 @@ import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/exercise_entry.dart';
+import '../../domain/models/day_entry.dart';
 import '../../domain/models/week_block.dart';
 import '../widgets/device_selection_dialog.dart';
 
@@ -160,9 +161,58 @@ class _WeekView extends StatefulWidget {
   State<_WeekView> createState() => _WeekViewState();
 }
 
+class _DayRef {
+  final int week;
+  final int day;
+  _DayRef(this.week, this.day);
+}
+
 class _WeekViewState extends State<_WeekView>
     with SingleTickerProviderStateMixin {
   late TabController _dayController;
+
+  Future<_DayRef?> _pickSourceDay(BuildContext context) async {
+    final plan = context.read<TrainingPlanProvider>().currentPlan!;
+    return showDialog<_DayRef>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Quelle wählen'),
+        children: [
+          for (final w in plan.weeks) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Woche \${w.weekNumber}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            for (var i = 0; i < w.days.length; i++)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(_, _DayRef(w.weekNumber, i)),
+                child: Text(DateFormat.yMd().add_E().format(w.days[i].date)),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<int?> _pickSourceWeek(BuildContext context) async {
+    final plan = context.read<TrainingPlanProvider>().currentPlan!;
+    return showDialog<int>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Quelle wählen'),
+        children: [
+          for (final w in plan.weeks)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(_, w.weekNumber),
+              child: Text('Woche \${w.weekNumber}'),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -192,6 +242,21 @@ class _WeekViewState extends State<_WeekView>
     final weekNumber = widget.week.weekNumber;
     return Column(
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Woche duplizieren',
+              onPressed: () async {
+                final src = await _pickSourceWeek(context);
+                if (src != null && src != weekNumber) {
+                  prov.copyWeekExercises(src, [weekNumber]);
+                }
+              },
+            ),
+          ],
+        ),
         TabBar(
           controller: _dayController,
           tabs: const [
@@ -208,48 +273,89 @@ class _WeekViewState extends State<_WeekView>
           child: TabBarView(
             controller: _dayController,
             children: [
-              for (var day in widget.week.days)
-                ListView.builder(
-                  itemCount: day.exercises.length,
-                  itemBuilder: (context, index) {
-                    final ex = day.exercises[index];
-                    return Dismissible(
-                      key: ValueKey('${day.date}-$index'),
-                      background: Container(color: Colors.red),
-                      onDismissed:
-                          (_) =>
-                              prov.removeExercise(weekNumber, day.date, index),
-                      child: _PlanEntryEditor(
-                        entry: ex,
-                        onChanged:
-                            (updated) => prov.updateExercise(
-                              weekNumber,
-                              day.date,
-                              index,
-                              updated,
-                            ),
-                        onSelectDevice: () async {
-                          final updated = await showDeviceSelectionDialog(
-                            context,
-                            ex,
-                          );
-                          if (updated != null) {
-                            prov.updateExercise(
-                              weekNumber,
-                              day.date,
-                              index,
-                              updated,
-                            );
-                          }
-                        },
-                      ),
-                    );
-                  },
+              for (var i = 0; i < widget.week.days.length; i++)
+                _DayView(
+                  weekNumber: weekNumber,
+                  dayIndex: i,
+                  day: widget.week.days[i],
+                  pickSource: () => _pickSourceDay(context),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DayView extends StatelessWidget {
+  final int weekNumber;
+  final int dayIndex;
+  final DayEntry day;
+  final Future<_DayRef?> Function() pickSource;
+
+  const _DayView({
+    required this.weekNumber,
+    required this.dayIndex,
+    required this.day,
+    required this.pickSource,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final prov = context.read<TrainingPlanProvider>();
+    return ListView.builder(
+      itemCount: day.exercises.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return ListTile(
+            title: Text(DateFormat.yMd().add_E().format(day.date)),
+            trailing: IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Tag duplizieren',
+              onPressed: () async {
+                final src = await pickSource();
+                if (src != null) {
+                  prov.copyDayExercises(src.week, src.day, {
+                    weekNumber: dayIndex,
+                  });
+                }
+              },
+            ),
+          );
+        }
+        final ex = day.exercises[index - 1];
+        final exIndex = index - 1;
+        return Dismissible(
+          key: ValueKey('${day.date}-$exIndex'),
+          background: Container(color: Colors.red),
+          onDismissed: (_) =>
+              prov.removeExercise(weekNumber, day.date, exIndex),
+          child: _PlanEntryEditor(
+            entry: ex,
+            onChanged: (updated) => prov.updateExercise(
+              weekNumber,
+              day.date,
+              exIndex,
+              updated,
+            ),
+            onSelectDevice: () async {
+              final updated = await showDeviceSelectionDialog(
+                context,
+                ex,
+              );
+              if (updated != null) {
+                prov.updateExercise(
+                  weekNumber,
+                  day.date,
+                  exIndex,
+                  updated,
+                );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }
