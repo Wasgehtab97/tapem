@@ -164,6 +164,44 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void copyWeekExercises(int sourceWeek, List<int> targetWeeks) {
+    final src = currentPlan?.weeks.firstWhere((w) => w.weekNumber == sourceWeek);
+    if (src == null) return;
+    for (final weekNo in targetWeeks) {
+      final target =
+          currentPlan?.weeks.firstWhere((w) => w.weekNumber == weekNo);
+      if (target == null) continue;
+      for (var i = 0; i < src.days.length && i < target.days.length; i++) {
+        final exercises = [
+          for (final ex in src.days[i].exercises)
+            ExerciseEntry.fromMap(ex.toMap())
+        ];
+        target.days[i] =
+            DayEntry(date: target.days[i].date, exercises: exercises);
+      }
+    }
+    notifyListeners();
+  }
+
+  void moveExercise(
+    int srcWeek,
+    DateTime srcDay,
+    int index,
+    int destWeek,
+    DateTime destDay,
+  ) {
+    final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
+    final destW =
+        currentPlan?.weeks.firstWhere((w) => w.weekNumber == destWeek);
+    if (srcW == null || destW == null) return;
+    final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
+    final dDay = destW.days.firstWhere((d) => d.date == destDay);
+    if (index < 0 || index >= sDay.exercises.length) return;
+    final ex = sDay.exercises.removeAt(index);
+    dDay.exercises.add(ex);
+    notifyListeners();
+  }
+
   void notify() => notifyListeners();
 
   ExerciseEntry? entryForDate(
