@@ -183,6 +183,44 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Copies all exercises from a specific day to multiple other days.
+  ///
+  /// [sourceWeek] and [sourceDay] identify the day to copy from. The
+  /// [targets] map uses the week number as key and the day index within that
+  /// week (0 = Monday) as value.
+  void copyDayExercises(
+    int sourceWeek,
+    int sourceDay,
+    Map<int, int> targets,
+  ) {
+    final srcWeek =
+        currentPlan?.weeks.firstWhere((w) => w.weekNumber == sourceWeek);
+    if (srcWeek == null || sourceDay < 0 || sourceDay >= srcWeek.days.length) {
+      return;
+    }
+    final srcDay = srcWeek.days[sourceDay];
+    final clone = [
+      for (final ex in srcDay.exercises)
+        ExerciseEntry.fromMap(ex.toMap()),
+    ];
+
+    targets.forEach((weekNo, dayIdx) {
+      final targetWeek =
+          currentPlan?.weeks.firstWhere((w) => w.weekNumber == weekNo);
+      if (targetWeek == null ||
+          dayIdx < 0 ||
+          dayIdx >= targetWeek.days.length) {
+        return;
+      }
+      final date = targetWeek.days[dayIdx].date;
+      targetWeek.days[dayIdx] = DayEntry(date: date, exercises: [
+        for (final ex in clone) ExerciseEntry.fromMap(ex.toMap()),
+      ]);
+    });
+
+    notifyListeners();
+  }
+
   void moveExercise(
     int srcWeek,
     DateTime srcDay,
