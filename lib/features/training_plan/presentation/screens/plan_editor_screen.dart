@@ -175,7 +175,7 @@ class _WeekViewState extends State<_WeekView>
     final plan = context.read<TrainingPlanProvider>().currentPlan!;
     return showDialog<_DayRef>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (dialogContext) => SimpleDialog(
         title: const Text('Quelle wählen'),
         children: [
           for (final w in plan.weeks) ...[
@@ -188,7 +188,8 @@ class _WeekViewState extends State<_WeekView>
             ),
             for (var i = 0; i < w.days.length; i++)
               SimpleDialogOption(
-                onPressed: () => Navigator.pop(_, _DayRef(w.weekNumber, i)),
+                onPressed: () =>
+                    Navigator.pop(dialogContext, _DayRef(w.weekNumber, i)),
                 child: Text(DateFormat.yMd().add_E().format(w.days[i].date)),
               ),
           ],
@@ -201,12 +202,12 @@ class _WeekViewState extends State<_WeekView>
     final plan = context.read<TrainingPlanProvider>().currentPlan!;
     return showDialog<int>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (dialogContext) => SimpleDialog(
         title: const Text('Quelle wählen'),
         children: [
           for (final w in plan.weeks)
             SimpleDialogOption(
-              onPressed: () => Navigator.pop(_, w.weekNumber),
+              onPressed: () => Navigator.pop(dialogContext, w.weekNumber),
               child: Text('Woche \${w.weekNumber}'),
             ),
         ],
