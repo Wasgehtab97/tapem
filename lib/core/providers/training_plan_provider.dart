@@ -164,6 +164,72 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void copyWeekExercises(int sourceWeek, List<int> targetWeeks) {
+    final src = currentPlan?.weeks.firstWhere((w) => w.weekNumber == sourceWeek);
+    if (src == null) return;
+    for (final weekNo in targetWeeks) {
+      final target =
+          currentPlan?.weeks.firstWhere((w) => w.weekNumber == weekNo);
+      if (target == null) continue;
+      for (var i = 0; i < src.days.length && i < target.days.length; i++) {
+        final exercises = [
+          for (final ex in src.days[i].exercises)
+            ExerciseEntry.fromMap(ex.toMap())
+        ];
+        target.days[i] =
+            DayEntry(date: target.days[i].date, exercises: exercises);
+      }
+    }
+    notifyListeners();
+  }
+
+  void moveExercise(
+    int srcWeek,
+    DateTime srcDay,
+    int index,
+    int destWeek,
+    DateTime destDay,
+  ) {
+    final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
+    final destW =
+        currentPlan?.weeks.firstWhere((w) => w.weekNumber == destWeek);
+    if (srcW == null || destW == null) return;
+    final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
+    final dDay = destW.days.firstWhere((d) => d.date == destDay);
+    if (index < 0 || index >= sDay.exercises.length) return;
+    final ex = sDay.exercises.removeAt(index);
+    dDay.exercises.add(ex);
+    notifyListeners();
+  }
+
+  /// Duplicate all exercises from [srcDay] of [srcWeek] to the given
+  /// [targets]. Each target is a `MapEntry` where the key is the week number and
+  /// the value the target day.
+  void copyDayExercises(
+    int srcWeek,
+    DateTime srcDay,
+    List<MapEntry<int, DateTime>> targets,
+  ) {
+    final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
+    if (srcW == null) return;
+    final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
+    final cloned = [
+      for (final ex in sDay.exercises) ExerciseEntry.fromMap(ex.toMap())
+    ];
+    for (final target in targets) {
+      final tWeek =
+          currentPlan?.weeks.firstWhere((w) => w.weekNumber == target.key);
+      if (tWeek == null) continue;
+      final tDay = tWeek.days.firstWhere((d) => d.date == target.value);
+      tDay.exercises
+        ..clear()
+        ..addAll([
+          for (final ex in cloned) ExerciseEntry.fromMap(ex.toMap())
+        ]);
+    }
+    notifyListeners();
+  }
+
   void notify() => notifyListeners();
 
   ExerciseEntry? entryForDate(

@@ -33,4 +33,15 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
   Future<void> deletePlan(String gymId, String planId) async {
     await _source.deletePlan(gymId, planId);
   }
+
+  @override
+  Future<void> deleteExercise(
+    String gymId,
+    String planId,
+    int weekNumber,
+    DateTime day,
+    int index,
+  ) async {
+    await _source.deleteExercise(gymId, planId, weekNumber, day, index);
+  }
 }
