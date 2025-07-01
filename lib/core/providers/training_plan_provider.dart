@@ -202,6 +202,34 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Duplicate all exercises from [srcDay] of [srcWeek] to the given
+  /// [targets]. Each target is a `MapEntry` where the key is the week number and
+  /// the value the target day.
+  void copyDayExercises(
+    int srcWeek,
+    DateTime srcDay,
+    List<MapEntry<int, DateTime>> targets,
+  ) {
+    final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
+    if (srcW == null) return;
+    final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
+    final cloned = [
+      for (final ex in sDay.exercises) ExerciseEntry.fromMap(ex.toMap())
+    ];
+    for (final target in targets) {
+      final tWeek =
+          currentPlan?.weeks.firstWhere((w) => w.weekNumber == target.key);
+      if (tWeek == null) continue;
+      final tDay = tWeek.days.firstWhere((d) => d.date == target.value);
+      tDay.exercises
+        ..clear()
+        ..addAll([
+          for (final ex in cloned) ExerciseEntry.fromMap(ex.toMap())
+        ]);
+    }
+    notifyListeners();
+  }
+
   void notify() => notifyListeners();
 
   ExerciseEntry? entryForDate(

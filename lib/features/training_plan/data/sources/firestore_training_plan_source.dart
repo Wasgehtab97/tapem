@@ -81,26 +81,34 @@ class FirestoreTrainingPlanSource {
     debugPrint('💾 FirestoreTrainingPlanSource.savePlan ${plan.id}');
     final planRef = _plansCol(gymId).doc(plan.id);
     await _deleteExistingWeeks(planRef);
-    await planRef.set(plan.toMap());
+    WriteBatch batch = _firestore.batch();
+    int opCount = 0;
+    Future<void> commit() async {
+      await batch.commit();
+      batch = _firestore.batch();
+      opCount = 0;
+    }
 
+    batch.set(planRef, plan.toMap());
+    opCount++;
     for (final week in plan.weeks) {
       debugPrint('  saving week ${week.weekNumber}');
-      final weekRef = planRef
-          .collection('weeks')
-          .doc(week.weekNumber.toString());
-      await weekRef.set({
+      final weekRef = planRef.collection('weeks').doc(week.weekNumber.toString());
+      batch.set(weekRef, {
         'weekNumber': week.weekNumber,
         'createdBy': plan.createdBy,
       });
+      if (++opCount > 450) await commit();
       for (final day in week.days) {
         debugPrint('    saving day ${day.date}');
         final id =
             '${day.date.year}-${day.date.month.toString().padLeft(2, '0')}-${day.date.day.toString().padLeft(2, '0')}';
         final dayRef = weekRef.collection('days').doc(id);
-        await dayRef.set({
+        batch.set(dayRef, {
           'date': Timestamp.fromDate(day.date),
           'createdBy': plan.createdBy,
         });
+        if (++opCount > 450) await commit();
         final exCol = dayRef.collection('exercises');
         for (var i = 0; i < day.exercises.length; i++) {
           debugPrint(
@@ -109,10 +117,12 @@ class FirestoreTrainingPlanSource {
           final ex = day.exercises[i];
           final data = ex.toMap();
           data['createdBy'] = plan.createdBy;
-          await exCol.doc('$i').set(data);
+          batch.set(exCol.doc('$i'), data);
+          if (++opCount > 450) await commit();
         }
       }
     }
+    if (opCount > 0) await commit();
   }
 
   Future<void> renamePlan(String gymId, String planId, String newName) async {
@@ -157,17 +167,29 @@ class FirestoreTrainingPlanSource {
     DocumentReference<Map<String, dynamic>> planRef,
   ) async {
     final weeks = await planRef.collection('weeks').get();
+    WriteBatch batch = _firestore.batch();
+    int count = 0;
+    Future<void> commit() async {
+      await batch.commit();
+      batch = _firestore.batch();
+      count = 0;
+    }
+
     for (final week in weeks.docs) {
       final days = await week.reference.collection('days').get();
       for (final day in days.docs) {
         final exCol = day.reference.collection('exercises');
         final ex = await exCol.get();
         for (final doc in ex.docs) {
-          await doc.reference.delete();
+          batch.delete(doc.reference);
+          if (++count > 450) await commit();
         }
-        await day.reference.delete();
+        batch.delete(day.reference);
+        if (++count > 450) await commit();
       }
-      await week.reference.delete();
+      batch.delete(week.reference);
+      if (++count > 450) await commit();
     }
+    if (count > 0) await commit();
   }
 }
