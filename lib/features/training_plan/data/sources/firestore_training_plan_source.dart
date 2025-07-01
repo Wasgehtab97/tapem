@@ -80,6 +80,7 @@ class FirestoreTrainingPlanSource {
   Future<void> savePlan(String gymId, TrainingPlanDto plan) async {
     debugPrint('💾 FirestoreTrainingPlanSource.savePlan ${plan.id}');
     final planRef = _plansCol(gymId).doc(plan.id);
+    await _deleteExistingWeeks(planRef);
     await planRef.set(plan.toMap());
 
     for (final week in plan.weeks) {
@@ -122,5 +123,51 @@ class FirestoreTrainingPlanSource {
   Future<void> deletePlan(String gymId, String planId) async {
     debugPrint('🗑 Firestore deletePlan $planId');
     await _plansCol(gymId).doc(planId).delete();
+  }
+
+  Future<void> deleteExercise(
+    String gymId,
+    String planId,
+    int weekNumber,
+    DateTime day,
+    int index,
+  ) async {
+    final dayId =
+        '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+    final exCol = _plansCol(gymId)
+        .doc(planId)
+        .collection('weeks')
+        .doc('$weekNumber')
+        .collection('days')
+        .doc(dayId)
+        .collection('exercises');
+    await exCol.doc('$index').delete();
+    final snap = await exCol.orderBy(FieldPath.documentId).get();
+    for (var i = 0; i < snap.docs.length; i++) {
+      final doc = snap.docs[i];
+      if (doc.id != '$i') {
+        final data = doc.data();
+        await doc.reference.delete();
+        await exCol.doc('$i').set(data);
+      }
+    }
+  }
+
+  Future<void> _deleteExistingWeeks(
+    DocumentReference<Map<String, dynamic>> planRef,
+  ) async {
+    final weeks = await planRef.collection('weeks').get();
+    for (final week in weeks.docs) {
+      final days = await week.reference.collection('days').get();
+      for (final day in days.docs) {
+        final exCol = day.reference.collection('exercises');
+        final ex = await exCol.get();
+        for (final doc in ex.docs) {
+          await doc.reference.delete();
+        }
+        await day.reference.delete();
+      }
+      await week.reference.delete();
+    }
   }
 }

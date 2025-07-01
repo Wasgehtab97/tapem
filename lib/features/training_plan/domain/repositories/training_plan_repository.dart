@@ -10,4 +10,12 @@ abstract class TrainingPlanRepository {
   );
 
   Future<void> deletePlan(String gymId, String planId);
+
+  Future<void> deleteExercise(
+    String gymId,
+    String planId,
+    int weekNumber,
+    DateTime day,
+    int index,
+  );
 }
