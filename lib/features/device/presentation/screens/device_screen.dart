@@ -97,6 +97,19 @@ class _DeviceScreenState extends State<DeviceScreen> {
         title: Text(prov.device!.name),
         centerTitle: true,
         actions: [
+          if (!prov.device!.isMulti)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.greenAccent,
+                foregroundColor: Colors.black,
+                radius: 12,
+                child: Text(
+                  '${prov.xp}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Verlauf',
