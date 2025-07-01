@@ -1,62 +1,214 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
-import 'widgets/nfc_global_listener.dart';
-import 'screens/dashboard.dart';
-import 'screens/history.dart';
-import 'screens/profile.dart';
-import 'screens/report_dashboard.dart';
-import 'screens/admin_dashboard.dart';
-import 'screens/trainingsplan.dart';
-import 'screens/gym.dart';
-import 'screens/rank.dart';
-import 'screens/affiliate_screen.dart';
-import 'home_page.dart';
-import 'theme/theme.dart';
+// lib/main.dart
+// ignore_for_file: avoid_print, use_super_parameters
 
-final navigatorKey = GlobalKey<NavigatorState>();
+import 'dart:async';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform, kIsWeb;
+
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+
+import 'firebase_options.dart';
+import 'app_router.dart';
+import 'package:tapem/core/theme/theme_loader.dart';
+import 'package:tapem/core/providers/app_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/history_provider.dart';
+import 'package:tapem/core/providers/profile_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/report_provider.dart';
+import 'package:tapem/core/providers/rank_provider.dart';
+import 'package:tapem/core/providers/training_plan_provider.dart';
+
+import 'features/nfc/data/nfc_service.dart';
+import 'features/nfc/domain/usecases/read_nfc_code.dart';
+import 'features/nfc/domain/usecases/write_nfc_tag.dart';
+import 'features/nfc/widgets/global_nfc_listener.dart';
+
+import 'features/device/data/sources/firestore_device_source.dart';
+import 'features/device/data/repositories/device_repository_impl.dart';
+import 'features/device/domain/repositories/device_repository.dart';
+import 'features/device/domain/usecases/create_device_usecase.dart';
+import 'features/device/domain/usecases/get_devices_for_gym.dart';
+import 'features/device/domain/usecases/get_device_by_nfc_code.dart';
+import 'features/device/domain/usecases/delete_device_usecase.dart';
+
+import 'features/device/data/sources/firestore_exercise_source.dart';
+import 'features/device/data/repositories/exercise_repository_impl.dart';
+import 'features/device/domain/repositories/exercise_repository.dart';
+import 'features/device/domain/usecases/get_exercises_for_device.dart';
+import 'features/device/domain/usecases/create_exercise_usecase.dart';
+import 'features/device/domain/usecases/delete_exercise_usecase.dart';
+
+import 'features/report/data/repositories/report_repository_impl.dart';
+import 'features/report/domain/usecases/get_device_usage_stats.dart';
+import 'features/report/domain/usecases/get_all_log_timestamps.dart';
+
+import 'features/splash/presentation/screens/splash_screen.dart';
+
+/// Global navigator key for NFC navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
+
+  // Load .env
+  await dotenv.load(fileName: '.env.dev').catchError((_) {});
+
+  // Firebase init
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+      );
+    }
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
+
+  // Disable reCAPTCHA for tests
+  fb_auth.FirebaseAuth.instance.setSettings(
+    appVerificationDisabledForTesting: true,
+  );
+
+  // Date formatting
+  await initializeDateFormatting();
+
+  runApp(const AppEntry());
+}
+
+class AppEntry extends StatelessWidget {
+  const AppEntry({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Prepare report use cases
+    final reportRepo = ReportRepositoryImpl();
+    final usageUC = GetDeviceUsageStats(reportRepo);
+    final logsUC = GetAllLogTimestamps(reportRepo);
+
+    return MultiProvider(
+      providers: [
+        // NFC
+        Provider<NfcService>(create: (_) => NfcService()),
+        Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),
+        Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
+
+        // Device
+        Provider<DeviceRepository>(
+          create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
+        ),
+        Provider<CreateDeviceUseCase>(
+          create: (c) => CreateDeviceUseCase(c.read<DeviceRepository>()),
+        ),
+        Provider<GetDevicesForGym>(
+          create: (c) => GetDevicesForGym(c.read<DeviceRepository>()),
+        ),
+        Provider<GetDeviceByNfcCode>(
+          create: (c) => GetDeviceByNfcCode(c.read<DeviceRepository>()),
+        ),
+        Provider<DeleteDeviceUseCase>(
+          create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
+        ),
+
+        // Exercise
+        Provider<ExerciseRepository>(
+          create: (_) => ExerciseRepositoryImpl(FirestoreExerciseSource()),
+        ),
+        Provider<GetExercisesForDevice>(
+          create: (c) => GetExercisesForDevice(c.read<ExerciseRepository>()),
+        ),
+        Provider<CreateExerciseUseCase>(
+          create: (c) => CreateExerciseUseCase(c.read<ExerciseRepository>()),
+        ),
+        Provider<DeleteExerciseUseCase>(
+          create: (c) => DeleteExerciseUseCase(c.read<ExerciseRepository>()),
+        ),
+
+        // App state
+        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ThemeLoader>(
+          create: (_) => ThemeLoader()..loadDefault(),
+          update: (ctx, auth, prev) {
+            final loader = prev ?? (ThemeLoader()..loadDefault());
+            loader.loadGymTheme(auth.gymCode ?? '');
+            return loader;
+          },
+        ),
+        ChangeNotifierProvider(create: (_) => GymProvider()),
+        ChangeNotifierProvider(create: (_) => DeviceProvider()),
+        ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(
+          create:
+              (c) => ExerciseProvider(
+                getEx: c.read<GetExercisesForDevice>(),
+                createEx: c.read<CreateExerciseUseCase>(),
+                deleteEx: c.read<DeleteExerciseUseCase>(),
+              ),
+        ),
+        ChangeNotifierProvider(
+          create:
+              (_) => ReportProvider(
+                getUsageStats: usageUC,
+                getLogTimestamps: logsUC,
+              ),
+        ),
+        ChangeNotifierProvider(create: (_) => RankProvider()),
+      ],
+      child: const MyApp(),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<ThemeLoader>().theme;
+    final locale = context.watch<AppProvider>().locale;
+
+    final child = (!kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.android)
+        ? GlobalNfcListener(child: _buildApp(theme, locale))
+        : _buildApp(theme, locale);
+
+    return child;
+  }
+
+  MaterialApp _buildApp(ThemeData theme, Locale? locale) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Gym Progress',
+      title: dotenv.env['APP_NAME'] ?? 'Tap’em',
       debugShowCheckedModeBanner: false,
-      theme: appTheme(),
-      builder: (ctx, child) => NfcGlobalListener(child: child!),
-      home: const HomePage(),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/dashboard':
-            return MaterialPageRoute(builder: (_) => const DashboardScreen(), settings: settings);
-          case '/history':
-            return MaterialPageRoute(builder: (_) => const HistoryScreen(), settings: settings);
-          case '/profile':
-            return MaterialPageRoute(builder: (_) => const ProfileScreen(), settings: settings);
-          case '/reporting':
-            return MaterialPageRoute(builder: (_) => const ReportDashboardScreen(), settings: settings);
-          case '/admin':
-            return MaterialPageRoute(builder: (_) => const AdminDashboardScreen(), settings: settings);
-          case '/trainingsplan':
-            return MaterialPageRoute(builder: (_) => const TrainingsplanScreen(), settings: settings);
-          case '/gym':
-            return MaterialPageRoute(builder: (_) => const GymScreen(), settings: settings);
-          case '/rank':
-            return MaterialPageRoute(builder: (_) => const RankScreen(), settings: settings);
-          case '/affiliate':
-            return MaterialPageRoute(builder: (_) => const AffiliateScreen(), settings: settings);
-          default:
-            return MaterialPageRoute(builder: (_) => const HomePage(), settings: settings);
-        }
-      },
-      onUnknownRoute: (_) => MaterialPageRoute(builder: (_) => const HomePage()),
+      theme: theme,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      initialRoute: AppRouter.splash,
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      onUnknownRoute:
+          (_) => MaterialPageRoute(builder: (_) => const SplashScreen()),
     );
   }
 }

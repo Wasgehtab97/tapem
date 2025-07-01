@@ -1,45 +1,105 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==================================================
+# Flutter / Dart / Pub
+# ==================================================
+# Build outputs
+build/
+**/build/
 
-# IntelliJ related
+# Dart tool cache
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+
+# Generated plugin registrant
+generated_plugin_registrant.dart
+
+# ==================================================
+# Firebase service account keys & config
+# ==================================================
+# Eigene Admin-SDK JSONs
+/scripts/*.json
+# Google-Services
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+
+# Environment files
+.env*
+!.env.example
+
+# ==================================================
+# IDEs & Editors
+# ==================================================
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
+# Misc
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.history/
+
+# ==================================================
+# Android
+# ==================================================
+# Gradle
+android/local.properties
+**/android/app/build/
+**/android/.gradle/
+**/android/gradle/
+**/android/gradlew*
+**/android/gradle-wrapper.*
+# Keystores
+**/*.jks
+**/*.keystore
+
+# ==================================================
+# iOS / Xcode
+# ==================================================
+# Flutter frameworks & pods
+ios/Flutter/.last_build_id
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/engine/
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Podfile.lock
+
+# Xcode
+*.xcworkspace
+*.xcuserdata
+*.xcuserstate
+DerivedData/
+
+# ==================================================
+# Node / JS (falls du node_modules hast)
+# ==================================================
+node_modules/
+
+# ==================================================
+# Testing / Coverage / Reports
+# ==================================================
+coverage/
+lcov.info
+*.out
+*.html
+!site/*.html
+
+# ==================================================
+# Obfuscation / symbolication
+# ==================================================
+app.*.symbols
+app.*.map.json
+# Flutter build outputs
 /build/
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# FVM Version Cache
+.fvm/

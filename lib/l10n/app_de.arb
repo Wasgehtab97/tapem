@@ -1,0 +1,333 @@
+{
+  "@@locale": "de",
+
+  "addSetButton": "Set hinzufügen",
+  "@addSetButton": {
+    "description": "Button-Label um ein neues Set hinzuzufügen"
+  },
+
+  "authErrorGeneric": "Fehler: {message}",
+  "@authErrorGeneric": {
+    "description": "Generische Auth-Fehlernachricht",
+    "placeholders": { "message": {} }
+  },
+
+  "authTitle": "Anmelden / Registrieren",
+  "@authTitle": {
+    "description": "Titel auf dem Authentifizierungsbildschirm"
+  },
+
+  "cancelButton": "Abbrechen",
+  "@cancelButton": {
+    "description": "Beschriftung für den Abbrechen-Button"
+  },
+
+  "deviceHistoryTooltip": "Verlauf anzeigen",
+  "@deviceHistoryTooltip": {
+    "description": "Tooltip für den Verlauf-Button auf der Geräte-Seite"
+  },
+
+  "deviceNotFound": "Gerät nicht gefunden",
+  "@deviceNotFound": {
+    "description": "Fehlermeldung, wenn das Gerät nicht geladen werden kann"
+  },
+
+  "emailFieldLabel": "E-Mail",
+  "@emailFieldLabel": {
+    "description": "Beschriftung für das E-Mail-Feld"
+  },
+
+  "emailInvalid": "Bitte gültige E-Mail eingeben.",
+  "@emailInvalid": {
+    "description": "Validierungsmeldung für ungültige E-Mail"
+  },
+
+  "invalidEmailError": "Ungültige E-Mail-Adresse.",
+  "@invalidEmailError": {
+    "description": "Fehlermeldung bei ungültiger E-Mail-Adresse"
+  },
+
+  "errorPrefix": "Fehler",
+  "@errorPrefix": {
+    "description": "Präfix für Fehlermeldungen"
+  },
+
+  "genericUser": "Nutzer",
+  "@genericUser": {
+    "description": "Fallback-Anzeige für unbekannten Benutzer"
+  },
+
+  "gymCodeFieldLabel": "Gym-Code",
+  "@gymCodeFieldLabel": {
+    "description": "Beschriftung für das Gym-Code-Feld"
+  },
+
+  "gymCodeHelpLabel": "Hilfe",
+  "@gymCodeHelpLabel": {
+    "description": "Beschriftung für Gym-Code Hilfe"
+  },
+
+  "gymCodeInvalid": "Ungültiger Gym-Code.",
+  "@gymCodeInvalid": {
+    "description": "Fehlermeldung bei ungültigem Gym-Code"
+  },
+
+  "gymCodeLockedMessage": "Zu viele Versuche. Bitte warte 30 Sekunden.",
+  "@gymCodeLockedMessage": {
+    "description": "Snackbar bei Sperrung des Gym-Codes"
+  },
+
+  "gymCodeRequired": "Gym-Code erforderlich.",
+  "@gymCodeRequired": {
+    "description": "Validierung, wenn Gym-Code fehlt"
+  },
+
+  "gymNoDevices": "Keine Geräte gefunden.",
+  "@gymNoDevices": {
+    "description": "Meldung, wenn im Gym keine Geräte vorhanden sind"
+  },
+
+  "gymTitle": "Gym",
+  "@gymTitle": {
+    "description": "Titel der Gym-Übersichtsseite"
+  },
+
+  "historyTitle": "Verlauf: {deviceId}",
+  "@historyTitle": {
+    "description": "Titel der Verlauf-Seite inklusive Geräte-ID",
+    "placeholders": { "deviceId": {} }
+  },
+
+  "historyChartTitle": "Workout-Verlauf",
+  "@historyChartTitle": {
+    "description": "Überschrift für das Verlaufs-Chart"
+  },
+
+  "historyListTitle": "Vergangene Workouts",
+  "@historyListTitle": {
+    "description": "Überschrift für die Liste vergangener Workouts"
+  },
+
+  "homeWelcome": "Willkommen, {user}",
+  "@homeWelcome": {
+    "description": "Begrüßung im Home-Screen",
+    "placeholders": { "user": {} }
+  },
+
+  "kgRequired": "kg?",
+  "@kgRequired": {
+    "description": "Validierungsmeldung, wenn Gewicht fehlt"
+  },
+
+  "lastEntriesTitle": "Letzte Einträge",
+  "@lastEntriesTitle": {
+    "description": "Überschrift für die Liste der letzten Einträge"
+  },
+
+  "languageDialogTitle": "Sprache wählen",
+  "@languageDialogTitle": {
+    "description": "Titel des Sprach-Auswahl-Dialogs"
+  },
+
+  "loginButton": "Login",
+  "@loginButton": {
+    "description": "Beschriftung für den Login-Knopf"
+  },
+
+  "loginFailed": "Login fehlgeschlagen: {error}",
+  "@loginFailed": {
+    "description": "Meldung, wenn der Login mit Ausnahme fehlschlägt",
+    "placeholders": { "error": {} }
+  },
+
+  "logoutTooltip": "Abmelden",
+  "@logoutTooltip": {
+    "description": "Tooltip für den Abmelden-Button"
+  },
+
+  "noteFieldLabel": "Notiz",
+  "@noteFieldLabel": {
+    "description": "Beschriftung für das Notizfeld"
+  },
+
+  "noteAddTooltip": "Notiz hinzufügen",
+  "@noteAddTooltip": {
+    "description": "Tooltip für den Button, um eine Notiz hinzuzufügen"
+  },
+
+  "noteEditTooltip": "Notiz bearbeiten",
+  "@noteEditTooltip": {
+    "description": "Tooltip für den Button, um eine vorhandene Notiz zu bearbeiten"
+  },
+
+  "noteModalTitle": "Geräte-Notiz",
+  "@noteModalTitle": {
+    "description": "Titel des Modals für Geräte-Notizen"
+  },
+
+  "noteModalHint": "Hier Geräte-Einstellungen o. Ä. notieren…",
+  "@noteModalHint": {
+    "description": "Platzhalter-Text im Notiz-Modal"
+  },
+
+  "noteSaveButton": "Speichern",
+  "@noteSaveButton": {
+    "description": "Beschriftung für den Speichern-Button im Notiz-Modal"
+  },
+
+  "noteDeleteTooltip": "Notiz löschen",
+  "@noteDeleteTooltip": {
+    "description": "Tooltip für den Button, um die Notiz zu löschen"
+  },
+
+  "saveSuccess": "Erfolgreich gespeichert",
+  "@saveSuccess": {
+    "description": "Snackbar-Meldung nach erfolgreichem Speichern"
+  },
+
+  "passwordFieldLabel": "Passwort",
+  "@passwordFieldLabel": {
+    "description": "Beschriftung für das Passwort-Feld"
+  },
+
+  "passwordTooShort": "Mindestens 6 Zeichen erforderlich.",
+  "@passwordTooShort": {
+    "description": "Validierungsmeldung für zu kurzes Passwort"
+  },
+
+  "profileTitle": "Profil",
+  "@profileTitle": {
+    "description": "Titel der Profilseite"
+  },
+
+  "profileTrainingDaysTitle": "Deine Trainingstage im Jahr",
+  "@profileTrainingDaysTitle": {
+    "description": "Überschrift für den Kalender auf der Profilseite"
+  },
+
+  "repsRequired": "Wdh?",
+  "@repsRequired": {
+    "description": "Validierungsmeldung, wenn Wiederholungen fehlen"
+  },
+
+  "registerButton": "Registrieren",
+  "@registerButton": {
+    "description": "Beschriftung für den Registrieren-Knopf"
+  },
+
+  "sampleWorkout1": "12. Mai 2025 – 3×8 @ 80 kg",
+  "@sampleWorkout1": {
+    "description": "Beispiel-Workout in der Liste"
+  },
+
+  "sampleWorkout2": "10. Mai 2025 – 3×10 @ 75 kg",
+  "@sampleWorkout2": {
+    "description": "Beispiel-Workout in der Liste"
+  },
+
+  "saveButton": "Speichern",
+  "@saveButton": {
+    "description": "Beschriftung für Speichern-Button"
+  },
+
+  "settingsIconTooltip": "Einstellungen",
+  "@settingsIconTooltip": {
+    "description": "Tooltip für das Zahnrad-Icon"
+  },
+
+  "tabAffiliate": "Affiliate",
+  "@tabAffiliate": {
+    "description": "Label für den Affiliate-Tab"
+  },
+
+  "tabAdmin": "Admin",
+  "@tabAdmin": {
+    "description": "Label für den Admin-Tab"
+  },
+
+  "tabGym": "Gym",
+  "@tabGym": {
+    "description": "Label für den Gym-Tab"
+  },
+
+  "tabProfile": "Profil",
+  "@tabProfile": {
+    "description": "Label für den Profil-Tab"
+  },
+
+  "tabReport": "Report",
+  "@tabReport": {
+    "description": "Label für den Report-Tab"
+  },
+
+  "tableHeaderKg": "kg",
+  "@tableHeaderKg": {
+    "description": "Tabellenkopf für Gewichtsspalte"
+  },
+
+  "tableHeaderNumber": "Nr.",
+  "@tableHeaderNumber": {
+    "description": "Tabellenkopf für Spalte Nummer"
+  },
+
+  "tableHeaderReps": "Wdh.",
+  "@tableHeaderReps": {
+    "description": "Tabellenkopf für Wiederholungen"
+  },
+
+  "timerPauseLabel": "Pause",
+  "@timerPauseLabel": {
+    "description": "Prefix-Label für den Pausen-Timer"
+  },
+
+  "timerStart": "Start",
+  "@timerStart": {
+    "description": "Beschriftung für Timer-Start-Button"
+  },
+
+  "timerStop": "Stopp",
+  "@timerStop": {
+    "description": "Beschriftung für Timer-Stopp-Button"
+  },
+
+  "secondsAbbreviation": "s",
+  "@secondsAbbreviation": {
+    "description": "Abkürzung für Sekunden"
+  },
+
+  "timerReset": "Zurücksetzen",
+  "@timerReset": {
+    "description": "Beschriftung für Timer-Zurücksetzen-Button"
+  },
+
+  "timerDuration": "Dauer",
+  "@timerDuration": {
+    "description": "Beschriftung für Auswahl der Timer-Dauer"
+  },
+
+  "userNotFound": "Nutzer nicht gefunden.",
+  "@userNotFound": {
+    "description": "Fehlermeldung, wenn Nutzer nicht gefunden wurde"
+  },
+
+  "wrongPassword": "Falsches Passwort.",
+  "@wrongPassword": {
+    "description": "Fehlermeldung bei falschem Passwort"
+  },
+
+  "germanLanguage": "Deutsch",
+  "@germanLanguage": {
+    "description": "Bezeichnung für deutsche Sprache"
+  },
+
+  "englishLanguage": "Englisch",
+  "@englishLanguage": {
+    "description": "Bezeichnung für englische Sprache"
+  },
+  "usernameDialogTitle": "Nutzernamen wählen",
+  "@usernameDialogTitle": {"description": "Titel des Dialogs zur Wahl des Nutzernamens"},
+  "usernameFieldLabel": "Nutzername",
+  "@usernameFieldLabel": {"description": "Beschriftung für das Nutzername-Feld"},
+  "usernameTaken": "Dieser Nutzername ist bereits vergeben.",
+  "@usernameTaken": {"description": "Fehler wenn Nutzername existiert"}
+}

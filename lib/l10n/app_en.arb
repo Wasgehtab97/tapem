@@ -1,0 +1,333 @@
+{
+  "@@locale": "en",
+
+  "addSetButton": "Add set",
+  "@addSetButton": {
+    "description": "Button label to add a new set"
+  },
+
+  "authErrorGeneric": "Error: {message}",
+  "@authErrorGeneric": {
+    "description": "Generic authentication error",
+    "placeholders": { "message": {} }
+  },
+
+  "authTitle": "Sign In / Register",
+  "@authTitle": {
+    "description": "Title on the auth screen"
+  },
+
+  "cancelButton": "Cancel",
+  "@cancelButton": {
+    "description": "Label for the cancel button"
+  },
+
+  "deviceHistoryTooltip": "Show history",
+  "@deviceHistoryTooltip": {
+    "description": "Tooltip for the history button on device screen"
+  },
+
+  "deviceNotFound": "Device not found",
+  "@deviceNotFound": {
+    "description": "Error when the device cannot be loaded"
+  },
+
+  "emailFieldLabel": "E-mail",
+  "@emailFieldLabel": {
+    "description": "Label for the e-mail text field"
+  },
+
+  "emailInvalid": "Please enter a valid e-mail.",
+  "@emailInvalid": {
+    "description": "Validation message for invalid e-mail"
+  },
+
+  "invalidEmailError": "Invalid e-mail address.",
+  "@invalidEmailError": {
+    "description": "Error when e-mail address is malformed"
+  },
+
+  "errorPrefix": "Error",
+  "@errorPrefix": {
+    "description": "Prefix for error displays"
+  },
+
+  "genericUser": "User",
+  "@genericUser": {
+    "description": "Fallback display for unknown user"
+  },
+
+  "gymCodeFieldLabel": "Gym Code",
+  "@gymCodeFieldLabel": {
+    "description": "Label for the gym code input"
+  },
+
+  "gymCodeHelpLabel": "Help",
+  "@gymCodeHelpLabel": {
+    "description": "Label for gym code help action"
+  },
+
+  "gymCodeInvalid": "Invalid gym code.",
+  "@gymCodeInvalid": {
+    "description": "Error when gym code is invalid"
+  },
+
+  "gymCodeLockedMessage": "Too many failed attempts. Please wait 30 seconds.",
+  "@gymCodeLockedMessage": {
+    "description": "Snackbar when gym code is locked due to too many attempts"
+  },
+
+  "gymCodeRequired": "Gym code required.",
+  "@gymCodeRequired": {
+    "description": "Validation when gym code is blank"
+  },
+
+  "gymNoDevices": "No devices found.",
+  "@gymNoDevices": {
+    "description": "Message when there are no devices in the gym"
+  },
+
+  "gymTitle": "Gym",
+  "@gymTitle": {
+    "description": "Title of the gym overview screen"
+  },
+
+  "historyTitle": "History: {deviceId}",
+  "@historyTitle": {
+    "description": "Title of the history screen including device ID",
+    "placeholders": { "deviceId": {} }
+  },
+
+  "historyChartTitle": "Workout history",
+  "@historyChartTitle": {
+    "description": "Heading for the workout history chart"
+  },
+
+  "historyListTitle": "Past workouts",
+  "@historyListTitle": {
+    "description": "Heading for the list of past workouts"
+  },
+
+  "homeWelcome": "Welcome, {user}",
+  "@homeWelcome": {
+    "description": "Greeting on the Home screen",
+    "placeholders": { "user": {} }
+  },
+
+  "kgRequired": "kg?",
+  "@kgRequired": {
+    "description": "Validation when weight is missing"
+  },
+
+  "lastEntriesTitle": "Last entries",
+  "@lastEntriesTitle": {
+    "description": "Title for the last entries list"
+  },
+
+  "languageDialogTitle": "Select language",
+  "@languageDialogTitle": {
+    "description": "Title of the language selection dialog"
+  },
+
+  "loginButton": "Login",
+  "@loginButton": {
+    "description": "Label for the Login button"
+  },
+
+  "loginFailed": "Login failed: {error}",
+  "@loginFailed": {
+    "description": "Message when login fails with exception",
+    "placeholders": { "error": {} }
+  },
+
+  "logoutTooltip": "Logout",
+  "@logoutTooltip": {
+    "description": "Tooltip for the logout button"
+  },
+
+  "noteFieldLabel": "Note",
+  "@noteFieldLabel": {
+    "description": "Label for the note field"
+  },
+
+  "noteAddTooltip": "Add note",
+  "@noteAddTooltip": {
+    "description": "Tooltip for the add-note button"
+  },
+
+  "noteEditTooltip": "Edit note",
+  "@noteEditTooltip": {
+    "description": "Tooltip for the edit-note button"
+  },
+
+  "noteModalTitle": "Device Note",
+  "@noteModalTitle": {
+    "description": "Title of the device note modal"
+  },
+
+  "noteModalHint": "Write settings or other details here…",
+  "@noteModalHint": {
+    "description": "Placeholder text in the note modal"
+  },
+
+  "noteSaveButton": "Save",
+  "@noteSaveButton": {
+    "description": "Label for the save button in the note modal"
+  },
+
+  "noteDeleteTooltip": "Delete note",
+  "@noteDeleteTooltip": {
+    "description": "Tooltip for the delete-note button in the note modal"
+  },
+
+  "saveSuccess": "Saved successfully",
+  "@saveSuccess": {
+    "description": "Snackbar message after successful save"
+  },
+
+  "passwordFieldLabel": "Password",
+  "@passwordFieldLabel": {
+    "description": "Label for the password text field"
+  },
+
+  "passwordTooShort": "Must be at least 6 characters.",
+  "@passwordTooShort": {
+    "description": "Validation message for too short password"
+  },
+
+  "profileTitle": "Profile",
+  "@profileTitle": {
+    "description": "Title of the profile screen"
+  },
+
+  "profileTrainingDaysTitle": "Your training days of the year",
+  "@profileTrainingDaysTitle": {
+    "description": "Heading for the calendar on profile screen"
+  },
+
+  "repsRequired": "reps?",
+  "@repsRequired": {
+    "description": "Validation when reps are missing"
+  },
+
+  "registerButton": "Register",
+  "@registerButton": {
+    "description": "Label for the Register button"
+  },
+
+  "sampleWorkout1": "May 12, 2025 – 3×8 @ 80 kg",
+  "@sampleWorkout1": {
+    "description": "Example workout in the list"
+  },
+
+  "sampleWorkout2": "May 10, 2025 – 3×10 @ 75 kg",
+  "@sampleWorkout2": {
+    "description": "Example workout in the list"
+  },
+
+  "saveButton": "Save",
+  "@saveButton": {
+    "description": "Label for the save button"
+  },
+
+  "settingsIconTooltip": "Settings",
+  "@settingsIconTooltip": {
+    "description": "Tooltip for the settings icon"
+  },
+
+  "tabAffiliate": "Affiliate",
+  "@tabAffiliate": {
+    "description": "Label for the Affiliate tab"
+  },
+
+  "tabAdmin": "Admin",
+  "@tabAdmin": {
+    "description": "Label for the Admin tab"
+  },
+
+  "tabGym": "Gym",
+  "@tabGym": {
+    "description": "Label for the Gym tab"
+  },
+
+  "tabProfile": "Profile",
+  "@tabProfile": {
+    "description": "Label for the Profile tab"
+  },
+
+  "tabReport": "Report",
+  "@tabReport": {
+    "description": "Label for the Report tab"
+  },
+
+  "tableHeaderKg": "kg",
+  "@tableHeaderKg": {
+    "description": "Table header for weight column"
+  },
+
+  "tableHeaderNumber": "No.",
+  "@tableHeaderNumber": {
+    "description": "Table header for number column"
+  },
+
+  "tableHeaderReps": "Reps",
+  "@tableHeaderReps": {
+    "description": "Table header for reps column"
+  },
+
+  "timerPauseLabel": "Rest",
+  "@timerPauseLabel": {
+    "description": "Prefix label for the rest timer"
+  },
+
+  "timerStart": "Start",
+  "@timerStart": {
+    "description": "Label for timer start button"
+  },
+
+  "timerStop": "Stop",
+  "@timerStop": {
+    "description": "Label for timer stop button"
+  },
+
+  "secondsAbbreviation": "s",
+  "@secondsAbbreviation": {
+    "description": "Abbreviation for seconds"
+  },
+
+  "timerReset": "Reset",
+  "@timerReset": {
+    "description": "Label for timer reset button"
+  },
+
+  "timerDuration": "Duration",
+  "@timerDuration": {
+    "description": "Label for timer duration dropdown"
+  },
+
+  "userNotFound": "User not found.",
+  "@userNotFound": {
+    "description": "Error when no user is found"
+  },
+
+  "wrongPassword": "Wrong password.",
+  "@wrongPassword": {
+    "description": "Error when password is wrong"
+  },
+
+  "germanLanguage": "German",
+  "@germanLanguage": {
+    "description": "Label for German language"
+  },
+
+  "englishLanguage": "English",
+  "@englishLanguage": {
+    "description": "Label for English language"
+  },
+  "usernameDialogTitle": "Choose username",
+  "@usernameDialogTitle": {"description": "Title of the username dialog"},
+  "usernameFieldLabel": "Username",
+  "@usernameFieldLabel": {"description": "Label for username field"},
+  "usernameTaken": "This username is already taken.",
+  "@usernameTaken": {"description": "Error when username exists"}
+}
