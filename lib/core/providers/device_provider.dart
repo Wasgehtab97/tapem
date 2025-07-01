@@ -28,6 +28,7 @@ class DeviceProvider extends ChangeNotifier {
   List<Map<String, String>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
+  int _xp = 0;
 
   late String _currentExerciseId;
 
@@ -50,6 +51,7 @@ class DeviceProvider extends ChangeNotifier {
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
+  int get xp => _xp;
 
   Future<void> loadDevices(String gymId) async {
     _devices = await _getDevicesForGym.execute(gymId);
@@ -74,6 +76,8 @@ class DeviceProvider extends ChangeNotifier {
       );
       _currentExerciseId = exerciseId;
 
+      _xp = 0;
+
       // Session initialisieren
       _sets = [
         {
@@ -91,6 +95,9 @@ class DeviceProvider extends ChangeNotifier {
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
       await _loadUserNote(gymId, deviceId, userId);
+      if (!_device!.isMulti) {
+        await _loadUserXp(gymId, userId);
+      }
     } catch (e, st) {
       _error = e.toString();
       debugPrintStack(label: 'DeviceProvider.loadDevice', stackTrace: st);
@@ -212,6 +219,7 @@ class DeviceProvider extends ChangeNotifier {
     if (!_device!.isMulti && showInLeaderboard) {
       try {
         await _updateLeaderboard(gymId, userId, showInLeaderboard);
+        await _loadUserXp(gymId, userId);
       } catch (e, st) {
         debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
       }
@@ -344,6 +352,24 @@ class DeviceProvider extends ChangeNotifier {
       _note = data['note'] as String? ?? '';
       notifyListeners();
     }
+  }
+
+  Future<void> _loadUserXp(
+    String gymId,
+    String userId,
+  ) async {
+    final xpDoc = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('leaderboard')
+        .doc(userId)
+        .get();
+    if (xpDoc.exists) {
+      _xp = xpDoc.data()?['xp'] as int? ?? 0;
+    } else {
+      _xp = 0;
+    }
+    notifyListeners();
   }
 
   void _setLoading(bool value) {
