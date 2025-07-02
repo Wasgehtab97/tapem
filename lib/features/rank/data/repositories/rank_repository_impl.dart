@@ -22,7 +22,10 @@ class RankRepositoryImpl implements RankRepository {
   }
 
   @override
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(String gymId) {
-    return _source.watchLeaderboard(gymId);
+  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+    String gymId,
+    String deviceId,
+  ) {
+    return _source.watchLeaderboard(gymId, deviceId);
   }
 }

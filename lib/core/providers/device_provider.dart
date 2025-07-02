@@ -113,7 +113,7 @@ class DeviceProvider extends ChangeNotifier {
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
       await _loadUserNote(gymId, deviceId, userId);
       if (!_device!.isMulti) {
-        await _loadUserXp(gymId, userId);
+        await _loadUserXp(gymId, deviceId, userId);
       }
     } catch (e, st) {
       _error = e.toString();
@@ -259,7 +259,7 @@ class DeviceProvider extends ChangeNotifier {
     if (!_device!.isMulti && showInLeaderboard) {
       try {
         await _updateLeaderboard(gymId, userId, showInLeaderboard);
-        await _loadUserXp(gymId, userId);
+        await _loadUserXp(gymId, _device!.uid, userId);
       } catch (e, st) {
         debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
       }
@@ -298,11 +298,13 @@ class DeviceProvider extends ChangeNotifier {
     final lbRef = _firestore
         .collection('gyms')
         .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
     final sessionRef = lbRef
         .collection('dailySessions')
-        .doc('${deviceId}_$dateStr');
+        .doc(dateStr);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -399,11 +401,14 @@ class DeviceProvider extends ChangeNotifier {
 
   Future<void> _loadUserXp(
     String gymId,
+    String deviceId,
     String userId,
   ) async {
     final xpDoc = await _firestore
         .collection('gyms')
         .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
         .collection('leaderboard')
         .doc(userId)
         .get();

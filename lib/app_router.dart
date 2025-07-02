@@ -83,8 +83,13 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
 
       case rank:
-        final gymId = settings.arguments as String? ?? '';
-        return MaterialPageRoute(builder: (_) => RankScreen(gymId: gymId));
+        final args = settings.arguments as Map<String, String>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => RankScreen(
+            gymId: args['gymId'] ?? '',
+            deviceId: args['deviceId'] ?? '',
+          ),
+        );
 
       case selectGym:
         return MaterialPageRoute(builder: (_) => const SelectGymScreen());

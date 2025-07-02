@@ -14,9 +14,9 @@ class RankProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> get entries => _entries;
 
-  void watch(String gymId) {
+  void watch(String gymId, String deviceId) {
     _sub?.cancel();
-    _sub = _repository.watchLeaderboard(gymId).listen((list) {
+    _sub = _repository.watchLeaderboard(gymId, deviceId).listen((list) {
       _entries = list;
       notifyListeners();
     });

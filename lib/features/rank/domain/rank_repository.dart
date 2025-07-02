@@ -5,5 +5,9 @@ abstract class RankRepository {
     String deviceId,
     bool showInLeaderboard,
   );
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(String gymId);
+
+  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+    String gymId,
+    String deviceId,
+  );
 }
