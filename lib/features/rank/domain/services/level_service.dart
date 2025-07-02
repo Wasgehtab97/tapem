@@ -2,6 +2,7 @@ import '../models/level_info.dart';
 
 class LevelService {
   static const int xpPerLevel = 1000;
+  static const int xpPerSession = 50;
   static const int maxLevel = 30;
 
   LevelInfo addXp(LevelInfo info, int delta) {
