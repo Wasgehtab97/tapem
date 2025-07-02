@@ -150,11 +150,13 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                 : '',
         sets: [
           PlannedSet(
-            weight:
-                headerMap.containsKey('gewicht')
-                    ? double.tryParse(row[headerMap['gewicht']!].toString()) ??
-                        0
-                    : 0,
+              weight: headerMap.containsKey('gewicht')
+                  ? double.tryParse(
+                          row[headerMap['gewicht']!]
+                              .toString()
+                              .replaceAll(',', '.')) ??
+                      0
+                  : 0,
             reps: int.tryParse(row[repsIdx].toString()) ?? 0,
             rir: int.tryParse(row[headerMap['rir']!].toString()),
             note:

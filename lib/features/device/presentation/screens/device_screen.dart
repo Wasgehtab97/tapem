@@ -225,7 +225,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                     labelText: 'kg',
                                     isDense: true,
                                   ),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
                                   onChanged: (v) {
                                     prov.updateSet(entry.key, weight: v);
                                   },
@@ -233,7 +235,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                     if (v == null || v.isEmpty) {
                                       return 'Gewicht?';
                                     }
-                                    if (double.tryParse(v) == null) {
+                                    if (double.tryParse(
+                                            v.replaceAll(',', '.')) ==
+                                        null) {
                                       return 'Zahl eingeben';
                                     }
                                     return null;
@@ -410,8 +414,10 @@ class _PlannedTable extends StatelessWidget {
                       hintText: weightHint,
                       isDense: true,
                     ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (v) => prov.updateSet(entrySet.key, weight: v),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (v) =>
+                        prov.updateSet(entrySet.key, weight: v),
                   ),
                 ),
                 const SizedBox(width: 12),

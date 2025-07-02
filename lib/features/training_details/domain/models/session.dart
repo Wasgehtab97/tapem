@@ -20,7 +20,7 @@ class Session {
 }
 
 class SessionSet {
-  final int weight;
+  final double weight;
   final int reps;
   SessionSet({ required this.weight, required this.reps });
 }

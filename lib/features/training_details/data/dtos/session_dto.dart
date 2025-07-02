@@ -7,7 +7,7 @@ class SessionDto {
   final String sessionId;
   final String deviceId;
   final DateTime timestamp;
-  final int weight;
+  final double weight;
   final int reps;
   final String note;
   final DocumentReference<Map<String, dynamic>> reference;
@@ -33,7 +33,7 @@ class SessionDto {
       sessionId: data['sessionId'] as String,
       deviceId: deviceId, // nicht mehr data['deviceId']
       timestamp: (data['timestamp'] as Timestamp).toDate(),
-      weight: (data['weight'] as num).toInt(),
+      weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),
       note: data['note'] as String? ?? '',
       reference: doc.reference,
