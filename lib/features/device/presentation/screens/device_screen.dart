@@ -153,10 +153,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        color: DeviceLevelStyle.widgetColorFor(
-                          prov.level,
-                        ),
-                        child: Padding(
+                        color: Colors.transparent,
+                        clipBehavior: Clip.antiAlias,
+                        child: Container(
+                          decoration: DeviceLevelStyle.widgetDecorationFor(
+                            prov.level,
+                          ),
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -215,10 +217,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     else ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        color: DeviceLevelStyle.widgetColorFor(
-                          prov.level,
-                        ),
-                        child: Padding(
+                        color: Colors.transparent,
+                        clipBehavior: Clip.antiAlias,
+                        child: Container(
+                          decoration: DeviceLevelStyle.widgetDecorationFor(
+                            prov.level,
+                          ),
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -438,8 +442,10 @@ class _PlannedTable extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      color: DeviceLevelStyle.widgetColorFor(prov.level),
-      child: Padding(
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: DeviceLevelStyle.widgetDecorationFor(prov.level),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
