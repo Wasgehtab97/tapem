@@ -517,6 +517,7 @@ class _PlannedTable extends StatelessWidget {
         const RestTimerWidget(),
       ],
     ),
-  );
+  ),
+);
   }
 }
