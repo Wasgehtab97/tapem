@@ -6,7 +6,7 @@ class WorkoutLog {
   final String userId;
   final String sessionId;
   final DateTime timestamp;
-  final int weight;
+  final double weight;
   final int reps;
   final int? rir;
   final String? note;

@@ -230,7 +230,7 @@ class DeviceProvider extends ChangeNotifier {
         'exerciseId': _currentExerciseId,
         'sessionId': sessionId,
         'timestamp': ts,
-        'weight': int.parse(set['weight']!),
+        'weight': double.parse(set['weight']!.replaceAll(',', '.')),
         'reps': int.parse(set['reps']!),
         'note': _note,
       };

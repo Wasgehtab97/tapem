@@ -11,7 +11,7 @@ WorkoutLogDto _$WorkoutLogDtoFromJson(Map<String, dynamic> json) =>
       userId: json['userId'] as String,
       sessionId: json['sessionId'] as String,
       timestamp: WorkoutLogDto._timestampToDate(json['timestamp'] as Timestamp),
-      weight: (json['weight'] as num).toInt(),
+      weight: (json['weight'] as num).toDouble(),
       reps: (json['reps'] as num).toInt(),
       rir: json['rir'] as int?,
       note: json['setNote'] as String?,

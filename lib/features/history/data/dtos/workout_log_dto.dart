@@ -20,7 +20,7 @@ class WorkoutLogDto {
   )
   final DateTime timestamp;
 
-  final int weight;
+  final double weight;
   final int reps;
   final int? rir;
   final String? note;
