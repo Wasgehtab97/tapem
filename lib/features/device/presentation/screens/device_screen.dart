@@ -154,7 +154,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         color: DeviceLevelStyle.widgetColorFor(
-                          level: prov.level,
+                          prov.level,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -216,7 +216,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         color: DeviceLevelStyle.widgetColorFor(
-                          level: prov.level,
+                          prov.level,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -438,7 +438,7 @@ class _PlannedTable extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      color: DeviceLevelStyle.widgetColorFor(level: prov.level),
+      color: DeviceLevelStyle.widgetColorFor(prov.level),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
