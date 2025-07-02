@@ -335,10 +335,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       const Divider(),
                       const RestTimerWidget(),
                     ],
-                ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -384,7 +384,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ],
             ),
           ),
-        ],
+              ),
       ),
     );
   }
