@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class FirestoreRankSource {
   final FirebaseFirestore _firestore;
@@ -49,18 +50,23 @@ class FirestoreRankSource {
     String gymId,
     String deviceId,
   ) {
-    return _firestore
+    final query = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('devices')
         .doc(deviceId)
         .collection('leaderboard')
         .where('showInLeaderboard', isEqualTo: true)
-        .orderBy('xp', descending: true)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => {'userId': d.id, ...d.data()}).toList(),
-        );
+        .orderBy('xp', descending: true);
+
+    return query.snapshots().asyncMap((snap) async {
+      final futures = snap.docs.map((d) async {
+        final userSnap =
+            await _firestore.collection('users').doc(d.id).get();
+        final username = userSnap.data()?['username'] as String?;
+        return {'userId': d.id, 'username': username, ...d.data()};
+      });
+      return Future.wait(futures);
+    });
   }
 }

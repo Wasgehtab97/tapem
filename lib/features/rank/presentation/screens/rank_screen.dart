@@ -35,7 +35,7 @@ class _RankScreenState extends State<RankScreen> {
               final e = entries[i];
               return ListTile(
                 leading: Text('#${i + 1}'),
-                title: Text(e['userId']),
+                title: Text(e['username'] ?? e['userId']),
                 trailing: Text('${e['xp']} XP'),
               );
             },
