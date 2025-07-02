@@ -185,10 +185,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 const SizedBox(height: 8),
                                 Text('Notiz: ${prov.lastSessionNote}'),
                               ],
-                            ],
+                          ],
                           ),
                         ),
                       ),
+                      if (prov.hasSessionToday)
+                        OutlinedButton.icon(
+                          onPressed: prov.startEditLastSession,
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Session bearbeiten'),
+                        ),
                     ],
                     const Divider(),
                     if (plannedEntry != null)
@@ -331,10 +337,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
                             showInLeaderboard:
-                                context
-                                    .read<AuthProvider>()
-                                    .showInLeaderboard ??
-                                true,
+                                context.read<AuthProvider>().showInLeaderboard ??
+                                    true,
+                            overwrite: prov.editingLastSession,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
