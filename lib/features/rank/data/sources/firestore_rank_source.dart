@@ -32,6 +32,8 @@ class FirestoreRankSource {
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
+      final sessSnap = await tx.get(sessionRef);
+
       var info = LevelInfo.fromMap(lbSnap.data());
 
       if (!lbSnap.exists) {
@@ -42,7 +44,6 @@ class FirestoreRankSource {
         });
       }
 
-      final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
         info = LevelService().addXp(info, 50);
         tx.set(sessionRef, {
