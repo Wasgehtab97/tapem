@@ -3,6 +3,7 @@ abstract class RankRepository {
     String gymId,
     String userId,
     String deviceId,
+    String sessionId,
     bool showInLeaderboard,
   );
 
