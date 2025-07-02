@@ -28,6 +28,8 @@ class DeviceProvider extends ChangeNotifier {
   List<Map<String, String>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
+  String? _lastSessionId;
+  bool _editingLastSession = false;
   int _xp = 0;
 
   late String _currentExerciseId;
@@ -51,6 +53,19 @@ class DeviceProvider extends ChangeNotifier {
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
+  String? get lastSessionId => _lastSessionId;
+  bool get editingLastSession => _editingLastSession;
+  bool get hasSessionToday {
+    if (_lastSessionDate == null) return false;
+    final now = DateTime.now();
+    final lastDay = DateTime(
+      _lastSessionDate!.year,
+      _lastSessionDate!.month,
+      _lastSessionDate!.day,
+    );
+    final today = DateTime(now.year, now.month, now.day);
+    return lastDay == today;
+  }
   int get xp => _xp;
 
   Future<void> loadDevices(String gymId) async {
@@ -91,6 +106,8 @@ class DeviceProvider extends ChangeNotifier {
       _lastSessionSets = [];
       _lastSessionDate = null;
       _lastSessionNote = '';
+      _lastSessionId = null;
+      _editingLastSession = false;
       notifyListeners();
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
@@ -142,6 +159,18 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Lädt die zuletzt gespeicherte Session in die Eingabefelder
+  void startEditLastSession() {
+    if (_lastSessionSets.isEmpty) return;
+    _sets = [
+      for (final set in _lastSessionSets)
+        Map<String, String>.from(set),
+    ];
+    _note = _lastSessionNote;
+    _editingLastSession = true;
+    notifyListeners();
+  }
+
   void setNote(String text) {
     _note = text;
     notifyListeners();
@@ -152,6 +181,7 @@ class DeviceProvider extends ChangeNotifier {
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
+    bool overwrite = false,
   }) async {
     if (_device == null) return;
 
@@ -165,26 +195,36 @@ class DeviceProvider extends ChangeNotifier {
         _lastSessionDate!.month,
         _lastSessionDate!.day,
       );
-      if (lastDay == today) {
+      if (lastDay == today && !overwrite) {
         throw Exception('Heute bereits gespeichert.');
       }
     }
 
-    final sessionId = _uuid.v4();
+    final sessionId = overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
     final ts = Timestamp.now();
     final batch = _firestore.batch();
     final savedSets = List<Map<String, String>>.from(_sets);
 
+    final logsCol = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(_device!.uid)
+        .collection('logs');
+
+    if (overwrite && _lastSessionId != null) {
+      final existing = await logsCol
+          .where('userId', isEqualTo: userId)
+          .where('sessionId', isEqualTo: _lastSessionId)
+          .get();
+      for (final doc in existing.docs) {
+        batch.delete(doc.reference);
+      }
+    }
+
     // Workout-Logs schreiben
     for (var set in savedSets) {
-      final logDoc =
-          _firestore
-              .collection('gyms')
-              .doc(gymId)
-              .collection('devices')
-              .doc(_device!.uid)
-              .collection('logs')
-              .doc();
+      final logDoc = logsCol.doc();
       final data = <String, dynamic>{
         'userId': userId,
         'exerciseId': _currentExerciseId,
@@ -229,6 +269,8 @@ class DeviceProvider extends ChangeNotifier {
     _lastSessionSets = savedSets;
     _lastSessionDate = ts.toDate();
     _lastSessionNote = _note;
+    _lastSessionId = sessionId;
+    _editingLastSession = false;
     _sets = [
       {
         'number': '1',
@@ -330,6 +372,7 @@ class DeviceProvider extends ChangeNotifier {
     ];
     _lastSessionDate = ts;
     _lastSessionNote = note;
+    _lastSessionId = sid;
     notifyListeners();
   }
 
