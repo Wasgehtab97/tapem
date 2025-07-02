@@ -94,7 +94,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     // Single-Übung: hier bleiben
     return Scaffold(
-      backgroundColor: DeviceLevelStyle.backgroundFor(prov.level),
       appBar: AppBar(
         title: Text(prov.device!.name),
         centerTitle: true,
@@ -155,6 +154,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
+                        color: DeviceLevelStyle.widgetColorFor(prov.level),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
@@ -211,24 +211,33 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     const Divider(),
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
-                    else ...[
-                      const Text(
-                        'Neue Session',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (var entry in prov.sets.asMap().entries)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
+                    else
+                      Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        color: DeviceLevelStyle.widgetColorFor(prov.level),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              SizedBox(
-                                width: 24,
-                                child: Text(entry.value['number']!),
+                              const Text(
+                                'Neue Session',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
+                              const SizedBox(height: 8),
+                              for (var entry in prov.sets.asMap().entries)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 24,
+                                        child: Text(entry.value['number']!),
+                                      ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextFormField(
@@ -412,9 +421,14 @@ class _PlannedTable extends StatelessWidget {
     final repsHint = entry.reps?.toString();
     final rirHint = entry.rir > 0 ? entry.rir.toString() : null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      color: DeviceLevelStyle.widgetColorFor(prov.level),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
         const Text(
           'Heute dran',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -502,6 +516,7 @@ class _PlannedTable extends StatelessWidget {
         const Divider(),
         const RestTimerWidget(),
       ],
-    );
+    ),
+  );
   }
 }
