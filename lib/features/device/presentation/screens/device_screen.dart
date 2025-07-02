@@ -115,7 +115,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text('${prov.xp}', style: const TextStyle(fontSize: 10)),
+                    Text(
+                      '${prov.xp} XP',
+                      style: const TextStyle(fontSize: 10),
+                    ),
                   ],
                 ),
               ),

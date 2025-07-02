@@ -332,7 +332,7 @@ class DeviceProvider extends ChangeNotifier {
       }
 
       if (!sessSnap.exists) {
-        info = LevelService().addXp(info, 50);
+        info = LevelService().addXp(info, LevelService.xpPerSession);
         tx.set(sessionRef, {
           'deviceId': deviceId,
           'date': dateStr,
