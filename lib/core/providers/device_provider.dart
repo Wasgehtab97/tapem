@@ -263,7 +263,12 @@ class DeviceProvider extends ChangeNotifier {
     // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
     if (!_device!.isMulti && showInLeaderboard) {
       try {
-        await _updateLeaderboard(gymId, userId, showInLeaderboard);
+        await _updateLeaderboard(
+          gymId,
+          userId,
+          sessionId,
+          showInLeaderboard,
+        );
         await _loadUserXp(gymId, _device!.uid, userId);
       } catch (e, st) {
         debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
@@ -291,6 +296,7 @@ class DeviceProvider extends ChangeNotifier {
   Future<void> _updateLeaderboard(
     String gymId,
     String userId,
+    String sessionId,
     bool showInLeaderboard,
   ) async {
     final now = DateTime.now();
@@ -308,8 +314,8 @@ class DeviceProvider extends ChangeNotifier {
         .collection('leaderboard')
         .doc(userId);
     final sessionRef = lbRef
-        .collection('dailySessions')
-        .doc(dateStr);
+        .collection('sessions')
+        .doc(sessionId);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -325,8 +331,11 @@ class DeviceProvider extends ChangeNotifier {
 
       final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
-        info = LevelService().addXp(info, 1);
-        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
+        info = LevelService().addXp(info, 50);
+        tx.set(sessionRef, {
+          'deviceId': deviceId,
+          'date': dateStr,
+        });
         tx.update(lbRef, {
           'xp': info.xp,
           'level': info.level,

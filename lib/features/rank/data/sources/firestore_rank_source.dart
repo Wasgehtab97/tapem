@@ -14,6 +14,7 @@ class FirestoreRankSource {
     required String gymId,
     required String userId,
     required String deviceId,
+    required String sessionId,
     required bool showInLeaderboard,
   }) async {
     final now = DateTime.now();
@@ -26,8 +27,8 @@ class FirestoreRankSource {
         .collection('leaderboard')
         .doc(userId);
     final sessionRef = lbRef
-        .collection('dailySessions')
-        .doc(dateStr);
+        .collection('sessions')
+        .doc(sessionId);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -43,8 +44,11 @@ class FirestoreRankSource {
 
       final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
-        info = LevelService().addXp(info, 1);
-        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
+        info = LevelService().addXp(info, 50);
+        tx.set(sessionRef, {
+          'deviceId': deviceId,
+          'date': dateStr,
+        });
         tx.update(lbRef, {
           'xp': info.xp,
           'level': info.level,

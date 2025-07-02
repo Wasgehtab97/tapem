@@ -11,12 +11,14 @@ class RankRepositoryImpl implements RankRepository {
     String gymId,
     String userId,
     String deviceId,
+    String sessionId,
     bool showInLeaderboard,
   ) {
     return _source.addXp(
       gymId: gymId,
       userId: userId,
       deviceId: deviceId,
+      sessionId: sessionId,
       showInLeaderboard: showInLeaderboard,
     );
   }

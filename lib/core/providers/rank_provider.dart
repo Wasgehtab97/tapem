@@ -26,9 +26,16 @@ class RankProvider extends ChangeNotifier {
     String gymId,
     String userId,
     String deviceId,
+    String sessionId,
     bool showInLeaderboard,
   ) {
-    return _repository.addXp(gymId, userId, deviceId, showInLeaderboard);
+    return _repository.addXp(
+      gymId,
+      userId,
+      deviceId,
+      sessionId,
+      showInLeaderboard,
+    );
   }
 
   @override
