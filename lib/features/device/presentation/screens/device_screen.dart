@@ -386,6 +386,16 @@ class _PlannedTable extends StatelessWidget {
       });
     }
 
+    // Prefill repetitions from the training plan so the value is visible
+    if (entry.reps != null &&
+        prov.sets.every((s) => s['reps'] != null && s['reps']!.isEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        for (var i = 0; i < prov.sets.length; i++) {
+          prov.updateSet(i, reps: entry.reps!.toString());
+        }
+      });
+    }
+
     final weightHint = entry.weight?.toString();
     final repsHint = entry.reps?.toString();
     final rirHint = entry.rir > 0 ? entry.rir.toString() : null;
@@ -407,7 +417,7 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey('w-${entrySet.key}'),
+                    key: ValueKey('w-${entrySet.key}-${entrySet.value['weight']}'),
                     initialValue: entrySet.value['weight'],
                     decoration: InputDecoration(
                       labelText: 'kg',
@@ -423,7 +433,7 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey('r-${entrySet.key}'),
+                    key: ValueKey('r-${entrySet.key}-${entrySet.value['reps']}'),
                     initialValue: entrySet.value['reps'],
                     decoration: InputDecoration(
                       labelText: 'x',
