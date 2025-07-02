@@ -178,9 +178,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                     ],
                     const Divider(),
-                    if (plannedEntry != null)
-                      _PlannedTable(entry: plannedEntry)
-                    else ...[
+                    if (plannedEntry != null) ...[
+                      _PlannedTable(entry: plannedEntry),
+                    ] else ...[
                       const Text(
                         'Neue Session',
                         style: TextStyle(
@@ -189,8 +189,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      for (var entry in prov.sets.asMap().entries)
-                        Padding(
+                      ...prov.sets.asMap().entries.map(
+                        (entry) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
                             children: [
@@ -281,6 +281,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             ],
                           ),
                         ),
+                      ),
                       TextButton.icon(
                         onPressed: () {
                           prov.addSet();
@@ -384,8 +385,8 @@ class _PlannedTable extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        for (final entrySet in prov.sets.asMap().entries)
-          Padding(
+        ...prov.sets.asMap().entries.map(
+          (entrySet) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
@@ -457,6 +458,7 @@ class _PlannedTable extends StatelessWidget {
               ],
             ),
           ),
+        ),
         TextButton.icon(
           onPressed: () => prov.addSet(),
           icon: const Icon(Icons.add),
