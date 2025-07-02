@@ -38,12 +38,13 @@ class DeviceLevelStyle {
   static BoxDecoration widgetDecorationFor(
     int level, {
     double opacity = 1.0,
-    double brightness = 0.0,
+    double brightness = -0.6,
   }) {
     final clampedBrightness = brightness.clamp(-1.0, 1.0);
-    final ColorFilter? filter = clampedBrightness == 0
-        ? null
-        : ColorFilter.matrix(_brightnessMatrix(clampedBrightness));
+    final ColorFilter? filter =
+        clampedBrightness == 0
+            ? null
+            : ColorFilter.matrix(_brightnessMatrix(clampedBrightness));
 
     return BoxDecoration(
       image: DecorationImage(
@@ -59,10 +60,26 @@ class DeviceLevelStyle {
   static List<double> _brightnessMatrix(double amount) {
     final value = amount * 255;
     return <double>[
-      1, 0, 0, 0, value,
-      0, 1, 0, 0, value,
-      0, 0, 1, 0, value,
-      0, 0, 0, 1, 0,
+      1,
+      0,
+      0,
+      0,
+      value,
+      0,
+      1,
+      0,
+      0,
+      value,
+      0,
+      0,
+      1,
+      0,
+      value,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
   }
 
