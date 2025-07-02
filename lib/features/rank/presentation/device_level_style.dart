@@ -29,13 +29,41 @@ class DeviceLevelStyle {
   }
 
   /// Decoration that applies the appropriate background image.
-  static BoxDecoration widgetDecorationFor(int level) {
+  ///
+  /// The optional [opacity] parameter can be used to make the background
+  /// image transparent. `1.0` means fully opaque and `0.0` fully transparent.
+  ///
+  /// A [brightness] value greater than `0` lightens the image while a negative
+  /// value darkens it. Values are clamped between `-1.0` and `1.0`.
+  static BoxDecoration widgetDecorationFor(
+    int level, {
+    double opacity = 1.0,
+    double brightness = 0.0,
+  }) {
+    final clampedBrightness = brightness.clamp(-1.0, 1.0);
+    final ColorFilter? filter = clampedBrightness == 0
+        ? null
+        : ColorFilter.matrix(_brightnessMatrix(clampedBrightness));
+
     return BoxDecoration(
       image: DecorationImage(
         image: AssetImage(_imageFor(level)),
         fit: BoxFit.cover,
+        opacity: opacity,
+        colorFilter: filter,
       ),
     );
+  }
+
+  /// Brightness adjustment matrix for [ColorFilter.matrix].
+  static List<double> _brightnessMatrix(double amount) {
+    final value = amount * 255;
+    return <double>[
+      1, 0, 0, 0, value,
+      0, 1, 0, 0, value,
+      0, 0, 1, 0, value,
+      0, 0, 0, 1, 0,
+    ];
   }
 
   // Deprecated background method for backward compatibility.
