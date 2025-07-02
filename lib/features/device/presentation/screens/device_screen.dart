@@ -104,10 +104,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 backgroundColor: Colors.greenAccent,
                 foregroundColor: Colors.black,
                 radius: 12,
-                child: Text(
-                  '${prov.xp}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'L${prov.level}',
+                    style: const TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${prov.xp}',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ],
+              ),
               ),
             ),
           IconButton(

@@ -36,7 +36,13 @@ class _RankScreenState extends State<RankScreen> {
               return ListTile(
                 leading: Text('#${i + 1}'),
                 title: Text(e['username'] ?? e['userId']),
-                trailing: Text('${e['xp']} XP'),
+                trailing: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('L${e['level'] ?? 1}'),
+                    Text('${e['xp']} XP'),
+                  ],
+                ),
               );
             },
           );

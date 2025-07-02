@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
+import '../../domain/models/level_info.dart';
+import '../../domain/services/level_service.dart';
+
 class FirestoreRankSource {
   final FirebaseFirestore _firestore;
 
@@ -28,18 +31,23 @@ class FirestoreRankSource {
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
+      var info = LevelInfo.fromMap(lbSnap.data());
+
       if (!lbSnap.exists) {
         tx.set(lbRef, {
-          'xp': 0,
+          ...info.toMap(),
           'showInLeaderboard': showInLeaderboard,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
+
       final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
+        info = LevelService().addXp(info, 1);
         tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
         tx.update(lbRef, {
-          'xp': FieldValue.increment(1),
+          'xp': info.xp,
+          'level': info.level,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -57,6 +65,7 @@ class FirestoreRankSource {
         .doc(deviceId)
         .collection('leaderboard')
         .where('showInLeaderboard', isEqualTo: true)
+        .orderBy('level', descending: true)
         .orderBy('xp', descending: true);
 
     return query.snapshots().asyncMap((snap) async {
