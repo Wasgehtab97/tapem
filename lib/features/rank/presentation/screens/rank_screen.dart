@@ -4,7 +4,9 @@ import 'package:tapem/core/providers/rank_provider.dart';
 
 class RankScreen extends StatefulWidget {
   final String gymId;
-  const RankScreen({Key? key, required this.gymId}) : super(key: key);
+  final String deviceId;
+  const RankScreen({Key? key, required this.gymId, required this.deviceId})
+      : super(key: key);
 
   @override
   _RankScreenState createState() => _RankScreenState();
@@ -17,7 +19,7 @@ class _RankScreenState extends State<RankScreen> {
   void initState() {
     super.initState();
     _provider = Provider.of<RankProvider>(context, listen: false);
-    _provider.watch(widget.gymId);
+    _provider.watch(widget.gymId, widget.deviceId);
   }
 
   @override

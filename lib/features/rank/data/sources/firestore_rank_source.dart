@@ -17,11 +17,13 @@ class FirestoreRankSource {
     final lbRef = _firestore
         .collection('gyms')
         .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
     final sessionRef = lbRef
         .collection('dailySessions')
-        .doc('${deviceId}_$dateStr');
+        .doc(dateStr);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -43,10 +45,15 @@ class FirestoreRankSource {
     });
   }
 
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(String gymId) {
+  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+    String gymId,
+    String deviceId,
+  ) {
     return _firestore
         .collection('gyms')
         .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
         .collection('leaderboard')
         .where('showInLeaderboard', isEqualTo: true)
         .orderBy('xp', descending: true)
