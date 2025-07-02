@@ -369,25 +369,17 @@ class _PlannedTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
 
-    final needsPrefill = prov.sets.any(
-      (s) => (s['reps'] ?? '').isEmpty || (s['rir'] ?? '').isEmpty,
-    );
-    if (prov.sets.length < entry.totalSets || needsPrefill) {
+    if (prov.sets.length < entry.totalSets) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         while (prov.sets.length < entry.totalSets) {
           prov.addSet();
         }
-        for (var i = 0; i < prov.sets.length; i++) {
-          final set = prov.sets[i];
-          if ((set['reps'] ?? '').isEmpty) {
-            prov.updateSet(i, reps: entry.reps?.toString() ?? '');
-          }
-          if ((set['rir'] ?? '').isEmpty) {
-            prov.updateSet(i, rir: entry.rir.toString());
-          }
-        }
       });
     }
+
+    final weightHint = entry.weight?.toString();
+    final repsHint = entry.reps?.toString();
+    final rirHint = entry.rir > 0 ? entry.rir.toString() : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -406,12 +398,11 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey(
-                      'w-${entrySet.key}-${entrySet.value['weight']}',
-                    ),
+                    key: ValueKey('w-${entrySet.key}'),
                     initialValue: entrySet.value['weight'],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'kg',
+                      hintText: weightHint,
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -421,12 +412,11 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey(
-                      'r-${entrySet.key}-${entrySet.value['reps']}',
-                    ),
+                    key: ValueKey('r-${entrySet.key}'),
                     initialValue: entrySet.value['reps'],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'x',
+                      hintText: repsHint,
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -436,12 +426,11 @@ class _PlannedTable extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey(
-                      'rir-${entrySet.key}-${entrySet.value['rir']}',
-                    ),
+                    key: ValueKey('rir-${entrySet.key}'),
                     initialValue: entrySet.value['rir'],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'RIR',
+                      hintText: rirHint,
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -452,9 +441,7 @@ class _PlannedTable extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    key: ValueKey(
-                      'n-${entrySet.key}-${entrySet.value['note']}',
-                    ),
+                    key: ValueKey('n-${entrySet.key}'),
                     initialValue: entrySet.value['note'],
                     decoration: const InputDecoration(
                       labelText: 'Notiz',
