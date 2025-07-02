@@ -335,7 +335,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       const Divider(),
                       const RestTimerWidget(),
                     ],
-                          ),
+                ],
                 ),
               ),
             ),
