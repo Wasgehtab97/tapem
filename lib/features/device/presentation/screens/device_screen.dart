@@ -13,6 +13,7 @@ import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
+import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -101,27 +102,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           if (!prov.device!.isMulti)
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.greenAccent,
-                foregroundColor: Colors.black,
-                radius: 12,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'L${prov.level}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${prov.xp} XP',
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
+              child: XpInfoButton(xp: prov.xp, level: prov.level),
             ),
           IconButton(
             icon: const Icon(Icons.history),
