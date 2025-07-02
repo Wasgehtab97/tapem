@@ -12,6 +12,7 @@ import 'package:tapem/core/providers/training_plan_provider.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
+import 'package:tapem/features/rank/presentation/device_level_style.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -93,6 +94,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     // Single-Übung: hier bleiben
     return Scaffold(
+      backgroundColor: DeviceLevelStyle.backgroundFor(prov.level),
       appBar: AppBar(
         title: Text(prov.device!.name),
         centerTitle: true,
