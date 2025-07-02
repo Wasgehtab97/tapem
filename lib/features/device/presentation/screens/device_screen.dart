@@ -338,11 +338,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
@@ -381,12 +379,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     child: const Text('Speichern'),
                   ),
                 ),
-              ],
-            ),
-          ),
+                ],
               ),
-      ),
-    );
+            ),
+          ],
+        ),
+      );
   }
 }
 
