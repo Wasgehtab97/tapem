@@ -10,6 +10,8 @@ import 'package:tapem/features/device/data/sources/firestore_device_source.dart'
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:uuid/uuid.dart';
+import 'package:tapem/features/rank/domain/models/level_info.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final GetDevicesForGym _getDevicesForGym;
@@ -31,6 +33,7 @@ class DeviceProvider extends ChangeNotifier {
   String? _lastSessionId;
   bool _editingLastSession = false;
   int _xp = 0;
+  int _level = 1;
 
   late String _currentExerciseId;
 
@@ -67,6 +70,7 @@ class DeviceProvider extends ChangeNotifier {
     return lastDay == today;
   }
   int get xp => _xp;
+  int get level => _level;
 
   Future<void> loadDevices(String gymId) async {
     _devices = await _getDevicesForGym.execute(gymId);
@@ -92,6 +96,7 @@ class DeviceProvider extends ChangeNotifier {
       _currentExerciseId = exerciseId;
 
       _xp = 0;
+      _level = 1;
 
       // Session initialisieren
       _sets = [
@@ -308,19 +313,23 @@ class DeviceProvider extends ChangeNotifier {
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
-      final sessSnap = await tx.get(sessionRef);
+      var info = LevelInfo.fromMap(lbSnap.data());
 
       if (!lbSnap.exists) {
         tx.set(lbRef, {
-          'xp': 0,
+          ...info.toMap(),
           'showInLeaderboard': showInLeaderboard,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
+
+      final sessSnap = await tx.get(sessionRef);
       if (!sessSnap.exists) {
+        info = LevelService().addXp(info, 1);
         tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
         tx.update(lbRef, {
-          'xp': FieldValue.increment(1),
+          'xp': info.xp,
+          'level': info.level,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -413,9 +422,12 @@ class DeviceProvider extends ChangeNotifier {
         .doc(userId)
         .get();
     if (xpDoc.exists) {
-      _xp = xpDoc.data()?['xp'] as int? ?? 0;
+      final data = xpDoc.data()!;
+      _xp = data['xp'] as int? ?? 0;
+      _level = data['level'] as int? ?? 1;
     } else {
       _xp = 0;
+      _level = 1;
     }
     notifyListeners();
   }
