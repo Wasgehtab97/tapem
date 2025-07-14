@@ -20,6 +20,7 @@ class CreateDeviceUseCase {
     required String gymId,
     required Device device,
     required bool isMulti,
+    List<String>? muscleGroupIds,
   }) async {
     final existing = await _repo.getDevicesForGym(gymId);
     final maxId = existing.isEmpty
@@ -32,6 +33,7 @@ class CreateDeviceUseCase {
       id: nextId,
       nfcCode: code,
       isMulti: isMulti,
+      muscleGroupIds: muscleGroupIds,
     );
     await _repo.createDevice(gymId, toSave);
   }

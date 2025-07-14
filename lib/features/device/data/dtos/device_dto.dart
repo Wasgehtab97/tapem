@@ -7,6 +7,7 @@ class DeviceDto {
   late final String uid;
   final int id;
   final String name;
+  final List<String> muscleGroupIds;
   final String description;
   final String? nfcCode;
   final bool isMulti;
@@ -15,10 +16,11 @@ class DeviceDto {
     required this.uid,
     required this.id,
     required this.name,
+    List<String>? muscleGroupIds,
     required this.description,
     this.nfcCode,
     required this.isMulti,
-  });
+  }) : muscleGroupIds = List.from(muscleGroupIds ?? []);
 
   factory DeviceDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -30,6 +32,9 @@ class DeviceDto {
       nfcCode: data['nfcCode'] as String?,
       // if the field is missing or null, default to false
       isMulti: (data['isMulti'] as bool?) ?? false,
+      muscleGroupIds: (data['muscleGroupIds'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 
@@ -38,6 +43,7 @@ class DeviceDto {
     uid: uid,
     id: id,
     name: name,
+    muscleGroupIds: muscleGroupIds,
     description: description,
     nfcCode: nfcCode,
     isMulti: isMulti,
