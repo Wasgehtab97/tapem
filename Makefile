@@ -26,3 +26,11 @@ ios-dev:
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	fvm flutter run -v -d 00008030-001E59420191802E
+
+# iOS Emulator: Start simulator and run app in debug mode
+ios-emu:
+	open -a Simulator
+	@sleep 5
+	fvm flutter pub get
+	fvm flutter gen-l10n
+	fvm flutter run -d 47B92242-AE5E-489D-9EA0-199C9CAE3003
