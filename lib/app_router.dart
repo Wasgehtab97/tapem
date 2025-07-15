@@ -8,6 +8,7 @@ import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen.dart';
+import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
@@ -33,6 +34,7 @@ class AppRouter {
   static const selectGym = '/select_gym';
   static const planOverview = '/plan_overview';
   static const muscleGroups = '/muscle_groups';
+  static const manageMuscleGroups = '/manage_muscle_groups';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -80,6 +82,9 @@ class AppRouter {
 
       case muscleGroups:
         return MaterialPageRoute(builder: (_) => const MuscleGroupScreen());
+
+      case manageMuscleGroups:
+        return MaterialPageRoute(builder: (_) => const MuscleGroupAdminScreen());
 
       case admin:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
