@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import "../../main.dart";
@@ -38,7 +39,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   List<MuscleGroup> _groups = [];
-  Map<String, int> _counts = {};
+  final Map<String, int> _counts = {};
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -80,7 +81,6 @@ class MuscleGroupProvider extends ChangeNotifier {
   Future<void> _loadCounts(String gymId, String userId) async {
     final ctx = navigatorKey.currentContext;
     if (ctx == null) return;
-    final devices = Provider.of<GymProvider>(ctx, listen: false).devices;
     _counts.clear();
     for (final group in _groups) {
       int sum = 0;

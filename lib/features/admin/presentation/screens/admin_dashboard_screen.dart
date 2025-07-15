@@ -11,6 +11,7 @@ import 'package:tapem/features/admin/presentation/widgets/device_list_item.dart'
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
+import 'package:tapem/app_router.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -147,6 +148,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Gerät anlegen'),
                     onPressed: _showCreateDialog,
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.fitness_center),
+                    label: const Text('Muskelgruppen'),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRouter.manageMuscleGroups);
+                    },
                   ),
                   const SizedBox(height: 24),
                   Expanded(
