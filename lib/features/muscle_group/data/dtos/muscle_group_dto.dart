@@ -7,12 +7,15 @@ class MuscleGroupDto {
   final String name;
   final MuscleRegion region;
   final List<String> deviceIds;
+  final List<String> exerciseIds;
 
   MuscleGroupDto({
     required this.name,
     required this.region,
     List<String>? deviceIds,
-  }) : deviceIds = List.from(deviceIds ?? []);
+    List<String>? exerciseIds,
+  })  : deviceIds = List.from(deviceIds ?? []),
+        exerciseIds = List.from(exerciseIds ?? []);
 
   factory MuscleGroupDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -25,6 +28,9 @@ class MuscleGroupDto {
       deviceIds: (data['deviceIds'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toList(),
+      exerciseIds: (data['exerciseIds'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
     )..id = doc.id;
   }
 
@@ -33,17 +39,20 @@ class MuscleGroupDto {
         name: name,
         region: region,
         deviceIds: deviceIds,
+        exerciseIds: exerciseIds,
       );
 
   factory MuscleGroupDto.fromModel(MuscleGroup model) => MuscleGroupDto(
         name: model.name,
         region: model.region,
         deviceIds: model.deviceIds,
+        exerciseIds: model.exerciseIds,
       )..id = model.id;
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'region': region.name,
         'deviceIds': deviceIds,
+        'exerciseIds': exerciseIds,
       };
 }

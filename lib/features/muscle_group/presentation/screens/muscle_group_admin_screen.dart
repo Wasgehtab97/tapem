@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/providers/gym_provider.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../features/device/domain/usecases/get_exercises_for_device.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../domain/models/muscle_group.dart';
 
@@ -24,13 +26,30 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     });
   }
 
-  void _showEditDialog({MuscleGroup? group}) {
+  Future<void> _showEditDialog({MuscleGroup? group}) async {
     final nameCtrl = TextEditingController(text: group?.name ?? '');
     final devices = context.read<GymProvider>().devices;
-    final selected = group == null
+    final selectedDevices = group == null
         ? <String>{}
         : group.deviceIds.toSet();
+    final selectedExercises = group == null
+        ? <String>{}
+        : group.exerciseIds.toSet();
     MuscleRegion region = group?.region ?? MuscleRegion.core;
+
+    final auth = context.read<AuthProvider>();
+    final getEx = context.read<GetExercisesForDevice>();
+    final exercises = <String, String>{};
+    for (final d in devices) {
+      final exList = await getEx.execute(
+        auth.gymCode ?? '',
+        d.uid,
+        auth.userId ?? '',
+      );
+      for (final ex in exList) {
+        exercises[ex.id] = '${d.name}: ${ex.name}';
+      }
+    }
 
     showDialog<void>(
       context: context,
@@ -61,19 +80,41 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                       .toList(),
                 ),
                 const SizedBox(height: 8),
+                const Text('Geräte', style: TextStyle(fontWeight: FontWeight.bold)),
                 SizedBox(
-                  height: 200,
+                  height: 150,
                   child: ListView(
                     children: [
                       for (final d in devices)
                         CheckboxListTile(
-                          value: selected.contains(d.uid),
+                          value: selectedDevices.contains(d.uid),
                           title: Text(d.name),
                           onChanged: (v) => setSt(() {
                             if (v == true) {
-                              selected.add(d.uid);
+                              selectedDevices.add(d.uid);
                             } else {
-                              selected.remove(d.uid);
+                              selectedDevices.remove(d.uid);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text('Übungen', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(
+                  height: 150,
+                  child: ListView(
+                    children: [
+                      for (final entry in exercises.entries)
+                        CheckboxListTile(
+                          value: selectedExercises.contains(entry.key),
+                          title: Text(entry.value),
+                          onChanged: (v) => setSt(() {
+                            if (v == true) {
+                              selectedExercises.add(entry.key);
+                            } else {
+                              selectedExercises.remove(entry.key);
                             }
                           }),
                         ),
@@ -95,7 +136,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                   id: id,
                   name: nameCtrl.text.trim(),
                   region: region,
-                  deviceIds: selected.toList(),
+                  deviceIds: selectedDevices.toList(),
+                  exerciseIds: selectedExercises.toList(),
                 );
                 await context
                     .read<MuscleGroupProvider>()
@@ -129,7 +171,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 final g = prov.groups[i];
                 return ListTile(
                   title: Text(g.name),
-                  subtitle: Text('${g.deviceIds.length} Geräte · ${g.region.name}'),
+                  subtitle: Text('${g.deviceIds.length} Geräte · ' 
+                      '${g.exerciseIds.length} Übungen · ${g.region.name}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit),
                     onPressed: () => _showEditDialog(group: g),
