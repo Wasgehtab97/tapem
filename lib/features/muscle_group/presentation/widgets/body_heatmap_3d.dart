@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_cube/flutter_cube.dart' as cube;
-import '../../../../core/providers/muscle_group_provider.dart';
-import 'package:provider/provider.dart';
 
 class BodyHeatmap3D extends StatelessWidget {
   const BodyHeatmap3D({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<MuscleGroupProvider>();
-
 
     return SizedBox(
       height: 300,
