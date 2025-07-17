@@ -48,9 +48,9 @@ class ExerciseProvider extends ChangeNotifier {
     String gymId,
     String deviceId,
     String name,
-    String userId,
-    {List<String>? muscleGroupIds},
-  ) async {
+    String userId, {
+    List<String>? muscleGroupIds,
+  }) async {
     final ex = await _createEx.execute(
       gymId,
       deviceId,

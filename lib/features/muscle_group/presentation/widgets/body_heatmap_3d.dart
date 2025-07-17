@@ -24,7 +24,7 @@ class BodyHeatmap3D extends StatelessWidget {
         final obj = cube.Object(fileName: 'assets/models/body.obj');
         // apply color based on overall intensity (placeholder)
         final intensity = maxCount > 0 ? prov.counts.values.reduce((a, b) => a + b) / (maxCount * prov.counts.length) : 0.0;
-        obj.updateTexture(cube.MeshTexture(color: intensityColor(intensity)));
+        // TODO: apply color when texture update API is available
         scene.world.add(obj);
         scene.camera.zoom = 10;
       }),
