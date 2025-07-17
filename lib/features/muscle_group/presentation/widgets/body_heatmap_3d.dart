@@ -10,9 +10,6 @@ class BodyHeatmap3D extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<MuscleGroupProvider>();
 
-    final maxCount = prov.counts.values.isEmpty
-        ? 0
-        : prov.counts.values.reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 300,
