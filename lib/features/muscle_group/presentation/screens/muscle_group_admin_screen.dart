@@ -30,6 +30,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     final selected = group == null
         ? <String>{}
         : group.deviceIds.toSet();
+    MuscleRegion region = group?.region ?? MuscleRegion.core;
 
     showDialog<void>(
       context: context,
@@ -46,6 +47,18 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 TextField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<MuscleRegion>(
+                  value: region,
+                  decoration: const InputDecoration(labelText: 'Körperregion'),
+                  onChanged: (v) => setSt(() => region = v ?? MuscleRegion.core),
+                  items: MuscleRegion.values
+                      .map((r) => DropdownMenuItem(
+                            value: r,
+                            child: Text(r.name),
+                          ))
+                      .toList(),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
@@ -81,6 +94,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 final newGroup = MuscleGroup(
                   id: id,
                   name: nameCtrl.text.trim(),
+                  region: region,
                   deviceIds: selected.toList(),
                 );
                 await context
@@ -115,7 +129,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 final g = prov.groups[i];
                 return ListTile(
                   title: Text(g.name),
-                  subtitle: Text('${g.deviceIds.length} Geräte'),
+                  subtitle: Text('${g.deviceIds.length} Geräte · ${g.region.name}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit),
                     onPressed: () => _showEditDialog(group: g),
