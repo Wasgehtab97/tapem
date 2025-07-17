@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
@@ -20,6 +21,7 @@ class ExerciseListScreen extends StatefulWidget {
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
   final _nameCtr = TextEditingController();
+  final Set<String> _selectedGroups = {};
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         widget.deviceId,
         userId,
       );
+      context.read<MuscleGroupProvider>().loadGroups(context);
     });
   }
 
@@ -64,18 +67,69 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   context: context,
                   builder: (_) => AlertDialog(
                     title: const Text('Übung hinzufügen'),
-                    content: TextField(
-                      controller: _nameCtr,
-                      decoration: const InputDecoration(labelText: 'Name'),
+                    content: StatefulBuilder(
+                      builder: (ctx2, setSt) {
+                        final groups =
+                            context.read<MuscleGroupProvider>().groups;
+                        return SizedBox(
+                          width: 300,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                controller: _nameCtr,
+                                decoration:
+                                    const InputDecoration(labelText: 'Name'),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text('Muskelgruppen',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              SizedBox(
+                                height: 150,
+                                child: ListView(
+                                  children: [
+                                    for (final g in groups)
+                                      CheckboxListTile(
+                                        value: _selectedGroups.contains(g.id),
+                                        title: Text(g.name),
+                                        onChanged: (v) => setSt(() {
+                                          if (v == true) {
+                                            _selectedGroups.add(g.id);
+                                          } else {
+                                            _selectedGroups.remove(g.id);
+                                          }
+                                        }),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final name = _nameCtr.text.trim();
                           if (name.isNotEmpty) {
-                            prov.addExercise(widget.gymId, widget.deviceId, name, userId);
+                            final ex = await prov.addExercise(
+                              widget.gymId,
+                              widget.deviceId,
+                              name,
+                              userId,
+                              muscleGroupIds: _selectedGroups.toList(),
+                            );
+                            await context.read<MuscleGroupProvider>().assignExercise(
+                                  context,
+                                  ex.id,
+                                  _selectedGroups.toList(),
+                                );
                             Navigator.pop(context);
+                            _selectedGroups.clear();
+                            _nameCtr.clear();
                           }
                         },
                         child: const Text('Erstellen'),

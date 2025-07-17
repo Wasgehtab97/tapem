@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../widgets/body_heatmap.dart';
+import '../widgets/body_heatmap_3d.dart';
 
 class MuscleGroupScreen extends StatefulWidget {
   const MuscleGroupScreen({Key? key}) : super(key: key);
@@ -40,7 +41,13 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
       appBar: AppBar(title: const Text('Muskelgruppen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: BodyHeatmap(),
+        child: Column(
+          children: const [
+            BodyHeatmap(),
+            SizedBox(height: 16),
+            BodyHeatmap3D(),
+          ],
+        ),
       ),
     );
   }
