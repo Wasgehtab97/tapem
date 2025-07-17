@@ -78,6 +78,40 @@ class MuscleGroupProvider extends ChangeNotifier {
     await loadGroups(context);
   }
 
+  Future<void> assignDevice(
+    BuildContext context,
+    String deviceId,
+    List<String> groupIds,
+  ) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return;
+    for (final g in _groups) {
+      if (groupIds.contains(g.id) && !g.deviceIds.contains(deviceId)) {
+        final updated = g.copyWith(deviceIds: [...g.deviceIds, deviceId]);
+        await _saveGroup.execute(gymId, updated);
+      }
+    }
+    await loadGroups(context);
+  }
+
+  Future<void> assignExercise(
+    BuildContext context,
+    String exerciseId,
+    List<String> groupIds,
+  ) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return;
+    for (final g in _groups) {
+      if (groupIds.contains(g.id) && !g.exerciseIds.contains(exerciseId)) {
+        final updated = g.copyWith(exerciseIds: [...g.exerciseIds, exerciseId]);
+        await _saveGroup.execute(gymId, updated);
+      }
+    }
+    await loadGroups(context);
+  }
+
   Future<void> _loadCounts(String gymId, String userId) async {
     final ctx = navigatorKey.currentContext;
     if (ctx == null) return;

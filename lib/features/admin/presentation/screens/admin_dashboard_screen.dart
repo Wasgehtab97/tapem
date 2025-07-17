@@ -12,6 +12,7 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -57,6 +58,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final newId =
         _devices.isEmpty ? 1 : _devices.map((d) => d.id).reduce(max) + 1;
     bool isMulti = false;
+    final muscleProv = context.read<MuscleGroupProvider>();
+    muscleProv.loadGroups(context);
+    final selectedGroups = <String>{};
 
     showDialog<bool>(
       context: context,
@@ -74,6 +78,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               TextField(
                 controller: descCtrl,
                 decoration: const InputDecoration(labelText: 'Beschreibung'),
+              ),
+              const SizedBox(height: 8),
+              const Text('Muskelgruppen',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(
+                height: 150,
+                child: ListView(
+                  children: [
+                    for (final g in muscleProv.groups)
+                      CheckboxListTile(
+                        value: selectedGroups.contains(g.id),
+                        title: Text(g.name),
+                        onChanged: (v) => setSt(() {
+                          if (v == true) {
+                            selectedGroups.add(g.id);
+                          } else {
+                            selectedGroups.remove(g.id);
+                          }
+                        }),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -114,6 +140,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   gymId: gymId,
                   device: device,
                   isMulti: isMulti,
+                  muscleGroupIds: selectedGroups.toList(),
+                );
+                await muscleProv.assignDevice(
+                  context,
+                  newUid,
+                  selectedGroups.toList(),
                 );
                 Navigator.of(ctx2).pop(true);
                 await _loadDevices();

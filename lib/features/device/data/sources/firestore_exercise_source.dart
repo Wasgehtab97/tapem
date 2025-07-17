@@ -27,6 +27,9 @@ class FirestoreExerciseSource {
         'id': doc.id,
         'name': data['name'] as String,
         'userId': data['userId'] as String,
+        'muscleGroupIds': (data['muscleGroupIds'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
       });
     }).toList();
   }

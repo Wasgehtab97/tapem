@@ -44,14 +44,22 @@ class ExerciseProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addExercise(
+  Future<Exercise> addExercise(
     String gymId,
     String deviceId,
     String name,
     String userId,
+    {List<String>? muscleGroupIds},
   ) async {
-    await _createEx.execute(gymId, deviceId, name, userId);
+    final ex = await _createEx.execute(
+      gymId,
+      deviceId,
+      name,
+      userId,
+      muscleGroupIds: muscleGroupIds,
+    );
     await loadExercises(gymId, deviceId, userId);
+    return ex;
   }
 
   Future<void> removeExercise(
