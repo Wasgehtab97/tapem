@@ -29,8 +29,13 @@ ios-dev:
 
 # iOS Emulator: Start simulator and run app in debug mode
 ios-emu:
+	fvm flutter clean
 	open -a Simulator
 	@sleep 5
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	fvm flutter run -d 47B92242-AE5E-489D-9EA0-199C9CAE3003
+
+# SetAdmin
+admin:
+	node scripts/setAdmin.js
