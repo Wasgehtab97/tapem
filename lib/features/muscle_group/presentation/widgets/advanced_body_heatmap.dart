@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vector_math/vector_math_64.dart' show Matrix4;
 
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../domain/models/muscle_group.dart';
+import 'muscle_paths.dart';
 
 class _AdvancedHeatmapPainter extends CustomPainter {
   final Map<MuscleRegion, double> intensities;
@@ -18,6 +20,13 @@ class _AdvancedHeatmapPainter extends CustomPainter {
     if (value > 0.66) return _primaryColor;
     if (value > 0) return _secondaryColor;
     return _mutedColor;
+  }
+
+  Path _mirror(Path path, double width) {
+    final matrix = Matrix4.identity()
+      ..scale(-1.0, 1.0)
+      ..translate(width, 0.0);
+    return path.transform(matrix.storage);
   }
 
   @override
@@ -48,63 +57,50 @@ class _AdvancedHeatmapPainter extends CustomPainter {
     }
 
     // Shoulders
-    final leftShoulder = Path()..addOval(Rect.fromLTWH(w * 0.25, h * 0.18, w * 0.15, h * 0.09));
-    final rightShoulder = Path()..addOval(Rect.fromLTWH(w * 0.6, h * 0.18, w * 0.15, h * 0.09));
+    final leftShoulder = MusclePaths.deltoidPath(size);
+    final rightShoulder = _mirror(leftShoulder, w);
     drawRegion(leftShoulder, MuscleRegion.shoulders);
     drawRegion(rightShoulder, MuscleRegion.shoulders);
 
     // Chest
-    final chest = Path()
-      ..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.37, h * 0.23, w * 0.26, h * 0.12), Radius.circular(w * 0.03)));
-    drawRegion(chest, MuscleRegion.chest);
+    drawRegion(MusclePaths.pectoralisPath(size), MuscleRegion.chest);
 
     // Biceps
-    final leftBiceps = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.2, h * 0.28, w * 0.1, h * 0.14), Radius.circular(w * 0.03)));
-    final rightBiceps = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.7, h * 0.28, w * 0.1, h * 0.14), Radius.circular(w * 0.03)));
+    final leftBiceps = MusclePaths.bicepsPath(size);
+    final rightBiceps = _mirror(leftBiceps, w);
     drawRegion(leftBiceps, MuscleRegion.arms);
     drawRegion(rightBiceps, MuscleRegion.arms);
 
     // Forearms
-    final leftForearm = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.2, h * 0.42, w * 0.1, h * 0.22), Radius.circular(w * 0.03)));
-    final rightForearm = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.7, h * 0.42, w * 0.1, h * 0.22), Radius.circular(w * 0.03)));
+    final leftForearm = MusclePaths.forearmFlexorsPath(size);
+    final rightForearm = _mirror(leftForearm, w);
     drawRegion(leftForearm, MuscleRegion.arms);
     drawRegion(rightForearm, MuscleRegion.arms);
 
     // Obliques
-    final leftOblique = Path()..addOval(Rect.fromLTWH(w * 0.35, h * 0.34, w * 0.07, h * 0.14));
-    final rightOblique = Path()..addOval(Rect.fromLTWH(w * 0.58, h * 0.34, w * 0.07, h * 0.14));
+    final leftOblique = MusclePaths.obliquesPath(size);
+    final rightOblique = _mirror(leftOblique, w);
     drawRegion(leftOblique, MuscleRegion.core);
     drawRegion(rightOblique, MuscleRegion.core);
 
     // Abs
-    for (int i = 0; i < 3; i++) {
-      final rectLeft = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.46, h * (0.3 + 0.05 * i * 2), w * 0.04, h * 0.06), Radius.circular(w * 0.015)));
-      final rectRight = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.5, h * (0.3 + 0.05 * i * 2), w * 0.04, h * 0.06), Radius.circular(w * 0.015)));
-      drawRegion(rectLeft, MuscleRegion.core);
-      drawRegion(rectRight, MuscleRegion.core);
-    }
+    drawRegion(MusclePaths.rectusAbdominisPath(size), MuscleRegion.core);
 
     // Quadriceps
-    final leftQuad = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.44, h * 0.54, w * 0.1, h * 0.22), Radius.circular(w * 0.05)));
-    final rightQuad = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.56, h * 0.54, w * 0.1, h * 0.22), Radius.circular(w * 0.05)));
-    drawRegion(leftQuad, MuscleRegion.legs);
-    drawRegion(rightQuad, MuscleRegion.legs);
+    drawRegion(MusclePaths.quadricepsPath(size), MuscleRegion.legs);
 
     // Vastus medialis (inner knee)
-    final leftVastus = Path()..addOval(Rect.fromLTWH(w * 0.47, h * 0.7, w * 0.05, h * 0.05));
-    final rightVastus = Path()..addOval(Rect.fromLTWH(w * 0.58, h * 0.7, w * 0.05, h * 0.05));
+    final leftVastus = MusclePaths.vastusMedialisPath(size);
+    final rightVastus = _mirror(leftVastus, w);
     drawRegion(leftVastus, MuscleRegion.legs);
     drawRegion(rightVastus, MuscleRegion.legs);
 
     // Tibialis anterior (shin)
-    final leftShin = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.47, h * 0.75, w * 0.05, h * 0.12), Radius.circular(w * 0.02)));
-    final rightShin = Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.58, h * 0.75, w * 0.05, h * 0.12), Radius.circular(w * 0.02)));
-    drawRegion(leftShin, MuscleRegion.legs);
-    drawRegion(rightShin, MuscleRegion.legs);
+    drawRegion(MusclePaths.tibialisAnteriorPath(size), MuscleRegion.legs);
 
     // Calves
-    final leftCalf = Path()..addOval(Rect.fromLTWH(w * 0.46, h * 0.87, w * 0.06, h * 0.07));
-    final rightCalf = Path()..addOval(Rect.fromLTWH(w * 0.58, h * 0.87, w * 0.06, h * 0.07));
+    final leftCalf = MusclePaths.gastrocnemiusPath(size);
+    final rightCalf = _mirror(leftCalf, w);
     drawRegion(leftCalf, MuscleRegion.legs);
     drawRegion(rightCalf, MuscleRegion.legs);
   }
