@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
-import '../widgets/body_heatmap.dart';
+import '../widgets/advanced_body_heatmap.dart';
 import '../widgets/body_heatmap_3d.dart';
 
 class MuscleGroupScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: const [
-            BodyHeatmap(),
+            AdvancedBodyHeatmap(),
             SizedBox(height: 16),
             BodyHeatmap3D(),
           ],
