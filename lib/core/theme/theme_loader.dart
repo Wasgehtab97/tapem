@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../features/gym/domain/models/branding.dart';
 import 'theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
@@ -13,27 +14,17 @@ class ThemeLoader extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Lädt Theme-Konfiguration aus Firestore anhand der Gym-ID.
-  Future<void> loadGymTheme(String gymId) async {
-    if (gymId.isEmpty) {
+  /// Wendet Branding-Daten auf das aktuelle Theme an.
+  void applyBranding(Branding? branding) {
+    if (branding == null ||
+        branding.primaryColor == null ||
+        branding.secondaryColor == null) {
       loadDefault();
       return;
     }
-    final doc =
-        await FirebaseFirestore.instance.collection('gyms').doc(gymId).get();
-    if (doc.exists) {
-      final data = doc.data()!;
-      final primaryHex = data['primaryColor'] as String?;
-      final accentHex = data['accentColor'] as String?;
-      if (primaryHex != null && accentHex != null) {
-        final primary = _parseHex(primaryHex);
-        final accent = _parseHex(accentHex);
-        _currentTheme = AppTheme.customTheme(primary: primary, secondary: accent);
-        notifyListeners();
-        return;
-      }
-    }
-    _currentTheme = AppTheme.darkTheme;
+    final primary = _parseHex(branding.primaryColor!);
+    final accent = _parseHex(branding.secondaryColor!);
+    _currentTheme = AppTheme.customTheme(primary: primary, secondary: accent);
     notifyListeners();
   }
 

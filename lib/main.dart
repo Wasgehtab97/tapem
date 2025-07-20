@@ -28,6 +28,7 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
+import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
@@ -141,12 +142,20 @@ class AppEntry extends StatelessWidget {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, ThemeLoader>(
+        ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
+          create: (_) => BrandingProvider(),
+          update: (_, auth, prov) {
+            final p = prov ?? BrandingProvider();
+            p.loadBrandingWithGym(auth.gymCode);
+            return p;
+          },
+        ),
+        ChangeNotifierProxyProvider<BrandingProvider, ThemeLoader>(
           create: (_) => ThemeLoader()..loadDefault(),
-          update: (ctx, auth, prev) {
-            final loader = prev ?? (ThemeLoader()..loadDefault());
-            loader.loadGymTheme(auth.gymCode ?? '');
-            return loader;
+          update: (_, branding, loader) {
+            final l = loader ?? (ThemeLoader()..loadDefault());
+            l.applyBranding(branding.branding);
+            return l;
           },
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
