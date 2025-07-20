@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:firebase_functions/firebase_functions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +46,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
     final primary = _primaryCtrl.text.replaceAll('#', '');
     final accent = _accentCtrl.text.replaceAll('#', '');
 
-    if (!_hexReg.hasMatch(primary) || !_hexReg.hasMatch(accent) || _logoBytes == null) {
+    if (!_hexReg.hasMatch(primary) ||
+        !_hexReg.hasMatch(accent) ||
+        _logoBytes == null) {
       setState(() => _error = 'Bitte gültige Farben und Logo wählen');
       return;
     }
@@ -82,8 +83,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_logoBytes != null)
-              Image.memory(_logoBytes!, height: 100),
+            if (_logoBytes != null) Image.memory(_logoBytes!, height: 100),
             ElevatedButton(
               onPressed: _pickLogo,
               child: const Text('Logo auswählen'),
@@ -105,13 +105,14 @@ class _BrandingScreenState extends State<BrandingScreen> {
             const Spacer(),
             ElevatedButton(
               onPressed: _loading ? null : _save,
-              child: _loading
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Speichern'),
+              child:
+                  _loading
+                      ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Speichern'),
             ),
           ],
         ),
