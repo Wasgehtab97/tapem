@@ -194,14 +194,6 @@ firebase_core_web
 3.4
 file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
 file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/lib/
-firebase_crashlytics
-3.2
-file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_crashlytics-4.3.9/
-file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_crashlytics-4.3.9/lib/
-firebase_crashlytics_platform_interface
-3.2
-file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_crashlytics_platform_interface-3.8.9/
-file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_crashlytics_platform_interface-3.8.9/lib/
 firebase_storage
 3.2
 file:///Users/daniel/.pub-cache/hosted/pub.dev/firebase_storage-12.4.9/
