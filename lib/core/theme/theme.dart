@@ -40,6 +40,12 @@ class AppTheme {
     secondary: neutralAccent,
   );
 
+  /// Erstellt ein Theme mit beliebigen Farben.
+  static ThemeData customTheme({
+    required Color primary,
+    required Color secondary,
+  }) => _buildTheme(primary: primary, secondary: secondary);
+
   /// Baut ein ThemeData mit angegebenen Primär- und Sekundärfarben.
   static ThemeData _buildTheme({
     required Color primary,
