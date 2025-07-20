@@ -189,6 +189,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Navigator.of(context).pushNamed(AppRouter.manageMuscleGroups);
                     },
                   ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.brush),
+                    label: const Text('Branding'),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRouter.branding);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Expanded(
                     child: ListView.separated(
