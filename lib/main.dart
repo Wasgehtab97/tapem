@@ -25,6 +25,7 @@ import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/all_exercises_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
@@ -176,6 +177,10 @@ class AppEntry extends StatelessWidget {
                 createEx: c.read<CreateExerciseUseCase>(),
                 deleteEx: c.read<DeleteExerciseUseCase>(),
               ),
+        ),
+        ChangeNotifierProvider(
+          create: (c) =>
+              AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
         ChangeNotifierProvider(
           create:
