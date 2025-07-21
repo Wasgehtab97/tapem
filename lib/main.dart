@@ -43,6 +43,7 @@ import 'features/device/domain/usecases/create_device_usecase.dart';
 import 'features/device/domain/usecases/get_devices_for_gym.dart';
 import 'features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'features/device/domain/usecases/delete_device_usecase.dart';
+import 'features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 
 import 'features/device/data/sources/firestore_exercise_source.dart';
 import 'features/device/data/repositories/exercise_repository_impl.dart';
@@ -123,6 +124,10 @@ class AppEntry extends StatelessWidget {
         ),
         Provider<DeleteDeviceUseCase>(
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
+        ),
+        Provider<UpdateDeviceMuscleGroupsUseCase>(
+          create: (c) =>
+              UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise

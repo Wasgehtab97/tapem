@@ -9,4 +9,10 @@ abstract class DeviceRepository {
 
   // Neu: Gerät löschen
   Future<void> deleteDevice(String gymId, String deviceId);
+
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> groups,
+  );
 }

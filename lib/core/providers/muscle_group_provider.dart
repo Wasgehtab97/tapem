@@ -9,6 +9,9 @@ import '../../features/muscle_group/data/sources/firestore_muscle_group_source.d
 import '../../features/muscle_group/domain/models/muscle_group.dart';
 import '../../features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
 import '../../features/muscle_group/domain/usecases/save_muscle_group.dart';
+import '../../features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
+import '../../features/device/data/repositories/device_repository_impl.dart';
+import '../../features/device/data/sources/firestore_device_source.dart';
 import '../../features/history/data/sources/firestore_history_source.dart';
 import '../../features/history/data/repositories/history_repository_impl.dart';
 import '../../features/history/domain/usecases/get_history_for_device.dart';
@@ -17,11 +20,13 @@ class MuscleGroupProvider extends ChangeNotifier {
   final GetMuscleGroupsForGym _getGroups;
   final SaveMuscleGroup _saveGroup;
   final GetHistoryForDevice _getHistory;
+  final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
     SaveMuscleGroup? saveGroup,
     GetHistoryForDevice? getHistory,
+    UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
   })  : _getGroups = getGroups ??
             GetMuscleGroupsForGym(
               MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
@@ -33,6 +38,10 @@ class MuscleGroupProvider extends ChangeNotifier {
         _getHistory = getHistory ??
             GetHistoryForDevice(
               HistoryRepositoryImpl(FirestoreHistorySource()),
+            ),
+        _updateDeviceGroups = updateDeviceGroups ??
+            UpdateDeviceMuscleGroupsUseCase(
+              DeviceRepositoryImpl(FirestoreDeviceSource()),
             );
 
   bool _isLoading = false;
@@ -74,6 +83,21 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
     await _saveGroup.execute(gymId, group);
+
+    final devices = Provider.of<GymProvider>(context, listen: false).devices;
+    for (final dId in group.deviceIds) {
+      try {
+        final dev = devices.firstWhere((d) => d.uid == dId);
+        if (!dev.isMulti) {
+          await _updateDeviceGroups.execute(
+            gymId,
+            dId,
+            [group.region.name],
+          );
+        }
+      } catch (_) {}
+    }
+
     await loadGroups(context);
   }
 

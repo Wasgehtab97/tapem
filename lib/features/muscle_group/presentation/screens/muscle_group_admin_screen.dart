@@ -27,57 +27,45 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   }
 
   Future<void> _showEditDialog({MuscleGroup? group}) async {
-    final nameCtrl = TextEditingController(text: group?.name ?? '');
-    final devices = context.read<GymProvider>().devices;
+    final devices =
+        context.read<GymProvider>().devices.where((d) => !d.isMulti).toList();
     final selectedDevices = group == null
         ? <String>{}
         : group.deviceIds.toSet();
-    final selectedExercises = group == null
-        ? <String>{}
-        : group.exerciseIds.toSet();
-    MuscleRegion region = group?.region ?? MuscleRegion.core;
+    final selectedRegions = group == null
+        ? <MuscleRegion>{}
+        : {group.region};
 
-    final auth = context.read<AuthProvider>();
-    final getEx = context.read<GetExercisesForDevice>();
-    final exercises = <String, String>{};
-    for (final d in devices) {
-      final exList = await getEx.execute(
-        auth.gymCode ?? '',
-        d.uid,
-        auth.userId ?? '',
-      );
-      for (final ex in exList) {
-        exercises[ex.id] = '${d.name}: ${ex.name}';
-      }
-    }
+    // no exercises needed
 
     showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx2, setSt) => AlertDialog(
           title: Text(group == null
-              ? 'Gruppe erstellen'
-              : 'Gruppe bearbeiten'),
+              ? 'Muskelgruppe hinzufügen'
+              : 'Muskelgruppe bearbeiten'),
           content: SizedBox(
             width: 300,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<MuscleRegion>(
-                  value: region,
-                  decoration: const InputDecoration(labelText: 'Körperregion'),
-                  onChanged: (v) => setSt(() => region = v ?? MuscleRegion.core),
-                  items: MuscleRegion.values
-                      .map((r) => DropdownMenuItem(
-                            value: r,
-                            child: Text(r.name),
-                          ))
-                      .toList(),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    for (final r in MuscleRegion.values)
+                      FilterChip(
+                        label: Text(r.name),
+                        selected: selectedRegions.contains(r),
+                        onSelected: (v) => setSt(() {
+                          if (v) {
+                            selectedRegions.add(r);
+                          } else {
+                            selectedRegions.remove(r);
+                          }
+                        }),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 const Text('Geräte', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -100,27 +88,6 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text('Übungen', style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(
-                  height: 150,
-                  child: ListView(
-                    children: [
-                      for (final entry in exercises.entries)
-                        CheckboxListTile(
-                          value: selectedExercises.contains(entry.key),
-                          title: Text(entry.value),
-                          onChanged: (v) => setSt(() {
-                            if (v == true) {
-                              selectedExercises.add(entry.key);
-                            } else {
-                              selectedExercises.remove(entry.key);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -131,17 +98,19 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final id = group?.id ?? _uuid.v4();
-                final newGroup = MuscleGroup(
-                  id: id,
-                  name: nameCtrl.text.trim(),
-                  region: region,
-                  deviceIds: selectedDevices.toList(),
-                  exerciseIds: selectedExercises.toList(),
-                );
-                await context
-                    .read<MuscleGroupProvider>()
-                    .saveGroup(context, newGroup);
+                final prov = context.read<MuscleGroupProvider>();
+                if (selectedRegions.isEmpty || selectedDevices.isEmpty) return;
+                for (final r in selectedRegions) {
+                  final id = group?.id ?? _uuid.v4();
+                  final newGroup = MuscleGroup(
+                    id: id,
+                    name: '',
+                    region: r,
+                    deviceIds: selectedDevices.toList(),
+                    exerciseIds: const [],
+                  );
+                  await prov.saveGroup(context, newGroup);
+                }
                 if (!mounted) return;
                 Navigator.of(ctx2).pop();
               },
@@ -170,9 +139,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
               itemBuilder: (_, i) {
                 final g = prov.groups[i];
                 return ListTile(
-                  title: Text(g.name),
-                  subtitle: Text('${g.deviceIds.length} Geräte · ' 
-                      '${g.exerciseIds.length} Übungen · ${g.region.name}'),
+                  title: Text(g.region.name),
+                  subtitle: Text('${g.deviceIds.length} Geräte'),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit),
                     onPressed: () => _showEditDialog(group: g),

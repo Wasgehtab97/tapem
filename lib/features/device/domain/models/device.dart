@@ -8,6 +8,7 @@ class Device {
   final String description;
   final String? nfcCode;
   final bool isMulti;
+  final List<String> muscleGroups;
 
   Device({
     required this.uid,
@@ -17,7 +18,9 @@ class Device {
     this.description = '',
     this.nfcCode,
     this.isMulti = false,
-  }) : muscleGroupIds = List.unmodifiable(muscleGroupIds ?? []);
+    List<String>? muscleGroups,
+  })  : muscleGroupIds = List.unmodifiable(muscleGroupIds ?? []),
+        muscleGroups   = List.unmodifiable(muscleGroups ?? []);
 
   Device copyWith({
     String? uid,
@@ -27,6 +30,7 @@ class Device {
     String? nfcCode,
     bool? isMulti,
     List<String>? muscleGroupIds,
+    List<String>? muscleGroups,
   }) => Device(
     uid:         uid         ?? this.uid,
     id:          id          ?? this.id,
@@ -35,6 +39,7 @@ class Device {
     nfcCode:     nfcCode     ?? this.nfcCode,
     isMulti:     isMulti     ?? this.isMulti,
     muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
+    muscleGroups:   muscleGroups   ?? this.muscleGroups,
   );
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
@@ -47,6 +52,9 @@ class Device {
     muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
         .map((e) => e.toString())
         .toList(),
+    muscleGroups: (json['muscleGroups'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -56,5 +64,6 @@ class Device {
     'nfcCode':     nfcCode,
     'isMulti':     isMulti,
     'muscleGroupIds': muscleGroupIds,
+    'muscleGroups':   muscleGroups,
   };
 }

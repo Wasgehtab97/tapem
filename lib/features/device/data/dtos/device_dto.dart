@@ -11,6 +11,7 @@ class DeviceDto {
   final String description;
   final String? nfcCode;
   final bool isMulti;
+  final List<String> muscleGroups;
 
   DeviceDto({
     required this.uid,
@@ -20,7 +21,9 @@ class DeviceDto {
     required this.description,
     this.nfcCode,
     required this.isMulti,
-  }) : muscleGroupIds = List.from(muscleGroupIds ?? []);
+    List<String>? muscleGroups,
+  })  : muscleGroupIds = List.from(muscleGroupIds ?? []),
+        muscleGroups   = List.from(muscleGroups ?? []);
 
   factory DeviceDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -35,6 +38,9 @@ class DeviceDto {
       muscleGroupIds: (data['muscleGroupIds'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toList(),
+      muscleGroups: (data['muscleGroups'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 
@@ -44,6 +50,7 @@ class DeviceDto {
     id: id,
     name: name,
     muscleGroupIds: muscleGroupIds,
+    muscleGroups:   muscleGroups,
     description: description,
     nfcCode: nfcCode,
     isMulti: isMulti,
