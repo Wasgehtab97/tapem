@@ -9,6 +9,7 @@ import '../../features/muscle_group/data/sources/firestore_muscle_group_source.d
 import '../../features/muscle_group/domain/models/muscle_group.dart';
 import '../../features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
 import '../../features/muscle_group/domain/usecases/save_muscle_group.dart';
+import '../../features/muscle_group/domain/usecases/delete_muscle_group.dart';
 import '../../features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 import '../../features/device/data/repositories/device_repository_impl.dart';
 import '../../features/device/data/sources/firestore_device_source.dart';
@@ -19,12 +20,14 @@ import '../../features/history/domain/usecases/get_history_for_device.dart';
 class MuscleGroupProvider extends ChangeNotifier {
   final GetMuscleGroupsForGym _getGroups;
   final SaveMuscleGroup _saveGroup;
+  final DeleteMuscleGroup _deleteGroup;
   final GetHistoryForDevice _getHistory;
   final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
     SaveMuscleGroup? saveGroup,
+    DeleteMuscleGroup? deleteGroup,
     GetHistoryForDevice? getHistory,
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
   })  : _getGroups = getGroups ??
@@ -33,6 +36,10 @@ class MuscleGroupProvider extends ChangeNotifier {
             ),
         _saveGroup = saveGroup ??
             SaveMuscleGroup(
+              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+            ),
+        _deleteGroup = deleteGroup ??
+            DeleteMuscleGroup(
               MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
             ),
         _getHistory = getHistory ??
@@ -113,6 +120,14 @@ class MuscleGroupProvider extends ChangeNotifier {
       } catch (_) {}
     }
 
+    await loadGroups(context);
+  }
+
+  Future<void> deleteGroup(BuildContext context, String groupId) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return;
+    await _deleteGroup.execute(gymId, groupId);
     await loadGroups(context);
   }
 
