@@ -191,9 +191,10 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final primary = selected.isNotEmpty ? [selected.first] : [];
-                final secondary =
-                    selected.length > 1 ? selected.sublist(1) : [];
+                final List<String> primary =
+                    selected.isNotEmpty ? [selected.first] : <String>[];
+                final List<String> secondary =
+                    selected.length > 1 ? selected.sublist(1) : <String>[];
                 await prov.updateDeviceAssignments(
                   context,
                   deviceId,
