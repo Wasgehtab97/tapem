@@ -9,6 +9,8 @@ class Device {
   final String? nfcCode;
   final bool isMulti;
   final List<String> muscleGroups;
+  final List<String> primaryMuscleGroups;
+  final List<String> secondaryMuscleGroups;
 
   Device({
     required this.uid,
@@ -19,8 +21,15 @@ class Device {
     this.nfcCode,
     this.isMulti = false,
     List<String>? muscleGroups,
-  })  : muscleGroupIds = List.unmodifiable(muscleGroupIds ?? []),
-        muscleGroups   = List.unmodifiable(muscleGroups ?? []);
+    List<String>? primaryMuscleGroups,
+    List<String>? secondaryMuscleGroups,
+  })  : muscleGroupIds      = List.unmodifiable(muscleGroupIds ?? []),
+        primaryMuscleGroups = List.unmodifiable(primaryMuscleGroups ?? []),
+        secondaryMuscleGroups = List.unmodifiable(secondaryMuscleGroups ?? []),
+        muscleGroups = List.unmodifiable(
+          muscleGroups ??
+              [...(primaryMuscleGroups ?? []), ...(secondaryMuscleGroups ?? [])],
+        );
 
   Device copyWith({
     String? uid,
@@ -31,6 +40,8 @@ class Device {
     bool? isMulti,
     List<String>? muscleGroupIds,
     List<String>? muscleGroups,
+    List<String>? primaryMuscleGroups,
+    List<String>? secondaryMuscleGroups,
   }) => Device(
     uid:         uid         ?? this.uid,
     id:          id          ?? this.id,
@@ -39,7 +50,13 @@ class Device {
     nfcCode:     nfcCode     ?? this.nfcCode,
     isMulti:     isMulti     ?? this.isMulti,
     muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
-    muscleGroups:   muscleGroups   ?? this.muscleGroups,
+    muscleGroups: muscleGroups ??
+        [
+          ...(primaryMuscleGroups ?? this.primaryMuscleGroups),
+          ...(secondaryMuscleGroups ?? this.secondaryMuscleGroups),
+        ],
+    primaryMuscleGroups: primaryMuscleGroups ?? this.primaryMuscleGroups,
+    secondaryMuscleGroups: secondaryMuscleGroups ?? this.secondaryMuscleGroups,
   );
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
@@ -50,6 +67,12 @@ class Device {
     nfcCode:     json['nfcCode']   as String?,
     isMulti:     json['isMulti']   as bool?   ?? false,
     muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList(),
+    primaryMuscleGroups: (json['primaryMuscleGroups'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList(),
+    secondaryMuscleGroups: (json['secondaryMuscleGroups'] as List<dynamic>? ?? [])
         .map((e) => e.toString())
         .toList(),
     muscleGroups: (json['muscleGroups'] as List<dynamic>? ?? [])
@@ -65,5 +88,7 @@ class Device {
     'isMulti':     isMulti,
     'muscleGroupIds': muscleGroupIds,
     'muscleGroups':   muscleGroups,
+    'primaryMuscleGroups': primaryMuscleGroups,
+    'secondaryMuscleGroups': secondaryMuscleGroups,
   };
 }

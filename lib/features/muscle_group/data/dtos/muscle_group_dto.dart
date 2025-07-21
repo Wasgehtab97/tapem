@@ -6,15 +6,18 @@ class MuscleGroupDto {
   late final String id;
   final String name;
   final MuscleRegion region;
-  final List<String> deviceIds;
+  final List<String> primaryDeviceIds;
+  final List<String> secondaryDeviceIds;
   final List<String> exerciseIds;
 
   MuscleGroupDto({
     required this.name,
     required this.region,
-    List<String>? deviceIds,
+    List<String>? primaryDeviceIds,
+    List<String>? secondaryDeviceIds,
     List<String>? exerciseIds,
-  })  : deviceIds = List.from(deviceIds ?? []),
+  })  : primaryDeviceIds = List.from(primaryDeviceIds ?? []),
+        secondaryDeviceIds = List.from(secondaryDeviceIds ?? []),
         exerciseIds = List.from(exerciseIds ?? []);
 
   factory MuscleGroupDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -25,7 +28,10 @@ class MuscleGroupDto {
         (r) => r.name == data['region'],
         orElse: () => MuscleRegion.core,
       ),
-      deviceIds: (data['deviceIds'] as List<dynamic>? ?? [])
+      primaryDeviceIds: (data['primaryDeviceIds'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      secondaryDeviceIds: (data['secondaryDeviceIds'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toList(),
       exerciseIds: (data['exerciseIds'] as List<dynamic>? ?? [])
@@ -38,21 +44,24 @@ class MuscleGroupDto {
         id: id,
         name: name,
         region: region,
-        deviceIds: deviceIds,
+        primaryDeviceIds: primaryDeviceIds,
+        secondaryDeviceIds: secondaryDeviceIds,
         exerciseIds: exerciseIds,
       );
 
   factory MuscleGroupDto.fromModel(MuscleGroup model) => MuscleGroupDto(
         name: model.name,
         region: model.region,
-        deviceIds: model.deviceIds,
+        primaryDeviceIds: model.primaryDeviceIds,
+        secondaryDeviceIds: model.secondaryDeviceIds,
         exerciseIds: model.exerciseIds,
       )..id = model.id;
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'region': region.name,
-        'deviceIds': deviceIds,
+        'primaryDeviceIds': primaryDeviceIds,
+        'secondaryDeviceIds': secondaryDeviceIds,
         'exerciseIds': exerciseIds,
       };
 }

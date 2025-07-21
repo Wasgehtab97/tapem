@@ -34,13 +34,25 @@ class FirestoreDeviceSource {
   Future<void> updateMuscleGroups(
     String gymId,
     String deviceId,
-    List<String> groups,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
   ) {
-    return _firestore
+    final ref = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('devices')
-        .doc(deviceId)
-        .update({'muscleGroups': FieldValue.arrayUnion(groups)});
+        .doc(deviceId);
+    final all = [...primaryGroups, ...secondaryGroups];
+    final data = <String, dynamic>{};
+    if (primaryGroups.isNotEmpty) {
+      data['primaryMuscleGroups'] = FieldValue.arrayUnion(primaryGroups);
+    }
+    if (secondaryGroups.isNotEmpty) {
+      data['secondaryMuscleGroups'] = FieldValue.arrayUnion(secondaryGroups);
+    }
+    if (all.isNotEmpty) {
+      data['muscleGroups'] = FieldValue.arrayUnion(all);
+    }
+    return ref.update(data);
   }
 }
