@@ -259,6 +259,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
+                    leading: Text('${device.id}'),
                     title: Text(device.name),
                     subtitle: Wrap(
                       spacing: 4,
