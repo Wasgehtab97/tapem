@@ -16,4 +16,11 @@ abstract class DeviceRepository {
     List<String> primaryGroups,
     List<String> secondaryGroups,
   );
+
+  Future<void> setMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  );
 }

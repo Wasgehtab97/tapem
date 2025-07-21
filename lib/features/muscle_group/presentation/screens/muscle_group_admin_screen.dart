@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/providers/gym_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
-import '../../../../core/providers/all_exercises_provider.dart';
 import '../../domain/models/muscle_group.dart';
 
 
@@ -24,18 +23,6 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MuscleGroupProvider>().loadGroups(context);
-      final auth = context.read<AuthProvider>();
-      final gym = context.read<GymProvider>();
-      final allEx = context.read<AllExercisesProvider>();
-      final gymId = auth.gymCode;
-      final userId = auth.userId;
-      if (gymId != null && userId != null && gym.devices.isNotEmpty) {
-        allEx.loadAll(
-          gymId,
-          gym.devices.map((d) => d.uid).toList(),
-          userId,
-        );
-      }
     });
   }
 
@@ -149,10 +136,104 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     );
   }
 
+  Future<void> _showDeviceDialog(String deviceId, String deviceName) async {
+    final prov = context.read<MuscleGroupProvider>();
+    final primarySel = <String>{};
+    final secondarySel = <String>{};
+    for (final g in prov.groups) {
+      if (g.primaryDeviceIds.contains(deviceId)) primarySel.add(g.id);
+      if (g.secondaryDeviceIds.contains(deviceId)) secondarySel.add(g.id);
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setSt) => AlertDialog(
+          title: Text('Gerät: $deviceName'),
+          content: SizedBox(
+            width: 300,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Primär', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(
+                  height: 150,
+                  child: ListView(
+                    children: [
+                      for (final g in prov.groups)
+                        CheckboxListTile(
+                          value: primarySel.contains(g.id),
+                          title: Text(g.region.name),
+                          onChanged: (v) => setSt(() {
+                            if (v == true) {
+                              primarySel.add(g.id);
+                              secondarySel.remove(g.id);
+                            } else {
+                              primarySel.remove(g.id);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+                const Text('Sekundär', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(
+                  height: 150,
+                  child: ListView(
+                    children: [
+                      for (final g in prov.groups)
+                        CheckboxListTile(
+                          value: secondarySel.contains(g.id),
+                          title: Text(g.region.name),
+                          onChanged: (v) => setSt(() {
+                            if (v == true) {
+                              secondarySel.add(g.id);
+                              primarySel.remove(g.id);
+                            } else {
+                              secondarySel.remove(g.id);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx2).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await prov.updateDeviceAssignments(
+                  context,
+                  deviceId,
+                  primarySel.toList(),
+                  secondarySel.toList(),
+                );
+                if (mounted) Navigator.of(ctx2).pop();
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupProv = context.watch<MuscleGroupProvider>();
-    final allExProv = context.watch<AllExercisesProvider>();
+    final gymProv = context.watch<GymProvider>();
+
+    final devices = gymProv.devices.where(
+      (d) => groupProv.groups.any(
+        (g) => g.primaryDeviceIds.contains(d.uid) ||
+            g.secondaryDeviceIds.contains(d.uid),
+      ),
+    ).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Muskelgruppen verwalten')),
@@ -160,28 +241,25 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
         onPressed: () => _showEditDialog(),
         child: const Icon(Icons.add),
       ),
-      body: groupProv.isLoading || allExProv.isLoading
+      body: groupProv.isLoading || gymProv.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
-              itemCount: allExProv.allExercises.length,
+              itemCount: devices.length,
               itemBuilder: (_, i) {
-                final entry = allExProv.allExercises[i];
-                final ex = entry.value;
-                final deviceId = entry.key;
+                final device = devices[i];
                 final primary = <MuscleGroup>[];
                 final secondary = <MuscleGroup>[];
                 for (final g in groupProv.groups) {
-                  if (!ex.muscleGroupIds.contains(g.id)) continue;
-                  if (g.primaryDeviceIds.contains(deviceId)) {
+                  if (g.primaryDeviceIds.contains(device.uid)) {
                     primary.add(g);
-                  } else if (g.secondaryDeviceIds.contains(deviceId)) {
+                  } else if (g.secondaryDeviceIds.contains(device.uid)) {
                     secondary.add(g);
                   }
                 }
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: Text(ex.name),
+                    title: Text(device.name),
                     subtitle: Wrap(
                       spacing: 4,
                       children: [
@@ -198,6 +276,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                           ),
                       ],
                     ),
+                    onTap: () => _showDeviceDialog(device.uid, device.name),
                   ),
                 );
               },

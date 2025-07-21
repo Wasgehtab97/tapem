@@ -50,4 +50,19 @@ class DeviceRepositoryImpl implements DeviceRepository {
       secondaryGroups,
     );
   }
+
+  @override
+  Future<void> setMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  ) {
+    return _source.setMuscleGroups(
+      gymId,
+      deviceId,
+      primaryGroups,
+      secondaryGroups,
+    );
+  }
 }
