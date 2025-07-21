@@ -22,4 +22,8 @@ class FirestoreMuscleGroupSource {
     final dto = MuscleGroupDto.fromModel(group);
     return _col(gymId).doc(dto.id).set(dto.toJson());
   }
+
+  Future<void> deleteMuscleGroup(String gymId, String groupId) {
+    return _col(gymId).doc(groupId).delete();
+  }
 }

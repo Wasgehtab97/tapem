@@ -40,8 +40,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
       }
     }
     final selectedRegions = group == null
-        ? <MuscleRegion>{}
-        : {group.region};
+        ? <MuscleRegion>[]
+        : <MuscleRegion>[group.region];
 
     // no exercises needed
 
@@ -64,9 +64,17 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                       FilterChip(
                         label: Text(r.name),
                         selected: selectedRegions.contains(r),
+                        selectedColor: selectedRegions.contains(r)
+                            ? (selectedRegions.indexOf(r) == 0
+                                ? Colors.blue
+                                : Colors.yellow)
+                            : null,
+                        checkmarkColor: Colors.white,
                         onSelected: (v) => setSt(() {
                           if (v) {
-                            selectedRegions.add(r);
+                            if (!selectedRegions.contains(r)) {
+                              selectedRegions.add(r);
+                            }
                           } else {
                             selectedRegions.remove(r);
                           }
@@ -129,14 +137,16 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                   if (value == MuscleRole.secondary) secondary.add(key);
                 });
                 if (selectedRegions.isEmpty || primary.isEmpty && secondary.isEmpty) return;
-                for (final r in selectedRegions) {
+                for (var i = 0; i < selectedRegions.length; i++) {
+                  final r = selectedRegions[i];
                   final id = group?.id ?? _uuid.v4();
                   final newGroup = MuscleGroup(
                     id: id,
                     name: '',
                     region: r,
-                    primaryDeviceIds: primary,
-                    secondaryDeviceIds: secondary,
+                    primaryDeviceIds: i == 0 ? primary : const [],
+                    secondaryDeviceIds:
+                        i == 0 ? secondary : [...primary, ...secondary],
                     exerciseIds: const [],
                   );
                   await prov.saveGroup(context, newGroup);
@@ -168,13 +178,64 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
               itemCount: prov.groups.length,
               itemBuilder: (_, i) {
                 final g = prov.groups[i];
+                final devices = context.read<GymProvider>().devices;
+                String nameFor(String id) {
+                  if (devices.isEmpty) return id;
+                  return devices
+                      .firstWhere((d) => d.uid == id, orElse: () => devices.first)
+                      .name;
+                }
                 return ListTile(
                   title: Text(g.region.name),
-                  subtitle:
-                      Text('${g.deviceIds.length} Geräte'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _showEditDialog(group: g),
+                  subtitle: Wrap(
+                    spacing: 4,
+                    children: [
+                      for (final id in g.primaryDeviceIds)
+                        Chip(
+                          label: Text(nameFor(id)),
+                          backgroundColor: Colors.blue,
+                          labelStyle: const TextStyle(color: Colors.white),
+                        ),
+                      for (final id in g.secondaryDeviceIds)
+                        Chip(
+                          label: Text(nameFor(id)),
+                          backgroundColor: Colors.yellow,
+                        ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showEditDialog(group: g),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Löschen?'),
+                              content: Text('Muskelgruppe ${g.region.name} entfernen?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Abbrechen'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Löschen'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok == true) {
+                            await prov.deleteGroup(context, g.id);
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
