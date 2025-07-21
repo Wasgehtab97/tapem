@@ -30,4 +30,17 @@ class FirestoreDeviceSource {
       .collection('devices').doc(deviceId)
       .delete();
   }
+
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> groups,
+  ) {
+    return _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .update({'muscleGroups': FieldValue.arrayUnion(groups)});
+  }
 }

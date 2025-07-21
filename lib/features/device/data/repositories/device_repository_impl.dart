@@ -35,4 +35,13 @@ class DeviceRepositoryImpl implements DeviceRepository {
   Future<void> deleteDevice(String gymId, String deviceId) {
     return _source.deleteDevice(gymId, deviceId);
   }
+
+  @override
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> groups,
+  ) {
+    return _source.updateMuscleGroups(gymId, deviceId, groups);
+  }
 }
