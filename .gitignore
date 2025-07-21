@@ -103,3 +103,6 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+# Flutter plugin files
+.flutter-plugins
+.flutter-plugins-dependencies
