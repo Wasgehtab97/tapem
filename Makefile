@@ -51,5 +51,5 @@ R:
 	@sleep 5
 	fvm flutter pub get && fvm flutter gen-l10n
 	@sleep 5
-	@printf "R\nq\n" | fvm flutter attach -d $(IOS_EMU_ID) &>/dev/null
+	printf "R\nq\n" | fvm flutter attach -d $(IOS_EMU_ID)
 	@sleep 5
