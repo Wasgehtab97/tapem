@@ -15,6 +15,7 @@ class DeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
+        leading: Text('${device.id}'),
         title: Text(device.name),
         subtitle: device.description.isNotEmpty ? Text(device.description) : null,
         onTap: onTap,
