@@ -95,7 +95,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                       for (final d in devices)
                         CheckboxListTile(
                           value: selectedDevices.contains(d.uid),
-                          title: Text(d.name),
+                          title: Text('${d.name} (${d.id})'),
                           onChanged: (v) => setSt(() {
                             if (v == true) {
                               selectedDevices.add(d.uid);
@@ -146,13 +146,18 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
 
   Future<void> _showDeviceDialog(String deviceId, String deviceName) async {
     final prov = context.read<MuscleGroupProvider>();
-    final selected = <String>[];
+    final selectedRegions = <MuscleRegion>[];
     for (final g in prov.groups) {
       if (g.primaryDeviceIds.contains(deviceId)) {
-        selected.insert(0, g.id);
+        selectedRegions.insert(0, g.region);
       } else if (g.secondaryDeviceIds.contains(deviceId)) {
-        selected.add(g.id);
+        selectedRegions.add(g.region);
       }
+    }
+
+    final Map<MuscleRegion, String> groupIds = {};
+    for (final g in prov.groups) {
+      groupIds[g.region] = g.id;
     }
 
     showDialog<void>(
@@ -162,22 +167,26 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
           title: Text('Gerät: $deviceName'),
           content: SizedBox(
             width: 300,
-            child: ListView(
-              shrinkWrap: true,
+            child: Wrap(
+              spacing: 4,
               children: [
-                for (final g in prov.groups)
-                  CheckboxListTile(
-                    value: selected.contains(g.id),
-                    title: Text(
-                      selected.isNotEmpty && selected.first == g.id
-                          ? '${g.region.name} (Primär)'
-                          : g.region.name,
-                    ),
-                    onChanged: (v) => setSt(() {
-                      if (v == true) {
-                        selected.add(g.id);
+                for (final r in MuscleRegion.values)
+                  FilterChip(
+                    label: Text(r.name),
+                    selected: selectedRegions.contains(r),
+                    selectedColor: selectedRegions.contains(r)
+                        ? (selectedRegions.indexOf(r) == 0
+                            ? Colors.blue
+                            : Colors.yellow)
+                        : null,
+                    checkmarkColor: Colors.white,
+                    onSelected: (v) => setSt(() {
+                      if (v) {
+                        if (!selectedRegions.contains(r)) {
+                          selectedRegions.add(r);
+                        }
                       } else {
-                        selected.remove(g.id);
+                        selectedRegions.remove(r);
                       }
                     }),
                   ),
@@ -191,10 +200,16 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final List<String> primary =
-                    selected.isNotEmpty ? [selected.first] : <String>[];
-                final List<String> secondary =
-                    selected.length > 1 ? selected.sublist(1) : <String>[];
+                final List<String> primary = [];
+                final List<String> secondary = [];
+                if (selectedRegions.isNotEmpty) {
+                  final id = groupIds[selectedRegions.first];
+                  if (id != null) primary.add(id);
+                  for (final r in selectedRegions.skip(1)) {
+                    final sId = groupIds[r];
+                    if (sId != null) secondary.add(sId);
+                  }
+                }
                 await prov.updateDeviceAssignments(
                   context,
                   deviceId,
