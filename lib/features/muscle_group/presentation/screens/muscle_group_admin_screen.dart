@@ -7,7 +7,6 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../domain/models/muscle_group.dart';
 
-enum MuscleRole { none, primary, secondary }
 
 class MuscleGroupAdminScreen extends StatefulWidget {
   const MuscleGroupAdminScreen({Key? key}) : super(key: key);
@@ -30,14 +29,11 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   Future<void> _showEditDialog({MuscleGroup? group}) async {
     final devices =
         context.read<GymProvider>().devices.where((d) => !d.isMulti).toList();
-    final Map<String, MuscleRole> selectedDevices = {};
+    final Set<String> selectedDevices = <String>{};
     if (group != null) {
-      for (final id in group.primaryDeviceIds) {
-        selectedDevices[id] = MuscleRole.primary;
-      }
-      for (final id in group.secondaryDeviceIds) {
-        selectedDevices[id] = MuscleRole.secondary;
-      }
+      selectedDevices
+        ..addAll(group.primaryDeviceIds)
+        ..addAll(group.secondaryDeviceIds);
     }
     final selectedRegions = group == null
         ? <MuscleRegion>[]
@@ -89,32 +85,16 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                   child: ListView(
                     children: [
                       for (final d in devices)
-                        ListTile(
+                        CheckboxListTile(
+                          value: selectedDevices.contains(d.uid),
                           title: Text(d.name),
-                          trailing: DropdownButton<MuscleRole>(
-                            value: selectedDevices[d.uid] ?? MuscleRole.none,
-                            onChanged: (v) => setSt(() {
-                              if (v == null || v == MuscleRole.none) {
-                                selectedDevices.remove(d.uid);
-                              } else {
-                                selectedDevices[d.uid] = v;
-                              }
-                            }),
-                            items: const [
-                              DropdownMenuItem(
-                                value: MuscleRole.none,
-                                child: Text('-'),
-                              ),
-                              DropdownMenuItem(
-                                value: MuscleRole.primary,
-                                child: Text('Primär'),
-                              ),
-                              DropdownMenuItem(
-                                value: MuscleRole.secondary,
-                                child: Text('Sekundär'),
-                              ),
-                            ],
-                          ),
+                          onChanged: (v) => setSt(() {
+                            if (v == true) {
+                              selectedDevices.add(d.uid);
+                            } else {
+                              selectedDevices.remove(d.uid);
+                            }
+                          }),
                         ),
                     ],
                   ),
@@ -130,13 +110,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
             ElevatedButton(
               onPressed: () async {
                 final prov = context.read<MuscleGroupProvider>();
-                final primary = <String>[];
-                final secondary = <String>[];
-                selectedDevices.forEach((key, value) {
-                  if (value == MuscleRole.primary) primary.add(key);
-                  if (value == MuscleRole.secondary) secondary.add(key);
-                });
-                if (selectedRegions.isEmpty || primary.isEmpty && secondary.isEmpty) return;
+                final deviceIds = selectedDevices.toList();
+                if (selectedRegions.isEmpty || deviceIds.isEmpty) return;
                 for (var i = 0; i < selectedRegions.length; i++) {
                   final r = selectedRegions[i];
                   final id = group?.id ?? _uuid.v4();
@@ -144,9 +119,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                     id: id,
                     name: '',
                     region: r,
-                    primaryDeviceIds: i == 0 ? primary : const [],
-                    secondaryDeviceIds:
-                        i == 0 ? secondary : [...primary, ...secondary],
+                    primaryDeviceIds: i == 0 ? deviceIds : const [],
+                    secondaryDeviceIds: i == 0 ? const [] : deviceIds,
                     exerciseIds: const [],
                   );
                   await prov.saveGroup(context, newGroup);
