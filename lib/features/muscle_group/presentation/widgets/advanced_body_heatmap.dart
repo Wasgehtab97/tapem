@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vector_math/vector_math_64.dart' show Matrix4;
 
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../domain/models/muscle_group.dart';
