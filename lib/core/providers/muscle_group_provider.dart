@@ -11,6 +11,7 @@ import '../../features/muscle_group/domain/usecases/get_muscle_groups_for_gym.da
 import '../../features/muscle_group/domain/usecases/save_muscle_group.dart';
 import '../../features/muscle_group/domain/usecases/delete_muscle_group.dart';
 import '../../features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
+import '../../features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../../features/device/data/repositories/device_repository_impl.dart';
 import '../../features/device/data/sources/firestore_device_source.dart';
 import '../../features/history/data/sources/firestore_history_source.dart';
@@ -23,6 +24,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   final DeleteMuscleGroup _deleteGroup;
   final GetHistoryForDevice _getHistory;
   final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
+  final SetDeviceMuscleGroupsUseCase _setDeviceGroups;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
@@ -30,6 +32,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     DeleteMuscleGroup? deleteGroup,
     GetHistoryForDevice? getHistory,
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
+    SetDeviceMuscleGroupsUseCase? setDeviceGroups,
   })  : _getGroups = getGroups ??
             GetMuscleGroupsForGym(
               MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
@@ -48,6 +51,10 @@ class MuscleGroupProvider extends ChangeNotifier {
             ),
         _updateDeviceGroups = updateDeviceGroups ??
             UpdateDeviceMuscleGroupsUseCase(
+              DeviceRepositoryImpl(FirestoreDeviceSource()),
+            ),
+        _setDeviceGroups = setDeviceGroups ??
+            SetDeviceMuscleGroupsUseCase(
               DeviceRepositoryImpl(FirestoreDeviceSource()),
             );
 
@@ -165,6 +172,57 @@ class MuscleGroupProvider extends ChangeNotifier {
         await _saveGroup.execute(gymId, updated);
       }
     }
+    await loadGroups(context);
+  }
+
+  Future<void> updateDeviceAssignments(
+    BuildContext context,
+    String deviceId,
+    List<String> primaryGroupIds,
+    List<String> secondaryGroupIds,
+  ) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return;
+
+    for (final g in _groups) {
+      final isPrimary = primaryGroupIds.contains(g.id);
+      final isSecondary = secondaryGroupIds.contains(g.id);
+
+      if (!isPrimary && !isSecondary) {
+        if (!g.primaryDeviceIds.contains(deviceId) &&
+            !g.secondaryDeviceIds.contains(deviceId)) {
+          continue;
+        }
+      }
+
+      final newPrimary = List<String>.from(g.primaryDeviceIds);
+      final newSecondary = List<String>.from(g.secondaryDeviceIds);
+      newPrimary.remove(deviceId);
+      newSecondary.remove(deviceId);
+      if (isPrimary) newPrimary.add(deviceId);
+      if (isSecondary) newSecondary.add(deviceId);
+
+      final updated = g.copyWith(
+        primaryDeviceIds: newPrimary,
+        secondaryDeviceIds: newSecondary,
+      );
+      await _saveGroup.execute(gymId, updated);
+    }
+
+    await _setDeviceGroups.execute(
+      gymId,
+      deviceId,
+      primaryGroupIds.map((id) {
+        final g = _groups.firstWhere((e) => e.id == id);
+        return g.region.name;
+      }).toList(),
+      secondaryGroupIds.map((id) {
+        final g = _groups.firstWhere((e) => e.id == id);
+        return g.region.name;
+      }).toList(),
+    );
+
     await loadGroups(context);
   }
 

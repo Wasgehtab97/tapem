@@ -55,4 +55,24 @@ class FirestoreDeviceSource {
     }
     return ref.update(data);
   }
+
+  Future<void> setMuscleGroups(
+    String gymId,
+    String deviceId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  ) {
+    final ref = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId);
+    final all = [...primaryGroups, ...secondaryGroups];
+    return ref.update({
+      'primaryMuscleGroups': primaryGroups,
+      'secondaryMuscleGroups': secondaryGroups,
+      'muscleGroups': all,
+      'muscleGroupIds': all,
+    });
+  }
 }
