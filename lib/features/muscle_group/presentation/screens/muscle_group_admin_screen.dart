@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/providers/gym_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
+import '../../../../core/providers/all_exercises_provider.dart';
 import '../../domain/models/muscle_group.dart';
 
 
@@ -23,6 +24,18 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MuscleGroupProvider>().loadGroups(context);
+      final auth = context.read<AuthProvider>();
+      final gym = context.read<GymProvider>();
+      final allEx = context.read<AllExercisesProvider>();
+      final gymId = auth.gymCode;
+      final userId = auth.userId;
+      if (gymId != null && userId != null && gym.devices.isNotEmpty) {
+        allEx.loadAll(
+          gymId,
+          gym.devices.map((d) => d.uid).toList(),
+          userId,
+        );
+      }
     });
   }
 
@@ -138,7 +151,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<MuscleGroupProvider>();
+    final groupProv = context.watch<MuscleGroupProvider>();
+    final allExProv = context.watch<AllExercisesProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Muskelgruppen verwalten')),
@@ -146,70 +160,44 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
         onPressed: () => _showEditDialog(),
         child: const Icon(Icons.add),
       ),
-      body: prov.isLoading
+      body: groupProv.isLoading || allExProv.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
-              itemCount: prov.groups.length,
+              itemCount: allExProv.allExercises.length,
               itemBuilder: (_, i) {
-                final g = prov.groups[i];
-                final devices = context.read<GymProvider>().devices;
-                String nameFor(String id) {
-                  if (devices.isEmpty) return id;
-                  return devices
-                      .firstWhere((d) => d.uid == id, orElse: () => devices.first)
-                      .name;
+                final entry = allExProv.allExercises[i];
+                final ex = entry.value;
+                final deviceId = entry.key;
+                final primary = <MuscleGroup>[];
+                final secondary = <MuscleGroup>[];
+                for (final g in groupProv.groups) {
+                  if (!ex.muscleGroupIds.contains(g.id)) continue;
+                  if (g.primaryDeviceIds.contains(deviceId)) {
+                    primary.add(g);
+                  } else if (g.secondaryDeviceIds.contains(deviceId)) {
+                    secondary.add(g);
+                  }
                 }
-                return ListTile(
-                  title: Text(g.region.name),
-                  subtitle: Wrap(
-                    spacing: 4,
-                    children: [
-                      for (final id in g.primaryDeviceIds)
-                        Chip(
-                          label: Text(nameFor(id)),
-                          backgroundColor: Colors.blue,
-                          labelStyle: const TextStyle(color: Colors.white),
-                        ),
-                      for (final id in g.secondaryDeviceIds)
-                        Chip(
-                          label: Text(nameFor(id)),
-                          backgroundColor: Colors.yellow,
-                        ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showEditDialog(group: g),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () async {
-                          final ok = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Löschen?'),
-                              content: Text('Muskelgruppe ${g.region.name} entfernen?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Abbrechen'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Löschen'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (ok == true) {
-                            await prov.deleteGroup(context, g.id);
-                          }
-                        },
-                      ),
-                    ],
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: ListTile(
+                    title: Text(ex.name),
+                    subtitle: Wrap(
+                      spacing: 4,
+                      children: [
+                        for (final g in primary)
+                          Chip(
+                            label: Text(g.region.name),
+                            backgroundColor: Colors.blue,
+                            labelStyle: const TextStyle(color: Colors.white),
+                          ),
+                        for (final g in secondary)
+                          Chip(
+                            label: Text(g.region.name),
+                            backgroundColor: Colors.yellow,
+                          ),
+                      ],
+                    ),
                   ),
                 );
               },
