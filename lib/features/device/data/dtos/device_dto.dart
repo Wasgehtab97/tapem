@@ -12,6 +12,8 @@ class DeviceDto {
   final String? nfcCode;
   final bool isMulti;
   final List<String> muscleGroups;
+  final List<String> primaryMuscleGroups;
+  final List<String> secondaryMuscleGroups;
 
   DeviceDto({
     required this.uid,
@@ -22,8 +24,12 @@ class DeviceDto {
     this.nfcCode,
     required this.isMulti,
     List<String>? muscleGroups,
-  })  : muscleGroupIds = List.from(muscleGroupIds ?? []),
-        muscleGroups   = List.from(muscleGroups ?? []);
+    List<String>? primaryMuscleGroups,
+    List<String>? secondaryMuscleGroups,
+  })  : muscleGroupIds      = List.from(muscleGroupIds ?? []),
+        muscleGroups        = List.from(muscleGroups ?? []),
+        primaryMuscleGroups = List.from(primaryMuscleGroups ?? []),
+        secondaryMuscleGroups = List.from(secondaryMuscleGroups ?? []);
 
   factory DeviceDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -41,6 +47,13 @@ class DeviceDto {
       muscleGroups: (data['muscleGroups'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toList(),
+      primaryMuscleGroups: (data['primaryMuscleGroups'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      secondaryMuscleGroups:
+          (data['secondaryMuscleGroups'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
     );
   }
 
@@ -50,7 +63,9 @@ class DeviceDto {
     id: id,
     name: name,
     muscleGroupIds: muscleGroupIds,
-    muscleGroups:   muscleGroups,
+    muscleGroups: muscleGroups,
+    primaryMuscleGroups: primaryMuscleGroups,
+    secondaryMuscleGroups: secondaryMuscleGroups,
     description: description,
     nfcCode: nfcCode,
     isMulti: isMulti,

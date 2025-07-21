@@ -4,9 +4,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/providers/gym_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../features/device/domain/usecases/get_exercises_for_device.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../domain/models/muscle_group.dart';
+
+enum MuscleRole { none, primary, secondary }
 
 class MuscleGroupAdminScreen extends StatefulWidget {
   const MuscleGroupAdminScreen({Key? key}) : super(key: key);
@@ -29,9 +30,15 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   Future<void> _showEditDialog({MuscleGroup? group}) async {
     final devices =
         context.read<GymProvider>().devices.where((d) => !d.isMulti).toList();
-    final selectedDevices = group == null
-        ? <String>{}
-        : group.deviceIds.toSet();
+    final Map<String, MuscleRole> selectedDevices = {};
+    if (group != null) {
+      for (final id in group.primaryDeviceIds) {
+        selectedDevices[id] = MuscleRole.primary;
+      }
+      for (final id in group.secondaryDeviceIds) {
+        selectedDevices[id] = MuscleRole.secondary;
+      }
+    }
     final selectedRegions = group == null
         ? <MuscleRegion>{}
         : {group.region};
@@ -74,16 +81,32 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                   child: ListView(
                     children: [
                       for (final d in devices)
-                        CheckboxListTile(
-                          value: selectedDevices.contains(d.uid),
+                        ListTile(
                           title: Text(d.name),
-                          onChanged: (v) => setSt(() {
-                            if (v == true) {
-                              selectedDevices.add(d.uid);
-                            } else {
-                              selectedDevices.remove(d.uid);
-                            }
-                          }),
+                          trailing: DropdownButton<MuscleRole>(
+                            value: selectedDevices[d.uid] ?? MuscleRole.none,
+                            onChanged: (v) => setSt(() {
+                              if (v == null || v == MuscleRole.none) {
+                                selectedDevices.remove(d.uid);
+                              } else {
+                                selectedDevices[d.uid] = v;
+                              }
+                            }),
+                            items: const [
+                              DropdownMenuItem(
+                                value: MuscleRole.none,
+                                child: Text('-'),
+                              ),
+                              DropdownMenuItem(
+                                value: MuscleRole.primary,
+                                child: Text('Primär'),
+                              ),
+                              DropdownMenuItem(
+                                value: MuscleRole.secondary,
+                                child: Text('Sekundär'),
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),
@@ -99,14 +122,21 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
             ElevatedButton(
               onPressed: () async {
                 final prov = context.read<MuscleGroupProvider>();
-                if (selectedRegions.isEmpty || selectedDevices.isEmpty) return;
+                final primary = <String>[];
+                final secondary = <String>[];
+                selectedDevices.forEach((key, value) {
+                  if (value == MuscleRole.primary) primary.add(key);
+                  if (value == MuscleRole.secondary) secondary.add(key);
+                });
+                if (selectedRegions.isEmpty || primary.isEmpty && secondary.isEmpty) return;
                 for (final r in selectedRegions) {
                   final id = group?.id ?? _uuid.v4();
                   final newGroup = MuscleGroup(
                     id: id,
                     name: '',
                     region: r,
-                    deviceIds: selectedDevices.toList(),
+                    primaryDeviceIds: primary,
+                    secondaryDeviceIds: secondary,
                     exerciseIds: const [],
                   );
                   await prov.saveGroup(context, newGroup);
@@ -140,7 +170,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                 final g = prov.groups[i];
                 return ListTile(
                   title: Text(g.region.name),
-                  subtitle: Text('${g.deviceIds.length} Geräte'),
+                  subtitle:
+                      Text('${g.deviceIds.length} Geräte'),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit),
                     onPressed: () => _showEditDialog(group: g),

@@ -28,7 +28,21 @@ class DeviceListItem extends StatelessWidget {
     return ListTile(
       leading: Text('${device.id}'),
       title: Text(device.name),
-      subtitle: Text(device.description),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(device.description),
+          Wrap(
+            spacing: 4,
+            children: [
+              for (final m in device.primaryMuscleGroups)
+                Text(m, style: const TextStyle(color: Colors.blue)),
+              for (final m in device.secondaryMuscleGroups)
+                Text(m, style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+        ],
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

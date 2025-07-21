@@ -7,6 +7,13 @@ class UpdateDeviceMuscleGroupsUseCase {
   Future<void> execute(
     String gymId,
     String deviceId,
-    List<String> groups,
-  ) => _repo.updateMuscleGroups(gymId, deviceId, groups);
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  ) =>
+      _repo.updateMuscleGroups(
+        gymId,
+        deviceId,
+        primaryGroups,
+        secondaryGroups,
+      );
 }

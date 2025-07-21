@@ -85,13 +85,28 @@ class MuscleGroupProvider extends ChangeNotifier {
     await _saveGroup.execute(gymId, group);
 
     final devices = Provider.of<GymProvider>(context, listen: false).devices;
-    for (final dId in group.deviceIds) {
+    for (final dId in group.primaryDeviceIds) {
       try {
         final dev = devices.firstWhere((d) => d.uid == dId);
         if (!dev.isMulti) {
           await _updateDeviceGroups.execute(
             gymId,
             dId,
+            [group.region.name],
+            const [],
+          );
+        }
+      } catch (_) {}
+    }
+
+    for (final dId in group.secondaryDeviceIds) {
+      try {
+        final dev = devices.firstWhere((d) => d.uid == dId);
+        if (!dev.isMulti) {
+          await _updateDeviceGroups.execute(
+            gymId,
+            dId,
+            const [],
             [group.region.name],
           );
         }
@@ -110,8 +125,11 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
     for (final g in _groups) {
-      if (groupIds.contains(g.id) && !g.deviceIds.contains(deviceId)) {
-        final updated = g.copyWith(deviceIds: [...g.deviceIds, deviceId]);
+      if (groupIds.contains(g.id) &&
+          !g.primaryDeviceIds.contains(deviceId)) {
+        final updated = g.copyWith(
+          primaryDeviceIds: [...g.primaryDeviceIds, deviceId],
+        );
         await _saveGroup.execute(gymId, updated);
       }
     }

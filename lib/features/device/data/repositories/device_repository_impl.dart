@@ -40,8 +40,14 @@ class DeviceRepositoryImpl implements DeviceRepository {
   Future<void> updateMuscleGroups(
     String gymId,
     String deviceId,
-    List<String> groups,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
   ) {
-    return _source.updateMuscleGroups(gymId, deviceId, groups);
+    return _source.updateMuscleGroups(
+      gymId,
+      deviceId,
+      primaryGroups,
+      secondaryGroups,
+    );
   }
 }

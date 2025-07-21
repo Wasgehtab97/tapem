@@ -13,6 +13,7 @@ abstract class DeviceRepository {
   Future<void> updateMuscleGroups(
     String gymId,
     String deviceId,
-    List<String> groups,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
   );
 }
