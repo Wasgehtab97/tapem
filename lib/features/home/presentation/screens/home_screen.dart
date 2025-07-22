@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
         authProv.userName ?? authProv.userEmail ?? loc.genericUser;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.homeWelcome(userDisplay)),
+        title: Text(userDisplay),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

@@ -94,6 +94,12 @@ class FirestoreAuthSource {
     });
   }
 
+  Future<void> setShowInLeaderboard(String userId, bool value) async {
+    await _firestore.collection('users').doc(userId).update({
+      'showInLeaderboard': value,
+    });
+  }
+
   Future<void> sendPasswordResetEmail(String email) {
     final settings = ActionCodeSettings(
       url: 'https://tapem.page.link/reset',

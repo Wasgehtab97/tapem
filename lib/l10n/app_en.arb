@@ -346,4 +346,16 @@
   "@confirmPasswordButton": {"description": "Button to confirm new password"},
   "passwordResetSuccess": "Password changed.",
   "@passwordResetSuccess": {"description": "Snackbar after successful password reset"}
+  "settingsDialogTitle": "Settings",
+  "@settingsDialogTitle": {"description": "Title for the settings dialog"},
+  "settingsOptionLanguage": "Language",
+  "@settingsOptionLanguage": {"description": "Settings option to change language"},
+  "settingsOptionPublicProfile": "Public profile",
+  "@settingsOptionPublicProfile": {"description": "Settings option to toggle profile visibility"},
+  "publicProfileDialogTitle": "Profile visibility",
+  "@publicProfileDialogTitle": {"description": "Title for public profile dialog"},
+  "publicProfilePublic": "Public",
+  "@publicProfilePublic": {"description": "Option label for public profile"},
+  "publicProfilePrivate": "Private",
+  "@publicProfilePrivate": {"description": "Option label for private profile"}
 }
