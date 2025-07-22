@@ -329,5 +329,13 @@
   "usernameFieldLabel": "Username",
   "@usernameFieldLabel": {"description": "Label for username field"},
   "usernameTaken": "This username is already taken.",
-  "@usernameTaken": {"description": "Error when username exists"}
+  "@usernameTaken": {"description": "Error when username exists"},
+  "forgotPassword": "Forgot password?",
+  "@forgotPassword": {"description": "Link to open password reset dialog"},
+  "passwordResetDialogTitle": "Reset password",
+  "@passwordResetDialogTitle": {"description": "Title for password reset dialog"},
+  "passwordResetHint": "Enter your e-mail to receive a reset link.",
+  "@passwordResetHint": {"description": "Hint text in password reset dialog"},
+  "passwordResetSent": "Password reset email sent.",
+  "@passwordResetSent": {"description": "Snackbar message after sending reset email"}
 }

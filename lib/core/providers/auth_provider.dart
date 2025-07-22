@@ -9,6 +9,7 @@ import 'package:tapem/features/auth/domain/usecases/logout.dart';
 import 'package:tapem/features/auth/domain/usecases/register.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
+import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -17,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   final GetCurrentUserUseCase _currentUC;
   final SetUsernameUseCase _setUsernameUC;
   final CheckUsernameAvailable _checkUsernameUC;
+  final ResetPasswordUseCase _resetPasswordUC;
 
   UserData? _user;
   bool _isLoading = false;
@@ -29,7 +31,8 @@ class AuthProvider extends ChangeNotifier {
       _logoutUC = LogoutUseCase(repo),
       _currentUC = GetCurrentUserUseCase(repo),
       _setUsernameUC = SetUsernameUseCase(repo),
-      _checkUsernameUC = CheckUsernameAvailable(repo) {
+      _checkUsernameUC = CheckUsernameAvailable(repo),
+      _resetPasswordUC = ResetPasswordUseCase(repo) {
     _loadCurrentUser();
   }
 
@@ -150,6 +153,18 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      await _resetPasswordUC.execute(email);
+    } catch (e) {
+      _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
     } finally {
       _setLoading(false);
     }
