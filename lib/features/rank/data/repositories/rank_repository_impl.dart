@@ -30,4 +30,20 @@ class RankRepositoryImpl implements RankRepository {
   ) {
     return _source.watchLeaderboard(gymId, deviceId);
   }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchWeeklyLeaderboard(
+    String gymId,
+    String weekId,
+  ) {
+    return _source.watchWeeklyLeaderboard(gymId, weekId);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchMonthlyLeaderboard(
+    String gymId,
+    String monthId,
+  ) {
+    return _source.watchMonthlyLeaderboard(gymId, monthId);
+  }
 }

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Leaderboard Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #fff; }
+    h1 { text-align: center; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 4px 8px; }
+  </style>
+</head>
+<body>
+<h1>Leaderboard</h1>
+<ul id="weekly"></ul>
+<ul id="monthly"></ul>
+<script>
+const ws = new WebSocket('ws://localhost:8081');
+ws.onmessage = (ev) => {
+  const msg = JSON.parse(ev.data);
+  if (msg.type === 'weekly') render('weekly', msg.data);
+  if (msg.type === 'monthly') render('monthly', msg.data);
+};
+function render(id, entries) {
+  const el = document.getElementById(id);
+  el.innerHTML = entries.map((e,i)=>`<li>#${i+1} ${e.username||e.userId} - ${e.xp} XP</li>`).join('');
+}
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
+import 'package:intl/intl.dart';
 
 class RankScreen extends StatefulWidget {
   final String gymId;
@@ -13,20 +14,44 @@ class RankScreen extends StatefulWidget {
   _RankScreenState createState() => _RankScreenState();
 }
 
-class _RankScreenState extends State<RankScreen> {
+class _RankScreenState extends State<RankScreen>
+    with SingleTickerProviderStateMixin {
   late RankProvider _provider;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _provider = Provider.of<RankProvider>(context, listen: false);
-    _provider.watch(widget.gymId, widget.deviceId);
+    _tabController = TabController(length: 3, vsync: this);
+    _provider.watchDevice(widget.gymId, widget.deviceId);
+    final now = DateTime.now();
+    final weekId = DateFormat('yyyy-ww').format(now);
+    final monthId = DateFormat('yyyy-MM').format(now);
+    _provider.watchWeekly(widget.gymId, weekId);
+    _provider.watchMonthly(widget.gymId, monthId);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Leaderboard')),
+      appBar: AppBar(
+        title: const Text('Leaderboard'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Gerät'),
+            Tab(text: 'Woche'),
+            Tab(text: 'Monat'),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Card(
@@ -56,23 +81,32 @@ class _RankScreenState extends State<RankScreen> {
           Expanded(
             child: Consumer<RankProvider>(
               builder: (context, prov, _) {
-                final entries = prov.entries;
-                return ListView.builder(
-                  itemCount: entries.length,
-                  itemBuilder: (context, i) {
-                    final e = entries[i];
-                    return ListTile(
-                      leading: Text('#${i + 1}'),
-                      title: Text(e['username'] ?? e['userId']),
-                      trailing: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('L${e['level'] ?? 1}'),
-                          Text('${e['xp']} XP'),
-                        ],
-                      ),
-                    );
-                  },
+                Widget buildList(List<Map<String, dynamic>> entries) {
+                  return ListView.builder(
+                    itemCount: entries.length,
+                    itemBuilder: (context, i) {
+                      final e = entries[i];
+                      return ListTile(
+                        leading: Text('#${i + 1}'),
+                        title: Text(e['username'] ?? e['userId']),
+                        trailing: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('L${e['level'] ?? 1}'),
+                            Text('${e['xp']} XP'),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    buildList(prov.deviceEntries),
+                    buildList(prov.weeklyEntries),
+                    buildList(prov.monthlyEntries),
+                  ],
                 );
               },
             ),
