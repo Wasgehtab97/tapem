@@ -19,6 +19,8 @@ import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/xp_overview_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/day_xp_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -41,6 +43,8 @@ class AppRouter {
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
   static const xpOverview = '/xp_overview';
+  static const dayXp = '/day_xp';
+  static const deviceXp = '/device_xp';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -130,6 +134,12 @@ class AppRouter {
 
       case xpOverview:
         return MaterialPageRoute(builder: (_) => const XpOverviewScreen());
+
+      case dayXp:
+        return MaterialPageRoute(builder: (_) => const DayXpScreen());
+
+      case deviceXp:
+        return MaterialPageRoute(builder: (_) => const DeviceXpScreen());
 
       default:
         return MaterialPageRoute(
