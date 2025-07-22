@@ -78,4 +78,33 @@ class FirestoreXpSource {
       return map;
     });
   }
+
+  Stream<Map<String, int>> watchTrainingDaysXp(String userId) {
+    final col = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('trainingDays');
+    return col.snapshots().map((snap) {
+      final map = <String, int>{};
+      for (final doc in snap.docs) {
+        map[doc.id] = (doc.data()['xp'] as int? ?? 0);
+      }
+      return map;
+    });
+  }
+
+  Stream<int> watchDeviceXp({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) {
+    final doc = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('leaderboard')
+        .doc(userId);
+    return doc.snapshots().map((snap) => (snap.data()?['xp'] as int?) ?? 0);
+  }
 }

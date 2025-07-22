@@ -14,9 +14,15 @@ class XpProvider extends ChangeNotifier {
   int _dayXp = 0;
   StreamSubscription<int>? _daySub;
   StreamSubscription<Map<String, int>>? _muscleSub;
+  Map<String, int> _dayListXp = {};
+  Map<String, int> _deviceXp = {};
+  StreamSubscription<Map<String, int>>? _dayListSub;
+  final Map<String, StreamSubscription<int>> _deviceSubs = {};
 
   Map<String, int> get muscleXp => _muscleXp;
   int get dayXp => _dayXp;
+  Map<String, int> get dayListXp => _dayListXp;
+  Map<String, int> get deviceXp => _deviceXp;
 
   Future<void> addSessionXp({
     required String gymId,
@@ -54,10 +60,41 @@ class XpProvider extends ChangeNotifier {
     });
   }
 
+  void watchTrainingDays(String userId) {
+    _dayListSub?.cancel();
+    _dayListSub = _repo.watchTrainingDaysXp(userId).listen((map) {
+      _dayListXp = map;
+      notifyListeners();
+    });
+  }
+
+  void watchDeviceXp(String gymId, String userId, List<String> deviceIds) {
+    for (final id in _deviceSubs.keys.toList()) {
+      if (!deviceIds.contains(id)) {
+        _deviceSubs[id]?.cancel();
+        _deviceSubs.remove(id);
+        _deviceXp.remove(id);
+      }
+    }
+    for (final id in deviceIds) {
+      if (_deviceSubs.containsKey(id)) continue;
+      _deviceSubs[id] = _repo
+          .watchDeviceXp(gymId: gymId, deviceId: id, userId: userId)
+          .listen((xp) {
+        _deviceXp[id] = xp;
+        notifyListeners();
+      });
+    }
+  }
+
   @override
   void dispose() {
     _daySub?.cancel();
     _muscleSub?.cancel();
+    _dayListSub?.cancel();
+    for (final sub in _deviceSubs.values) {
+      sub.cancel();
+    }
     super.dispose();
   }
 }
