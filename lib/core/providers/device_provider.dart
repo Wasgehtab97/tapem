@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
@@ -12,6 +13,8 @@ import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/xp_provider.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final GetDevicesForGym _getDevicesForGym;
@@ -183,6 +186,7 @@ class DeviceProvider extends ChangeNotifier {
 
   /// Speichert die Session-Logs, die User-Note und updated das Leaderboard
   Future<void> saveWorkoutSession({
+    required BuildContext context,
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
@@ -259,6 +263,21 @@ class DeviceProvider extends ChangeNotifier {
     batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
 
     await batch.commit();
+
+    // XP-System aktualisieren
+    try {
+      await Provider.of<XpProvider>(context, listen: false).addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: _device!.uid,
+        sessionId: sessionId,
+        showInLeaderboard: showInLeaderboard,
+        isMulti: _device!.isMulti,
+        primaryMuscleGroupIds: _device!.primaryMuscleGroups,
+      );
+    } catch (e, st) {
+      debugPrintStack(label: '_updateXp', stackTrace: st);
+    }
 
     // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
     if (!_device!.isMulti && showInLeaderboard) {
