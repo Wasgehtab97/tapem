@@ -12,7 +12,7 @@ import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/app_router.dart';
-import 'package:tapem/features/rank/presentation/screens/device_leaderboard_list_screen.dart';
+import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -29,14 +29,18 @@ class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
 
   List<Widget> _buildPages(BuildContext context) {
-    final gymId = context.watch<GymProvider>().currentGymId;
+    final gymProv = context.watch<GymProvider>();
+    final gymId = gymProv.currentGymId;
+    final devices = gymProv.devices.where((d) => !d.isMulti).toList();
+    final deviceId = devices.isNotEmpty ? devices.first.uid : '';
+
     return [
       const GymScreen(),
       const ProfileScreen(),
       const ReportScreen(),
       const MuscleGroupScreen(),
       const AdminDashboardScreen(),
-      DeviceLeaderboardListScreen(gymId: gymId),
+      RankScreen(gymId: gymId, deviceId: deviceId),
       const AffiliateScreen(),
       const PlanOverviewScreen(),
     ];
