@@ -39,6 +39,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> setShowInLeaderboard(String userId, bool value) {
+    return _source.setShowInLeaderboard(userId, value);
+  }
+
+  @override
   Future<bool> isUsernameAvailable(String username) {
     return _source.isUsernameAvailable(username);
   }

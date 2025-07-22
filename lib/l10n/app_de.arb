@@ -346,4 +346,16 @@
   "@confirmPasswordButton": {"description": "Button zum Passwort aktualisieren"},
   "passwordResetSuccess": "Passwort geändert.",
   "@passwordResetSuccess": {"description": "Snackbar nach erfolgreichem Reset"}
+  "settingsDialogTitle": "Einstellungen",
+  "@settingsDialogTitle": {"description": "Titel des Einstellungsdialogs"},
+  "settingsOptionLanguage": "Sprache",
+  "@settingsOptionLanguage": {"description": "Option zum Sprachauswahl"},
+  "settingsOptionPublicProfile": "Öffentliches Profil",
+  "@settingsOptionPublicProfile": {"description": "Option zur Sichtbarkeit des Profils"},
+  "publicProfileDialogTitle": "Profil-Sichtbarkeit",
+  "@publicProfileDialogTitle": {"description": "Titel des Dialogs für öffentliche Profil-Option"},
+  "publicProfilePublic": "Öffentlich",
+  "@publicProfilePublic": {"description": "Option für öffentliches Profil"},
+  "publicProfilePrivate": "Privat",
+  "@publicProfilePrivate": {"description": "Option für privates Profil"}
 }

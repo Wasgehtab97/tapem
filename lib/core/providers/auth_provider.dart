@@ -10,6 +10,7 @@ import 'package:tapem/features/auth/domain/usecases/register.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
+import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -17,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   final LogoutUseCase _logoutUC;
   final GetCurrentUserUseCase _currentUC;
   final SetUsernameUseCase _setUsernameUC;
+  final SetShowInLeaderboardUseCase _setShowInLbUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final ResetPasswordUseCase _resetPasswordUC;
 
@@ -31,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
       _logoutUC = LogoutUseCase(repo),
       _currentUC = GetCurrentUserUseCase(repo),
       _setUsernameUC = SetUsernameUseCase(repo),
+      _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
       _checkUsernameUC = CheckUsernameAvailable(repo),
       _resetPasswordUC = ResetPasswordUseCase(repo) {
     _loadCurrentUser();
@@ -153,6 +156,20 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> setShowInLeaderboard(bool value) async {
+    if (_user == null) return;
+    _setLoading(true);
+    _error = null;
+    try {
+      await _setShowInLbUC.execute(_user!.id, value);
+      _user = _user!.copyWith(showInLeaderboard: value);
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _setLoading(false);
     }
