@@ -95,6 +95,17 @@ class FirestoreAuthSource {
   }
 
   Future<void> sendPasswordResetEmail(String email) {
-    return _auth.sendPasswordResetEmail(email: email);
+    final settings = ActionCodeSettings(
+      url: 'https://tapem.page.link/reset',
+      handleCodeInApp: true,
+      androidPackageName: 'com.example.tapem',
+      iOSBundleId: 'com.example.tapem',
+      androidInstallApp: true,
+      dynamicLinkDomain: 'tapem.page.link',
+    );
+    return _auth.sendPasswordResetEmail(
+      email: email,
+      actionCodeSettings: settings,
+    );
   }
 }

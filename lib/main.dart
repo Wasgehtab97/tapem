@@ -36,6 +36,7 @@ import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
 import 'features/nfc/domain/usecases/write_nfc_tag.dart';
 import 'features/nfc/widgets/global_nfc_listener.dart';
+import 'features/auth/presentation/widgets/dynamic_link_listener.dart';
 
 import 'features/device/data/sources/firestore_device_source.dart';
 import 'features/device/data/repositories/device_repository_impl.dart';
@@ -209,12 +210,11 @@ class MyApp extends StatelessWidget {
     final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
 
-    final child = (!kIsWeb &&
-            defaultTargetPlatform == TargetPlatform.android)
-        ? GlobalNfcListener(child: _buildApp(theme, locale))
-        : _buildApp(theme, locale);
-
-    return child;
+    Widget app = _buildApp(theme, locale);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      app = GlobalNfcListener(child: app);
+    }
+    return DynamicLinkListener(child: app);
   }
 
   MaterialApp _buildApp(ThemeData theme, Locale? locale) {

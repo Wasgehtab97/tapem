@@ -337,5 +337,13 @@
   "passwordResetHint": "Enter your e-mail to receive a reset link.",
   "@passwordResetHint": {"description": "Hint text in password reset dialog"},
   "passwordResetSent": "Password reset email sent.",
-  "@passwordResetSent": {"description": "Snackbar message after sending reset email"}
+  "@passwordResetSent": {"description": "Snackbar message after sending reset email"},
+  "resetPasswordTitle": "Choose new password",
+  "@resetPasswordTitle": {"description": "Title of password reset screen"},
+  "newPasswordFieldLabel": "New password",
+  "@newPasswordFieldLabel": {"description": "Label for new password field"},
+  "confirmPasswordButton": "Update password",
+  "@confirmPasswordButton": {"description": "Button to confirm new password"},
+  "passwordResetSuccess": "Password changed.",
+  "@passwordResetSuccess": {"description": "Snackbar after successful password reset"}
 }

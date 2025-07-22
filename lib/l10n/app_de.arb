@@ -337,5 +337,13 @@
   "passwordResetHint": "E-Mail eingeben, um einen Reset-Link zu erhalten.",
   "@passwordResetHint": {"description": "Hinweistext im Reset-Dialog"},
   "passwordResetSent": "Passwort-Reset-E-Mail wurde gesendet.",
-  "@passwordResetSent": {"description": "Snackbar nach Senden des Reset-Links"}
+  "@passwordResetSent": {"description": "Snackbar nach Senden des Reset-Links"},
+  "resetPasswordTitle": "Neues Passwort wählen",
+  "@resetPasswordTitle": {"description": "Titel des In-App-Reset-Screens"},
+  "newPasswordFieldLabel": "Neues Passwort",
+  "@newPasswordFieldLabel": {"description": "Beschriftung für neues Passwort"},
+  "confirmPasswordButton": "Passwort ändern",
+  "@confirmPasswordButton": {"description": "Button zum Passwort aktualisieren"},
+  "passwordResetSuccess": "Passwort geändert.",
+  "@passwordResetSuccess": {"description": "Snackbar nach erfolgreichem Reset"}
 }
