@@ -360,6 +360,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       if (_formKey.currentState!.validate()) {
                         try {
                           await prov.saveWorkoutSession(
+                            context: context,
                             gymId: widget.gymId,
                             userId: context.read<AuthProvider>().userId!,
                             showInLeaderboard:

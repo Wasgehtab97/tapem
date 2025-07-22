@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class XpInfoButton extends StatelessWidget {
   final int xp;
@@ -30,6 +31,9 @@ class XpInfoButton extends StatelessWidget {
           children: [
             Text('XP: $xp'),
             Text('Level: ${_toRoman(level)}'),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: xp / LevelService.xpPerLevel),
+            Text('${LevelService.xpPerLevel - xp} XP bis Level ${level + 1}'),
           ],
         ),
         actions: [

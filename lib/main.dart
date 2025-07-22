@@ -28,6 +28,7 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/all_exercises_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
+import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
@@ -196,6 +197,7 @@ class AppEntry extends StatelessWidget {
               ),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
+        ChangeNotifierProvider(create: (_) => XpProvider()),
       ],
       child: const MyApp(),
     );
