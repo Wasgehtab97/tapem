@@ -345,7 +345,7 @@
   "confirmPasswordButton": "Update password",
   "@confirmPasswordButton": {"description": "Button to confirm new password"},
   "passwordResetSuccess": "Password changed.",
-  "@passwordResetSuccess": {"description": "Snackbar after successful password reset"}
+  "@passwordResetSuccess": {"description": "Snackbar after successful password reset"},
   "settingsDialogTitle": "Settings",
   "@settingsDialogTitle": {"description": "Title for the settings dialog"},
   "settingsOptionLanguage": "Language",
