@@ -8,14 +8,14 @@ import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
 class XpProvider extends ChangeNotifier {
   final XpRepository _repo;
   XpProvider({XpRepository? repo})
-      : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource());
+    : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource());
 
   Map<String, int> _muscleXp = {};
   int _dayXp = 0;
   StreamSubscription<int>? _daySub;
   StreamSubscription<Map<String, int>>? _muscleSub;
   Map<String, int> _dayListXp = {};
-  Map<String, int> _deviceXp = {};
+  final Map<String, int> _deviceXp = {};
   StreamSubscription<Map<String, int>>? _dayListSub;
   final Map<String, StreamSubscription<int>> _deviceSubs = {};
 
@@ -81,9 +81,9 @@ class XpProvider extends ChangeNotifier {
       _deviceSubs[id] = _repo
           .watchDeviceXp(gymId: gymId, deviceId: id, userId: userId)
           .listen((xp) {
-        _deviceXp[id] = xp;
-        notifyListeners();
-      });
+            _deviceXp[id] = xp;
+            notifyListeners();
+          });
     }
   }
 
