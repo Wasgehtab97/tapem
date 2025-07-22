@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
@@ -34,10 +35,8 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
 
     final regionXp = <MuscleRegion, int>{};
     for (final entry in xpProv.muscleXp.entries) {
-      final group = muscleProv.groups.firstWhere(
-        (g) => g.id == entry.key,
-        orElse: () => null,
-      );
+      final group = muscleProv.groups
+          .firstWhereOrNull((g) => g.id == entry.key);
       if (group != null) {
         regionXp[group.region] =
             (regionXp[group.region] ?? 0) + entry.value;
