@@ -8,4 +8,5 @@ abstract class AuthRepository {
   Future<UserData?> getCurrentUser();
   Future<void> setUsername(String userId, String username);
   Future<bool> isUsernameAvailable(String username);
+  Future<void> sendPasswordResetEmail(String email);
 }

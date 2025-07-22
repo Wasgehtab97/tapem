@@ -93,4 +93,8 @@ class FirestoreAuthSource {
       'usernameLower': lower,
     });
   }
+
+  Future<void> sendPasswordResetEmail(String email) {
+    return _auth.sendPasswordResetEmail(email: email);
+  }
 }

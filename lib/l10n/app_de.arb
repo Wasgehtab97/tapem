@@ -329,5 +329,13 @@
   "usernameFieldLabel": "Nutzername",
   "@usernameFieldLabel": {"description": "Beschriftung für das Nutzername-Feld"},
   "usernameTaken": "Dieser Nutzername ist bereits vergeben.",
-  "@usernameTaken": {"description": "Fehler wenn Nutzername existiert"}
+  "@usernameTaken": {"description": "Fehler wenn Nutzername existiert"},
+  "forgotPassword": "Passwort vergessen?",
+  "@forgotPassword": {"description": "Link zum Passwort-Reset"},
+  "passwordResetDialogTitle": "Passwort zurücksetzen",
+  "@passwordResetDialogTitle": {"description": "Titel des Passwort-Reset-Dialogs"},
+  "passwordResetHint": "E-Mail eingeben, um einen Reset-Link zu erhalten.",
+  "@passwordResetHint": {"description": "Hinweistext im Reset-Dialog"},
+  "passwordResetSent": "Passwort-Reset-E-Mail wurde gesendet.",
+  "@passwordResetSent": {"description": "Snackbar nach Senden des Reset-Links"}
 }

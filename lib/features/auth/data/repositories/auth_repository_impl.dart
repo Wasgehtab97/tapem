@@ -42,4 +42,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> isUsernameAvailable(String username) {
     return _source.isUsernameAvailable(username);
   }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) {
+    return _source.sendPasswordResetEmail(email);
+  }
 }

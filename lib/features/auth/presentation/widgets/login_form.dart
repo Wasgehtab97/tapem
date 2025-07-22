@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
@@ -75,6 +76,10 @@ class _LoginFormState extends State<LoginForm> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(loc.loginButton),
+            ),
+            TextButton(
+              onPressed: () => showPasswordResetDialog(context),
+              child: Text(loc.forgotPassword),
             ),
           ],
         ),
