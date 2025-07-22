@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -197,6 +198,7 @@ class AppEntry extends StatelessWidget {
               ),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
+        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),
       ],
       child: const MyApp(),

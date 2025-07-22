@@ -14,6 +14,7 @@ Tap’em ist eine Flutter-App für Fitnessstudios. Sie setzt auf ein modulares K
 - **Dynamisches Branding**: Farbschema, Logos und App-Namen pro Studio konfigurierbar
 - **State Management**: Provider für skalierbare Business-Logik
 - **Visualisierung**: Kalender-Übersicht, Charts (fl_chart), Streak-Badges, Trainingshistorie
+- **Challenges & Badges**: Wöchentliche und monatliche Aufgaben mit XP-Zielen
 - **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung
 - **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors
 
