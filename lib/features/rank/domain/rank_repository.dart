@@ -12,13 +12,4 @@ abstract class RankRepository {
     String deviceId,
   );
 
-  Stream<List<Map<String, dynamic>>> watchWeeklyLeaderboard(
-    String gymId,
-    String weekId,
-  );
-
-  Stream<List<Map<String, dynamic>>> watchMonthlyLeaderboard(
-    String gymId,
-    String monthId,
-  );
 }

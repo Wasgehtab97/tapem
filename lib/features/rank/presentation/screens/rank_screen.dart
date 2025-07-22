@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
-import 'package:intl/intl.dart';
+import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 
 class RankScreen extends StatefulWidget {
   final String gymId;
@@ -23,13 +23,8 @@ class _RankScreenState extends State<RankScreen>
   void initState() {
     super.initState();
     _provider = Provider.of<RankProvider>(context, listen: false);
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _provider.watchDevice(widget.gymId, widget.deviceId);
-    final now = DateTime.now();
-    final weekId = DateFormat('yyyy-ww').format(now);
-    final monthId = DateFormat('yyyy-MM').format(now);
-    _provider.watchWeekly(widget.gymId, weekId);
-    _provider.watchMonthly(widget.gymId, monthId);
   }
 
   @override
@@ -47,8 +42,7 @@ class _RankScreenState extends State<RankScreen>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Gerät'),
-            Tab(text: 'Woche'),
-            Tab(text: 'Monat'),
+            Tab(text: 'Challenges'),
           ],
         ),
       ),
@@ -104,8 +98,7 @@ class _RankScreenState extends State<RankScreen>
                   controller: _tabController,
                   children: [
                     buildList(prov.deviceEntries),
-                    buildList(prov.weeklyEntries),
-                    buildList(prov.monthlyEntries),
+                    const ChallengeTab(),
                   ],
                 );
               },

@@ -6,17 +6,6 @@ const db = admin.firestore();
 
 const wss = new WebSocket.Server({ port: 8081 });
 
-function weekId(date) {
-  const d = new Date(date.getTime());
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay() + 4);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-${String(week).padStart(2,'0')}`;
-}
-
-function monthId(date) {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;
-}
 
 async function fetchEntries(col) {
   const snap = await col.orderBy('xp','desc').get();
@@ -29,16 +18,12 @@ async function fetchEntries(col) {
 }
 
 async function broadcast() {
-  const now = new Date();
-  const wRef = db.collection('leaderboards_weekly').doc(weekId(now)).collection('users');
-  const mRef = db.collection('leaderboards_monthly').doc(monthId(now)).collection('users');
-  const [weekly, monthly] = await Promise.all([fetchEntries(wRef), fetchEntries(mRef)]);
-  const payloadW = JSON.stringify({ type: 'weekly', data: weekly });
-  const payloadM = JSON.stringify({ type: 'monthly', data: monthly });
+  const col = db.collection('leaderboards_global');
+  const entries = await fetchEntries(col);
+  const payload = JSON.stringify({ type: 'global', data: entries });
   for (const client of wss.clients) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(payloadW);
-      client.send(payloadM);
+      client.send(payload);
     }
   }
 }
