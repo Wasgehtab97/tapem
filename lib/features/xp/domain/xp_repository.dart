@@ -8,4 +8,11 @@ abstract class XpRepository {
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
   });
+
+  Stream<int> watchDayXp({
+    required String userId,
+    required DateTime date,
+  });
+
+  Stream<Map<String, int>> watchMuscleXp(String userId);
 }

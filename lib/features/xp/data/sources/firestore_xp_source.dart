@@ -54,4 +54,28 @@ class FirestoreXpSource {
       );
     }
   }
+
+  Stream<int> watchDayXp({
+    required String userId,
+    required DateTime date,
+  }) {
+    final dateStr = date.toIso8601String().split('T').first;
+    final ref = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('trainingDays')
+        .doc(dateStr);
+    return ref.snapshots().map((snap) => (snap.data()?['xp'] as int?) ?? 0);
+  }
+
+  Stream<Map<String, int>> watchMuscleXp(String userId) {
+    final col = _firestore.collection('users').doc(userId).collection('muscles');
+    return col.snapshots().map((snap) {
+      final map = <String, int>{};
+      for (final doc in snap.docs) {
+        map[doc.id] = (doc.data()['xp'] as int? ?? 0);
+      }
+      return map;
+    });
+  }
 }

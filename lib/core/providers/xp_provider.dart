@@ -8,6 +8,14 @@ class XpProvider extends ChangeNotifier {
   XpProvider({XpRepository? repo})
       : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource());
 
+  Map<String, int> _muscleXp = {};
+  int _dayXp = 0;
+  StreamSubscription<int>? _daySub;
+  StreamSubscription<Map<String, int>>? _muscleSub;
+
+  Map<String, int> get muscleXp => _muscleXp;
+  int get dayXp => _dayXp;
+
   Future<void> addSessionXp({
     required String gymId,
     required String userId,
@@ -26,5 +34,28 @@ class XpProvider extends ChangeNotifier {
       isMulti: isMulti,
       primaryMuscleGroupIds: primaryMuscleGroupIds,
     );
+  }
+
+  void watchDayXp(String userId, DateTime date) {
+    _daySub?.cancel();
+    _daySub = _repo.watchDayXp(userId: userId, date: date).listen((value) {
+      _dayXp = value;
+      notifyListeners();
+    });
+  }
+
+  void watchMuscleXp(String userId) {
+    _muscleSub?.cancel();
+    _muscleSub = _repo.watchMuscleXp(userId).listen((map) {
+      _muscleXp = map;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _daySub?.cancel();
+    _muscleSub?.cancel();
+    super.dispose();
   }
 }

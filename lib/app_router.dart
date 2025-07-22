@@ -18,6 +18,7 @@ import 'package:tapem/features/training_details/presentation/screens/training_de
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/xp_overview_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -39,6 +40,7 @@ class AppRouter {
   static const manageMuscleGroups = '/manage_muscle_groups';
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
+  static const xpOverview = '/xp_overview';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -125,6 +127,9 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => ResetPasswordScreen(oobCode: code),
         );
+
+      case xpOverview:
+        return MaterialPageRoute(builder: (_) => const XpOverviewScreen());
 
       default:
         return MaterialPageRoute(
