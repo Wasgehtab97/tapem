@@ -25,4 +25,17 @@ class XpRepositoryImpl implements XpRepository {
       primaryMuscleGroupIds: primaryMuscleGroupIds,
     );
   }
+
+  @override
+  Stream<int> watchDayXp({
+    required String userId,
+    required DateTime date,
+  }) {
+    return _source.watchDayXp(userId: userId, date: date);
+  }
+
+  @override
+  Stream<Map<String, int>> watchMuscleXp(String userId) {
+    return _source.watchMuscleXp(userId);
+  }
 }

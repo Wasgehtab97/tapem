@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/app_router.dart';
 
 class XpInfoButton extends StatelessWidget {
   final int xp;
@@ -40,6 +41,13 @@ class XpInfoButton extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(AppRouter.xpOverview);
+            },
+            child: const Text('Details'),
           ),
         ],
       ),
