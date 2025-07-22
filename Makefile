@@ -31,11 +31,14 @@ ios-dev:
 	fvm flutter gen-l10n
 	fvm flutter run -v -d $(IOS_DEV_ID)
 
-# iOS-Emulator in tmux-Session starten (nur einmal ausführen)
+# iOS Emulator: Start simulator und run im Debug-Mode
 ios-emu:
-	@echo "Starte iOS-Emulator in tmux-Session '$(TMUX_SESSION)'..."
-	@tmux new-session -d -s $(TMUX_SESSION) "fvm flutter run -d $(IOS_EMU_ID)"
-	@echo "→ Terminal-Session: tmux attach -t $(TMUX_SESSION)"
+	fvm flutter clean
+	open -a Simulator
+	@sleep 5
+	fvm flutter pub get
+	fvm flutter gen-l10n
+	fvm flutter run -d $(IOS_EMU_ID)
 
 # SetAdmin: Utility-Target
 admin:
