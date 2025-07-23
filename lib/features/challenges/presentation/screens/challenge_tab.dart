@@ -36,11 +36,17 @@ class _ChallengeTabState extends State<ChallengeTab> {
         ),
         Expanded(
           child: ListView(
-            children: const [
-              ListTile(title: Text('Challenge A')),
-              ListTile(title: Text('Challenge B')),
-              ListTile(title: Text('Challenge C')),
-            ],
+            children: _selection == 'Weekly'
+                ? const [
+                    ListTile(title: Text('Challenge A')),
+                    ListTile(title: Text('Challenge B')),
+                    ListTile(title: Text('Challenge C')),
+                  ]
+                : const [
+                    ListTile(title: Text('Challenge D')),
+                    ListTile(title: Text('Challenge E')),
+                    ListTile(title: Text('Challenge F')),
+                  ],
           ),
         ),
       ],
