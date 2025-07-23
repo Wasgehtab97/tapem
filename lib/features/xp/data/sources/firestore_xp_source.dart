@@ -22,9 +22,9 @@ class FirestoreXpSource {
     final now = DateTime.now();
     final dateStr = now.toIso8601String().split('T').first;
     final userRef = _firestore.collection('users').doc(userId);
-    final dayRef = userRef.collection('trainingDays').doc(dateStr);
+    final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
     final muscleRefs = primaryMuscleGroupIds
-        .map((id) => userRef.collection('muscles').doc(id))
+        .map((id) => userRef.collection('muscleGroupXP').doc(id))
         .toList();
 
     await _firestore.runTransaction((tx) async {
@@ -65,13 +65,13 @@ class FirestoreXpSource {
     final ref = _firestore
         .collection('users')
         .doc(userId)
-        .collection('trainingDays')
+        .collection('trainingDayXP')
         .doc(dateStr);
     return ref.snapshots().map((snap) => (snap.data()?['xp'] as int?) ?? 0);
   }
 
   Stream<Map<String, int>> watchMuscleXp(String userId) {
-    final col = _firestore.collection('users').doc(userId).collection('muscles');
+    final col = _firestore.collection('users').doc(userId).collection('muscleGroupXP');
     return col.snapshots().map((snap) {
       final map = <String, int>{};
       for (final doc in snap.docs) {
@@ -85,7 +85,7 @@ class FirestoreXpSource {
     final col = _firestore
         .collection('users')
         .doc(userId)
-        .collection('trainingDays');
+        .collection('trainingDayXP');
     return col.snapshots().map((snap) {
       final map = <String, int>{};
       for (final doc in snap.docs) {

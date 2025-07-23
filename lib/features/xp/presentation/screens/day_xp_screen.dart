@@ -44,11 +44,11 @@ class _DayXpScreenState extends State<DayXpScreen> {
         final userDoc = await fs.collection('users').doc(uid).get();
         if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) continue;
         final username = userDoc.data()?['username'] as String?;
-        final dayDocs = await fs
-            .collection('users')
-            .doc(uid)
-            .collection('trainingDays')
-            .get();
+          final dayDocs = await fs
+              .collection('users')
+              .doc(uid)
+              .collection('trainingDayXP')
+              .get();
         var xp = 0;
         for (final d in dayDocs.docs) {
           xp += (d.data()['xp'] as int? ?? 0);
