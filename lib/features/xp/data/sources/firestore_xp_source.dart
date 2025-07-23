@@ -151,7 +151,7 @@ class FirestoreXpSource {
           map[group] = (entry.value as int? ?? 0);
         }
       }
-      debugPrint('📥 muscleXp snapshot ${map.length} entries');
+      debugPrint('📥 muscleXp snapshot ${map.length} entries $map');
       return map;
     });
   }

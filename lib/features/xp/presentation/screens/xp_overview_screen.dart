@@ -39,13 +39,30 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
 
     final regionXp = <MuscleRegion, int>{};
     for (final entry in xpProv.muscleXp.entries) {
-      final group = muscleProv.groups
-          .firstWhereOrNull((g) => g.id == entry.key);
+      debugPrint('📊 xpEntry ${entry.key} -> ${entry.value}');
+      MuscleRegion? region;
+      final group =
+          muscleProv.groups.firstWhereOrNull((g) => g.id == entry.key);
       if (group != null) {
-        regionXp[group.region] =
-            (regionXp[group.region] ?? 0) + entry.value;
+        region = group.region;
+        debugPrint('↪ matched group ${group.name} (${group.id}) '
+            '-> region ${region.name}');
+      } else {
+        region = MuscleRegion.values
+            .firstWhereOrNull((r) => r.name == entry.key);
+        if (region != null) {
+          debugPrint('↪ interpreted key ${entry.key} as region ${region.name}');
+        } else {
+          debugPrint('⚠️ could not map key ${entry.key} to a region');
+        }
+      }
+
+      if (region != null) {
+        regionXp[region] = (regionXp[region] ?? 0) + entry.value;
       }
     }
+
+    debugPrint('💡 regionXp map: $regionXp');
 
     return Scaffold(
       appBar: AppBar(title: const Text('XP Muskelgruppen')),
