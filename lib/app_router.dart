@@ -13,6 +13,9 @@ import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/xp_muscle_groups_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/experience_screen.dart';
+import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 
 class AppRouter {
@@ -28,6 +31,9 @@ class AppRouter {
   static const rank = '/rank';
   // Deprecated alias for backward compatibility
   static const rankScreen = rank;
+  static const xpMuscleGroups = '/xp_muscle_groups';
+  static const experience = '/experience';
+  static const deviceXp = '/device_xp';
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
   static const planOverview = '/plan_overview';
@@ -97,6 +103,18 @@ class AppRouter {
 
       case planOverview:
         return MaterialPageRoute(builder: (_) => const PlanOverviewScreen());
+
+      case xpMuscleGroups:
+        return MaterialPageRoute(builder: (_) => const XPMuscleGroupsScreen());
+
+      case experience:
+        final userName = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => ExperienceScreen(userName: userName),
+        );
+
+      case deviceXp:
+        return MaterialPageRoute(builder: (_) => const DeviceXpScreen());
 
       default:
         return MaterialPageRoute(
