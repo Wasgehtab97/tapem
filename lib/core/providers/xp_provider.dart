@@ -58,9 +58,11 @@ class XpProvider extends ChangeNotifier {
   void watchMuscleXp(String gymId, String userId) {
     debugPrint('👀 provider watchMuscleXp userId=$userId gymId=$gymId');
     _muscleSub?.cancel();
-    _muscleSub = _repo.watchMuscleXp(gymId: gymId, userId: userId).listen((map) {
+    _muscleSub = _repo
+        .watchMuscleXp(gymId: gymId, userId: userId)
+        .listen((map) {
       _muscleXp = map;
-      debugPrint('🔄 provider muscleXp=${map.length} entries');
+      debugPrint('🔄 provider muscleXp=${map.length} entries $map');
       notifyListeners();
     });
   }
