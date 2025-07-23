@@ -8,8 +8,8 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   ChallengeRepositoryImpl(this._source);
 
   @override
-  Stream<List<Challenge>> watchActiveChallenges() {
-    return _source.watchActiveChallenges();
+  Stream<List<Challenge>> watchActiveChallenges(String gymId) {
+    return _source.watchActiveChallenges(gymId);
   }
 
   @override

@@ -20,9 +20,9 @@ class ChallengeProvider extends ChangeNotifier {
   List<Challenge> get challenges => _challenges;
   List<Badge> get badges => _badges;
 
-  void watchChallenges() {
+  void watchChallenges(String gymId) {
     _chSub?.cancel();
-    _chSub = _repo.watchActiveChallenges().listen((list) {
+    _chSub = _repo.watchActiveChallenges(gymId).listen((list) {
       _challenges = list;
       notifyListeners();
     });
