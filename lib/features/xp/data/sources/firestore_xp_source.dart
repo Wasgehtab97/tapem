@@ -63,8 +63,10 @@ class FirestoreXpSource {
       } else {
         tx.set(dayRef, {'xp': newDayXp});
       }
-      updates['dailyXP'] =
-          (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+      if (currentDayXp == 0) {
+        updates['dailyXP'] =
+            (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+      }
 
       if (!isMulti && muscleRefs.isNotEmpty) {
         for (var i = 0; i < muscleRefs.length; i++) {
