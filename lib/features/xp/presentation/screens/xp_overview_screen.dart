@@ -21,10 +21,11 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final xpProv = context.read<XpProvider>();
     final muscleProv = context.read<MuscleGroupProvider>();
     final uid = auth.userId;
-    if (uid != null) {
+    final gymId = auth.gymCode;
+    if (uid != null && gymId != null) {
       debugPrint('👀 overview watchDayXp/watchMuscleXp userId=$uid');
       xpProv.watchDayXp(uid, DateTime.now());
-      xpProv.watchMuscleXp(uid);
+      xpProv.watchMuscleXp(gymId, uid);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         muscleProv.loadGroups(context);
       });
