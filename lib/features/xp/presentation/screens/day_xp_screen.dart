@@ -73,16 +73,17 @@ class _DayXpScreenState extends State<DayXpScreen> {
       ..sort((a, b) => b.key.compareTo(a.key));
     final totalXp = xpProv.dayListXp.values.fold<int>(0, (a, b) => a + b);
 
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Trainingstage XP')),
+      appBar: AppBar(title: const Text('Erfahrung')),
       body: ListView(
         children: [
           ListTile(
-            title: const Text('Gesamt XP'),
+            title: Text(auth.userName ?? ''),
             trailing: Text('$totalXp'),
           ),
           const Divider(),
-          ..._lbEntries.asMap().entries.map(
+          ..._lbEntries.asMap().entries.take(10).map(
                 (e) => ListTile(
                   leading: Text('#${e.key + 1}'),
                   title: Text(e.value['username'] ?? e.value['userId']),
