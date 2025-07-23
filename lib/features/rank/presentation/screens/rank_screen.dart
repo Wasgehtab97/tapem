@@ -46,46 +46,46 @@ class _RankScreenState extends State<RankScreen>
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              title: const Text('XP je Muskelgruppe'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).pushNamed(AppRouter.xpOverview),
-            ),
-          ),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: ListTile(
-              title: const Text('XP je Trainingstag'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).pushNamed(AppRouter.dayXp),
-            ),
-          ),
-          Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              title: const Text('XP je Gerät'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).pushNamed(AppRouter.deviceXp),
-            ),
-          ),
-          Expanded(
-            child: Consumer<RankProvider>(
-              builder: (context, prov, _) {
-                return TabBarView(
-                  controller: _tabController,
-                  children: const [
-                    SizedBox.shrink(),
-                    ChallengeTab(),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+      body: Consumer<RankProvider>(
+        builder: (context, prov, _) {
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              ListView(
+                children: [
+                  Card(
+                    margin: const EdgeInsets.all(8),
+                    child: ListTile(
+                      title: const Text('XP je Muskelgruppe'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          Navigator.of(context).pushNamed(AppRouter.xpOverview),
+                    ),
+                  ),
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    child: ListTile(
+                      title: const Text('XP je Trainingstag'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          Navigator.of(context).pushNamed(AppRouter.dayXp),
+                    ),
+                  ),
+                  Card(
+                    margin: const EdgeInsets.all(8),
+                    child: ListTile(
+                      title: const Text('XP je Gerät'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          Navigator.of(context).pushNamed(AppRouter.deviceXp),
+                    ),
+                  ),
+                ],
+              ),
+              const ChallengeTab(),
+            ],
+          );
+        },
       ),
     );
   }
