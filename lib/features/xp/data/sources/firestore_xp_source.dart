@@ -33,13 +33,15 @@ class FirestoreXpSource {
         tx.set(dayRef, {'xp': LevelService.xpPerSession});
       }
 
-      for (final ref in muscleRefs) {
-        final snap = await tx.get(ref);
-        final xp = (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
-        if (!snap.exists) {
-          tx.set(ref, {'xp': xp});
-        } else {
-          tx.update(ref, {'xp': xp});
+      if (!isMulti && muscleRefs.isNotEmpty) {
+        for (final ref in muscleRefs) {
+          final snap = await tx.get(ref);
+          final xp = (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
+          if (!snap.exists) {
+            tx.set(ref, {'xp': xp});
+          } else {
+            tx.update(ref, {'xp': xp});
+          }
         }
       }
     });

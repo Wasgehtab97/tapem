@@ -29,10 +29,14 @@ class FirestoreRankSource {
     final sessionRef = lbRef
         .collection('sessions')
         .doc(sessionId);
+    final dayRef = lbRef
+        .collection('days')
+        .doc(dateStr);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
       final sessSnap = await tx.get(sessionRef);
+      final daySnap = await tx.get(dayRef);
 
       var info = LevelInfo.fromMap(lbSnap.data());
 
@@ -44,18 +48,21 @@ class FirestoreRankSource {
         });
       }
 
-      if (!sessSnap.exists) {
+      if (!daySnap.exists) {
         info = LevelService().addXp(info, LevelService.xpPerSession);
-        tx.set(sessionRef, {
-          'deviceId': deviceId,
-          'date': dateStr,
-        });
+        tx.set(dayRef, {'date': dateStr});
         tx.update(lbRef, {
           'xp': info.xp,
           'level': info.level,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-        // previously weekly and monthly leaderboards were updated here
+      }
+
+      if (!sessSnap.exists) {
+        tx.set(sessionRef, {
+          'deviceId': deviceId,
+          'date': dateStr,
+        });
       }
     });
   }
