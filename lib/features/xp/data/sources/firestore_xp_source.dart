@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 
@@ -19,6 +20,8 @@ class FirestoreXpSource {
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
   }) async {
+    debugPrint(
+        '📥 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId isMulti=$isMulti muscles=$primaryMuscleGroupIds showLB=$showInLeaderboard');
     final now = DateTime.now();
     final dateStr = now.toIso8601String().split('T').first;
     final userRef = _firestore.collection('users').doc(userId);
@@ -35,6 +38,7 @@ class FirestoreXpSource {
         .doc('stats');
 
     await _firestore.runTransaction((tx) async {
+      debugPrint('⏳ transaction start');
       final daySnap = await tx.get(dayRef);
       final statsSnap = await tx.get(statsRef);
       final statsData = statsSnap.data() ?? {};
@@ -43,6 +47,7 @@ class FirestoreXpSource {
 
       final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
       final newDayXp = currentDayXp + LevelService.xpPerSession;
+      debugPrint('👉 dayXP $currentDayXp -> $newDayXp');
       if (daySnap.exists) {
         tx.update(dayRef, {'xp': newDayXp});
       } else {
@@ -55,6 +60,7 @@ class FirestoreXpSource {
         for (final ref in muscleRefs) {
           final snap = await tx.get(ref);
           final xp = (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
+          debugPrint('👉 muscle ${ref.id} XP ${(snap.data()?['xp'] as int?) ?? 0} -> $xp');
           if (!snap.exists) {
             tx.set(ref, {'xp': xp});
           } else {
@@ -76,9 +82,12 @@ class FirestoreXpSource {
           tx.set(statsRef, updates);
         }
       }
+      debugPrint('⏳ transaction updates: $updates');
     });
+    debugPrint('✅ stored session XP');
 
     if (!isMulti && showInLeaderboard) {
+      debugPrint('📤 forwarding XP to rank source');
       await _rankSource.addXp(
         gymId: gymId,
         userId: userId,
@@ -99,16 +108,23 @@ class FirestoreXpSource {
         .doc(userId)
         .collection('trainingDayXP')
         .doc(dateStr);
-    return ref.snapshots().map((snap) => (snap.data()?['xp'] as int?) ?? 0);
+    debugPrint('👀 watchDayXp userId=$userId date=$dateStr');
+    return ref.snapshots().map((snap) {
+      final xp = (snap.data()?['xp'] as int?) ?? 0;
+      debugPrint('📥 dayXp snapshot $xp');
+      return xp;
+    });
   }
 
   Stream<Map<String, int>> watchMuscleXp(String userId) {
     final col = _firestore.collection('users').doc(userId).collection('muscleGroupXP');
+    debugPrint('👀 watchMuscleXp userId=$userId');
     return col.snapshots().map((snap) {
       final map = <String, int>{};
       for (final doc in snap.docs) {
         map[doc.id] = (doc.data()['xp'] as int? ?? 0);
       }
+      debugPrint('📥 muscleXp snapshot ${map.length} entries');
       return map;
     });
   }
@@ -118,11 +134,13 @@ class FirestoreXpSource {
         .collection('users')
         .doc(userId)
         .collection('trainingDayXP');
+    debugPrint('👀 watchTrainingDaysXp userId=$userId');
     return col.snapshots().map((snap) {
       final map = <String, int>{};
       for (final doc in snap.docs) {
         map[doc.id] = (doc.data()['xp'] as int? ?? 0);
       }
+      debugPrint('📥 trainingDays snapshot ${map.length} days');
       return map;
     });
   }
@@ -139,6 +157,11 @@ class FirestoreXpSource {
         .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
-    return doc.snapshots().map((snap) => (snap.data()?['xp'] as int?) ?? 0);
+    debugPrint('👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId');
+    return doc.snapshots().map((snap) {
+      final xp = (snap.data()?['xp'] as int?) ?? 0;
+      debugPrint('📥 deviceXp snapshot $xp');
+      return xp;
+    });
   }
 }

@@ -22,6 +22,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final muscleProv = context.read<MuscleGroupProvider>();
     final uid = auth.userId;
     if (uid != null) {
+      debugPrint('👀 overview watchDayXp/watchMuscleXp userId=$uid');
       xpProv.watchDayXp(uid, DateTime.now());
       xpProv.watchMuscleXp(uid);
       muscleProv.loadGroups(context);
