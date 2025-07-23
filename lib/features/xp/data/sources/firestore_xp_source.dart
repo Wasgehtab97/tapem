@@ -28,7 +28,8 @@ class FirestoreXpSource {
     final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
     final muscleRefs = primaryMuscleGroupIds
         .map((id) => userRef.collection('muscleGroupXP').doc(id))
-        .toList();
+        .toList()
+        .cast<DocumentReference<Map<String, dynamic>>>();
     final statsRef = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -44,7 +45,7 @@ class FirestoreXpSource {
       final statsSnap = await tx.get(statsRef);
 
       // Preload muscle snapshots if required.
-      final muscleSnaps = <DocumentSnapshot>[];
+      final muscleSnaps = <DocumentSnapshot<Map<String, dynamic>>>[];
       if (!isMulti && muscleRefs.isNotEmpty) {
         for (final ref in muscleRefs) {
           muscleSnaps.add(await tx.get(ref));
