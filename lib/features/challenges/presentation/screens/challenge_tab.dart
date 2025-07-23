@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/gym_provider.dart';
+import '../widgets/active_challenges_widget.dart';
+import '../widgets/completed_challenges_widget.dart';
+import '../../../../core/providers/challenge_provider.dart';
 
 class ChallengeTab extends StatefulWidget {
   const ChallengeTab({Key? key}) : super(key: key);
@@ -7,46 +13,44 @@ class ChallengeTab extends StatefulWidget {
   State<ChallengeTab> createState() => _ChallengeTabState();
 }
 
-class _ChallengeTabState extends State<ChallengeTab> {
-  String _selection = 'Monthly';
+class _ChallengeTabState extends State<ChallengeTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final gymId = context.read<GymProvider>().currentGymId;
+      final userId = context.read<AuthProvider>().userId;
+      if (gymId.isNotEmpty) {
+        context.read<ChallengeProvider>().watchChallenges(gymId);
+      }
+      if (userId != null) {
+        context.read<ChallengeProvider>().watchBadges(userId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => setState(() => _selection = 'Monthly'),
-                  child: const Text('Monthly'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => setState(() => _selection = 'Weekly'),
-                  child: const Text('Weekly'),
-                ),
-              ),
-            ],
-          ),
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Aktiv'),
+            Tab(text: 'Abgeschlossen'),
+          ],
         ),
         Expanded(
-          child: ListView(
-            children: _selection == 'Weekly'
-                ? const [
-                    ListTile(title: Text('Challenge A')),
-                    ListTile(title: Text('Challenge B')),
-                    ListTile(title: Text('Challenge C')),
-                  ]
-                : const [
-                    ListTile(title: Text('Challenge D')),
-                    ListTile(title: Text('Challenge E')),
-                    ListTile(title: Text('Challenge F')),
-                  ],
+          child: TabBarView(
+            controller: _tabController,
+            children: const [
+              ActiveChallengesWidget(),
+              CompletedChallengesWidget(),
+            ],
           ),
         ),
       ],
