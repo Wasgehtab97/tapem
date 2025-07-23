@@ -127,13 +127,27 @@ class FirestoreXpSource {
     });
   }
 
-  Stream<Map<String, int>> watchMuscleXp(String userId) {
-    final col = _firestore.collection('users').doc(userId).collection('muscleGroupXP');
-    debugPrint('👀 watchMuscleXp userId=$userId');
-    return col.snapshots().map((snap) {
+  Stream<Map<String, int>> watchMuscleXp({
+    required String gymId,
+    required String userId,
+  }) {
+    final doc = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
+    debugPrint('👀 watchMuscleXp userId=$userId gymId=$gymId');
+    return doc.snapshots().map((snap) {
+      final data = snap.data() ?? {};
       final map = <String, int>{};
-      for (final doc in snap.docs) {
-        map[doc.id] = (doc.data()['xp'] as int? ?? 0);
+      for (final entry in data.entries) {
+        final key = entry.key;
+        if (key.endsWith('XP') && key != 'dailyXP') {
+          final group = key.substring(0, key.length - 2);
+          map[group] = (entry.value as int? ?? 0);
+        }
       }
       debugPrint('📥 muscleXp snapshot ${map.length} entries');
       return map;

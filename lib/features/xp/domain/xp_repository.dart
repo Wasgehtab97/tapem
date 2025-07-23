@@ -14,7 +14,10 @@ abstract class XpRepository {
     required DateTime date,
   });
 
-  Stream<Map<String, int>> watchMuscleXp(String userId);
+  Stream<Map<String, int>> watchMuscleXp({
+    required String gymId,
+    required String userId,
+  });
 
   Stream<Map<String, int>> watchTrainingDaysXp(String userId);
 
