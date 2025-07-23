@@ -41,7 +41,7 @@ class _RankScreenState extends State<RankScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Gerät'),
+            Tab(text: 'Rank'),
             Tab(text: 'Challenges'),
           ],
         ),
@@ -75,30 +75,11 @@ class _RankScreenState extends State<RankScreen>
           Expanded(
             child: Consumer<RankProvider>(
               builder: (context, prov, _) {
-                Widget buildList(List<Map<String, dynamic>> entries) {
-                  return ListView.builder(
-                    itemCount: entries.length,
-                    itemBuilder: (context, i) {
-                      final e = entries[i];
-                      return ListTile(
-                        leading: Text('#${i + 1}'),
-                        title: Text(e['username'] ?? e['userId']),
-                        trailing: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('L${e['level'] ?? 1}'),
-                            Text('${e['xp']} XP'),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }
                 return TabBarView(
                   controller: _tabController,
-                  children: [
-                    buildList(prov.deviceEntries),
-                    const ChallengeTab(),
+                  children: const [
+                    SizedBox.shrink(),
+                    ChallengeTab(),
                   ],
                 );
               },

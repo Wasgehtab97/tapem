@@ -44,14 +44,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('XP Übersicht')),
+      appBar: AppBar(title: const Text('XP Muskelgruppen')),
       body: ListView(
         children: [
-          ListTile(
-            title: const Text('XP heute'),
-            trailing: Text('${xpProv.dayXp}'),
-          ),
-          const Divider(),
           for (final region in MuscleRegion.values)
             ListTile(
               title: Text(region.name),
