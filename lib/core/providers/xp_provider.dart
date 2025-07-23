@@ -33,6 +33,7 @@ class XpProvider extends ChangeNotifier {
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
   }) {
+    debugPrint('🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId');
     return _repo.addSessionXp(
       gymId: gymId,
       userId: userId,
@@ -45,30 +46,37 @@ class XpProvider extends ChangeNotifier {
   }
 
   void watchDayXp(String userId, DateTime date) {
+    debugPrint('👀 provider watchDayXp userId=$userId date=$date');
     _daySub?.cancel();
     _daySub = _repo.watchDayXp(userId: userId, date: date).listen((value) {
       _dayXp = value;
+      debugPrint('🔄 provider dayXp=$value');
       notifyListeners();
     });
   }
 
   void watchMuscleXp(String userId) {
+    debugPrint('👀 provider watchMuscleXp userId=$userId');
     _muscleSub?.cancel();
     _muscleSub = _repo.watchMuscleXp(userId).listen((map) {
       _muscleXp = map;
+      debugPrint('🔄 provider muscleXp=${map.length} entries');
       notifyListeners();
     });
   }
 
   void watchTrainingDays(String userId) {
+    debugPrint('👀 provider watchTrainingDays userId=$userId');
     _dayListSub?.cancel();
     _dayListSub = _repo.watchTrainingDaysXp(userId).listen((map) {
       _dayListXp = map;
+      debugPrint('🔄 provider dayListXp=${map.length} days');
       notifyListeners();
     });
   }
 
   void watchDeviceXp(String gymId, String userId, List<String> deviceIds) {
+    debugPrint('👀 provider watchDeviceXp userId=$userId devices=$deviceIds');
     for (final id in _deviceSubs.keys.toList()) {
       if (!deviceIds.contains(id)) {
         _deviceSubs[id]?.cancel();
@@ -82,6 +90,7 @@ class XpProvider extends ChangeNotifier {
           .watchDeviceXp(gymId: gymId, deviceId: id, userId: userId)
           .listen((xp) {
             _deviceXp[id] = xp;
+            debugPrint('🔄 provider device $id xp=$xp');
             notifyListeners();
           });
     }

@@ -32,12 +32,14 @@ class _DayXpScreenState extends State<DayXpScreen> {
   void _listenLeaderboard(String gymId) {
     if (gymId.isEmpty) return;
     final fs = FirebaseFirestore.instance;
+    debugPrint('👀 listen leaderboard gymId=$gymId');
     _lbSub = fs
         .collection('gyms')
         .doc(gymId)
         .collection('users')
         .snapshots()
         .listen((snap) async {
+      debugPrint('📥 leaderboard snapshot users=${snap.docs.length}');
       final List<Map<String, dynamic>> data = [];
       for (final doc in snap.docs) {
         final uid = doc.id;
@@ -56,6 +58,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
         data.add({'userId': uid, 'username': username, 'xp': xp});
       }
       data.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
+      debugPrint('🏆 leaderboard entries=${data.length}');
       setState(() => _lbEntries = data);
     });
   }

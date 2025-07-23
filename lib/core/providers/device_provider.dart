@@ -265,6 +265,7 @@ class DeviceProvider extends ChangeNotifier {
 
     // XP-System aktualisieren
     try {
+      debugPrint('➡️ call addSessionXp session=$sessionId device=${_device!.uid}');
       await Provider.of<XpProvider>(context, listen: false).addSessionXp(
         gymId: gymId,
         userId: userId,
@@ -274,6 +275,7 @@ class DeviceProvider extends ChangeNotifier {
         isMulti: _device!.isMulti,
         primaryMuscleGroupIds: _device!.primaryMuscleGroups,
       );
+      debugPrint('✅ addSessionXp completed');
     } catch (e, st) {
       debugPrintStack(label: '_updateXp', stackTrace: st);
     }
