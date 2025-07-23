@@ -39,10 +39,19 @@ class FirestoreXpSource {
 
     await _firestore.runTransaction((tx) async {
       debugPrint('⏳ transaction start');
+      // All reads must happen before any writes in a transaction.
       final daySnap = await tx.get(dayRef);
       final statsSnap = await tx.get(statsRef);
-      final statsData = statsSnap.data() ?? {};
 
+      // Preload muscle snapshots if required.
+      final muscleSnaps = <DocumentSnapshot>[];
+      if (!isMulti && muscleRefs.isNotEmpty) {
+        for (final ref in muscleRefs) {
+          muscleSnaps.add(await tx.get(ref));
+        }
+      }
+
+      final statsData = statsSnap.data() ?? {};
       final updates = <String, dynamic>{};
 
       final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
@@ -57,8 +66,9 @@ class FirestoreXpSource {
           (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
 
       if (!isMulti && muscleRefs.isNotEmpty) {
-        for (final ref in muscleRefs) {
-          final snap = await tx.get(ref);
+        for (var i = 0; i < muscleRefs.length; i++) {
+          final ref = muscleRefs[i];
+          final snap = muscleSnaps[i];
           final xp = (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
           debugPrint('👉 muscle ${ref.id} XP ${(snap.data()?['xp'] as int?) ?? 0} -> $xp');
           if (!snap.exists) {
