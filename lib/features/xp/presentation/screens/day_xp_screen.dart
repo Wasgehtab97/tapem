@@ -44,15 +44,15 @@ class _DayXpScreenState extends State<DayXpScreen> {
         final userDoc = await fs.collection('users').doc(uid).get();
         if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) continue;
         final username = userDoc.data()?['username'] as String?;
-          final dayDocs = await fs
-              .collection('users')
-              .doc(uid)
-              .collection('trainingDayXP')
-              .get();
-        var xp = 0;
-        for (final d in dayDocs.docs) {
-          xp += (d.data()['xp'] as int? ?? 0);
-        }
+        final statsDoc = await fs
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(uid)
+            .collection('rank')
+            .doc('stats')
+            .get();
+        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
         data.add({'userId': uid, 'username': username, 'xp': xp});
       }
       data.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));

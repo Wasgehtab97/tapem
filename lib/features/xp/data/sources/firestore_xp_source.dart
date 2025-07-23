@@ -26,11 +26,25 @@ class FirestoreXpSource {
     final muscleRefs = primaryMuscleGroupIds
         .map((id) => userRef.collection('muscleGroupXP').doc(id))
         .toList();
+    final statsRef = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
 
     await _firestore.runTransaction((tx) async {
       final daySnap = await tx.get(dayRef);
+      final statsSnap = await tx.get(statsRef);
+      final statsData = statsSnap.data() ?? {};
+
+      final updates = <String, dynamic>{};
+
       if (!daySnap.exists) {
         tx.set(dayRef, {'xp': LevelService.xpPerSession});
+        updates['dailyXP'] =
+            (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
       }
 
       if (!isMulti && muscleRefs.isNotEmpty) {
@@ -42,6 +56,20 @@ class FirestoreXpSource {
           } else {
             tx.update(ref, {'xp': xp});
           }
+        }
+
+        for (final id in primaryMuscleGroupIds) {
+          final field = '${id}XP';
+          updates[field] =
+              (statsData[field] as int? ?? 0) + LevelService.xpPerSession;
+        }
+      }
+
+      if (updates.isNotEmpty) {
+        if (statsSnap.exists) {
+          tx.update(statsRef, updates);
+        } else {
+          tx.set(statsRef, updates);
         }
       }
     });
