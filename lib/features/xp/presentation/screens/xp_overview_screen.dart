@@ -25,7 +25,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       debugPrint('👀 overview watchDayXp/watchMuscleXp userId=$uid');
       xpProv.watchDayXp(uid, DateTime.now());
       xpProv.watchMuscleXp(uid);
-      muscleProv.loadGroups(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        muscleProv.loadGroups(context);
+      });
     }
   }
 
