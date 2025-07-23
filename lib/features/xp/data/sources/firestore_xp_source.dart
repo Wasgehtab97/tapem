@@ -41,11 +41,15 @@ class FirestoreXpSource {
 
       final updates = <String, dynamic>{};
 
-      if (!daySnap.exists) {
-        tx.set(dayRef, {'xp': LevelService.xpPerSession});
-        updates['dailyXP'] =
-            (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+      final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
+      final newDayXp = currentDayXp + LevelService.xpPerSession;
+      if (daySnap.exists) {
+        tx.update(dayRef, {'xp': newDayXp});
+      } else {
+        tx.set(dayRef, {'xp': newDayXp});
       }
+      updates['dailyXP'] =
+          (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
 
       if (!isMulti && muscleRefs.isNotEmpty) {
         for (final ref in muscleRefs) {
