@@ -48,13 +48,22 @@ exports.checkChallengesOnLog = functions.firestore
     const data = snap.data();
     const userId = data.userId;
     const sessionId = data.sessionId;
-    if (!userId || !sessionId) return null;
+    console.log(
+      `📥 new log gym=${gymId} device=${deviceId} user=${userId} session=${sessionId}`
+    );
+    if (!userId || !sessionId) {
+      console.log('🚫 missing userId or sessionId, abort');
+      return null;
+    }
 
     const db = admin.firestore();
     const existing = await snap.ref.parent
       .where('sessionId', '==', sessionId)
       .get();
-    if (existing.size > 1) return null;
+    if (existing.size > 1) {
+      console.log(`↩️ additional log for session ${sessionId}, ignore`);
+      return null;
+    }
 
     const now = admin.firestore.Timestamp.now();
     const weeklyRef = db
@@ -70,13 +79,20 @@ exports.checkChallengesOnLog = functions.firestore
       .where('start', '<=', now)
       .where('end', '>=', now);
 
-    const [weeklySnap, monthlySnap] = await Promise.all([weeklyRef.get(), monthlyRef.get()]);
+    const [weeklySnap, monthlySnap] = await Promise.all([
+      weeklyRef.get(),
+      monthlyRef.get(),
+    ]);
     const challenges = [...weeklySnap.docs, ...monthlySnap.docs];
+    console.log(`🎯 found ${challenges.length} active challenges`);
 
     for (const doc of challenges) {
       const ch = doc.data();
       const devices = ch.deviceIds || [];
-      if (devices.length && !devices.includes(deviceId)) continue;
+      if (devices.length && !devices.includes(deviceId)) {
+        console.log(`➡️ challenge ${doc.id} skipped for device ${deviceId}`);
+        continue;
+      }
 
       const logsSnap = await db
         .collectionGroup('logs')
@@ -86,6 +102,9 @@ exports.checkChallengesOnLog = functions.firestore
         .where('timestamp', '<=', ch.end)
         .get();
 
+      console.log(
+        `📊 challenge ${doc.id} requires ${ch.minSets || 0} sets -> ${logsSnap.size} logs`
+      );
       if (logsSnap.size >= (ch.minSets || 0)) {
         const badgeRef = db
           .collection('users')
@@ -114,6 +133,9 @@ exports.checkChallengesOnLog = functions.firestore
             } else {
               tx.set(statsRef, { challengeXP: xp });
             }
+            console.log(
+              `🏆 awarded challenge ${doc.id} to ${userId}, +${ch.xpReward || 0} XP`
+            );
           }
         });
       }
