@@ -90,9 +90,14 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
     });
 
     final colName = _type == 'weekly' ? 'weekly' : 'monthly';
-    final col = FirebaseFirestore.instance.collection('gyms').doc(gymId).collection(colName);
+    final col = FirebaseFirestore.instance
+        .collection('gyms')
+        .doc(gymId)
+        .collection(colName);
     try {
-      await col.add(data);
+      print('Creating challenge in gym $gymId/$colName: $data');
+      final docRef = await col.add(data);
+      print('Challenge created with id: ${docRef.id}');
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
