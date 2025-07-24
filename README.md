@@ -64,6 +64,14 @@ Weitere Details zum State-Management stehen in [docs/provider_structure.md](docs
    flutter pub get
    ```
 
+4. **Firestore Indexes deployen**
+   Damit komplexe Abfragen funktionieren (z.B. für Challenges), müssen die in
+   `firestore.indexes.json` definierten Indexe in dein Firebase-Projekt übertragen
+   werden:
+   ```bash
+   firebase deploy --only firestore:indexes
+   ```
+
 ---
 
 ## Flavors

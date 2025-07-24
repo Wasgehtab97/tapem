@@ -290,6 +290,7 @@ class DeviceProvider extends ChangeNotifier {
         _device!.uid,
       );
     } catch (e, st) {
+      debugPrint('⚠️ _updateXp error: $e');
       debugPrintStack(label: '_updateXp', stackTrace: st);
     }
 
