@@ -103,25 +103,34 @@ class FirestoreChallengeSource {
         continue;
       }
       debugPrint('➡️ check challenge ${ch.id} devices=${ch.deviceIds}');
-      final deviceIds = ch.deviceIds.isEmpty ? [deviceId] : ch.deviceIds;
-
-      // Firestore erlaubt maximal 10 IDs pro whereIn-Query.
-      final chunks = <List<String>>[];
-      for (var i = 0; i < deviceIds.length; i += 10) {
-        chunks.add(
-            deviceIds.sublist(i, i + 10 > deviceIds.length ? deviceIds.length : i + 10));
-      }
 
       var logCount = 0;
-      for (final ids in chunks) {
+      if (ch.deviceIds.isEmpty) {
         final snap = await _firestore
             .collectionGroup('logs')
             .where('userId', isEqualTo: userId)
-            .where('deviceId', whereIn: ids)
             .where('timestamp', isGreaterThanOrEqualTo: ch.start)
             .where('timestamp', isLessThanOrEqualTo: ch.end)
             .get();
-        logCount += snap.size;
+        logCount = snap.size;
+      } else {
+        // Firestore erlaubt maximal 10 IDs pro whereIn-Query.
+        final chunks = <List<String>>[];
+        for (var i = 0; i < ch.deviceIds.length; i += 10) {
+          chunks.add(ch.deviceIds.sublist(
+              i, i + 10 > ch.deviceIds.length ? ch.deviceIds.length : i + 10));
+        }
+
+        for (final ids in chunks) {
+          final snap = await _firestore
+              .collectionGroup('logs')
+              .where('userId', isEqualTo: userId)
+              .where('deviceId', whereIn: ids)
+              .where('timestamp', isGreaterThanOrEqualTo: ch.start)
+              .where('timestamp', isLessThanOrEqualTo: ch.end)
+              .get();
+          logCount += snap.size;
+        }
       }
       debugPrint(
           '📊 logs $logCount / required ${ch.minSets} for challenge ${ch.id}');

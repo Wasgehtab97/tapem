@@ -97,21 +97,40 @@ exports.checkChallengesOnLog = functions.firestore
         continue;
       }
 
-      const logsSnap = await db
-        .collectionGroup('logs')
-        .where('userId', '==', userId)
-        .where('deviceId', 'in', devices.length ? devices : [deviceId])
-        .where('timestamp', '>=', ch.start)
-        .where('timestamp', '<=', ch.end)
-        .get();
+      let logCount = 0;
+      if (devices.length === 0) {
+        const snap = await db
+          .collectionGroup('logs')
+          .where('userId', '==', userId)
+          .where('timestamp', '>=', ch.start)
+          .where('timestamp', '<=', ch.end)
+          .get();
+        logCount = snap.size;
+      } else {
+        const chunks = [];
+        for (let i = 0; i < devices.length; i += 10) {
+          chunks.push(devices.slice(i, i + 10 > devices.length ? devices.length : i + 10));
+        }
+
+        for (const ids of chunks) {
+          const snap = await db
+            .collectionGroup('logs')
+            .where('userId', '==', userId)
+            .where('deviceId', 'in', ids)
+            .where('timestamp', '>=', ch.start)
+            .where('timestamp', '<=', ch.end)
+            .get();
+          logCount += snap.size;
+        }
+      }
 
       console.log(
-        `📊 challenge ${doc.id} requires ${ch.minSets || 0} sets -> ${logsSnap.size} logs`
+        `📊 challenge ${doc.id} requires ${ch.minSets || 0} sets -> ${logCount} logs`
       );
       console.log(
-        `📈 challenge ${doc.id} progress ${logsSnap.size}/${ch.minSets || 0}`
+        `📈 challenge ${doc.id} progress ${logCount}/${ch.minSets || 0}`
       );
-      if (logsSnap.size >= (ch.minSets || 0)) {
+      if (logCount >= (ch.minSets || 0)) {
         const completedRef = db
           .collection('gyms')
           .doc(gymId)
