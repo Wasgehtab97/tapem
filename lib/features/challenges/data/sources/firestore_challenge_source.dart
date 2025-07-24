@@ -56,4 +56,79 @@ class FirestoreChallengeSource {
         .map((d) => CompletedChallenge.fromMap(d.id, d.data()))
         .toList());
   }
+
+  Future<void> checkChallenges({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+  }) async {
+    final now = Timestamp.fromDate(DateTime.now());
+    final weeklySnap = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('weekly')
+        .where('start', isLessThanOrEqualTo: now)
+        .where('end', isGreaterThanOrEqualTo: now)
+        .get();
+    final monthlySnap = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('monthly')
+        .where('start', isLessThanOrEqualTo: now)
+        .where('end', isGreaterThanOrEqualTo: now)
+        .get();
+
+    final challenges = [
+      ...weeklySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
+      ...monthlySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
+    ];
+
+    for (final ch in challenges) {
+      if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
+        continue;
+      }
+      final deviceIds = ch.deviceIds.isEmpty ? [deviceId] : ch.deviceIds;
+      final logsSnap = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .where('deviceId', whereIn: deviceIds)
+          .where('timestamp', isGreaterThanOrEqualTo: ch.start)
+          .where('timestamp', isLessThanOrEqualTo: ch.end)
+          .get();
+
+      if (logsSnap.size >= ch.minSets) {
+        final completedRef = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('completedChallenges')
+            .doc('${ch.id}_$userId');
+        await _firestore.runTransaction((tx) async {
+          final completedSnap = await tx.get(completedRef);
+          if (!completedSnap.exists) {
+            tx.set(completedRef, {
+              'challengeId': ch.id,
+              'userId': userId,
+              'title': ch.title,
+              'completedAt': FieldValue.serverTimestamp(),
+              'xpReward': ch.xpReward,
+            });
+            final statsRef = _firestore
+                .collection('gyms')
+                .doc(gymId)
+                .collection('users')
+                .doc(userId)
+                .collection('rank')
+                .doc('stats');
+            final statsSnap = await tx.get(statsRef);
+            final xp = (statsSnap.data()?['challengeXP'] as int? ?? 0) + ch.xpReward;
+            if (statsSnap.exists) {
+              tx.update(statsRef, {'challengeXP': xp});
+            } else {
+              tx.set(statsRef, {'challengeXP': xp});
+            }
+          }
+        });
+      }
+    }
+  }
 }
