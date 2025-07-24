@@ -154,11 +154,19 @@ exports.checkChallengesOnLog = functions.firestore
               .collection('rank')
               .doc('stats');
             const statsSnap = await tx.get(statsRef);
-            const xp = (statsSnap.data()?.challengeXP || 0) + (ch.xpReward || 0);
+            const data = statsSnap.data() || {};
+            const challengeXp = (data.challengeXP || 0) + (ch.xpReward || 0);
+            const dailyXp = (data.dailyXP || 0) + (ch.xpReward || 0);
             if (statsSnap.exists) {
-              tx.update(statsRef, { challengeXP: xp });
+              tx.update(statsRef, {
+                challengeXP: challengeXp,
+                dailyXP: dailyXp,
+              });
             } else {
-              tx.set(statsRef, { challengeXP: xp });
+              tx.set(statsRef, {
+                challengeXP: challengeXp,
+                dailyXP: dailyXp,
+              });
             }
             console.log(
               `🏁 challenge ${doc.id} completed by ${userId}, +${ch.xpReward || 0} XP`
