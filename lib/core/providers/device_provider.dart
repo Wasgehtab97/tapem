@@ -72,6 +72,7 @@ class DeviceProvider extends ChangeNotifier {
     final today = DateTime(now.year, now.month, now.day);
     return lastDay == today;
   }
+
   int get xp => _xp;
   int get level => _level;
 
@@ -103,13 +104,7 @@ class DeviceProvider extends ChangeNotifier {
 
       // Session initialisieren
       _sets = [
-        {
-          'number': '1',
-          'weight': '',
-          'reps': '',
-          'rir': '',
-          'note': '',
-        },
+        {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
@@ -170,10 +165,7 @@ class DeviceProvider extends ChangeNotifier {
   /// Lädt die zuletzt gespeicherte Session in die Eingabefelder
   void startEditLastSession() {
     if (_lastSessionSets.isEmpty) return;
-    _sets = [
-      for (final set in _lastSessionSets)
-        Map<String, String>.from(set),
-    ];
+    _sets = [for (final set in _lastSessionSets) Map<String, String>.from(set)];
     _note = _lastSessionNote;
     _editingLastSession = true;
     notifyListeners();
@@ -195,7 +187,8 @@ class DeviceProvider extends ChangeNotifier {
     if (_device == null) return;
 
     debugPrint(
-        '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite');
+      '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
+    );
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -212,7 +205,8 @@ class DeviceProvider extends ChangeNotifier {
       }
     }
 
-    final sessionId = overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
+    final sessionId =
+        overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
     final ts = Timestamp.now();
     final batch = _firestore.batch();
     final savedSets = List<Map<String, String>>.from(_sets);
@@ -225,10 +219,11 @@ class DeviceProvider extends ChangeNotifier {
         .collection('logs');
 
     if (overwrite && _lastSessionId != null) {
-      final existing = await logsCol
-          .where('userId', isEqualTo: userId)
-          .where('sessionId', isEqualTo: _lastSessionId)
-          .get();
+      final existing =
+          await logsCol
+              .where('userId', isEqualTo: userId)
+              .where('sessionId', isEqualTo: _lastSessionId)
+              .get();
       for (final doc in existing.docs) {
         batch.delete(doc.reference);
       }
@@ -271,7 +266,9 @@ class DeviceProvider extends ChangeNotifier {
 
     // XP-System aktualisieren
     try {
-      debugPrint('➡️ call addSessionXp session=$sessionId device=${_device!.uid}');
+      debugPrint(
+        '➡️ call addSessionXp session=$sessionId device=${_device!.uid}',
+      );
       await Provider.of<XpProvider>(context, listen: false).addSessionXp(
         gymId: gymId,
         userId: userId,
@@ -284,24 +281,19 @@ class DeviceProvider extends ChangeNotifier {
       debugPrint('✅ addSessionXp completed');
 
       // Challenges prüfen
-      await Provider.of<ChallengeProvider>(context, listen: false).checkChallenges(
-        gymId,
-        userId,
-        _device!.uid,
-      );
+      await Provider.of<ChallengeProvider>(
+        context,
+        listen: false,
+      ).checkChallenges(gymId, userId, _device!.uid);
     } catch (e, st) {
+      debugPrint('⚠️ _updateXp error: $e');
       debugPrintStack(label: '_updateXp', stackTrace: st);
     }
 
     // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
     if (!_device!.isMulti && showInLeaderboard) {
       try {
-        await _updateLeaderboard(
-          gymId,
-          userId,
-          sessionId,
-          showInLeaderboard,
-        );
+        await _updateLeaderboard(gymId, userId, sessionId, showInLeaderboard);
         await _loadUserXp(gymId, _device!.uid, userId);
       } catch (e, st) {
         debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
@@ -315,13 +307,7 @@ class DeviceProvider extends ChangeNotifier {
     _lastSessionId = sessionId;
     _editingLastSession = false;
     _sets = [
-      {
-        'number': '1',
-        'weight': '',
-        'reps': '',
-        'rir': '',
-        'note': '',
-      },
+      {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
     ];
     notifyListeners();
   }
@@ -346,9 +332,7 @@ class DeviceProvider extends ChangeNotifier {
         .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
-    final sessionRef = lbRef
-        .collection('sessions')
-        .doc(sessionId);
+    final sessionRef = lbRef.collection('sessions').doc(sessionId);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -366,10 +350,7 @@ class DeviceProvider extends ChangeNotifier {
 
       if (!sessSnap.exists) {
         info = LevelService().addXp(info, LevelService.xpPerSession);
-        tx.set(sessionRef, {
-          'deviceId': deviceId,
-          'date': dateStr,
-        });
+        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
         tx.update(lbRef, {
           'xp': info.xp,
           'level': info.level,
@@ -451,19 +432,16 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadUserXp(
-    String gymId,
-    String deviceId,
-    String userId,
-  ) async {
-    final xpDoc = await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('leaderboard')
-        .doc(userId)
-        .get();
+  Future<void> _loadUserXp(String gymId, String deviceId, String userId) async {
+    final xpDoc =
+        await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .doc(deviceId)
+            .collection('leaderboard')
+            .doc(userId)
+            .get();
     if (xpDoc.exists) {
       final data = xpDoc.data()!;
       _xp = data['xp'] as int? ?? 0;
