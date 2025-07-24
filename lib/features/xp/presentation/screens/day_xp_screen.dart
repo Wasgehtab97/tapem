@@ -25,6 +25,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
     final uid = auth.userId;
     if (uid != null) {
       xpProv.watchTrainingDays(uid);
+      xpProv.watchStatsDailyXp(auth.gymCode ?? '', uid);
       _listenLeaderboard(auth.gymCode ?? '');
     }
   }
@@ -74,7 +75,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
     final xpProv = context.watch<XpProvider>();
     final entries = xpProv.dayListXp.entries.toList()
       ..sort((a, b) => b.key.compareTo(a.key));
-    final totalXp = xpProv.dayListXp.values.fold<int>(0, (a, b) => a + b);
+    final totalXp = xpProv.statsDailyXp;
 
     final auth = context.watch<AuthProvider>();
     return Scaffold(

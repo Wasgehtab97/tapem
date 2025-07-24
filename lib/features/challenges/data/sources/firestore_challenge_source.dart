@@ -204,9 +204,11 @@ class FirestoreChallengeSource {
               }
 
               final data = statsSnap.data() ?? {};
+              final previousDaily = data['dailyXP'] as int? ?? 0;
               final challengeXp =
                   (data['challengeXP'] as int? ?? 0) + ch.xpReward;
-              final dailyXp = (data['dailyXP'] as int? ?? 0) + ch.xpReward;
+              final dailyXp = previousDaily + ch.xpReward;
+              debugPrint('📊 dailyXP $previousDaily -> $dailyXp');
 
               if (statsSnap.exists) {
                 tx.update(statsRef, {
@@ -219,6 +221,7 @@ class FirestoreChallengeSource {
                   'dailyXP': dailyXp,
                 });
               }
+              debugPrint('✅ dailyXP set to $dailyXp');
 
               debugPrint(
                 '🏁 challenge ${ch.id} completed -> +${ch.xpReward} XP (daily=$dailyXp)',

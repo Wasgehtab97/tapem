@@ -18,11 +18,14 @@ class XpProvider extends ChangeNotifier {
   final Map<String, int> _deviceXp = {};
   StreamSubscription<Map<String, int>>? _dayListSub;
   final Map<String, StreamSubscription<int>> _deviceSubs = {};
+  int _statsDailyXp = 0;
+  StreamSubscription<int>? _statsDailySub;
 
   Map<String, int> get muscleXp => _muscleXp;
   int get dayXp => _dayXp;
   Map<String, int> get dayListXp => _dayListXp;
   Map<String, int> get deviceXp => _deviceXp;
+  int get statsDailyXp => _statsDailyXp;
 
   Future<void> addSessionXp({
     required String gymId,
@@ -93,9 +96,21 @@ class XpProvider extends ChangeNotifier {
           .listen((xp) {
             _deviceXp[id] = xp;
             debugPrint('🔄 provider device $id xp=$xp');
-            notifyListeners();
-          });
+          notifyListeners();
+        });
     }
+  }
+
+  void watchStatsDailyXp(String gymId, String userId) {
+    debugPrint('👀 provider watchStatsDailyXp gymId=$gymId userId=$userId');
+    _statsDailySub?.cancel();
+    _statsDailySub = _repo
+        .watchStatsDailyXp(gymId: gymId, userId: userId)
+        .listen((xp) {
+      _statsDailyXp = xp;
+      debugPrint('🔄 provider statsDailyXp=$xp');
+      notifyListeners();
+    });
   }
 
   @override
@@ -103,6 +118,7 @@ class XpProvider extends ChangeNotifier {
     _daySub?.cancel();
     _muscleSub?.cancel();
     _dayListSub?.cancel();
+    _statsDailySub?.cancel();
     for (final sub in _deviceSubs.values) {
       sub.cancel();
     }
