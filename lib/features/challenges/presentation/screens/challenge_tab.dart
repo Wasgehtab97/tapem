@@ -21,16 +21,17 @@ class _ChallengeTabState extends State<ChallengeTab>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-      final gymId = context.read<GymProvider>().currentGymId;
-      final userId = context.read<AuthProvider>().userId;
-      print("ChallengeTab init with gym: $gymId, user: $userId");
-      if (gymId.isNotEmpty && userId != null) {
-        context.read<ChallengeProvider>().watchChallenges(gymId, userId);
-      }
-      if (userId != null) {
-        context.read<ChallengeProvider>().watchBadges(userId);
-      }
-    });
+
+    final gymId = context.read<GymProvider>().currentGymId;
+    final userId = context.read<AuthProvider>().userId;
+    print('ChallengeTab init with gym: $gymId, user: $userId');
+
+    if (gymId.isNotEmpty && userId != null) {
+      context.read<ChallengeProvider>().watchChallenges(gymId, userId);
+    }
+    if (userId != null) {
+      context.read<ChallengeProvider>().watchBadges(userId);
+    }
   }
 
   @override
