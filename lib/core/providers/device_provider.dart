@@ -14,6 +14,7 @@ import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/core/providers/challenge_provider.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final GetDevicesForGym _getDevicesForGym;
@@ -237,6 +238,7 @@ class DeviceProvider extends ChangeNotifier {
     for (var set in savedSets) {
       final logDoc = logsCol.doc();
       final data = <String, dynamic>{
+        'deviceId': _device!.uid,
         'userId': userId,
         'exerciseId': _currentExerciseId,
         'sessionId': sessionId,
@@ -280,6 +282,13 @@ class DeviceProvider extends ChangeNotifier {
         primaryMuscleGroupIds: _device!.primaryMuscleGroups,
       );
       debugPrint('✅ addSessionXp completed');
+
+      // Challenges prüfen
+      await Provider.of<ChallengeProvider>(context, listen: false).checkChallenges(
+        gymId,
+        userId,
+        _device!.uid,
+      );
     } catch (e, st) {
       debugPrintStack(label: '_updateXp', stackTrace: st);
     }

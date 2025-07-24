@@ -63,6 +63,14 @@ class ChallengeProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> checkChallenges(
+    String gymId,
+    String userId,
+    String deviceId,
+  ) {
+    return _repo.checkChallenges(gymId, userId, deviceId);
+  }
+
   @override
   void dispose() {
     _chSub?.cancel();
