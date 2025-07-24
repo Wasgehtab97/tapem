@@ -166,9 +166,27 @@ class FirestoreChallengeSource {
               .doc(userId)
               .collection('completedChallenges')
               .doc(ch.id);
+          final badgeRef = _firestore
+              .collection('users')
+              .doc(userId)
+              .collection('badges')
+              .doc(ch.id);
+          final statsRef = _firestore
+              .collection('gyms')
+              .doc(gymId)
+              .collection('users')
+              .doc(userId)
+              .collection('rank')
+              .doc('stats');
+
           await _firestore.runTransaction((tx) async {
+            // Read all necessary documents first.
             final completedSnap = await tx.get(completedRef);
+            final badgeSnap = await tx.get(badgeRef);
+            final statsSnap = await tx.get(statsRef);
+
             if (!completedSnap.exists) {
+              // Only write after all reads are done.
               tx.set(completedRef, {
                 'challengeId': ch.id,
                 'userId': userId,
@@ -176,12 +194,7 @@ class FirestoreChallengeSource {
                 'completedAt': FieldValue.serverTimestamp(),
                 'xpReward': ch.xpReward,
               });
-              final badgeRef = _firestore
-                  .collection('users')
-                  .doc(userId)
-                  .collection('badges')
-                  .doc(ch.id);
-              final badgeSnap = await tx.get(badgeRef);
+
               if (!badgeSnap.exists) {
                 tx.set(badgeRef, {
                   'challengeId': ch.id,
@@ -189,18 +202,12 @@ class FirestoreChallengeSource {
                   'awardedAt': FieldValue.serverTimestamp(),
                 });
               }
-              final statsRef = _firestore
-                  .collection('gyms')
-                  .doc(gymId)
-                  .collection('users')
-                  .doc(userId)
-                  .collection('rank')
-                  .doc('stats');
-              final statsSnap = await tx.get(statsRef);
+
               final data = statsSnap.data() ?? {};
               final challengeXp =
                   (data['challengeXP'] as int? ?? 0) + ch.xpReward;
               final dailyXp = (data['dailyXP'] as int? ?? 0) + ch.xpReward;
+
               if (statsSnap.exists) {
                 tx.update(statsRef, {
                   'challengeXP': challengeXp,
@@ -212,6 +219,7 @@ class FirestoreChallengeSource {
                   'dailyXP': dailyXp,
                 });
               }
+
               debugPrint(
                 '🏁 challenge ${ch.id} completed -> +${ch.xpReward} XP (daily=$dailyXp)',
               );
