@@ -106,17 +106,20 @@ exports.checkChallengesOnLog = functions.firestore
         `📊 challenge ${doc.id} requires ${ch.minSets || 0} sets -> ${logsSnap.size} logs`
       );
       if (logsSnap.size >= (ch.minSets || 0)) {
-        const badgeRef = db
-          .collection('users')
-          .doc(userId)
-          .collection('badges')
-          .doc(doc.id);
+        const completedRef = db
+          .collection('gyms')
+          .doc(gymId)
+          .collection('completedChallenges')
+          .doc(`${doc.id}_${userId}`);
         await db.runTransaction(async (tx) => {
-          const badgeSnap = await tx.get(badgeRef);
-          if (!badgeSnap.exists) {
-            tx.set(badgeRef, {
+          const completedSnap = await tx.get(completedRef);
+          if (!completedSnap.exists) {
+            tx.set(completedRef, {
               challengeId: doc.id,
-              awardedAt: admin.firestore.FieldValue.serverTimestamp(),
+              userId,
+              title: ch.title || '',
+              completedAt: admin.firestore.FieldValue.serverTimestamp(),
+              xpReward: ch.xpReward || 0,
             });
 
             const statsRef = db
@@ -134,7 +137,7 @@ exports.checkChallengesOnLog = functions.firestore
               tx.set(statsRef, { challengeXP: xp });
             }
             console.log(
-              `🏆 awarded challenge ${doc.id} to ${userId}, +${ch.xpReward || 0} XP`
+              `🏁 challenge ${doc.id} completed by ${userId}, +${ch.xpReward || 0} XP`
             );
           }
         });
