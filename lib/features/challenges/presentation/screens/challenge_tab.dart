@@ -21,9 +21,9 @@ class _ChallengeTabState extends State<ChallengeTab>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
       final gymId = context.read<GymProvider>().currentGymId;
       final userId = context.read<AuthProvider>().userId;
+      print("ChallengeTab init with gym: $gymId, user: $userId");
       if (gymId.isNotEmpty && userId != null) {
         context.read<ChallengeProvider>().watchChallenges(gymId, userId);
       }
