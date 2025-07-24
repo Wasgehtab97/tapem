@@ -197,6 +197,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Navigator.of(context).pushNamed(AppRouter.branding);
                     },
                   ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.flag),
+                    label: const Text('Challenges verwalten'),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRouter.manageChallenges);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Expanded(
                     child: ListView.separated(

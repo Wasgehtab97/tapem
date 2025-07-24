@@ -20,6 +20,7 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_overview_
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/xp_overview_screen.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/challenge_admin_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/day_xp_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
 
@@ -47,6 +48,7 @@ class AppRouter {
   static const dayXp = '/day_xp';
   static const deviceXp = '/device_xp';
   static const challenges = '/challenges';
+  static const manageChallenges = '/manage_challenges';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -103,6 +105,10 @@ class AppRouter {
 
       case admin:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+
+      case manageChallenges:
+        return MaterialPageRoute(
+            builder: (_) => const ChallengeAdminScreen());
 
       case affiliate:
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
