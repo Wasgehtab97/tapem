@@ -68,6 +68,7 @@ class FirestoreChallengeSource {
     required String deviceId,
   }) async {
     final now = Timestamp.fromDate(DateTime.now());
+    debugPrint('⏳ checkChallenges gym=$gymId user=$userId device=$deviceId');
     final weeklySnap = await _firestore
         .collection('gyms')
         .doc(gymId)
@@ -86,16 +87,21 @@ class FirestoreChallengeSource {
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
         .get();
+    debugPrint(
+        '📥 loaded challenges weekly=${weeklySnap.size} monthly=${monthlySnap.size}');
 
     final challenges = [
       ...weeklySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
       ...monthlySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
     ];
 
+    debugPrint('🎯 evaluating ${challenges.length} challenges');
+
     for (final ch in challenges) {
       if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
         continue;
       }
+      debugPrint('➡️ check challenge ${ch.id} devices=${ch.deviceIds}');
       final deviceIds = ch.deviceIds.isEmpty ? [deviceId] : ch.deviceIds;
       final logsSnap = await _firestore
           .collectionGroup('logs')
@@ -104,6 +110,8 @@ class FirestoreChallengeSource {
           .where('timestamp', isGreaterThanOrEqualTo: ch.start)
           .where('timestamp', isLessThanOrEqualTo: ch.end)
           .get();
+      debugPrint(
+          '📊 logs ${logsSnap.size} / required ${ch.minSets} for challenge ${ch.id}');
 
       if (logsSnap.size >= ch.minSets) {
         final completedRef = _firestore
@@ -144,12 +152,22 @@ class FirestoreChallengeSource {
                 .collection('rank')
                 .doc('stats');
             final statsSnap = await tx.get(statsRef);
-            final xp = (statsSnap.data()?['challengeXP'] as int? ?? 0) + ch.xpReward;
+            final data = statsSnap.data() ?? {};
+            final challengeXp = (data['challengeXP'] as int? ?? 0) + ch.xpReward;
+            final dailyXp = (data['dailyXP'] as int? ?? 0) + ch.xpReward;
             if (statsSnap.exists) {
-              tx.update(statsRef, {'challengeXP': xp});
+              tx.update(statsRef, {
+                'challengeXP': challengeXp,
+                'dailyXP': dailyXp,
+              });
             } else {
-              tx.set(statsRef, {'challengeXP': xp});
+              tx.set(statsRef, {
+                'challengeXP': challengeXp,
+                'dailyXP': dailyXp,
+              });
             }
+            debugPrint(
+                '🏁 challenge ${ch.id} completed -> +${ch.xpReward} XP (daily=$dailyXp)');
           }
         });
       }
