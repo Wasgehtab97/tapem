@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:async/async.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/models/challenge.dart';
 import '../../domain/models/badge.dart';
 import '../../domain/models/completed_challenge.dart';
