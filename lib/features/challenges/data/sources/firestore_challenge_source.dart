@@ -15,7 +15,9 @@ class FirestoreChallengeSource {
     final weekly = _firestore
         .collection('gyms')
         .doc(gymId)
-        .collection('weekly')
+        .collection('challenges')
+        .doc('weekly')
+        .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
         .snapshots()
@@ -24,7 +26,9 @@ class FirestoreChallengeSource {
     final monthly = _firestore
         .collection('gyms')
         .doc(gymId)
-        .collection('monthly')
+        .collection('challenges')
+        .doc('monthly')
+        .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
         .snapshots()
@@ -49,8 +53,9 @@ class FirestoreChallengeSource {
     final col = _firestore
         .collection('gyms')
         .doc(gymId)
+        .collection('users')
+        .doc(userId)
         .collection('completedChallenges')
-        .where('userId', isEqualTo: userId)
         .orderBy('completedAt', descending: true);
     return col.snapshots().map((snap) => snap.docs
         .map((d) => CompletedChallenge.fromMap(d.id, d.data()))
@@ -66,14 +71,18 @@ class FirestoreChallengeSource {
     final weeklySnap = await _firestore
         .collection('gyms')
         .doc(gymId)
-        .collection('weekly')
+        .collection('challenges')
+        .doc('weekly')
+        .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
         .get();
     final monthlySnap = await _firestore
         .collection('gyms')
         .doc(gymId)
-        .collection('monthly')
+        .collection('challenges')
+        .doc('monthly')
+        .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
         .get();
@@ -100,8 +109,10 @@ class FirestoreChallengeSource {
         final completedRef = _firestore
             .collection('gyms')
             .doc(gymId)
+            .collection('users')
+            .doc(userId)
             .collection('completedChallenges')
-            .doc('${ch.id}_$userId');
+            .doc(ch.id);
         await _firestore.runTransaction((tx) async {
           final completedSnap = await tx.get(completedRef);
           if (!completedSnap.exists) {
@@ -112,6 +123,19 @@ class FirestoreChallengeSource {
               'completedAt': FieldValue.serverTimestamp(),
               'xpReward': ch.xpReward,
             });
+            final badgeRef = _firestore
+                .collection('users')
+                .doc(userId)
+                .collection('badges')
+                .doc(ch.id);
+            final badgeSnap = await tx.get(badgeRef);
+            if (!badgeSnap.exists) {
+              tx.set(badgeRef, {
+                'challengeId': ch.id,
+                'userId': userId,
+                'awardedAt': FieldValue.serverTimestamp(),
+              });
+            }
             final statsRef = _firestore
                 .collection('gyms')
                 .doc(gymId)

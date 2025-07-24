@@ -93,7 +93,9 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
     final col = FirebaseFirestore.instance
         .collection('gyms')
         .doc(gymId)
-        .collection(colName);
+        .collection('challenges')
+        .doc(colName)
+        .collection('items');
     try {
       print('Creating challenge in gym $gymId/$colName: $data');
       final docRef = await col.add(data);

@@ -68,13 +68,17 @@ exports.checkChallengesOnLog = functions.firestore
     const weeklyRef = db
       .collection('gyms')
       .doc(gymId)
-      .collection('weekly')
+      .collection('challenges')
+      .doc('weekly')
+      .collection('items')
       .where('start', '<=', now)
       .where('end', '>=', now);
     const monthlyRef = db
       .collection('gyms')
       .doc(gymId)
-      .collection('monthly')
+      .collection('challenges')
+      .doc('monthly')
+      .collection('items')
       .where('start', '<=', now)
       .where('end', '>=', now);
 
@@ -111,8 +115,10 @@ exports.checkChallengesOnLog = functions.firestore
         const completedRef = db
           .collection('gyms')
           .doc(gymId)
+          .collection('users')
+          .doc(userId)
           .collection('completedChallenges')
-          .doc(`${doc.id}_${userId}`);
+          .doc(doc.id);
         await db.runTransaction(async (tx) => {
           const completedSnap = await tx.get(completedRef);
           if (!completedSnap.exists) {
@@ -123,6 +129,20 @@ exports.checkChallengesOnLog = functions.firestore
               completedAt: admin.firestore.FieldValue.serverTimestamp(),
               xpReward: ch.xpReward || 0,
             });
+
+            const badgeRef = db
+              .collection('users')
+              .doc(userId)
+              .collection('badges')
+              .doc(doc.id);
+            const badgeSnap = await tx.get(badgeRef);
+            if (!badgeSnap.exists) {
+              tx.set(badgeRef, {
+                challengeId: doc.id,
+                userId,
+                awardedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            }
 
             console.log(`📄 completedChallenge doc ${completedRef.path}`);
 
