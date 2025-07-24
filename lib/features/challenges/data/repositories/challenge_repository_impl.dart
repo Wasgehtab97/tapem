@@ -23,4 +23,14 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       String gymId, String userId) {
     return _source.watchCompletedChallenges(gymId, userId);
   }
+
+  @override
+  Future<void> checkChallenges(
+      String gymId, String userId, String deviceId) {
+    return _source.checkChallenges(
+      gymId: gymId,
+      userId: userId,
+      deviceId: deviceId,
+    );
+  }
 }

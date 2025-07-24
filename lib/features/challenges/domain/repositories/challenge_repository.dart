@@ -9,4 +9,10 @@ abstract class ChallengeRepository {
     String gymId,
     String userId,
   );
+
+  Future<void> checkChallenges(
+    String gymId,
+    String userId,
+    String deviceId,
+  );
 }

@@ -66,15 +66,11 @@ exports.checkChallengesOnLog = functions.firestore
 
     const now = admin.firestore.Timestamp.now();
     const weeklyRef = db
-      .collection('gyms')
-      .doc(gymId)
-      .collection('weekly')
+      .collection(`gyms/${gymId}/challenges/weekly`)
       .where('start', '<=', now)
       .where('end', '>=', now);
     const monthlyRef = db
-      .collection('gyms')
-      .doc(gymId)
-      .collection('monthly')
+      .collection(`gyms/${gymId}/challenges/monthly`)
       .where('start', '<=', now)
       .where('end', '>=', now);
 
@@ -109,10 +105,13 @@ exports.checkChallengesOnLog = functions.firestore
       );
       if (logsSnap.size >= (ch.minSets || 0)) {
         const completedRef = db
-          .collection('gyms')
-          .doc(gymId)
-          .collection('completedChallenges')
-          .doc(`${doc.id}_${userId}`);
+          .collection(`gyms/${gymId}/users/${userId}/completedChallenges`)
+          .doc(doc.id);
+        const badgeRef = db
+          .collection('users')
+          .doc(userId)
+          .collection('badges')
+          .doc(doc.id);
         await db.runTransaction(async (tx) => {
           const completedSnap = await tx.get(completedRef);
           if (!completedSnap.exists) {
@@ -140,6 +139,11 @@ exports.checkChallengesOnLog = functions.firestore
             } else {
               tx.set(statsRef, { challengeXP: xp });
             }
+            tx.set(badgeRef, {
+              challengeId: doc.id,
+              userId,
+              awardedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
             console.log(
               `🏁 challenge ${doc.id} completed by ${userId}, +${ch.xpReward || 0} XP`
             );
