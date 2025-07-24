@@ -61,8 +61,7 @@ exports.checkChallengesOnLog = functions.firestore
       .where('sessionId', '==', sessionId)
       .get();
     if (existing.size > 1) {
-      console.log(`↩️ additional log for session ${sessionId}, ignore`);
-      return null;
+      console.log(`↩️ additional log for session ${sessionId}`);
     }
 
     const now = admin.firestore.Timestamp.now();
@@ -105,6 +104,9 @@ exports.checkChallengesOnLog = functions.firestore
       console.log(
         `📊 challenge ${doc.id} requires ${ch.minSets || 0} sets -> ${logsSnap.size} logs`
       );
+      console.log(
+        `📈 challenge ${doc.id} progress ${logsSnap.size}/${ch.minSets || 0}`
+      );
       if (logsSnap.size >= (ch.minSets || 0)) {
         const completedRef = db
           .collection('gyms')
@@ -121,6 +123,8 @@ exports.checkChallengesOnLog = functions.firestore
               completedAt: admin.firestore.FieldValue.serverTimestamp(),
               xpReward: ch.xpReward || 0,
             });
+
+            console.log(`📄 completedChallenge doc ${completedRef.path}`);
 
             const statsRef = db
               .collection('gyms')
