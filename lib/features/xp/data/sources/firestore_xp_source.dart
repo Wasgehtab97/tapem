@@ -191,4 +191,23 @@ class FirestoreXpSource {
       return xp;
     });
   }
+
+  Stream<int> watchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) {
+    final doc = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
+    debugPrint('👀 watchStatsDailyXp gymId=$gymId userId=$userId');
+    return doc.snapshots().map((snap) {
+      final xp = (snap.data()?['dailyXP'] as int?) ?? 0;
+      debugPrint('📥 stats dailyXP snapshot $xp');
+      return xp;
+    });
+  }
 }

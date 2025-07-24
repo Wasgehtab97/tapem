@@ -26,4 +26,9 @@ abstract class XpRepository {
     required String deviceId,
     required String userId,
   });
+
+  Stream<int> watchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  });
 }

@@ -59,4 +59,12 @@ class XpRepositoryImpl implements XpRepository {
       userId: userId,
     );
   }
+
+  @override
+  Stream<int> watchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) {
+    return _source.watchStatsDailyXp(gymId: gymId, userId: userId);
+  }
 }
