@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:async/async.dart';
 import '../../domain/models/challenge.dart';
 import '../../domain/models/badge.dart';
+import '../../domain/models/completed_challenge.dart';
 
 class FirestoreChallengeSource {
   final FirebaseFirestore _firestore;
@@ -41,5 +42,18 @@ class FirestoreChallengeSource {
         .snapshots()
         .map((snap) =>
             snap.docs.map((d) => Badge.fromMap(d.id, d.data())).toList());
+  }
+
+  Stream<List<CompletedChallenge>> watchCompletedChallenges(
+      String gymId, String userId) {
+    final col = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('completedChallenges')
+        .where('userId', isEqualTo: userId)
+        .orderBy('completedAt', descending: true);
+    return col.snapshots().map((snap) => snap.docs
+        .map((d) => CompletedChallenge.fromMap(d.id, d.data()))
+        .toList());
   }
 }

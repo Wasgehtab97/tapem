@@ -7,17 +7,17 @@ class CompletedChallengesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badges = context.watch<ChallengeProvider>().badges;
-    if (badges.isEmpty) {
-      return const Center(child: Text('Noch keine Badges'));
+    final completed = context.watch<ChallengeProvider>().completed;
+    if (completed.isEmpty) {
+      return const Center(child: Text('Keine abgeschlossenen Challenges'));
     }
     return ListView.builder(
-      itemCount: badges.length,
+      itemCount: completed.length,
       itemBuilder: (_, i) {
-        final b = badges[i];
+        final c = completed[i];
         return ListTile(
-          title: Text(b.challengeId),
-          subtitle: Text('${b.awardedAt.toLocal()}'),
+          title: Text(c.title),
+          subtitle: Text('${c.completedAt.toLocal()}'),
         );
       },
     );

@@ -15,9 +15,36 @@ class ActiveChallengesWidget extends StatelessWidget {
       itemCount: challenges.length,
       itemBuilder: (_, i) {
         final c = challenges[i];
-        return ListTile(
-          title: Text(c.title),
-          subtitle: Text(c.description),
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: ListTile(
+            title: Text(c.title),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: Text(c.title),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(c.description),
+                      const SizedBox(height: 8),
+                      Text('XP: ${c.xpReward}'),
+                      const SizedBox(height: 8),
+                      Text('Geräte: ${c.deviceIds.join(', ')}'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Schließen'),
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
         );
       },
     );
