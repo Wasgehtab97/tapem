@@ -237,6 +237,7 @@ class DeviceProvider extends ChangeNotifier {
     for (var set in savedSets) {
       final logDoc = logsCol.doc();
       final data = <String, dynamic>{
+        'deviceId': _device!.uid,
         'userId': userId,
         'exerciseId': _currentExerciseId,
         'sessionId': sessionId,
