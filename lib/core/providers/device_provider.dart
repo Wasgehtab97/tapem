@@ -193,6 +193,9 @@ class DeviceProvider extends ChangeNotifier {
   }) async {
     if (_device == null) return;
 
+    debugPrint(
+        '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite');
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -262,6 +265,7 @@ class DeviceProvider extends ChangeNotifier {
     batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
 
     await batch.commit();
+    debugPrint('📚 logs stored for session=$sessionId');
 
     // XP-System aktualisieren
     try {

@@ -25,22 +25,26 @@ class ChallengeProvider extends ChangeNotifier {
   List<Badge> get badges => _badges;
 
   void watchChallenges(String gymId, String userId) {
+    debugPrint('👀 watchChallenges gymId=$gymId userId=$userId');
     _chSub?.cancel();
     _chSub = _repo.watchActiveChallenges(gymId).listen((list) {
       final completedIds = _completed.map((c) => c.id).toSet();
       _challenges =
           list.where((c) => !completedIds.contains(c.id)).toList();
+      debugPrint('🔄 activeChallenges=${_challenges.length}');
       notifyListeners();
     });
     watchCompletedChallenges(gymId, userId);
   }
 
   void watchCompletedChallenges(String gymId, String userId) {
+    debugPrint('👀 watchCompletedChallenges gymId=$gymId userId=$userId');
     _completedSub?.cancel();
     _completedSub = _repo
         .watchCompletedChallenges(gymId, userId)
         .listen((list) {
       _completed = list;
+      debugPrint('🔄 completedChallenges=${list.length}');
       // Remove completed from active list
       final completedIds = _completed.map((c) => c.id).toSet();
       _challenges =
@@ -50,9 +54,11 @@ class ChallengeProvider extends ChangeNotifier {
   }
 
   void watchBadges(String userId) {
+    debugPrint('👀 watchBadges userId=$userId');
     _badgeSub?.cancel();
     _badgeSub = _repo.watchBadges(userId).listen((list) {
       _badges = list;
+      debugPrint('🔄 badges=${list.length}');
       notifyListeners();
     });
   }
