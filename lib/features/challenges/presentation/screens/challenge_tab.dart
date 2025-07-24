@@ -24,8 +24,8 @@ class _ChallengeTabState extends State<ChallengeTab>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final gymId = context.read<GymProvider>().currentGymId;
       final userId = context.read<AuthProvider>().userId;
-      if (gymId.isNotEmpty) {
-        context.read<ChallengeProvider>().watchChallenges(gymId);
+      if (gymId.isNotEmpty && userId != null) {
+        context.read<ChallengeProvider>().watchChallenges(gymId, userId);
       }
       if (userId != null) {
         context.read<ChallengeProvider>().watchBadges(userId);

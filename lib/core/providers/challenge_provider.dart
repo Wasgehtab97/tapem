@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
+import 'package:tapem/features/challenges/domain/models/completed_challenge.dart';
 import 'package:tapem/features/challenges/data/repositories/challenge_repository_impl.dart';
 import 'package:tapem/features/challenges/data/sources/firestore_challenge_source.dart';
 import 'package:tapem/features/challenges/domain/repositories/challenge_repository.dart';
@@ -9,21 +10,41 @@ import 'package:tapem/features/challenges/domain/repositories/challenge_reposito
 class ChallengeProvider extends ChangeNotifier {
   final ChallengeRepository _repo;
   List<Challenge> _challenges = [];
+  List<CompletedChallenge> _completed = [];
   List<Badge> _badges = [];
   StreamSubscription? _chSub;
   StreamSubscription? _badgeSub;
+  StreamSubscription? _completedSub;
 
   ChallengeProvider({ChallengeRepository? repo})
       : _repo = repo ??
             ChallengeRepositoryImpl(FirestoreChallengeSource());
 
   List<Challenge> get challenges => _challenges;
+  List<CompletedChallenge> get completed => _completed;
   List<Badge> get badges => _badges;
 
-  void watchChallenges(String gymId) {
+  void watchChallenges(String gymId, String userId) {
     _chSub?.cancel();
     _chSub = _repo.watchActiveChallenges(gymId).listen((list) {
-      _challenges = list;
+      final completedIds = _completed.map((c) => c.id).toSet();
+      _challenges =
+          list.where((c) => !completedIds.contains(c.id)).toList();
+      notifyListeners();
+    });
+    watchCompletedChallenges(gymId, userId);
+  }
+
+  void watchCompletedChallenges(String gymId, String userId) {
+    _completedSub?.cancel();
+    _completedSub = _repo
+        .watchCompletedChallenges(gymId, userId)
+        .listen((list) {
+      _completed = list;
+      // Remove completed from active list
+      final completedIds = _completed.map((c) => c.id).toSet();
+      _challenges =
+          _challenges.where((c) => !completedIds.contains(c.id)).toList();
       notifyListeners();
     });
   }
@@ -40,6 +61,7 @@ class ChallengeProvider extends ChangeNotifier {
   void dispose() {
     _chSub?.cancel();
     _badgeSub?.cancel();
+    _completedSub?.cancel();
     super.dispose();
   }
 }
