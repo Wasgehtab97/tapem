@@ -116,6 +116,18 @@ Vor dem Start müssen die passenden `.env`-Dateien vorhanden sein.
 
 ---
 
+## Häufige Probleme
+
+Falls es nach dem Entfernen oder Hinzufügen von Abhängigkeiten zu "Target of URI doesn't exist" Fehlern kommt, hilft meist ein erneutes Ausführen von:
+
+```bash
+flutter pub get
+```
+
+Damit aktualisiert Flutter die verwendeten Pakete.
+
+---
+
 ## Lizenz
 
 Siehe [LICENSE](LICENSE).
