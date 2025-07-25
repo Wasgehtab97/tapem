@@ -51,17 +51,20 @@ class _DeviceCardState extends State<DeviceCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 56,
-                    width: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppGradients.primary,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initial,
-                      style: theme.textTheme.titleLarge,
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.transparent,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppGradients.primary,
+                      ),
+                      child: Center(
+                        child: Text(
+                          initial,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),

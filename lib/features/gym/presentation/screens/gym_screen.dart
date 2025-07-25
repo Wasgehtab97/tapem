@@ -141,6 +141,7 @@ class _GymScreenState extends State<GymScreen> {
             onRefresh: () async => gymProv.loadGymData(gymId),
             child: CustomScrollView(
               controller: _scrollCtr,
+              physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   pinned: true,
@@ -148,8 +149,8 @@ class _GymScreenState extends State<GymScreen> {
                   backgroundColor:
                       Theme.of(context).colorScheme.surface.withOpacity(0.7),
                   flexibleSpace: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: SizedBox.expand(),
+                    filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                    child: const SizedBox.expand(),
                   ),
                 ),
                 SliverPersistentHeader(
