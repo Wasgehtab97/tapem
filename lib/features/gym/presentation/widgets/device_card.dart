@@ -1,10 +1,11 @@
 // lib/features/gym/presentation/widgets/device_card.dart
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/utils/context_extensions.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 
-class DeviceCard extends StatelessWidget {
+class DeviceCard extends StatefulWidget {
   final Device device;
   final VoidCallback? onTap;
   const DeviceCard({
@@ -14,39 +15,76 @@ class DeviceCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<DeviceCard> createState() => _DeviceCardState();
+}
+
+class _DeviceCardState extends State<DeviceCard> {
+  double _scale = 1;
+
+  void _onTapDown(TapDownDetails d) => setState(() => _scale = 0.97);
+  void _onTapEnd([_]) => setState(() => _scale = 1);
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final device = widget.device;
+    final initial = device.name.isNotEmpty ? device.name[0].toUpperCase() : '?';
+    final subtitle = device.description;
     return Hero(
       tag: 'device-${device.uid}',
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Row(
-              children: [
-                Text('${device.id}', style: theme.textTheme.labelLarge),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(device.name, style: theme.textTheme.titleMedium),
-                    if (device.description.isNotEmpty)
-                      Text(device.description, style: theme.textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+      child: AnimatedScale(
+        duration: AppDurations.short,
+        scale: _scale,
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
-        ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            onTap: widget.onTap,
+            onTapDown: _onTapDown,
+            onTapCancel: _onTapEnd,
+            onTapUp: _onTapEnd,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 56,
+                    width: 56,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.primary,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initial,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    device.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
