@@ -147,11 +147,7 @@ class _GymScreenState extends State<GymScreen> {
                   pinned: true,
                   title: Text(loc.gymTitle),
                   backgroundColor:
-                      Theme.of(context).colorScheme.surface.withOpacity(0.7),
-                  flexibleSpace: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                    child: const SizedBox.expand(),
-                  ),
+                      Theme.of(context).colorScheme.surface.withOpacity(0.9),
                 ),
                 SliverPersistentHeader(
                   pinned: true,
@@ -266,10 +262,10 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get maxExtent => 112;
+  double get maxExtent => 128;
 
   @override
-  double get minExtent => 112;
+  double get minExtent => 128;
 
   @override
   Widget build(
