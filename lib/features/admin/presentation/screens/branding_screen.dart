@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
 
@@ -23,11 +24,22 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
   final _hexReg = RegExp(r'^[0-9a-fA-F]{6}\$');
 
-  // File selection via file_picker was removed to avoid an additional
-  // dependency. Show a hint instead so the user can provide the logo data
-  // manually if needed.
   Future<void> _pickLogo() async {
-    setState(() => _error = 'Dateiauswahl nicht verfügbar');
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null) return;
+    final bytes = result.files.single.bytes;
+    if (bytes == null) return;
+    if (bytes.length > 500 * 1024) {
+      setState(() => _error = 'Bild zu groß (max 500KB)');
+      return;
+    }
+    setState(() {
+      _logoBytes = bytes;
+      _error = null;
+    });
   }
 
   Future<void> _save() async {

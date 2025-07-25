@@ -120,8 +120,8 @@ Vor dem Start müssen die passenden `.env`-Dateien vorhanden sein.
 
 - Falls es nach dem Entfernen oder Hinzufügen von Abhängigkeiten zu "Target of URI doesn't exist" Fehlern kommt, hilft meist ein erneutes Ausführen von
   `flutter pub get`. Damit aktualisiert Flutter die verwendeten Pakete.
-- Die App verwendet keinen `file_picker` mehr. Logo-Upload und Plan-Import
-  erfordern daher das manuelle Einfügen der Daten.
+- Die App nutzt wieder den `file_picker` für Logo-Upload und Plan-Import.
+  Führe nach Änderungen an den Abhängigkeiten `flutter pub get` aus.
 
 ---
 

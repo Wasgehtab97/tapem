@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
@@ -23,14 +27,20 @@ class ImportPlanScreen extends StatefulWidget {
 class _ImportPlanScreenState extends State<ImportPlanScreen> {
   final _csvCtr = TextEditingController();
 
-  // File import via file_picker is intentionally omitted. Instead, inform the
-  // user that selecting a CSV file is not available so the data can be pasted
-  // manually.
   Future<void> _pickFile() async {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dateiauswahl nicht verfügbar')),
-      );
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    if (result != null) {
+      final file = result.files.single;
+      String content = '';
+      if (file.bytes != null) {
+        content = utf8.decode(file.bytes!);
+      } else if (file.path != null) {
+        content = await File(file.path!).readAsString();
+      }
+      setState(() => _csvCtr.text = content);
     }
   }
 

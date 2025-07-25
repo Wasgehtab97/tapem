@@ -30,6 +30,7 @@ dependencies:
   csv: ^6.0.0
   googleapis: ^14.0.0     # Nur falls du wirklich die Sheets-API nutzt
   # google_sign_in: ^6.2.1
+  file_picker: ^6.1.1
   async: ^2.11.0
 
   # Firebase
