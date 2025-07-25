@@ -1,9 +1,5 @@
-import 'dart:convert';
-
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
@@ -28,19 +24,10 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   final _csvCtr = TextEditingController();
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
-    );
-    if (result != null) {
-      final file = result.files.single;
-      String content = '';
-      if (file.bytes != null) {
-        content = utf8.decode(file.bytes!);
-      } else if (file.path != null) {
-        content = await File(file.path!).readAsString();
-      }
-      setState(() => _csvCtr.text = content);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dateiauswahl nicht verfügbar')),
+      );
     }
   }
 
