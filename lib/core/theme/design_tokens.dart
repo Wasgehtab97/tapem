@@ -66,6 +66,16 @@ class AppGradients {
       AppColors.accentAmber,
     ],
   );
+
+  /// Primary gradient used for buttons and icons.
+  static const LinearGradient primary = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      AppColors.accentMint,
+      AppColors.accentTurquoise,
+    ],
+  );
 }
 
 /// Animation durations.
