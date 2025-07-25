@@ -51,8 +51,8 @@ class Challenge {
         deviceIds: (map['deviceIds'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
             .toList(),
-        minSets: map['minSets'] as int? ?? 0,
-        xpReward: map['xpReward'] as int? ?? 0,
+        minSets: _parseInt(map['minSets']),
+        xpReward: _parseInt(map['xpReward']),
       );
 
   Map<String, dynamic> toMap() => {
@@ -64,4 +64,11 @@ class Challenge {
         'minSets': minSets,
         'xpReward': xpReward,
       };
+}
+
+int _parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }

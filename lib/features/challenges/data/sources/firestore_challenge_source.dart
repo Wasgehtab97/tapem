@@ -114,11 +114,12 @@ class FirestoreChallengeSource {
 
     debugPrint('🎯 evaluating ${challenges.length} challenges');
 
-    for (final ch in challenges) {
-      if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
-        continue;
-      }
+      for (final ch in challenges) {
+        if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
+          continue;
+        }
       debugPrint('➡️ check challenge ${ch.id} devices=${ch.deviceIds}');
+      debugPrint('🔍 required sets for ${ch.id}: ${ch.minSets}');
       try {
         var logCount = 0;
         if (ch.deviceIds.isEmpty) {
@@ -157,6 +158,7 @@ class FirestoreChallengeSource {
         debugPrint(
           '📊 logs $logCount / required ${ch.minSets} for challenge ${ch.id}',
         );
+        debugPrint('📈 progress ${logCount}/${ch.minSets} for ${ch.id}');
 
         if (logCount >= ch.minSets) {
           final completedRef = _firestore

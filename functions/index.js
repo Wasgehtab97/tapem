@@ -96,6 +96,7 @@ exports.checkChallengesOnLog = functions.firestore
         console.log(`➡️ challenge ${doc.id} skipped for device ${deviceId}`);
         continue;
       }
+      console.log(`🔍 checking challenge ${doc.id}, minSets=${ch.minSets || 0}`);
 
       let logCount = 0;
       if (devices.length === 0) {
