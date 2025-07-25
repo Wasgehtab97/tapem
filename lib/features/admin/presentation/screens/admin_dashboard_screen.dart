@@ -13,6 +13,7 @@ import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -112,8 +113,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Device ID: $newId',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(
+                'Device ID: $newId',
+                style: TextStyle(
+                  fontSize: AppFontSizes.body,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             ],
           ),
           actions: [

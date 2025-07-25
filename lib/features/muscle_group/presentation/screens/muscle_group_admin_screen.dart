@@ -70,10 +70,11 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                         selected: selectedRegions.contains(r),
                         selectedColor: selectedRegions.contains(r)
                             ? (selectedRegions.indexOf(r) == 0
-                                ? Colors.blue
-                                : Colors.yellow)
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.secondary)
                             : null,
-                        checkmarkColor: Colors.white,
+                        checkmarkColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         onSelected: (v) => setSt(() {
                           if (v) {
                             if (!selectedRegions.contains(r)) {
@@ -176,10 +177,11 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                     selected: selectedRegions.contains(r),
                     selectedColor: selectedRegions.contains(r)
                         ? (selectedRegions.indexOf(r) == 0
-                            ? Colors.blue
-                            : Colors.yellow)
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.secondary)
                         : null,
-                    checkmarkColor: Colors.white,
+                    checkmarkColor:
+                        Theme.of(context).colorScheme.onPrimary,
                     onSelected: (v) => setSt(() {
                       if (v) {
                         if (!selectedRegions.contains(r)) {
@@ -293,13 +295,18 @@ return Scaffold(
                           for (final g in primary)
                             Chip(
                               label: Text(g.region.name),
-                              backgroundColor: Colors.blue,
-                              labelStyle: const TextStyle(color: Colors.white),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              labelStyle: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onPrimary,
+                              ),
                             ),
                           for (final g in secondary)
                             Chip(
                               label: Text(g.region.name),
-                              backgroundColor: Colors.yellow,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.secondary,
                             ),
                         ],
                       ),

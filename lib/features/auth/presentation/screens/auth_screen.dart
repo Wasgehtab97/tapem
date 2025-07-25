@@ -58,7 +58,7 @@ class _AuthScreenState extends State<AuthScreen>
             ),
             if (authProv.isLoading)
               Container(
-                color: Colors.black45,
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],

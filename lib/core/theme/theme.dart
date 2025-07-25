@@ -71,7 +71,7 @@ class AppTheme {
         iconTheme: IconThemeData(color: onPrimary),
         titleTextStyle: TextStyle(
           color: onPrimary,
-          fontSize: 20,
+          fontSize: AppFontSizes.headline,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -81,7 +81,7 @@ class AppTheme {
           foregroundColor: onPrimary,
           textStyle: TextStyle(fontWeight: FontWeight.bold),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.button),
           ),
         ),
       ),
@@ -90,7 +90,7 @@ class AppTheme {
           foregroundColor: onPrimary,
           side: BorderSide(color: onSurface54),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.button),
           ),
         ),
       ),
@@ -109,14 +109,17 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceBlack,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
         border: OutlineInputBorder(
           borderSide: BorderSide(color: onSurface38),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.button),
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: secondary),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.button),
         ),
         hintStyle: TextStyle(color: onSurface38),
         labelStyle: TextStyle(color: onSurface54),
@@ -124,9 +127,9 @@ class AppTheme {
       cardTheme: CardTheme(
         color: surfaceBlack,
         elevation: 2,
-        margin: EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -143,26 +146,26 @@ class AppTheme {
       textTheme: TextTheme(
         titleLarge: GoogleFonts.inter(
           color: onPrimary,
-          fontSize: 20,
+          fontSize: AppFontSizes.headline,
           fontWeight: FontWeight.bold,
         ),
         titleMedium: GoogleFonts.inter(
           color: onSurface,
-          fontSize: 16,
+          fontSize: AppFontSizes.title,
         ),
         bodyMedium: GoogleFonts.inter(
           color: onSurface,
-          fontSize: 14,
+          fontSize: AppFontSizes.body,
         ),
         labelLarge: GoogleFonts.inter(
           color: onPrimary,
-          fontSize: 14,
+          fontSize: AppFontSizes.body,
           fontWeight: FontWeight.w600,
         ),
       ),
       scrollbarTheme: ScrollbarThemeData(
         thumbColor: MaterialStateProperty.all(secondary.withOpacity(0.7)),
-        radius: Radius.circular(8),
+        radius: const Radius.circular(AppRadius.button),
         thickness: MaterialStateProperty.all(6),
       ),
       dividerColor: onSurface38,

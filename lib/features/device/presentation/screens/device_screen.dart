@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/widgets/gradient_button.dart';
 
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -96,7 +97,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
     // Single-Übung: hier bleiben
     return Scaffold(
       appBar: AppBar(
-        title: Text(prov.device!.name),
+        title: Hero(
+          tag: 'device-${prov.device!.uid}',
+          child: Material(
+            type: MaterialType.transparency,
+            child: Text(prov.device!.name),
+          ),
+        ),
         centerTitle: true,
         actions: [
           if (!prov.device!.isMulti)
@@ -130,7 +137,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (prov.device!.description.isNotEmpty) ...[
                       Text(
                         prov.device!.description,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -355,7 +364,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
+                  child: GradientButton(
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         try {
