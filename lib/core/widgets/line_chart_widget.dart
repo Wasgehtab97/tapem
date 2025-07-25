@@ -83,7 +83,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((touchedSpot) {
                   return LineTooltipItem(
-                    '${touchedSpot.y.toStringAsFixed(1)}',
+                    touchedSpot.y.toStringAsFixed(1),
                     TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,

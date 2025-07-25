@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/widgets/circular_xp_indicator.dart';
-import '../../../core/widgets/line_chart_widget.dart';
-import '../../../core/widgets/horizontal_bar_chart_widget.dart';
-import '../../../core/widgets/heatmap_widget.dart';
-import '../../../core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/circular_xp_indicator.dart';
+import 'package:tapem/core/widgets/line_chart_widget.dart';
+import 'package:tapem/core/widgets/horizontal_bar_chart_widget.dart';
+import 'package:tapem/core/widgets/heatmap_widget.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 /// An example dashboard screen demonstrating the refreshed UI components.
 ///

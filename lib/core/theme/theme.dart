@@ -114,4 +114,10 @@ class AppTheme {
     primary: AppColors.accentAmber,
     secondary: AppColors.accentTurquoise,
   );
+
+  /// A neutral dark theme without strong branding accents.
+  static final ThemeData neutralTheme = _buildTheme(
+    primary: AppColors.accentTurquoise,
+    secondary: AppColors.accentTurquoise,
+  );
 }
