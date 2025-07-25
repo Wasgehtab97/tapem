@@ -147,7 +147,7 @@ class _GymScreenState extends State<GymScreen> {
                   title: Text(loc.gymTitle),
                   backgroundColor:
                       Theme.of(context).colorScheme.surface.withOpacity(0.7),
-                  flexibleSpace: const BackdropFilter(
+                  flexibleSpace: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: SizedBox.expand(),
                   ),

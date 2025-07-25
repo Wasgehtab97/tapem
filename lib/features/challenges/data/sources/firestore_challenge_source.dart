@@ -158,7 +158,7 @@ class FirestoreChallengeSource {
         debugPrint(
           '📊 logs $logCount / required ${ch.minSets} for challenge ${ch.id}',
         );
-        debugPrint('📈 progress ${logCount}/${ch.minSets} for ${ch.id}');
+        debugPrint('📈 progress $logCount/${ch.minSets} for ${ch.id}');
 
         if (logCount >= ch.minSets) {
           final completedRef = _firestore
