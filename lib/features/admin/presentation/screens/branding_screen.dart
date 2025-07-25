@@ -23,6 +23,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
   final _hexReg = RegExp(r'^[0-9a-fA-F]{6}\$');
 
+  // File selection via file_picker was removed to avoid an additional
+  // dependency. Show a hint instead so the user can provide the logo data
+  // manually if needed.
   Future<void> _pickLogo() async {
     setState(() => _error = 'Dateiauswahl nicht verfügbar');
   }

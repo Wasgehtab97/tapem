@@ -23,6 +23,9 @@ class ImportPlanScreen extends StatefulWidget {
 class _ImportPlanScreenState extends State<ImportPlanScreen> {
   final _csvCtr = TextEditingController();
 
+  // File import via file_picker is intentionally omitted. Instead, inform the
+  // user that selecting a CSV file is not available so the data can be pasted
+  // manually.
   Future<void> _pickFile() async {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
