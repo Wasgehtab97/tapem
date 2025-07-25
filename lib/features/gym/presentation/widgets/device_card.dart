@@ -16,18 +16,20 @@ class DeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: Row(
-            children: [
-              Text('${device.id}', style: theme.textTheme.labelLarge),
+    return Hero(
+      tag: 'device-${device.uid}',
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Row(
+              children: [
+                Text('${device.id}', style: theme.textTheme.labelLarge),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
@@ -42,6 +44,7 @@ class DeviceCard extends StatelessWidget {
               const Icon(Icons.chevron_right),
             ],
           ),
+        ),
         ),
       ),
     );

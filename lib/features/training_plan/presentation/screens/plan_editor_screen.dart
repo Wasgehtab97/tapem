@@ -329,7 +329,9 @@ class _DayView extends StatelessWidget {
         final exIndex = index - 1;
         return Dismissible(
           key: ValueKey('${day.date}-$exIndex'),
-          background: Container(color: Colors.red),
+          background: Container(
+            color: Theme.of(context).colorScheme.error,
+          ),
           onDismissed: (_) =>
               prov.removeExercise(weekNumber, day.date, exIndex),
           child: _PlanEntryEditor(
