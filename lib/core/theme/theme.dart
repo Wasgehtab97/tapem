@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'design_tokens.dart';
 
 /// Enthält alle Farben und zentrale Theme-Definitionen für die App.
 class AppTheme {
-  // Blau-Theme Hauptfarben
-  static const Color primaryBlue     = Color(0xFF0D47A1);
-  static const Color accentBlue      = Color(0xFF2979FF);
+  static const Color primaryBlue  = AppColors.accentBlue;
+  static const Color accentBlue   = AppColors.accentOrange;
 
-  // Grün-Theme Hauptfarben
-  static const Color primaryGreen    = Color(0xFF2E7D32);
-  static const Color accentGreen     = Color(0xFF66BB6A);
+  static const Color primaryGreen = Color(0xFF2E7D32);
+  static const Color accentGreen  = Color(0xFF66BB6A);
 
-  // Neutrale Farben für Auth
-  static const Color neutralPrimary  = Color(0xFF424242);
-  static const Color neutralAccent   = Color(0xFF616161);
+  static const Color neutralPrimary = Color(0xFF424242);
+  static const Color neutralAccent  = Color(0xFF616161);
 
-  // Gemeinsame Farben
-  static const Color darkBackground  = Color(0xFF121212);
-  static const Color surfaceBlack    = Color(0xFF1E1E1E);
-  static const Color onPrimary       = Colors.white;
-  static const Color onSurface       = Colors.white70;
+  static const Color darkBackground = AppColors.background;
+  static const Color surfaceBlack   = AppColors.surface;
+
+  static const Color onPrimary       = AppColors.textPrimary;
+  static const Color onSurface       = AppColors.textSecondary;
   static const Color onSurface38     = Colors.white38;
   static const Color onSurface54     = Colors.white54;
 
@@ -129,11 +129,36 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: surfaceBlack,
+        selectedItemColor: secondary,
+        unselectedItemColor: onSurface54,
+        showUnselectedLabels: true,
+      ),
+      tabBarTheme: TabBarTheme(
+        indicatorColor: secondary,
+        labelColor: onPrimary,
+        unselectedLabelColor: onSurface54,
+      ),
       textTheme: TextTheme(
-        titleLarge: TextStyle(color: onPrimary, fontSize: 20, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: onSurface, fontSize: 16),
-        bodyMedium: TextStyle(color: onSurface, fontSize: 14),
-        labelLarge: TextStyle(color: onPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+        titleLarge: GoogleFonts.inter(
+          color: onPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        titleMedium: GoogleFonts.inter(
+          color: onSurface,
+          fontSize: 16,
+        ),
+        bodyMedium: GoogleFonts.inter(
+          color: onSurface,
+          fontSize: 14,
+        ),
+        labelLarge: GoogleFonts.inter(
+          color: onPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       scrollbarTheme: ScrollbarThemeData(
         thumbColor: MaterialStateProperty.all(secondary.withOpacity(0.7)),
