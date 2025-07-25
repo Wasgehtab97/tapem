@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -25,21 +24,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
   final _hexReg = RegExp(r'^[0-9a-fA-F]{6}\$');
 
   Future<void> _pickLogo() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-    if (result == null) return;
-    final bytes = result.files.single.bytes;
-    if (bytes == null) return;
-    if (bytes.length > 500 * 1024) {
-      setState(() => _error = 'Bild zu groß (max 500KB)');
-      return;
-    }
-    setState(() {
-      _logoBytes = bytes;
-      _error = null;
-    });
+    setState(() => _error = 'Dateiauswahl nicht verfügbar');
   }
 
   Future<void> _save() async {
