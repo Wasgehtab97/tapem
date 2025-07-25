@@ -5,12 +5,12 @@ import 'theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
-  ThemeData _currentTheme = AppTheme.darkTheme;
+  ThemeData _currentTheme = AppTheme.mintDarkTheme;
   ThemeData get theme => _currentTheme;
 
-  /// Setzt Standard-Dark-Theme (Blau).
+  /// Setzt das Standard-Dark-Theme.
   void loadDefault() {
-    _currentTheme = AppTheme.darkTheme;
+    _currentTheme = AppTheme.mintDarkTheme;
     notifyListeners();
   }
 

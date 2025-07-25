@@ -3,50 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
 
-/// Enthält alle Farben und zentrale Theme-Definitionen für die App.
+/// Provides the dark themes for the Tap’em app based on the new design tokens.
+///
+/// The themes defined here build upon `ThemeData.dark()` and override colours
+/// and typography to create high-contrast, minimalistic UIs. Each theme
+/// variant pairs different primary and secondary accents – e.g. mint +
+/// turquoise – while maintaining a consistent base.
 class AppTheme {
-  static const Color primaryBlue  = AppColors.accentBlue;
-  static const Color accentBlue   = AppColors.accentOrange;
-
-  static const Color primaryGreen = Color(0xFF2E7D32);
-  static const Color accentGreen  = Color(0xFF66BB6A);
-
-  static const Color neutralPrimary = Color(0xFF424242);
-  static const Color neutralAccent  = Color(0xFF616161);
-
-  static const Color darkBackground = AppColors.background;
-  static const Color surfaceBlack   = AppColors.surface;
-
-  static const Color onPrimary       = AppColors.textPrimary;
-  static const Color onSurface       = AppColors.textSecondary;
-  static const Color onSurface38     = Colors.white38;
-  static const Color onSurface54     = Colors.white54;
-
-  /// Zentrales Dark-Theme (Blau)
-  static final ThemeData darkTheme = _buildTheme(
-    primary: primaryBlue,
-    secondary: accentBlue,
-  );
-
-  /// Zentrales Dark-Theme (Grün)
-  static final ThemeData greenDarkTheme = _buildTheme(
-    primary: primaryGreen,
-    secondary: accentGreen,
-  );
-
-  /// Neutrales Dark-Theme (Grau) für Auth-Screens
-  static final ThemeData neutralTheme = _buildTheme(
-    primary: neutralPrimary,
-    secondary: neutralAccent,
-  );
-
-  /// Erstellt ein Theme mit beliebigen Farben.
-  static ThemeData customTheme({
-    required Color primary,
-    required Color secondary,
-  }) => _buildTheme(primary: primary, secondary: secondary);
-
-  /// Baut ein ThemeData mit angegebenen Primär- und Sekundärfarben.
+  /// Builds a ThemeData with the given primary and secondary colours.
   static ThemeData _buildTheme({
     required Color primary,
     required Color secondary,
@@ -55,31 +19,67 @@ class AppTheme {
     final scheme = ColorScheme.dark(
       primary: primary,
       secondary: secondary,
-      background: darkBackground,
-      surface: surfaceBlack,
-      onPrimary: onPrimary,
-      onSurface: onSurface,
+      background: AppColors.background,
+      surface: AppColors.surface,
+      onPrimary: AppColors.textPrimary,
+      onSurface: AppColors.textSecondary,
     );
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: darkBackground,
-      canvasColor: surfaceBlack,
-      hintColor: onSurface,
-      appBarTheme: AppBarTheme(
-        backgroundColor: surfaceBlack,
-        elevation: 2,
-        iconTheme: IconThemeData(color: onPrimary),
-        titleTextStyle: TextStyle(
-          color: onPrimary,
+      scaffoldBackgroundColor: AppColors.background,
+      canvasColor: AppColors.surface,
+      cardColor: AppColors.surface,
+      hintColor: AppColors.textSecondary,
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        centerTitle: true,
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        selectedItemColor: secondary,
+        unselectedItemColor: AppColors.textSecondary,
+        showUnselectedLabels: true,
+      ),
+      textTheme: TextTheme(
+        // Large display numbers
+        displayLarge: GoogleFonts.inter(
+          color: AppColors.textPrimary,
+          fontSize: AppFontSizes.kpi,
+          fontWeight: FontWeight.w700,
+        ),
+        titleLarge: GoogleFonts.inter(
+          color: AppColors.textPrimary,
           fontSize: AppFontSizes.headline,
           fontWeight: FontWeight.w600,
         ),
+        titleMedium: GoogleFonts.inter(
+          color: AppColors.textSecondary,
+          fontSize: AppFontSizes.title,
+        ),
+        bodyMedium: GoogleFonts.inter(
+          color: AppColors.textSecondary,
+          fontSize: AppFontSizes.body,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          borderSide: BorderSide(color: secondary),
+        ),
+        hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: secondary,
-          foregroundColor: onPrimary,
-          textStyle: TextStyle(fontWeight: FontWeight.bold),
+          foregroundColor: AppColors.textPrimary,
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.button),
           ),
@@ -87,89 +87,31 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: onPrimary,
-          side: BorderSide(color: onSurface54),
+          foregroundColor: secondary,
+          side: BorderSide(color: secondary.withOpacity(0.5)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.button),
           ),
         ),
       ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: secondary,
-          textStyle: TextStyle(fontWeight: FontWeight.w600),
-        ),
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: secondary,
-        foregroundColor: onPrimary,
-        elevation: 4,
-        sizeConstraints: BoxConstraints.tightFor(width: 48, height: 48),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: surfaceBlack,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: onSurface38),
-          borderRadius: BorderRadius.circular(AppRadius.button),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: secondary),
-          borderRadius: BorderRadius.circular(AppRadius.button),
-        ),
-        hintStyle: TextStyle(color: onSurface38),
-        labelStyle: TextStyle(color: onSurface54),
-      ),
-      cardTheme: CardTheme(
-        color: surfaceBlack,
-        elevation: 2,
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: surfaceBlack,
-        selectedItemColor: secondary,
-        unselectedItemColor: onSurface54,
-        showUnselectedLabels: true,
-      ),
-      tabBarTheme: TabBarTheme(
-        indicatorColor: secondary,
-        labelColor: onPrimary,
-        unselectedLabelColor: onSurface54,
-      ),
-      textTheme: TextTheme(
-        titleLarge: GoogleFonts.inter(
-          color: onPrimary,
-          fontSize: AppFontSizes.headline,
-          fontWeight: FontWeight.bold,
-        ),
-        titleMedium: GoogleFonts.inter(
-          color: onSurface,
-          fontSize: AppFontSizes.title,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          color: onSurface,
-          fontSize: AppFontSizes.body,
-        ),
-        labelLarge: GoogleFonts.inter(
-          color: onPrimary,
-          fontSize: AppFontSizes.body,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      scrollbarTheme: ScrollbarThemeData(
-        thumbColor: MaterialStateProperty.all(secondary.withOpacity(0.7)),
-        radius: const Radius.circular(AppRadius.button),
-        thickness: MaterialStateProperty.all(6),
-      ),
-      dividerColor: onSurface38,
-      dialogBackgroundColor: surfaceBlack,
     );
   }
+
+  /// Builds a custom theme from arbitrary colors.
+  static ThemeData customTheme({
+    required Color primary,
+    required Color secondary,
+  }) => _buildTheme(primary: primary, secondary: secondary);
+
+  /// The default dark theme using mint as primary and turquoise as secondary.
+  static final ThemeData mintDarkTheme = _buildTheme(
+    primary: AppColors.accentMint,
+    secondary: AppColors.accentTurquoise,
+  );
+
+  /// An alternate theme that highlights amber accents (e.g. for warning states).
+  static final ThemeData amberDarkTheme = _buildTheme(
+    primary: AppColors.accentAmber,
+    secondary: AppColors.accentTurquoise,
+  );
 }
