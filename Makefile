@@ -49,3 +49,11 @@ R:
 	git pull
 	fvm flutter pub get
 	fvm flutter gen-l10n
+
+# iOS Wireless: Verbindung zum iPhone über Netzwerk
+ios-wireless:
+	fvm flutter clean
+	fvm flutter pub get
+	fvm flutter gen-l10n
+	cd ios && pod install && cd ..
+	fvm flutter run --release -d 00008030-001E59420191802E --device-timeout=30
