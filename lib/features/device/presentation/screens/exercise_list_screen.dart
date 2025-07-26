@@ -91,14 +91,21 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                 children: [
                                   for (final g in groups)
                                     FilterChip(
-                                      label: Text(g.name),
+                                      label: Text(
+                                        g.name,
+                                        style: TextStyle(
+                                          color: _selectedGroups.contains(g.id)
+                                              ? Theme.of(context).colorScheme.onPrimary
+                                              : null,
+                                        ),
+                                      ),
+                                      showCheckmark: false,
                                       selected: _selectedGroups.contains(g.id),
                                       selectedColor: _selectedGroups.contains(g.id)
                                           ? (_selectedGroups.indexOf(g.id) == 0
                                               ? Theme.of(context).colorScheme.primary
                                               : Theme.of(context).colorScheme.secondary)
                                           : null,
-                                      checkmarkColor: Theme.of(context).colorScheme.onPrimary,
                                       onSelected: (v) => setSt(() {
                                         if (v) {
                                           if (!_selectedGroups.contains(g.id)) {
