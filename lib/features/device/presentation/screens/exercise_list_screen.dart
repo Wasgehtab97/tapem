@@ -21,7 +21,7 @@ class ExerciseListScreen extends StatefulWidget {
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
   final _nameCtr = TextEditingController();
-  final Set<String> _selectedGroups = {};
+  final List<String> _selectedGroups = [];
 
   @override
   void initState() {
@@ -85,24 +85,36 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                               const Text('Muskelgruppen',
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold)),
-                              SizedBox(
-                                height: 150,
-                                child: ListView(
-                                  children: [
-                                    for (final g in groups)
-                                      CheckboxListTile(
-                                        value: _selectedGroups.contains(g.id),
-                                        title: Text(g.name),
-                                        onChanged: (v) => setSt(() {
-                                          if (v == true) {
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: [
+                                  for (final g in groups)
+                                    FilterChip(
+                                      label: Text(g.name),
+                                      selected: _selectedGroups.contains(g.id),
+                                      selectedColor: _selectedGroups.contains(g.id)
+                                          ? (_selectedGroups.indexOf(g.id) == 0
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary)
+                                          : null,
+                                      checkmarkColor:
+                                          Theme.of(context).colorScheme.onPrimary,
+                                      onSelected: (v) => setSt(() {
+                                        if (v) {
+                                          if (!_selectedGroups.contains(g.id)) {
                                             _selectedGroups.add(g.id);
-                                          } else {
-                                            _selectedGroups.remove(g.id);
                                           }
-                                        }),
-                                      ),
-                                  ],
-                                ),
+                                        } else {
+                                          _selectedGroups.remove(g.id);
+                                        }
+                                      }),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
@@ -114,18 +126,18 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                       ElevatedButton(
                         onPressed: () async {
                           final name = _nameCtr.text.trim();
-                          if (name.isNotEmpty) {
+                          if (name.isNotEmpty && _selectedGroups.isNotEmpty) {
                             final ex = await prov.addExercise(
                               widget.gymId,
                               widget.deviceId,
                               name,
                               userId,
-                              muscleGroupIds: _selectedGroups.toList(),
+                              muscleGroupIds: List.from(_selectedGroups),
                             );
                             await context.read<MuscleGroupProvider>().assignExercise(
                                   context,
                                   ex.id,
-                                  _selectedGroups.toList(),
+                                  List.from(_selectedGroups),
                                 );
                             Navigator.pop(context);
                             _selectedGroups.clear();
