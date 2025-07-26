@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/widgets/gradient_button.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -146,13 +147,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        color: Colors.transparent,
-                        clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
                         child: Container(
                           decoration: DeviceLevelStyle.widgetDecorationFor(
                             prov.level,
                           ),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -210,13 +212,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     else ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        color: Colors.transparent,
-                        clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
                         child: Container(
                           decoration: DeviceLevelStyle.widgetDecorationFor(
                             prov.level,
                           ),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -436,11 +439,12 @@ class _PlannedTable extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      color: Colors.transparent,
-      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
       child: Container(
         decoration: DeviceLevelStyle.widgetDecorationFor(prov.level),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
