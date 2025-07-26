@@ -235,106 +235,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               const SizedBox(height: 8),
                               for (var entry in prov.sets.asMap().entries)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        child: Text(entry.value['number']!),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: TextFormField(
-                                          initialValue: entry.value['weight'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'kg',
-                                            isDense: true,
-                                          ),
-                                          keyboardType:
-                                              const TextInputType.numberWithOptions(
-                                                decimal: true,
-                                              ),
-                                          onChanged: (v) {
-                                            prov.updateSet(
-                                              entry.key,
-                                              weight: v,
-                                            );
-                                          },
-                                          validator: (v) {
-                                            if (v == null || v.isEmpty) {
-                                              return 'Gewicht?';
-                                            }
-                                            if (double.tryParse(
-                                                  v.replaceAll(',', '.'),
-                                                ) ==
-                                                null) {
-                                              return 'Zahl eingeben';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: TextFormField(
-                                          initialValue: entry.value['reps'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'x',
-                                            isDense: true,
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (v) {
-                                            prov.updateSet(entry.key, reps: v);
-                                          },
-                                          validator: (v) {
-                                            if (v == null || v.isEmpty) {
-                                              return 'Wdh.?';
-                                            }
-                                            if (int.tryParse(v) == null) {
-                                              return 'Ganzzahl';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: TextFormField(
-                                          initialValue: entry.value['rir'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'RIR',
-                                            isDense: true,
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (v) {
-                                            prov.updateSet(entry.key, rir: v);
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        flex: 2,
-                                        child: TextFormField(
-                                          initialValue: entry.value['note'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'Notiz',
-                                            isDense: true,
-                                          ),
-                                          onChanged: (v) {
-                                            prov.updateSet(entry.key, note: v);
-                                          },
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline),
-                                        onPressed: () {
-                                          prov.removeSet(entry.key);
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: _SessionSetRow(index: entry.key, set: entry.value),
                                 ),
                               TextButton.icon(
                                 onPressed: () {
@@ -543,6 +445,94 @@ class _PlannedTable extends StatelessWidget {
             const RestTimerWidget(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SessionSetRow extends StatefulWidget {
+  final int index;
+  final Map<String, String> set;
+
+  const _SessionSetRow({required this.index, required this.set});
+
+  @override
+  State<_SessionSetRow> createState() => _SessionSetRowState();
+}
+
+class _SessionSetRowState extends State<_SessionSetRow> {
+  bool _showExtras = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final prov = context.read<DeviceProvider>();
+    return Dismissible(
+      key: ValueKey('set-${widget.index}-${widget.set['number']}'),
+      direction: DismissDirection.horizontal,
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          return true;
+        }
+        setState(() => _showExtras = !_showExtras);
+        return false;
+      },
+      onDismissed: (_) => prov.removeSet(widget.index),
+      child: Row(
+        children: [
+          SizedBox(width: 24, child: Text(widget.set['number']!)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              initialValue: widget.set['weight'],
+              decoration: const InputDecoration(labelText: 'kg', isDense: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => prov.updateSet(widget.index, weight: v),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Gewicht?';
+                if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                  return 'Zahl eingeben';
+                }
+                return null;
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              initialValue: widget.set['reps'],
+              decoration: const InputDecoration(labelText: 'x', isDense: true),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => prov.updateSet(widget.index, reps: v),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Wdh.?';
+                if (int.tryParse(v) == null) return 'Ganzzahl';
+                return null;
+              },
+            ),
+          ),
+          if (_showExtras) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                initialValue: widget.set['rir'],
+                decoration:
+                    const InputDecoration(labelText: 'RIR', isDense: true),
+                keyboardType: TextInputType.number,
+                onChanged: (v) => prov.updateSet(widget.index, rir: v),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                initialValue: widget.set['note'],
+                decoration:
+                    const InputDecoration(labelText: 'Notiz', isDense: true),
+                onChanged: (v) => prov.updateSet(widget.index, note: v),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
