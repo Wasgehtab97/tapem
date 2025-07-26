@@ -153,6 +153,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         child: Container(
                           decoration: DeviceLevelStyle.widgetDecorationFor(
                             prov.level,
+                            opacity: 0.4,
                           ),
                           padding: const EdgeInsets.all(AppSpacing.sm),
                           child: Column(
@@ -218,6 +219,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         child: Container(
                           decoration: DeviceLevelStyle.widgetDecorationFor(
                             prov.level,
+                            opacity: 0.4,
                           ),
                           padding: const EdgeInsets.all(AppSpacing.sm),
                           child: Column(
