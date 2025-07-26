@@ -5,7 +5,6 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
-import '../widgets/muscle_group_card.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
@@ -91,16 +90,22 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                 runSpacing: 4,
                                 children: [
                                   for (final g in groups)
-                                    MuscleGroupCard(
-                                      label: g.name,
+                                    FilterChip(
+                                      label: Text(g.name),
                                       selected: _selectedGroups.contains(g.id),
-                                      isPrimary: _selectedGroups.contains(g.id) &&
-                                          _selectedGroups.indexOf(g.id) == 0,
-                                      onTap: () => setSt(() {
-                                        if (_selectedGroups.contains(g.id)) {
-                                          _selectedGroups.remove(g.id);
+                                      selectedColor: _selectedGroups.contains(g.id)
+                                          ? (_selectedGroups.indexOf(g.id) == 0
+                                              ? Theme.of(context).colorScheme.primary
+                                              : Theme.of(context).colorScheme.secondary)
+                                          : null,
+                                      checkmarkColor: Theme.of(context).colorScheme.onPrimary,
+                                      onSelected: (v) => setSt(() {
+                                        if (v) {
+                                          if (!_selectedGroups.contains(g.id)) {
+                                            _selectedGroups.add(g.id);
+                                          }
                                         } else {
-                                          _selectedGroups.add(g.id);
+                                          _selectedGroups.remove(g.id);
                                         }
                                       }),
                                     ),
