@@ -104,7 +104,6 @@ flutter:
     - assets/images/
     - assets/logos/
     - assets/models/
-    - assets/muscle_heatmap_optimized.svg
     - assets/muscle_heatmap.svg
 
 l10n:
