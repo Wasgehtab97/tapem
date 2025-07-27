@@ -1,67 +1,52 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// A widget that loads an SVG silhouette of the human body and recolours each
-/// muscle region based on the provided XP values. The SVG must define a group
-/// with a unique `id` for each muscle region. Colours are interpolated between
-/// mint and amber depending on the XP ratio of that region.
+/// muscle region on the fly. The SVG must define an element with a unique `id`
+/// for every region. For example, an element with `id="arms"` will be
+/// recoloured using the entry `colors['arms']` if provided.
 class SvgMuscleHeatmapWidget extends StatelessWidget {
-  /// Mapping of muscle ids to the accumulated XP of that region.
-  final Map<String, double> xpMap;
+  /// Mapping of region identifiers to the desired colour. The identifiers
+  /// correspond to the `id` attributes in the SVG file. The colours should be
+  /// provided without the leading `#` and using 6-digit hex notation.
+  final Map<String, Color> colors;
 
-  /// Cached Future for loading the SVG asset only once.
-  static final Future<String> _svgFuture =
-      rootBundle.loadString('assets/muscle_heatmap.svg');
+  /// The asset path of the SVG template.
+  final String assetPath;
 
-  const SvgMuscleHeatmapWidget({Key? key, required this.xpMap}) : super(key: key);
+  const SvgMuscleHeatmapWidget({
+    Key? key,
+    required this.colors,
+    this.assetPath = 'assets/muscle_heatmap.svg',
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: _svgFuture,
+      future: rootBundle.loadString(assetPath),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox.shrink();
         }
-
         String svgString = snapshot.data!;
-
-        final values = xpMap.values;
-        if (values.isNotEmpty) {
-          final minXp = values.reduce(math.min);
-          final maxXp = values.reduce(math.max);
-          const mintColor = Color(0xFF00E676);
-          const amberColor = Color(0xFFFFC107);
-
-          xpMap.forEach((id, xp) {
-            final t = maxXp > minXp
-                ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
-                : 0.0;
-            final color = Color.lerp(mintColor, amberColor, t)!;
-            final hex = color.value
-                .toRadixString(16)
-                .padLeft(8, '0')
-                .substring(2)
-                .toUpperCase();
-            final regex = RegExp('<[^>]*id="$id"[^>]*fill="#?[0-9A-Fa-f]{6}"');
-            svgString = svgString.replaceAllMapped(regex, (match) {
-              final original = match.group(0)!;
-              return original.replaceAll(
-                RegExp('fill="#?[0-9A-Fa-f]{6}"'),
-                'fill="#${hex}"',
-              );
-            });
+        // Replace the fill colour of each element by searching for the id and
+        // replacing the following fill attribute.
+        colors.forEach((id, color) {
+          final hex = color.value.toRadixString(16).padLeft(8, '0').substring(2);
+          final regex = RegExp('<[^>]*id="$id"[^>]*fill="#?[0-9A-Fa-f]{6}"');
+          svgString = svgString.replaceAllMapped(regex, (match) {
+            final original = match.group(0)!;
+            return original.replaceAll(
+              RegExp('fill="#?[0-9A-Fa-f]{6}"'),
+              'fill="#${hex.toUpperCase()}"',
+            );
           });
-        }
-
-        return Center(
-          child: SvgPicture.string(
-            svgString,
-            fit: BoxFit.contain,
-          ),
+        });
+        return SvgPicture.string(
+          svgString,
+          width: double.infinity,
+          height: 400,
         );
       },
     );
