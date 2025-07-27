@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" stroke="none">
+  <!-- Kopf -->
+  <circle id="head" cx="100" cy="35" r="30" fill="#00BCD4"/>
+
+  <!-- Schultern / Deltamuskeln -->
+  <path id="shoulder_left" fill="#00BCD4"
+        d="M45 60 
+           C40 45, 60 25, 80 45 
+           L75 60 
+           C65 55, 55 55, 45 60 Z"/>
+  <path id="shoulder_right" fill="#00BCD4"
+        d="M155 60 
+           C160 45, 140 25, 120 45 
+           L125 60 
+           C135 55, 145 55, 155 60 Z"/>
+
+  <!-- Brust -->
+  <path id="chest_left" fill="#00BCD4"
+        d="M60 60 
+           C50 80, 50 110, 100 110 
+           L100 60 
+           C80 55, 70 55, 60 60 Z"/>
+  <path id="chest_right" fill="#00BCD4"
+        d="M140 60 
+           C150 80, 150 110, 100 110 
+           L100 60 
+           C120 55, 130 55, 140 60 Z"/>
+
+  <!-- Oberarme -->
+  <path id="upper_arm_left" fill="#00E676"
+        d="M60 110 
+           C50 130, 50 160, 60 180 
+           L70 180 
+           C65 160, 65 130, 70 110 Z"/>
+  <path id="upper_arm_right" fill="#00E676"
+        d="M140 110 
+           C150 130, 150 160, 140 180 
+           L130 180 
+           C135 160, 135 130, 130 110 Z"/>
+
+  <!-- Unterarme -->
+  <path id="forearm_left" fill="#00E676"
+        d="M70 180 
+           C65 200, 65 240, 70 280 
+           L80 280 
+           C75 240, 75 200, 80 180 Z"/>
+  <path id="forearm_right" fill="#00E676"
+        d="M130 180 
+           C135 200, 135 240, 130 280 
+           L120 280 
+           C125 240, 125 200, 120 180 Z"/>
+
+  <!-- Bauch / Abs (6-Pack) -->
+  <path id="abs_top_left" fill="#00BCD4"
+        d="M90 110 L110 110 L110 135 L90 135 Z"/>
+  <path id="abs_top_right" fill="#00BCD4"
+        d="M110 110 L130 110 L130 135 L110 135 Z"/>
+  <path id="abs_mid_left" fill="#00BCD4"
+        d="M90 135 L110 135 L110 160 L90 160 Z"/>
+  <path id="abs_mid_right" fill="#00BCD4"
+        d="M110 135 L130 135 L130 160 L110 160 Z"/>
+  <path id="abs_bot_left" fill="#00BCD4"
+        d="M90 160 L110 160 L110 185 L90 185 Z"/>
+  <path id="abs_bot_right" fill="#00BCD4"
+        d="M110 160 L130 160 L130 185 L110 185 Z"/>
+
+  <!-- Hüfte / Becken -->
+  <path id="pelvis" fill="#00BCD4"
+        d="M70 185 
+           C75 200, 125 200, 130 185 
+           L130 210 
+           C125 215, 75 215, 70 210 Z"/>
+
+  <!-- Oberschenkel -->
+  <path id="thigh_left" fill="#FFC107"
+        d="M75 210 
+           C65 260, 65 310, 75 360 
+           L95 360 
+           C85 310, 85 260, 95 210 Z"/>
+  <path id="thigh_right" fill="#FFC107"
+        d="M125 210 
+           C135 260, 135 310, 125 360 
+           L105 360 
+           C115 310, 115 260, 105 210 Z"/>
+
+  <!-- Waden -->
+  <path id="calf_left" fill="#FFC107"
+        d="M85 360 
+           C83 380, 83 400, 90 400 
+           L95 400 
+           C90 395, 90 375, 85 360 Z"/>
+  <path id="calf_right" fill="#FFC107"
+        d="M115 360 
+           C117 380, 117 400, 110 400 
+           L105 400 
+           C110 395, 110 375, 115 360 Z"/>
+
+  <!-- Füße -->
+  <path id="foot_left" fill="#00BCD4"
+        d="M85 400 L95 400 L95 410 L85 410 Z"/>
+  <path id="foot_right" fill="#00BCD4"
+        d="M105 400 L115 400 L115 410 L105 410 Z"/>
+</svg>
