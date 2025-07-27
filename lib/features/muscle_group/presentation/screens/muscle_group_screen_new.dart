@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
-import '../../../xp/presentation/widgets/body_heatmap_widget.dart';
+import '../widgets/body_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
 
 /// A revised muscle group screen that displays a granular 2D heatmap instead of
