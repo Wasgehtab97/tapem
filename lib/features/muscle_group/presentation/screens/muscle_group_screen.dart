@@ -44,8 +44,6 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
         child: Column(
           children: const [
             AdvancedBodyHeatmap(),
-            SizedBox(height: 16),
-            BodyHeatmap3D(),
           ],
         ),
       ),

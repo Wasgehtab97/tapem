@@ -7,8 +7,7 @@ import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../muscle_group/domain/models/muscle_group.dart';
 import '../widgets/xp_gauge.dart';
-import '../widgets/xp_time_series_chart.dart';
-import '../widgets/body_heatmap_widget.dart';
+// Graph and heatmap widgets were removed in the simplified design
 import 'leaderboard_screen.dart';
 
 /// A revamped XP overview screen that combines gauges, charts and a heatmap.
@@ -66,27 +65,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       }
     }
 
-    // Build intensities for the heatmap: normalise values to 0–1.
-    double maxRegionXp = regionXp.values.isEmpty
-        ? 0.0
-        : regionXp.values.reduce((a, b) => a > b ? a : b).toDouble();
-    final Map<MuscleRegion, double> intensities = {};
-    regionXp.forEach((region, xp) {
-      final intensity = maxRegionXp > 0 ? xp / maxRegionXp : 0.0;
-      intensities[region] = intensity;
-    });
-
-    // Build time series data: convert xpProv.dayListXp (Map<String,int>) to
-    // Map<DateTime,int>.
-    final Map<DateTime, int> timeData = {};
-    xpProv.dayListXp.forEach((day, xp) {
-      // Assume keys are ISO date strings (yyyy-MM-dd). If parsing fails,
-      // ignore the entry.
-      try {
-        final date = DateTime.parse(day);
-        timeData[date] = xp as int;
-      } catch (_) {}
-    });
+    // No time series or heatmap calculation needed in the simplified design.
 
     void openLeaderboard(MuscleRegion region) {
       // Fetch entries callback: aggregate XP per user for this region.
@@ -141,11 +120,6 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            XpTimeSeriesChart(data: timeData, period: _period),
-            const SizedBox(height: 24),
-            // Heatmap
-            BodyHeatmapWidget(intensities: intensities),
-            const SizedBox(height: 24),
             const Text(
               'Muskelgruppen',
               style: TextStyle(
@@ -168,6 +142,20 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                     size: 100,
                   onTap: () => openLeaderboard(region),
                   ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            DataTable(
+              columns: const [
+                DataColumn(label: Text('Muskelgruppe')),
+                DataColumn(label: Text('XP')),
+              ],
+              rows: [
+                for (final region in MuscleRegion.values)
+                  DataRow(cells: [
+                    DataCell(Text(region.name)),
+                    DataCell(Text('${regionXp[region] ?? 0}')),
+                  ]),
               ],
             ),
           ],
