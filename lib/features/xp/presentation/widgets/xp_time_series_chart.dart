@@ -47,16 +47,15 @@ class XpTimeSeriesChart extends StatelessWidget {
         break;
     }
     final entries = data.entries
-        .where((e) => cutoff == null || !e.key.isBefore(cutoff!))
+        .where((e) => cutoff == null || !e.key.isBefore(cutoff))
         .toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
     final spots = <FlSpot>[];
-    for (int i = 0; i < entries.length; i++) {
-      final date = entries[i].key;
-      final xp = entries[i].value;
-      spots.add(FlSpot(i.toDouble(), xp.toDouble()));
-    }
+      for (int i = 0; i < entries.length; i++) {
+        final xp = entries[i].value;
+        spots.add(FlSpot(i.toDouble(), xp.toDouble()));
+      }
 
     // Determine axis labels.
     String getFormattedLabel(int index) {
