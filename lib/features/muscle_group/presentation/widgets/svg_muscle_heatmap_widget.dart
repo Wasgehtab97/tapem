@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,17 +31,15 @@ class SvgMuscleHeatmapWidget extends StatelessWidget {
 
         final values = xpMap.values;
         if (values.isNotEmpty) {
-          final minXp = values.reduce((a, b) => a < b ? a : b);
-          final maxXp = values.reduce((a, b) => a > b ? a : b);
+          final minXp = values.reduce(math.min);
+          final maxXp = values.reduce(math.max);
           const mintColor = Color(0xFF00E676);
           const amberColor = Color(0xFFFFC107);
 
           xpMap.forEach((id, xp) {
-            double t = 0;
-            if (maxXp > minXp) {
-              t = (xp - minXp) / (maxXp - minXp);
-              t = t.clamp(0, 1);
-            }
+            final t = maxXp > minXp
+                ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
+                : 0.0;
             final color = Color.lerp(mintColor, amberColor, t)!;
             final hex = color.value
                 .toRadixString(16)
