@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../widgets/svg_muscle_heatmap_widget.dart';
+import '../widgets/mesh_3d_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
 
 class MuscleGroupScreen extends StatefulWidget {
@@ -82,8 +83,23 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
             colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
           });
 
-          return SvgMuscleHeatmapWidget(
-            colors: colorMap,
+          return DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                const TabBar(
+                  tabs: [Tab(text: '2D'), Tab(text: '3D')],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      SvgMuscleHeatmapWidget(colors: colorMap),
+                      Mesh3DHeatmapWidget(muscleColors: colorMap),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ),
