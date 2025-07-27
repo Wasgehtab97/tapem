@@ -49,6 +49,7 @@ dependencies:
   vector_math: ^2.1.4
   flutter_colorpicker: ^1.0.3
   flutter_svg: ^1.1.6
+  model_viewer_plus: ^1.0.7
 
   # Weitere Helfer
   flutter_dotenv: ^5.0.2
@@ -104,6 +105,7 @@ flutter:
     - assets/images/
     - assets/logos/
     - assets/models/
+    - assets/models/body.gltf
     - assets/muscle_heatmap.svg
 
 l10n:
