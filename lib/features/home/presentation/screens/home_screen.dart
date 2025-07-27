@@ -7,7 +7,7 @@ import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen.dart';
+import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const GymScreen(),
       const ProfileScreen(),
       const ReportScreen(),
-      const MuscleGroupScreen(),
+      const MuscleGroupScreenNew(),
       const AdminDashboardScreen(),
       RankScreen(gymId: gymId, deviceId: deviceId),
       const AffiliateScreen(),

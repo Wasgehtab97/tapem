@@ -7,7 +7,7 @@ import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen.dart';
+import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
@@ -95,7 +95,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ReportScreen());
 
       case muscleGroups:
-        return MaterialPageRoute(builder: (_) => const MuscleGroupScreen());
+        return MaterialPageRoute(builder: (_) => const MuscleGroupScreenNew());
 
       case manageMuscleGroups:
         return MaterialPageRoute(builder: (_) => const MuscleGroupAdminScreen());
