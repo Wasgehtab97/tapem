@@ -107,6 +107,8 @@ flutter:
     - assets/models/
     - assets/models/body.gltf
     - assets/muscle_heatmap.svg
+    - assets/body_front.svg
+    - assets/body_back.svg
 
 l10n:
   arb-dir: lib/l10n
