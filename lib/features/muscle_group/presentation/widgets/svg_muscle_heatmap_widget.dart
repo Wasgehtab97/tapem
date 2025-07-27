@@ -10,12 +10,16 @@ class SvgMuscleHeatmapWidget extends StatelessWidget {
   /// Mapping of muscle ids to the accumulated XP of that region.
   final Map<String, double> xpMap;
 
+  /// Cached Future for loading the SVG asset only once.
+  static final Future<String> _svgFuture =
+      rootBundle.loadString('assets/muscle_heatmap_new.svg');
+
   const SvgMuscleHeatmapWidget({Key? key, required this.xpMap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: rootBundle.loadString('assets/muscle_heatmap.svg'),
+      future: _svgFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
