@@ -13,7 +13,7 @@ class InteractiveSvgMuscleHeatmapWidget extends StatelessWidget {
     Key? key,
     required this.colors,
     this.onRegionTap,
-    this.assetPath = 'assets/muscle_heatmap.svg',
+    this.assetPath = 'assets/body_front.svg',
   }) : super(key: key);
 
   // Normalised bounding boxes for each region (based on the 200x408 viewBox).

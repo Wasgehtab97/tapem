@@ -18,7 +18,7 @@ class SvgMuscleHeatmapWidget extends StatelessWidget {
   const SvgMuscleHeatmapWidget({
     Key? key,
     required this.colors,
-    this.assetPath = 'assets/muscle_heatmap.svg',
+    this.assetPath = 'assets/body_front.svg',
   }) : super(key: key);
 
   @override

@@ -8,6 +8,27 @@ import '../widgets/svg_muscle_heatmap_widget.dart';
 import '../widgets/mesh_3d_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
 
+const Map<String, List<String>> muscleCategoryMap = {
+  'chest': ['pectoral'],
+  'back': ['latissimus_dorsi', 'lower_back', 'rhomboids'],
+  'arms': ['biceps', 'triceps', 'forearm'],
+  'legs': [
+    'quadriceps',
+    'hamstrings',
+    'adductors',
+    'abductors',
+    'calves',
+    'feet'
+  ],
+  'core': ['abs'],
+  'shoulders': [
+    'anterior_deltoid',
+    'lateral_deltoid',
+    'posterior_deltoid',
+    'trapezius'
+  ],
+};
+
 class MuscleGroupScreen extends StatefulWidget {
   const MuscleGroupScreen({Key? key}) : super(key: key);
 
