@@ -12,7 +12,7 @@ class SvgMuscleHeatmapWidget extends StatelessWidget {
 
   /// Cached Future for loading the SVG asset only once.
   static final Future<String> _svgFuture =
-      rootBundle.loadString('assets/muscle_heatmap_new.svg');
+      rootBundle.loadString('assets/muscle_heatmap.svg');
 
   const SvgMuscleHeatmapWidget({Key? key, required this.xpMap}) : super(key: key);
 
