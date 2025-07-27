@@ -89,7 +89,6 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     });
 
     void openLeaderboard(MuscleRegion region) {
-      final auth = context.read<AuthProvider>();
       // Fetch entries callback: aggregate XP per user for this region.
       Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
         // This is a placeholder implementation. In a real app you would
