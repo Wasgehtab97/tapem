@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
-import '../widgets/advanced_body_heatmap.dart';
-import '../widgets/body_heatmap_3d.dart';
+import '../widgets/svg_muscle_heatmap_widget.dart';
 
 class MuscleGroupScreen extends StatefulWidget {
   const MuscleGroupScreen({Key? key}) : super(key: key);
@@ -41,11 +40,64 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
       appBar: AppBar(title: const Text('Muskelgruppen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: const [
-            AdvancedBodyHeatmap(),
-          ],
-        ),
+        child: Builder(builder: (context) {
+          final counts = prov.counts;
+          final groups = prov.groups;
+          final intensities = <MuscleRegion, double>{};
+          final maxCount = counts.values.isEmpty
+              ? 0
+              : counts.values.reduce((a, b) => a > b ? a : b);
+          if (maxCount > 0) {
+            for (final g in groups) {
+              final count = counts[g.id] ?? 0;
+              final intensity = count / maxCount;
+              final existing = intensities[g.region];
+              if (existing == null || intensity > existing) {
+                intensities[g.region] = intensity;
+              }
+            }
+          }
+
+          Color _gradient(double value) {
+            const muted = Color(0xFF555555);
+            const mint = Color(0xFF00E676);
+            const turquoise = Color(0xFF00BCD4);
+            const amber = Color(0xFFFFC107);
+            if (value <= 0.0) return muted;
+            if (value <= 0.5) {
+              final t = value / 0.5;
+              return Color.lerp(muted, mint, t)!;
+            } else if (value <= 0.8) {
+              final t = (value - 0.5) / 0.3;
+              return Color.lerp(mint, turquoise, t)!;
+            } else {
+              final t = (value - 0.8) / 0.2;
+              return Color.lerp(turquoise, amber, t.clamp(0.0, 1.0))!;
+            }
+          }
+
+          final colors = <String, Color>{
+            'head': const Color(0xFF555555),
+            'chest': _gradient(intensities[MuscleRegion.chest] ?? 0),
+            'core': _gradient(intensities[MuscleRegion.core] ?? 0),
+            'pelvis': _gradient(intensities[MuscleRegion.core] ?? 0),
+            'upper_arm_left': _gradient(intensities[MuscleRegion.arms] ?? 0),
+            'upper_arm_right': _gradient(intensities[MuscleRegion.arms] ?? 0),
+            'forearm_left': _gradient(intensities[MuscleRegion.arms] ?? 0),
+            'forearm_right': _gradient(intensities[MuscleRegion.arms] ?? 0),
+            'thigh_left': _gradient(intensities[MuscleRegion.legs] ?? 0),
+            'thigh_right': _gradient(intensities[MuscleRegion.legs] ?? 0),
+            'calf_left': _gradient(intensities[MuscleRegion.legs] ?? 0),
+            'calf_right': _gradient(intensities[MuscleRegion.legs] ?? 0),
+            'foot_left': _gradient(intensities[MuscleRegion.legs] ?? 0),
+            'foot_right': _gradient(intensities[MuscleRegion.legs] ?? 0),
+          };
+
+          return SvgMuscleHeatmapWidget(
+            colors: colors,
+            assetPath: 'assets/muscle_heatmap_optimized.svg',
+          );
+        }),
       ),
     );
   }
