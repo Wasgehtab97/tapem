@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -67,8 +69,21 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
             'foot_right': regionXp[MuscleRegion.legs] ?? 0,
           };
 
+          final values = xpMap.values;
+          final minXp = values.isNotEmpty ? values.reduce(math.min) : 0.0;
+          final maxXp = values.isNotEmpty ? values.reduce(math.max) : 0.0;
+          const mintColor = Color(0xFF00E676);
+          const amberColor = Color(0xFFFFC107);
+          final colorMap = <String, Color>{};
+          xpMap.forEach((id, xp) {
+            final t = maxXp > minXp
+                ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
+                : 0.0;
+            colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
+          });
+
           return SvgMuscleHeatmapWidget(
-            xpMap: xpMap,
+            colors: colorMap,
           );
         }),
       ),
