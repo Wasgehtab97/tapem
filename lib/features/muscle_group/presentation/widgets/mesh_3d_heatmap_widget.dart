@@ -18,13 +18,6 @@ class Mesh3DHeatmapWidget extends StatefulWidget {
 }
 
 class _Mesh3DHeatmapWidgetState extends State<Mesh3DHeatmapWidget> {
-  late final ModelViewerController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = ModelViewerController();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +26,6 @@ class _Mesh3DHeatmapWidgetState extends State<Mesh3DHeatmapWidget> {
       ar: false,
       autoRotate: false,
       cameraControls: true,
-      onModelLoaded: () {
-        for (final entry in widget.muscleColors.entries) {
-          _controller.setColor(entry.key, entry.value);
-        }
-      },
-      controller: _controller,
     );
   }
 }
