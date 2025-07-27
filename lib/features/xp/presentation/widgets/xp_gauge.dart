@@ -39,7 +39,7 @@ class XpGauge extends StatelessWidget {
     final double progress = (currentXp % 1000) / 1000.0;
 
     // Helper to determine the colour at the current progress.
-    Color _progressColor(double value) {
+    Color progressColor(double value) {
       // Mint green (#00E676) for the first 60%.
       const mint = Color(0xFF00E676);
       // Turquoise (#00BCD4) in the middle segment.
@@ -74,7 +74,7 @@ class XpGauge extends StatelessWidget {
                 value: progress.clamp(0.0, 1.0),
                 strokeWidth: size * 0.08,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  _progressColor(progress),
+                  progressColor(progress),
                 ),
                 backgroundColor: const Color(0xFF3A3A3A),
               ),

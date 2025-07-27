@@ -5,7 +5,7 @@ import 'package:collection/collection.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
-import '../../domain/models/muscle_group.dart';
+import '../../../muscle_group/domain/models/muscle_group.dart';
 import '../widgets/xp_gauge.dart';
 import '../widgets/xp_time_series_chart.dart';
 import '../widgets/body_heatmap_widget.dart';
@@ -88,9 +88,8 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       } catch (_) {}
     });
 
-    void _openLeaderboard(MuscleRegion region) {
+    void openLeaderboard(MuscleRegion region) {
       final auth = context.read<AuthProvider>();
-      final gymId = auth.gymCode ?? '';
       // Fetch entries callback: aggregate XP per user for this region.
       Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
         // This is a placeholder implementation. In a real app you would
@@ -168,7 +167,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                     level: ((regionXp[region] ?? 0) / 1000).floor(),
                     label: region.name,
                     size: 100,
-                    onTap: () => _openLeaderboard(region),
+                  onTap: () => openLeaderboard(region),
                   ),
               ],
             ),
