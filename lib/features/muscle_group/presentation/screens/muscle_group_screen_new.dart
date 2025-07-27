@@ -8,6 +8,7 @@ import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../widgets/interactive_svg_muscle_heatmap_widget.dart';
+import '../widgets/mesh_3d_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
 
 /// A revised muscle group screen that displays a granular 2D heatmap instead of
@@ -124,9 +125,26 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       appBar: AppBar(title: const Text('Muskelgruppen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: InteractiveSvgMuscleHeatmapWidget(
-          colors: colorMap,
-          onRegionTap: showXp,
+        child: DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              const TabBar(
+                tabs: [Tab(text: '2D'), Tab(text: '3D')],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    InteractiveSvgMuscleHeatmapWidget(
+                      colors: colorMap,
+                      onRegionTap: showXp,
+                    ),
+                    Mesh3DHeatmapWidget(muscleColors: colorMap),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
