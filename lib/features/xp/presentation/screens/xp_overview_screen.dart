@@ -7,6 +7,7 @@ import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../muscle_group/domain/models/muscle_group.dart';
 import '../widgets/xp_gauge.dart';
+import '../widgets/xp_time_series_chart.dart';
 // Graph and heatmap widgets were removed in the simplified design
 import 'leaderboard_screen.dart';
 

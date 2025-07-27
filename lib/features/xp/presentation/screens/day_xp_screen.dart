@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
+import '../widgets/xp_time_series_chart.dart';
 import 'leaderboard_screen.dart';
 
 class DayXpScreen extends StatefulWidget {
