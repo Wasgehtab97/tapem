@@ -42,57 +42,30 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       );
     }
 
-    // Compute intensities: take the maximum count per region and normalise.
-    final Map<MuscleRegion, double> intensities = {};
+    // Sum all logged counts per region.
+    final Map<MuscleRegion, double> regionXp = {};
     final counts = prov.counts;
     final groups = prov.groups;
-    final int maxCount = counts.values.isEmpty
-        ? 0
-        : counts.values.reduce((a, b) => a > b ? a : b);
-    if (maxCount > 0) {
-      for (final g in groups) {
-        final count = counts[g.id] ?? 0;
-        final double intensity = count / maxCount;
-        final existing = intensities[g.region];
-        if (existing == null || intensity > existing) {
-          intensities[g.region] = intensity;
-        }
-      }
+    for (final g in groups) {
+      final count = counts[g.id] ?? 0;
+      regionXp[g.region] = (regionXp[g.region] ?? 0) + count.toDouble();
     }
 
-    Color gradient(double value) {
-      const muted = Color(0xFF555555);
-      const mint = Color(0xFF00E676);
-      const turquoise = Color(0xFF00BCD4);
-      const amber = Color(0xFFFFC107);
-      if (value <= 0.0) return muted;
-      if (value <= 0.5) {
-        final t = value / 0.5;
-        return Color.lerp(muted, mint, t)!;
-      } else if (value <= 0.8) {
-        final t = (value - 0.5) / 0.3;
-        return Color.lerp(mint, turquoise, t)!;
-      } else {
-        final t = (value - 0.8) / 0.2;
-        return Color.lerp(turquoise, amber, t.clamp(0.0, 1.0))!;
-      }
-    }
-
-    final colors = <String, Color>{
-      'head': const Color(0xFF555555),
-      'chest': gradient(intensities[MuscleRegion.chest] ?? 0),
-      'core': gradient(intensities[MuscleRegion.core] ?? 0),
-      'pelvis': gradient(intensities[MuscleRegion.core] ?? 0),
-      'upper_arm_left': gradient(intensities[MuscleRegion.arms] ?? 0),
-      'upper_arm_right': gradient(intensities[MuscleRegion.arms] ?? 0),
-      'forearm_left': gradient(intensities[MuscleRegion.arms] ?? 0),
-      'forearm_right': gradient(intensities[MuscleRegion.arms] ?? 0),
-      'thigh_left': gradient(intensities[MuscleRegion.legs] ?? 0),
-      'thigh_right': gradient(intensities[MuscleRegion.legs] ?? 0),
-      'calf_left': gradient(intensities[MuscleRegion.legs] ?? 0),
-      'calf_right': gradient(intensities[MuscleRegion.legs] ?? 0),
-      'foot_left': gradient(intensities[MuscleRegion.legs] ?? 0),
-      'foot_right': gradient(intensities[MuscleRegion.legs] ?? 0),
+    final xpMap = <String, double>{
+      'head': 0,
+      'chest': regionXp[MuscleRegion.chest] ?? 0,
+      'core': regionXp[MuscleRegion.core] ?? 0,
+      'pelvis': regionXp[MuscleRegion.core] ?? 0,
+      'upper_arm_left': regionXp[MuscleRegion.arms] ?? 0,
+      'upper_arm_right': regionXp[MuscleRegion.arms] ?? 0,
+      'forearm_left': regionXp[MuscleRegion.arms] ?? 0,
+      'forearm_right': regionXp[MuscleRegion.arms] ?? 0,
+      'thigh_left': regionXp[MuscleRegion.legs] ?? 0,
+      'thigh_right': regionXp[MuscleRegion.legs] ?? 0,
+      'calf_left': regionXp[MuscleRegion.legs] ?? 0,
+      'calf_right': regionXp[MuscleRegion.legs] ?? 0,
+      'foot_left': regionXp[MuscleRegion.legs] ?? 0,
+      'foot_right': regionXp[MuscleRegion.legs] ?? 0,
     };
 
     return Scaffold(
@@ -100,8 +73,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SvgMuscleHeatmapWidget(
-          colors: colors,
-          assetPath: 'assets/muscle_heatmap_optimized.svg',
+          xpMap: xpMap,
         ),
       ),
     );
