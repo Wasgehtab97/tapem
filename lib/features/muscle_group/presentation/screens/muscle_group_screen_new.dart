@@ -24,6 +24,7 @@ class MuscleGroupScreenNew extends StatefulWidget {
 }
 
 class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
+  bool _showFront = true;
   @override
   void initState() {
     super.initState();
@@ -135,9 +136,33 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    InteractiveSvgMuscleHeatmapWidget(
-                      colors: colorMap,
-                      onRegionTap: showXp,
+                    Stack(
+                      children: [
+                        Center(
+                          child: SizedBox(
+                            width: 200,
+                            child: InteractiveSvgMuscleHeatmapWidget(
+                              colors: colorMap,
+                              onRegionTap: showXp,
+                              assetPath: _showFront
+                                  ? 'assets/body_front.svg'
+                                  : 'assets/body_back.svg',
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(Icons.flip),
+                            onPressed: () {
+                              setState(() {
+                                _showFront = !_showFront;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     Mesh3DHeatmapWidget(muscleColors: colorMap),
                   ],
