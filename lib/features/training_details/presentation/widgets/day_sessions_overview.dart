@@ -7,9 +7,9 @@ class DaySessionsOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int columns = (sessions.length <= 2)
-        ? sessions.length
-        : (sessions.length <= 4 ? 2 : 3);
+    // Limit to a maximum of two columns to avoid layout overflow on small screens
+    final int columns =
+        sessions.length <= 2 ? sessions.length : 2;
     return LayoutBuilder(
       builder: (context, constraints) {
         final double cardWidth =
