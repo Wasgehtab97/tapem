@@ -44,9 +44,8 @@ class FeedbackButton extends StatelessWidget {
                 final text = controller.text.trim();
                 if (text.isNotEmpty) {
                   final auth = context.read<AuthProvider>();
-                  final gym = context.read<GymProvider>().currentGym;
-                  final userId = auth.user?.uid ?? '';
-                  final gymId = gym.uid;
+                  final gymId = context.read<GymProvider>().currentGymId;
+                  final userId = auth.userId ?? '';
                   await context.read<FeedbackProvider>().submitFeedback(
                     gymId: gymId,
                     deviceId: deviceId,

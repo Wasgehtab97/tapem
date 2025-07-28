@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'report_screen_new.dart';
-import '../../../core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
 
 class ReportScreen extends StatelessWidget {
   static const routeName = '/report';
