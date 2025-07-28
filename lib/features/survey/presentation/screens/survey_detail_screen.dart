@@ -51,7 +51,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                   return ListView(
                     children: results.keys.map((option) {
                       final count = results[option] ?? 0;
-                      final percent = total == 0 ? 0 : count / total;
+                      final percent = total == 0 ? 0.0 : count / total;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Column(
