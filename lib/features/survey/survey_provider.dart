@@ -22,7 +22,7 @@ class SurveyProvider extends ChangeNotifier {
         .collection('gyms')
         .doc(gymId)
         .collection('surveys')
-        .where('status', isEqualTo: 'offen')
+        .where('status', isEqualTo: 'open')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) =>
@@ -60,8 +60,8 @@ class SurveyProvider extends ChangeNotifier {
     final doc = {
       'title': title,
       'options': options,
-      'status': 'offen',
-      'createdAt': DateTime.now(),
+      'status': 'open',
+      'createdAt': FieldValue.serverTimestamp(),
     };
     await _firestore
         .collection('gyms')

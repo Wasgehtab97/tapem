@@ -29,7 +29,7 @@ class Survey {
       id: id,
       title: data['title'] as String? ?? '',
       options: List<String>.from(data['options'] as List<dynamic>? ?? []),
-      open: data['status'] == 'offen',
+      open: data['status'] == 'offen' || data['status'] == 'open',
       createdAt: createdAt,
     );
   }

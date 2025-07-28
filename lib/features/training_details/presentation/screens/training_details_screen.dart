@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
+import '../widgets/day_sessions_overview.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
@@ -49,15 +50,12 @@ class TrainingDetailsScreen extends StatelessWidget {
           final sessions = prov.sessions;
           return Scaffold(
             appBar: _AppBar(titleDate: date),
-            body: sessions.isEmpty
-                ? const Center(child: Text('Keine Trainingseinheiten'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: sessions.length,
-                    itemBuilder: (_, i) => _SessionTile(
-                      session: sessions[i],
-                    ),
-                  ),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: sessions.isEmpty
+                  ? const Center(child: Text('Keine Trainingseinheiten'))
+                  : DaySessionsOverview(sessions: sessions),
+            ),
           );
         },
       ),
@@ -83,54 +81,4 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-/// Single session tile: deviceName (bold) + description underneath + all sets + optional note
-class _SessionTile extends StatelessWidget {
-  final Session session;
-  const _SessionTile({required this.session});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ExpansionTile(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Device name in bold
-            Text(
-              session.deviceName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            // Device description, if available
-            if (session.deviceDescription.isNotEmpty)
-              Text(session.deviceDescription),
-          ],
-        ),
-        // If you want the timestamp back, uncomment:
-        // subtitle: Text(
-        //   DateFormat.Hm(
-        //     Localizations.localeOf(context).toString(),
-        //   ).format(session.timestamp),
-        // ),
-        children: [
-          // One ListTile per set
-          ...session.sets.map(
-            (s) => ListTile(
-              title: Text('${s.weight} kg × ${s.reps} Wdh.'),
-            ),
-          ),
-          // Optional note
-          if (session.note.isNotEmpty) ...[
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text('Notiz: ${session.note}'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }

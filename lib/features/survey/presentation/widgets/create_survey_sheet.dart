@@ -40,12 +40,26 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
 
   Future<void> _save() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty || _options.length < 2) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Titel eingeben')),
+      );
+      return;
+    }
+    if (_options.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mindestens zwei Optionen angeben')),
+      );
+      return;
+    }
     await context.read<SurveyProvider>().createSurvey(
-          gymId: widget.gymId,
-          title: title,
-          options: List<String>.from(_options),
-        );
+      gymId: widget.gymId,
+      title: title,
+      options: List<String>.from(_options),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Umfrage gespeichert')),
+    );
     if (mounted) Navigator.of(context).pop();
   }
 
