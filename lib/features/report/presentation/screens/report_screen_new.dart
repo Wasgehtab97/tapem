@@ -7,6 +7,7 @@ import '../../../feedback/feedback_provider.dart';
 import '../../../survey/presentation/screens/survey_overview_screen.dart';
 import '../../../survey/survey_provider.dart';
 import '../../../survey/survey.dart';
+import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../../core/providers/report_provider.dart';
 
 class ReportScreenNew extends StatelessWidget {
@@ -114,84 +115,10 @@ class ReportScreenNew extends StatelessWidget {
   }
 
   void _showCreateSurveyDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final optionController = TextEditingController();
-    final options = <String>[];
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Neue Umfrage'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Titel'),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: optionController,
-                          decoration: const InputDecoration(
-                              labelText: 'Option hinzufügen'),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () {
-                          final txt = optionController.text.trim();
-                          if (txt.isNotEmpty) {
-                            setState(() {
-                              options.add(txt);
-                            });
-                            optionController.clear();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 100,
-                    width: double.maxFinite,
-                    child: ListView(
-                      shrinkWrap: true,
-                      children:
-                          options.map((e) => ListTile(title: Text(e))).toList(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Abbrechen'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final title = titleController.text.trim();
-                    if (title.isNotEmpty && options.length >= 2) {
-                      await context.read<SurveyProvider>().createSurvey(
-                            gymId: gymId,
-                            title: title,
-                            options: options,
-                          );
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Speichern'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      isScrollControlled: true,
+      builder: (_) => CreateSurveySheet(gymId: gymId),
     );
   }
 }
