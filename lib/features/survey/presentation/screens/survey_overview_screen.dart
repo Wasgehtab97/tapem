@@ -17,19 +17,21 @@ class SurveyOverviewScreen extends StatefulWidget {
 class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late SurveyProvider _surveyProvider;
 
   @override
   void initState() {
     super.initState();
+    _surveyProvider = context.read<SurveyProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SurveyProvider>().listen(widget.gymId);
+      _surveyProvider.listen(widget.gymId);
     });
     _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    context.read<SurveyProvider>().cancel();
+    _surveyProvider.cancel();
     _tabController.dispose();
     super.dispose();
   }
