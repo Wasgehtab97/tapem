@@ -156,10 +156,11 @@ class ReportScreenNew extends StatelessWidget {
               const SizedBox(height: 8),
               SizedBox(
                 height: 100,
+                width: double.maxFinite,
                 child: ListView(
-                  children: options
-                      .map((e) => ListTile(title: Text(e)))
-                      .toList(),
+                  shrinkWrap: true,
+                  children:
+                      options.map((e) => ListTile(title: Text(e))).toList(),
                 ),
               ),
             ],
