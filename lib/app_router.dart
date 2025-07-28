@@ -23,6 +23,7 @@ import 'package:tapem/features/challenges/presentation/screens/challenge_screen.
 import 'package:tapem/features/admin/presentation/screens/challenge_admin_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/day_xp_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
+import 'package:tapem/features/feedback/presentation/screens/feedback_overview_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -49,6 +50,7 @@ class AppRouter {
   static const deviceXp = '/device_xp';
   static const challenges = '/challenges';
   static const manageChallenges = '/manage_challenges';
+  static const feedbackOverview = '/feedback_overview';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -151,6 +153,12 @@ class AppRouter {
 
       case challenges:
         return MaterialPageRoute(builder: (_) => const ChallengeScreen());
+
+      case feedbackOverview:
+        final gymId = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => FeedbackOverviewScreen(gymId: gymId),
+        );
 
       default:
         return MaterialPageRoute(

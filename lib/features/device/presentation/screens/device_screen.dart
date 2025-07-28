@@ -16,6 +16,7 @@ import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
+import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -112,6 +113,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               padding: const EdgeInsets.only(right: 8.0),
               child: XpInfoButton(xp: prov.xp, level: prov.level),
             ),
+          FeedbackButton(deviceId: widget.deviceId),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Verlauf',
