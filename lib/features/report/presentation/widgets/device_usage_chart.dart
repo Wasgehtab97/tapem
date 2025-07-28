@@ -1,81 +1,119 @@
-// lib/features/report/presentation/widgets/device_usage_chart.dart
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:tapem/features/device/domain/models/device.dart';
 
-class DeviceUsageChart extends StatelessWidget {
-  /// Liste aller Geräte im aktuellen Gym
-  final List<Device> devices;
+class DeviceUsageChart extends StatefulWidget {
+  final Map<String, int> usageData;
 
-  /// Nutzungszahlen, key = device.uid, value = Anzahl aller Sessions
-  final Map<String, int> usageCounts;
+  const DeviceUsageChart({Key? key, required this.usageData}) : super(key: key);
 
-  const DeviceUsageChart({
-    required this.devices,
-    required this.usageCounts,
-    Key? key,
-  }) : super(key: key);
+  @override
+  State<DeviceUsageChart> createState() => _DeviceUsageChartState();
+}
+
+class _DeviceUsageChartState extends State<DeviceUsageChart> {
+  String _filter = '';
 
   @override
   Widget build(BuildContext context) {
-    // Erzeuge eine Bar pro Device (auch wenn count = 0)
-    final bars = <BarChartGroupData>[];
-    for (var i = 0; i < devices.length; i++) {
-      final device   = devices[i];
-      final count    = usageCounts[device.uid] ?? 0;
-      final barColor = Theme.of(context).colorScheme.primary;
+    final entries = widget.usageData.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
+    final filtered = entries
+        .where((e) => e.key.toLowerCase().contains(_filter.toLowerCase()))
+        .toList();
+
+    final maxBars = 20;
+    var display = filtered;
+    int otherSum = 0;
+    if (filtered.length > maxBars) {
+      display = filtered.take(maxBars - 1).toList();
+      otherSum = filtered.skip(maxBars - 1).fold(0, (a, b) => a + b.value);
+      display.add(MapEntry('Other', otherSum));
+    }
+
+    final bars = <BarChartGroupData>[];
+    final gradient = [Colors.tealAccent, Colors.cyan, Colors.amber];
+    for (var i = 0; i < display.length; i++) {
+      final e = display[i];
+      final colors = LinearGradient(colors: gradient).colors;
       bars.add(
         BarChartGroupData(
           x: i,
           barRods: [
             BarChartRodData(
-              toY: count.toDouble(),
-              width: 16.0,
-              color: barColor,
+              toY: e.value.toDouble(),
+              width: 16,
               borderRadius: BorderRadius.circular(4),
+              gradient: LinearGradient(colors: gradient),
             ),
           ],
         ),
       );
     }
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: (usageCounts.values.isEmpty
-                ? 1
-                : usageCounts.values.reduce((a, b) => a > b ? a : b)
-                    .toDouble()) *
-            1.2, // etwas Kopfraum
-        gridData: FlGridData(show: true),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: true, interval: 1)),
-          rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
+    final maxY =
+        display.map((e) => e.value).reduce((a, b) => a > b ? a : b).toDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.search),
+            hintText: 'Gerät filtern',
+          ),
+          onChanged: (v) => setState(() => _filter = v),
         ),
-        borderData: FlBorderData(show: false),
-        barGroups: bars,
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, _, rod, __) {
-              final device = devices[group.x.toInt()];
-              final sessions = rod.toY.toInt();
-              return BarTooltipItem(
-                '${device.name}\n$sessions Sessions',
-                const TextStyle(color: Colors.white, fontSize: 12),
-              );
-            },
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 220,
+          child: BarChart(
+            BarChartData(
+              maxY: maxY * 1.2,
+              gridData: FlGridData(show: true),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final i = value.toInt();
+                      if (i < 0 || i >= display.length) return const SizedBox();
+                      return RotatedBox(
+                        quarterTurns: 1,
+                        child: Text(
+                          display[i].key,
+                          style: const TextStyle(fontSize: 10),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, interval: maxY / 5),
+                ),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              borderData: FlBorderData(show: false),
+              barGroups: bars,
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, _, rod, __) {
+                    final i = group.x.toInt();
+                    final entry = display[i];
+                    return BarTooltipItem(
+                      '${entry.key}\n${entry.value} Sessions',
+                      const TextStyle(color: Colors.white, fontSize: 12),
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

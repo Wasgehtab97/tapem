@@ -33,6 +33,7 @@ import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/feedback/feedback_provider.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -197,6 +198,7 @@ class AppEntry extends StatelessWidget {
                 getLogTimestamps: logsUC,
               ),
         ),
+        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
         ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),
