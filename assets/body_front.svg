@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Schulter & Nacken -->
+  <path id="trapezius" d="M60 65 C70 50 130 50 140 65 L140 80 L60 80 Z" fill="#8E44AD" />
+  <path id="anterior_deltoid" d="M45 80 C55 70 65 70 75 80 C65 90 55 90 45 80 Z" fill="#2980B9" />
+  <path id="lateral_deltoid" d="M25 80 C30 70 40 70 45 80 C40 90 30 90 25 80 Z" fill="#3498DB" />
+  <path id="posterior_deltoid" d="M75 55 C85 45 115 45 125 55 L125 60 L75 60 Z" fill="#9B59B6" />
+
+  <!-- Brust & Rücken -->
+  <path id="pectoral" d="M60 100 C70 90 130 90 140 100 L135 140 L65 140 Z" fill="#E74C3C" />
+  <path id="latissimus_dorsi" d="M50 140 C55 130 65 130 70 140 L70 190 C65 200 55 200 50 190 Z" fill="#16A085" />
+  <path id="latissimus_dorsi" d="M150 140 C145 130 135 130 130 140 L130 190 C135 200 145 200 150 190 Z" fill="#16A085" />
+  <path id="lower_back" d="M85 190 C95 180 105 180 115 190 L110 220 C100 230 90 230 85 220 Z" fill="#D35400" />
+  <path id="rhomboids" d="M85 90 C90 85 110 85 115 90 L110 110 L90 110 Z" fill="#8E44AD" />
+
+  <!-- Arme -->
+  <path id="biceps" d="M20 100 C25 95 35 95 40 100 L40 140 C35 145 25 145 20 140 Z" fill="#27AE60" />
+  <path id="biceps" d="M160 100 C165 95 175 95 180 100 L180 140 C175 145 165 145 160 140 Z" fill="#27AE60" />
+  <path id="triceps" d="M15 100 C20 95 25 95 30 100 L30 140 C25 145 20 145 15 140 Z" fill="#F1C40F" />
+  <path id="triceps" d="M185 100 C180 95 175 95 170 100 L170 140 C175 145 180 145 185 140 Z" fill="#F1C40F" />
+  <path id="forearm" d="M20 140 C25 135 35 135 40 140 L40 200 C35 205 25 205 20 200 Z" fill="#E67E22" />
+  <path id="forearm" d="M160 140 C165 135 175 135 180 140 L180 200 C175 205 165 205 160 200 Z" fill="#E67E22" />
+
+  <!-- Core -->
+  <path id="abs" d="M70 140 C80 135 120 135 130 140 L125 200 C115 205 85 205 75 200 Z" fill="#F39C12" />
+
+  <!-- Gesäß -->
+  <path id="gluteus" d="M80 200 C90 195 110 195 120 200 L125 220 C115 225 85 225 75 220 Z" fill="#9B59B6" />
+
+  <!-- Beine -->
+  <path id="quadriceps" d="M60 220 C65 215 75 215 80 220 L85 280 C80 285 70 285 65 280 Z" fill="#2ECC71" />
+  <path id="quadriceps" d="M140 220 C135 215 125 215 120 220 L115 280 C120 285 130 285 135 280 Z" fill="#2ECC71" />
+  <path id="hamstrings" d="M65 220 C70 215 80 215 85 220 L90 280 C85 285 75 285 70 280 Z" fill="#27AE60" />
+  <path id="hamstrings" d="M135 220 C130 215 120 215 115 220 L110 280 C115 285 125 285 130 280 Z" fill="#27AE60" />
+  <path id="adductors" d="M70 220 C72 215 78 215 80 220 L82 280 C78 282 72 282 70 280 Z" fill="#D35400" />
+  <path id="adductors" d="M130 220 C128 215 122 215 120 220 L118 280 C122 282 128 282 130 280 Z" fill="#D35400" />
+  <path id="abductors" d="M55 220 C58 215 62 215 65 220 L67 280 C64 282 58 282 55 280 Z" fill="#1ABC9C" />
+  <path id="abductors" d="M145 220 C142 215 138 215 135 220 L133 280 C136 282 142 282 145 280 Z" fill="#1ABC9C" />
+
+  <!-- Unterschenkel -->
+  <path id="calves" d="M65 280 C68 275 72 275 75 280 L75 330 C72 335 68 335 65 330 Z" fill="#3498DB" />
+  <path id="calves" d="M135 280 C132 275 128 275 125 280 L125 330 C128 335 132 335 135 330 Z" fill="#3498DB" />
+
+  <!-- Füße -->
+  <path id="feet" d="M60 330 L80 330 L75 340 L55 340 Z" fill="#95A5A6" />
+  <path id="feet" d="M120 330 L140 330 L145 340 L125 340 Z" fill="#95A5A6" />
+</svg>
