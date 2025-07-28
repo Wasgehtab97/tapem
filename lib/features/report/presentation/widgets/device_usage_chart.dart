@@ -35,7 +35,6 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     final gradient = [Colors.tealAccent, Colors.cyan, Colors.amber];
     for (var i = 0; i < display.length; i++) {
       final e = display[i];
-      final colors = LinearGradient(colors: gradient).colors;
       bars.add(
         BarChartGroupData(
           x: i,
