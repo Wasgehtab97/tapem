@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SessionDto {
   final String sessionId;
   final String deviceId;
+  final String exerciseId;
   final DateTime timestamp;
   final double weight;
   final int reps;
@@ -15,6 +16,7 @@ class SessionDto {
   SessionDto({
     required this.sessionId,
     required this.deviceId,
+    required this.exerciseId,
     required this.timestamp,
     required this.weight,
     required this.reps,
@@ -28,10 +30,12 @@ class SessionDto {
     // Erzeuge deviceId aus dem Pfad:
     final deviceRef = doc.reference.parent.parent;
     final deviceId = deviceRef?.id ?? '<unknown>';
+    final exerciseId = data['exerciseId'] as String? ?? '';
 
     return SessionDto(
       sessionId: data['sessionId'] as String,
       deviceId: deviceId, // nicht mehr data['deviceId']
+      exerciseId: exerciseId,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),

@@ -63,7 +63,7 @@ class TrainingDetailsScreen extends StatelessWidget {
   }
 }
 
-/// Custom AppBar that shows `Training am <Datum>` or a placeholder title
+/// Custom AppBar that shows the selected date in the accent colour.
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
   const _AppBar({this.titleDate});
@@ -76,7 +76,14 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
           ).format(titleDate!)
         : 'Training Details';
 
-    return AppBar(title: Text('Training am $title'));
+    return AppBar(
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.secondary,
+        ),
+      ),
+    );
   }
 
   @override

@@ -34,8 +34,20 @@ class SessionRepositoryImpl implements SessionRepository {
       final deviceSnap = await deviceRef.get();
       final data = deviceSnap.data()!;
 
-      final deviceName = (data['name'] as String?) ?? first.deviceId;
+      var deviceName = (data['name'] as String?) ?? first.deviceId;
       final deviceDescription = (data['description'] as String?) ?? '';
+      final isMulti = (data['isMulti'] as bool?) ?? false;
+
+      if (isMulti && first.exerciseId.isNotEmpty) {
+        final exSnap = await deviceRef
+            .collection('exercises')
+            .doc(first.exerciseId)
+            .get();
+        if (exSnap.exists) {
+          final exName = (exSnap.data()?["name"] as String?) ?? '';
+          if (exName.isNotEmpty) deviceName = exName;
+        }
+      }
 
       final sets = list
         .map((dto) => SessionSet(weight: dto.weight, reps: dto.reps))
