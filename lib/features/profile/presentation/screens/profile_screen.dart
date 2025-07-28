@@ -11,7 +11,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
-import '../../survey/presentation/screens/survey_vote_screen.dart';
+import '../../../survey/presentation/screens/survey_vote_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
