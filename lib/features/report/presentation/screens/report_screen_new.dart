@@ -121,70 +121,75 @@ class ReportScreenNew extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) {
-        return AlertDialog(
-          title: const Text('Neue Umfrage'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Titel'),
-              ),
-              const SizedBox(height: 8),
-              Row(
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Neue Umfrage'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: optionController,
-                      decoration:
-                          const InputDecoration(labelText: 'Option hinzufügen'),
-                    ),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Titel'),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      final txt = optionController.text.trim();
-                      if (txt.isNotEmpty) {
-                        options.add(txt);
-                        optionController.clear();
-                        (context as Element).markNeedsBuild();
-                      }
-                    },
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: optionController,
+                          decoration: const InputDecoration(
+                              labelText: 'Option hinzufügen'),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          final txt = optionController.text.trim();
+                          if (txt.isNotEmpty) {
+                            setState(() {
+                              options.add(txt);
+                            });
+                            optionController.clear();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 100,
+                    width: double.maxFinite,
+                    child: ListView(
+                      shrinkWrap: true,
+                      children:
+                          options.map((e) => ListTile(title: Text(e))).toList(),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 100,
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children:
-                      options.map((e) => ListTile(title: Text(e))).toList(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Abbrechen'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final title = titleController.text.trim();
-                if (title.isNotEmpty && options.length >= 2) {
-                  await context.read<SurveyProvider>().createSurvey(
-                        gymId: gymId,
-                        title: title,
-                        options: options,
-                      );
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Speichern'),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: () async {
+                    final title = titleController.text.trim();
+                    if (title.isNotEmpty && options.length >= 2) {
+                      await context.read<SurveyProvider>().createSurvey(
+                            gymId: gymId,
+                            title: title,
+                            options: options,
+                          );
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Speichern'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
