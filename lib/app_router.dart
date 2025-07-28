@@ -24,6 +24,8 @@ import 'package:tapem/features/admin/presentation/screens/challenge_admin_screen
 import 'package:tapem/features/xp/presentation/screens/day_xp_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
 import 'package:tapem/features/feedback/presentation/screens/feedback_overview_screen.dart';
+import 'package:tapem/features/survey/presentation/screens/survey_overview_screen.dart';
+import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -51,6 +53,8 @@ class AppRouter {
   static const challenges = '/challenges';
   static const manageChallenges = '/manage_challenges';
   static const feedbackOverview = '/feedback_overview';
+  static const surveyOverview = '/survey_overview';
+  static const surveyVote = '/survey_vote';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -158,6 +162,21 @@ class AppRouter {
         final gymId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
           builder: (_) => FeedbackOverviewScreen(gymId: gymId),
+        );
+
+      case surveyOverview:
+        final gymId = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => SurveyOverviewScreen(gymId: gymId),
+        );
+
+      case surveyVote:
+        final args = settings.arguments as Map<String, String>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => SurveyVoteScreen(
+            gymId: args['gymId'] ?? '',
+            userId: args['userId'] ?? '',
+          ),
         );
 
       default:
