@@ -2,8 +2,8 @@
 # Flutter / Dart / Pub
 # ==================================================
 # Build outputs
-build/
-**/build/
+/build/
+/**/build/
 
 # Dart tool cache
 .dart_tool/
@@ -14,21 +14,30 @@ build/
 # Generated plugin registrant
 generated_plugin_registrant.dart
 
-# ==================================================
-# Firebase service account keys & config
-# ==================================================
-# Eigene Admin-SDK JSONs
-/scripts/*.json
-# Google-Services
-/android/app/google-services.json
-/ios/Runner/GoogleService-Info.plist
+# Flutter plugin versioning
+.flutter-plugins
+.flutter-plugins-dependencies
 
-# Environment files
+# FVM Version Cache
+.fvm/
+
+# ==================================================
+# Environment & Secrets
+# ==================================================
+# Env files
 .env*
 !.env.example
 
+# Firebase service account keys & config
+/scripts/*.json
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+
+# Android keystore config
+android/key.properties
+
 # ==================================================
-# IDEs & Editors
+# IDEs, Editors & OS
 # ==================================================
 # IntelliJ / Android Studio
 *.iml
@@ -39,24 +48,31 @@ generated_plugin_registrant.dart
 # VS Code
 .vscode/
 
-# Misc
+# macOS
+.DS_Store
+._*
+
+# Miscellaneous
 *.class
 *.log
 *.pyc
 *.swp
-.DS_Store
+*.crash
 .history/
 
 # ==================================================
 # Android
 # ==================================================
-# Gradle
+# Local properties & caches
 android/local.properties
-**/android/app/build/
 **/android/.gradle/
 **/android/gradle/
 **/android/gradlew*
 **/android/gradle-wrapper.*
+
+# Build output
+**/android/app/build/
+
 # Keystores
 **/*.jks
 **/*.keystore
@@ -69,9 +85,11 @@ ios/Flutter/.last_build_id
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Flutter/engine/
+
+# CocoaPods
 ios/Pods/
-ios/Runner.xcworkspace/
 ios/Podfile.lock
+ios/Runner.xcworkspace/
 
 # Xcode
 *.xcworkspace
@@ -80,7 +98,7 @@ ios/Podfile.lock
 DerivedData/
 
 # ==================================================
-# Node / JS (falls du node_modules hast)
+# Node / JavaScript
 # ==================================================
 node_modules/
 
@@ -92,17 +110,11 @@ lcov.info
 *.out
 *.html
 !site/*.html
+firebase-debug.log
+.firebase/
 
 # ==================================================
-# Obfuscation / symbolication
+# Obfuscation / Symbolication
 # ==================================================
 app.*.symbols
 app.*.map.json
-# Flutter build outputs
-/build/
-
-# FVM Version Cache
-.fvm/
-# Flutter plugin files
-.flutter-plugins
-.flutter-plugins-dependencies
