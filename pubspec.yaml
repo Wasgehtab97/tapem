@@ -22,7 +22,7 @@ dependencies:
   # Lokalisierung
   flutter_localizations:
     sdk: flutter
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # State-Management & Utilities
   provider: ^6.1.5
