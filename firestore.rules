@@ -1,8 +1,35 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Hilfsfunktion: nur eingeloggte Nutzer
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 1) User-Dokumente: jeder darf lesen, nur Eigentümer schreiben
+    match /users/{userId}/{document=**} {
+      allow read:    if isSignedIn();
+      allow create, update, delete:
+        if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 2a) Gym-Dokument selbst: nur Nutzer mit diesem gymId-Claim
+    match /gyms/{gymId} {
+      allow read:    if isSignedIn() && request.auth.token.gymId == gymId;
+      allow create, update, delete:
+        if isSignedIn() && request.auth.token.gymId == gymId;
+    }
+
+    // 2b) Alle Subcollections unter einem Gym
+    match /gyms/{gymId}/{document=**} {
+      allow read, write:
+        if isSignedIn() && request.auth.token.gymId == gymId;
+    }
+
+    // 3) Alles sonst komplett verbieten
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
