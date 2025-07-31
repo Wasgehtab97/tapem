@@ -81,12 +81,12 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Run Firestore security‐rules tests
+      - name: Run Firestore security-rules tests
         run: |
           firebase emulators:exec \
             --only firestore \
             --project tap-em \
-            "mocha --timeout 120000 firestore-tests/security_rules.test.js"
+            "npx mocha --timeout 120000 firestore-tests/security_rules.test.js"
 
   build:
     name: Build APKs (Matrix)
