@@ -18,15 +18,15 @@ jobs:
     name: Lint & Analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      # Flutter setup
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
 
-      # Cache Pub & Dart tool files
-      - name: Cache Pub & Dart
+      - name: Cache Pub & Dart tool files
         uses: actions/cache@v3
         with:
           path: |
@@ -34,13 +34,13 @@ jobs:
             .dart_tool
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
 
-      - name: Install Dependencies
+      - name: Install Dart dependencies
         run: flutter pub get
 
-      - name: Check Formatting
+      - name: Check Dart formatting
         run: dart format --set-exit-if-changed .
 
-      - name: Analyze Code
+      - name: Analyze code
         run: flutter analyze
 
   test:
@@ -48,13 +48,18 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install Dart dependencies
         run: flutter pub get
 
-      - name: Run Tests with Coverage
+      - name: Run tests with coverage
         run: flutter test --coverage
 
   rules_test:
@@ -62,24 +67,26 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Set up Node.js & Firebase Tools
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm install -g firebase-tools
 
-      - name: Install JS Dependencies
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install JS dependencies
         run: npm ci
 
-      - name: Run Firestore Security Rules Tests
+      - name: Run Firestore security‐rules tests
         run: |
           firebase emulators:exec \
             --only firestore \
             --project tap-em \
-            --timeout 120000 \
-            "mocha firestore-tests/security_rules.test.js"
+            "mocha --timeout 120000 firestore-tests/security_rules.test.js"
 
   build:
     name: Build APKs (Matrix)
@@ -89,13 +96,18 @@ jobs:
       matrix:
         flavor: [dev, prod]
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install Dart dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build APK (${{ matrix.flavor }})
         run: flutter build apk --flavor ${{ matrix.flavor }} --release
 
   coverage_report:
@@ -103,9 +115,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Upload Coverage Artifact
+      - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -116,7 +129,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/upload-artifact@v4
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
         with:
           name: apks
           path: build/app/outputs/flutter-apk/*.apk
@@ -126,5 +140,5 @@ jobs:
     if: false
     runs-on: ubuntu-latest
     steps:
-      - name: Stub Deployment
-        run: echo "Deployment step stub – Secrets konfigurieren wir in Sprint 1"
+      - name: Stub deployment step
+        run: echo "Deployment placeholder – configure secrets in Sprint 1"
