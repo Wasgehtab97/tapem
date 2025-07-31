@@ -89,12 +89,9 @@ jobs:
             "npx mocha --timeout 120000 firestore-tests/security_rules.test.js"
 
   build:
-    name: Build APKs (Matrix)
+    name: Build Debug APK
     needs: rules_test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        flavor: [dev, prod]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -107,8 +104,8 @@ jobs:
       - name: Install Dart dependencies
         run: flutter pub get
 
-      - name: Build APK (${{ matrix.flavor }})
-        run: flutter build apk --flavor ${{ matrix.flavor }} --release
+      - name: Build debug APK
+        run: flutter build apk --debug
 
   coverage_report:
     name: Upload Coverage Report
@@ -129,11 +126,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Upload APKs
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: apks
-          path: build/app/outputs/flutter-apk/*.apk
+          name: debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
   deploy_placeholder:
     name: Deploy Placeholder
