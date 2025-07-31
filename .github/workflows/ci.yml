@@ -2,61 +2,67 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches-ignore:
+      - main
+      - production
   pull_request:
-    branches: [ main, develop ]
+    branches-ignore:
+      - main
+      - production
 
 jobs:
-  analyze:
-    name: Analyze
+  lint:
+    name: Lint & Analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Cache Pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            .pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
       - run: flutter pub get
+      - run: flutter format --set-exit-if-changed .
       - run: flutter analyze
 
   test:
-    name: Test
+    name: Unit- & Widget-Tests
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
       - run: flutter pub get
       - run: flutter test --coverage
 
   rules_test:
-    name: Test Firestore Rules
-    runs-on: ubuntu-latest
+    name: Firestore Security Rules Tests
     needs: test
-    defaults:
-      run:
-        shell: bash
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-
-      - name: Install test dependencies
+      - name: Install dependencies
         run: npm ci
-
       - name: Start Firestore emulator
         run: |
           npx firebase-tools emulators:start --only firestore --project tap-em &
           sleep 5
-
-      - name: Run security‐rules tests
+      - name: Run security-rules tests
         run: npx mocha firestore-tests/security_rules.test.js
 
-  build_matrix:
-    name: Build APKs
+  build:
+    name: Build APKs (Matrix)
+    needs: rules_test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -64,17 +70,34 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
       - run: flutter pub get
       - run: flutter build apk --flavor ${{ matrix.flavor }} --release
 
-  deploy:
-    name: Upload APK artifacts
-    needs: build_matrix
+  coverage_report:
+    name: Upload Coverage Report
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+
+  upload_apks:
+    name: Upload APK Artifacts
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/upload-artifact@v3
         with:
           name: apks
           path: build/app/outputs/flutter-apk/*.apk
+
+  deploy_placeholder:
+    name: Deploy Placeholder
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub Deployment
+        run: echo "Deployment step stub – Secrets konfigurieren wir in Sprint 1"
