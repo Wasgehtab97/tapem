@@ -10,36 +10,52 @@ on:
       - main
       - production
 
+env:
+  FLUTTER_CHANNEL: stable
+
 jobs:
   lint:
     name: Lint & Analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      # Flutter setup
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
-      - name: Cache Pub dependencies
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      # Cache Pub & Dart tool files
+      - name: Cache Pub & Dart
         uses: actions/cache@v3
         with:
           path: |
             ~/.pub-cache
-            .pub-cache
             .dart_tool
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-      - run: flutter pub get
-      - run: flutter format --set-exit-if-changed .
-      - run: flutter analyze
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Check Formatting
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze Code
+        run: flutter analyze
 
   test:
-    name: Unit- & Widget-Tests
+    name: Unit & Widget Tests
     needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
-      - run: flutter pub get
-      - run: flutter test --coverage
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Tests with Coverage
+        run: flutter test --coverage
 
   rules_test:
     name: Firestore Security Rules Tests
@@ -47,17 +63,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Install dependencies
+
+      - name: Install JS Dependencies
         run: npm ci
-      - name: Start Firestore emulator
+
+      - name: Start Firestore Emulator
         run: |
           npx firebase-tools emulators:start --only firestore --project tap-em &
           sleep 5
-      - name: Run security-rules tests
+
+      - name: Run Security Rules Tests
         run: npx mocha firestore-tests/security_rules.test.js
 
   build:
@@ -70,8 +90,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
-      - run: flutter pub get
-      - run: flutter build apk --flavor ${{ matrix.flavor }} --release
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --flavor ${{ matrix.flavor }} --release
 
   coverage_report:
     name: Upload Coverage Report
@@ -79,7 +103,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/upload-artifact@v3
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: coverage/
