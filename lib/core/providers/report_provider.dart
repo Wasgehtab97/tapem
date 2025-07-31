@@ -18,8 +18,8 @@ class ReportProvider extends ChangeNotifier {
   ReportProvider({
     required GetDeviceUsageStats getUsageStats,
     required GetAllLogTimestamps getLogTimestamps,
-  })  : _getUsage = getUsageStats,
-        _getTimestamps = getLogTimestamps;
+  }) : _getUsage = getUsageStats,
+       _getTimestamps = getLogTimestamps;
 
   Future<void> loadReport(String gymId) async {
     if (gymId.isEmpty) {

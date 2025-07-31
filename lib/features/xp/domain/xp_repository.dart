@@ -9,10 +9,7 @@ abstract class XpRepository {
     required List<String> primaryMuscleGroupIds,
   });
 
-  Stream<int> watchDayXp({
-    required String userId,
-    required DateTime date,
-  });
+  Stream<int> watchDayXp({required String userId, required DateTime date});
 
   Stream<Map<String, int>> watchMuscleXp({
     required String gymId,

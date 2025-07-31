@@ -65,102 +65,110 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setSt) => AlertDialog(
-          title: const Text('Neues Gerät anlegen'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Beschreibung'),
-              ),
-              const SizedBox(height: 8),
-              const Text('Muskelgruppen',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(
-                height: 150,
-                child: ListView(
-                  children: [
-                    for (final g in muscleProv.groups)
-                      CheckboxListTile(
-                        value: selectedGroups.contains(g.id),
-                        title: Text(g.name),
-                        onChanged: (v) => setSt(() {
-                          if (v == true) {
-                            selectedGroups.add(g.id);
-                          } else {
-                            selectedGroups.remove(g.id);
-                          }
-                        }),
+      builder:
+          (ctx) => StatefulBuilder(
+            builder:
+                (ctx2, setSt) => AlertDialog(
+                  title: const Text('Neues Gerät anlegen'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(labelText: 'Name'),
                       ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: descCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Beschreibung',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Muskelgruppen',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(
+                        height: 150,
+                        child: ListView(
+                          children: [
+                            for (final g in muscleProv.groups)
+                              CheckboxListTile(
+                                value: selectedGroups.contains(g.id),
+                                title: Text(g.name),
+                                onChanged:
+                                    (v) => setSt(() {
+                                      if (v == true) {
+                                        selectedGroups.add(g.id);
+                                      } else {
+                                        selectedGroups.remove(g.id);
+                                      }
+                                    }),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('Mehrere Übungen?'),
+                          Switch(
+                            value: isMulti,
+                            onChanged: (v) => setSt(() => isMulti = v),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Device ID: $newId',
+                        style: TextStyle(
+                          fontSize: AppFontSizes.body,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx2).pop(false),
+                      child: const Text('Abbrechen'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // Token neu laden, damit Custom-Claims aktuell sind
+                        final fbUser =
+                            fb_auth.FirebaseAuth.instance.currentUser;
+                        if (fbUser != null) {
+                          await fbUser.getIdToken(true);
+                        }
+
+                        final device = Device(
+                          uid: newUid,
+                          id: newId,
+                          name: nameCtrl.text.trim(),
+                          description: descCtrl.text.trim(),
+                          isMulti: isMulti,
+                        );
+                        await _createUC.execute(
+                          gymId: gymId,
+                          device: device,
+                          isMulti: isMulti,
+                          muscleGroupIds: selectedGroups.toList(),
+                        );
+                        await muscleProv.assignDevice(
+                          context,
+                          newUid,
+                          selectedGroups.toList(),
+                        );
+                        Navigator.of(ctx2).pop(true);
+                        await _loadDevices();
+                      },
+                      child: const Text('Erstellen'),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('Mehrere Übungen?'),
-                  Switch(
-                    value: isMulti,
-                    onChanged: (v) => setSt(() => isMulti = v),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Device ID: $newId',
-                style: TextStyle(
-                  fontSize: AppFontSizes.body,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx2).pop(false),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Token neu laden, damit Custom-Claims aktuell sind
-                final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
-                if (fbUser != null) {
-                  await fbUser.getIdToken(true);
-                }
-
-                final device = Device(
-                  uid: newUid,
-                  id: newId,
-                  name: nameCtrl.text.trim(),
-                  description: descCtrl.text.trim(),
-                  isMulti: isMulti,
-                );
-                await _createUC.execute(
-                  gymId: gymId,
-                  device: device,
-                  isMulti: isMulti,
-                  muscleGroupIds: selectedGroups.toList(),
-                );
-                await muscleProv.assignDevice(
-                  context,
-                  newUid,
-                  selectedGroups.toList(),
-                );
-                Navigator.of(ctx2).pop(true);
-                await _loadDevices();
-              },
-              child: const Text('Erstellen'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -176,58 +184,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Admin-Dashboard')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Gerät anlegen'),
-                    onPressed: _showCreateDialog,
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.fitness_center),
-                    label: const Text('Muskelgruppen'),
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(AppRouter.manageMuscleGroups);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.brush),
-                    label: const Text('Branding'),
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(AppRouter.branding);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.flag),
-                    label: const Text('Challenges verwalten'),
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(AppRouter.manageChallenges);
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _devices.length,
-                      separatorBuilder: (_, __) => const Divider(),
-                      itemBuilder: (_, i) {
-                        final device = _devices[i];
-                        return DeviceListItem(
-                          device: device,
-                          onDeleted: _loadDevices,
-                        );
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Gerät anlegen'),
+                      onPressed: _showCreateDialog,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.fitness_center),
+                      label: const Text('Muskelgruppen'),
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(AppRouter.manageMuscleGroups);
                       },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.brush),
+                      label: const Text('Branding'),
+                      onPressed: () {
+                        Navigator.of(context).pushNamed(AppRouter.branding);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.flag),
+                      label: const Text('Challenges verwalten'),
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(AppRouter.manageChallenges);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: _devices.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (_, i) {
+                          final device = _devices[i];
+                          return DeviceListItem(
+                            device: device,
+                            onDeleted: _loadDevices,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }

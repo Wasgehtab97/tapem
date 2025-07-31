@@ -71,10 +71,7 @@ class AppGradients {
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      AppColors.accentMint,
-      AppColors.accentTurquoise,
-    ],
+    colors: [AppColors.accentMint, AppColors.accentTurquoise],
   );
 }
 

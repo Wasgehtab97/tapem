@@ -165,19 +165,24 @@ class TrainingPlanProvider extends ChangeNotifier {
   }
 
   void copyWeekExercises(int sourceWeek, List<int> targetWeeks) {
-    final src = currentPlan?.weeks.firstWhere((w) => w.weekNumber == sourceWeek);
+    final src = currentPlan?.weeks.firstWhere(
+      (w) => w.weekNumber == sourceWeek,
+    );
     if (src == null) return;
     for (final weekNo in targetWeeks) {
-      final target =
-          currentPlan?.weeks.firstWhere((w) => w.weekNumber == weekNo);
+      final target = currentPlan?.weeks.firstWhere(
+        (w) => w.weekNumber == weekNo,
+      );
       if (target == null) continue;
       for (var i = 0; i < src.days.length && i < target.days.length; i++) {
         final exercises = [
           for (final ex in src.days[i].exercises)
-            ExerciseEntry.fromMap(ex.toMap())
+            ExerciseEntry.fromMap(ex.toMap()),
         ];
-        target.days[i] =
-            DayEntry(date: target.days[i].date, exercises: exercises);
+        target.days[i] = DayEntry(
+          date: target.days[i].date,
+          exercises: exercises,
+        );
       }
     }
     notifyListeners();
@@ -188,34 +193,32 @@ class TrainingPlanProvider extends ChangeNotifier {
   /// [sourceWeek] and [sourceDay] identify the day to copy from. The
   /// [targets] map uses the week number as key and the day index within that
   /// week (0 = Monday) as value.
-  void copyDayExercises(
-    int sourceWeek,
-    int sourceDay,
-    Map<int, int> targets,
-  ) {
-    final srcWeek =
-        currentPlan?.weeks.firstWhere((w) => w.weekNumber == sourceWeek);
+  void copyDayExercises(int sourceWeek, int sourceDay, Map<int, int> targets) {
+    final srcWeek = currentPlan?.weeks.firstWhere(
+      (w) => w.weekNumber == sourceWeek,
+    );
     if (srcWeek == null || sourceDay < 0 || sourceDay >= srcWeek.days.length) {
       return;
     }
     final srcDay = srcWeek.days[sourceDay];
     final clone = [
-      for (final ex in srcDay.exercises)
-        ExerciseEntry.fromMap(ex.toMap()),
+      for (final ex in srcDay.exercises) ExerciseEntry.fromMap(ex.toMap()),
     ];
 
     targets.forEach((weekNo, dayIdx) {
-      final targetWeek =
-          currentPlan?.weeks.firstWhere((w) => w.weekNumber == weekNo);
+      final targetWeek = currentPlan?.weeks.firstWhere(
+        (w) => w.weekNumber == weekNo,
+      );
       if (targetWeek == null ||
           dayIdx < 0 ||
           dayIdx >= targetWeek.days.length) {
         return;
       }
       final date = targetWeek.days[dayIdx].date;
-      targetWeek.days[dayIdx] = DayEntry(date: date, exercises: [
-        for (final ex in clone) ExerciseEntry.fromMap(ex.toMap()),
-      ]);
+      targetWeek.days[dayIdx] = DayEntry(
+        date: date,
+        exercises: [for (final ex in clone) ExerciseEntry.fromMap(ex.toMap())],
+      );
     });
 
     notifyListeners();
@@ -229,8 +232,9 @@ class TrainingPlanProvider extends ChangeNotifier {
     DateTime destDay,
   ) {
     final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
-    final destW =
-        currentPlan?.weeks.firstWhere((w) => w.weekNumber == destWeek);
+    final destW = currentPlan?.weeks.firstWhere(
+      (w) => w.weekNumber == destWeek,
+    );
     if (srcW == null || destW == null) return;
     final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
     final dDay = destW.days.firstWhere((d) => d.date == destDay);

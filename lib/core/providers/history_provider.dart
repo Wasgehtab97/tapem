@@ -12,10 +12,9 @@ class HistoryProvider extends ChangeNotifier {
   final GetHistoryForDevice _getHistory;
 
   HistoryProvider({GetHistoryForDevice? getHistory})
-      : _getHistory = getHistory ??
-            GetHistoryForDevice(
-              HistoryRepositoryImpl(FirestoreHistorySource()),
-            );
+    : _getHistory =
+          getHistory ??
+          GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource()));
 
   bool _isLoading = false;
   String? _error;

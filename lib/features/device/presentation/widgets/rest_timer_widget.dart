@@ -93,10 +93,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CircularProgressIndicator(
-                  value: 1 - progress,
-                  strokeWidth: 6,
-                ),
+                CircularProgressIndicator(value: 1 - progress, strokeWidth: 6),
                 Text('$_remaining${loc.secondsAbbreviation}'),
               ],
             ),

@@ -6,5 +6,5 @@ class GetDeviceByNfcCode {
   GetDeviceByNfcCode(this._repo);
 
   Future<Device?> execute(String gymId, String nfcCode) =>
-    _repo.getDeviceByNfcCode(gymId, nfcCode);
+      _repo.getDeviceByNfcCode(gymId, nfcCode);
 }

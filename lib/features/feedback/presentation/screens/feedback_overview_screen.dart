@@ -8,7 +8,8 @@ import 'package:tapem/core/providers/gym_provider.dart';
 
 class FeedbackOverviewScreen extends StatefulWidget {
   final String gymId;
-  const FeedbackOverviewScreen({Key? key, required this.gymId}) : super(key: key);
+  const FeedbackOverviewScreen({Key? key, required this.gymId})
+    : super(key: key);
 
   @override
   State<FeedbackOverviewScreen> createState() => _FeedbackOverviewScreenState();
@@ -36,7 +37,9 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<FeedbackProvider>();
-    final devices = {for (var d in context.watch<GymProvider>().devices) d.uid: d};
+    final devices = {
+      for (var d in context.watch<GymProvider>().devices) d.uid: d,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -46,19 +49,24 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
           tabs: const [Tab(text: 'Offen'), Tab(text: 'Erledigt')],
         ),
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList(provider.openEntries, devices, false),
-                _buildList(provider.doneEntries, devices, true),
-              ],
-            ),
+      body:
+          provider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList(provider.openEntries, devices, false),
+                  _buildList(provider.doneEntries, devices, true),
+                ],
+              ),
     );
   }
 
-  Widget _buildList(List<FeedbackEntry> entries, Map<String, Device> devices, bool done) {
+  Widget _buildList(
+    List<FeedbackEntry> entries,
+    Map<String, Device> devices,
+    bool done,
+  ) {
     if (entries.isEmpty) {
       return const Center(child: Text('Keine Einträge'));
     }
@@ -73,17 +81,18 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
             '${entry.createdAt.toLocal().toString().split('T').first}\n${entry.text}',
           ),
           isThreeLine: true,
-          trailing: !done
-              ? IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () {
-                    context.read<FeedbackProvider>().markDone(
-                          gymId: widget.gymId,
-                          entryId: entry.id,
-                        );
-                  },
-                )
-              : null,
+          trailing:
+              !done
+                  ? IconButton(
+                    icon: const Icon(Icons.check),
+                    onPressed: () {
+                      context.read<FeedbackProvider>().markDone(
+                        gymId: widget.gymId,
+                        entryId: entry.id,
+                      );
+                    },
+                  )
+                  : null,
         );
       },
     );

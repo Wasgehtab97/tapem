@@ -54,12 +54,16 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final Map<MuscleRegion, int> regionXp = {};
     for (final entry in xpProv.muscleXp.entries) {
       MuscleRegion? region;
-      final group = muscleProv.groups.firstWhereOrNull((g) => g.id == entry.key);
+      final group = muscleProv.groups.firstWhereOrNull(
+        (g) => g.id == entry.key,
+      );
       if (group != null) {
         region = group.region;
       } else {
         // Fallback: try to interpret the key as a region name.
-        region = MuscleRegion.values.firstWhereOrNull((r) => r.name == entry.key);
+        region = MuscleRegion.values.firstWhereOrNull(
+          (r) => r.name == entry.key,
+        );
       }
       if (region != null) {
         regionXp[region] = (regionXp[region] ?? 0) + entry.value as int;
@@ -77,12 +81,14 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
         // For now, return an empty list.
         return [];
       }
+
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => LeaderboardScreen(
-            title: 'Rangliste: ${region.name}',
-            fetchEntries: fetchEntries,
-          ),
+          builder:
+              (_) => LeaderboardScreen(
+                title: 'Rangliste: ${region.name}',
+                fetchEntries: fetchEntries,
+              ),
         ),
       );
     }
@@ -112,11 +118,21 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                   style: const TextStyle(color: Colors.white),
                   underline: const SizedBox.shrink(),
                   items: const [
-                    DropdownMenuItem(value: XpPeriod.last7Days, child: Text('7 Tage')),
-                    DropdownMenuItem(value: XpPeriod.last30Days, child: Text('30 Tage')),
-                    DropdownMenuItem(value: XpPeriod.total, child: Text('Gesamt')),
+                    DropdownMenuItem(
+                      value: XpPeriod.last7Days,
+                      child: Text('7 Tage'),
+                    ),
+                    DropdownMenuItem(
+                      value: XpPeriod.last30Days,
+                      child: Text('30 Tage'),
+                    ),
+                    DropdownMenuItem(
+                      value: XpPeriod.total,
+                      child: Text('Gesamt'),
+                    ),
                   ],
-                  onChanged: (value) => setState(() => _period = value ?? _period),
+                  onChanged:
+                      (value) => setState(() => _period = value ?? _period),
                 ),
               ],
             ),
@@ -141,7 +157,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                     level: ((regionXp[region] ?? 0) / 1000).floor(),
                     label: region.name,
                     size: 100,
-                  onTap: () => openLeaderboard(region),
+                    onTap: () => openLeaderboard(region),
                   ),
               ],
             ),
@@ -153,10 +169,12 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
               ],
               rows: [
                 for (final region in MuscleRegion.values)
-                  DataRow(cells: [
-                    DataCell(Text(region.name)),
-                    DataCell(Text('${regionXp[region] ?? 0}')),
-                  ]),
+                  DataRow(
+                    cells: [
+                      DataCell(Text(region.name)),
+                      DataCell(Text('${regionXp[region] ?? 0}')),
+                    ],
+                  ),
               ],
             ),
           ],

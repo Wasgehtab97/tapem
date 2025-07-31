@@ -8,11 +8,8 @@ import 'package:tapem/core/theme/design_tokens.dart';
 class DeviceCard extends StatefulWidget {
   final Device device;
   final VoidCallback? onTap;
-  const DeviceCard({
-    Key? key,
-    required this.device,
-    this.onTap,
-  }) : super(key: key);
+  const DeviceCard({Key? key, required this.device, this.onTap})
+    : super(key: key);
 
   @override
   State<DeviceCard> createState() => _DeviceCardState();
@@ -60,10 +57,7 @@ class _DeviceCardState extends State<DeviceCard> {
                         gradient: AppGradients.primary,
                       ),
                       child: Center(
-                        child: Text(
-                          initial,
-                          style: theme.textTheme.titleLarge,
-                        ),
+                        child: Text(initial, style: theme.textTheme.titleLarge),
                       ),
                     ),
                   ),
@@ -90,4 +84,3 @@ class _DeviceCardState extends State<DeviceCard> {
     );
   }
 }
-

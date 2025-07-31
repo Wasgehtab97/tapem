@@ -41,9 +41,9 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Titel eingeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Titel eingeben')));
       return;
     }
     if (_options.length < 2) {
@@ -57,9 +57,9 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
       title: title,
       options: List<String>.from(_options),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Umfrage gespeichert')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Umfrage gespeichert')));
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -91,10 +91,7 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
                   onSubmitted: (_) => _addOption(),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _addOption,
-              ),
+              IconButton(icon: const Icon(Icons.add), onPressed: _addOption),
             ],
           ),
           const SizedBox(height: 8),
@@ -102,20 +99,18 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: _options
-                  .map(
-                    (o) => Chip(
-                      label: Text(o),
-                      onDeleted: () => _removeOption(o),
-                    ),
-                  )
-                  .toList(),
+              children:
+                  _options
+                      .map(
+                        (o) => Chip(
+                          label: Text(o),
+                          onDeleted: () => _removeOption(o),
+                        ),
+                      )
+                      .toList(),
             ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _save,
-            child: const Text('Speichern'),
-          ),
+          ElevatedButton(onPressed: _save, child: const Text('Speichern')),
           const SizedBox(height: 16),
         ],
       ),

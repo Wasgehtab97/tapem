@@ -9,7 +9,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final FirestoreAuthSource _source;
 
   AuthRepositoryImpl([FirestoreAuthSource? src])
-      : _source = src ?? FirestoreAuthSource();
+    : _source = src ?? FirestoreAuthSource();
 
   @override
   Future<UserData> login(String email, String password) async {
@@ -18,8 +18,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserData> register(
-      String email, String password, String gymId) async {
+  Future<UserData> register(String email, String password, String gymId) async {
     final UserDataDto dto = await _source.register(email, password, gymId);
     return dto.toModel();
   }

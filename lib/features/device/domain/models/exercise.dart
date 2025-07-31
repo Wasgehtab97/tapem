@@ -18,24 +18,25 @@ class Exercise {
     String? userId,
     List<String>? muscleGroupIds,
   }) => Exercise(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        userId: userId ?? this.userId,
-        muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
-      );
+    id: id ?? this.id,
+    name: name ?? this.name,
+    userId: userId ?? this.userId,
+    muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
+  );
 
   factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        userId: json['userId'] as String,
-        muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
+    id: json['id'] as String,
+    name: json['name'] as String,
+    userId: json['userId'] as String,
+    muscleGroupIds:
+        (json['muscleGroupIds'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
             .toList(),
-      );
+  );
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'userId': userId,
-        'muscleGroupIds': muscleGroupIds,
-      };
+    'name': name,
+    'userId': userId,
+    'muscleGroupIds': muscleGroupIds,
+  };
 }

@@ -36,27 +36,29 @@ class InteractiveSvgMuscleHeatmapWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final scaleX = constraints.maxWidth / 200;
-      // The SVG height is fixed to 400 while the viewBox height is 408.
-      const scaleY = 400 / 408;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scaleX = constraints.maxWidth / 200;
+        // The SVG height is fixed to 400 while the viewBox height is 408.
+        const scaleY = 400 / 408;
 
-      return Stack(
-        children: [
-          SvgMuscleHeatmapWidget(colors: colors, assetPath: assetPath),
-          for (final entry in _bounds.entries)
-            Positioned(
-              left: entry.value.left * scaleX,
-              top: entry.value.top * scaleY,
-              width: entry.value.width * scaleX,
-              height: entry.value.height * scaleY,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => onRegionTap?.call(entry.key),
+        return Stack(
+          children: [
+            SvgMuscleHeatmapWidget(colors: colors, assetPath: assetPath),
+            for (final entry in _bounds.entries)
+              Positioned(
+                left: entry.value.left * scaleX,
+                top: entry.value.top * scaleY,
+                width: entry.value.width * scaleX,
+                height: entry.value.height * scaleY,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => onRegionTap?.call(entry.key),
+                ),
               ),
-            ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }

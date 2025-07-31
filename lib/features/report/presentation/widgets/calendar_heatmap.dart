@@ -15,9 +15,10 @@ class CalendarHeatmap extends StatelessWidget {
     }
 
     // Earliest date für Init
-    final initDate = counts.keys.isNotEmpty
-        ? counts.keys.reduce((a, b) => a.isBefore(b) ? a : b)
-        : DateTime.now();
+    final initDate =
+        counts.keys.isNotEmpty
+            ? counts.keys.reduce((a, b) => a.isBefore(b) ? a : b)
+            : DateTime.now();
 
     return HeatMapCalendar(
       // Daten und Farbschwellen

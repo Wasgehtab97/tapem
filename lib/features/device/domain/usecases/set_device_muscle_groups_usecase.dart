@@ -9,11 +9,5 @@ class SetDeviceMuscleGroupsUseCase {
     String deviceId,
     List<String> primaryGroups,
     List<String> secondaryGroups,
-  ) =>
-      _repo.setMuscleGroups(
-        gymId,
-        deviceId,
-        primaryGroups,
-        secondaryGroups,
-      );
+  ) => _repo.setMuscleGroups(gymId, deviceId, primaryGroups, secondaryGroups);
 }

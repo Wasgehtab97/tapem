@@ -46,9 +46,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     final prov = context.watch<MuscleGroupProvider>();
 
     if (prov.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (prov.error != null) {
       return Scaffold(
@@ -68,7 +66,9 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       if (grp != null) {
         region = grp.region;
       } else {
-        region = MuscleRegion.values.firstWhereOrNull((r) => r.name == entry.key);
+        region = MuscleRegion.values.firstWhereOrNull(
+          (r) => r.name == entry.key,
+        );
       }
       if (region != null) {
         regionXp[region] = (regionXp[region] ?? 0) + entry.value;
@@ -99,9 +99,10 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     const amberColor = Color(0xFFFFC107);
     final colorMap = <String, Color>{};
     xpMap.forEach((id, xp) {
-      final t = maxXp > minXp
-          ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
-          : 0.0;
+      final t =
+          maxXp > minXp
+              ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
+              : 0.0;
       colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
     });
 
@@ -109,16 +110,17 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       final xp = xpMap[regionId] ?? 0;
       showDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: Text(regionId.replaceAll('_', ' ')),
-          content: Text('$xp XP'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+        builder:
+            (_) => AlertDialog(
+              title: Text(regionId.replaceAll('_', ' ')),
+              content: Text('$xp XP'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
 
@@ -130,9 +132,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
           length: 2,
           child: Column(
             children: [
-              const TabBar(
-                tabs: [Tab(text: '2D'), Tab(text: '3D')],
-              ),
+              const TabBar(tabs: [Tab(text: '2D'), Tab(text: '3D')]),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -163,9 +163,10 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
                     Center(
                       child: InteractiveSvgMuscleHeatmapWidget(
                         colors: colorMap,
-                        assetPath: showFront
-                            ? 'assets/body_front.svg'
-                            : 'assets/body_back.svg',
+                        assetPath:
+                            showFront
+                                ? 'assets/body_front.svg'
+                                : 'assets/body_back.svg',
                         onRegionTap: showXp,
                       ),
                     ),
@@ -180,4 +181,3 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     );
   }
 }
-

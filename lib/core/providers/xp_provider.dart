@@ -36,7 +36,9 @@ class XpProvider extends ChangeNotifier {
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
   }) {
-    debugPrint('🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId');
+    debugPrint(
+      '🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId',
+    );
     return _repo.addSessionXp(
       gymId: gymId,
       userId: userId,
@@ -61,9 +63,9 @@ class XpProvider extends ChangeNotifier {
   void watchMuscleXp(String gymId, String userId) {
     debugPrint('👀 provider watchMuscleXp userId=$userId gymId=$gymId');
     _muscleSub?.cancel();
-    _muscleSub = _repo
-        .watchMuscleXp(gymId: gymId, userId: userId)
-        .listen((map) {
+    _muscleSub = _repo.watchMuscleXp(gymId: gymId, userId: userId).listen((
+      map,
+    ) {
       _muscleXp = map;
       debugPrint('🔄 provider muscleXp=${map.length} entries $map');
       notifyListeners();
@@ -96,8 +98,8 @@ class XpProvider extends ChangeNotifier {
           .listen((xp) {
             _deviceXp[id] = xp;
             debugPrint('🔄 provider device $id xp=$xp');
-          notifyListeners();
-        });
+            notifyListeners();
+          });
     }
   }
 
@@ -107,10 +109,10 @@ class XpProvider extends ChangeNotifier {
     _statsDailySub = _repo
         .watchStatsDailyXp(gymId: gymId, userId: userId)
         .listen((xp) {
-      _statsDailyXp = xp;
-      debugPrint('🔄 provider statsDailyXp=$xp');
-      notifyListeners();
-    });
+          _statsDailyXp = xp;
+          debugPrint('🔄 provider statsDailyXp=$xp');
+          notifyListeners();
+        });
   }
 
   @override

@@ -17,9 +17,9 @@ class TrainingDetailsProvider extends ChangeNotifier {
   List<Session> get sessions => List.unmodifiable(_sessions);
 
   TrainingDetailsProvider()
-      : _getSessions = GetSessionsForDate(
-          SessionRepositoryImpl(FirestoreSessionSource()),
-        );
+    : _getSessions = GetSessionsForDate(
+        SessionRepositoryImpl(FirestoreSessionSource()),
+      );
 
   /// Lädt alle Sessions für [userId] am [date].
   Future<void> loadSessions({

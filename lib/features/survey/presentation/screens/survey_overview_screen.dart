@@ -44,10 +44,7 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
         title: const Text('Umfragen'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Offen'),
-            Tab(text: 'Abgeschlossen'),
-          ],
+          tabs: const [Tab(text: 'Offen'), Tab(text: 'Abgeschlossen')],
         ),
       ),
       body: TabBarView(
@@ -60,7 +57,11 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
     );
   }
 
-  Widget _buildList(BuildContext context, List<Survey> surveys, {required bool open}) {
+  Widget _buildList(
+    BuildContext context,
+    List<Survey> surveys, {
+    required bool open,
+  }) {
     if (surveys.isEmpty) {
       return const Center(child: Text('Keine Umfragen'));
     }
@@ -72,17 +73,21 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
           title: Text(survey.title),
           subtitle: Text(DateFormat.yMd().add_Hm().format(survey.createdAt)),
           trailing: open ? const Icon(Icons.arrow_forward_ios) : null,
-          onTap: open
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SurveyDetailScreen(
-                          gymId: widget.gymId, survey: survey),
-                    ),
-                  );
-                }
-              : null,
+          onTap:
+              open
+                  ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => SurveyDetailScreen(
+                              gymId: widget.gymId,
+                              survey: survey,
+                            ),
+                      ),
+                    );
+                  }
+                  : null,
         );
       },
     );

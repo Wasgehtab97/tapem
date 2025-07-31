@@ -2,7 +2,16 @@
 import '../models/exercise.dart';
 
 abstract class ExerciseRepository {
-  Future<List<Exercise>> getExercises(String gymId, String deviceId, String userId);
+  Future<List<Exercise>> getExercises(
+    String gymId,
+    String deviceId,
+    String userId,
+  );
   Future<void> createExercise(String gymId, String deviceId, Exercise ex);
-  Future<void> deleteExercise(String gymId, String deviceId, String exerciseId, String userId);
+  Future<void> deleteExercise(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+  );
 }

@@ -7,13 +7,14 @@ part of 'exercise_dto.dart';
 // **************************************************************************
 
 ExerciseDto _$ExerciseDtoFromJson(Map<String, dynamic> json) => ExerciseDto(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      userId: json['userId'] as String,
-      muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
+  id: json['id'] as String,
+  name: json['name'] as String,
+  userId: json['userId'] as String,
+  muscleGroupIds:
+      (json['muscleGroupIds'] as List<dynamic>? ?? [])
           .map((e) => e as String)
           .toList(),
-    );
+);
 
 Map<String, dynamic> _$ExerciseDtoToJson(ExerciseDto instance) =>
     <String, dynamic>{

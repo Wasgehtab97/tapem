@@ -8,24 +8,21 @@ import 'package:tapem/core/providers/device_provider.dart';
 class NoteButtonWidget extends StatelessWidget {
   final String deviceId;
 
-  const NoteButtonWidget({
-    Key? key,
-    required this.deviceId,
-  }) : super(key: key);
+  const NoteButtonWidget({Key? key, required this.deviceId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final loc  = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
     final prov = context.watch<DeviceProvider>();
     final hasNote = prov.note.isNotEmpty;
 
     return FloatingActionButton(
       heroTag: 'noteBtn_$deviceId',
-      mini: true,  // verkleinert den Button
+      mini: true, // verkleinert den Button
       tooltip: hasNote ? loc.noteEditTooltip : loc.noteAddTooltip,
       child: Icon(
         hasNote ? Icons.info : Icons.info_outline,
-        size: 20,  // Icon etwas kleiner
+        size: 20, // Icon etwas kleiner
       ),
       onPressed: () => _openNoteModal(context, prov),
     );

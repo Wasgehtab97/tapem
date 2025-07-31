@@ -10,10 +10,5 @@ class UpdateDeviceMuscleGroupsUseCase {
     List<String> primaryGroups,
     List<String> secondaryGroups,
   ) =>
-      _repo.updateMuscleGroups(
-        gymId,
-        deviceId,
-        primaryGroups,
-        secondaryGroups,
-      );
+      _repo.updateMuscleGroups(gymId, deviceId, primaryGroups, secondaryGroups);
 }

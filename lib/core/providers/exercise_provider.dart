@@ -14,17 +14,17 @@ class ExerciseProvider extends ChangeNotifier {
     required GetExercisesForDevice getEx,
     required CreateExerciseUseCase createEx,
     required DeleteExerciseUseCase deleteEx,
-  })  : _getEx = getEx,
-        _createEx = createEx,
-        _deleteEx = deleteEx;
+  }) : _getEx = getEx,
+       _createEx = createEx,
+       _deleteEx = deleteEx;
 
   List<Exercise> _exercises = [];
   bool _isLoading = false;
   String? _error;
 
   List<Exercise> get exercises => List.unmodifiable(_exercises);
-  bool get isLoading    => _isLoading;
-  String? get error     => _error;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
 
   Future<void> loadExercises(
     String gymId,

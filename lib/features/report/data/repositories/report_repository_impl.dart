@@ -7,7 +7,7 @@ import 'package:tapem/features/report/domain/repositories/report_repository.dart
 class ReportRepositoryImpl implements ReportRepository {
   final FirestoreReportSource _source;
   ReportRepositoryImpl([FirestoreReportSource? source])
-      : _source = source ?? FirestoreReportSource();
+    : _source = source ?? FirestoreReportSource();
 
   @override
   Future<Map<String, int>> fetchUsageCountPerMachine(String gymId) async {

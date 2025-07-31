@@ -6,7 +6,7 @@ class FirestoreSessionSource {
   final FirebaseFirestore _firestore;
 
   FirestoreSessionSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<List<SessionDto>> getSessionsForDate({
     required String userId,
@@ -17,12 +17,16 @@ class FirestoreSessionSource {
         .add(const Duration(days: 1))
         .subtract(const Duration(milliseconds: 1));
 
-    final snap = await _firestore
-        .collectionGroup('logs')
-        .where('userId', isEqualTo: userId)
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
-        .get();
+    final snap =
+        await _firestore
+            .collectionGroup('logs')
+            .where('userId', isEqualTo: userId)
+            .where(
+              'timestamp',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+            )
+            .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
+            .get();
 
     return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
   }

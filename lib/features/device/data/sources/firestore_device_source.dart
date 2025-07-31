@@ -8,27 +8,33 @@ class FirestoreDeviceSource {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<DeviceDto>> getDevicesForGym(String gymId) async {
-    final snap = await _firestore
-      .collection('gyms').doc(gymId)
-      .collection('devices')
-      .orderBy('id')
-      .get();
+    final snap =
+        await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .orderBy('id')
+            .get();
     return snap.docs.map((doc) => DeviceDto.fromDocument(doc)).toList();
   }
 
   Future<void> createDevice(String gymId, Device device) {
     return _firestore
-      .collection('gyms').doc(gymId)
-      .collection('devices').doc(device.uid)
-      .set(device.toJson());
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(device.uid)
+        .set(device.toJson());
   }
 
   // Neu: Gerät löschen
   Future<void> deleteDevice(String gymId, String deviceId) {
     return _firestore
-      .collection('gyms').doc(gymId)
-      .collection('devices').doc(deviceId)
-      .delete();
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .delete();
   }
 
   Future<void> updateMuscleGroups(

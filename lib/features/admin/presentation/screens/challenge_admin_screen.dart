@@ -71,12 +71,18 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
 
     if (_type == 'weekly') {
       start = _startOfWeek(year, _week!);
-      end = start.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
+      end = start
+          .add(const Duration(days: 7))
+          .subtract(const Duration(milliseconds: 1));
       data['startWeek'] = _week;
       data['endWeek'] = _week;
     } else {
       start = DateTime(year, _month!, 1);
-      end = DateTime(year, _month! + 1, 1).subtract(const Duration(milliseconds: 1));
+      end = DateTime(
+        year,
+        _month! + 1,
+        1,
+      ).subtract(const Duration(milliseconds: 1));
       data['startMonth'] = _month;
       data['endMonth'] = _month;
     }
@@ -148,9 +154,10 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
                 DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
                 DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
               ],
-              onChanged: (v) => setState(() {
-                _type = v ?? 'weekly';
-              }),
+              onChanged:
+                  (v) => setState(() {
+                    _type = v ?? 'weekly';
+                  }),
               decoration: const InputDecoration(labelText: 'Typ'),
             ),
             const SizedBox(height: 8),
@@ -184,13 +191,14 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
                     CheckboxListTile(
                       value: _deviceIds.contains(d.uid),
                       title: Text('${d.name} (${d.id})'),
-                      onChanged: (v) => setState(() {
-                        if (v == true) {
-                          _deviceIds.add(d.uid);
-                        } else {
-                          _deviceIds.remove(d.uid);
-                        }
-                      }),
+                      onChanged:
+                          (v) => setState(() {
+                            if (v == true) {
+                              _deviceIds.add(d.uid);
+                            } else {
+                              _deviceIds.remove(d.uid);
+                            }
+                          }),
                     ),
                 ],
               ),
@@ -205,13 +213,14 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _saving ? null : _create,
-              child: _saving
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Challenge anlegen'),
+              child:
+                  _saving
+                      ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Challenge anlegen'),
             ),
           ],
         ),

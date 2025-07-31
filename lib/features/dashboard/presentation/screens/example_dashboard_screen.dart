@@ -19,11 +19,7 @@ class ExampleDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Sample data for charts.
     final lineData = [3.0, 4.5, 2.5, 5.2, 6.0, 4.8, 5.5];
-    final barData = {
-      'Browser': 80.0,
-      'Mail': 50.0,
-      'Terminal': 65.0,
-    };
+    final barData = {'Browser': 80.0, 'Mail': 50.0, 'Terminal': 65.0};
     final heatmapData = [
       [0.1, 0.2, 0.3, 0.4, 0.2],
       [0.3, 0.6, 0.5, 0.4, 0.3],
@@ -38,10 +34,7 @@ class ExampleDashboardScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
         ],
         title: const Text('Dashboard'),
       ),
@@ -62,7 +55,10 @@ class ExampleDashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Activity', style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'Activity',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     TimeSeriesLineChart(points: lineData),
                   ],
@@ -80,7 +76,10 @@ class ExampleDashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Applications', style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'Applications',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     HorizontalBarChart(data: barData),
                   ],
@@ -98,7 +97,10 @@ class ExampleDashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Heatmap', style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'Heatmap',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     HeatmapWidget(values: heatmapData),
                   ],

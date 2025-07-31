@@ -133,12 +133,13 @@ class AppEntry extends StatelessWidget {
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
         Provider<UpdateDeviceMuscleGroupsUseCase>(
-          create: (c) =>
-              UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create:
+              (c) =>
+                  UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
         Provider<SetDeviceMuscleGroupsUseCase>(
-          create: (c) =>
-              SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create:
+              (c) => SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise
@@ -189,8 +190,9 @@ class AppEntry extends StatelessWidget {
               ),
         ),
         ChangeNotifierProvider(
-          create: (c) =>
-              AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
+          create:
+              (c) =>
+                  AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
         ChangeNotifierProvider(
           create:

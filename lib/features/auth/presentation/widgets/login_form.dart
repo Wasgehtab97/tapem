@@ -25,17 +25,14 @@ class _LoginFormState extends State<LoginForm> {
     await authProv.login(_email, _password);
     if (authProv.error != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProv.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(authProv.error!)));
       return;
     }
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(
-      AppRouter.home,
-      arguments: 1,
-    );
+    Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
   }
 
   @override
@@ -55,27 +52,29 @@ class _LoginFormState extends State<LoginForm> {
               decoration: InputDecoration(labelText: loc.emailFieldLabel),
               keyboardType: TextInputType.emailAddress,
               onSaved: (v) => _email = v!.trim(),
-              validator: (v) =>
-                  v != null && v.contains('@') ? null : loc.emailInvalid,
+              validator:
+                  (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
             ),
             const SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(labelText: loc.passwordFieldLabel),
               obscureText: true,
               onSaved: (v) => _password = v ?? '',
-              validator: (v) =>
-                  v != null && v.length >= 6 ? null : loc.passwordTooShort,
+              validator:
+                  (v) =>
+                      v != null && v.length >= 6 ? null : loc.passwordTooShort,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: authProv.isLoading ? null : _submit,
-              child: authProv.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(loc.loginButton),
+              child:
+                  authProv.isLoading
+                      ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Text(loc.loginButton),
             ),
             TextButton(
               onPressed: () => showPasswordResetDialog(context),

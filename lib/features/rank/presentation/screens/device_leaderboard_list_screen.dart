@@ -27,10 +27,7 @@ class DeviceLeaderboardListScreen extends StatelessWidget {
             onTap: () {
               Navigator.of(context).pushNamed(
                 AppRouter.rank,
-                arguments: {
-                  'gymId': gymId,
-                  'deviceId': d.uid,
-                },
+                arguments: {'gymId': gymId, 'deviceId': d.uid},
               );
             },
           );

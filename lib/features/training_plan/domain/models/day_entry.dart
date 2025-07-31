@@ -7,17 +7,18 @@ class DayEntry {
   final List<ExerciseEntry> exercises;
 
   DayEntry({required this.date, required List<ExerciseEntry> exercises})
-      : exercises = List.from(exercises);
+    : exercises = List.from(exercises);
 
   factory DayEntry.fromMap(Map<String, dynamic> map) => DayEntry(
-        date: (map['date'] as Timestamp).toDate(),
-        exercises: (map['exercises'] as List<dynamic>? ?? [])
+    date: (map['date'] as Timestamp).toDate(),
+    exercises:
+        (map['exercises'] as List<dynamic>? ?? [])
             .map((e) => ExerciseEntry.fromMap(e as Map<String, dynamic>))
             .toList(),
-      );
+  );
 
   Map<String, dynamic> toMap() => {
-        'date': Timestamp.fromDate(date),
-        'exercises': exercises.map((e) => e.toMap()).toList(),
-      };
+    'date': Timestamp.fromDate(date),
+    'exercises': exercises.map((e) => e.toMap()).toList(),
+  };
 }

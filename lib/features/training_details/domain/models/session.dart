@@ -3,7 +3,7 @@ class Session {
   final String sessionId;
   final String deviceId;
   final String deviceName;
-  final String deviceDescription;  // neu!
+  final String deviceDescription; // neu!
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
@@ -22,5 +22,5 @@ class Session {
 class SessionSet {
   final double weight;
   final int reps;
-  SessionSet({ required this.weight, required this.reps });
+  SessionSet({required this.weight, required this.reps});
 }

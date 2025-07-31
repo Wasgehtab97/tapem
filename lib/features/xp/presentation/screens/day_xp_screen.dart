@@ -25,21 +25,23 @@ class _DayXpScreenState extends State<DayXpScreen> {
     Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
       if (gymId.isEmpty) return [];
       final fs = FirebaseFirestore.instance;
-      final snap = await fs.collection('gyms').doc(gymId).collection('users').get();
+      final snap =
+          await fs.collection('gyms').doc(gymId).collection('users').get();
       final List<LeaderboardEntry> data = [];
       for (final doc in snap.docs) {
         final uid = doc.id;
         final userDoc = await fs.collection('users').doc(uid).get();
         if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) continue;
         final username = userDoc.data()?['username'] as String? ?? uid;
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
+        final statsDoc =
+            await fs
+                .collection('gyms')
+                .doc(gymId)
+                .collection('users')
+                .doc(uid)
+                .collection('rank')
+                .doc('stats')
+                .get();
         final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
         data.add(LeaderboardEntry(userId: uid, username: username, xp: xp));
       }
@@ -48,10 +50,11 @@ class _DayXpScreenState extends State<DayXpScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => LeaderboardScreen(
-          title: 'Rangliste',
-          fetchEntries: fetchEntries,
-        ),
+        builder:
+            (_) => LeaderboardScreen(
+              title: 'Rangliste',
+              fetchEntries: fetchEntries,
+            ),
       ),
     );
   }
@@ -79,28 +82,30 @@ class _DayXpScreenState extends State<DayXpScreen> {
         .collection('users')
         .snapshots()
         .listen((snap) async {
-      debugPrint('📥 leaderboard snapshot users=${snap.docs.length}');
-      final List<Map<String, dynamic>> data = [];
-      for (final doc in snap.docs) {
-        final uid = doc.id;
-        final userDoc = await fs.collection('users').doc(uid).get();
-        if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) continue;
-        final username = userDoc.data()?['username'] as String?;
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
-        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
-        data.add({'userId': uid, 'username': username, 'xp': xp});
-      }
-      data.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
-      debugPrint('🏆 leaderboard entries=${data.length}');
-      setState(() => _lbEntries = data);
-    });
+          debugPrint('📥 leaderboard snapshot users=${snap.docs.length}');
+          final List<Map<String, dynamic>> data = [];
+          for (final doc in snap.docs) {
+            final uid = doc.id;
+            final userDoc = await fs.collection('users').doc(uid).get();
+            if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true))
+              continue;
+            final username = userDoc.data()?['username'] as String?;
+            final statsDoc =
+                await fs
+                    .collection('gyms')
+                    .doc(gymId)
+                    .collection('users')
+                    .doc(uid)
+                    .collection('rank')
+                    .doc('stats')
+                    .get();
+            final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
+            data.add({'userId': uid, 'username': username, 'xp': xp});
+          }
+          data.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
+          debugPrint('🏆 leaderboard entries=${data.length}');
+          setState(() => _lbEntries = data);
+        });
   }
 
   @override
@@ -133,7 +138,11 @@ class _DayXpScreenState extends State<DayXpScreen> {
             trailing: Text('$totalXp'),
           ),
           const Divider(),
-          ..._lbEntries.asMap().entries.take(10).map(
+          ..._lbEntries
+              .asMap()
+              .entries
+              .take(10)
+              .map(
                 (e) => ListTile(
                   leading: Text('#${e.key + 1}'),
                   title: Text(e.value['username'] ?? e.value['userId']),

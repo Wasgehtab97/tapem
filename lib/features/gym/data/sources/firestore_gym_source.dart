@@ -29,12 +29,13 @@ class FirestoreGymSource {
 
   /// Gibt die Branding-Konfiguration des Gyms zurück.
   Future<Branding?> getBranding(String gymId) async {
-    final doc = await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('config')
-        .doc('branding')
-        .get();
+    final doc =
+        await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('config')
+            .doc('branding')
+            .get();
     if (!doc.exists) return null;
     return Branding.fromMap(doc.data()!);
   }

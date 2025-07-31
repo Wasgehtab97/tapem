@@ -104,7 +104,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const MuscleGroupScreenNew());
 
       case manageMuscleGroups:
-        return MaterialPageRoute(builder: (_) => const MuscleGroupAdminScreen());
+        return MaterialPageRoute(
+          builder: (_) => const MuscleGroupAdminScreen(),
+        );
 
       case branding:
         return MaterialPageRoute(builder: (_) => const BrandingScreen());
@@ -113,8 +115,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
 
       case manageChallenges:
-        return MaterialPageRoute(
-            builder: (_) => const ChallengeAdminScreen());
+        return MaterialPageRoute(builder: (_) => const ChallengeAdminScreen());
 
       case affiliate:
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
@@ -122,10 +123,11 @@ class AppRouter {
       case rank:
         final args = settings.arguments as Map<String, String>? ?? const {};
         return MaterialPageRoute(
-          builder: (_) => RankScreen(
-            gymId: args['gymId'] ?? '',
-            deviceId: args['deviceId'] ?? '',
-          ),
+          builder:
+              (_) => RankScreen(
+                gymId: args['gymId'] ?? '',
+                deviceId: args['deviceId'] ?? '',
+              ),
         );
 
       case selectGym:
@@ -173,10 +175,11 @@ class AppRouter {
       case surveyVote:
         final args = settings.arguments as Map<String, String>? ?? const {};
         return MaterialPageRoute(
-          builder: (_) => SurveyVoteScreen(
-            gymId: args['gymId'] ?? '',
-            userId: args['userId'] ?? '',
-          ),
+          builder:
+              (_) => SurveyVoteScreen(
+                gymId: args['gymId'] ?? '',
+                userId: args['userId'] ?? '',
+              ),
         );
 
       default:

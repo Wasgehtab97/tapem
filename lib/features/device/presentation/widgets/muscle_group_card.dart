@@ -17,14 +17,14 @@ class MuscleGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final Color bgColor = selected
-        ? (primary
-            ? theme.colorScheme.primary
-            : theme.colorScheme.secondary)
-        : theme.colorScheme.surface;
-    final Color textColor = selected
-        ? theme.colorScheme.onPrimary
-        : theme.colorScheme.onSurface;
+    final Color bgColor =
+        selected
+            ? (primary
+                ? theme.colorScheme.primary
+                : theme.colorScheme.secondary)
+            : theme.colorScheme.surface;
+    final Color textColor =
+        selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
 
     return InkWell(
       onTap: onTap,
@@ -35,10 +35,7 @@ class MuscleGroupCard extends StatelessWidget {
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          name,
-          style: TextStyle(color: textColor),
-        ),
+        child: Text(name, style: TextStyle(color: textColor)),
       ),
     );
   }

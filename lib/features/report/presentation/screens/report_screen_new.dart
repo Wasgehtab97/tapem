@@ -20,8 +20,7 @@ class ReportScreenNew extends StatelessWidget {
     final usageData = context.watch<ReportProvider>().usageCounts;
     final data = usageData.isEmpty ? _exampleUsageData(context) : usageData;
     final feedbackProvider = context.watch<FeedbackProvider>();
-    if (!feedbackProvider.isLoading &&
-        feedbackProvider.entries.isEmpty) {
+    if (!feedbackProvider.isLoading && feedbackProvider.entries.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<FeedbackProvider>().loadFeedback(gymId);
       });
@@ -29,9 +28,7 @@ class ReportScreenNew extends StatelessWidget {
     final int openCount = feedbackProvider.openEntries.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Report'),
-      ),
+      appBar: AppBar(title: const Text('Report')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -44,9 +41,11 @@ class ReportScreenNew extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.feedback_outlined),
                 title: const Text('Feedback'),
-                subtitle: Text(openCount > 0
-                    ? '$openCount offene Einträge'
-                    : 'Kein offenes Feedback'),
+                subtitle: Text(
+                  openCount > 0
+                      ? '$openCount offene Einträge'
+                      : 'Kein offenes Feedback',
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.push(
@@ -78,8 +77,7 @@ class ReportScreenNew extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              SurveyOverviewScreen(gymId: gymId),
+                          builder: (_) => SurveyOverviewScreen(gymId: gymId),
                         ),
                       );
                     },

@@ -21,10 +21,6 @@ class GetHistoryForDevice {
     required String deviceId,
     required String userId,
   }) {
-    return _repo.getHistory(
-      gymId: gymId,
-      deviceId: deviceId,
-      userId: userId,
-    );
+    return _repo.getHistory(gymId: gymId, deviceId: deviceId, userId: userId);
   }
 }

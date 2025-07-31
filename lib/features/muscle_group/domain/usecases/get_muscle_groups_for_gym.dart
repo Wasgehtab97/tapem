@@ -5,5 +5,6 @@ class GetMuscleGroupsForGym {
   final MuscleGroupRepository _repo;
   GetMuscleGroupsForGym(this._repo);
 
-  Future<List<MuscleGroup>> execute(String gymId) => _repo.getMuscleGroups(gymId);
+  Future<List<MuscleGroup>> execute(String gymId) =>
+      _repo.getMuscleGroups(gymId);
 }

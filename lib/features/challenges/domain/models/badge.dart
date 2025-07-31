@@ -14,15 +14,15 @@ class Badge {
   });
 
   factory Badge.fromMap(String id, Map<String, dynamic> map) => Badge(
-        id: id,
-        challengeId: map['challengeId'] as String? ?? '',
-        userId: map['userId'] as String? ?? '',
-        awardedAt: (map['awardedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      );
+    id: id,
+    challengeId: map['challengeId'] as String? ?? '',
+    userId: map['userId'] as String? ?? '',
+    awardedAt: (map['awardedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  );
 
   Map<String, dynamic> toMap() => {
-        'challengeId': challengeId,
-        'userId': userId,
-        'awardedAt': Timestamp.fromDate(awardedAt),
-      };
+    'challengeId': challengeId,
+    'userId': userId,
+    'awardedAt': Timestamp.fromDate(awardedAt),
+  };
 }

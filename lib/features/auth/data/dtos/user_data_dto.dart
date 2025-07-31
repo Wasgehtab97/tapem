@@ -29,7 +29,8 @@ class UserDataDto {
     return UserDataDto(
       userId: doc.id,
       email: data['email'] as String,
-      emailLower: data['emailLower'] as String? ??
+      emailLower:
+          data['emailLower'] as String? ??
           (data['email'] as String).toLowerCase(),
       userName: data['username'] as String?,
       userNameLower: data['usernameLower'] as String?,

@@ -26,10 +26,10 @@ class DeviceDto {
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
-  })  : muscleGroupIds      = List.from(muscleGroupIds ?? []),
-        muscleGroups        = List.from(muscleGroups ?? []),
-        primaryMuscleGroups = List.from(primaryMuscleGroups ?? []),
-        secondaryMuscleGroups = List.from(secondaryMuscleGroups ?? []);
+  }) : muscleGroupIds = List.from(muscleGroupIds ?? []),
+       muscleGroups = List.from(muscleGroups ?? []),
+       primaryMuscleGroups = List.from(primaryMuscleGroups ?? []),
+       secondaryMuscleGroups = List.from(secondaryMuscleGroups ?? []);
 
   factory DeviceDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -41,15 +41,18 @@ class DeviceDto {
       nfcCode: data['nfcCode'] as String?,
       // if the field is missing or null, default to false
       isMulti: (data['isMulti'] as bool?) ?? false,
-      muscleGroupIds: (data['muscleGroupIds'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toList(),
-      muscleGroups: (data['muscleGroups'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toList(),
-      primaryMuscleGroups: (data['primaryMuscleGroups'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toList(),
+      muscleGroupIds:
+          (data['muscleGroupIds'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      muscleGroups:
+          (data['muscleGroups'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      primaryMuscleGroups:
+          (data['primaryMuscleGroups'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
       secondaryMuscleGroups:
           (data['secondaryMuscleGroups'] as List<dynamic>? ?? [])
               .map((e) => e.toString())

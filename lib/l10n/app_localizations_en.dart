@@ -53,7 +53,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gymCodeInvalid => 'Invalid gym code.';
 
   @override
-  String get gymCodeLockedMessage => 'Too many failed attempts. Please wait 30 seconds.';
+  String get gymCodeLockedMessage =>
+      'Too many failed attempts. Please wait 30 seconds.';
 
   @override
   String get gymCodeRequired => 'Gym code required.';

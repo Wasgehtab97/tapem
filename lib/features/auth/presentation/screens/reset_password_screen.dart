@@ -5,7 +5,8 @@ import '../../../../app_router.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String oobCode;
-  const ResetPasswordScreen({Key? key, required this.oobCode}) : super(key: key);
+  const ResetPasswordScreen({Key? key, required this.oobCode})
+    : super(key: key);
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -31,7 +32,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.passwordResetSuccess)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
+        ),
       );
       Navigator.of(context).pushReplacementNamed(AppRouter.auth);
     } on fb_auth.FirebaseAuthException catch (e) {
@@ -57,17 +60,29 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                decoration: InputDecoration(labelText: loc.newPasswordFieldLabel, errorText: _error),
+                decoration: InputDecoration(
+                  labelText: loc.newPasswordFieldLabel,
+                  errorText: _error,
+                ),
                 obscureText: true,
-                validator: (v) => v != null && v.length >= 6 ? null : loc.passwordTooShort,
+                validator:
+                    (v) =>
+                        v != null && v.length >= 6
+                            ? null
+                            : loc.passwordTooShort,
                 onSaved: (v) => _password = v ?? '',
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(loc.confirmPasswordButton),
+                child:
+                    _loading
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Text(loc.confirmPasswordButton),
               ),
             ],
           ),

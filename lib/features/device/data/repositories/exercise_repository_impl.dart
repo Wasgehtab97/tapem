@@ -17,11 +17,7 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   }
 
   @override
-  Future<void> createExercise(
-    String gymId,
-    String deviceId,
-    Exercise ex,
-  ) {
+  Future<void> createExercise(String gymId, String deviceId, Exercise ex) {
     return _src.createExercise(gymId, deviceId, ex);
   }
 

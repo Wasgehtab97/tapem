@@ -23,13 +23,13 @@ class Device {
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
-  })  : muscleGroupIds      = List.unmodifiable(muscleGroupIds ?? []),
-        primaryMuscleGroups = List.unmodifiable(primaryMuscleGroups ?? []),
-        secondaryMuscleGroups = List.unmodifiable(secondaryMuscleGroups ?? []),
-        muscleGroups = List.unmodifiable(
-          muscleGroups ??
-              [...(primaryMuscleGroups ?? []), ...(secondaryMuscleGroups ?? [])],
-        );
+  }) : muscleGroupIds = List.unmodifiable(muscleGroupIds ?? []),
+       primaryMuscleGroups = List.unmodifiable(primaryMuscleGroups ?? []),
+       secondaryMuscleGroups = List.unmodifiable(secondaryMuscleGroups ?? []),
+       muscleGroups = List.unmodifiable(
+         muscleGroups ??
+             [...(primaryMuscleGroups ?? []), ...(secondaryMuscleGroups ?? [])],
+       );
 
   Device copyWith({
     String? uid,
@@ -43,14 +43,15 @@ class Device {
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
   }) => Device(
-    uid:         uid         ?? this.uid,
-    id:          id          ?? this.id,
-    name:        name        ?? this.name,
+    uid: uid ?? this.uid,
+    id: id ?? this.id,
+    name: name ?? this.name,
     description: description ?? this.description,
-    nfcCode:     nfcCode     ?? this.nfcCode,
-    isMulti:     isMulti     ?? this.isMulti,
+    nfcCode: nfcCode ?? this.nfcCode,
+    isMulti: isMulti ?? this.isMulti,
     muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
-    muscleGroups: muscleGroups ??
+    muscleGroups:
+        muscleGroups ??
         [
           ...(primaryMuscleGroups ?? this.primaryMuscleGroups),
           ...(secondaryMuscleGroups ?? this.secondaryMuscleGroups),
@@ -60,34 +61,38 @@ class Device {
   );
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
-    uid:         json['uid']       as String,
-    id:          json['id']        as int? ?? 0,
-    name:        json['name']      as String,
+    uid: json['uid'] as String,
+    id: json['id'] as int? ?? 0,
+    name: json['name'] as String,
     description: json['description'] as String? ?? '',
-    nfcCode:     json['nfcCode']   as String?,
-    isMulti:     json['isMulti']   as bool?   ?? false,
-    muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
-        .map((e) => e.toString())
-        .toList(),
-    primaryMuscleGroups: (json['primaryMuscleGroups'] as List<dynamic>? ?? [])
-        .map((e) => e.toString())
-        .toList(),
-    secondaryMuscleGroups: (json['secondaryMuscleGroups'] as List<dynamic>? ?? [])
-        .map((e) => e.toString())
-        .toList(),
-    muscleGroups: (json['muscleGroups'] as List<dynamic>? ?? [])
-        .map((e) => e.toString())
-        .toList(),
+    nfcCode: json['nfcCode'] as String?,
+    isMulti: json['isMulti'] as bool? ?? false,
+    muscleGroupIds:
+        (json['muscleGroupIds'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
+    primaryMuscleGroups:
+        (json['primaryMuscleGroups'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
+    secondaryMuscleGroups:
+        (json['secondaryMuscleGroups'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
+    muscleGroups:
+        (json['muscleGroups'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
   );
 
   Map<String, dynamic> toJson() => {
-    'id':          id,
-    'name':        name,
+    'id': id,
+    'name': name,
     'description': description,
-    'nfcCode':     nfcCode,
-    'isMulti':     isMulti,
+    'nfcCode': nfcCode,
+    'isMulti': isMulti,
     'muscleGroupIds': muscleGroupIds,
-    'muscleGroups':   muscleGroups,
+    'muscleGroups': muscleGroups,
     'primaryMuscleGroups': primaryMuscleGroups,
     'secondaryMuscleGroups': secondaryMuscleGroups,
   };

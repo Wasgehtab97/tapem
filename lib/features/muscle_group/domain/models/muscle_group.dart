@@ -15,9 +15,9 @@ class MuscleGroup {
     List<String>? primaryDeviceIds,
     List<String>? secondaryDeviceIds,
     List<String>? exerciseIds,
-  })  : primaryDeviceIds = List.unmodifiable(primaryDeviceIds ?? []),
-        secondaryDeviceIds = List.unmodifiable(secondaryDeviceIds ?? []),
-        exerciseIds = List.unmodifiable(exerciseIds ?? []);
+  }) : primaryDeviceIds = List.unmodifiable(primaryDeviceIds ?? []),
+       secondaryDeviceIds = List.unmodifiable(secondaryDeviceIds ?? []),
+       exerciseIds = List.unmodifiable(exerciseIds ?? []);
 
   /// Convenience getter combining both device lists
   List<String> get deviceIds =>
@@ -31,37 +31,41 @@ class MuscleGroup {
     List<String>? secondaryDeviceIds,
     List<String>? exerciseIds,
   }) => MuscleGroup(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        region: region ?? this.region,
-        primaryDeviceIds: primaryDeviceIds ?? this.primaryDeviceIds,
-        secondaryDeviceIds: secondaryDeviceIds ?? this.secondaryDeviceIds,
-        exerciseIds: exerciseIds ?? this.exerciseIds,
-      );
+    id: id ?? this.id,
+    name: name ?? this.name,
+    region: region ?? this.region,
+    primaryDeviceIds: primaryDeviceIds ?? this.primaryDeviceIds,
+    secondaryDeviceIds: secondaryDeviceIds ?? this.secondaryDeviceIds,
+    exerciseIds: exerciseIds ?? this.exerciseIds,
+  );
 
-  factory MuscleGroup.fromJson(Map<String, dynamic> json, String id) => MuscleGroup(
+  factory MuscleGroup.fromJson(Map<String, dynamic> json, String id) =>
+      MuscleGroup(
         id: id,
         name: json['name'] as String? ?? '',
         region: MuscleRegion.values.firstWhere(
           (r) => r.name == json['region'],
           orElse: () => MuscleRegion.core,
         ),
-        primaryDeviceIds: (json['primaryDeviceIds'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-        secondaryDeviceIds: (json['secondaryDeviceIds'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-        exerciseIds: (json['exerciseIds'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
+        primaryDeviceIds:
+            (json['primaryDeviceIds'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList(),
+        secondaryDeviceIds:
+            (json['secondaryDeviceIds'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList(),
+        exerciseIds:
+            (json['exerciseIds'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'region': region.name,
-        'primaryDeviceIds': primaryDeviceIds,
-        'secondaryDeviceIds': secondaryDeviceIds,
-        'exerciseIds': exerciseIds,
-      };
+    'name': name,
+    'region': region.name,
+    'primaryDeviceIds': primaryDeviceIds,
+    'secondaryDeviceIds': secondaryDeviceIds,
+    'exerciseIds': exerciseIds,
+  };
 }

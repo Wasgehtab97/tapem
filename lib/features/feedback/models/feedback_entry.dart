@@ -19,7 +19,11 @@ class FeedbackEntry {
     required this.isDone,
   });
 
-  factory FeedbackEntry.fromMap(String id, Map<String, dynamic> data, String gymId) {
+  factory FeedbackEntry.fromMap(
+    String id,
+    Map<String, dynamic> data,
+    String gymId,
+  ) {
     return FeedbackEntry(
       id: id,
       gymId: gymId,
@@ -32,10 +36,10 @@ class FeedbackEntry {
   }
 
   Map<String, dynamic> toMap() => {
-        'deviceId': deviceId,
-        'userId': userId,
-        'text': text,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'isDone': isDone,
-      };
+    'deviceId': deviceId,
+    'userId': userId,
+    'text': text,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'isDone': isDone,
+  };
 }

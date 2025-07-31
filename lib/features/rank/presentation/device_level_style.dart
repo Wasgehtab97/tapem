@@ -8,7 +8,6 @@ class DeviceLevelStyle {
   static const Color level2Widget = Color(0xFF66BB6A); // vivid green
   static const Color level3Widget = Color(0xFFFFCA28); // vivid amber
 
-
   /// Returns the widget color for the given level.
   /// Levels above 3 reuse the color of level 3 for now.
   static Color widgetColorFor(int level) {
@@ -26,9 +25,8 @@ class DeviceLevelStyle {
     double opacity = 1.0,
     double brightness = -0.6,
   }) {
-    final colors = AppGradients.primary.colors
-        .map((c) => c.withOpacity(opacity))
-        .toList();
+    final colors =
+        AppGradients.primary.colors.map((c) => c.withOpacity(opacity)).toList();
 
     return BoxDecoration(
       gradient: LinearGradient(

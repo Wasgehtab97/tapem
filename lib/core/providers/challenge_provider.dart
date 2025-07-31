@@ -17,8 +17,7 @@ class ChallengeProvider extends ChangeNotifier {
   StreamSubscription? _completedSub;
 
   ChallengeProvider({ChallengeRepository? repo})
-      : _repo = repo ??
-            ChallengeRepositoryImpl(FirestoreChallengeSource());
+    : _repo = repo ?? ChallengeRepositoryImpl(FirestoreChallengeSource());
 
   List<Challenge> get challenges => _challenges;
   List<CompletedChallenge> get completed => _completed;
@@ -29,8 +28,7 @@ class ChallengeProvider extends ChangeNotifier {
     _chSub?.cancel();
     _chSub = _repo.watchActiveChallenges(gymId).listen((list) {
       final completedIds = _completed.map((c) => c.id).toSet();
-      _challenges =
-          list.where((c) => !completedIds.contains(c.id)).toList();
+      _challenges = list.where((c) => !completedIds.contains(c.id)).toList();
       debugPrint('🔄 activeChallenges=${_challenges.length}');
       notifyListeners();
     });
@@ -40,9 +38,9 @@ class ChallengeProvider extends ChangeNotifier {
   void watchCompletedChallenges(String gymId, String userId) {
     debugPrint('👀 watchCompletedChallenges gymId=$gymId userId=$userId');
     _completedSub?.cancel();
-    _completedSub = _repo
-        .watchCompletedChallenges(gymId, userId)
-        .listen((list) {
+    _completedSub = _repo.watchCompletedChallenges(gymId, userId).listen((
+      list,
+    ) {
       _completed = list;
       debugPrint('🔄 completedChallenges=${list.length}');
       // Remove completed from active list
@@ -63,11 +61,7 @@ class ChallengeProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> checkChallenges(
-    String gymId,
-    String userId,
-    String deviceId,
-  ) {
+  Future<void> checkChallenges(String gymId, String userId, String deviceId) {
     return _repo.checkChallenges(gymId, userId, deviceId);
   }
 

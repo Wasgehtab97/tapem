@@ -27,10 +27,7 @@ class XpRepositoryImpl implements XpRepository {
   }
 
   @override
-  Stream<int> watchDayXp({
-    required String userId,
-    required DateTime date,
-  }) {
+  Stream<int> watchDayXp({required String userId, required DateTime date}) {
     return _source.watchDayXp(userId: userId, date: date);
   }
 

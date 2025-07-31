@@ -56,10 +56,13 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                     value: prov.activePlanId == plan.id,
                     onChanged: (_) => prov.setActivePlan(plan.id),
                   ),
-                  title: Text(plan.name,
-                      style: prov.activePlanId == plan.id
-                          ? const TextStyle(fontWeight: FontWeight.bold)
-                          : null),
+                  title: Text(
+                    plan.name,
+                    style:
+                        prov.activePlanId == plan.id
+                            ? const TextStyle(fontWeight: FontWeight.bold)
+                            : null,
+                  ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
                       final gymId = context.read<AuthProvider>().gymCode!;
@@ -75,10 +78,17 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                         }
                       }
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
-                      PopupMenuItem(value: 'delete', child: Text('Löschen')),
-                    ],
+                    itemBuilder:
+                        (_) => const [
+                          PopupMenuItem(
+                            value: 'rename',
+                            child: Text('Umbenennen'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Löschen'),
+                          ),
+                        ],
                   ),
                   onTap: () async {
                     prov.currentPlan = plan;
@@ -103,7 +113,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             label: const Text('Importieren'),
             onPressed: () {
               Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const ImportPlanScreen()))
+                  .push(
+                    MaterialPageRoute(builder: (_) => const ImportPlanScreen()),
+                  )
                   .then((_) => _reload());
             },
           ),
@@ -122,7 +134,11 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   weeks: cfg.weeks,
                 );
                 Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const PlanEditorScreen()))
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => const PlanEditorScreen(),
+                      ),
+                    )
                     .then((_) => _reload());
               }
             },
@@ -139,46 +155,50 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     return showDialog<_PlanCfg>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Neuer Plan'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtr,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                TextField(
-                  controller: weeksCtr,
-                  decoration: const InputDecoration(labelText: 'Wochen'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameCtr.text.trim().isEmpty) return;
-                Navigator.pop(
-                  context,
-                  _PlanCfg(
-                    nameCtr.text.trim(),
-                    int.tryParse(weeksCtr.text) ?? 4,
+      builder:
+          (_) => StatefulBuilder(
+            builder:
+                (ctx, setState) => AlertDialog(
+                  title: const Text('Neuer Plan'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: nameCtr,
+                          decoration: const InputDecoration(labelText: 'Name'),
+                        ),
+                        TextField(
+                          controller: weeksCtr,
+                          decoration: const InputDecoration(
+                            labelText: 'Wochen',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Abbrechen'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (nameCtr.text.trim().isEmpty) return;
+                        Navigator.pop(
+                          context,
+                          _PlanCfg(
+                            nameCtr.text.trim(),
+                            int.tryParse(weeksCtr.text) ?? 4,
+                          ),
+                        );
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+          ),
     );
   }
 
@@ -186,48 +206,54 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     final ctr = TextEditingController(text: current);
     return showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Plan umbenennen'),
-        content: TextField(
-          controller: ctr,
-          decoration: const InputDecoration(labelText: 'Name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Plan umbenennen'),
+            content: TextField(
+              controller: ctr,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.pop(
+                      context,
+                      ctr.text.trim().isEmpty ? null : ctr.text.trim(),
+                    ),
+                child: const Text('Speichern'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () =>
-                Navigator.pop(context, ctr.text.trim().isEmpty ? null : ctr.text.trim()),
-            child: const Text('Speichern'),
-          ),
-        ],
-      ),
     );
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Plan löschen?'),
-            content: const Text('Dieser Vorgang kann nicht rückgängig gemacht werden.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Abbrechen'),
+          builder:
+              (_) => AlertDialog(
+                title: const Text('Plan löschen?'),
+                content: const Text(
+                  'Dieser Vorgang kann nicht rückgängig gemacht werden.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Abbrechen'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Löschen'),
+                  ),
+                ],
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Löschen'),
-              ),
-            ],
-          ),
         ) ??
         false;
   }
-
 }
 
 class _PlanCfg {

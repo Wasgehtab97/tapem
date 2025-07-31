@@ -11,5 +11,4 @@ abstract class RankRepository {
     String gymId,
     String deviceId,
   );
-
 }

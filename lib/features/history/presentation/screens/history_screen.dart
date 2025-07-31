@@ -34,14 +34,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc   = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final prov  = context.watch<HistoryProvider>();
+    final prov = context.watch<HistoryProvider>();
 
     if (prov.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (prov.error != null) {
       return Scaffold(
@@ -55,16 +53,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     for (var log in prov.logs) {
       sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
     }
-    final sessionEntries = sessionsMap.entries.toList()
-      ..sort((a, b) {
-        return b.value.first.timestamp
-            .compareTo(a.value.first.timestamp);
-      });
+    final sessionEntries =
+        sessionsMap.entries.toList()..sort((a, b) {
+          return b.value.first.timestamp.compareTo(a.value.first.timestamp);
+        });
 
     final dates = <DateTime>[];
     final values = <double>[];
     for (var e in sessionEntries) {
-      final logs = [...e.value]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final logs = [...e.value]
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
       dates.add(logs.first.timestamp);
       final e1rms = logs.map((l) => l.weight * (1 + l.reps / 30));
       values.add(e1rms.reduce(max));
@@ -77,11 +75,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    final spots = values
-        .asMap()
-        .entries
-        .map((e) => FlSpot(e.key.toDouble(), e.value))
-        .toList();
+    final spots =
+        values
+            .asMap()
+            .entries
+            .map((e) => FlSpot(e.key.toDouble(), e.value))
+            .toList();
     final minY = values.reduce(min) * 0.9;
     final maxY = values.reduce(max) * 1.1;
 
@@ -92,9 +91,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(loc.historyChartTitle,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              loc.historyChartTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             SizedBox(
               height: 200,
@@ -116,7 +118,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         interval: 1,
                         getTitlesWidget: (value, meta) {
                           final i = value.toInt();
-                          if (i < 0 || i >= dates.length) return const SizedBox();
+                          if (i < 0 || i >= dates.length)
+                            return const SizedBox();
                           final d = dates[i];
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
@@ -135,14 +138,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         showTitles: true,
                         reservedSize: 40,
                         interval: (maxY - minY) / 5,
-                        getTitlesWidget: (value, meta) => Text(
-                          value.toStringAsFixed(0),
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        getTitlesWidget:
+                            (value, meta) => Text(
+                              value.toStringAsFixed(0),
+                              style: theme.textTheme.bodySmall,
+                            ),
                       ),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                   lineBarsData: [
                     LineChartBarData(
@@ -160,9 +168,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(loc.historyListTitle,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              loc.historyListTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(
@@ -177,22 +188,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: ExpansionTile(
-                      title: Text(titleDate,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      children: logs
-                          .map((log) => ListTile(
-                                title: Text('${log.weight} kg × ${log.reps} Wdh.'),
-                                subtitle: Row(
-                                  children: [
-                                    if (log.rir != null) Text('RIR ${log.rir}'),
-                                    if (log.note != null && log.note!.isNotEmpty) ...[
-                                      if (log.rir != null) const SizedBox(width: 8),
-                                      Expanded(child: Text(log.note!)),
+                      title: Text(
+                        titleDate,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      children:
+                          logs
+                              .map(
+                                (log) => ListTile(
+                                  title: Text(
+                                    '${log.weight} kg × ${log.reps} Wdh.',
+                                  ),
+                                  subtitle: Row(
+                                    children: [
+                                      if (log.rir != null)
+                                        Text('RIR ${log.rir}'),
+                                      if (log.note != null &&
+                                          log.note!.isNotEmpty) ...[
+                                        if (log.rir != null)
+                                          const SizedBox(width: 8),
+                                        Expanded(child: Text(log.note!)),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ))
-                          .toList(),
+                              )
+                              .toList(),
                     ),
                   );
                 },

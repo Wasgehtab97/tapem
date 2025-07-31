@@ -24,8 +24,7 @@ class SessionDto {
     required this.reference,
   });
 
-  factory SessionDto.fromFirestore(
-      DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SessionDto.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     // Erzeuge deviceId aus dem Pfad:
     final deviceRef = doc.reference.parent.parent;

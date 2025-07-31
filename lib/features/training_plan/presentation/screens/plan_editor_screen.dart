@@ -175,26 +175,35 @@ class _WeekViewState extends State<_WeekView>
     final plan = context.read<TrainingPlanProvider>().currentPlan!;
     return showDialog<_DayRef>(
       context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Quelle wählen'),
-        children: [
-          for (final w in plan.weeks) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(
-                'Woche \${w.weekNumber}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            for (var i = 0; i < w.days.length; i++)
-              SimpleDialogOption(
-                onPressed: () =>
-                    Navigator.pop(dialogContext, _DayRef(w.weekNumber, i)),
-                child: Text(DateFormat.yMd().add_E().format(w.days[i].date)),
-              ),
-          ],
-        ],
-      ),
+      builder:
+          (dialogContext) => SimpleDialog(
+            title: const Text('Quelle wählen'),
+            children: [
+              for (final w in plan.weeks) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    'Woche \${w.weekNumber}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                for (var i = 0; i < w.days.length; i++)
+                  SimpleDialogOption(
+                    onPressed:
+                        () => Navigator.pop(
+                          dialogContext,
+                          _DayRef(w.weekNumber, i),
+                        ),
+                    child: Text(
+                      DateFormat.yMd().add_E().format(w.days[i].date),
+                    ),
+                  ),
+              ],
+            ],
+          ),
     );
   }
 
@@ -202,16 +211,17 @@ class _WeekViewState extends State<_WeekView>
     final plan = context.read<TrainingPlanProvider>().currentPlan!;
     return showDialog<int>(
       context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Quelle wählen'),
-        children: [
-          for (final w in plan.weeks)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(dialogContext, w.weekNumber),
-              child: Text('Woche \${w.weekNumber}'),
-            ),
-        ],
-      ),
+      builder:
+          (dialogContext) => SimpleDialog(
+            title: const Text('Quelle wählen'),
+            children: [
+              for (final w in plan.weeks)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(dialogContext, w.weekNumber),
+                  child: Text('Woche \${w.weekNumber}'),
+                ),
+            ],
+          ),
     );
   }
 
@@ -329,31 +339,18 @@ class _DayView extends StatelessWidget {
         final exIndex = index - 1;
         return Dismissible(
           key: ValueKey('${day.date}-$exIndex'),
-          background: Container(
-            color: Theme.of(context).colorScheme.error,
-          ),
-          onDismissed: (_) =>
-              prov.removeExercise(weekNumber, day.date, exIndex),
+          background: Container(color: Theme.of(context).colorScheme.error),
+          onDismissed:
+              (_) => prov.removeExercise(weekNumber, day.date, exIndex),
           child: _PlanEntryEditor(
             entry: ex,
-            onChanged: (updated) => prov.updateExercise(
-              weekNumber,
-              day.date,
-              exIndex,
-              updated,
-            ),
+            onChanged:
+                (updated) =>
+                    prov.updateExercise(weekNumber, day.date, exIndex, updated),
             onSelectDevice: () async {
-              final updated = await showDeviceSelectionDialog(
-                context,
-                ex,
-              );
+              final updated = await showDeviceSelectionDialog(context, ex);
               if (updated != null) {
-                prov.updateExercise(
-                  weekNumber,
-                  day.date,
-                  exIndex,
-                  updated,
-                );
+                prov.updateExercise(weekNumber, day.date, exIndex, updated);
               }
             },
           ),

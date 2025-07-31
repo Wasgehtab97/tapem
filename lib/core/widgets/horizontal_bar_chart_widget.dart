@@ -34,54 +34,61 @@ class HorizontalBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxVal = maxValue ?? (data.values.isEmpty ? 1 : data.values.reduce((a, b) => a > b ? a : b));
+    final maxVal =
+        maxValue ??
+        (data.values.isEmpty ? 1 : data.values.reduce((a, b) => a > b ? a : b));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: data.entries.map((entry) {
-        final ratio = (entry.value / maxVal).clamp(0.0, 1.0);
-        final colour = _getColour(entry.value, maxVal);
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 80,
-                child: Text(
-                  entry.key,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    Container(
-                      height: barHeight,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.button),
-                      ),
+      children:
+          data.entries.map((entry) {
+            final ratio = (entry.value / maxVal).clamp(0.0, 1.0);
+            final colour = _getColour(entry.value, maxVal);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      entry.key,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                    AnimatedContainer(
-                      duration: AppDurations.short,
-                      height: barHeight,
-                      width: ratio * 1.0,
-                      decoration: BoxDecoration(
-                        color: colour,
-                        borderRadius: BorderRadius.circular(AppRadius.button),
-                      ),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Container(
+                          height: barHeight,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                          ),
+                        ),
+                        AnimatedContainer(
+                          duration: AppDurations.short,
+                          height: barHeight,
+                          width: ratio * 1.0,
+                          decoration: BoxDecoration(
+                            color: colour,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    entry.value.toStringAsFixed(0),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                entry.value.toStringAsFixed(0),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 }

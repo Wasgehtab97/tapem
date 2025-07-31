@@ -15,12 +15,14 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = widget.usageData.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries =
+        widget.usageData.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
 
-    final filtered = entries
-        .where((e) => e.key.toLowerCase().contains(_filter.toLowerCase()))
-        .toList();
+    final filtered =
+        entries
+            .where((e) => e.key.toLowerCase().contains(_filter.toLowerCase()))
+            .toList();
 
     final maxBars = 20;
     var display = filtered;
@@ -91,8 +93,12 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: true, interval: maxY / 5),
                 ),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
               ),
               borderData: FlBorderData(show: false),
               barGroups: bars,

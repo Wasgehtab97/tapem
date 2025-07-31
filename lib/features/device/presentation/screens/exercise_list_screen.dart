@@ -45,100 +45,128 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       appBar: AppBar(title: const Text('Übung wählen')),
       body: Consumer<ExerciseProvider>(
         builder: (_, prov, __) {
-          if (prov.isLoading) return const Center(child: CircularProgressIndicator());
-          if (prov.error != null) return Center(child: Text('Fehler: ${prov.error}'));
+          if (prov.isLoading)
+            return const Center(child: CircularProgressIndicator());
+          if (prov.error != null)
+            return Center(child: Text('Fehler: ${prov.error}'));
           return ListView(
             children: [
               for (var ex in prov.exercises)
                 ListTile(
                   title: Text(ex.name),
-                  onTap: () => Navigator.of(context).pushNamed(
-                    AppRouter.device,
-                    arguments: {
-                      'gymId': widget.gymId,
-                      'deviceId': widget.deviceId,
-                      'exerciseId': ex.id,
-                    },
-                  ),
+                  onTap:
+                      () => Navigator.of(context).pushNamed(
+                        AppRouter.device,
+                        arguments: {
+                          'gymId': widget.gymId,
+                          'deviceId': widget.deviceId,
+                          'exerciseId': ex.id,
+                        },
+                      ),
                 ),
               ListTile(
                 leading: const Icon(Icons.add),
                 title: const Text('Neue Übung'),
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Übung hinzufügen'),
-                    content: StatefulBuilder(
-                      builder: (ctx2, setSt) {
-                        final groups =
-                            context.read<MuscleGroupProvider>().groups;
-                        return SizedBox(
-                          width: 300,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextField(
-                                controller: _nameCtr,
-                                decoration:
-                                    const InputDecoration(labelText: 'Name'),
+                onTap:
+                    () => showDialog(
+                      context: context,
+                      builder:
+                          (_) => AlertDialog(
+                            title: const Text('Übung hinzufügen'),
+                            content: StatefulBuilder(
+                              builder: (ctx2, setSt) {
+                                final groups =
+                                    context.read<MuscleGroupProvider>().groups;
+                                return SizedBox(
+                                  width: 300,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: _nameCtr,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Name',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Muskelgruppen',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Wrap(
+                                        spacing: 4,
+                                        runSpacing: 4,
+                                        children: [
+                                          for (final g in groups)
+                                            MuscleGroupCard(
+                                              name: g.name,
+                                              selected: _selectedGroups
+                                                  .contains(g.id),
+                                              primary:
+                                                  _selectedGroups.contains(
+                                                    g.id,
+                                                  ) &&
+                                                  _selectedGroups.indexOf(
+                                                        g.id,
+                                                      ) ==
+                                                      0,
+                                              onTap:
+                                                  () => setSt(() {
+                                                    if (_selectedGroups
+                                                        .contains(g.id)) {
+                                                      _selectedGroups.remove(
+                                                        g.id,
+                                                      );
+                                                    } else {
+                                                      _selectedGroups.add(g.id);
+                                                    }
+                                                  }),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Abbrechen'),
                               ),
-                              const SizedBox(height: 8),
-                              const Text('Muskelgruppen',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                              Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
-                                children: [
-                                  for (final g in groups)
-                                    MuscleGroupCard(
-                                      name: g.name,
-                                      selected: _selectedGroups.contains(g.id),
-                                      primary: _selectedGroups.contains(g.id) &&
-                                          _selectedGroups.indexOf(g.id) == 0,
-                                      onTap: () => setSt(() {
-                                        if (_selectedGroups.contains(g.id)) {
-                                          _selectedGroups.remove(g.id);
-                                        } else {
-                                          _selectedGroups.add(g.id);
-                                        }
-                                      }),
-                                    ),
-                                ],
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final name = _nameCtr.text.trim();
+                                  if (name.isNotEmpty &&
+                                      _selectedGroups.isNotEmpty) {
+                                    final ex = await prov.addExercise(
+                                      widget.gymId,
+                                      widget.deviceId,
+                                      name,
+                                      userId,
+                                      muscleGroupIds: List.from(
+                                        _selectedGroups,
+                                      ),
+                                    );
+                                    await context
+                                        .read<MuscleGroupProvider>()
+                                        .assignExercise(
+                                          context,
+                                          ex.id,
+                                          List.from(_selectedGroups),
+                                        );
+                                    Navigator.pop(context);
+                                    _selectedGroups.clear();
+                                    _nameCtr.clear();
+                                  }
+                                },
+                                child: const Text('Erstellen'),
                               ),
                             ],
                           ),
-                        );
-                      },
                     ),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final name = _nameCtr.text.trim();
-                          if (name.isNotEmpty && _selectedGroups.isNotEmpty) {
-                            final ex = await prov.addExercise(
-                              widget.gymId,
-                              widget.deviceId,
-                              name,
-                              userId,
-                              muscleGroupIds: List.from(_selectedGroups),
-                            );
-                            await context.read<MuscleGroupProvider>().assignExercise(
-                                  context,
-                                  ex.id,
-                                  List.from(_selectedGroups),
-                                );
-                            Navigator.pop(context);
-                            _selectedGroups.clear();
-                            _nameCtr.clear();
-                          }
-                        },
-                        child: const Text('Erstellen'),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ],
           );

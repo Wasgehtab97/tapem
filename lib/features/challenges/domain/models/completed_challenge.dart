@@ -11,14 +11,16 @@ class CompletedChallenge {
     required this.completedAt,
   });
 
-  factory CompletedChallenge.fromMap(String id, Map<String, dynamic> map) => CompletedChallenge(
+  factory CompletedChallenge.fromMap(String id, Map<String, dynamic> map) =>
+      CompletedChallenge(
         id: id,
         title: map['title'] as String? ?? '',
-        completedAt: (map['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        completedAt:
+            (map['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       );
 
   Map<String, dynamic> toMap() => {
-        'title': title,
-        'completedAt': Timestamp.fromDate(completedAt),
-      };
+    'title': title,
+    'completedAt': Timestamp.fromDate(completedAt),
+  };
 }

@@ -41,7 +41,10 @@ class HeatmapWidget extends StatelessWidget {
             children: [
               for (int j = 0; j < values[i].length; j++)
                 GestureDetector(
-                  onTap: onCellTap == null ? null : () => onCellTap!(i, j, values[i][j]),
+                  onTap:
+                      onCellTap == null
+                          ? null
+                          : () => onCellTap!(i, j, values[i][j]),
                   child: Container(
                     width: cellSize,
                     height: cellSize,

@@ -26,12 +26,8 @@ class FirestoreRankSource {
         .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
-    final sessionRef = lbRef
-        .collection('sessions')
-        .doc(sessionId);
-    final dayRef = lbRef
-        .collection('days')
-        .doc(dateStr);
+    final sessionRef = lbRef.collection('sessions').doc(sessionId);
+    final dayRef = lbRef.collection('days').doc(dateStr);
 
     await _firestore.runTransaction((tx) async {
       final lbSnap = await tx.get(lbRef);
@@ -59,10 +55,7 @@ class FirestoreRankSource {
       }
 
       if (!sessSnap.exists) {
-        tx.set(sessionRef, {
-          'deviceId': deviceId,
-          'date': dateStr,
-        });
+        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
       }
     });
   }
@@ -83,8 +76,7 @@ class FirestoreRankSource {
 
     return query.snapshots().asyncMap((snap) async {
       final futures = snap.docs.map((d) async {
-        final userSnap =
-            await _firestore.collection('users').doc(d.id).get();
+        final userSnap = await _firestore.collection('users').doc(d.id).get();
         final username = userSnap.data()?['username'] as String?;
         return {'userId': d.id, 'username': username, ...d.data()};
       });

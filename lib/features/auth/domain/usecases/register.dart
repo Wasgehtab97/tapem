@@ -9,13 +9,10 @@ import '../repositories/auth_repository.dart';
 /// damit Custom Claims (z.B. role) direkt verfügbar sind.
 class RegisterUseCase {
   final AuthRepository _repo;
-  RegisterUseCase([AuthRepository? repo]) : _repo = repo ?? AuthRepositoryImpl();
+  RegisterUseCase([AuthRepository? repo])
+    : _repo = repo ?? AuthRepositoryImpl();
 
-  Future<UserData> execute(
-      String email,
-      String password,
-      String gymId,
-  ) async {
+  Future<UserData> execute(String email, String password, String gymId) async {
     // 1) Nutzerkonto anlegen und UserData in Firestore speichern
     final user = await _repo.register(email, password, gymId);
 

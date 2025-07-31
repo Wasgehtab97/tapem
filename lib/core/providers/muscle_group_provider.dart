@@ -33,30 +33,34 @@ class MuscleGroupProvider extends ChangeNotifier {
     GetHistoryForDevice? getHistory,
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
     SetDeviceMuscleGroupsUseCase? setDeviceGroups,
-  })  : _getGroups = getGroups ??
-            GetMuscleGroupsForGym(
-              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-            ),
-        _saveGroup = saveGroup ??
-            SaveMuscleGroup(
-              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-            ),
-        _deleteGroup = deleteGroup ??
-            DeleteMuscleGroup(
-              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-            ),
-        _getHistory = getHistory ??
-            GetHistoryForDevice(
-              HistoryRepositoryImpl(FirestoreHistorySource()),
-            ),
-        _updateDeviceGroups = updateDeviceGroups ??
-            UpdateDeviceMuscleGroupsUseCase(
-              DeviceRepositoryImpl(FirestoreDeviceSource()),
-            ),
-        _setDeviceGroups = setDeviceGroups ??
-            SetDeviceMuscleGroupsUseCase(
-              DeviceRepositoryImpl(FirestoreDeviceSource()),
-            );
+  }) : _getGroups =
+           getGroups ??
+           GetMuscleGroupsForGym(
+             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+           ),
+       _saveGroup =
+           saveGroup ??
+           SaveMuscleGroup(
+             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+           ),
+       _deleteGroup =
+           deleteGroup ??
+           DeleteMuscleGroup(
+             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+           ),
+       _getHistory =
+           getHistory ??
+           GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource())),
+       _updateDeviceGroups =
+           updateDeviceGroups ??
+           UpdateDeviceMuscleGroupsUseCase(
+             DeviceRepositoryImpl(FirestoreDeviceSource()),
+           ),
+       _setDeviceGroups =
+           setDeviceGroups ??
+           SetDeviceMuscleGroupsUseCase(
+             DeviceRepositoryImpl(FirestoreDeviceSource()),
+           );
 
   bool _isLoading = false;
   String? _error;
@@ -103,12 +107,9 @@ class MuscleGroupProvider extends ChangeNotifier {
       try {
         final dev = devices.firstWhere((d) => d.uid == dId);
         if (!dev.isMulti) {
-          await _updateDeviceGroups.execute(
-            gymId,
-            dId,
-            [group.region.name],
-            const [],
-          );
+          await _updateDeviceGroups.execute(gymId, dId, [
+            group.region.name,
+          ], const []);
         }
       } catch (_) {}
     }
@@ -117,12 +118,9 @@ class MuscleGroupProvider extends ChangeNotifier {
       try {
         final dev = devices.firstWhere((d) => d.uid == dId);
         if (!dev.isMulti) {
-          await _updateDeviceGroups.execute(
-            gymId,
-            dId,
-            const [],
-            [group.region.name],
-          );
+          await _updateDeviceGroups.execute(gymId, dId, const [], [
+            group.region.name,
+          ]);
         }
       } catch (_) {}
     }
@@ -147,8 +145,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
     for (final g in _groups) {
-      if (groupIds.contains(g.id) &&
-          !g.primaryDeviceIds.contains(deviceId)) {
+      if (groupIds.contains(g.id) && !g.primaryDeviceIds.contains(deviceId)) {
         final updated = g.copyWith(
           primaryDeviceIds: [...g.primaryDeviceIds, deviceId],
         );

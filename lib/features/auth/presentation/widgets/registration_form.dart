@@ -41,9 +41,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
     _formKey.currentState!.save();
     setState(() => _gymError = null);
 
-    final validator = ValidateGymCode(
-      GymRepositoryImpl(FirestoreGymSource()),
-    );
+    final validator = ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
 
     try {
       await validator.execute(_gymCode);
@@ -79,17 +77,14 @@ class _RegistrationFormState extends State<RegistrationForm> {
     await authProv.register(_email, _password, _gymCode);
     if (authProv.error != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProv.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(authProv.error!)));
       return;
     }
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(
-      AppRouter.home,
-      arguments: 1,
-    );
+    Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
   }
 
   @override
@@ -109,16 +104,17 @@ class _RegistrationFormState extends State<RegistrationForm> {
               decoration: InputDecoration(labelText: loc.emailFieldLabel),
               keyboardType: TextInputType.emailAddress,
               onSaved: (v) => _email = v!.trim(),
-              validator: (v) =>
-                  v != null && v.contains('@') ? null : loc.emailInvalid,
+              validator:
+                  (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
             ),
             const SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(labelText: loc.passwordFieldLabel),
               obscureText: true,
               onSaved: (v) => _password = v ?? '',
-              validator: (v) =>
-                  v != null && v.length >= 6 ? null : loc.passwordTooShort,
+              validator:
+                  (v) =>
+                      v != null && v.length >= 6 ? null : loc.passwordTooShort,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -129,19 +125,23 @@ class _RegistrationFormState extends State<RegistrationForm> {
               ),
               enabled: !_isLocked,
               onSaved: (v) => _gymCode = v!.trim(),
-              validator: (v) =>
-                  v != null && v.trim().isNotEmpty ? null : loc.gymCodeRequired,
+              validator:
+                  (v) =>
+                      v != null && v.trim().isNotEmpty
+                          ? null
+                          : loc.gymCodeRequired,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: authProv.isLoading || _isLocked ? null : _submit,
-              child: authProv.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(loc.registerButton),
+              child:
+                  authProv.isLoading
+                      ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Text(loc.registerButton),
             ),
           ],
         ),

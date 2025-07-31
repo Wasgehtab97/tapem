@@ -15,8 +15,8 @@ class CircularXpIndicator extends StatelessWidget {
     required this.progress,
     this.size = 160,
     this.label = 'XP',
-  })  : assert(progress >= 0 && progress <= 1),
-        super(key: key);
+  }) : assert(progress >= 0 && progress <= 1),
+       super(key: key);
 
   /// Progress value between 0.0 and 1.0.
   final double progress;
@@ -44,9 +44,7 @@ class CircularXpIndicator extends StatelessWidget {
               SizedBox(
                 width: size,
                 height: size,
-                child: CustomPaint(
-                  painter: _RingPainter(progress: value),
-                ),
+                child: CustomPaint(painter: _RingPainter(progress: value)),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -56,10 +54,7 @@ class CircularXpIndicator extends StatelessWidget {
                     style: Theme.of(context).textTheme.displayLarge,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text(label, style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
             ],
@@ -82,20 +77,22 @@ class _RingPainter extends CustomPainter {
     final centre = Offset(size.width / 2, size.height / 2);
 
     // Draw background track
-    final backgroundPaint = Paint()
-      ..color = AppColors.surface
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+    final backgroundPaint =
+        Paint()
+          ..color = AppColors.surface
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth;
     canvas.drawCircle(centre, radius, backgroundPaint);
 
     // Draw progress arc with gradient
     final rect = Rect.fromCircle(center: centre, radius: radius);
     final gradient = AppGradients.progress.createShader(rect);
-    final progressPaint = Paint()
-      ..shader = gradient
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
+    final progressPaint =
+        Paint()
+          ..shader = gradient
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = strokeWidth;
     final sweepAngle = 2 * math.pi * progress;
     canvas.drawArc(rect, -math.pi / 2, sweepAngle, false, progressPaint);
   }

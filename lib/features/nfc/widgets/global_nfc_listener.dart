@@ -27,9 +27,9 @@ class _GlobalNfcListenerState extends State<GlobalNfcListener> {
     super.didChangeDependencies();
     if (!_listening) {
       _listening = true;
-      _reader    = context.read<ReadNfcCode>();
+      _reader = context.read<ReadNfcCode>();
       _getDevice = context.read<GetDeviceByNfcCode>();
-      _auth      = context.read<auth.AuthProvider>();
+      _auth = context.read<auth.AuthProvider>();
 
       _reader.execute().listen((code) async {
         if (code.isEmpty) return;
@@ -41,17 +41,14 @@ class _GlobalNfcListenerState extends State<GlobalNfcListener> {
         if (dev.isMulti) {
           navigatorKey.currentState?.pushNamed(
             AppRouter.exerciseList,
-            arguments: {
-              'gymId':    gymId,
-              'deviceId': dev.id,
-            },
+            arguments: {'gymId': gymId, 'deviceId': dev.id},
           );
         } else {
           navigatorKey.currentState?.pushNamed(
             AppRouter.device,
             arguments: {
-              'gymId':      gymId,
-              'deviceId':   dev.id,
+              'gymId': gymId,
+              'deviceId': dev.id,
               'exerciseId': dev.id,
             },
           );

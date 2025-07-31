@@ -18,14 +18,14 @@ const Map<String, List<String>> muscleCategoryMap = {
     'adductors',
     'abductors',
     'calves',
-    'feet'
+    'feet',
   ],
   'core': ['abs'],
   'shoulders': [
     'anterior_deltoid',
     'lateral_deltoid',
     'posterior_deltoid',
-    'trapezius'
+    'trapezius',
   ],
 };
 
@@ -50,9 +50,7 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
     final prov = context.watch<MuscleGroupProvider>();
 
     if (prov.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (prov.error != null) {
       return Scaffold(
@@ -65,64 +63,65 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
       appBar: AppBar(title: const Text('Muskelgruppen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Builder(builder: (context) {
-          final counts = prov.counts;
-          final groups = prov.groups;
-          final regionXp = <MuscleRegion, double>{};
-          for (final g in groups) {
-            final count = counts[g.id] ?? 0;
-            regionXp[g.region] = (regionXp[g.region] ?? 0) + count.toDouble();
-          }
+        child: Builder(
+          builder: (context) {
+            final counts = prov.counts;
+            final groups = prov.groups;
+            final regionXp = <MuscleRegion, double>{};
+            for (final g in groups) {
+              final count = counts[g.id] ?? 0;
+              regionXp[g.region] = (regionXp[g.region] ?? 0) + count.toDouble();
+            }
 
-          final xpMap = <String, double>{
-            'head': 0,
-            'chest': regionXp[MuscleRegion.chest] ?? 0,
-            'core': regionXp[MuscleRegion.core] ?? 0,
-            'pelvis': regionXp[MuscleRegion.core] ?? 0,
-            'upper_arm_left': regionXp[MuscleRegion.arms] ?? 0,
-            'upper_arm_right': regionXp[MuscleRegion.arms] ?? 0,
-            'forearm_left': regionXp[MuscleRegion.arms] ?? 0,
-            'forearm_right': regionXp[MuscleRegion.arms] ?? 0,
-            'thigh_left': regionXp[MuscleRegion.legs] ?? 0,
-            'thigh_right': regionXp[MuscleRegion.legs] ?? 0,
-            'calf_left': regionXp[MuscleRegion.legs] ?? 0,
-            'calf_right': regionXp[MuscleRegion.legs] ?? 0,
-            'foot_left': regionXp[MuscleRegion.legs] ?? 0,
-            'foot_right': regionXp[MuscleRegion.legs] ?? 0,
-          };
+            final xpMap = <String, double>{
+              'head': 0,
+              'chest': regionXp[MuscleRegion.chest] ?? 0,
+              'core': regionXp[MuscleRegion.core] ?? 0,
+              'pelvis': regionXp[MuscleRegion.core] ?? 0,
+              'upper_arm_left': regionXp[MuscleRegion.arms] ?? 0,
+              'upper_arm_right': regionXp[MuscleRegion.arms] ?? 0,
+              'forearm_left': regionXp[MuscleRegion.arms] ?? 0,
+              'forearm_right': regionXp[MuscleRegion.arms] ?? 0,
+              'thigh_left': regionXp[MuscleRegion.legs] ?? 0,
+              'thigh_right': regionXp[MuscleRegion.legs] ?? 0,
+              'calf_left': regionXp[MuscleRegion.legs] ?? 0,
+              'calf_right': regionXp[MuscleRegion.legs] ?? 0,
+              'foot_left': regionXp[MuscleRegion.legs] ?? 0,
+              'foot_right': regionXp[MuscleRegion.legs] ?? 0,
+            };
 
-          final values = xpMap.values;
-          final minXp = values.isNotEmpty ? values.reduce(math.min) : 0.0;
-          final maxXp = values.isNotEmpty ? values.reduce(math.max) : 0.0;
-          const mintColor = Color(0xFF00E676);
-          const amberColor = Color(0xFFFFC107);
-          final colorMap = <String, Color>{};
-          xpMap.forEach((id, xp) {
-            final t = maxXp > minXp
-                ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
-                : 0.0;
-            colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
-          });
+            final values = xpMap.values;
+            final minXp = values.isNotEmpty ? values.reduce(math.min) : 0.0;
+            final maxXp = values.isNotEmpty ? values.reduce(math.max) : 0.0;
+            const mintColor = Color(0xFF00E676);
+            const amberColor = Color(0xFFFFC107);
+            final colorMap = <String, Color>{};
+            xpMap.forEach((id, xp) {
+              final t =
+                  maxXp > minXp
+                      ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
+                      : 0.0;
+              colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
+            });
 
-          return DefaultTabController(
-            length: 2,
-            child: Column(
-              children: [
-                const TabBar(
-                  tabs: [Tab(text: '2D'), Tab(text: '3D')],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      SvgMuscleHeatmapWidget(colors: colorMap),
-                      Mesh3DHeatmapWidget(muscleColors: colorMap),
-                    ],
+            return DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  const TabBar(tabs: [Tab(text: '2D'), Tab(text: '3D')]),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        SvgMuscleHeatmapWidget(colors: colorMap),
+                        Mesh3DHeatmapWidget(muscleColors: colorMap),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

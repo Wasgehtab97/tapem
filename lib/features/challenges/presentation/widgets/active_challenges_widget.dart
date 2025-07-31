@@ -22,26 +22,27 @@ class ActiveChallengesWidget extends StatelessWidget {
             onTap: () {
               showDialog(
                 context: context,
-                builder: (_) => AlertDialog(
-                  title: Text(c.title),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.description),
-                      const SizedBox(height: 8),
-                      Text('XP: ${c.xpReward}'),
-                      const SizedBox(height: 8),
-                      Text('Geräte: ${c.deviceIds.join(', ')}'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Schließen'),
-                    )
-                  ],
-                ),
+                builder:
+                    (_) => AlertDialog(
+                      title: Text(c.title),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(c.description),
+                          const SizedBox(height: 8),
+                          Text('XP: ${c.xpReward}'),
+                          const SizedBox(height: 8),
+                          Text('Geräte: ${c.deviceIds.join(', ')}'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Schließen'),
+                        ),
+                      ],
+                    ),
               );
             },
           ),

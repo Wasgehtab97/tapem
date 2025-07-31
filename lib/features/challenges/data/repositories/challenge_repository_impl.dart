@@ -20,13 +20,14 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
 
   @override
   Stream<List<CompletedChallenge>> watchCompletedChallenges(
-      String gymId, String userId) {
+    String gymId,
+    String userId,
+  ) {
     return _source.watchCompletedChallenges(gymId, userId);
   }
 
   @override
-  Future<void> checkChallenges(
-      String gymId, String userId, String deviceId) {
+  Future<void> checkChallenges(String gymId, String userId, String deviceId) {
     return _source.checkChallenges(
       gymId: gymId,
       userId: userId,

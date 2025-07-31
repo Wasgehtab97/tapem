@@ -237,8 +237,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               const SizedBox(height: 8),
                               for (var entry in prov.sets.asMap().entries)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: _SessionSetRow(index: entry.key, set: entry.value),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: _SessionSetRow(
+                                    index: entry.key,
+                                    set: entry.value,
+                                  ),
                                 ),
                               TextButton.icon(
                                 onPressed: () {
@@ -487,7 +492,9 @@ class _SessionSetRowState extends State<_SessionSetRow> {
             child: TextFormField(
               initialValue: widget.set['weight'],
               decoration: const InputDecoration(labelText: 'kg', isDense: true),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               onChanged: (v) => prov.updateSet(widget.index, weight: v),
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Gewicht?';
@@ -517,8 +524,10 @@ class _SessionSetRowState extends State<_SessionSetRow> {
             Expanded(
               child: TextFormField(
                 initialValue: widget.set['rir'],
-                decoration:
-                    const InputDecoration(labelText: 'RIR', isDense: true),
+                decoration: const InputDecoration(
+                  labelText: 'RIR',
+                  isDense: true,
+                ),
                 keyboardType: TextInputType.number,
                 onChanged: (v) => prov.updateSet(widget.index, rir: v),
               ),
@@ -528,8 +537,10 @@ class _SessionSetRowState extends State<_SessionSetRow> {
               flex: 2,
               child: TextFormField(
                 initialValue: widget.set['note'],
-                decoration:
-                    const InputDecoration(labelText: 'Notiz', isDense: true),
+                decoration: const InputDecoration(
+                  labelText: 'Notiz',
+                  isDense: true,
+                ),
                 onChanged: (v) => prov.updateSet(widget.index, note: v),
               ),
             ),

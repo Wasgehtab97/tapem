@@ -58,10 +58,7 @@ class FirestoreAuthSource {
         .doc(gym.id)
         .collection('users')
         .doc(uid)
-        .set({
-      'role': 'member',
-      'createdAt': Timestamp.fromDate(now),
-    });
+        .set({'role': 'member', 'createdAt': Timestamp.fromDate(now)});
 
     return dto;
   }
@@ -78,11 +75,12 @@ class FirestoreAuthSource {
 
   Future<bool> isUsernameAvailable(String username) async {
     final lower = username.toLowerCase();
-    final query = await _firestore
-        .collection('users')
-        .where('usernameLower', isEqualTo: lower)
-        .limit(1)
-        .get();
+    final query =
+        await _firestore
+            .collection('users')
+            .where('usernameLower', isEqualTo: lower)
+            .limit(1)
+            .get();
     return query.docs.isEmpty;
   }
 

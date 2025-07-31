@@ -67,7 +67,9 @@ class AppTheme {
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),
-          borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+          borderSide: BorderSide(
+            color: AppColors.textSecondary.withOpacity(0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),

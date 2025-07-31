@@ -12,10 +12,9 @@ class ProfileProvider extends ChangeNotifier {
   final GetHistoryForDevice _getHistory;
 
   ProfileProvider({GetHistoryForDevice? getHistory})
-      : _getHistory = getHistory ??
-            GetHistoryForDevice(
-              HistoryRepositoryImpl(FirestoreHistorySource()),
-            );
+    : _getHistory =
+          getHistory ??
+          GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource()));
 
   bool _isLoading = false;
   String? _error;
@@ -33,9 +32,9 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final authProv = Provider.of<AuthProvider>(context, listen: false);
-      final gymId    = authProv.gymCode;
-      final userId   = authProv.userId;
-      final devices  = Provider.of<GymProvider>(context, listen: false).devices;
+      final gymId = authProv.gymCode;
+      final userId = authProv.userId;
+      final devices = Provider.of<GymProvider>(context, listen: false).devices;
 
       if (gymId == null || userId == null) {
         throw Exception('Kein Benutzer oder Gym gefunden');
@@ -54,7 +53,8 @@ class ProfileProvider extends ChangeNotifier {
       for (final logs in results) {
         for (final log in logs) {
           final dt = log.timestamp;
-          final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          final key =
+              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
           datesSet.add(key);
         }
       }
@@ -62,7 +62,10 @@ class ProfileProvider extends ChangeNotifier {
       _trainingDates = datesSet.toList()..sort();
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
-      debugPrintStack(label: 'ProfileProvider.loadTrainingDates', stackTrace: st);
+      debugPrintStack(
+        label: 'ProfileProvider.loadTrainingDates',
+        stackTrace: st,
+      );
     } finally {
       _isLoading = false;
       notifyListeners();

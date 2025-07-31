@@ -41,9 +41,10 @@ class ExerciseEntry {
     rir: (map['rir'] as num?)?.toInt() ?? 0,
     restInSeconds: (map['restInSeconds'] as num?)?.toInt() ?? 0,
     notes: map['notes'] as String?,
-    sets: (map['sets'] as List<dynamic>? ?? [])
-        .map((e) => PlannedSet.fromMap(e as Map<String, dynamic>))
-        .toList(),
+    sets:
+        (map['sets'] as List<dynamic>? ?? [])
+            .map((e) => PlannedSet.fromMap(e as Map<String, dynamic>))
+            .toList(),
   );
 
   Map<String, dynamic> toMap() => {

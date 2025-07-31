@@ -10,9 +10,5 @@ abstract class ChallengeRepository {
     String userId,
   );
 
-  Future<void> checkChallenges(
-    String gymId,
-    String userId,
-    String deviceId,
-  );
+  Future<void> checkChallenges(String gymId, String userId, String deviceId);
 }

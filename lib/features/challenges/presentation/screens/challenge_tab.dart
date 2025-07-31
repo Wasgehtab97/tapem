@@ -40,10 +40,7 @@ class _ChallengeTabState extends State<ChallengeTab>
       children: [
         TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Aktiv'),
-            Tab(text: 'Abgeschlossen'),
-          ],
+          tabs: const [Tab(text: 'Aktiv'), Tab(text: 'Abgeschlossen')],
         ),
         Expanded(
           child: TabBarView(

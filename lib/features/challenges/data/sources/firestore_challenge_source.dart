@@ -114,10 +114,10 @@ class FirestoreChallengeSource {
 
     debugPrint('🎯 evaluating ${challenges.length} challenges');
 
-      for (final ch in challenges) {
-        if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
-          continue;
-        }
+    for (final ch in challenges) {
+      if (ch.deviceIds.isNotEmpty && !ch.deviceIds.contains(deviceId)) {
+        continue;
+      }
       debugPrint('➡️ check challenge ${ch.id} devices=${ch.deviceIds}');
       debugPrint('🔍 required sets for ${ch.id}: ${ch.minSets}');
       try {

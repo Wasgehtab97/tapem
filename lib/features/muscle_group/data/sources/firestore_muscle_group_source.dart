@@ -7,7 +7,7 @@ class FirestoreMuscleGroupSource {
   final FirebaseFirestore _firestore;
 
   FirestoreMuscleGroupSource([FirebaseFirestore? firestore])
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _col(String gymId) {
     return _firestore.collection('gyms').doc(gymId).collection('muscleGroups');

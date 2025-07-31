@@ -6,11 +6,8 @@ class XpInfoButton extends StatelessWidget {
   final int xp;
   final int level;
 
-  const XpInfoButton({
-    Key? key,
-    required this.xp,
-    required this.level,
-  }) : super(key: key);
+  const XpInfoButton({Key? key, required this.xp, required this.level})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,33 +21,36 @@ class XpInfoButton extends StatelessWidget {
   void _showInfo(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('XP Info'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('XP: $xp'),
-            Text('Level: ${_toRoman(level)}'),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: xp / LevelService.xpPerLevel),
-            Text('${LevelService.xpPerLevel - xp} XP bis Level ${level + 1}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('XP Info'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('XP: $xp'),
+                Text('Level: ${_toRoman(level)}'),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(value: xp / LevelService.xpPerLevel),
+                Text(
+                  '${LevelService.xpPerLevel - xp} XP bis Level ${level + 1}',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed(AppRouter.xpOverview);
+                },
+                child: const Text('Details'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pushNamed(AppRouter.xpOverview);
-            },
-            child: const Text('Details'),
-          ),
-        ],
-      ),
     );
   }
 

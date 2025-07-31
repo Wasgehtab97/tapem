@@ -100,7 +100,9 @@ class FirestoreTrainingPlanSource {
 
     for (final week in plan.weeks) {
       debugPrint('  saving week ${week.weekNumber}');
-      final weekRef = planRef.collection('weeks').doc(week.weekNumber.toString());
+      final weekRef = planRef
+          .collection('weeks')
+          .doc(week.weekNumber.toString());
       batch.set(weekRef, {
         'weekNumber': week.weekNumber,
         'createdBy': plan.createdBy,
@@ -167,5 +169,4 @@ class FirestoreTrainingPlanSource {
       }
     }
   }
-
 }

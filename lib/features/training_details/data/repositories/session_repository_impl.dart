@@ -25,8 +25,8 @@ class SessionRepositoryImpl implements SessionRepository {
 
     // 2) Für jede Gruppe: sortieren, Sets mappen, Namen+Description holen
     for (var entry in grouped.entries) {
-      final list = entry.value
-        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final list =
+          entry.value..sort((a, b) => a.timestamp.compareTo(b.timestamp));
       final first = list.first;
 
       // Referenz aufs Device-Dokument:
@@ -39,29 +39,30 @@ class SessionRepositoryImpl implements SessionRepository {
       final isMulti = (data['isMulti'] as bool?) ?? false;
 
       if (isMulti && first.exerciseId.isNotEmpty) {
-        final exSnap = await deviceRef
-            .collection('exercises')
-            .doc(first.exerciseId)
-            .get();
+        final exSnap =
+            await deviceRef.collection('exercises').doc(first.exerciseId).get();
         if (exSnap.exists) {
           final exName = (exSnap.data()?["name"] as String?) ?? '';
           if (exName.isNotEmpty) deviceName = exName;
         }
       }
 
-      final sets = list
-        .map((dto) => SessionSet(weight: dto.weight, reps: dto.reps))
-        .toList();
+      final sets =
+          list
+              .map((dto) => SessionSet(weight: dto.weight, reps: dto.reps))
+              .toList();
 
-      sessions.add(Session(
-        sessionId: first.sessionId,
-        deviceId: first.deviceId,
-        deviceName: deviceName,
-        deviceDescription: deviceDescription,
-        timestamp: first.timestamp,
-        note: first.note,
-        sets: sets,
-      ));
+      sessions.add(
+        Session(
+          sessionId: first.sessionId,
+          deviceId: first.deviceId,
+          deviceName: deviceName,
+          deviceDescription: deviceDescription,
+          timestamp: first.timestamp,
+          note: first.note,
+          sets: sets,
+        ),
+      );
     }
 
     // 3) Neueste zuerst

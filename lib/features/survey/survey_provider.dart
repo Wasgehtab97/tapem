@@ -12,7 +12,7 @@ class SurveyProvider extends ChangeNotifier {
   List<Survey> closedSurveys = [];
 
   SurveyProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   void listen(String gymId) {
     _openSub?.cancel();
@@ -25,12 +25,14 @@ class SurveyProvider extends ChangeNotifier {
         .where('status', isEqualTo: 'open')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList())
+        .map(
+          (snap) =>
+              snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList(),
+        )
         .listen((surveys) {
-      openSurveys = surveys;
-      notifyListeners();
-    });
+          openSurveys = surveys;
+          notifyListeners();
+        });
 
     _closedSub = _firestore
         .collection('gyms')
@@ -39,12 +41,14 @@ class SurveyProvider extends ChangeNotifier {
         .where('status', isEqualTo: 'abgeschlossen')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList())
+        .map(
+          (snap) =>
+              snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList(),
+        )
         .listen((surveys) {
-      closedSurveys = surveys;
-      notifyListeners();
-    });
+          closedSurveys = surveys;
+          notifyListeners();
+        });
   }
 
   void cancel() {
@@ -70,7 +74,10 @@ class SurveyProvider extends ChangeNotifier {
         .add(doc);
   }
 
-  Future<void> closeSurvey({required String gymId, required String surveyId}) async {
+  Future<void> closeSurvey({
+    required String gymId,
+    required String surveyId,
+  }) async {
     await _firestore
         .collection('gyms')
         .doc(gymId)
@@ -92,11 +99,11 @@ class SurveyProvider extends ChangeNotifier {
         .doc(surveyId)
         .collection('answers')
         .add({
-      'surveyId': surveyId,
-      'userId': userId,
-      'selectedOption': selectedOption,
-      'timestamp': DateTime.now(),
-    });
+          'surveyId': surveyId,
+          'userId': userId,
+          'selectedOption': selectedOption,
+          'timestamp': DateTime.now(),
+        });
   }
 
   Future<Map<String, int>> getResults({
@@ -104,13 +111,14 @@ class SurveyProvider extends ChangeNotifier {
     required String surveyId,
     required List<String> options,
   }) async {
-    final snap = await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('surveys')
-        .doc(surveyId)
-        .collection('answers')
-        .get();
+    final snap =
+        await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('surveys')
+            .doc(surveyId)
+            .collection('answers')
+            .get();
     final Map<String, int> counts = {for (final o in options) o: 0};
     for (final doc in snap.docs) {
       final data = doc.data();

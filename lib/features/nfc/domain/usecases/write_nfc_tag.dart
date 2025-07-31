@@ -41,9 +41,7 @@ class WriteNfcTagUseCase {
     } finally {
       // 4) Session immer beenden
       try {
-        await FlutterNfcKit.finish(
-          iosAlertMessage: 'Schreiben abgeschlossen',
-        );
+        await FlutterNfcKit.finish(iosAlertMessage: 'Schreiben abgeschlossen');
       } catch (e) {
         debugPrint('⚠️ NFC finish() failed: \$e');
       }
@@ -65,17 +63,16 @@ class WriteNfcTagUseCase {
     final payload = <int>[status, ...langBytes, ...textBytes];
 
     // d) Byte-Array als hex-String
-    final payloadHex = payload
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final payloadHex =
+        payload.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
     // e) Record-Type 'T' = 0x54
     const typeHex = '54';
 
     return NDEFRawRecord(
-      '',                   // identifier leer lassen
-      payloadHex,           // payload als hex-String
-      typeHex,              // type-Field als hex-String
+      '', // identifier leer lassen
+      payloadHex, // payload als hex-String
+      typeHex, // type-Field als hex-String
       TypeNameFormat.nfcWellKnown,
     );
   }

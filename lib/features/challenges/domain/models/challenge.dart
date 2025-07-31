@@ -1,4 +1,5 @@
 import "package:cloud_firestore/cloud_firestore.dart";
+
 class Challenge {
   final String id;
   final String title;
@@ -43,27 +44,28 @@ class Challenge {
   }
 
   factory Challenge.fromMap(String id, Map<String, dynamic> map) => Challenge(
-        id: id,
-        title: map['title'] as String? ?? '',
-        description: map['description'] as String? ?? '',
-        start: (map['start'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        end: (map['end'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        deviceIds: (map['deviceIds'] as List<dynamic>? ?? [])
+    id: id,
+    title: map['title'] as String? ?? '',
+    description: map['description'] as String? ?? '',
+    start: (map['start'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    end: (map['end'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    deviceIds:
+        (map['deviceIds'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
             .toList(),
-        minSets: _parseInt(map['minSets']),
-        xpReward: _parseInt(map['xpReward']),
-      );
+    minSets: _parseInt(map['minSets']),
+    xpReward: _parseInt(map['xpReward']),
+  );
 
   Map<String, dynamic> toMap() => {
-        'title': title,
-        'description': description,
-        'start': Timestamp.fromDate(start),
-        'end': Timestamp.fromDate(end),
-        'deviceIds': deviceIds,
-        'minSets': minSets,
-        'xpReward': xpReward,
-      };
+    'title': title,
+    'description': description,
+    'start': Timestamp.fromDate(start),
+    'end': Timestamp.fromDate(end),
+    'deviceIds': deviceIds,
+    'minSets': minSets,
+    'xpReward': xpReward,
+  };
 }
 
 int _parseInt(dynamic value) {

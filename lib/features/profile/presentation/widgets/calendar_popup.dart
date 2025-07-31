@@ -1,7 +1,7 @@
 // lib/features/profile/presentation/widgets/calendar_popup.dart
 
 import 'package:flutter/material.dart';
-import 'package:tapem/app_router.dart';      // ← HIER DEN IMPORT HINZUFÜGEN
+import 'package:tapem/app_router.dart'; // ← HIER DEN IMPORT HINZUFÜGEN
 import 'calendar.dart';
 
 /// Modal Bottom Sheet mit größerem, horizontal scrollbarem Jahres-Heatmap-Kalender.
@@ -41,13 +41,13 @@ class _CalendarPopupState extends State<CalendarPopup> {
   Widget build(BuildContext context) {
     final sheetHeight = MediaQuery.of(context).size.height * 0.6;
     final firstOfYear = DateTime(widget.initialYear, 1, 1);
-    final lastOfYear  = DateTime(widget.initialYear, 12, 31);
+    final lastOfYear = DateTime(widget.initialYear, 12, 31);
     final startOffset = (firstOfYear.weekday + 6) % 7;
-    final gridStart   = firstOfYear.subtract(Duration(days: startOffset));
-    final totalDays   = lastOfYear.difference(gridStart).inDays + 1;
-    final weekCount   = (totalDays / 7).ceil();
+    final gridStart = firstOfYear.subtract(Duration(days: startOffset));
+    final totalDays = lastOfYear.difference(gridStart).inDays + 1;
+    final weekCount = (totalDays / 7).ceil();
 
-    const boxSize   = 24.0;
+    const boxSize = 24.0;
     const boxMargin = 2.0;
     final cellWidth = boxSize + boxMargin * 2;
 
@@ -59,7 +59,8 @@ class _CalendarPopupState extends State<CalendarPopup> {
     }
 
     final viewportWidth = MediaQuery.of(context).size.width - 32;
-    final desiredOffset = targetWeek * cellWidth - (viewportWidth - boxSize) / 2;
+    final desiredOffset =
+        targetWeek * cellWidth - (viewportWidth - boxSize) / 2;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasJumped && _scrollCtrl.hasClients) {
@@ -90,10 +91,9 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 onDayTap: (date) {
                   // Popup schließen und weiterleiten
                   Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed(
-                    AppRouter.trainingDetails,
-                    arguments: date,
-                  );
+                  Navigator.of(
+                    context,
+                  ).pushNamed(AppRouter.trainingDetails, arguments: date);
                 },
               ),
             ),

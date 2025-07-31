@@ -5,5 +5,8 @@ import '../models/workout_log.dart';
 abstract class HistoryRepository {
   /// Holt alle Logs für [gymId], [deviceId] und [userId].
   Future<List<WorkoutLog>> getHistory(
-      String gymId, String deviceId, String userId);
+    String gymId,
+    String deviceId,
+    String userId,
+  );
 }

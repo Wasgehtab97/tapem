@@ -12,10 +12,7 @@ import '../widgets/day_sessions_overview.dart';
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
 
-  const TrainingDetailsScreen({
-    Key? key,
-    required this.date,
-  }) : super(key: key);
+  const TrainingDetailsScreen({Key? key, required this.date}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,10 +21,7 @@ class TrainingDetailsScreen extends StatelessWidget {
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
         final prov = TrainingDetailsProvider();
-        prov.loadSessions(
-          userId: auth.userId!,
-          date: date,
-        );
+        prov.loadSessions(userId: auth.userId!, date: date);
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(
@@ -52,9 +46,10 @@ class TrainingDetailsScreen extends StatelessWidget {
             appBar: _AppBar(titleDate: date),
             body: Padding(
               padding: const EdgeInsets.all(16),
-              child: sessions.isEmpty
-                  ? const Center(child: Text('Keine Trainingseinheiten'))
-                  : DaySessionsOverview(sessions: sessions),
+              child:
+                  sessions.isEmpty
+                      ? const Center(child: Text('Keine Trainingseinheiten'))
+                      : DaySessionsOverview(sessions: sessions),
             ),
           );
         },
@@ -70,18 +65,17 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = titleDate != null
-        ? DateFormat.yMMMMd(
-            Localizations.localeOf(context).toString(),
-          ).format(titleDate!)
-        : 'Training Details';
+    final title =
+        titleDate != null
+            ? DateFormat.yMMMMd(
+              Localizations.localeOf(context).toString(),
+            ).format(titleDate!)
+            : 'Training Details';
 
     return AppBar(
       title: Text(
         title,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.secondary,
-        ),
+        style: TextStyle(color: Theme.of(context).colorScheme.secondary),
       ),
     );
   }

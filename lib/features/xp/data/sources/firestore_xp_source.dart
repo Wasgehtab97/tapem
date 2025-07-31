@@ -8,8 +8,8 @@ class FirestoreXpSource {
   final FirestoreRankSource _rankSource;
 
   FirestoreXpSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _rankSource = FirestoreRankSource(firestore: firestore);
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _rankSource = FirestoreRankSource(firestore: firestore);
 
   Future<void> addSessionXp({
     required String gymId,
@@ -21,15 +21,17 @@ class FirestoreXpSource {
     required List<String> primaryMuscleGroupIds,
   }) async {
     debugPrint(
-        '📥 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId isMulti=$isMulti muscles=$primaryMuscleGroupIds showLB=$showInLeaderboard');
+      '📥 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId isMulti=$isMulti muscles=$primaryMuscleGroupIds showLB=$showInLeaderboard',
+    );
     final now = DateTime.now();
     final dateStr = now.toIso8601String().split('T').first;
     final userRef = _firestore.collection('users').doc(userId);
     final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
-    final muscleRefs = primaryMuscleGroupIds
-        .map((id) => userRef.collection('muscleGroupXP').doc(id))
-        .toList()
-        .cast<DocumentReference<Map<String, dynamic>>>();
+    final muscleRefs =
+        primaryMuscleGroupIds
+            .map((id) => userRef.collection('muscleGroupXP').doc(id))
+            .toList()
+            .cast<DocumentReference<Map<String, dynamic>>>();
     final statsRef = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -72,8 +74,11 @@ class FirestoreXpSource {
         for (var i = 0; i < muscleRefs.length; i++) {
           final ref = muscleRefs[i];
           final snap = muscleSnaps[i];
-          final xp = (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
-          debugPrint('👉 muscle ${ref.id} XP ${(snap.data()?['xp'] as int?) ?? 0} -> $xp');
+          final xp =
+              (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
+          debugPrint(
+            '👉 muscle ${ref.id} XP ${(snap.data()?['xp'] as int?) ?? 0} -> $xp',
+          );
           if (!snap.exists) {
             tx.set(ref, {'xp': xp});
           } else {
@@ -111,10 +116,7 @@ class FirestoreXpSource {
     }
   }
 
-  Stream<int> watchDayXp({
-    required String userId,
-    required DateTime date,
-  }) {
+  Stream<int> watchDayXp({required String userId, required DateTime date}) {
     final dateStr = date.toIso8601String().split('T').first;
     final ref = _firestore
         .collection('users')
@@ -184,7 +186,9 @@ class FirestoreXpSource {
         .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
-    debugPrint('👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId');
+    debugPrint(
+      '👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
+    );
     return doc.snapshots().map((snap) {
       final xp = (snap.data()?['xp'] as int?) ?? 0;
       debugPrint('📥 deviceXp snapshot $xp');

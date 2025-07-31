@@ -67,16 +67,19 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   List<Device> _applyFilters(List<Device> devices) {
-    var res = devices.where((d) {
-      final q = _query.toLowerCase();
-      final matches = d.name.toLowerCase().contains(q) ||
-          d.description.toLowerCase().contains(q);
-      return matches;
-    }).toList();
+    var res =
+        devices.where((d) {
+          final q = _query.toLowerCase();
+          final matches =
+              d.name.toLowerCase().contains(q) ||
+              d.description.toLowerCase().contains(q);
+          return matches;
+        }).toList();
     if (_groupFilter.isNotEmpty) {
-      res = res
-          .where((d) => d.muscleGroups.any((g) => _groupFilter.contains(g)))
-          .toList();
+      res =
+          res
+              .where((d) => d.muscleGroups.any((g) => _groupFilter.contains(g)))
+              .toList();
     }
     if (_single && !_multi) {
       res = res.where((d) => !d.isMulti).toList();
@@ -87,8 +90,10 @@ class _GymScreenState extends State<GymScreen> {
   }
 
   Map<String, List<Device>> _groupByLetter(List<Device> devices) {
-    final groups = groupBy(devices, (Device d) =>
-        d.name.isNotEmpty ? d.name[0].toUpperCase() : '#');
+    final groups = groupBy(
+      devices,
+      (Device d) => d.name.isNotEmpty ? d.name[0].toUpperCase() : '#',
+    );
     final sortedKeys = groups.keys.toList()..sort();
     return {for (final k in sortedKeys) k: groups[k]!};
   }
@@ -119,9 +124,7 @@ class _GymScreenState extends State<GymScreen> {
     final gymId = auth.gymCode ?? '';
 
     if (gymProv.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (gymProv.error != null) {
       return Scaffold(
@@ -146,27 +149,30 @@ class _GymScreenState extends State<GymScreen> {
                 SliverAppBar(
                   pinned: true,
                   title: Text(loc.gymTitle),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surface.withOpacity(0.9),
                 ),
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _SearchHeaderDelegate(
                     controller: _searchCtr,
-                    groups: groupProv.groups
-                        .map((g) => g.region.name)
-                        .toSet()
-                        .toList(),
+                    groups:
+                        groupProv.groups
+                            .map((g) => g.region.name)
+                            .toSet()
+                            .toList(),
                     selectedGroups: _groupFilter,
                     showSingle: _single,
                     showMulti: _multi,
-                    onGroupToggle: (g) => setState(() {
-                      if (_groupFilter.contains(g)) {
-                        _groupFilter.remove(g);
-                      } else {
-                        _groupFilter.add(g);
-                      }
-                    }),
+                    onGroupToggle:
+                        (g) => setState(() {
+                          if (_groupFilter.contains(g)) {
+                            _groupFilter.remove(g);
+                          } else {
+                            _groupFilter.add(g);
+                          }
+                        }),
                     onToggleSingle: (v) => setState(() => _single = v),
                     onToggleMulti: (v) => setState(() => _multi = v),
                   ),
@@ -180,12 +186,18 @@ class _GymScreenState extends State<GymScreen> {
                     SliverStickyHeader(
                       header: Container(
                         key: _headerKeys.putIfAbsent(
-                            entry.key, () => GlobalKey()),
+                          entry.key,
+                          () => GlobalKey(),
+                        ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         color: Theme.of(context).colorScheme.surface,
-                        child: Text(entry.key,
-                            style: Theme.of(context).textTheme.titleLarge),
+                        child: Text(
+                          entry.key,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                       ),
                       sliver: SliverPadding(
                         padding: const EdgeInsets.all(8),
@@ -204,8 +216,9 @@ class _GymScreenState extends State<GymScreen> {
                                   'deviceId': d.uid,
                                   'exerciseId': d.uid,
                                 };
-                                Navigator.of(context)
-                                    .pushNamed(AppRouter.device, arguments: args);
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRouter.device, arguments: args);
                               },
                             );
                           },
@@ -227,8 +240,10 @@ class _GymScreenState extends State<GymScreen> {
                     onTap: () => _jumpToLetter(l),
                     child: Padding(
                       padding: const EdgeInsets.all(2),
-                      child: Text(l,
-                          style: Theme.of(context).textTheme.labelLarge),
+                      child: Text(
+                        l,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                     ),
                   ),
               ],
@@ -269,7 +284,10 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
       padding: const EdgeInsets.all(8),
@@ -325,4 +343,3 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.showMulti != showMulti;
   }
 }
-

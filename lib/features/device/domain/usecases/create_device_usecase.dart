@@ -23,12 +23,13 @@ class CreateDeviceUseCase {
     List<String>? muscleGroupIds,
   }) async {
     final existing = await _repo.getDevicesForGym(gymId);
-    final maxId = existing.isEmpty
-        ? 0
-        : existing.map((d) => d.id).reduce((a, b) => a > b ? a : b);
+    final maxId =
+        existing.isEmpty
+            ? 0
+            : existing.map((d) => d.id).reduce((a, b) => a > b ? a : b);
     final nextId = maxId + 1;
 
-    final code   = _generateNfcCode();
+    final code = _generateNfcCode();
     final toSave = device.copyWith(
       id: nextId,
       nfcCode: code,

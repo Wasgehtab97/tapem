@@ -18,7 +18,6 @@ class Mesh3DHeatmapWidget extends StatefulWidget {
 }
 
 class _Mesh3DHeatmapWidgetState extends State<Mesh3DHeatmapWidget> {
-
   @override
   Widget build(BuildContext context) {
     return ModelViewer(

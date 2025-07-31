@@ -21,11 +21,7 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
   }
 
   @override
-  Future<void> renamePlan(
-    String gymId,
-    String planId,
-    String newName,
-  ) async {
+  Future<void> renamePlan(String gymId, String planId, String newName) async {
     await _source.renamePlan(gymId, planId, newName);
   }
 

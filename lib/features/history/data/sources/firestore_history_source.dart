@@ -8,22 +8,23 @@ class FirestoreHistorySource {
   final FirebaseFirestore _firestore;
 
   FirestoreHistorySource([FirebaseFirestore? instance])
-      : _firestore = instance ?? FirebaseFirestore.instance;
+    : _firestore = instance ?? FirebaseFirestore.instance;
 
   Future<List<WorkoutLogDto>> getLogs({
     required String gymId,
     required String deviceId,
     required String userId,
   }) async {
-    final snapshot = await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('logs')
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .doc(deviceId)
+            .collection('logs')
+            .where('userId', isEqualTo: userId)
+            .orderBy('timestamp', descending: true)
+            .get();
 
     return snapshot.docs.map((doc) => WorkoutLogDto.fromDocument(doc)).toList();
   }

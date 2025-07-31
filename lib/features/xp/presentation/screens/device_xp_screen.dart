@@ -22,10 +22,8 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
     final uid = auth.userId;
     final gymId = gymProv.currentGymId;
     if (uid != null && gymId.isNotEmpty) {
-      final deviceIds = gymProv.devices
-          .where((d) => !d.isMulti)
-          .map((d) => d.uid)
-          .toList();
+      final deviceIds =
+          gymProv.devices.where((d) => !d.isMulti).map((d) => d.uid).toList();
       xpProv.watchDeviceXp(gymId, uid, deviceIds);
     }
   }
@@ -48,37 +46,41 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
             onTap: () async {
               final fs = FirebaseFirestore.instance;
               final gymId = gymProv.currentGymId;
-              final snap = await fs
-                  .collection('gyms')
-                  .doc(gymId)
-                  .collection('devices')
-                  .doc(d.uid)
-                  .collection('leaderboard')
-                  .where('showInLeaderboard', isEqualTo: true)
-                  .orderBy('xp', descending: true)
-                  .limit(5)
-                  .get();
-              final entries = await Future.wait(snap.docs.map((doc) async {
-                final user = await fs.collection('users').doc(doc.id).get();
-                final name = user.data()?['username'] as String? ?? doc.id;
-                final xp = doc.data()['xp'] as int? ?? 0;
-                return {'username': name, 'xp': xp};
-              }));
+              final snap =
+                  await fs
+                      .collection('gyms')
+                      .doc(gymId)
+                      .collection('devices')
+                      .doc(d.uid)
+                      .collection('leaderboard')
+                      .where('showInLeaderboard', isEqualTo: true)
+                      .orderBy('xp', descending: true)
+                      .limit(5)
+                      .get();
+              final entries = await Future.wait(
+                snap.docs.map((doc) async {
+                  final user = await fs.collection('users').doc(doc.id).get();
+                  final name = user.data()?['username'] as String? ?? doc.id;
+                  final xp = doc.data()['xp'] as int? ?? 0;
+                  return {'username': name, 'xp': xp};
+                }),
+              );
               showDialog(
                 context: context,
-                builder: (_) => AlertDialog(
-                  title: Text(d.name),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final e in entries)
-                        ListTile(
-                          title: Text(e['username'] as String),
-                          trailing: Text('${e['xp']} XP'),
-                        ),
-                    ],
-                  ),
-                ),
+                builder:
+                    (_) => AlertDialog(
+                      title: Text(d.name),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final e in entries)
+                            ListTile(
+                              title: Text(e['username'] as String),
+                              trailing: Text('${e['xp']} XP'),
+                            ),
+                        ],
+                      ),
+                    ),
               );
             },
           );

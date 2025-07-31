@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 /// Defines the selectable time periods for the XP time series chart.
-enum XpPeriod {
-  last7Days,
-  last30Days,
-  total,
-}
+enum XpPeriod { last7Days, last30Days, total }
 
 /// A line chart that visualises the XP progression over time.
 ///
@@ -24,11 +20,8 @@ class XpTimeSeriesChart extends StatelessWidget {
   /// shown and how the x-axis labels are formatted.
   final XpPeriod period;
 
-  const XpTimeSeriesChart({
-    Key? key,
-    required this.data,
-    required this.period,
-  }) : super(key: key);
+  const XpTimeSeriesChart({Key? key, required this.data, required this.period})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -46,16 +39,17 @@ class XpTimeSeriesChart extends StatelessWidget {
         cutoff = null;
         break;
     }
-    final entries = data.entries
-        .where((e) => cutoff == null || !e.key.isBefore(cutoff))
-        .toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final entries =
+        data.entries
+            .where((e) => cutoff == null || !e.key.isBefore(cutoff))
+            .toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
 
     final spots = <FlSpot>[];
-      for (int i = 0; i < entries.length; i++) {
-        final xp = entries[i].value;
-        spots.add(FlSpot(i.toDouble(), xp.toDouble()));
-      }
+    for (int i = 0; i < entries.length; i++) {
+      final xp = entries[i].value;
+      spots.add(FlSpot(i.toDouble(), xp.toDouble()));
+    }
 
     // Determine axis labels.
     String getFormattedLabel(int index) {
@@ -83,9 +77,11 @@ class XpTimeSeriesChart extends StatelessWidget {
           minX: 0,
           maxX: spots.isNotEmpty ? (spots.length - 1).toDouble() : 0,
           minY: 0,
-          maxY: spots.isNotEmpty
-              ? (spots.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.2)
-              : 1000,
+          maxY:
+              spots.isNotEmpty
+                  ? (spots.map((e) => e.y).reduce((a, b) => a > b ? a : b) *
+                      1.2)
+                  : 1000,
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
@@ -129,8 +125,12 @@ class XpTimeSeriesChart extends StatelessWidget {
                 },
               ),
             ),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
           ),
           borderData: FlBorderData(show: false),
           lineBarsData: [

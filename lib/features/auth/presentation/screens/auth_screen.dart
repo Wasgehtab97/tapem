@@ -41,20 +41,14 @@ class _AuthScreenState extends State<AuthScreen>
           title: Text(loc.authTitle),
           bottom: TabBar(
             controller: _tabController,
-            tabs: [
-              Tab(text: loc.loginButton),
-              Tab(text: loc.registerButton),
-            ],
+            tabs: [Tab(text: loc.loginButton), Tab(text: loc.registerButton)],
           ),
         ),
         body: Stack(
           children: [
             TabBarView(
               controller: _tabController,
-              children: const [
-                LoginForm(),
-                RegistrationForm(),
-              ],
+              children: const [LoginForm(), RegistrationForm()],
             ),
             if (authProv.isLoading)
               Container(

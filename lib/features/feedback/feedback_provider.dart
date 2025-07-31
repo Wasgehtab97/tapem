@@ -6,7 +6,7 @@ import 'models/feedback_entry.dart';
 class FeedbackProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
   FeedbackProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   bool _loading = false;
   String? _error;
@@ -26,16 +26,18 @@ class FeedbackProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final snap = await _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('feedback')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final snap =
+          await _firestore
+              .collection('gyms')
+              .doc(gymId)
+              .collection('feedback')
+              .orderBy('createdAt', descending: true)
+              .get();
       _entries
         ..clear()
-        ..addAll(snap.docs.map((d) =>
-            FeedbackEntry.fromMap(d.id, d.data(), gymId)));
+        ..addAll(
+          snap.docs.map((d) => FeedbackEntry.fromMap(d.id, d.data(), gymId)),
+        );
     } catch (e, st) {
       debugPrintStack(label: 'FeedbackProvider.loadFeedback', stackTrace: st);
       _error = e.toString();
@@ -65,7 +67,10 @@ class FeedbackProvider extends ChangeNotifier {
         .add(data);
   }
 
-  Future<void> markDone({required String gymId, required String entryId}) async {
+  Future<void> markDone({
+    required String gymId,
+    required String entryId,
+  }) async {
     await _firestore
         .collection('gyms')
         .doc(gymId)

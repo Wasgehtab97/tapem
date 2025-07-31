@@ -8,7 +8,7 @@ class RankScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
   const RankScreen({Key? key, required this.gymId, required this.deviceId})
-      : super(key: key);
+    : super(key: key);
 
   @override
   _RankScreenState createState() => _RankScreenState();
@@ -40,10 +40,7 @@ class _RankScreenState extends State<RankScreen>
         title: const Text('Leaderboard'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Rank'),
-            Tab(text: 'Challenges'),
-          ],
+          tabs: const [Tab(text: 'Rank'), Tab(text: 'Challenges')],
         ),
       ),
       body: Consumer<RankProvider>(
@@ -58,8 +55,10 @@ class _RankScreenState extends State<RankScreen>
                     child: ListTile(
                       title: const Text('XP je Muskelgruppe'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Navigator.of(context).pushNamed(AppRouter.xpOverview),
+                      onTap:
+                          () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRouter.xpOverview),
                     ),
                   ),
                   Card(
@@ -67,8 +66,9 @@ class _RankScreenState extends State<RankScreen>
                     child: ListTile(
                       title: const Text('XP je Trainingstag'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Navigator.of(context).pushNamed(AppRouter.dayXp),
+                      onTap:
+                          () =>
+                              Navigator.of(context).pushNamed(AppRouter.dayXp),
                     ),
                   ),
                   Card(
@@ -76,8 +76,10 @@ class _RankScreenState extends State<RankScreen>
                     child: ListTile(
                       title: const Text('XP je Gerät'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Navigator.of(context).pushNamed(AppRouter.deviceXp),
+                      onTap:
+                          () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRouter.deviceXp),
                     ),
                   ),
                 ],

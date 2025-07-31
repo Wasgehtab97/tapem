@@ -14,10 +14,7 @@ class WorkoutLogDto {
   final String userId;
   final String sessionId;
 
-  @JsonKey(
-    fromJson: _timestampToDate,
-    toJson: _dateToTimestamp,
-  )
+  @JsonKey(fromJson: _timestampToDate, toJson: _dateToTimestamp)
   final DateTime timestamp;
 
   final double weight;
@@ -50,17 +47,16 @@ class WorkoutLogDto {
 
   /// DTO → Domain-Modell
   WorkoutLog toModel() => WorkoutLog(
-        id: id,
-        userId: userId,
-        sessionId: sessionId,
-        timestamp: timestamp,
-        weight: weight,
-        reps: reps,
-        rir: rir,
-        note: note,
-      );
+    id: id,
+    userId: userId,
+    sessionId: sessionId,
+    timestamp: timestamp,
+    weight: weight,
+    reps: reps,
+    rir: rir,
+    note: note,
+  );
 
   static DateTime _timestampToDate(Timestamp ts) => ts.toDate();
-  static Timestamp _dateToTimestamp(DateTime date) =>
-      Timestamp.fromDate(date);
+  static Timestamp _dateToTimestamp(DateTime date) => Timestamp.fromDate(date);
 }

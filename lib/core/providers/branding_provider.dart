@@ -6,7 +6,7 @@ class BrandingProvider extends ChangeNotifier {
   final FirestoreGymSource _source;
 
   BrandingProvider({FirestoreGymSource? source})
-      : _source = source ?? FirestoreGymSource();
+    : _source = source ?? FirestoreGymSource();
 
   Branding? _branding;
   bool _isLoading = false;

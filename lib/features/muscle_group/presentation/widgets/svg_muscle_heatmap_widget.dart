@@ -33,7 +33,10 @@ class SvgMuscleHeatmapWidget extends StatelessWidget {
         // Replace the fill colour of each element by searching for the id and
         // replacing the following fill attribute.
         colors.forEach((id, color) {
-          final hex = color.value.toRadixString(16).padLeft(8, '0').substring(2);
+          final hex = color.value
+              .toRadixString(16)
+              .padLeft(8, '0')
+              .substring(2);
           final regex = RegExp('<[^>]*id="$id"[^>]*fill="#?[0-9A-Fa-f]{6}"');
           svgString = svgString.replaceAllMapped(regex, (match) {
             final original = match.group(0)!;

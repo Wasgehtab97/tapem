@@ -77,38 +77,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final current = authProv.showInLeaderboard ?? true;
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(loc.publicProfileDialogTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<bool>(
-              title: Text(loc.publicProfilePublic),
-              value: true,
-              groupValue: current,
-              onChanged: (v) {
-                authProv.setShowInLeaderboard(v!);
-                Navigator.pop(context);
-              },
+      builder:
+          (_) => AlertDialog(
+            title: Text(loc.publicProfileDialogTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<bool>(
+                  title: Text(loc.publicProfilePublic),
+                  value: true,
+                  groupValue: current,
+                  onChanged: (v) {
+                    authProv.setShowInLeaderboard(v!);
+                    Navigator.pop(context);
+                  },
+                ),
+                RadioListTile<bool>(
+                  title: Text(loc.publicProfilePrivate),
+                  value: false,
+                  groupValue: current,
+                  onChanged: (v) {
+                    authProv.setShowInLeaderboard(v!);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
-            RadioListTile<bool>(
-              title: Text(loc.publicProfilePrivate),
-              value: false,
-              groupValue: current,
-              onChanged: (v) {
-                authProv.setShowInLeaderboard(v!);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(loc.cancelButton),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(loc.cancelButton),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -116,25 +117,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final loc = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(loc.settingsDialogTitle),
-        children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(context);
-              _showLanguageDialog();
-            },
-            child: Text(loc.settingsOptionLanguage),
+      builder:
+          (_) => SimpleDialog(
+            title: Text(loc.settingsDialogTitle),
+            children: [
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showLanguageDialog();
+                },
+                child: Text(loc.settingsOptionLanguage),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showPrivacyDialog();
+                },
+                child: Text(loc.settingsOptionPublicProfile),
+              ),
+            ],
           ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(context);
-              _showPrivacyDialog();
-            },
-            child: Text(loc.settingsOptionPublicProfile),
-          ),
-        ],
-      ),
     );
   }
 
@@ -187,15 +189,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () {
-                        final gymId =
-                            context.read<GymProvider>().currentGymId;
+                        final gymId = context.read<GymProvider>().currentGymId;
                         final userId =
                             context.read<AuthProvider>().userId ?? '';
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                SurveyVoteScreen(gymId: gymId, userId: userId),
+                            builder:
+                                (_) => SurveyVoteScreen(
+                                  gymId: gymId,
+                                  userId: userId,
+                                ),
                           ),
                         );
                       },

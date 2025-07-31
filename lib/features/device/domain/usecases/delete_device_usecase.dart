@@ -8,10 +8,7 @@ class DeleteDeviceUseCase {
   DeleteDeviceUseCase(this._repo);
 
   /// Löscht ein Gerät in Firestore
-  Future<void> execute({
-    required String gymId,
-    required String deviceId,
-  }) {
+  Future<void> execute({required String gymId, required String deviceId}) {
     return _repo.deleteDevice(gymId, deviceId);
   }
 }

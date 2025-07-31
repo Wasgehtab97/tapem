@@ -15,9 +15,9 @@ class AllExercisesProvider extends ChangeNotifier {
   Map<String, List<Exercise>> get byDevice => Map.unmodifiable(_byDevice);
 
   List<MapEntry<String, Exercise>> get allExercises => [
-        for (final entry in _byDevice.entries)
-          for (final ex in entry.value) MapEntry(entry.key, ex),
-      ];
+    for (final entry in _byDevice.entries)
+      for (final ex in entry.value) MapEntry(entry.key, ex),
+  ];
 
   Future<void> loadAll(
     String gymId,
