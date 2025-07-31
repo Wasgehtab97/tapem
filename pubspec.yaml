@@ -87,6 +87,8 @@ dependency_overrides:
       url: https://github.com/okadan/flutter-nfc-manager.git
       path: packages/nfc_manager
 
+  value_layout_builder: ^0.5.0
+
 # Icon-Konfiguration
 flutter_icons:
   android: true

@@ -15,7 +15,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;

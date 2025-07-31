@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';

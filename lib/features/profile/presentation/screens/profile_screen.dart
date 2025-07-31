@@ -7,7 +7,7 @@ import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';

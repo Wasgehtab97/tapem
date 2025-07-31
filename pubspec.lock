@@ -1269,13 +1269,13 @@ packages:
     source: hosted
     version: "4.5.1"
   value_layout_builder:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: value_layout_builder
-      sha256: c02511ea91ca5c643b514a33a38fa52536f74aa939ec367d02938b5ede6807fa
+      sha256: ab4b7d98bac8cefeb9713154d43ee0477490183f5aa23bb4ffa5103d9bbf6275
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   vector_math:
     dependency: "direct main"
     description:

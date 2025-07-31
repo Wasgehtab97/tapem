@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 /// Ein einfacher Rest-Timer mit Start/Stop-Button.
 class RestTimerWidget extends StatefulWidget {
