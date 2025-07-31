@@ -107,6 +107,9 @@ jobs:
       - name: Build debug APK
         run: flutter build apk --debug
 
+      - name: Show APK output dir
+        run: ls -R build/app/outputs
+
   coverage_report:
     name: Upload Coverage Report
     needs: test
@@ -118,19 +121,24 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage/
+          name: coverage-lcov
+          path: coverage/lcov.info
 
   upload_apks:
     name: Upload APK Artifacts
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Upload debug APK
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Upload APK(s)
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: apks
+          path: |
+            build/app/outputs/apk/**/*.apk
+            build/app/outputs/flutter-apk/*.apk
 
   deploy_placeholder:
     name: Deploy Placeholder
