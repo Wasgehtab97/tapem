@@ -1,5 +1,3 @@
-// lib/features/history/presentation/screens/history_screen.dart
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -36,6 +34,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final prov = context.watch<HistoryProvider>();
 
     if (prov.isLoading) {
@@ -48,7 +47,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    // Gruppieren und Chart-Logik wie gehabt...
+    // Gruppieren und Chart-Logik
     final sessionsMap = <String, List<WorkoutLog>>{};
     for (var log in prov.logs) {
       sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
@@ -84,6 +83,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final minY = values.reduce(min) * 0.9;
     final maxY = values.reduce(max) * 1.1;
 
+    final localeString = Localizations.localeOf(context).toString();
+
     return Scaffold(
       appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
       body: Padding(
@@ -93,7 +94,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             Text(
               loc.historyChartTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -118,16 +119,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         interval: 1,
                         getTitlesWidget: (value, meta) {
                           final i = value.toInt();
-                          if (i < 0 || i >= dates.length)
+                          if (i < 0 || i >= dates.length) {
                             return const SizedBox();
+                          }
                           final d = dates[i];
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Text(
-                              DateFormat.Md(
-                                Localizations.localeOf(context).toString(),
-                              ).format(d),
-                              style: theme.textTheme.bodySmall,
+                              DateFormat.Md(localeString).format(d),
+                              style: textTheme.bodySmall,
                             ),
                           );
                         },
@@ -138,11 +138,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         showTitles: true,
                         reservedSize: 40,
                         interval: (maxY - minY) / 5,
-                        getTitlesWidget:
-                            (value, meta) => Text(
-                              value.toStringAsFixed(0),
-                              style: theme.textTheme.bodySmall,
-                            ),
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toStringAsFixed(0),
+                            style: textTheme.bodySmall,
+                          );
+                        },
                       ),
                     ),
                     topTitles: AxisTitles(
@@ -170,7 +171,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const SizedBox(height: 16),
             Text(
               loc.historyListTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -182,7 +183,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   final logs = [...sessionEntries[idx].value]
                     ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
                   final titleDate = DateFormat.yMMMMd(
-                    Localizations.localeOf(context).toString(),
+                    localeString,
                   ).format(logs.first.timestamp);
 
                   return Card(

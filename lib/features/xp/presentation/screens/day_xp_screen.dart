@@ -22,8 +22,11 @@ class _DayXpScreenState extends State<DayXpScreen> {
   void _openLeaderboard() {
     final auth = context.read<AuthProvider>();
     final gymId = auth.gymCode ?? '';
+
     Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
-      if (gymId.isEmpty) return [];
+      if (gymId.isEmpty) {
+        return [];
+      }
       final fs = FirebaseFirestore.instance;
       final snap =
           await fs.collection('gyms').doc(gymId).collection('users').get();
@@ -31,7 +34,9 @@ class _DayXpScreenState extends State<DayXpScreen> {
       for (final doc in snap.docs) {
         final uid = doc.id;
         final userDoc = await fs.collection('users').doc(uid).get();
-        if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) continue;
+        if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) {
+          continue;
+        }
         final username = userDoc.data()?['username'] as String? ?? uid;
         final statsDoc =
             await fs
@@ -73,7 +78,9 @@ class _DayXpScreenState extends State<DayXpScreen> {
   }
 
   void _listenLeaderboard(String gymId) {
-    if (gymId.isEmpty) return;
+    if (gymId.isEmpty) {
+      return;
+    }
     final fs = FirebaseFirestore.instance;
     debugPrint('👀 listen leaderboard gymId=$gymId');
     _lbSub = fs
@@ -87,8 +94,9 @@ class _DayXpScreenState extends State<DayXpScreen> {
           for (final doc in snap.docs) {
             final uid = doc.id;
             final userDoc = await fs.collection('users').doc(uid).get();
-            if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true))
+            if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) {
               continue;
+            }
             final username = userDoc.data()?['username'] as String?;
             final statsDoc =
                 await fs
@@ -118,8 +126,8 @@ class _DayXpScreenState extends State<DayXpScreen> {
   Widget build(BuildContext context) {
     final xpProv = context.watch<XpProvider>();
     final totalXp = xpProv.statsDailyXp;
-
     final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erfahrung'),

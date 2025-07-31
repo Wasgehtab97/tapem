@@ -1,4 +1,3 @@
-// lib/features/device/presentation/screens/exercise_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
@@ -10,6 +9,7 @@ import '../widgets/muscle_group_card.dart';
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
+
   const ExerciseListScreen({
     Key? key,
     required this.gymId,
@@ -45,10 +45,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       appBar: AppBar(title: const Text('Übung wählen')),
       body: Consumer<ExerciseProvider>(
         builder: (_, prov, __) {
-          if (prov.isLoading)
+          if (prov.isLoading) {
             return const Center(child: CircularProgressIndicator());
-          if (prov.error != null)
+          }
+          if (prov.error != null) {
             return Center(child: Text('Fehler: ${prov.error}'));
+          }
           return ListView(
             children: [
               for (var ex in prov.exercises)

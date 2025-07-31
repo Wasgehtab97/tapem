@@ -45,8 +45,6 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     final selectedRegions =
         group == null ? <MuscleRegion>[] : <MuscleRegion>[group.region];
 
-    // no exercises needed
-
     showDialog<void>(
       context: context,
       builder:
@@ -132,8 +130,9 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                       onPressed: () async {
                         final prov = context.read<MuscleGroupProvider>();
                         final deviceIds = selectedDevices.toList();
-                        if (selectedRegions.isEmpty || deviceIds.isEmpty)
+                        if (selectedRegions.isEmpty || deviceIds.isEmpty) {
                           return;
+                        }
                         for (var i = 0; i < selectedRegions.length; i++) {
                           final r = selectedRegions[i];
                           final id = group?.id ?? _uuid.v4();
@@ -147,7 +146,9 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                           );
                           await prov.saveGroup(context, newGroup);
                         }
-                        if (!mounted) return;
+                        if (!mounted) {
+                          return;
+                        }
                         Navigator.of(ctx2).pop();
                       },
                       child: const Text('Speichern'),
@@ -225,10 +226,14 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                         final List<String> secondary = [];
                         if (selectedRegions.isNotEmpty) {
                           final id = groupIds[selectedRegions.first];
-                          if (id != null) primary.add(id);
+                          if (id != null) {
+                            primary.add(id);
+                          }
                           for (final r in selectedRegions.skip(1)) {
                             final sId = groupIds[r];
-                            if (sId != null) secondary.add(sId);
+                            if (sId != null) {
+                              secondary.add(sId);
+                            }
                           }
                         }
                         await prov.updateDeviceAssignments(
@@ -237,7 +242,9 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
                           primary,
                           secondary,
                         );
-                        if (mounted) Navigator.of(ctx2).pop();
+                        if (mounted) {
+                          Navigator.of(ctx2).pop();
+                        }
                       },
                       child: const Text('Speichern'),
                     ),
@@ -253,19 +260,19 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     final gymProv = context.watch<GymProvider>();
 
     final devices =
-        gymProv.devices
-            .where(
-              (d) => groupProv.groups.any(
-                (g) =>
-                    g.primaryDeviceIds.contains(d.uid) ||
-                    g.secondaryDeviceIds.contains(d.uid),
-              ),
-            )
-            .toList();
+        gymProv.devices.where((d) {
+          return groupProv.groups.any(
+            (g) =>
+                g.primaryDeviceIds.contains(d.uid) ||
+                g.secondaryDeviceIds.contains(d.uid),
+          );
+        }).toList();
 
     final filteredDevices =
         devices.where((d) {
-          if (_filter.isEmpty) return true;
+          if (_filter.isEmpty) {
+            return true;
+          }
           final f = _filter.toLowerCase();
           return groupProv.groups.any(
             (g) =>
