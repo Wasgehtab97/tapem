@@ -1,33 +1,129 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Hilfsfunktion: nur eingeloggte Nutzer
+    // ----- Helper Functions -----
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 1) User-Dokumente: jeder darf lesen, nur Eigentümer schreiben
+    // verify the request comes from the user's own gym
+    function inGym(gymId) {
+      return isSignedIn() && request.auth.token.gymId == gymId;
+    }
+
+    // check admin role for this gym
+    function isAdmin(gymId) {
+      return inGym(gymId) && request.auth.token.role == 'admin';
+    }
+
+    // requestor is the owner of a user document
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isOwnerInGym(gymId, userId) {
+      return inGym(gymId) && request.auth.uid == userId;
+    }
+
+    // ----- User documents -----
+    // Only the authenticated user may read/write their user profile and
+    // any nested collections (trainingDayXP, muscleGroupXP, badges, ...)
     match /users/{userId}/{document=**} {
-      allow read:    if isSignedIn();
-      allow create, update, delete:
-        if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
-    // 2a) Gym-Dokument selbst: nur Nutzer mit diesem gymId-Claim
+    // ----- Gyms -----
     match /gyms/{gymId} {
-      allow read:    if isSignedIn() && request.auth.token.gymId == gymId;
-      allow create, update, delete:
-        if isSignedIn() && request.auth.token.gymId == gymId;
+      // Admins can modify gym documents. All users in the gym can read.
+      allow read: if inGym(gymId);
+      allow write: if isAdmin(gymId);
+
+      // ---- Devices collection ----
+      match /devices/{deviceId} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+
+        // Logs are appended by the owning user only. They are immutable.
+        match /logs/{logId} {
+          allow create: if inGym(gymId) &&
+                         request.resource.data.userId == request.auth.uid;
+          allow read: if inGym(gymId) &&
+                       resource.data.userId == request.auth.uid;
+          allow update, delete: if false;
+        }
+
+        // Each user manages their own notes for the device.
+        match /userNotes/{userId} {
+          allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+        }
+
+        // Leaderboard entries are updated per user.
+        match /leaderboard/{userId}/{doc=**} {
+          allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+        }
+
+        // Custom exercises per user
+        match /exercises/{exerciseId} {
+          allow read, write: if inGym(gymId) &&
+            (request.auth.uid == request.resource.data.userId ||
+             request.auth.uid == resource.data.userId) ||
+            isAdmin(gymId);
+        }
+      }
+
+      // ---- Surveys ----
+      match /surveys/{surveyId} {
+        allow read: if inGym(gymId);
+        allow create, update, delete: if isAdmin(gymId);
+
+        // Users submit answers; only admins read all answers
+        match /answers/{answerId} {
+          allow create: if isOwnerInGym(gymId, request.auth.uid);
+          allow read: if isAdmin(gymId);
+          allow update, delete: if false;
+        }
+      }
+
+      // ---- Feedback ----
+      match /feedback/{entryId} {
+        allow create: if inGym(gymId) &&
+          request.resource.data.userId == request.auth.uid;
+        allow read, update, delete: if isAdmin(gymId);
+      }
+
+      // ---- Training plans ----
+      match /trainingPlans/{planId}/{subdoc=**} {
+        allow read, write:
+          if isAdmin(gymId) ||
+             request.auth.uid == request.resource.data.createdBy ||
+             request.auth.uid == resource.data.createdBy;
+      }
+
+      // ---- Muscle groups ----
+      match /muscleGroups/{groupId} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // ---- Challenges ----
+      match /challenges/{type}/{docId}/{sub=**} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // ---- Users subcollection ----
+      match /users/{userId}/{doc=**} {
+        allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+      }
+
+      // Fallback for any other documents inside gyms
+      match /{document=**} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
     }
 
-    // 2b) Alle Subcollections unter einem Gym
-    match /gyms/{gymId}/{document=**} {
-      allow read, write:
-        if isSignedIn() && request.auth.token.gymId == gymId;
-    }
-
-    // 3) Alles sonst komplett verbieten
+    // Deny everything else by default
     match /{document=**} {
       allow read, write: if false;
     }
