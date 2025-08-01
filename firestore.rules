@@ -93,10 +93,13 @@ service cloud.firestore {
 
         // Custom exercises per user
         match /exercises/{exerciseId} {
-          allow read, write: if inGym(gymId) &&
-            (request.auth.uid == request.resource.data.userId ||
-             request.auth.uid == resource.data.userId) ||
-            isAdmin(gymId);
+          allow read: if (isSignedIn() &&
+                        request.auth.uid == resource.data.userId) ||
+                       isAdmin(gymId);
+          allow write: if inGym(gymId) &&
+                          (request.auth.uid == request.resource.data.userId ||
+                           request.auth.uid == resource.data.userId) ||
+                        isAdmin(gymId);
         }
       }
 
