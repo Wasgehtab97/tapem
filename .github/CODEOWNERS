@@ -1,0 +1,15 @@
+# CODEOWNERS: legt Reviewer für bestimmte Pfade fest
+
+# Frontend-Team (UI-Komponenten)
+/lib/features/ui/       @frontend-dev1 @frontend-dev2
+
+# Backend-Team (Admin-Features & Core-Logic)
+/lib/features/admin/    @backend-dev
+/lib/core/providers/    @backend-dev
+
+# DevOps (Build-Skripte, CI/CD)
+/.github/workflows/     @devops-engineer
+
+# Dokumentation & Guidelines
+/docs/Development_Guidelines.md @product-owner
+/.github/PULL_REQUEST_TEMPLATE.md @product-owner
