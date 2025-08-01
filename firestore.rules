@@ -24,6 +24,17 @@ service cloud.firestore {
       );
     }
 
+    // convenience helpers
+    function ownerOrAdmin(gymId, userId) {
+      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
+    }
+    function requestOwnerInGym(gymId) {
+      return inGym(gymId) && request.resource.data.userId == request.auth.uid;
+    }
+    function resourceOwnerOrAdmin(gymId) {
+      return (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin(gymId);
+    }
+
     // requestor is the owner of a user document
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
@@ -71,25 +82,22 @@ service cloud.firestore {
 
         // Logs are appended by the owning user only. They are immutable.
         match /logs/{logId} {
-          allow create: if inGym(gymId) &&
-                         request.resource.data.userId == request.auth.uid;
+          allow create: if requestOwnerInGym(gymId);
           // Allow users to read their own logs even if membership data
           // is not yet available. This prevents permission errors when
           // accessing training details shortly after registration.
-          allow read: if (isSignedIn() &&
-                          resource.data.userId == request.auth.uid) ||
-                       isAdmin(gymId);
+          allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }
 
         // Each user manages their own notes for the device.
         match /userNotes/{userId} {
-          allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+          allow read, write: if ownerOrAdmin(gymId, userId);
         }
 
         // Leaderboard entries are updated per user.
         match /leaderboard/{userId}/{doc=**} {
-          allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+          allow read, write: if ownerOrAdmin(gymId, userId);
         }
 
         // Custom exercises per user
@@ -151,10 +159,10 @@ service cloud.firestore {
         // membership exists. Further reads/writes require gym membership or
         // admin role.
         allow create: if isOwner(userId);
-        allow read, update, delete: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+        allow read, update, delete: if ownerOrAdmin(gymId, userId);
       }
       match /users/{userId}/{doc=**} {
-        allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+        allow read, write: if ownerOrAdmin(gymId, userId);
       }
 
       // Fallback for any other documents inside gyms
