@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../dtos/session_dto.dart';
 
 /// Liest alle Log‐Einträge (collectionGroup "logs") für ein Datum aus.
