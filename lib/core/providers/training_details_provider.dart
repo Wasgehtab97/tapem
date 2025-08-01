@@ -26,14 +26,17 @@ class TrainingDetailsProvider extends ChangeNotifier {
     required String userId,
     required DateTime date,
   }) async {
+    debugPrint('📆 loadSessions user=$userId date=$date');
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       _sessions = await _getSessions.execute(userId: userId, date: date);
+      debugPrint('✅ loaded ${_sessions.length} sessions');
     } catch (e) {
       _error = e.toString();
+      debugPrint('❌ loadSessions error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
