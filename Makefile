@@ -57,3 +57,7 @@ ios-wireless:
 	fvm flutter gen-l10n
 	cd ios && pod install && cd ..
 	fvm flutter run --release -d 00008030-001E59420191802E --device-timeout=30
+
+# Deploy firestore.rules
+rules:
+	firebase deploy --only firestore:rules
