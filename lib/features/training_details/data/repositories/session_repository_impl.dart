@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tapem/features/training_details/data/dtos/session_dto.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
