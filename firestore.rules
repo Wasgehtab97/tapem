@@ -42,7 +42,10 @@ service cloud.firestore {
     // ----- User documents -----
     // Only the authenticated user may read/write their user profile
     match /users/{userId} {
-      allow create, read, update: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow read: if isOwner(userId);
+      // Permit username updates right after registration
+      allow update: if isOwner(userId);
     }
 
     // Allow access to any nested collections under the user document

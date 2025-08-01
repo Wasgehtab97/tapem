@@ -34,9 +34,12 @@ Future<void> showUsernameDialog(BuildContext context) async {
                       if (name.isEmpty) return;
                       final success = await auth.setUsername(name);
                       if (success) {
+                        debugPrint('Username "$name" successfully saved');
                         // ignore: use_build_context_synchronously
                         Navigator.pop(ctx);
                       } else {
+                        debugPrint('Failed to set username "$name": '
+                            '${auth.error ?? 'unknown error'}');
                         setState(() => error = auth.error ?? loc.usernameTaken);
                       }
                     },
