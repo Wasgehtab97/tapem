@@ -53,7 +53,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get gymCodeInvalid => 'Ungültiger Gym-Code.';
 
   @override
-  String get gymCodeLockedMessage => 'Zu viele Versuche. Bitte warte 30 Sekunden.';
+  String get gymCodeLockedMessage =>
+      'Zu viele Versuche. Bitte warte 30 Sekunden.';
 
   @override
   String get gymCodeRequired => 'Gym-Code erforderlich.';
@@ -224,7 +225,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordResetDialogTitle => 'Passwort zurücksetzen';
 
   @override
-  String get passwordResetHint => 'E-Mail eingeben, um einen Reset-Link zu erhalten.';
+  String get passwordResetHint =>
+      'E-Mail eingeben, um einen Reset-Link zu erhalten.';
 
   @override
   String get passwordResetSent => 'Passwort-Reset-E-Mail wurde gesendet.';

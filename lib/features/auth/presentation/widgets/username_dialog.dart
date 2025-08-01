@@ -38,8 +38,10 @@ Future<void> showUsernameDialog(BuildContext context) async {
                         // ignore: use_build_context_synchronously
                         Navigator.pop(ctx);
                       } else {
-                        debugPrint('Failed to set username "$name": '
-                            '${auth.error ?? 'unknown error'}');
+                        debugPrint(
+                          'Failed to set username "$name": '
+                          '${auth.error ?? 'unknown error'}',
+                        );
                         setState(() => error = auth.error ?? loc.usernameTaken);
                       }
                     },

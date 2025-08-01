@@ -41,7 +41,8 @@ class SessionRepositoryImpl implements SessionRepository {
       final deviceDescription = (data['description'] as String?) ?? '';
       final isMulti = (data['isMulti'] as bool?) ?? false;
       debugPrint(
-        '📥 SessionRepositoryImpl: deviceName=$deviceName isMulti=$isMulti');
+        '📥 SessionRepositoryImpl: deviceName=$deviceName isMulti=$isMulti',
+      );
 
       if (isMulti && first.exerciseId.isNotEmpty) {
         final exRef = deviceRef.collection('exercises').doc(first.exerciseId);

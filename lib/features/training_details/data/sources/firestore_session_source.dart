@@ -33,7 +33,9 @@ class FirestoreSessionSource {
             .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
             .get();
 
-    debugPrint('📥 FirestoreSessionSource: fetched ${snap.docs.length} log docs');
+    debugPrint(
+      '📥 FirestoreSessionSource: fetched ${snap.docs.length} log docs',
+    );
 
     return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
   }
