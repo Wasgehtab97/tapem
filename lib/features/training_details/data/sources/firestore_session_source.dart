@@ -17,6 +17,10 @@ class FirestoreSessionSource {
         .add(const Duration(days: 1))
         .subtract(const Duration(milliseconds: 1));
 
+    debugPrint(
+      '📥 FirestoreSessionSource: query logs user=$userId start=$start end=$end',
+    );
+
     final snap =
         await _firestore
             .collectionGroup('logs')
@@ -27,6 +31,8 @@ class FirestoreSessionSource {
             )
             .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
             .get();
+
+    debugPrint('📥 FirestoreSessionSource: fetched ${snap.docs.length} log docs');
 
     return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
   }

@@ -14,6 +14,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required DateTime date,
   }) async {
     final dtos = await _source.getSessionsForDate(userId: userId, date: date);
+    debugPrint('📥 SessionRepositoryImpl: processing ${dtos.length} log dtos');
 
     // 1) Gruppieren
     final Map<String, List<SessionDto>> grouped = {};
@@ -31,16 +32,20 @@ class SessionRepositoryImpl implements SessionRepository {
 
       // Referenz aufs Device-Dokument:
       final deviceRef = first.reference.parent.parent!;
+      debugPrint('📥 SessionRepositoryImpl: read device ${deviceRef.path}');
       final deviceSnap = await deviceRef.get();
       final data = deviceSnap.data()!;
 
       var deviceName = (data['name'] as String?) ?? first.deviceId;
       final deviceDescription = (data['description'] as String?) ?? '';
       final isMulti = (data['isMulti'] as bool?) ?? false;
+      debugPrint(
+        '📥 SessionRepositoryImpl: deviceName=$deviceName isMulti=$isMulti');
 
       if (isMulti && first.exerciseId.isNotEmpty) {
-        final exSnap =
-            await deviceRef.collection('exercises').doc(first.exerciseId).get();
+        final exRef = deviceRef.collection('exercises').doc(first.exerciseId);
+        debugPrint('📥 SessionRepositoryImpl: read exercise ${exRef.path}');
+        final exSnap = await exRef.get();
         if (exSnap.exists) {
           final exName = (exSnap.data()?["name"] as String?) ?? '';
           if (exName.isNotEmpty) deviceName = exName;
