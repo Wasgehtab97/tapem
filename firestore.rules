@@ -43,7 +43,8 @@ service cloud.firestore {
     // Only the authenticated user may read/write their user profile
     match /users/{userId} {
       allow create: if isOwner(userId);
-      allow read: if isOwner(userId);
+      // Allow signed-in users to read usernames for availability checks
+      allow read: if isSignedIn();
       // Permit username updates right after registration
       allow update: if isOwner(userId);
     }
