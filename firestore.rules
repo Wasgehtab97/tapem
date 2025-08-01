@@ -7,13 +7,21 @@ service cloud.firestore {
     }
 
     // verify the request comes from the user's own gym
+    // either via custom claim `gymId` or membership document
     function inGym(gymId) {
-      return isSignedIn() && request.auth.token.gymId == gymId;
+      return isSignedIn() && (
+        request.auth.token.gymId == gymId ||
+        exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid))
+      );
     }
 
     // check admin role for this gym
+    // admin can be indicated via custom claim or the role field in the gym membership
     function isAdmin(gymId) {
-      return inGym(gymId) && request.auth.token.role == 'admin';
+      return inGym(gymId) && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // requestor is the owner of a user document
