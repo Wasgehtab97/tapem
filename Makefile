@@ -1,10 +1,11 @@
-.PHONY: ios android push ios-dev ios-emu R
+.PHONY: ios android push ios-dev ios-emu R rules rules-dev
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
 IOS_EMU_ID   := 47B92242-AE5E-489D-9EA0-199C9CAE3003
 ANDROID_ID   := 519e8f06
 TMUX_SESSION := flutter
+FIREBASE_CONFIG ?= firebase.json
 
 # Standard-Targets
 ios:
@@ -60,4 +61,7 @@ ios-wireless:
 
 # Deploy firestore.rules
 rules:
-	firebase deploy --only firestore:rules
+        npx firebase deploy --only firestore:rules -c $(FIREBASE_CONFIG)
+
+rules-dev:
+        $(MAKE) rules FIREBASE_CONFIG=firebase.dev.json
