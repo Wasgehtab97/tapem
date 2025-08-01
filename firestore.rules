@@ -134,7 +134,11 @@ service cloud.firestore {
       // ---- Users subcollection ----
       // Users are referenced under their gym as well
       match /users/{userId} {
-        allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+        // Allow initial creation for the authenticated user even before
+        // membership exists. Further reads/writes require gym membership or
+        // admin role.
+        allow create: if isOwner(userId);
+        allow read, update, delete: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
       }
       match /users/{userId}/{doc=**} {
         allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);

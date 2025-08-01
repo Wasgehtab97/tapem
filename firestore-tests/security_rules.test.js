@@ -52,4 +52,28 @@ describe('Firestore Security Rules', function() {
 
     await assertFails(badRef.set({ foo: 'bar' }));
   });
+
+  it('erlaubt Anlage der eigenen Mitgliedschaft', async () => {
+    const authCtx = testEnv.authenticatedContext('newUser', {});
+    const db = authCtx.firestore();
+    const ref = db
+      .collection('gyms')
+      .doc('gymA')
+      .collection('users')
+      .doc('newUser');
+
+    await assertSucceeds(ref.set({ role: 'member' }));
+  });
+
+  it('blockt Anlage der Mitgliedschaft für fremden Nutzer', async () => {
+    const authCtx = testEnv.authenticatedContext('hacker', {});
+    const db = authCtx.firestore();
+    const ref = db
+      .collection('gyms')
+      .doc('gymA')
+      .collection('users')
+      .doc('otherUser');
+
+    await assertFails(ref.set({ role: 'member' }));
+  });
 });
