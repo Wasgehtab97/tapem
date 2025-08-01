@@ -33,6 +33,12 @@ service cloud.firestore {
       return inGym(gymId) && request.auth.uid == userId;
     }
 
+    // check if the request targets only the gym document itself
+    function isGymDocument(gymId) {
+      return resource.__name__ ==
+             "/databases/" + database + "/documents/gyms/" + gymId;
+    }
+
     // ----- User documents -----
     // Only the authenticated user may read/write their user profile and
     // any nested collections (trainingDayXP, muscleGroupXP, badges, ...)
@@ -42,8 +48,9 @@ service cloud.firestore {
 
     // ----- Gyms -----
     match /gyms/{gymId} {
-      // Admins can modify gym documents. All users in the gym can read.
-      allow read: if inGym(gymId);
+      // Gym documents are readable for everyone to validate gym codes.
+      // Write access remains restricted to admins.
+      allow read: if inGym(gymId) || isGymDocument(gymId);
       allow write: if isAdmin(gymId);
 
       // ---- Devices collection ----
