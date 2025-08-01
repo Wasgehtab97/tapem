@@ -64,7 +64,9 @@ service cloud.firestore {
 
       // ---- Devices collection ----
       match /devices/{deviceId} {
-        allow read: if inGym(gymId);
+        // Allow any authenticated user to read device information so that
+        // training details can be displayed even before membership data exists.
+        allow read: if inGym(gymId) || isSignedIn();
         allow write: if isAdmin(gymId);
 
         // Logs are appended by the owning user only. They are immutable.
