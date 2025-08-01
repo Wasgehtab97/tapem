@@ -76,8 +76,9 @@ service cloud.firestore {
           // Allow users to read their own logs even if membership data
           // is not yet available. This prevents permission errors when
           // accessing training details shortly after registration.
-          allow read: if isSignedIn() &&
-                       resource.data.userId == request.auth.uid;
+          allow read: if (isSignedIn() &&
+                          resource.data.userId == request.auth.uid) ||
+                       isAdmin(gymId);
           allow update, delete: if false;
         }
 
