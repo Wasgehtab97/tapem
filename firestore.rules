@@ -50,7 +50,8 @@ service cloud.firestore {
     match /gyms/{gymId} {
       // Gym documents are readable for everyone to validate gym codes.
       // Write access remains restricted to admins.
-      allow read: if inGym(gymId) || isGymDocument(gymId);
+      // Allow unauthenticated users to verify gym codes during registration
+      allow read: if true;
       allow write: if isAdmin(gymId);
 
       // ---- Devices collection ----
