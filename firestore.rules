@@ -35,6 +35,11 @@ service cloud.firestore {
       return (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin(gymId);
     }
 
+    // Exercise is shared globally (no userId field or empty)
+    function isPublicExercise() {
+      return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
+    }
+
     // requestor is the owner of a user document
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
@@ -102,9 +107,9 @@ service cloud.firestore {
 
         // Custom exercises per user
         match /exercises/{exerciseId} {
-          allow read: if (isSignedIn() &&
-                        request.auth.uid == resource.data.userId) ||
-                       isAdmin(gymId);
+          allow read: if isAdmin(gymId) ||
+                       (isSignedIn() &&
+                        (request.auth.uid == resource.data.userId || isPublicExercise()));
           allow write: if inGym(gymId) &&
                           (request.auth.uid == request.resource.data.userId ||
                            request.auth.uid == resource.data.userId) ||
