@@ -40,8 +40,12 @@ service cloud.firestore {
     }
 
     // ----- User documents -----
-    // Only the authenticated user may read/write their user profile and
-    // any nested collections (trainingDayXP, muscleGroupXP, badges, ...)
+    // Only the authenticated user may read/write their user profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Allow access to any nested collections under the user document
     match /users/{userId}/{document=**} {
       allow read, write: if isOwner(userId);
     }
@@ -128,6 +132,10 @@ service cloud.firestore {
       }
 
       // ---- Users subcollection ----
+      // Users are referenced under their gym as well
+      match /users/{userId} {
+        allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
+      }
       match /users/{userId}/{doc=**} {
         allow read, write: if isOwnerInGym(gymId, userId) || isAdmin(gymId);
       }
