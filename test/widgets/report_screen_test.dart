@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen_new.dart';
 import 'package:tapem/core/providers/report_provider.dart';
-import 'package:tapem/core/providers/feedback_provider.dart';
+import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
