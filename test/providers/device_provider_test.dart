@@ -14,7 +14,6 @@ import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
 import 'package:tapem/features/challenges/domain/models/completed_challenge.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase_test_utils.dart';
 
 class FakeDeviceRepository implements DeviceRepository {
   FakeDeviceRepository(this.devices);
@@ -78,10 +77,6 @@ class FakeChallengeRepository implements ChallengeRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() async {
-    await setupFirebase();
-  });
 
   group('DeviceProvider', () {
     test('loadDevice sets device and last session', () async {

@@ -1,4 +1,4 @@
-name: Test and Coverage
+name: coverage
 
 on:
   push:
@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
       - name: Install dependencies
@@ -19,7 +18,7 @@ jobs:
         run: flutter test --coverage
       - name: Install lcov
         run: sudo apt-get update && sudo apt-get install -y lcov bc
-      - name: Check coverage threshold
+      - name: Verify coverage
         run: |
           total=$(lcov --summary coverage/lcov.info | grep lines | awk '{print $2}' | sed 's/%//')
           echo "Coverage: $total%"

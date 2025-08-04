@@ -4,6 +4,7 @@ import 'package:tapem/features/gym/domain/models/branding.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
+// TODO: replace with real logging service
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
@@ -16,8 +17,8 @@ class BrandingProvider extends ChangeNotifier {
   final FirestoreGymSource _source;
   final LogFn _log;
 
-  BrandingProvider({FirestoreGymSource? source, LogFn? log})
-    : _source = source ?? FirestoreGymSource(),
+  BrandingProvider({required FirestoreGymSource source, LogFn? log})
+    : _source = source,
       _log = log ?? _defaultLog;
 
   Branding? _branding;

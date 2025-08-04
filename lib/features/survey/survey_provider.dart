@@ -5,6 +5,7 @@ import 'survey.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
+// TODO: replace with real logging service
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
@@ -27,8 +28,8 @@ class SurveyProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isLoading => _isLoading;
 
-  SurveyProvider({FirebaseFirestore? firestore, LogFn? log})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
+  SurveyProvider({required FirebaseFirestore firestore, LogFn? log})
+      : _firestore = firestore,
         _log = log ?? _defaultLog;
 
   void listen(String gymId) {

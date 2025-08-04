@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -18,6 +17,7 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
+// TODO: replace with real logging service
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
@@ -52,10 +52,10 @@ class DeviceProvider extends ChangeNotifier {
   late String _currentExerciseId;
 
   DeviceProvider({
+    required FirebaseFirestore firestore,
     GetDevicesForGym? getDevicesForGym,
-    FirebaseFirestore? firestore,
     LogFn? log,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _firestore = firestore,
         _getDevicesForGym = getDevicesForGym ??
             GetDevicesForGym(
               DeviceRepositoryImpl(
