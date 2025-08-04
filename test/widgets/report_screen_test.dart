@@ -25,7 +25,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await setupFirebaseMocks();
+    await setupFirebase();
   });
 
   testWidgets('ReportScreenNew shows chart with fallback data', (tester) async {
@@ -34,7 +34,10 @@ void main() {
       getUsageStats: GetDeviceUsageStats(repo),
       getLogTimestamps: GetAllLogTimestamps(repo),
     );
-    final feedbackProvider = FeedbackProvider(firestore: FakeFirebaseFirestore());
+    final feedbackProvider = FeedbackProvider(
+      firestore: FakeFirebaseFirestore(),
+      log: (_, [__]) {},
+    );
 
     await tester.pumpWidget(
       MultiProvider(

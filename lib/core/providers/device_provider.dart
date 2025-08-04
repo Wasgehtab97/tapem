@@ -55,10 +55,13 @@ class DeviceProvider extends ChangeNotifier {
     GetDevicesForGym? getDevicesForGym,
     FirebaseFirestore? firestore,
     LogFn? log,
-  })  : _getDevicesForGym =
-            getDevicesForGym ??
-            GetDevicesForGym(DeviceRepositoryImpl(FirestoreDeviceSource())),
-        _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _getDevicesForGym = getDevicesForGym ??
+            GetDevicesForGym(
+              DeviceRepositoryImpl(
+                FirestoreDeviceSource(firestore: firestore),
+              ),
+            ),
         _log = log ?? _defaultLog;
 
   // Öffentliche Getter
@@ -199,129 +202,136 @@ class DeviceProvider extends ChangeNotifier {
   }) async {
     if (_device == null) return;
 
-    _log(
-      '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
-    );
+    _error = null;
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // Verhindere doppelte Sessions am selben Tag
-    if (_lastSessionDate != null) {
-      final lastDay = DateTime(
-        _lastSessionDate!.year,
-        _lastSessionDate!.month,
-        _lastSessionDate!.day,
-      );
-      if (lastDay == today && !overwrite) {
-        throw Exception('Heute bereits gespeichert.');
-      }
-    }
-
-    final sessionId =
-        overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
-    final ts = Timestamp.now();
-    final batch = _firestore.batch();
-    final savedSets = List<Map<String, String>>.from(_sets);
-
-    final logsCol = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(_device!.uid)
-        .collection('logs');
-
-    if (overwrite && _lastSessionId != null) {
-      final existing =
-          await logsCol
-              .where('userId', isEqualTo: userId)
-              .where('sessionId', isEqualTo: _lastSessionId)
-              .get();
-      for (final doc in existing.docs) {
-        batch.delete(doc.reference);
-      }
-    }
-
-    // Workout-Logs schreiben
-    for (var set in savedSets) {
-      final logDoc = logsCol.doc();
-      final data = <String, dynamic>{
-        'deviceId': _device!.uid,
-        'userId': userId,
-        'exerciseId': _currentExerciseId,
-        'sessionId': sessionId,
-        'timestamp': ts,
-        'weight': double.parse(set['weight']!.replaceAll(',', '.')),
-        'reps': int.parse(set['reps']!),
-        'note': _note,
-      };
-      if (set['rir'] != null && set['rir']!.isNotEmpty) {
-        data['rir'] = int.parse(set['rir']!);
-      }
-      if (set['note'] != null && set['note']!.isNotEmpty) {
-        data['setNote'] = set['note'];
-      }
-      batch.set(logDoc, data);
-    }
-
-    // User-Note schreiben
-    final noteDoc = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(_device!.uid)
-        .collection('userNotes')
-        .doc(userId);
-    batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
-
-    await batch.commit();
-    _log('📚 logs stored for session=$sessionId');
-
-    // XP-System aktualisieren
     try {
       _log(
-        '➡️ call addSessionXp session=$sessionId device=${_device!.uid}',
+        '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
       );
-      await Provider.of<XpProvider>(context, listen: false).addSessionXp(
-        gymId: gymId,
-        userId: userId,
-        deviceId: _device!.uid,
-        sessionId: sessionId,
-        showInLeaderboard: showInLeaderboard,
-        isMulti: _device!.isMulti,
-        primaryMuscleGroupIds: _device!.primaryMuscleGroups,
-      );
-      _log('✅ addSessionXp completed');
 
-      // Challenges prüfen
-      await Provider.of<ChallengeProvider>(
-        context,
-        listen: false,
-      ).checkChallenges(gymId, userId, _device!.uid);
-    } catch (e, st) {
-      _log('⚠️ _updateXp error: $e', st);
-    }
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
 
-    // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
-    if (!_device!.isMulti && showInLeaderboard) {
-      try {
-        await _updateLeaderboard(gymId, userId, sessionId, showInLeaderboard);
-        await _loadUserXp(gymId, _device!.uid, userId);
-      } catch (e, st) {
-        _log('_updateLeaderboard error: $e', st);
+      // Verhindere doppelte Sessions am selben Tag
+      if (_lastSessionDate != null) {
+        final lastDay = DateTime(
+          _lastSessionDate!.year,
+          _lastSessionDate!.month,
+          _lastSessionDate!.day,
+        );
+        if (lastDay == today && !overwrite) {
+          _error = 'Heute bereits gespeichert.';
+          return;
+        }
       }
-    }
 
-    // Lokalen State zurücksetzen
-    _lastSessionSets = savedSets;
-    _lastSessionDate = ts.toDate();
-    _lastSessionNote = _note;
-    _lastSessionId = sessionId;
-    _editingLastSession = false;
-    _sets = [
-      {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
-    ];
-    notifyListeners();
+      final sessionId =
+          overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
+      final ts = Timestamp.now();
+      final batch = _firestore.batch();
+      final savedSets = List<Map<String, String>>.from(_sets);
+
+      final logsCol = _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('devices')
+          .doc(_device!.uid)
+          .collection('logs');
+
+      if (overwrite && _lastSessionId != null) {
+        final existing = await logsCol
+            .where('userId', isEqualTo: userId)
+            .where('sessionId', isEqualTo: _lastSessionId)
+            .get();
+        for (final doc in existing.docs) {
+          batch.delete(doc.reference);
+        }
+      }
+
+      // Workout-Logs schreiben
+      for (var set in savedSets) {
+        final logDoc = logsCol.doc();
+        final data = <String, dynamic>{
+          'deviceId': _device!.uid,
+          'userId': userId,
+          'exerciseId': _currentExerciseId,
+          'sessionId': sessionId,
+          'timestamp': ts,
+          'weight': double.parse(set['weight']!.replaceAll(',', '.')),
+          'reps': int.parse(set['reps']!),
+          'note': _note,
+        };
+        if (set['rir'] != null && set['rir']!.isNotEmpty) {
+          data['rir'] = int.parse(set['rir']!);
+        }
+        if (set['note'] != null && set['note']!.isNotEmpty) {
+          data['setNote'] = set['note'];
+        }
+        batch.set(logDoc, data);
+      }
+
+      // User-Note schreiben
+      final noteDoc = _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('devices')
+          .doc(_device!.uid)
+          .collection('userNotes')
+          .doc(userId);
+      batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
+
+      await batch.commit();
+      _log('📚 logs stored for session=$sessionId');
+
+      // XP-System aktualisieren
+      try {
+        _log(
+          '➡️ call addSessionXp session=$sessionId device=${_device!.uid}',
+        );
+        await Provider.of<XpProvider>(context, listen: false).addSessionXp(
+          gymId: gymId,
+          userId: userId,
+          deviceId: _device!.uid,
+          sessionId: sessionId,
+          showInLeaderboard: showInLeaderboard,
+          isMulti: _device!.isMulti,
+          primaryMuscleGroupIds: _device!.primaryMuscleGroups,
+        );
+        _log('✅ addSessionXp completed');
+
+        // Challenges prüfen
+        await Provider.of<ChallengeProvider>(
+          context,
+          listen: false,
+        ).checkChallenges(gymId, userId, _device!.uid);
+      } catch (e, st) {
+        _log('⚠️ _updateXp error: $e', st);
+      }
+
+      // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
+      if (!_device!.isMulti && showInLeaderboard) {
+        try {
+          await _updateLeaderboard(gymId, userId, sessionId, showInLeaderboard);
+          await _loadUserXp(gymId, _device!.uid, userId);
+        } catch (e, st) {
+          _log('_updateLeaderboard error: $e', st);
+        }
+      }
+
+      // Lokalen State zurücksetzen
+      _lastSessionSets = savedSets;
+      _lastSessionDate = ts.toDate();
+      _lastSessionNote = _note;
+      _lastSessionId = sessionId;
+      _editingLastSession = false;
+      _sets = [
+        {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
+      ];
+      notifyListeners();
+    } catch (e, st) {
+      _log('DeviceProvider.saveWorkoutSession error: $e', st);
+      _error = e.toString();
+    }
   }
 
   Future<void> _updateLeaderboard(
