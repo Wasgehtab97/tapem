@@ -50,4 +50,31 @@ void main() {
     final chart = tester.widget<DeviceUsageChart>(find.byType(DeviceUsageChart));
     expect(chart.usageData.isNotEmpty, true);
   });
+
+  testWidgets('ReportScreenNew uses provided usage data', (tester) async {
+    final repo = FakeReportRepository(usage: const {'Device X': 5});
+    final reportProvider = ReportProvider(
+      getUsageStats: GetDeviceUsageStats(repo),
+      getLogTimestamps: GetAllLogTimestamps(repo),
+    );
+    final feedbackProvider = FeedbackProvider(
+      firestore: FakeFirebaseFirestore(),
+      log: (_, [__]) {},
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ReportProvider>.value(value: reportProvider),
+          ChangeNotifierProvider<FeedbackProvider>.value(value: feedbackProvider),
+        ],
+        child: const MaterialApp(home: ReportScreenNew(gymId: 'g1')),
+      ),
+    );
+
+    await tester.pump();
+
+    final chart = tester.widget<DeviceUsageChart>(find.byType(DeviceUsageChart));
+    expect(chart.usageData, {'Device X': 5});
+  });
 }

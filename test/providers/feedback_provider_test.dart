@@ -3,6 +3,8 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../test_utils.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -66,6 +68,21 @@ void main() {
         log: (_, [__]) {},
       );
       await provider.loadFeedback('g1');
+      await provider.markDone(gymId: 'g1', entryId: doc.id);
+      final updated = await doc.get();
+      expect(updated.data()?['isDone'], true);
+      expect(provider.doneEntries.length, 1);
+    });
+
+    test('markDone is idempotent', () async {
+      final firestore = makeFirestore();
+      final doc = await seedFeedback(firestore, gymId: 'g1');
+      final provider = FeedbackProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
+      await provider.loadFeedback('g1');
+      await provider.markDone(gymId: 'g1', entryId: doc.id);
       await provider.markDone(gymId: 'g1', entryId: doc.id);
       final updated = await doc.get();
       expect(updated.data()?['isDone'], true);
