@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'models/feedback_entry.dart';
+
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
 void _defaultLog(String message, [StackTrace? stack]) {
@@ -10,8 +12,6 @@ void _defaultLog(String message, [StackTrace? stack]) {
     debugPrint(message);
   }
 }
-
-import 'models/feedback_entry.dart';
 
 class FeedbackProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
@@ -66,42 +66,52 @@ class FeedbackProvider extends ChangeNotifier {
     required String userId,
     required String text,
   }) async {
-    final data = {
-      'deviceId': deviceId,
-      'userId': userId,
-      'text': text,
-      'createdAt': Timestamp.now(),
-      'isDone': false,
-    };
-    await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('feedback')
-        .add(data);
+    try {
+      final data = {
+        'deviceId': deviceId,
+        'userId': userId,
+        'text': text,
+        'createdAt': Timestamp.now(),
+        'isDone': false,
+      };
+      await _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('feedback')
+          .add(data);
+    } catch (e, st) {
+      _log('FeedbackProvider.submitFeedback error: $e', st);
+      _error = e.toString();
+    }
   }
 
   Future<void> markDone({
     required String gymId,
     required String entryId,
   }) async {
-    await _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('feedback')
-        .doc(entryId)
-        .update({'isDone': true});
-    final idx = _entries.indexWhere((e) => e.id == entryId);
-    if (idx != -1) {
-      _entries[idx] = FeedbackEntry(
-        id: _entries[idx].id,
-        gymId: gymId,
-        deviceId: _entries[idx].deviceId,
-        userId: _entries[idx].userId,
-        text: _entries[idx].text,
-        createdAt: _entries[idx].createdAt,
-        isDone: true,
-      );
-      notifyListeners();
+    try {
+      await _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('feedback')
+          .doc(entryId)
+          .update({'isDone': true});
+      final idx = _entries.indexWhere((e) => e.id == entryId);
+      if (idx != -1) {
+        _entries[idx] = FeedbackEntry(
+          id: _entries[idx].id,
+          gymId: gymId,
+          deviceId: _entries[idx].deviceId,
+          userId: _entries[idx].userId,
+          text: _entries[idx].text,
+          createdAt: _entries[idx].createdAt,
+          isDone: true,
+        );
+        notifyListeners();
+      }
+    } catch (e, st) {
+      _log('FeedbackProvider.markDone error: $e', st);
+      _error = e.toString();
     }
   }
 }

@@ -1,7 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_core_mocks/firebase_core_mocks.dart';
 
-Future<void> setupFirebaseMocks() async {
-  setupFirebaseCoreMocks();
-  await Firebase.initializeApp();
+Future<void> setupFirebase() async {
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: 'test',
+        appId: 'test',
+        messagingSenderId: 'test',
+        projectId: 'test',
+      ),
+    );
+  }
 }

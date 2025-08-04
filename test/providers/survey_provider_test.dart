@@ -8,13 +8,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await setupFirebaseMocks();
+    await setupFirebase();
   });
 
   group('SurveyProvider', () {
     test('createSurvey adds document', () async {
       final firestore = FakeFirebaseFirestore();
-      final provider = SurveyProvider(firestore: firestore);
+      final provider = SurveyProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
       await provider.createSurvey(
         gymId: 'g1',
         title: 'Test',
@@ -30,7 +33,10 @@ void main() {
 
     test('submitAnswer stores response', () async {
       final firestore = FakeFirebaseFirestore();
-      final provider = SurveyProvider(firestore: firestore);
+      final provider = SurveyProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
       final surveyRef = await firestore
           .collection('gyms')
           .doc('g1')
@@ -53,7 +59,10 @@ void main() {
 
     test('getResults counts votes', () async {
       final firestore = FakeFirebaseFirestore();
-      final provider = SurveyProvider(firestore: firestore);
+      final provider = SurveyProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
       final surveyRef = await firestore
           .collection('gyms')
           .doc('g1')

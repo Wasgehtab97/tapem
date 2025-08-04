@@ -80,7 +80,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await setupFirebaseMocks();
+    await setupFirebase();
   });
 
   group('DeviceProvider', () {

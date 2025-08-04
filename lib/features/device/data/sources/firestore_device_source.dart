@@ -5,7 +5,10 @@ import '../../domain/models/device.dart';
 import '../dtos/device_dto.dart';
 
 class FirestoreDeviceSource {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  FirestoreDeviceSource({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<List<DeviceDto>> getDevicesForGym(String gymId) async {
     final snap =
