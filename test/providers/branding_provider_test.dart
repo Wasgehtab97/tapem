@@ -2,11 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
+import 'package:tapem/features/gym/domain/models/gym_config.dart';
 
-class FakeGymSource extends FirestoreGymSource {
+class FakeGymSource implements FirestoreGymSource {
   FakeGymSource({this.branding, this.throwError});
   final Branding? branding;
   final bool? throwError;
+
+  @override
+  Future<GymConfig?> getGymByCode(String code) async => null;
+
+  @override
+  Future<GymConfig?> getGymById(String id) async => null;
+
   @override
   Future<Branding?> getBranding(String gymId) async {
     if (throwError == true) throw Exception('fail');
