@@ -16,9 +16,20 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 
+typedef LogFn = void Function(String message, [StackTrace? stack]);
+
+void _defaultLog(String message, [StackTrace? stack]) {
+  if (stack != null) {
+    debugPrintStack(label: message, stackTrace: stack);
+  } else {
+    debugPrint(message);
+  }
+}
+
 class DeviceProvider extends ChangeNotifier {
   final GetDevicesForGym _getDevicesForGym;
   final FirebaseFirestore _firestore;
+  final LogFn _log;
   final Uuid _uuid = const Uuid();
 
   List<Device> _devices = [];
@@ -43,10 +54,12 @@ class DeviceProvider extends ChangeNotifier {
   DeviceProvider({
     GetDevicesForGym? getDevicesForGym,
     FirebaseFirestore? firestore,
-  }) : _getDevicesForGym =
-           getDevicesForGym ??
-           GetDevicesForGym(DeviceRepositoryImpl(FirestoreDeviceSource())),
-       _firestore = firestore ?? FirebaseFirestore.instance;
+    LogFn? log,
+  })  : _getDevicesForGym =
+            getDevicesForGym ??
+            GetDevicesForGym(DeviceRepositoryImpl(FirestoreDeviceSource())),
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _log = log ?? _defaultLog;
 
   // Öffentliche Getter
   bool get isLoading => _isLoading;
@@ -120,7 +133,7 @@ class DeviceProvider extends ChangeNotifier {
       }
     } catch (e, st) {
       _error = e.toString();
-      debugPrintStack(label: 'DeviceProvider.loadDevice', stackTrace: st);
+      _log('DeviceProvider.loadDevice error: $e', st);
     } finally {
       _setLoading(false);
     }
@@ -186,7 +199,7 @@ class DeviceProvider extends ChangeNotifier {
   }) async {
     if (_device == null) return;
 
-    debugPrint(
+    _log(
       '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
     );
 
@@ -262,11 +275,11 @@ class DeviceProvider extends ChangeNotifier {
     batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
 
     await batch.commit();
-    debugPrint('📚 logs stored for session=$sessionId');
+    _log('📚 logs stored for session=$sessionId');
 
     // XP-System aktualisieren
     try {
-      debugPrint(
+      _log(
         '➡️ call addSessionXp session=$sessionId device=${_device!.uid}',
       );
       await Provider.of<XpProvider>(context, listen: false).addSessionXp(
@@ -278,7 +291,7 @@ class DeviceProvider extends ChangeNotifier {
         isMulti: _device!.isMulti,
         primaryMuscleGroupIds: _device!.primaryMuscleGroups,
       );
-      debugPrint('✅ addSessionXp completed');
+      _log('✅ addSessionXp completed');
 
       // Challenges prüfen
       await Provider.of<ChallengeProvider>(
@@ -286,8 +299,7 @@ class DeviceProvider extends ChangeNotifier {
         listen: false,
       ).checkChallenges(gymId, userId, _device!.uid);
     } catch (e, st) {
-      debugPrint('⚠️ _updateXp error: $e');
-      debugPrintStack(label: '_updateXp', stackTrace: st);
+      _log('⚠️ _updateXp error: $e', st);
     }
 
     // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
@@ -296,7 +308,7 @@ class DeviceProvider extends ChangeNotifier {
         await _updateLeaderboard(gymId, userId, sessionId, showInLeaderboard);
         await _loadUserXp(gymId, _device!.uid, userId);
       } catch (e, st) {
-        debugPrintStack(label: '_updateLeaderboard', stackTrace: st);
+        _log('_updateLeaderboard error: $e', st);
       }
     }
 

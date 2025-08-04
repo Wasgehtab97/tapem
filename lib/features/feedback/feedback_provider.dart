@@ -1,12 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+typedef LogFn = void Function(String message, [StackTrace? stack]);
+
+void _defaultLog(String message, [StackTrace? stack]) {
+  if (stack != null) {
+    debugPrintStack(label: message, stackTrace: stack);
+  } else {
+    debugPrint(message);
+  }
+}
+
 import 'models/feedback_entry.dart';
 
 class FeedbackProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
-  FeedbackProvider({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  final LogFn _log;
+
+  FeedbackProvider({FirebaseFirestore? firestore, LogFn? log})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _log = log ?? _defaultLog;
 
   bool _loading = false;
   String? _error;
@@ -39,7 +52,7 @@ class FeedbackProvider extends ChangeNotifier {
           snap.docs.map((d) => FeedbackEntry.fromMap(d.id, d.data(), gymId)),
         );
     } catch (e, st) {
-      debugPrintStack(label: 'FeedbackProvider.loadFeedback', stackTrace: st);
+      _log('FeedbackProvider.loadFeedback error: $e', st);
       _error = e.toString();
     } finally {
       _loading = false;

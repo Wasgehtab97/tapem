@@ -9,6 +9,7 @@ import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dar
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
 import 'package:tapem/features/report/presentation/widgets/device_usage_chart.dart';
+import '../firebase_test_utils.dart';
 
 class FakeReportRepository implements ReportRepository {
   FakeReportRepository({this.usage = const {}, this.times = const []});
@@ -22,6 +23,10 @@ class FakeReportRepository implements ReportRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await setupFirebaseMocks();
+  });
 
   testWidgets('ReportScreenNew shows chart with fallback data', (tester) async {
     final repo = FakeReportRepository();
