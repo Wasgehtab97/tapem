@@ -3,6 +3,8 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../test_utils.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -93,6 +95,51 @@ void main() {
       );
       expect(results['A'], 2);
       expect(results['B'], 1);
+    });
+
+    test('getResults counts multiple answers from same user', () async {
+      final firestore = makeFirestore();
+      final provider = SurveyProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
+      final surveyRef = await seedSurvey(firestore, gymId: 'g1');
+      await seedSurveyAnswer(
+        firestore,
+        gymId: 'g1',
+        surveyId: surveyRef.id,
+        userId: 'u1',
+        option: 'A',
+      );
+      await seedSurveyAnswer(
+        firestore,
+        gymId: 'g1',
+        surveyId: surveyRef.id,
+        userId: 'u1',
+        option: 'A',
+      );
+      final results = await provider.getResults(
+        gymId: 'g1',
+        surveyId: surveyRef.id,
+        options: const ['A', 'B'],
+      );
+      expect(results['A'], 2);
+      expect(results['B'], 0);
+    });
+
+    test('getResults returns zero counts when there are no answers', () async {
+      final firestore = makeFirestore();
+      final provider = SurveyProvider(
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
+      final surveyRef = await seedSurvey(firestore, gymId: 'g1');
+      final results = await provider.getResults(
+        gymId: 'g1',
+        surveyId: surveyRef.id,
+        options: const ['A', 'B'],
+      );
+      expect(results, {'A': 0, 'B': 0});
     });
   });
 }
