@@ -22,9 +22,9 @@ class BrandingProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _branding = await _source.getBranding(gymId);
-    } catch (e, st) {
+    } catch (e) {
       _error = 'Fehler beim Laden: ${e.toString()}';
-      debugPrintStack(label: 'BrandingProvider.loadBranding', stackTrace: st);
+      debugPrint('BrandingProvider.loadBranding error: $e');
       _branding = null;
     } finally {
       _isLoading = false;
