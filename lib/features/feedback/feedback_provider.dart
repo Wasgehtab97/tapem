@@ -5,6 +5,7 @@ import 'models/feedback_entry.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
+// TODO: replace with real logging service
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
@@ -17,8 +18,8 @@ class FeedbackProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
   final LogFn _log;
 
-  FeedbackProvider({FirebaseFirestore? firestore, LogFn? log})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
+  FeedbackProvider({required FirebaseFirestore firestore, LogFn? log})
+    : _firestore = firestore,
       _log = log ?? _defaultLog;
 
   bool _loading = false;

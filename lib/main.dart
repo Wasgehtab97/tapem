@@ -35,6 +35,7 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
+import 'features/gym/data/sources/firestore_gym_source.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -160,9 +161,15 @@ class AppEntry extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
-          create: (_) => BrandingProvider(),
+          create: (_) => BrandingProvider(
+            source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
+          ),
           update: (_, auth, prov) {
-            final p = prov ?? BrandingProvider();
+            final p = prov ?? BrandingProvider(
+              source: FirestoreGymSource(
+                firestore: FirebaseFirestore.instance,
+              ),
+            );
             p.loadBrandingWithGym(auth.gymCode);
             return p;
           },
@@ -176,7 +183,11 @@ class AppEntry extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
-        ChangeNotifierProvider(create: (_) => DeviceProvider()),
+        ChangeNotifierProvider(
+          create: (_) => DeviceProvider(
+            firestore: FirebaseFirestore.instance,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
@@ -201,8 +212,16 @@ class AppEntry extends StatelessWidget {
                 getLogTimestamps: logsUC,
               ),
         ),
-        ChangeNotifierProvider(create: (_) => SurveyProvider()),
-        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SurveyProvider(
+            firestore: FirebaseFirestore.instance,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FeedbackProvider(
+            firestore: FirebaseFirestore.instance,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),

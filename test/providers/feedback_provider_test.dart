@@ -2,14 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() async {
-    await setupFirebase();
-  });
 
   group('FeedbackProvider', () {
     test('submitFeedback creates document', () async {

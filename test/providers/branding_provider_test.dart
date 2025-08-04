@@ -3,7 +3,6 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/features/gym/domain/models/gym_config.dart';
-import '../firebase_test_utils.dart';
 
 class FakeGymSource implements FirestoreGymSource {
   FakeGymSource({this.branding, this.throwError});
@@ -25,10 +24,6 @@ class FakeGymSource implements FirestoreGymSource {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() async {
-    await setupFirebase();
-  });
 
   group('BrandingProvider', () {
     test('loads branding successfully', () async {
