@@ -1,0 +1,34 @@
+name: Test and Coverage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Run tests with coverage
+        run: flutter test --coverage
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov bc
+      - name: Check coverage threshold
+        run: |
+          total=$(lcov --summary coverage/lcov.info | grep lines | awk '{print $2}' | sed 's/%//')
+          echo "Coverage: $total%"
+          if (( $(echo "$total < 30" | bc -l) )); then
+            echo "Coverage below 30%"
+            exit 1
+          fi
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/

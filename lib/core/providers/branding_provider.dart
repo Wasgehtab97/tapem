@@ -2,11 +2,23 @@ import 'package:flutter/foundation.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 
+typedef LogFn = void Function(String message, [StackTrace? stack]);
+
+void _defaultLog(String message, [StackTrace? stack]) {
+  if (stack != null) {
+    debugPrintStack(label: message, stackTrace: stack);
+  } else {
+    debugPrint(message);
+  }
+}
+
 class BrandingProvider extends ChangeNotifier {
   final FirestoreGymSource _source;
+  final LogFn _log;
 
-  BrandingProvider({FirestoreGymSource? source})
-    : _source = source ?? FirestoreGymSource();
+  BrandingProvider({FirestoreGymSource? source, LogFn? log})
+    : _source = source ?? FirestoreGymSource(),
+      _log = log ?? _defaultLog;
 
   Branding? _branding;
   bool _isLoading = false;
@@ -22,9 +34,9 @@ class BrandingProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _branding = await _source.getBranding(gymId);
-    } catch (e) {
+    } catch (e, st) {
       _error = 'Fehler beim Laden: ${e.toString()}';
-      debugPrint('BrandingProvider.loadBranding error: $e');
+      _log('BrandingProvider.loadBranding error: $e', st);
       _branding = null;
     } finally {
       _isLoading = false;
