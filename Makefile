@@ -1,38 +1,49 @@
-.PHONY: ios android push ios-dev ios-emu R rules rules-dev
+.PHONY: ios android push ios-dev ios-emu android-emu R rules rules-dev ios-wireless admin
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
 IOS_EMU_ID   := 47B92242-AE5E-489D-9EA0-199C9CAE3003
 ANDROID_ID   := 519e8f06
+ANDROID_EMU_ID := emulator-5554  # Emulator-Name laut `flutter devices`
+ANDROID_EMU_NAME := sdk_gphone64_x86_64  # AVD-Name zum Starten (kann angepasst werden)
 TMUX_SESSION := flutter
 FIREBASE_CONFIG ?= firebase.json
 
-# Standard-Targets
+# iOS auf echtem Gerät
 ios:
 	fvm flutter clean
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	cd ios && pod install && cd ..
-	fvm flutter run --release -d $(IOS_DEV_ID)
+	fvm flutter run --release -d $(iOS_DEV_ID)
 
+# Android auf echtem Gerät
 android:
 	fvm flutter clean
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	fvm flutter run --release -d $(ANDROID_ID)
 
+# Android Emulator starten und App ausführen
+android-emu:
+	flutter clean
+	flutter pub get
+	flutter gen-l10n
+	flutter run -d $(ANDROID_EMU_ID)
+
+# Git push
 push:
 	git add .
 	git commit -m "newest push"
 	git push
 
-# Dev-Targets ohne Clean/Pods für schnellen Workflow
+# Schneller Workflow ohne clean
 ios-dev:
 	fvm flutter pub get
 	fvm flutter gen-l10n
-	fvm flutter run -v -d $(IOS_DEV_ID)
+	fvm flutter run -v -d $(iOS_DEV_ID)
 
-# iOS Emulator: Start simulator und run im Debug-Mode
+# iOS Emulator
 ios-emu:
 	fvm flutter clean
 	open -a Simulator
@@ -41,27 +52,27 @@ ios-emu:
 	fvm flutter gen-l10n
 	fvm flutter run -d $(IOS_EMU_ID)
 
-# SetAdmin: Utility-Target
+# Admin-Skript
 admin:
 	node scripts/setAdmin.js
 
-# R: Pull, Dependencies, Gen, Hot Restart per SIGUSR2 auf die PID in PIDFILE
+# Pull, Dependencies, Gen, Hot Restart
 R:
 	git pull
 	fvm flutter pub get
 	fvm flutter gen-l10n
 
-# iOS Wireless: Verbindung zum iPhone über Netzwerk
+# iOS über Netzwerk
 ios-wireless:
 	fvm flutter clean
 	fvm flutter pub get
 	fvm flutter gen-l10n
 	cd ios && pod install && cd ..
-	fvm flutter run --release -d 00008030-001E59420191802E --device-timeout=30
+	fvm flutter run --release -d $(iOS_DEV_ID) --device-timeout=30
 
-# Deploy firestore.rules
+# Firestore-Regeln deployen
 rules:
-        npx firebase deploy --only firestore:rules -c $(FIREBASE_CONFIG)
+	npx firebase deploy --only firestore:rules -c $(FIREBASE_CONFIG)
 
 rules-dev:
-        $(MAKE) rules FIREBASE_CONFIG=firebase.dev.json
+	$(MAKE) rules FIREBASE_CONFIG=firebase.dev.json
