@@ -2,7 +2,7 @@ name: Security - Gitleaks
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [ main, a_gpt5 ]
   workflow_dispatch:
 
 jobs:
