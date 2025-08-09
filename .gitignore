@@ -130,3 +130,14 @@ serviceAccount*.json
 **/GoogleService-Info.plist
 functions/.runtimeconfig.json
 **/key.properties
+
+# Scripts secrets
+scripts/*.json
+!scripts/*.example.json
+# Firebase configs (generic)
+**/google-services.json
+**/GoogleService-Info.plist
+serviceAccount*.json
+**/serviceAccount*.json
+functions/.runtimeconfig.json
+**/key.properties
