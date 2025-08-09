@@ -1,0 +1,47 @@
+{
+  "issues": [
+    {"title": "App Check", "body": "Integrate Firebase App Check.", "labels": ["type:security", "prio:P0", "sprint:A"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Firestore Rules+Tests", "body": "Harden Firestore rules and add tests.", "labels": ["type:security", "prio:P0", "sprint:A"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Storage Rules+Tests", "body": "Secure Storage rules with tests.", "labels": ["type:security", "prio:P0", "sprint:A"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Remote Config", "body": "Set up Firebase Remote Config.", "labels": ["type:feature", "prio:P1", "sprint:A"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Claims+assignRole", "body": "Manage custom claims and role assignment.", "labels": ["type:feature", "prio:P1", "sprint:A"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "Feedback Kategorie+Foto", "body": "Allow feedback with categories and photos.", "labels": ["type:feature", "prio:P1", "sprint:B"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "FCM/APNs+lokal", "body": "Enable push notifications (FCM/APNs) locally.", "labels": ["type:feature", "prio:P1", "sprint:B"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "serverside Topic-Subscription", "body": "Server-side topic subscription handling.", "labels": ["type:feature", "prio:P0", "sprint:B"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Functions+Reminder", "body": "Cloud Functions with reminder job.", "labels": ["type:feature", "prio:P1", "sprint:B"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Report-Badges+Tests", "body": "Add report badges with tests.", "labels": ["type:feature", "prio:P2", "sprint:B"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "Session-Schema+Idempotenz", "body": "Define session schema with idempotency.", "labels": ["type:feature", "prio:P0", "sprint:C"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Offline Queue+Sync+Debounce", "body": "Implement offline queue with sync and debounce.", "labels": ["type:feature", "prio:P0", "sprint:C"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "NDEF Nonce+Mapping/Revoke", "body": "NDEF nonce mapping and revoke logic.", "labels": ["type:feature", "prio:P0", "sprint:C"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "QR-Fallback", "body": "Provide QR fallback.", "labels": ["type:feature", "prio:P1", "sprint:C"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Sync-Status-UI+E2E", "body": "Sync status UI with end-to-end tests.", "labels": ["type:feature", "prio:P1", "sprint:C"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "Aggregat-Schema", "body": "Design aggregate schema.", "labels": ["type:feature", "prio:P0", "sprint:D"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "onSetCreate XP-Delta idempotent", "body": "Ensure XP delta is idempotent on set/create.", "labels": ["type:feature", "prio:P0", "sprint:D"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Leaderboards nur aus Aggregaten", "body": "Leaderboards computed from aggregates only.", "labels": ["type:feature", "prio:P1", "sprint:D"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Simple Reports", "body": "Generate simple reports.", "labels": ["type:feature", "prio:P2", "sprint:D"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Tests/Monitoring", "body": "Add tests and monitoring.", "labels": ["type:feature", "prio:P1", "sprint:D"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "Branding Light", "body": "Implement light branding.", "labels": ["type:feature", "prio:P2", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Onboarding Guides", "body": "Create onboarding guides.", "labels": ["type:docs", "prio:P1", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Pilot Whitelist via RC", "body": "Manage pilot whitelist via Remote Config.", "labels": ["type:feature", "prio:P1", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Store Drafts/Privacy", "body": "Prepare store drafts and privacy texts.", "labels": ["type:docs", "prio:P1", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "TestFlight/Play-Internal+CI", "body": "Setup TestFlight and Play Internal with CI.", "labels": ["type:feature", "prio:P1", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Consent+Export/Löschung Stub", "body": "Stub for consent, export and deletion.", "labels": ["type:feature", "prio:P0", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "DPIA/Privacy/Impressum", "body": "Add DPIA, privacy policy and imprint.", "labels": ["type:docs", "prio:P0", "sprint:E"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "Minimal Licensing Gate", "body": "Introduce minimal licensing gate.", "labels": ["type:feature", "prio:P0", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "E2E-Suite", "body": "Build end-to-end test suite.", "labels": ["type:feature", "prio:P1", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Pen-Tests", "body": "Schedule penetration tests.", "labels": ["type:security", "prio:P0", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Performance Low-End", "body": "Optimize for low-end devices.", "labels": ["type:feature", "prio:P2", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Bugbash/Crashlytics", "body": "Bugbash and Crashlytics review.", "labels": ["type:chore", "prio:P1", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Pilot Dry-Run", "body": "Run a pilot dry-run.", "labels": ["type:feature", "prio:P0", "sprint:F"], "milestone": "Pilot v1.0 (Oct 2025)"},
+
+    {"title": "RC Build+Flags", "body": "Release candidate build with feature flags.", "labels": ["type:feature", "prio:P0", "sprint:G"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Pilot-Rollout", "body": "Pilot rollout.", "labels": ["type:feature", "prio:P0", "sprint:G"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "Monitoring+Hotfix", "body": "Monitoring and hotfix strategy.", "labels": ["type:chore", "prio:P1", "sprint:G"], "milestone": "Pilot v1.0 (Oct 2025)"},
+    {"title": "KPI+Retro", "body": "Collect KPIs and run retrospective.", "labels": ["type:chore", "prio:P2", "sprint:G"], "milestone": "Pilot v1.0 (Oct 2025)"}
+  ]
+}

@@ -1,0 +1,11 @@
+name: Feature
+description: Neue Funktion oder Verbesserung
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was soll umgesetzt werden?
+    validations:
+      required: true

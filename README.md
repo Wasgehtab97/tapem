@@ -47,7 +47,7 @@ Weitere Details zum State-Management stehen in [docs/provider_structure.md](docs
 
 ---
 
-## Getting Started
+## Erste Schritte
 
 1. **Repository klonen**
    ```bash
@@ -64,6 +64,14 @@ Weitere Details zum State-Management stehen in [docs/provider_structure.md](docs
    ```bash
    flutter pub get
    ```
+4. **Firebase konfigurieren**
+   - `google-services.json` in `android/app/`
+   - `GoogleService-Info.plist` in `ios/Runner/`
+   - Details siehe [docs/environment-setup.md](docs/environment-setup.md)
+
+Hinweis: `.gitignore` schützt diese Dateien. Weitere Regeln stehen in [docs/secrets-policy.md](docs/secrets-policy.md).
+
+Die Dateien `pubspec.lock` und – sobald vorhanden – `ios/Podfile.lock` werden versioniert, um reproduzierbare Builds zu gewährleisten.
 
 ---
 
@@ -114,6 +122,18 @@ flutter run --flavor dev
 ```
 
 Vor dem Start müssen die passenden `.env`-Dateien vorhanden sein.
+
+---
+
+## Backlog erzeugen
+
+Pilot-Issues und Labels können automatisiert erstellt werden:
+
+```bash
+python3 scripts/create_issues.py --token $GITHUB_TOKEN_PILOT_ISSUES
+```
+
+Die zugehörigen Definitionen stehen in `project/roadmap/issues_pilot.json`.
 
 ---
 
