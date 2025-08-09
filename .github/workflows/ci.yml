@@ -63,7 +63,7 @@ jobs:
         run: flutter test --coverage
 
   rules_test:
-    name: Firestore Security Rules Tests
+    name: Firestore & Storage Rules Tests
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -81,12 +81,19 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Run Firestore security-rules tests
+      - name: Run rules tests
         run: |
           firebase emulators:exec \
-            --only firestore \
+            --only firestore,storage \
             --project tap-em \
-            "npx mocha --timeout 120000 firestore-tests/security_rules.test.js"
+            "npm run rules-test" | tee rules-test.log
+
+      - name: Upload emulator logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rules-test-log
+          path: rules-test.log
 
   build:
     name: Build Debug APK

@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function inGym(gymId) {
+      return isSignedIn() && (
+        request.auth.token.gymId == gymId ||
+        exists(/databases/(default)/documents/gyms/$(gymId)/users/$(request.auth.uid))
+      );
+    }
+    function isAdmin(gymId) {
+      return inGym(gymId) && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/(default)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    function ownerOrAdmin(gymId, userId) {
+      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
+    }
+
+    match /feedback/{gymId}/{userId}/{fileId} {
+      // v1 hardening: feedback images owner/admin only (storage_feedback_owner)
+      allow read: if ownerOrAdmin(gymId, userId);
+      allow write: if ownerOrAdmin(gymId, userId) &&
+                   request.resource.contentType.matches('image/.*') &&
+                   request.resource.size < 5 * 1024 * 1024; // v1 hardening: image & size check (storage_feedback_mime)
+      allow list: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
