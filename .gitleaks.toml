@@ -1,0 +1,12 @@
+title = "Tapem Gitleaks Config"
+[allowlist]
+  description = "Allowed files/lines"
+  files = [
+    '''firebase_options\.dart''',  # enthält keine echten Secrets (öffentlich)
+  ]
+
+[[rules]]
+id = "FirebaseServiceAccount"
+description = "Do not commit Firebase service account keys"
+regex = '''(?i)\"type\":\s*\"service_account\"'''
+tags = ["key","firebase","security"]

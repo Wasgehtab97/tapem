@@ -3,7 +3,7 @@
 # ==================================================
 # Build outputs
 /build/
-/**/build/
+**/build/
 
 # Dart tool cache
 .dart_tool/
@@ -28,13 +28,19 @@ generated_plugin_registrant.dart
 .env*
 !.env.example
 
-# Firebase service account keys & config
-/scripts/*.json
-/android/app/google-services.json
-/ios/Runner/GoogleService-Info.plist
+# Service accounts & Firebase configs (generic)
+serviceAccount*.json
+**/serviceAccount*.json
+**/google-services.json
+**/GoogleService-Info.plist
 
-# Android keystore config
-android/key.properties
+# Firebase emulator logs/state
+firebase-debug.log
+.firebase/
+functions/.runtimeconfig.json
+
+# Android keystore config (in any module)
+**/key.properties
 
 # ==================================================
 # IDEs, Editors & OS
@@ -52,6 +58,9 @@ android/key.properties
 .DS_Store
 ._*
 
+# Windows
+Thumbs.db
+
 # Miscellaneous
 *.class
 *.log
@@ -66,9 +75,6 @@ android/key.properties
 # Local properties & caches
 android/local.properties
 **/android/.gradle/
-**/android/gradle/
-**/android/gradlew*
-**/android/gradle-wrapper.*
 
 # Build output
 **/android/app/build/
@@ -77,30 +83,38 @@ android/local.properties
 **/*.jks
 **/*.keystore
 
+# Distributions
+**/*.apk
+**/*.aab
+
 # ==================================================
 # iOS / Xcode
 # ==================================================
-# Flutter frameworks & pods
+# Flutter frameworks & pods (generated)
 ios/Flutter/.last_build_id
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Flutter/engine/
+ios/Flutter/ephemeral/
 
 # CocoaPods
 ios/Pods/
-ios/Podfile.lock
-ios/Runner.xcworkspace/
+ios/.symlinks/
 
-# Xcode
+# Xcode generated
 *.xcworkspace
 *.xcuserdata
 *.xcuserstate
 DerivedData/
 
+# iOS distributions
+**/*.ipa
+
 # ==================================================
 # Node / JavaScript
 # ==================================================
 node_modules/
+functions/node_modules/
 
 # ==================================================
 # Testing / Coverage / Reports
@@ -110,11 +124,3 @@ lcov.info
 *.out
 *.html
 !site/*.html
-firebase-debug.log
-.firebase/
-
-# ==================================================
-# Obfuscation / Symbolication
-# ==================================================
-app.*.symbols
-app.*.map.json

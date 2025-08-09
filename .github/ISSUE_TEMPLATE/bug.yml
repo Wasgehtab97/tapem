@@ -1,0 +1,23 @@
+name: Bug
+description: Fehler melden
+labels: ["type:chore"]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduktion
+      description: Schritte zum Reproduzieren
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true

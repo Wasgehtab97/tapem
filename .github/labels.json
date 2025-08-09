@@ -1,0 +1,16 @@
+[
+  {"name": "type:feature", "color": "1f883d", "description": "Feature"},
+  {"name": "type:chore", "color": "8c8c8c", "description": "Chore"},
+  {"name": "type:security", "color": "d93f0b", "description": "Security"},
+  {"name": "type:docs", "color": "0e8a16", "description": "Documentation"},
+  {"name": "prio:P0", "color": "b60205", "description": "Highest priority"},
+  {"name": "prio:P1", "color": "d93f0b", "description": "High priority"},
+  {"name": "prio:P2", "color": "fbca04", "description": "Normal priority"},
+  {"name": "sprint:A", "color": "5319e7", "description": "Sprint A"},
+  {"name": "sprint:B", "color": "5319e7", "description": "Sprint B"},
+  {"name": "sprint:C", "color": "5319e7", "description": "Sprint C"},
+  {"name": "sprint:D", "color": "5319e7", "description": "Sprint D"},
+  {"name": "sprint:E", "color": "5319e7", "description": "Sprint E"},
+  {"name": "sprint:F", "color": "5319e7", "description": "Sprint F"},
+  {"name": "sprint:G", "color": "5319e7", "description": "Sprint G"}
+]
