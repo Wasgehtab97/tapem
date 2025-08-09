@@ -124,3 +124,9 @@ lcov.info
 *.out
 *.html
 !site/*.html
+serviceAccount*.json
+**/serviceAccount*.json
+**/google-services.json
+**/GoogleService-Info.plist
+functions/.runtimeconfig.json
+**/key.properties
