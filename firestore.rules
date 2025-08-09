@@ -32,7 +32,9 @@ service cloud.firestore {
       return inGym(gymId) && request.resource.data.userId == request.auth.uid;
     }
     function resourceOwnerOrAdmin(gymId) {
-      return (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin(gymId);
+      // v1 hardening: ensure read access requires gym membership (logs_owner_cross_gym)
+      return (inGym(gymId) && resource.data.userId == request.auth.uid) ||
+             isAdmin(gymId);
     }
 
 
@@ -79,24 +81,21 @@ service cloud.firestore {
     // ----- Gyms -----
     match /gyms/{gymId} {
       // Gym documents are readable for everyone to validate gym codes.
-      // Write access remains restricted to admins.
-      // Allow unauthenticated users to verify gym codes during registration
+      // Public fields: name, code, logoUrl
+      // v1 hardening: document contains no sensitive fields (gym_document_public)
       allow read: if true;
       allow write: if isAdmin(gymId);
 
       // ---- Devices collection ----
       match /devices/{deviceId} {
-        // Allow any authenticated user to read device information so that
-        // training details can be displayed even before membership data exists.
-        allow read: if inGym(gymId) || isSignedIn();
+        // v1 hardening: block cross-gym reads (device_cross_gym)
+        allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
 
         // Logs are appended by the owning user only. They are immutable.
         match /logs/{logId} {
           allow create: if requestOwnerInGym(gymId);
-          // Allow users to read their own logs even if membership data
-          // is not yet available. This prevents permission errors when
-          // accessing training details shortly after registration.
+          // v1 hardening: owner must belong to gym (logs_owner_cross_gym)
           allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }
@@ -108,13 +107,15 @@ service cloud.firestore {
 
         // Leaderboard entries are updated per user.
         match /leaderboard/{userId}/{doc=**} {
-          allow read, write: if ownerOrAdmin(gymId, userId);
+          // v1 hardening: enforce userId match; TODO server-side writes (leaderboard_owner_only)
+          allow read, write: if ownerOrAdmin(gymId, userId) &&
+                             request.resource.data.userId == userId;
         }
 
         // Custom exercises per user
         match /exercises/{exerciseId} {
           allow read: if isAdmin(gymId) ||
-                       (isSignedIn() &&
+                       (inGym(gymId) &&
                         (request.auth.uid == resource.data.userId || isPublicExercise()));
           allow write: if inGym(gymId) &&
                           (request.auth.uid == request.resource.data.userId ||
@@ -138,6 +139,7 @@ service cloud.firestore {
 
       // ---- Feedback ----
       match /feedback/{entryId} {
+        // v1 hardening: limit feedback reads to admins (feedback_access)
         allow create: if inGym(gymId) &&
           request.resource.data.userId == request.auth.uid;
         allow read, update, delete: if isAdmin(gymId);
@@ -145,10 +147,12 @@ service cloud.firestore {
 
       // ---- Training plans ----
       match /trainingPlans/{planId}/{subdoc=**} {
-        allow read, write:
-          if isAdmin(gymId) ||
-             request.auth.uid == request.resource.data.createdBy ||
-             request.auth.uid == resource.data.createdBy;
+        // v1 hardening: require gym membership and creator/admin (training_plan_scoping)
+        allow read, write: if inGym(gymId) && (
+          isAdmin(gymId) ||
+          request.auth.uid == request.resource.data.createdBy ||
+          request.auth.uid == resource.data.createdBy
+        );
       }
 
       // ---- Muscle groups ----
@@ -166,11 +170,9 @@ service cloud.firestore {
       // ---- Users subcollection ----
       // Users are referenced under their gym as well
       match /users/{userId} {
-        // Allow initial creation for the authenticated user even before
-        // membership exists. Further reads/writes require gym membership or
-        // admin role.
-        allow create: if isOwner(userId);
-        allow read, update, delete: if ownerOrAdmin(gymId, userId);
+        // v1 hardening: membership lifecycle admin-only (membership_admin_only)
+        allow read: if inGym(gymId);
+        allow create, update, delete: if isAdmin(gymId);
       }
       match /users/{userId}/{doc=**} {
         allow read, write: if ownerOrAdmin(gymId, userId);

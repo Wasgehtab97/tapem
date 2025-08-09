@@ -1,27 +1,51 @@
-// firestore-tests/security_rules.test.js
-
 const path = require('path');
 const fs = require('fs');
-const { initializeTestEnvironment, assertFails, assertSucceeds } =
-  require('@firebase/rules-unit-testing');
+const {
+  initializeTestEnvironment,
+  assertFails,
+  assertSucceeds,
+} = require('@firebase/rules-unit-testing');
 
-// Lade Firestore-Sicherheitsregeln relativ zum Testverzeichnis
-const rulesPath = path.resolve(__dirname, '../firestore.rules');
-const rules = fs.readFileSync(rulesPath, 'utf8');
+const firestoreRules = fs.readFileSync(
+  path.resolve(__dirname, '../firestore.rules'),
+  'utf8'
+);
+const storageRules = fs.readFileSync(
+  path.resolve(__dirname, '../storage.rules'),
+  'utf8'
+);
 
-describe('Firestore Security Rules', function() {
-  this.timeout(10000);
-
+describe('Security Rules v1', function () {
+  this.timeout(20000);
   let testEnv;
 
   before(async () => {
     testEnv = await initializeTestEnvironment({
       projectId: 'tap-em',
       firestore: {
-        rules,
+        rules: firestoreRules,
         host: '127.0.0.1',
         port: 8080,
       },
+      storage: {
+        rules: storageRules,
+        host: '127.0.0.1',
+        port: 9199,
+      },
+    });
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.collection('gyms').doc('G1').set({ code: 'G1', name: 'Gym 1' });
+      await db.collection('gyms').doc('G2').set({ code: 'G2', name: 'Gym 2' });
+      await db.collection('gyms').doc('G1').collection('devices').doc('D1').set({ id: 1 });
+      await db.collection('gyms').doc('G2').collection('devices').doc('D2').set({ id: 1 });
+      await db.collection('gyms').doc('G1').collection('users').doc('userA').set({ role: 'member' });
+      await db.collection('gyms').doc('G1').collection('users').doc('adminA').set({ role: 'admin' });
+      await db.collection('gyms').doc('G2').collection('users').doc('userB').set({ role: 'member' });
+      await db.collection('gyms').doc('G1').collection('trainingPlans').doc('planA').set({ createdBy: 'userA' });
+      await db.collection('gyms').doc('G2').collection('trainingPlans').doc('planB').set({ createdBy: 'userB' });
+      await db.collection('gyms').doc('G1').collection('feedback').doc('fb1').set({ userId: 'userA', text: 'hi' });
     });
   });
 
@@ -29,51 +53,104 @@ describe('Firestore Security Rules', function() {
     await testEnv.cleanup();
   });
 
-  it('erlaubt write im eigenen Gym', async () => {
-    const authCtx = testEnv.authenticatedContext('user1', { gymId: 'gymA' });
-    const db = authCtx.firestore();
-    const ref = db
-      .collection('gyms')
-      .doc('gymA')
-      .collection('config')
-      .doc('cfg');
+  const userA = () => testEnv.authenticatedContext('userA', { gymId: 'G1', role: 'member' });
+  const userB = () => testEnv.authenticatedContext('userB', { gymId: 'G2', role: 'member' });
+  const admin = () => testEnv.authenticatedContext('adminA', { gymId: 'G1', role: 'admin' });
+  const noMember = () => testEnv.authenticatedContext('noMember', {});
 
-    await assertSucceeds(ref.set({ foo: 'bar' }));
+  describe('Firestore rules', () => {
+    it('blocks cross-gym device read (device_cross_gym)', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('gyms').doc('G2').collection('devices').doc('D2');
+      await assertFails(ref.get());
+    });
+
+    it('allows device read in own gym', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('devices').doc('D1');
+      await assertSucceeds(ref.get());
+    });
+
+    it('prevents membership self-write (membership_admin_only)', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('userA');
+      await assertFails(ref.set({ role: 'member' }));
+    });
+
+    it('allows admin membership write', async () => {
+      const db = admin().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('newUser');
+      await assertSucceeds(ref.set({ role: 'member' }));
+    });
+
+    it('blocks role escalation (membership_role_escalation)', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('userA');
+      await assertFails(ref.update({ role: 'admin' }));
+    });
+
+    it('enforces gym scoping on training plans (training_plan_scoping)', async () => {
+      const dbA = userA().firestore();
+      const planRef = dbA.collection('gyms').doc('G1').collection('trainingPlans').doc('planA');
+      await assertSucceeds(planRef.get());
+      const foreignRef = dbA.collection('gyms').doc('G2').collection('trainingPlans').doc('planB');
+      await assertFails(foreignRef.get());
+      const writeRef = dbA.collection('gyms').doc('G1').collection('trainingPlans').doc('planA');
+      await assertSucceeds(writeRef.set({ createdBy: 'userA' }));
+      const otherWrite = dbA.collection('gyms').doc('G1').collection('trainingPlans').doc('planA');
+      await assertFails(otherWrite.set({ createdBy: 'userB' }));
+    });
+
+    it('allows feedback creation and restricts reads (feedback_access)', async () => {
+      const dbA = userA().firestore();
+      const newFeedback = dbA.collection('gyms').doc('G1').collection('feedback').doc('fb2');
+      await assertSucceeds(newFeedback.set({ userId: 'userA', text: 'ok' }));
+      const dbB = userB().firestore();
+      const readOther = dbB.collection('gyms').doc('G1').collection('feedback').doc('fb1');
+      await assertFails(readOther.get());
+      const dbAdmin = admin().firestore();
+      await assertSucceeds(dbAdmin.collection('gyms').doc('G1').collection('feedback').doc('fb1').get());
+    });
   });
 
-  it('blockt write im fremden Gym', async () => {
-    const authCtx = testEnv.authenticatedContext('user2', { gymId: 'gymA' });
-    const db = authCtx.firestore();
-    const badRef = db
-      .collection('gyms')
-      .doc('gymB')
-      .collection('config')
-      .doc('cfg');
+  describe('Storage rules', () => {
+    it('owner can upload and read own feedback image (storage_feedback_owner)', async () => {
+      const storage = userA().storage();
+      const file = storage.bucket().file('feedback/G1/userA/pic.png');
+      await assertSucceeds(file.save(Buffer.from('123'), { contentType: 'image/png' }));
+      await assertSucceeds(file.download());
+    });
 
-    await assertFails(badRef.set({ foo: 'bar' }));
-  });
+    it('admin can read member feedback image', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const storage = context.storage();
+        await storage
+          .bucket()
+          .file('feedback/G1/userA/pic2.png')
+          .save(Buffer.from('123'), { contentType: 'image/png' });
+      });
+      const adminStorage = admin().storage();
+      await assertSucceeds(
+        adminStorage.bucket().file('feedback/G1/userA/pic2.png').download()
+      );
+    });
 
-  it('erlaubt Anlage der eigenen Mitgliedschaft', async () => {
-    const authCtx = testEnv.authenticatedContext('newUser', {});
-    const db = authCtx.firestore();
-    const ref = db
-      .collection('gyms')
-      .doc('gymA')
-      .collection('users')
-      .doc('newUser');
+    it('other gym member cannot read image', async () => {
+      const storageB = userB().storage();
+      await assertFails(
+        storageB.bucket().file('feedback/G1/userA/pic2.png').download()
+      );
+    });
 
-    await assertSucceeds(ref.set({ role: 'member' }));
-  });
+    it('listing is denied', async () => {
+      const storageA = userA().storage();
+      await assertFails(storageA.bucket().getFiles({ prefix: 'feedback/G1/userA' }));
+    });
 
-  it('blockt Anlage der Mitgliedschaft für fremden Nutzer', async () => {
-    const authCtx = testEnv.authenticatedContext('hacker', {});
-    const db = authCtx.firestore();
-    const ref = db
-      .collection('gyms')
-      .doc('gymA')
-      .collection('users')
-      .doc('otherUser');
-
-    await assertFails(ref.set({ role: 'member' }));
+    it('blocks non-image uploads (storage_feedback_mime)', async () => {
+      const storageA = userA().storage();
+      const bad = storageA.bucket().file('feedback/G1/userA/file.txt');
+      await assertFails(bad.save(Buffer.from('hi'), { contentType: 'text/plain' }));
+    });
   });
 });
