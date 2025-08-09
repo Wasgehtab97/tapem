@@ -59,8 +59,8 @@ admin:
 # Pull, Dependencies, Gen, Hot Restart
 R:
 	git pull
-	fvm flutter pub get
-	fvm flutter gen-l10n
+	flutter pub get
+	flutter gen-l10n
 
 # iOS über Netzwerk
 ios-wireless:
