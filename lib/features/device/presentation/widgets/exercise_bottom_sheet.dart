@@ -5,7 +5,7 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'muscle_group_selector_list.dart';
+import 'package:tapem/features/muscle_group/presentation/widgets/muscle_group_selector.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
@@ -103,7 +103,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           const SizedBox(height: 8),
           SizedBox(
             height: 240,
-            child: MuscleGroupSelectorList(
+            child: MuscleGroupSelector(
               initialSelection: _selected.toList(),
               filter: _query,
               onChanged: (ids) => setState(() {
