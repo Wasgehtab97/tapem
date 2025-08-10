@@ -10,9 +10,9 @@ import '../repositories/auth_repository.dart';
 class RegisterUseCase {
   final AuthRepository _repo;
   final fb_auth.FirebaseAuth _auth;
-  RegisterUseCase([AuthRepository? repo, fb_auth.FirebaseAuth? auth])
-      : _repo = repo ?? AuthRepositoryImpl(),
-        _auth = auth ?? fb_auth.FirebaseAuth.instance;
+  RegisterUseCase(AuthRepository repo, fb_auth.FirebaseAuth auth)
+      : _repo = repo,
+        _auth = auth;
 
   Future<UserData> execute(String email, String password, String gymId) async {
     // 1) Nutzerkonto anlegen und UserData in Firestore speichern

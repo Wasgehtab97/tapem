@@ -28,16 +28,16 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   String? _selectedGymCode;
 
-  AuthProvider({AuthRepositoryImpl? repo, fb_auth.FirebaseAuth? auth})
-    : _loginUC = LoginUseCase(repo, auth),
-      _registerUC = RegisterUseCase(repo, auth),
-      _logoutUC = LogoutUseCase(repo),
-      _currentUC = GetCurrentUserUseCase(repo),
-      _setUsernameUC = SetUsernameUseCase(repo),
-      _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
-      _checkUsernameUC = CheckUsernameAvailable(repo),
-      _resetPasswordUC = ResetPasswordUseCase(repo),
-      _auth = auth ?? fb_auth.FirebaseAuth.instance {
+  AuthProvider({required AuthRepositoryImpl repo, required fb_auth.FirebaseAuth auth})
+      : _loginUC = LoginUseCase(repo, auth),
+        _registerUC = RegisterUseCase(repo, auth),
+        _logoutUC = LogoutUseCase(repo),
+        _currentUC = GetCurrentUserUseCase(repo),
+        _setUsernameUC = SetUsernameUseCase(repo),
+        _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
+        _checkUsernameUC = CheckUsernameAvailable(repo),
+        _resetPasswordUC = ResetPasswordUseCase(repo),
+        _auth = auth {
     _loadCurrentUser();
   }
 

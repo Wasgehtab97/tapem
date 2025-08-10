@@ -92,15 +92,14 @@ import 'core/feature_flags.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<FirebaseApp> _getOrCreateFirebaseApp() async {
-  try {
+  if (Firebase.apps.isNotEmpty) {
     if (kDebugMode) debugPrint('Using existing Firebase app');
     return Firebase.app();
-  } catch (_) {
-    if (kDebugMode) debugPrint('Initialized Firebase app');
-    return Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
   }
+  if (kDebugMode) debugPrint('Initializing Firebase app');
+  return Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 }
 
 Future<void> main() async {
@@ -116,6 +115,8 @@ Future<void> main() async {
 
   final auth = fb_auth.FirebaseAuth.instanceFor(app: app);
   auth.setSettings(appVerificationDisabledForTesting: true);
+
+  debugPrint('Firebase bootstrap complete (default app name: ${app.name})');
 
   await initializeDateFormatting();
 
@@ -210,6 +211,7 @@ class AppEntry extends StatelessWidget {
             repo: AuthRepositoryImpl(
               FirestoreAuthSource(auth: auth, firestore: firestore),
             ),
+            auth: auth,
           ),
         ),
         ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
@@ -264,7 +266,15 @@ class AppEntry extends StatelessWidget {
             ),
           ),
         ),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider(
+            getHistory: GetHistoryForDevice(
+              HistoryRepositoryImpl(
+                FirestoreHistorySource(firestore: firestore),
+              ),
+            ),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => MuscleGroupProvider(
             getGroups: GetMuscleGroupsForGym(

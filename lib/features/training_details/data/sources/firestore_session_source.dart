@@ -6,8 +6,8 @@ import '../dtos/session_dto.dart';
 class FirestoreSessionSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreSessionSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreSessionSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   Future<List<SessionDto>> getSessionsForDate({
     required String userId,

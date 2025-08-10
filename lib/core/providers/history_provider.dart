@@ -11,10 +11,8 @@ import 'package:tapem/features/history/domain/models/workout_log.dart';
 class HistoryProvider extends ChangeNotifier {
   final GetHistoryForDevice _getHistory;
 
-  HistoryProvider({GetHistoryForDevice? getHistory})
-    : _getHistory =
-          getHistory ??
-          GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource()));
+  HistoryProvider({required GetHistoryForDevice getHistory})
+      : _getHistory = getHistory;
 
   bool _isLoading = false;
   String? _error;

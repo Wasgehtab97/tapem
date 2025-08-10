@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -41,7 +42,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
     _formKey.currentState!.save();
     setState(() => _gymError = null);
 
-    final validator = ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
+    final fs = context.read<FirebaseFirestore>();
+    final validator =
+        ValidateGymCode(GymRepositoryImpl(FirestoreGymSource(firestore: fs)));
 
     try {
       await validator.execute(_gymCode);

@@ -5,8 +5,8 @@ import '../../domain/models/exercise.dart';
 class FirestoreExerciseSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreExerciseSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreExerciseSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   CollectionReference _col(String gymId, String deviceId) => _firestore
       .collection('gyms')

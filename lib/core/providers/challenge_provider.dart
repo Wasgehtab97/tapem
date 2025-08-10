@@ -16,8 +16,7 @@ class ChallengeProvider extends ChangeNotifier {
   StreamSubscription? _badgeSub;
   StreamSubscription? _completedSub;
 
-  ChallengeProvider({ChallengeRepository? repo})
-    : _repo = repo ?? ChallengeRepositoryImpl(FirestoreChallengeSource());
+  ChallengeProvider({required ChallengeRepository repo}) : _repo = repo;
 
   List<Challenge> get challenges => _challenges;
   List<CompletedChallenge> get completed => _completed;

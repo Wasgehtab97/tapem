@@ -6,8 +6,8 @@ import '../../domain/models/muscle_group.dart';
 class FirestoreMuscleGroupSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreMuscleGroupSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreMuscleGroupSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   CollectionReference<Map<String, dynamic>> _col(String gymId) {
     return _firestore.collection('gyms').doc(gymId).collection('muscleGroups');
