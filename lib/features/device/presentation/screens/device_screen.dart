@@ -36,7 +36,6 @@ class DeviceScreen extends StatefulWidget {
 
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _redirected = false;
 
   @override
   void initState() {
@@ -80,20 +79,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
         appBar: AppBar(title: const Text('Gerät nicht gefunden')),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
-    }
-
-    // **Nur** Multi + initialId==deviceId => ExerciseList
-    if (!_redirected &&
-        prov.device!.isMulti &&
-        widget.exerciseId == widget.deviceId) {
-      _redirected = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed(
-          AppRouter.exerciseList,
-          arguments: {'gymId': widget.gymId, 'deviceId': widget.deviceId},
-        );
-      });
-      return const Scaffold();
     }
 
     // Single-Übung: hier bleiben
