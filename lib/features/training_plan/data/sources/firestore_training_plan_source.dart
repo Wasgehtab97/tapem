@@ -9,8 +9,8 @@ import '../../domain/models/exercise_entry.dart';
 class FirestoreTrainingPlanSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreTrainingPlanSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreTrainingPlanSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   CollectionReference<Map<String, dynamic>> _plansCol(String gymId) =>
       _firestore.collection('gyms').doc(gymId).collection('trainingPlans');

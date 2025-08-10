@@ -9,8 +9,7 @@ class RankProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _deviceEntries = [];
   StreamSubscription? _deviceSub;
 
-  RankProvider({RankRepository? repository})
-    : _repository = repository ?? RankRepositoryImpl(FirestoreRankSource());
+  RankProvider({required RankRepository repository}) : _repository = repository;
 
   List<Map<String, dynamic>> get deviceEntries => _deviceEntries;
 

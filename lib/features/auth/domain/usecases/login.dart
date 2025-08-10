@@ -10,9 +10,9 @@ import '../repositories/auth_repository.dart';
 class LoginUseCase {
   final AuthRepository _repo;
   final fb_auth.FirebaseAuth _auth;
-  LoginUseCase([AuthRepository? repo, fb_auth.FirebaseAuth? auth])
-      : _repo = repo ?? AuthRepositoryImpl(),
-        _auth = auth ?? fb_auth.FirebaseAuth.instance;
+  LoginUseCase(AuthRepository repo, fb_auth.FirebaseAuth auth)
+      : _repo = repo,
+        _auth = auth;
 
   Future<UserData> execute(String email, String password) async {
     // 1) Authentifizieren und UserData aus Firestore holen

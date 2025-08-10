@@ -7,8 +7,8 @@ import '../dtos/workout_log_dto.dart';
 class FirestoreHistorySource {
   final FirebaseFirestore _firestore;
 
-  FirestoreHistorySource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreHistorySource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   Future<List<WorkoutLogDto>> getLogs({
     required String gymId,

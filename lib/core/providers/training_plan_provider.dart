@@ -19,9 +19,8 @@ class TrainingPlanProvider extends ChangeNotifier {
   bool isSaving = false;
   String? error;
 
-  TrainingPlanProvider({TrainingPlanRepository? repo})
-    : _repo =
-          repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
+  TrainingPlanProvider({required TrainingPlanRepository repo})
+      : _repo = repo {
     _loadActivePlanId();
   }
 

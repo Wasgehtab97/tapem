@@ -6,8 +6,8 @@ import '../../domain/models/branding.dart';
 class FirestoreGymSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreGymSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreGymSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   /// Sucht in 'gyms' nach dem Dokument mit Feld 'code' == [code].
   Future<GymConfig?> getGymByCode(String code) async {

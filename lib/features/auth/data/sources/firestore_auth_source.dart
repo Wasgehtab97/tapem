@@ -7,9 +7,9 @@ class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
-  FirestoreAuthSource({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreAuthSource({required FirebaseAuth auth, required FirebaseFirestore firestore})
+      : _auth = auth,
+        _firestore = firestore;
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -34,7 +34,7 @@ class FirestoreAuthSource {
     final uid = cred.user!.uid;
 
     // Gym anhand des Codes suchen und dessen ID speichern
-    final gymSrc = FirestoreGymSource();
+    final gymSrc = FirestoreGymSource(firestore: _firestore);
     final gym = await gymSrc.getGymByCode(initialGymCode);
     if (gym == null) throw Exception('Gym code not found');
 

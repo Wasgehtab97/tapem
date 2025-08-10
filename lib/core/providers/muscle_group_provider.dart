@@ -27,40 +27,18 @@ class MuscleGroupProvider extends ChangeNotifier {
   final SetDeviceMuscleGroupsUseCase _setDeviceGroups;
 
   MuscleGroupProvider({
-    GetMuscleGroupsForGym? getGroups,
-    SaveMuscleGroup? saveGroup,
-    DeleteMuscleGroup? deleteGroup,
-    GetHistoryForDevice? getHistory,
-    UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
-    SetDeviceMuscleGroupsUseCase? setDeviceGroups,
-  }) : _getGroups =
-           getGroups ??
-           GetMuscleGroupsForGym(
-             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-           ),
-       _saveGroup =
-           saveGroup ??
-           SaveMuscleGroup(
-             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-           ),
-       _deleteGroup =
-           deleteGroup ??
-           DeleteMuscleGroup(
-             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-           ),
-       _getHistory =
-           getHistory ??
-           GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource())),
-       _updateDeviceGroups =
-           updateDeviceGroups ??
-           UpdateDeviceMuscleGroupsUseCase(
-             DeviceRepositoryImpl(FirestoreDeviceSource()),
-           ),
-       _setDeviceGroups =
-           setDeviceGroups ??
-           SetDeviceMuscleGroupsUseCase(
-             DeviceRepositoryImpl(FirestoreDeviceSource()),
-           );
+    required GetMuscleGroupsForGym getGroups,
+    required SaveMuscleGroup saveGroup,
+    required DeleteMuscleGroup deleteGroup,
+    required GetHistoryForDevice getHistory,
+    required UpdateDeviceMuscleGroupsUseCase updateDeviceGroups,
+    required SetDeviceMuscleGroupsUseCase setDeviceGroups,
+  })  : _getGroups = getGroups,
+        _saveGroup = saveGroup,
+        _deleteGroup = deleteGroup,
+        _getHistory = getHistory,
+        _updateDeviceGroups = updateDeviceGroups,
+        _setDeviceGroups = setDeviceGroups;
 
   bool _isLoading = false;
   String? _error;

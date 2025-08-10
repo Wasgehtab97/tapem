@@ -3,8 +3,7 @@ import '../models/user_data.dart';
 
 class GetCurrentUserUseCase {
   final AuthRepositoryImpl _repo;
-  GetCurrentUserUseCase([AuthRepositoryImpl? repo])
-    : _repo = repo ?? AuthRepositoryImpl();
+  GetCurrentUserUseCase(this._repo);
 
   Future<UserData?> execute() => _repo.getCurrentUser();
 }

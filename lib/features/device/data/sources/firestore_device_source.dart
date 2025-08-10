@@ -7,8 +7,8 @@ import '../dtos/device_dto.dart';
 class FirestoreDeviceSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreDeviceSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreDeviceSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   Future<List<DeviceDto>> getDevicesForGym(String gymId) async {
     final snap =

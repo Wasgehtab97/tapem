@@ -4,8 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreReportSource {
   final FirebaseFirestore _fs;
-  FirestoreReportSource([FirebaseFirestore? fs])
-    : _fs = fs ?? FirebaseFirestore.instance;
+  FirestoreReportSource(this._fs);
 
   /// Alle Geräte des Gyms laden
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> fetchDevices(

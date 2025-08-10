@@ -8,8 +8,8 @@ import '../../domain/models/completed_challenge.dart';
 class FirestoreChallengeSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreChallengeSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreChallengeSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   Stream<List<Challenge>> watchActiveChallenges(String gymId) {
     final now = Timestamp.fromDate(DateTime.now());

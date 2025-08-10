@@ -11,10 +11,8 @@ import 'package:tapem/features/history/domain/usecases/get_history_for_device.da
 class ProfileProvider extends ChangeNotifier {
   final GetHistoryForDevice _getHistory;
 
-  ProfileProvider({GetHistoryForDevice? getHistory})
-    : _getHistory =
-          getHistory ??
-          GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource()));
+  ProfileProvider({required GetHistoryForDevice getHistory})
+      : _getHistory = getHistory;
 
   bool _isLoading = false;
   String? _error;

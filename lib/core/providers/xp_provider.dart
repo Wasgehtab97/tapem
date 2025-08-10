@@ -7,8 +7,7 @@ import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
 
 class XpProvider extends ChangeNotifier {
   final XpRepository _repo;
-  XpProvider({XpRepository? repo})
-    : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource());
+  XpProvider({required XpRepository repo}) : _repo = repo;
 
   Map<String, int> _muscleXp = {};
   int _dayXp = 0;

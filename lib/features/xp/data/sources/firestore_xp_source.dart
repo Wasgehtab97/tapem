@@ -7,9 +7,9 @@ class FirestoreXpSource {
   final FirebaseFirestore _firestore;
   final FirestoreRankSource _rankSource;
 
-  FirestoreXpSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _rankSource = FirestoreRankSource(firestore: firestore);
+  FirestoreXpSource({required FirebaseFirestore firestore})
+      : _firestore = firestore,
+        _rankSource = FirestoreRankSource(firestore: firestore);
 
   Future<void> addSessionXp({
     required String gymId,

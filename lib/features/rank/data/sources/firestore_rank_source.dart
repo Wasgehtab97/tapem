@@ -7,8 +7,8 @@ import '../../domain/services/level_service.dart';
 class FirestoreRankSource {
   final FirebaseFirestore _firestore;
 
-  FirestoreRankSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreRankSource({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   Future<void> addXp({
     required String gymId,

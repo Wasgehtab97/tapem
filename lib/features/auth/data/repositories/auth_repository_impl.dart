@@ -8,8 +8,7 @@ import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final FirestoreAuthSource _source;
 
-  AuthRepositoryImpl([FirestoreAuthSource? src])
-    : _source = src ?? FirestoreAuthSource();
+  AuthRepositoryImpl(this._source);
 
   @override
   Future<UserData> login(String email, String password) async {
