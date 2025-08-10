@@ -66,6 +66,8 @@ import 'features/report/domain/usecases/get_all_log_timestamps.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
 
+import 'core/feature_flags.dart';
+
 /// Global navigator key for NFC navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -97,11 +99,14 @@ Future<void> main() async {
   // Date formatting
   await initializeDateFormatting();
 
-  runApp(const AppEntry());
+  final flags = FeatureFlags.instance;
+  await flags.load();
+  runApp(AppEntry(featureFlags: flags));
 }
 
 class AppEntry extends StatelessWidget {
-  const AppEntry({Key? key}) : super(key: key);
+  final FeatureFlags featureFlags;
+  const AppEntry({Key? key, required this.featureFlags}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +117,7 @@ class AppEntry extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<FeatureFlags>.value(value: featureFlags),
         // NFC
         Provider<NfcService>(create: (_) => NfcService()),
         Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),

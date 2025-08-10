@@ -64,6 +64,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
+    final flags = context.watch<FeatureFlags>();
     final locale = Localizations.localeOf(context).toString();
     final planProv = context.watch<TrainingPlanProvider>();
     final plannedEntry = planProv.entryForDate(
@@ -222,11 +223,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              if (FeatureFlags.uiSetsTableV1) ...[
-                                SizedBox(
-                                  height: 300,
-                                  child: SessionSetsTable(),
-                                ),
+                    if (flags.uiSetsTableV1) ...[
+                                const SessionSetsTable(),
                                 const Divider(),
                                 const RestTimerWidget(),
                               ] else ...[
