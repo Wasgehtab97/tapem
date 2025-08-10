@@ -17,6 +17,8 @@ import '../widgets/note_button_widget.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
+import 'package:tapem/core/feature_flags.dart';
+import '../widgets/session_sets_table.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -220,25 +222,34 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              for (var entry in prov.sets.asMap().entries)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: _SessionSetRow(
-                                    index: entry.key,
-                                    set: entry.value,
-                                  ),
+                              if (FeatureFlags.uiSetsTableV1) ...[
+                                SizedBox(
+                                  height: 300,
+                                  child: SessionSetsTable(),
                                 ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  prov.addSet();
-                                },
-                                icon: const Icon(Icons.add),
-                                label: const Text('Set hinzufügen'),
-                              ),
-                              const Divider(),
-                              const RestTimerWidget(),
+                                const Divider(),
+                                const RestTimerWidget(),
+                              ] else ...[
+                                for (var entry in prov.sets.asMap().entries)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: _SessionSetRow(
+                                      index: entry.key,
+                                      set: entry.value,
+                                    ),
+                                  ),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    prov.addSet();
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Set hinzufügen'),
+                                ),
+                                const Divider(),
+                                const RestTimerWidget(),
+                              ],
                             ],
                           ),
                         ),
