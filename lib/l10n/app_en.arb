@@ -446,5 +446,31 @@
   "multiDeviceMuscleGroupFilter": "Filter by muscle group",
   "@multiDeviceMuscleGroupFilter": {"description": "Dropdown label filter"},
   "multiDeviceMuscleGroupFilterAll": "All muscle groups",
-  "@multiDeviceMuscleGroupFilterAll": {"description": "Dropdown item all"}
+  "@multiDeviceMuscleGroupFilterAll": {"description": "Dropdown item all"},
+  "exerciseAddTitle": "Add exercise",
+  "@exerciseAddTitle": {"description": "Bottom sheet title add exercise"},
+  "exerciseEditTitle": "Edit exercise",
+  "@exerciseEditTitle": {"description": "Bottom sheet title edit exercise"},
+  "exerciseNameLabel": "Name",
+  "@exerciseNameLabel": {"description": "Exercise name label"},
+  "exerciseMuscleGroupsLabel": "Muscle groups",
+  "@exerciseMuscleGroupsLabel": {"description": "Header muscle groups"},
+  "exerciseSearchMuscleGroupsHint": "Search muscle groups...",
+  "@exerciseSearchMuscleGroupsHint": {"description": "Hint for muscle group search"},
+  "exerciseNoMuscleGroups": "No muscle groups available",
+  "@exerciseNoMuscleGroups": {"description": "Empty state muscle groups"},
+  "commonCancel": "Cancel",
+  "@commonCancel": {"description": "Common cancel"},
+  "commonSave": "Save",
+  "@commonSave": {"description": "Common save"},
+  "a11yMgSelected": "Muscle group: {name}, selected",
+  "@a11yMgSelected": {
+    "description": "Semantics for selected muscle group",
+    "placeholders": {"name": {}}
+  },
+  "a11yMgUnselected": "Muscle group: {name}, not selected",
+  "@a11yMgUnselected": {
+    "description": "Semantics for unselected muscle group",
+    "placeholders": {"name": {}}
+  }
 }

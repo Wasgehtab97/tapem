@@ -751,6 +751,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All'**
   String get multiDeviceMuscleGroupFilterAll;
+
+  /// Bottom sheet title add exercise
+  String get exerciseAddTitle;
+
+  /// Bottom sheet title edit exercise
+  String get exerciseEditTitle;
+
+  /// Label for exercise name field
+  String get exerciseNameLabel;
+
+  /// Header muscle groups
+  String get exerciseMuscleGroupsLabel;
+
+  /// Hint for muscle group search field
+  String get exerciseSearchMuscleGroupsHint;
+
+  /// Empty state muscle groups
+  String get exerciseNoMuscleGroups;
+
+  /// Common cancel button
+  String get commonCancel;
+
+  /// Common save button
+  String get commonSave;
+
+  /// Semantics label for selected muscle group
+  String a11yMgSelected(Object name);
+
+  /// Semantics label for unselected muscle group
+  String a11yMgUnselected(Object name);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
