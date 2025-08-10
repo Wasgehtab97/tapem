@@ -4,175 +4,161 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
-import '../widgets/muscle_group_card.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import '../widgets/multi_device_banner.dart';
+import '../widgets/muscle_chips.dart';
+import '../widgets/exercise_bottom_sheet.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
 
-  const ExerciseListScreen({
-    Key? key,
-    required this.gymId,
-    required this.deviceId,
-  }) : super(key: key);
+  const ExerciseListScreen({super.key, required this.gymId, required this.deviceId});
 
   @override
-  _ExerciseListScreenState createState() => _ExerciseListScreenState();
+  State<ExerciseListScreen> createState() => _ExerciseListScreenState();
 }
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
-  final _nameCtr = TextEditingController();
-  final List<String> _selectedGroups = [];
+  final _searchCtr = TextEditingController();
+  String _query = '';
+  String? _groupFilter;
 
   @override
   void initState() {
     super.initState();
     final userId = context.read<AuthProvider>().userId!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExerciseProvider>().loadExercises(
-        widget.gymId,
-        widget.deviceId,
-        userId,
-      );
+      context.read<ExerciseProvider>().loadExercises(widget.gymId, widget.deviceId, userId);
       context.read<MuscleGroupProvider>().loadGroups(context);
     });
   }
 
+  Future<void> _openAdd([Exercise? ex]) async {
+    final result = await showModalBottomSheet<Exercise>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ExerciseBottomSheet(
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
+        exercise: ex,
+      ),
+    );
+    if (result != null && ex == null) {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(
+        AppRouter.device,
+        arguments: {
+          'gymId': widget.gymId,
+          'deviceId': widget.deviceId,
+          'exerciseId': result.id,
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userId = context.read<AuthProvider>().userId!;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Übung wählen')),
-      body: Consumer<ExerciseProvider>(
-        builder: (_, prov, __) {
-          if (prov.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (prov.error != null) {
-            return Center(child: Text('Fehler: ${prov.error}'));
-          }
-          return ListView(
-            children: [
-              for (var ex in prov.exercises)
-                ListTile(
-                  title: Text(ex.name),
-                  onTap:
-                      () => Navigator.of(context).pushNamed(
-                        AppRouter.device,
-                        arguments: {
-                          'gymId': widget.gymId,
-                          'deviceId': widget.deviceId,
-                          'exerciseId': ex.id,
-                        },
-                      ),
-                ),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('Neue Übung'),
-                onTap:
-                    () => showDialog(
-                      context: context,
-                      builder:
-                          (_) => AlertDialog(
-                            title: const Text('Übung hinzufügen'),
-                            content: StatefulBuilder(
-                              builder: (ctx2, setSt) {
-                                final groups =
-                                    context.read<MuscleGroupProvider>().groups;
-                                return SizedBox(
-                                  width: 300,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: _nameCtr,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Name',
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'Muskelgruppen',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Wrap(
-                                        spacing: 4,
-                                        runSpacing: 4,
-                                        children: [
-                                          for (final g in groups)
-                                            MuscleGroupCard(
-                                              name: g.name,
-                                              selected: _selectedGroups
-                                                  .contains(g.id),
-                                              primary:
-                                                  _selectedGroups.contains(
-                                                    g.id,
-                                                  ) &&
-                                                  _selectedGroups.indexOf(
-                                                        g.id,
-                                                      ) ==
-                                                      0,
-                                              onTap:
-                                                  () => setSt(() {
-                                                    if (_selectedGroups
-                                                        .contains(g.id)) {
-                                                      _selectedGroups.remove(
-                                                        g.id,
-                                                      );
-                                                    } else {
-                                                      _selectedGroups.add(g.id);
-                                                    }
-                                                  }),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Abbrechen'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  final name = _nameCtr.text.trim();
-                                  if (name.isNotEmpty &&
-                                      _selectedGroups.isNotEmpty) {
-                                    final ex = await prov.addExercise(
-                                      widget.gymId,
-                                      widget.deviceId,
-                                      name,
-                                      userId,
-                                      muscleGroupIds: List.from(
-                                        _selectedGroups,
-                                      ),
-                                    );
-                                    await context
-                                        .read<MuscleGroupProvider>()
-                                        .assignExercise(
-                                          context,
-                                          ex.id,
-                                          List.from(_selectedGroups),
-                                        );
-                                    Navigator.pop(context);
-                                    _selectedGroups.clear();
-                                    _nameCtr.clear();
-                                  }
-                                },
-                                child: const Text('Erstellen'),
-                              ),
-                            ],
-                          ),
-                    ),
-              ),
-            ],
+    final loc = AppLocalizations.of(context)!;
+    final prov = context.watch<ExerciseProvider>();
+    final groups = context.watch<MuscleGroupProvider>().groups;
+
+    List<Exercise> exercises = prov.exercises.where((e) {
+      final matchesQuery = e.name.toLowerCase().contains(_query.toLowerCase());
+      final matchesGroup = _groupFilter == null || e.muscleGroupIds.contains(_groupFilter);
+      return matchesQuery && matchesGroup;
+    }).toList();
+
+    Widget body;
+    if (prov.isLoading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (prov.error != null) {
+      body = Center(child: Text('Fehler: ${prov.error}'));
+    } else if (exercises.isEmpty) {
+      body = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(loc.multiDevice_noExercises),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _openAdd(),
+              child: Text(loc.multiDevice_newExercise),
+            ),
+          ],
+        ),
+      );
+    } else {
+      body = ListView.builder(
+        itemCount: exercises.length,
+        itemBuilder: (_, i) {
+          final ex = exercises[i];
+          return ListTile(
+            leading: const Icon(Icons.fitness_center),
+            title: Text(ex.name),
+            subtitle: MuscleChips(muscleGroupIds: ex.muscleGroupIds),
+            onTap: () {
+              Navigator.of(context).pushNamed(
+                AppRouter.device,
+                arguments: {
+                  'gymId': widget.gymId,
+                  'deviceId': widget.deviceId,
+                  'exerciseId': ex.id,
+                },
+              );
+            },
+            trailing: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _openAdd(ex),
+              tooltip: loc.multiDevice_editExerciseButton,
+            ),
           );
         },
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(loc.multiDevice_exerciseListTitle)),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openAdd(),
+        tooltip: loc.multiDevice_newExercise,
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          const MultiDeviceBanner(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchCtr,
+              decoration: InputDecoration(
+                hintText: loc.multiDevice_searchHint,
+                prefixIcon: const Icon(Icons.search),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: DropdownButton<String?>(
+              value: _groupFilter,
+              hint: Text(loc.multiDevice_muscleGroupFilter),
+              isExpanded: true,
+              onChanged: (v) => setState(() => _groupFilter = v),
+              items: [
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(loc.multiDevice_muscleGroupFilterAll),
+                ),
+                for (final g in groups)
+                  DropdownMenuItem<String?>(value: g.id, child: Text(g.name)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(child: body),
+        ],
       ),
     );
   }

@@ -4,19 +4,23 @@ import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
 import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
 
 class ExerciseProvider extends ChangeNotifier {
   final GetExercisesForDevice _getEx;
   final CreateExerciseUseCase _createEx;
   final DeleteExerciseUseCase _deleteEx;
+  final UpdateExerciseUseCase _updateEx;
 
   ExerciseProvider({
     required GetExercisesForDevice getEx,
     required CreateExerciseUseCase createEx,
     required DeleteExerciseUseCase deleteEx,
+    required UpdateExerciseUseCase updateEx,
   }) : _getEx = getEx,
        _createEx = createEx,
-       _deleteEx = deleteEx;
+       _deleteEx = deleteEx,
+       _updateEx = updateEx;
 
   List<Exercise> _exercises = [];
   bool _isLoading = false;
@@ -69,6 +73,24 @@ class ExerciseProvider extends ChangeNotifier {
     String userId,
   ) async {
     await _deleteEx.execute(gymId, deviceId, exerciseId, userId);
+    await loadExercises(gymId, deviceId, userId);
+  }
+
+  Future<void> updateExercise(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String name,
+    String userId, {
+    List<String>? muscleGroupIds,
+  }) async {
+    final ex = Exercise(
+      id: exerciseId,
+      name: name,
+      userId: userId,
+      muscleGroupIds: muscleGroupIds ?? const [],
+    );
+    await _updateEx.execute(gymId, deviceId, ex);
     await loadExercises(gymId, deviceId, userId);
   }
 }

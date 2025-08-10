@@ -12,10 +12,15 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
+import '../widgets/multi_device_banner.dart';
+import '../widgets/exercise_header.dart';
+import '../widgets/exercise_bottom_sheet.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
@@ -72,6 +77,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
       widget.exerciseId,
       DateTime.now(),
     );
+    final exProv = context.watch<ExerciseProvider>();
+    Exercise? currentExercise;
+    try {
+      currentExercise = exProv.exercises
+          .firstWhere((e) => e.id == widget.exerciseId);
+    } catch (_) {}
 
     if (prov.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -117,6 +128,37 @@ class _DeviceScreenState extends State<DeviceScreen> {
       floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
       body: Column(
         children: [
+          if (prov.device!.isMulti) const MultiDeviceBanner(),
+          if (prov.device!.isMulti && currentExercise != null)
+            ExerciseHeader(
+              name: currentExercise!.name,
+              muscleGroupIds: currentExercise!.muscleGroupIds,
+              onChange: () {
+                Navigator.of(context).pushReplacementNamed(
+                  AppRouter.exerciseList,
+                  arguments: {
+                    'gymId': widget.gymId,
+                    'deviceId': widget.deviceId,
+                  },
+                );
+              },
+              onEdit: () async {
+                await showModalBottomSheet<Exercise>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => ExerciseBottomSheet(
+                    gymId: widget.gymId,
+                    deviceId: widget.deviceId,
+                    exercise: currentExercise,
+                  ),
+                );
+              },
+            ),
+          if (prov.device!.isMulti)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(loc.multiDevice_sessionHint),
+            ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -321,12 +363,22 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               return;
                             }
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(loc.sessionSaved)),
+                              SnackBar(
+                                content: Text(
+                                  prov.device!.isMulti
+                                      ? loc.multiDevice_sessionSaved
+                                      : loc.sessionSaved,
+                                ),
+                              ),
                             );
                           },
                     child: prov.isSaving
                         ? const CircularProgressIndicator()
-                        : Text(loc.saveButton),
+                        : Text(
+                            prov.device!.isMulti
+                                ? loc.multiDevice_saveButton
+                                : loc.saveButton,
+                          ),
                   ),
                 ),
               ],
