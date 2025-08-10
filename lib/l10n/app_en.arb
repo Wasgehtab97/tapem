@@ -210,6 +210,46 @@
     "description": "Validation when reps are missing"
   },
 
+  "numberInvalid": "Enter a number",
+  "@numberInvalid": {
+    "description": "Validation when a number is expected"
+  },
+
+  "intRequired": "Integer",
+  "@intRequired": {
+    "description": "Validation when an integer is expected"
+  },
+
+  "newSessionTitle": "New session",
+  "@newSessionTitle": {
+    "description": "Heading for new session"
+  },
+
+  "pleaseCheckInputs": "Please check inputs",
+  "@pleaseCheckInputs": {
+    "description": "Snackbar when form is invalid"
+  },
+
+  "noCompletedSets": "No completed sets",
+  "@noCompletedSets": {
+    "description": "Snackbar when no sets are completed"
+  },
+
+  "sessionSaved": "Session saved",
+  "@sessionSaved": {
+    "description": "Snackbar after successful save"
+  },
+
+  "setCompleteTooltip": "Complete set",
+  "@setCompleteTooltip": {
+    "description": "Tooltip for completing a set"
+  },
+
+  "setReopenTooltip": "Reopen set",
+  "@setReopenTooltip": {
+    "description": "Tooltip when set is completed"
+  },
+
   "registerButton": "Register",
   "@registerButton": {
     "description": "Label for the Register button"

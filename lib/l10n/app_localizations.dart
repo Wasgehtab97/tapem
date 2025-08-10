@@ -341,6 +341,30 @@ abstract class AppLocalizations {
   /// **'reps?'**
   String get repsRequired;
 
+  /// Validation when a number is expected
+  String get numberInvalid;
+
+  /// Validation when an integer is expected
+  String get intRequired;
+
+  /// Heading for new session
+  String get newSessionTitle;
+
+  /// Snackbar when form is invalid
+  String get pleaseCheckInputs;
+
+  /// Snackbar when no sets are completed
+  String get noCompletedSets;
+
+  /// Snackbar after successful save
+  String get sessionSaved;
+
+  /// Tooltip for completing a set
+  String get setCompleteTooltip;
+
+  /// Tooltip when set is completed
+  String get setReopenTooltip;
+
   /// Label for the Register button
   ///
   /// In en, this message translates to:

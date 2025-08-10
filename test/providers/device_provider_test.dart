@@ -163,6 +163,7 @@ void main() {
         userId: 'u1',
       );
       provider.updateSet(0, weight: '70', reps: '6');
+      provider.toggleSetDone(0);
       provider.setNote('test');
 
       final xpProvider = XpProvider(repo: xpRepo);
@@ -197,6 +198,68 @@ void main() {
       expect(logs.docs.length, 1);
       expect(xpRepo.calls, 1);
       expect(chRepo.calls, 1);
+    });
+
+    testWidgets('saveWorkoutSession without completed sets aborts', (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'd1',
+        id: 1,
+        name: 'Device',
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'd1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, weight: '70', reps: '6');
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<DeviceProvider>.value(
+          value: provider,
+          child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        ),
+      );
+
+      final ctx = tester.element(find.byType(SizedBox));
+      await provider.saveWorkoutSession(
+        context: ctx,
+        gymId: 'g1',
+        userId: 'u1',
+        showInLeaderboard: false,
+      );
+
+      final logs = await firestore
+          .collection('gyms')
+          .doc('g1')
+          .collection('devices')
+          .doc('d1')
+          .collection('logs')
+          .get();
+      expect(logs.docs.length, 0);
+      expect(provider.error, isNotNull);
+    });
+
+    test('toggleSetDone validates inputs', () {
+      final provider = DeviceProvider(
+        firestore: FakeFirebaseFirestore(),
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([])),
+        log: (_, [__]) {},
+      );
+      provider.addSet();
+      provider.updateSet(0, weight: '10');
+      provider.toggleSetDone(0);
+      expect(provider.completedCount, 0);
+      provider.updateSet(0, reps: '5');
+      provider.toggleSetDone(0);
+      expect(provider.completedCount, 1);
     });
   });
 }

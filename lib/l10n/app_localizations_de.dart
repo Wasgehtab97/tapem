@@ -140,6 +140,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get repsRequired => 'Wdh?';
 
   @override
+  String get numberInvalid => 'Zahl eingeben';
+
+  @override
+  String get intRequired => 'Ganzzahl';
+
+  @override
+  String get newSessionTitle => 'Neue Session';
+
+  @override
+  String get pleaseCheckInputs => 'Bitte Eingaben prüfen';
+
+  @override
+  String get noCompletedSets => 'Keine abgeschlossenen Sätze';
+
+  @override
+  String get sessionSaved => 'Session gespeichert';
+
+  @override
+  String get setCompleteTooltip => 'Satz abschließen';
+
+  @override
+  String get setReopenTooltip => 'Satz wieder öffnen';
+
+  @override
   String get registerButton => 'Registrieren';
 
   @override
