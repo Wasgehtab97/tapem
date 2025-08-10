@@ -152,7 +152,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pleaseCheckInputs => 'Bitte Eingaben prüfen';
 
   @override
-  String get noCompletedSets => 'Keine abgeschlossenen Sätze';
+  String get noCompletedSets => 'Keine abgeschlossenen Sätze.';
+
+  @override
+  String get todayAlreadySaved => 'Heute bereits gespeichert.';
+
+  @override
+  String get setRemoved => 'Satz entfernt';
+
+  @override
+  String get undo => 'Rückgängig';
 
   @override
   String get sessionSaved => 'Session gespeichert';

@@ -38,14 +38,13 @@ class DeviceProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  List<Map<String, String>> _sets = [];
+  List<Map<String, dynamic>> _sets = [];
   String _note = '';
 
   List<Map<String, String>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
   String? _lastSessionId;
-  bool _editingLastSession = false;
   int _xp = 0;
   int _level = 1;
 
@@ -69,14 +68,13 @@ class DeviceProvider extends ChangeNotifier {
   String? get error => _error;
   Device? get device => _device;
   List<Device> get devices => List.unmodifiable(_devices);
-  List<Map<String, String>> get sets => List.unmodifiable(_sets);
+  List<Map<String, dynamic>> get sets => List.unmodifiable(_sets);
   String get note => _note;
   List<Map<String, String>> get lastSessionSets =>
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
   String? get lastSessionId => _lastSessionId;
-  bool get editingLastSession => _editingLastSession;
   bool get hasSessionToday {
     if (_lastSessionDate == null) return false;
     final now = DateTime.now();
@@ -133,7 +131,6 @@ class DeviceProvider extends ChangeNotifier {
       _lastSessionDate = null;
       _lastSessionNote = '';
       _lastSessionId = null;
-      _editingLastSession = false;
       notifyListeners();
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
@@ -161,6 +158,14 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void insertSetAt(int index, Map<String, dynamic> set) {
+    _sets.insert(index, Map<String, dynamic>.from(set));
+    for (var i = 0; i < _sets.length; i++) {
+      _sets[i]['number'] = '${i + 1}';
+    }
+    notifyListeners();
+  }
+
   void updateSet(
     int index, {
     String? weight,
@@ -168,7 +173,7 @@ class DeviceProvider extends ChangeNotifier {
     String? rir,
     String? note,
   }) {
-    final current = Map<String, String>.from(_sets[index]);
+    final current = Map<String, dynamic>.from(_sets[index]);
     if (weight != null) current['weight'] = weight;
     if (reps != null) current['reps'] = reps;
     if (rir != null) current['rir'] = rir;
@@ -201,26 +206,17 @@ class DeviceProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final current = s['done'] == 'true';
+    final current = s['done'] == 'true' || s['done'] == true;
     s['done'] = (!current).toString();
-    _sets[index] = Map<String, String>.from(s);
+    _sets[index] = Map<String, dynamic>.from(s);
     notifyListeners();
   }
 
   int get completedCount =>
-      _sets.where((s) => s['done'] == 'true').length;
-
-  /// Lädt die zuletzt gespeicherte Session in die Eingabefelder
-  void startEditLastSession() {
-    if (_lastSessionSets.isEmpty) return;
-    _sets = [
-      for (final set in _lastSessionSets)
-        {...set, 'done': 'false'}
-    ];
-    _note = _lastSessionNote;
-    _editingLastSession = true;
-    notifyListeners();
-  }
+      _sets.where((s) {
+        final d = s['done'];
+        return d == 'true' || d == true;
+      }).length;
 
   void setNote(String text) {
     _note = text;
@@ -243,34 +239,9 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
       );
-
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-
-      // Verhindere doppelte Sessions am selben Tag
-      if (_lastSessionDate != null) {
-        final lastDay = DateTime(
-          _lastSessionDate!.year,
-          _lastSessionDate!.month,
-          _lastSessionDate!.day,
-        );
-        if (lastDay == today && !overwrite) {
-          _error = 'Heute bereits gespeichert.';
-          return;
-        }
-      }
-
-      final sessionId =
-          overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
-      final ts = Timestamp.now();
-      final batch = _firestore.batch();
-      final savedSets =
-          _sets.where((s) => s['done'] == 'true').map((s) => Map<String, String>.from(s)).toList();
-      if (savedSets.isEmpty) {
-        _error = 'Keine abgeschlossenen Sätze.';
-        notifyListeners();
-        return;
-      }
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
 
       final logsCol = _firestore
           .collection('gyms')
@@ -279,14 +250,34 @@ class DeviceProvider extends ChangeNotifier {
           .doc(_device!.uid)
           .collection('logs');
 
-      if (overwrite && _lastSessionId != null) {
-        final existing = await logsCol
-            .where('userId', isEqualTo: userId)
-            .where('sessionId', isEqualTo: _lastSessionId)
-            .get();
-        for (final doc in existing.docs) {
-          batch.delete(doc.reference);
-        }
+      final existingToday = await logsCol
+          .where('userId', isEqualTo: userId)
+          .where('exerciseId', isEqualTo: _currentExerciseId)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .limit(1)
+          .get();
+
+      if (existingToday.docs.isNotEmpty) {
+        _error = 'Heute bereits gespeichert.';
+        notifyListeners();
+        return;
+      }
+
+      final sessionId = _uuid.v4();
+      final ts = Timestamp.now();
+      final batch = _firestore.batch();
+      final savedSets = _sets
+          .where((s) {
+            final d = s['done'];
+            return d == true || d == 'true';
+          })
+          .map((s) => Map<String, dynamic>.from(s))
+          .toList();
+      if (savedSets.isEmpty) {
+        _error = 'Keine abgeschlossenen Sätze.';
+        notifyListeners();
+        return;
       }
 
       // Workout-Logs schreiben
@@ -374,7 +365,6 @@ class DeviceProvider extends ChangeNotifier {
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
       _lastSessionId = sessionId;
-      _editingLastSession = false;
       _sets.removeWhere((s) => s['done'] == 'true');
       for (var i = 0; i < _sets.length; i++) {
         _sets[i]['number'] = '${i + 1}';
