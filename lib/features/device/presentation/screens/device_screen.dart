@@ -134,7 +134,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    if (prov.lastSessionSets.isNotEmpty) ...[
+                      if (prov.lastSessionSets.isNotEmpty) ...[
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
@@ -190,12 +190,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ),
                         ),
                       ),
-                      if (prov.hasSessionToday)
-                        OutlinedButton.icon(
-                          onPressed: prov.startEditLastSession,
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Session bearbeiten'),
-                        ),
                     ],
                     const Divider(),
                     if (plannedEntry != null)
@@ -210,14 +204,49 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 8),
                       for (var entry in prov.sets.asMap().entries)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: SetCard(
-                            index: entry.key,
-                            set: entry.value,
-                            previous: entry.key < prov.lastSessionSets.length
-                                ? prov.lastSessionSets[entry.key]
-                                : null,
+                        Dismissible(
+                          key: ValueKey(
+                              'set-${entry.key}-${entry.value['number']}'),
+                          direction: DismissDirection.endToStart,
+                          background: const SizedBox.shrink(),
+                          secondaryBackground: Container(
+                            alignment: Alignment.centerRight,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            color: Colors.red.withOpacity(0.15),
+                            child:
+                                const Icon(Icons.delete, semanticLabel: 'Löschen'),
+                          ),
+                          onDismissed: (_) {
+                            final removed =
+                                Map<String, dynamic>.from(entry.value);
+                            final removedIndex = entry.key;
+                            context
+                                .read<DeviceProvider>()
+                                .removeSet(entry.key);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(loc.setRemoved),
+                                action: SnackBarAction(
+                                  label: loc.undo,
+                                  onPressed: () => context
+                                      .read<DeviceProvider>()
+                                      .insertSetAt(removedIndex, removed),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 4),
+                            child: SetCard(
+                              index: entry.key,
+                              set: entry.value,
+                              previous:
+                                  entry.key < prov.lastSessionSets.length
+                                      ? prov.lastSessionSets[entry.key]
+                                      : null,
+                            ),
                           ),
                         ),
                       TextButton.icon(
@@ -260,38 +289,45 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: GradientButton(
-                    onPressed: () async {
-                      if (!_formKey.currentState!.validate()) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(loc.pleaseCheckInputs)),
-                        );
-                        return;
-                      }
-                      if (prov.completedCount == 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(loc.noCompletedSets)),
-                        );
-                        return;
-                      }
-                      try {
-                        await prov.saveWorkoutSession(
-                          context: context,
-                          gymId: widget.gymId,
-                          userId: context.read<AuthProvider>().userId!,
-                          showInLeaderboard:
-                              context.read<AuthProvider>().showInLeaderboard ??
-                                  true,
-                          overwrite: prov.editingLastSession,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(loc.sessionSaved)),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${loc.errorPrefix}: $e')),
-                        );
-                      }
-                    },
+                    onPressed: prov.hasSessionToday
+                        ? null
+                        : () async {
+                            if (!_formKey.currentState!.validate()) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(loc.pleaseCheckInputs)),
+                              );
+                              return;
+                            }
+                            if (prov.completedCount == 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.noCompletedSets)),
+                              );
+                              return;
+                            }
+                            try {
+                              await prov.saveWorkoutSession(
+                                context: context,
+                                gymId: widget.gymId,
+                                userId: context
+                                    .read<AuthProvider>()
+                                    .userId!,
+                                showInLeaderboard: context
+                                        .read<AuthProvider>()
+                                        .showInLeaderboard ??
+                                    true,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.sessionSaved)),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content:
+                                        Text('${loc.errorPrefix}: $e')),
+                              );
+                            }
+                          },
                     child: Text(loc.saveButton),
                   ),
                 ),

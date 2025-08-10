@@ -152,7 +152,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseCheckInputs => 'Please check inputs';
 
   @override
-  String get noCompletedSets => 'No completed sets';
+  String get noCompletedSets => 'No completed sets.';
+
+  @override
+  String get todayAlreadySaved => 'Already saved today.';
+
+  @override
+  String get setRemoved => 'Set removed';
+
+  @override
+  String get undo => 'Undo';
 
   @override
   String get sessionSaved => 'Session saved';

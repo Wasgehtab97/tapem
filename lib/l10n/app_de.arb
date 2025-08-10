@@ -230,10 +230,23 @@
     "description": "Snackbar, wenn das Formular ungültig ist"
   },
 
-  "noCompletedSets": "Keine abgeschlossenen Sätze",
+  "noCompletedSets": "Keine abgeschlossenen Sätze.",
   "@noCompletedSets": {
     "description": "Snackbar, wenn keine Sätze abgeschlossen sind"
   },
+
+  "todayAlreadySaved": "Heute bereits gespeichert.",
+  "@todayAlreadySaved": {
+    "description": "Fehler wenn bereits eine Session gespeichert wurde"
+  },
+
+  "setRemoved": "Satz entfernt",
+  "@setRemoved": {
+    "description": "Snackbar nach Entfernen eines Satzes"
+  },
+
+  "undo": "Rückgängig",
+  "@undo": {"description": "Aktion zum Rückgängig machen"},
 
   "sessionSaved": "Session gespeichert",
   "@sessionSaved": {

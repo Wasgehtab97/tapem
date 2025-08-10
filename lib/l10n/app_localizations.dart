@@ -356,6 +356,15 @@ abstract class AppLocalizations {
   /// Snackbar when no sets are completed
   String get noCompletedSets;
 
+  /// Error when a session has already been saved today
+  String get todayAlreadySaved;
+
+  /// Snackbar after removing a set
+  String get setRemoved;
+
+  /// Label for undoing an action
+  String get undo;
+
   /// Snackbar after successful save
   String get sessionSaved;
 
