@@ -299,22 +299,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multiDeviceBannerOk => 'OK';
 
   @override
-  String get multiDeviceSessionHint => 'Session counts only for daily XP & device stats.';
+  String get multiDeviceSessionHint => 'In multi-device mode, only daily XP and device stats count.';
 
   @override
-  String get multiDeviceSaveButton => 'Save session (without muscle group XP)';
+  String get multiDeviceSaveButton => 'Save session (no muscle group XP)';
 
   @override
-  String get multiDeviceSessionSaved => 'Session saved. Daily XP & stats updated.';
+  String get multiDeviceSessionSaved => 'Session saved. Daily XP and device stats updated.';
 
   @override
-  String get multiDeviceNewExercise => 'New exercise';
+  String get multiDeviceNewExercise => 'Add exercise';
 
   @override
-  String get multiDeviceExerciseListTitle => 'Choose exercise';
+  String get multiDeviceExerciseListTitle => 'Select exercise';
 
   @override
-  String get multiDeviceNoExercises => 'No exercises available';
+  String get multiDeviceNoExercises => 'No exercises found';
 
   @override
   String get multiDeviceAddExerciseTitle => 'Add exercise';
@@ -341,11 +341,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multiDeviceEditExerciseButton => 'Edit';
 
   @override
-  String get multiDeviceSearchHint => 'Search...';
+  String get multiDeviceSearchHint => 'Search exercises...';
 
   @override
   String get multiDeviceMuscleGroupFilter => 'Filter by muscle group';
 
   @override
-  String get multiDeviceMuscleGroupFilterAll => 'All';
+  String get multiDeviceMuscleGroupFilterAll => 'All muscle groups';
 }
