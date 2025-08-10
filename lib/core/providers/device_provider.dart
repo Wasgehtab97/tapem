@@ -17,7 +17,7 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
-// TODO: replace with real logging service
+// Replace with real logging service.
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
@@ -365,54 +365,6 @@ class DeviceProvider extends ChangeNotifier {
       _isSaving = false;
       notifyListeners();
     }
-  }
-
-  Future<void> _updateLeaderboard(
-    String gymId,
-    String userId,
-    String sessionId,
-    bool showInLeaderboard,
-  ) async {
-    final now = DateTime.now();
-    final dateStr =
-        '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-    final deviceId = _device!.uid;
-
-    final lbRef = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('leaderboard')
-        .doc(userId);
-    final sessionRef = lbRef.collection('sessions').doc(sessionId);
-
-    await _firestore.runTransaction((tx) async {
-      final lbSnap = await tx.get(lbRef);
-      final sessSnap = await tx.get(sessionRef);
-
-      var info = LevelInfo.fromMap(lbSnap.data());
-
-      if (!lbSnap.exists) {
-        tx.set(lbRef, {
-          ...info.toMap(),
-          'showInLeaderboard': showInLeaderboard,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (!sessSnap.exists) {
-        info = LevelService().addXp(info, LevelService.xpPerSession);
-        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
-        tx.update(lbRef, {
-          'xp': info.xp,
-          'level': info.level,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    });
   }
 
   Future<void> _loadLastSession(

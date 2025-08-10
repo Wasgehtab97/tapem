@@ -291,4 +291,61 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get publicProfilePrivate => 'Privat';
+
+  @override
+  String get multiDevice_bannerText => 'Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.';
+
+  @override
+  String get multiDevice_bannerOk => 'OK';
+
+  @override
+  String get multiDevice_sessionHint => 'Session zählt nur für Tages-XP & Gerätestatistiken.';
+
+  @override
+  String get multiDevice_saveButton => 'Session speichern (ohne XP pro Muskelgruppe)';
+
+  @override
+  String get multiDevice_sessionSaved => 'Session gespeichert. Tages-XP & Stats aktualisiert.';
+
+  @override
+  String get multiDevice_newExercise => 'Neue Übung';
+
+  @override
+  String get multiDevice_exerciseListTitle => 'Übung wählen';
+
+  @override
+  String get multiDevice_noExercises => 'Keine Übungen vorhanden';
+
+  @override
+  String get multiDevice_addExerciseTitle => 'Übung hinzufügen';
+
+  @override
+  String get multiDevice_editExerciseTitle => 'Übung bearbeiten';
+
+  @override
+  String get multiDevice_nameFieldLabel => 'Name';
+
+  @override
+  String get multiDevice_muscleGroupSection => 'Muskelgruppen';
+
+  @override
+  String get multiDevice_cancel => 'Abbrechen';
+
+  @override
+  String get multiDevice_save => 'Speichern';
+
+  @override
+  String get multiDevice_changeExercise => 'Wechseln';
+
+  @override
+  String get multiDevice_editExerciseButton => 'Bearbeiten';
+
+  @override
+  String get multiDevice_searchHint => 'Suche...';
+
+  @override
+  String get multiDevice_muscleGroupFilter => 'Nach Muskelgruppe filtern';
+
+  @override
+  String get multiDevice_muscleGroupFilterAll => 'Alle';
 }
