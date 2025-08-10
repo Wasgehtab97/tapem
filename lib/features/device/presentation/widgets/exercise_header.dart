@@ -40,12 +40,12 @@ class ExerciseHeader extends StatelessWidget {
               children: [
                 TextButton(
                   onPressed: onChange,
-                  child: Text(loc.multiDevice_changeExercise),
+                  child: Text(loc.multiDeviceChangeExercise),
                 ),
                 if (onEdit != null)
                   TextButton(
                     onPressed: onEdit,
-                    child: Text(loc.multiDevice_editExerciseButton),
+                    child: Text(loc.multiDeviceEditExerciseButton),
                   ),
               ],
             )
