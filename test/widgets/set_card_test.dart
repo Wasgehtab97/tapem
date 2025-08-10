@@ -46,7 +46,7 @@ void main() {
     );
 
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField).first).readOnly,
+      tester.widget<TextField>(find.byType(TextField).first).readOnly,
       false,
     );
 
@@ -57,7 +57,7 @@ void main() {
 
     expect(provider.completedCount, 1);
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField).first).readOnly,
+      tester.widget<TextField>(find.byType(TextField).first).readOnly,
       true,
     );
     final container = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));

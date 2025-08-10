@@ -124,7 +124,7 @@ class _SetCardState extends State<SetCard> {
                         IconButton(
                           onPressed: () {
                             final form = Form.of(context);
-                            if (form != null && !form.validate()) {
+                            if (!form.validate()) {
                               HapticFeedback.lightImpact();
                               return;
                             }
