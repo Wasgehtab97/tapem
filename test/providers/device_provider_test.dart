@@ -181,12 +181,13 @@ void main() {
       );
 
       final ctx = tester.element(find.byType(SizedBox));
-      await provider.saveWorkoutSession(
+      final ok = await provider.saveWorkoutSession(
         context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
       );
+      expect(ok, isTrue);
 
       final logs = await firestore
           .collection('gyms')
@@ -229,12 +230,13 @@ void main() {
       );
 
       final ctx = tester.element(find.byType(SizedBox));
-      await provider.saveWorkoutSession(
+      final ok = await provider.saveWorkoutSession(
         context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
       );
+      expect(ok, isFalse);
 
       final logs = await firestore
           .collection('gyms')
@@ -301,21 +303,23 @@ void main() {
       );
 
       final ctx = tester.element(find.byType(SizedBox));
-      await provider.saveWorkoutSession(
+      var ok = await provider.saveWorkoutSession(
         context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
       );
+      expect(ok, isTrue);
 
       provider.updateSet(0, weight: '70', reps: '6');
       provider.toggleSetDone(0);
-      await provider.saveWorkoutSession(
+      ok = await provider.saveWorkoutSession(
         context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
       );
+      expect(ok, isFalse);
 
       expect(provider.error, 'Heute bereits gespeichert.');
     });

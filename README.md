@@ -69,6 +69,12 @@ Weitere Details zum State-Management stehen in [docs/provider_structure.md](docs
    - `GoogleService-Info.plist` in `ios/Runner/`
    - Details siehe [docs/environment-setup.md](docs/environment-setup.md)
 
+5. **Firestore-Indexe deployen**
+   ```bash
+   firebase deploy --only firestore:indexes
+   ```
+   Ohne die Indexe schlagen bestimmte Abfragen fehl (z. B. "Heute bereits gespeichert?").
+
 Hinweis: `.gitignore` schützt diese Dateien. Weitere Regeln stehen in [docs/secrets-policy.md](docs/secrets-policy.md).
 
 Die Dateien `pubspec.lock` und – sobald vorhanden – `ios/Podfile.lock` werden versioniert, um reproduzierbare Builds zu gewährleisten.

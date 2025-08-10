@@ -44,46 +44,50 @@ class _DeviceCardState extends State<DeviceCard> {
             onTapDown: _onTapDown,
             onTapCancel: _onTapEnd,
             onTapUp: _onTapEnd,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.transparent,
-                    child: DecoratedBox(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppGradients.primary,
-                      ),
-                      child: Center(
-                        child: Text(initial, style: theme.textTheme.titleLarge),
+            child: SizedBox(
+              height: 140,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.transparent,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppGradients.primary,
+                        ),
+                        child: Center(
+                          child: Text(initial, style: theme.textTheme.titleLarge),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    device.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle.isNotEmpty)
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
-                      subtitle,
+                      device.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'ID: $idText',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodySmall,
                     ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'ID: $idText',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
