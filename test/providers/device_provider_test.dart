@@ -261,6 +261,64 @@ void main() {
       provider.toggleSetDone(0);
       expect(provider.completedCount, 1);
     });
+
+    testWidgets('second save in same day is blocked', (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'd1',
+        id: 1,
+        name: 'Device',
+        primaryMuscleGroups: const ['m1'],
+      );
+      final xpRepo = FakeXpRepository();
+      final chRepo = FakeChallengeRepository();
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        firestore: firestore,
+        log: (_, [__]) {},
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'd1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, weight: '70', reps: '6');
+      provider.toggleSetDone(0);
+
+      final xpProvider = XpProvider(repo: xpRepo);
+      final challengeProvider = ChallengeProvider(repo: chRepo);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
+            ChangeNotifierProvider<ChallengeProvider>.value(value: challengeProvider),
+            ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          ],
+          child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        ),
+      );
+
+      final ctx = tester.element(find.byType(SizedBox));
+      await provider.saveWorkoutSession(
+        context: ctx,
+        gymId: 'g1',
+        userId: 'u1',
+        showInLeaderboard: false,
+      );
+
+      provider.updateSet(0, weight: '70', reps: '6');
+      provider.toggleSetDone(0);
+      await provider.saveWorkoutSession(
+        context: ctx,
+        gymId: 'g1',
+        userId: 'u1',
+        showInLeaderboard: false,
+      );
+
+      expect(provider.error, 'Heute bereits gespeichert.');
+    });
   });
 }
 

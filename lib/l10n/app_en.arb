@@ -230,10 +230,21 @@
     "description": "Snackbar when form is invalid"
   },
 
-  "noCompletedSets": "No completed sets",
+  "noCompletedSets": "No completed sets.",
   "@noCompletedSets": {
     "description": "Snackbar when no sets are completed"
   },
+
+  "todayAlreadySaved": "Already saved today.",
+  "@todayAlreadySaved": {
+    "description": "Error when a session has already been saved today"
+  },
+
+  "setRemoved": "Set removed",
+  "@setRemoved": {"description": "Snackbar after removing a set"},
+
+  "undo": "Undo",
+  "@undo": {"description": "Undo action"},
 
   "sessionSaved": "Session saved",
   "@sessionSaved": {

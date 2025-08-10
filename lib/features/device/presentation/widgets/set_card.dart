@@ -8,7 +8,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 class SetCard extends StatefulWidget {
   final int index;
-  final Map<String, String> set;
+  final Map<String, dynamic> set;
   final Map<String, String>? previous;
 
   const SetCard({super.key, required this.index, required this.set, this.previous});
@@ -24,7 +24,8 @@ class _SetCardState extends State<SetCard> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
-    final done = widget.set['done'] == 'true';
+    final doneVal = widget.set['done'];
+    final done = doneVal == 'true' || doneVal == true;
 
     final decoration = DeviceLevelStyle.widgetDecorationFor(
       prov.level,
@@ -73,7 +74,7 @@ class _SetCardState extends State<SetCard> {
                         Expanded(
                           child: TextFormField(
                             readOnly: done,
-                            initialValue: widget.set['weight'],
+                            initialValue: widget.set['weight'] as String?,
                             decoration: const InputDecoration(
                               labelText: 'kg',
                               isDense: true,
@@ -101,7 +102,7 @@ class _SetCardState extends State<SetCard> {
                         Expanded(
                           child: TextFormField(
                             readOnly: done,
-                            initialValue: widget.set['reps'],
+                            initialValue: widget.set['reps'] as String?,
                             decoration: const InputDecoration(
                               labelText: 'x',
                               isDense: true,
@@ -159,7 +160,7 @@ class _SetCardState extends State<SetCard> {
                             Expanded(
                               child: TextFormField(
                                 readOnly: done,
-                                initialValue: widget.set['rir'],
+                                initialValue: widget.set['rir'] as String?,
                                 decoration: const InputDecoration(
                                   labelText: 'RIR',
                                   isDense: true,
@@ -177,7 +178,7 @@ class _SetCardState extends State<SetCard> {
                               flex: 2,
                               child: TextFormField(
                                 readOnly: done,
-                                initialValue: widget.set['note'],
+                                initialValue: widget.set['note'] as String?,
                                 decoration: InputDecoration(
                                   labelText: loc.noteFieldLabel,
                                   isDense: true,
