@@ -96,7 +96,8 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
     });
 
     final colName = _type == 'weekly' ? 'weekly' : 'monthly';
-    final col = FirebaseFirestore.instance
+    final fs = context.read<FirebaseFirestore>();
+    final col = fs
         .collection('gyms')
         .doc(gymId)
         .collection('challenges')

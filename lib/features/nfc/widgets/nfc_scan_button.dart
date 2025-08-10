@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -17,6 +18,10 @@ class NfcScanButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.nfc),
       onPressed: () async {
+        if (!await NfcManager.instance.isAvailable()) {
+          if (kDebugMode) debugPrint('NFC not available');
+          return;
+        }
         // Alte Session beenden (falls offen)
         try {
           await NfcManager.instance.stopSession();

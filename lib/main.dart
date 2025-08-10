@@ -61,8 +61,28 @@ import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 
 import 'features/report/data/repositories/report_repository_impl.dart';
+import 'features/report/data/sources/firestore_report_source.dart';
 import 'features/report/domain/usecases/get_device_usage_stats.dart';
 import 'features/report/domain/usecases/get_all_log_timestamps.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/data/sources/firestore_auth_source.dart';
+import 'features/gym/data/repositories/gym_repository_impl.dart';
+import 'features/challenges/data/repositories/challenge_repository_impl.dart';
+import 'features/challenges/data/sources/firestore_challenge_source.dart';
+import 'features/xp/data/repositories/xp_repository_impl.dart';
+import 'features/xp/data/sources/firestore_xp_source.dart';
+import 'features/rank/data/repositories/rank_repository_impl.dart';
+import 'features/rank/data/sources/firestore_rank_source.dart';
+import 'features/training_plan/data/repositories/training_plan_repository_impl.dart';
+import 'features/training_plan/data/sources/firestore_training_plan_source.dart';
+import 'features/history/data/repositories/history_repository_impl.dart';
+import 'features/history/data/sources/firestore_history_source.dart';
+import 'features/history/domain/usecases/get_history_for_device.dart';
+import 'features/muscle_group/data/repositories/muscle_group_repository_impl.dart';
+import 'features/muscle_group/data/sources/firestore_muscle_group_source.dart';
+import 'features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
+import 'features/muscle_group/domain/usecases/save_muscle_group.dart';
+import 'features/muscle_group/domain/usecases/delete_muscle_group.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
 
@@ -71,55 +91,70 @@ import 'core/feature_flags.dart';
 /// Global navigator key for NFC navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+Future<FirebaseApp> _getOrCreateFirebaseApp() async {
+  try {
+    if (kDebugMode) debugPrint('Using existing Firebase app');
+    return Firebase.app();
+  } catch (_) {
+    if (kDebugMode) debugPrint('Initialized Firebase app');
+    return Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load .env
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  final FirebaseApp app;
-  if (Firebase.apps.isNotEmpty) {
-    if (kDebugMode) {
-      debugPrint('Using existing Firebase app');
-    }
-    app = Firebase.app();
-  } else {
-    app = await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    if (kDebugMode) {
-      debugPrint('Initialized Firebase app');
-    }
-  }
+  final app = await _getOrCreateFirebaseApp();
 
-  FirebaseFirestore.instanceFor(app: app).settings = const Settings(
-    persistenceEnabled: true,
-  );
+  final firestore = FirebaseFirestore.instanceFor(app: app);
+  firestore.settings = const Settings(persistenceEnabled: true);
 
-  fb_auth.FirebaseAuth.instanceFor(app: app).setSettings(
-    appVerificationDisabledForTesting: true,
-  );
+  final auth = fb_auth.FirebaseAuth.instanceFor(app: app);
+  auth.setSettings(appVerificationDisabledForTesting: true);
 
   await initializeDateFormatting();
 
   final flags = await FeatureFlags.init(app);
-  runApp(AppEntry(featureFlags: flags));
+  runApp(AppEntry(
+    featureFlags: flags,
+    app: app,
+    firestore: firestore,
+    auth: auth,
+  ));
 }
 
 class AppEntry extends StatelessWidget {
   final FeatureFlags featureFlags;
-  const AppEntry({Key? key, required this.featureFlags}) : super(key: key);
+  final FirebaseApp app;
+  final FirebaseFirestore firestore;
+  final fb_auth.FirebaseAuth auth;
+  const AppEntry({
+    Key? key,
+    required this.featureFlags,
+    required this.app,
+    required this.firestore,
+    required this.auth,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Prepare report use cases
-    final reportRepo = ReportRepositoryImpl();
+    final reportRepo = ReportRepositoryImpl(FirestoreReportSource(firestore));
     final usageUC = GetDeviceUsageStats(reportRepo);
     final logsUC = GetAllLogTimestamps(reportRepo);
 
     return MultiProvider(
       providers: [
+        Provider<FirebaseApp>.value(value: app),
+        Provider<FirebaseFirestore>.value(value: firestore),
+        Provider<fb_auth.FirebaseAuth>.value(value: auth),
         ChangeNotifierProvider<FeatureFlags>.value(value: featureFlags),
+
         // NFC
         Provider<NfcService>(create: (_) => NfcService()),
         Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),
@@ -127,7 +162,9 @@ class AppEntry extends StatelessWidget {
 
         // Device
         Provider<DeviceRepository>(
-          create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
+          create: (_) => DeviceRepositoryImpl(
+            FirestoreDeviceSource(firestore: firestore),
+          ),
         ),
         Provider<CreateDeviceUseCase>(
           create: (c) => CreateDeviceUseCase(c.read<DeviceRepository>()),
@@ -142,18 +179,19 @@ class AppEntry extends StatelessWidget {
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
         Provider<UpdateDeviceMuscleGroupsUseCase>(
-          create:
-              (c) =>
-                  UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create: (c) =>
+              UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
         Provider<SetDeviceMuscleGroupsUseCase>(
-          create:
-              (c) => SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create: (c) =>
+              SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise
         Provider<ExerciseRepository>(
-          create: (_) => ExerciseRepositoryImpl(FirestoreExerciseSource()),
+          create: (_) => ExerciseRepositoryImpl(
+            FirestoreExerciseSource(firestore: firestore),
+          ),
         ),
         Provider<GetExercisesForDevice>(
           create: (c) => GetExercisesForDevice(c.read<ExerciseRepository>()),
@@ -167,18 +205,23 @@ class AppEntry extends StatelessWidget {
 
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            repo: AuthRepositoryImpl(
+              FirestoreAuthSource(auth: auth, firestore: firestore),
+            ),
+          ),
+        ),
         ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
           create: (_) => BrandingProvider(
-            source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
+            source: FirestoreGymSource(firestore: firestore),
           ),
-          update: (_, auth, prov) {
-            final p = prov ?? BrandingProvider(
-              source: FirestoreGymSource(
-                firestore: FirebaseFirestore.instance,
-              ),
-            );
-            p.loadBrandingWithGym(auth.gymCode);
+          update: (_, authProv, prov) {
+            final p = prov ??
+                BrandingProvider(
+                  source: FirestoreGymSource(firestore: firestore),
+                );
+            p.loadBrandingWithGym(authProv.gymCode);
             return p;
           },
         ),
@@ -190,49 +233,116 @@ class AppEntry extends StatelessWidget {
             return l;
           },
         ),
-        ChangeNotifierProvider(create: (_) => GymProvider()),
+        ChangeNotifierProvider(
+          create: (_) => GymProvider(
+            gymRepo: GymRepositoryImpl(
+              FirestoreGymSource(firestore: firestore),
+            ),
+            deviceRepo: DeviceRepositoryImpl(
+              FirestoreDeviceSource(firestore: firestore),
+            ),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => DeviceProvider(
-            firestore: FirebaseFirestore.instance,
+            firestore: firestore,
           ),
         ),
-        ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
-        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(
+          create: (_) => TrainingPlanProvider(
+            repo: TrainingPlanRepositoryImpl(
+              FirestoreTrainingPlanSource(firestore: firestore),
+            ),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HistoryProvider(
+            getHistory: GetHistoryForDevice(
+              HistoryRepositoryImpl(
+                FirestoreHistorySource(firestore: firestore),
+              ),
+            ),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => MuscleGroupProvider()),
         ChangeNotifierProvider(
-          create:
-              (c) => ExerciseProvider(
-                getEx: c.read<GetExercisesForDevice>(),
-                createEx: c.read<CreateExerciseUseCase>(),
-                deleteEx: c.read<DeleteExerciseUseCase>(),
+          create: (_) => MuscleGroupProvider(
+            getGroups: GetMuscleGroupsForGym(
+              MuscleGroupRepositoryImpl(
+                FirestoreMuscleGroupSource(firestore: firestore),
               ),
-        ),
-        ChangeNotifierProvider(
-          create:
-              (c) =>
-                  AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
-        ),
-        ChangeNotifierProvider(
-          create:
-              (_) => ReportProvider(
-                getUsageStats: usageUC,
-                getLogTimestamps: logsUC,
+            ),
+            saveGroup: SaveMuscleGroup(
+              MuscleGroupRepositoryImpl(
+                FirestoreMuscleGroupSource(firestore: firestore),
               ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => SurveyProvider(
-            firestore: FirebaseFirestore.instance,
+            ),
+            deleteGroup: DeleteMuscleGroup(
+              MuscleGroupRepositoryImpl(
+                FirestoreMuscleGroupSource(firestore: firestore),
+              ),
+            ),
+            getHistory: GetHistoryForDevice(
+              HistoryRepositoryImpl(
+                FirestoreHistorySource(firestore: firestore),
+              ),
+            ),
+            updateDeviceGroups: UpdateDeviceMuscleGroupsUseCase(
+              DeviceRepositoryImpl(
+                FirestoreDeviceSource(firestore: firestore),
+              ),
+            ),
+            setDeviceGroups: SetDeviceMuscleGroupsUseCase(
+              DeviceRepositoryImpl(
+                FirestoreDeviceSource(firestore: firestore),
+              ),
+            ),
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => FeedbackProvider(
-            firestore: FirebaseFirestore.instance,
+          create: (c) => ExerciseProvider(
+            getEx: c.read<GetExercisesForDevice>(),
+            createEx: c.read<CreateExerciseUseCase>(),
+            deleteEx: c.read<DeleteExerciseUseCase>(),
           ),
         ),
-        ChangeNotifierProvider(create: (_) => RankProvider()),
-        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
-        ChangeNotifierProvider(create: (_) => XpProvider()),
+        ChangeNotifierProvider(
+          create: (c) =>
+              AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReportProvider(
+            getUsageStats: usageUC,
+            getLogTimestamps: logsUC,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SurveyProvider(firestore: firestore),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FeedbackProvider(firestore: firestore),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RankProvider(
+            repository: RankRepositoryImpl(
+              FirestoreRankSource(firestore: firestore),
+            ),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChallengeProvider(
+            repo: ChallengeRepositoryImpl(
+              FirestoreChallengeSource(firestore: firestore),
+            ),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => XpProvider(
+            repo: XpRepositoryImpl(
+              FirestoreXpSource(firestore: firestore),
+            ),
+          ),
+        ),
       ],
       child: const MyApp(),
     );

@@ -81,7 +81,7 @@ class DeviceListItem extends StatelessWidget {
               if (confirm != true) return;
 
               // Token erneuern (Custom-Claims)
-              final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+              final fbUser = context.read<fb_auth.FirebaseAuth>().currentUser;
               if (fbUser != null) await fbUser.getIdToken(true);
 
               await deleteUC.execute(gymId: gymId, deviceId: device.uid);

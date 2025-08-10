@@ -8,6 +8,10 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
+import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
+import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
@@ -20,7 +24,11 @@ class TrainingDetailsScreen extends StatelessWidget {
 
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
-        final prov = TrainingDetailsProvider();
+        final fs = context.read<FirebaseFirestore>();
+        final repo = SessionRepositoryImpl(FirestoreSessionSource(firestore: fs));
+        final prov = TrainingDetailsProvider(
+          getSessions: GetSessionsForDate(repo),
+        );
         prov.loadSessions(userId: auth.userId!, date: date);
         return prov;
       },

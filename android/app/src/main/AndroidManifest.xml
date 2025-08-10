@@ -6,8 +6,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.NFC" />
 
-    <!-- NFC-Feature: App erfordert NFC-Hardware -->
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <!-- NFC-Feature: App erfordert keine NFC-Hardware -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
     <application
         android:name="${applicationName}"

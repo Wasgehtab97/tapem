@@ -138,7 +138,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       onPressed: () async {
                         // Token neu laden, damit Custom-Claims aktuell sind
                         final fbUser =
-                            fb_auth.FirebaseAuth.instance.currentUser;
+                            context.read<fb_auth.FirebaseAuth>().currentUser;
                         if (fbUser != null) {
                           await fbUser.getIdToken(true);
                         }

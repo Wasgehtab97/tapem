@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
+import 'package:flutter/foundation.dart';
 
 /// Liefert einen Stream mit allen NDEF-Texten (ohne Status-/Lang-Code-Bytes),
 /// die der Benutzer scannt. Nach jedem Scan wird die Session beendet
 /// und kurz danach neu gestartet.
 class NfcService {
   Stream<String> readStream() async* {
+    if (!await NfcManager.instance.isAvailable()) {
+      if (kDebugMode) debugPrint('NFC not available');
+      return;
+    }
     while (true) {
       final completer = Completer<String>();
       NfcManager.instance.startSession(
