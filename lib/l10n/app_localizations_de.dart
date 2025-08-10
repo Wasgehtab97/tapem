@@ -293,59 +293,59 @@ class AppLocalizationsDe extends AppLocalizations {
   String get publicProfilePrivate => 'Privat';
 
   @override
-  String get multiDevice_bannerText => 'Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.';
+  String get multiDeviceBannerText => 'Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.';
 
   @override
-  String get multiDevice_bannerOk => 'OK';
+  String get multiDeviceBannerOk => 'OK';
 
   @override
-  String get multiDevice_sessionHint => 'Session zählt nur für Tages-XP & Gerätestatistiken.';
+  String get multiDeviceSessionHint => 'Session zählt nur für Tages-XP & Gerätestatistiken.';
 
   @override
-  String get multiDevice_saveButton => 'Session speichern (ohne XP pro Muskelgruppe)';
+  String get multiDeviceSaveButton => 'Session speichern (ohne XP pro Muskelgruppe)';
 
   @override
-  String get multiDevice_sessionSaved => 'Session gespeichert. Tages-XP & Stats aktualisiert.';
+  String get multiDeviceSessionSaved => 'Session gespeichert. Tages-XP & Stats aktualisiert.';
 
   @override
-  String get multiDevice_newExercise => 'Neue Übung';
+  String get multiDeviceNewExercise => 'Neue Übung';
 
   @override
-  String get multiDevice_exerciseListTitle => 'Übung wählen';
+  String get multiDeviceExerciseListTitle => 'Übung wählen';
 
   @override
-  String get multiDevice_noExercises => 'Keine Übungen vorhanden';
+  String get multiDeviceNoExercises => 'Keine Übungen vorhanden';
 
   @override
-  String get multiDevice_addExerciseTitle => 'Übung hinzufügen';
+  String get multiDeviceAddExerciseTitle => 'Übung hinzufügen';
 
   @override
-  String get multiDevice_editExerciseTitle => 'Übung bearbeiten';
+  String get multiDeviceEditExerciseTitle => 'Übung bearbeiten';
 
   @override
-  String get multiDevice_nameFieldLabel => 'Name';
+  String get multiDeviceNameFieldLabel => 'Name';
 
   @override
-  String get multiDevice_muscleGroupSection => 'Muskelgruppen';
+  String get multiDeviceMuscleGroupSection => 'Muskelgruppen';
 
   @override
-  String get multiDevice_cancel => 'Abbrechen';
+  String get multiDeviceCancel => 'Abbrechen';
 
   @override
-  String get multiDevice_save => 'Speichern';
+  String get multiDeviceSave => 'Speichern';
 
   @override
-  String get multiDevice_changeExercise => 'Wechseln';
+  String get multiDeviceChangeExercise => 'Wechseln';
 
   @override
-  String get multiDevice_editExerciseButton => 'Bearbeiten';
+  String get multiDeviceEditExerciseButton => 'Bearbeiten';
 
   @override
-  String get multiDevice_searchHint => 'Suche...';
+  String get multiDeviceSearchHint => 'Suche...';
 
   @override
-  String get multiDevice_muscleGroupFilter => 'Nach Muskelgruppe filtern';
+  String get multiDeviceMuscleGroupFilter => 'Nach Muskelgruppe filtern';
 
   @override
-  String get multiDevice_muscleGroupFilterAll => 'Alle';
+  String get multiDeviceMuscleGroupFilterAll => 'Alle';
 }

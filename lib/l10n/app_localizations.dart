@@ -642,115 +642,115 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Multi-device mode: only daily XP and device statistics are counted. No XP per muscle group and no leaderboard update.'**
-  String get multiDevice_bannerText;
+  String get multiDeviceBannerText;
 
   /// Dismiss banner
   ///
   /// In en, this message translates to:
   /// **'OK'**
-  String get multiDevice_bannerOk;
+  String get multiDeviceBannerOk;
 
   /// Hint below header
   ///
   /// In en, this message translates to:
   /// **'Session counts only for daily XP & device stats.'**
-  String get multiDevice_sessionHint;
+  String get multiDeviceSessionHint;
 
   /// Save button for multi devices
   ///
   /// In en, this message translates to:
   /// **'Save session (without muscle group XP)'**
-  String get multiDevice_saveButton;
+  String get multiDeviceSaveButton;
 
   /// Snackbar text after save
   ///
   /// In en, this message translates to:
   /// **'Session saved. Daily XP & stats updated.'**
-  String get multiDevice_sessionSaved;
+  String get multiDeviceSessionSaved;
 
   /// CTA new exercise
   ///
   /// In en, this message translates to:
   /// **'New exercise'**
-  String get multiDevice_newExercise;
+  String get multiDeviceNewExercise;
 
   /// Title of exercise list
   ///
   /// In en, this message translates to:
   /// **'Choose exercise'**
-  String get multiDevice_exerciseListTitle;
+  String get multiDeviceExerciseListTitle;
 
   /// Empty state exercise list
   ///
   /// In en, this message translates to:
   /// **'No exercises available'**
-  String get multiDevice_noExercises;
+  String get multiDeviceNoExercises;
 
   /// Bottom sheet title add
   ///
   /// In en, this message translates to:
   /// **'Add exercise'**
-  String get multiDevice_addExerciseTitle;
+  String get multiDeviceAddExerciseTitle;
 
   /// Bottom sheet title edit
   ///
   /// In en, this message translates to:
   /// **'Edit exercise'**
-  String get multiDevice_editExerciseTitle;
+  String get multiDeviceEditExerciseTitle;
 
   /// Name field label
   ///
   /// In en, this message translates to:
   /// **'Name'**
-  String get multiDevice_nameFieldLabel;
+  String get multiDeviceNameFieldLabel;
 
   /// Header muscle groups
   ///
   /// In en, this message translates to:
   /// **'Muscle groups'**
-  String get multiDevice_muscleGroupSection;
+  String get multiDeviceMuscleGroupSection;
 
   /// Cancel in bottom sheet
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
-  String get multiDevice_cancel;
+  String get multiDeviceCancel;
 
   /// Save in bottom sheet
   ///
   /// In en, this message translates to:
   /// **'Save'**
-  String get multiDevice_save;
+  String get multiDeviceSave;
 
   /// Button to change exercise
   ///
   /// In en, this message translates to:
   /// **'Change'**
-  String get multiDevice_changeExercise;
+  String get multiDeviceChangeExercise;
 
   /// Button to edit exercise
   ///
   /// In en, this message translates to:
   /// **'Edit'**
-  String get multiDevice_editExerciseButton;
+  String get multiDeviceEditExerciseButton;
 
   /// Hint in search field
   ///
   /// In en, this message translates to:
   /// **'Search...'**
-  String get multiDevice_searchHint;
+  String get multiDeviceSearchHint;
 
   /// Dropdown label filter
   ///
   /// In en, this message translates to:
   /// **'Filter by muscle group'**
-  String get multiDevice_muscleGroupFilter;
+  String get multiDeviceMuscleGroupFilter;
 
   /// Dropdown item all
   ///
   /// In en, this message translates to:
   /// **'All'**
-  String get multiDevice_muscleGroupFilterAll;
+  String get multiDeviceMuscleGroupFilterAll;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -58,8 +58,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
             padding: const EdgeInsets.all(16),
             child: Text(
               widget.exercise == null
-                  ? loc.multiDevice_addExerciseTitle
-                  : loc.multiDevice_editExerciseTitle,
+                  ? loc.multiDeviceAddExerciseTitle
+                  : loc.multiDeviceEditExerciseTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
@@ -68,7 +68,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
             child: TextField(
               controller: _nameCtr,
               decoration:
-                  InputDecoration(labelText: loc.multiDevice_nameFieldLabel),
+                  InputDecoration(labelText: loc.multiDeviceNameFieldLabel),
               onChanged: (_) => setState(() {}),
               autofocus: true,
             ),
@@ -76,7 +76,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(loc.multiDevice_muscleGroupSection,
+            child: Text(loc.multiDeviceMuscleGroupSection,
                 style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           Padding(
@@ -105,7 +105,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               const SizedBox(width: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(loc.multiDevice_cancel),
+                child: Text(loc.multiDeviceCancel),
               ),
               const Spacer(),
               TextButton(
@@ -147,7 +147,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                         Navigator.pop(context, ex);
                       }
                     : null,
-                child: Text(loc.multiDevice_save),
+                child: Text(loc.multiDeviceSave),
               ),
               const SizedBox(width: 16),
             ],

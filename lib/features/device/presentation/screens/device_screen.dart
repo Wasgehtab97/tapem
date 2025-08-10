@@ -157,7 +157,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           if (prov.device!.isMulti)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(loc.multiDevice_sessionHint),
+              child: Text(loc.multiDeviceSessionHint),
             ),
           Expanded(
             child: SingleChildScrollView(
@@ -366,7 +366,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               SnackBar(
                                 content: Text(
                                   prov.device!.isMulti
-                                      ? loc.multiDevice_sessionSaved
+                                      ? loc.multiDeviceSessionSaved
                                       : loc.sessionSaved,
                                 ),
                               ),
@@ -376,7 +376,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ? const CircularProgressIndicator()
                         : Text(
                             prov.device!.isMulti
-                                ? loc.multiDevice_saveButton
+                                ? loc.multiDeviceSaveButton
                                 : loc.saveButton,
                           ),
                   ),

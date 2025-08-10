@@ -16,12 +16,12 @@ class _MultiDeviceBannerState extends State<MultiDeviceBanner> {
     if (!_visible) return const SizedBox.shrink();
     final loc = AppLocalizations.of(context)!;
     return MaterialBanner(
-      content: Text(loc.multiDevice_bannerText),
+      content: Text(loc.multiDeviceBannerText),
       leading: const Icon(Icons.info_outline),
       actions: [
         TextButton(
           onPressed: () => setState(() => _visible = false),
-          child: Text(loc.multiDevice_bannerOk),
+          child: Text(loc.multiDeviceBannerOk),
         ),
       ],
     );

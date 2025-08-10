@@ -80,11 +80,11 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(loc.multiDevice_noExercises),
+            Text(loc.multiDeviceNoExercises),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => _openAdd(),
-              child: Text(loc.multiDevice_newExercise),
+              child: Text(loc.multiDeviceNewExercise),
             ),
           ],
         ),
@@ -111,7 +111,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => _openAdd(ex),
-              tooltip: loc.multiDevice_editExerciseButton,
+              tooltip: loc.multiDeviceEditExerciseButton,
             ),
           );
         },
@@ -119,10 +119,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.multiDevice_exerciseListTitle)),
+      appBar: AppBar(title: Text(loc.multiDeviceExerciseListTitle)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openAdd(),
-        tooltip: loc.multiDevice_newExercise,
+        tooltip: loc.multiDeviceNewExercise,
         child: const Icon(Icons.add),
       ),
       body: Column(
@@ -133,7 +133,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             child: TextField(
               controller: _searchCtr,
               decoration: InputDecoration(
-                hintText: loc.multiDevice_searchHint,
+                hintText: loc.multiDeviceSearchHint,
                 prefixIcon: const Icon(Icons.search),
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -143,13 +143,13 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: DropdownButton<String?>(
               value: _groupFilter,
-              hint: Text(loc.multiDevice_muscleGroupFilter),
+              hint: Text(loc.multiDeviceMuscleGroupFilter),
               isExpanded: true,
               onChanged: (v) => setState(() => _groupFilter = v),
               items: [
                 DropdownMenuItem<String?>(
                   value: null,
-                  child: Text(loc.multiDevice_muscleGroupFilterAll),
+                  child: Text(loc.multiDeviceMuscleGroupFilterAll),
                 ),
                 for (final g in groups)
                   DropdownMenuItem<String?>(value: g.id, child: Text(g.name)),
