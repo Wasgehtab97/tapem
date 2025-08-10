@@ -77,30 +77,20 @@ Future<void> main() async {
   // Load .env
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  // Firebase init
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: true,
-      );
-    }
-  } on FirebaseException catch (e) {
-    if (e.code != 'duplicate-app') rethrow;
-  }
+  final app = await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
 
-  // Disable reCAPTCHA for tests
   fb_auth.FirebaseAuth.instance.setSettings(
     appVerificationDisabledForTesting: true,
   );
 
-  // Date formatting
   await initializeDateFormatting();
 
-  final flags = FeatureFlags.instance;
-  await flags.load();
+  final flags = await FeatureFlags.init(app);
   runApp(AppEntry(featureFlags: flags));
 }
 
