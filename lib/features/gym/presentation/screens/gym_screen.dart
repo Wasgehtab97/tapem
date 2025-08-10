@@ -211,14 +211,24 @@ class _GymScreenState extends State<GymScreen> {
                             return DeviceCard(
                               device: d,
                               onTap: () {
-                                final args = {
-                                  'gymId': gymId,
-                                  'deviceId': d.uid,
-                                  'exerciseId': d.uid,
-                                };
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRouter.device, arguments: args);
+                                if (d.isMulti) {
+                                  Navigator.of(context).pushNamed(
+                                    AppRouter.exerciseList,
+                                    arguments: {
+                                      'gymId': gymId,
+                                      'deviceId': d.uid,
+                                    },
+                                  );
+                                } else {
+                                  Navigator.of(context).pushNamed(
+                                    AppRouter.device,
+                                    arguments: {
+                                      'gymId': gymId,
+                                      'deviceId': d.uid,
+                                      'exerciseId': d.uid,
+                                    },
+                                  );
+                                }
                               },
                             );
                           },

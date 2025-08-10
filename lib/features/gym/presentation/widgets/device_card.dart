@@ -27,6 +27,7 @@ class _DeviceCardState extends State<DeviceCard> {
     final device = widget.device;
     final initial = device.name.isNotEmpty ? device.name[0].toUpperCase() : '?';
     final subtitle = device.description;
+    final idText = device.id > 0 ? device.id.toString() : '–';
     return Hero(
       tag: 'device-${device.uid}',
       child: AnimatedScale(
@@ -75,6 +76,13 @@ class _DeviceCardState extends State<DeviceCard> {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium,
                     ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'ID: $idText',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),

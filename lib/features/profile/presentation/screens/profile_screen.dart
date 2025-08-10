@@ -187,25 +187,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        final gymId = context.read<GymProvider>().currentGymId;
-                        final userId =
-                            context.read<AuthProvider>().userId ?? '';
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => SurveyVoteScreen(
-                                  gymId: gymId,
-                                  userId: userId,
-                                ),
-                          ),
-                        );
-                      },
-                      child: const Text('Umfragen'),
-                    ),
-                    const SizedBox(height: 8),
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -218,8 +199,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
-                ),
               ),
+            ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                final gymId = context.read<GymProvider>().currentGymId;
+                final userId = context.read<AuthProvider>().userId ?? '';
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SurveyVoteScreen(
+                      gymId: gymId,
+                      userId: userId,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Umfragen'),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
