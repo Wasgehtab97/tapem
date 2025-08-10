@@ -342,18 +342,33 @@ abstract class AppLocalizations {
   String get repsRequired;
 
   /// Validation when a number is expected
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
   String get numberInvalid;
 
   /// Validation when an integer is expected
+  ///
+  /// In en, this message translates to:
+  /// **'Integer'**
   String get intRequired;
 
   /// Heading for new session
+  ///
+  /// In en, this message translates to:
+  /// **'New session'**
   String get newSessionTitle;
 
   /// Snackbar when form is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Please check inputs'**
   String get pleaseCheckInputs;
 
   /// Snackbar when no sets are completed
+  ///
+  /// In en, this message translates to:
+  /// **'No completed sets'**
   String get noCompletedSets;
 
   /// Error when a session has already been saved today
@@ -366,12 +381,21 @@ abstract class AppLocalizations {
   String get undo;
 
   /// Snackbar after successful save
+  ///
+  /// In en, this message translates to:
+  /// **'Session saved'**
   String get sessionSaved;
 
   /// Tooltip for completing a set
+  ///
+  /// In en, this message translates to:
+  /// **'Complete set'**
   String get setCompleteTooltip;
 
   /// Tooltip when set is completed
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen set'**
   String get setReopenTooltip;
 
   /// Label for the Register button
