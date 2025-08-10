@@ -289,7 +289,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: GradientButton(
-                    onPressed: prov.hasSessionToday
+                    onPressed: prov.hasSessionToday || prov.isSaving
                         ? null
                         : () async {
                             if (!_formKey.currentState!.validate()) {
@@ -305,30 +305,28 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               );
                               return;
                             }
-                            try {
-                              await prov.saveWorkoutSession(
-                                context: context,
-                                gymId: widget.gymId,
-                                userId: context
-                                    .read<AuthProvider>()
-                                    .userId!,
-                                showInLeaderboard: context
-                                        .read<AuthProvider>()
-                                        .showInLeaderboard ??
-                                    true,
-                              );
+                            final auth = context.read<AuthProvider>();
+                            final ok = await prov.saveWorkoutSession(
+                              context: context,
+                              gymId: widget.gymId,
+                              userId: auth.userId!,
+                              showInLeaderboard:
+                                  auth.showInLeaderboard ?? true,
+                            );
+                            if (!ok) {
+                              final msg = prov.error ?? 'Speichern fehlgeschlagen.';
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(loc.sessionSaved)),
+                                SnackBar(content: Text(msg)),
                               );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text('${loc.errorPrefix}: $e')),
-                              );
+                              return;
                             }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(loc.sessionSaved)),
+                            );
                           },
-                    child: Text(loc.saveButton),
+                    child: prov.isSaving
+                        ? const CircularProgressIndicator()
+                        : Text(loc.saveButton),
                   ),
                 ),
               ],

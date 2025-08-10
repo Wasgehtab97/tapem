@@ -36,6 +36,7 @@ class DeviceProvider extends ChangeNotifier {
 
   Device? _device;
   bool _isLoading = false;
+  bool _isSaving = false;
   String? _error;
 
   List<Map<String, dynamic>> _sets = [];
@@ -65,6 +66,7 @@ class DeviceProvider extends ChangeNotifier {
 
   // Öffentliche Getter
   bool get isLoading => _isLoading;
+  bool get isSaving => _isSaving;
   String? get error => _error;
   Device? get device => _device;
   List<Device> get devices => List.unmodifiable(_devices);
@@ -223,22 +225,28 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Speichert die Session-Logs, die User-Note und updated das Leaderboard
-  Future<void> saveWorkoutSession({
+  /// Speichert die Session-Logs, die User-Note und aktualisiert XP/Challenges
+  Future<bool> saveWorkoutSession({
     required BuildContext context,
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
-    bool overwrite = false,
   }) async {
-    if (_device == null) return;
+    if (_device == null) return false;
 
     _error = null;
+    _isSaving = true;
+    notifyListeners();
 
     try {
-      _log(
-        '💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length} overwrite=$overwrite',
-      );
+      _log('💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length}');
+      final savedSets =
+          _sets.where((s) => s['done'] == true || s['done'] == 'true').toList();
+      if (savedSets.isEmpty) {
+        _error = 'Keine abgeschlossenen Sätze.';
+        return false;
+      }
+
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -260,30 +268,15 @@ class DeviceProvider extends ChangeNotifier {
 
       if (existingToday.docs.isNotEmpty) {
         _error = 'Heute bereits gespeichert.';
-        notifyListeners();
-        return;
+        return false;
       }
 
       final sessionId = _uuid.v4();
       final ts = Timestamp.now();
       final batch = _firestore.batch();
-      final savedSets = _sets
-          .where((s) {
-            final d = s['done'];
-            return d == true || d == 'true';
-          })
-          .map((s) => Map<String, dynamic>.from(s))
-          .toList();
-      if (savedSets.isEmpty) {
-        _error = 'Keine abgeschlossenen Sätze.';
-        notifyListeners();
-        return;
-      }
 
-      // Workout-Logs schreiben
-      for (var set in savedSets) {
-        set.remove('done');
-        final logDoc = logsCol.doc();
+      for (final set in savedSets) {
+        final ref = logsCol.doc();
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
           'userId': userId,
@@ -294,33 +287,28 @@ class DeviceProvider extends ChangeNotifier {
           'reps': int.parse(set['reps']!),
           'note': _note,
         };
-        if (set['rir'] != null && set['rir']!.isNotEmpty) {
+        if ((set['rir'] ?? '').toString().isNotEmpty) {
           data['rir'] = int.parse(set['rir']!);
         }
-        if (set['note'] != null && set['note']!.isNotEmpty) {
+        if ((set['note'] ?? '').toString().isNotEmpty) {
           data['setNote'] = set['note'];
         }
-        batch.set(logDoc, data);
+        batch.set(ref, data);
       }
 
-      // User-Note schreiben
-      final noteDoc = _firestore
+      final noteRef = _firestore
           .collection('gyms')
           .doc(gymId)
           .collection('devices')
           .doc(_device!.uid)
           .collection('userNotes')
           .doc(userId);
-      batch.set(noteDoc, {'note': _note, 'updatedAt': ts});
+      batch.set(noteRef, {'note': _note, 'updatedAt': ts});
 
       await batch.commit();
       _log('📚 logs stored for session=$sessionId');
 
-      // XP-System aktualisieren
       try {
-        _log(
-          '➡️ call addSessionXp session=$sessionId device=${_device!.uid}',
-        );
         await Provider.of<XpProvider>(context, listen: false).addSessionXp(
           gymId: gymId,
           userId: userId,
@@ -330,59 +318,52 @@ class DeviceProvider extends ChangeNotifier {
           isMulti: _device!.isMulti,
           primaryMuscleGroupIds: _device!.primaryMuscleGroups,
         );
-        _log('✅ addSessionXp completed');
-
-        // Challenges prüfen
-        await Provider.of<ChallengeProvider>(
-          context,
-          listen: false,
-        ).checkChallenges(gymId, userId, _device!.uid);
+        await Provider.of<ChallengeProvider>(context, listen: false)
+            .checkChallenges(gymId, userId, _device!.uid);
       } catch (e, st) {
-        _log('⚠️ _updateXp error: $e', st);
+        _log('⚠️ XP/Challenges error: $e', st);
       }
 
-      // Leaderboard aktualisieren, nur bei Einzelgeräten und Opt-in
-      if (!_device!.isMulti && showInLeaderboard) {
-        try {
-          await _updateLeaderboard(gymId, userId, sessionId, showInLeaderboard);
-          await _loadUserXp(gymId, _device!.uid, userId);
-        } catch (e, st) {
-          _log('_updateLeaderboard error: $e', st);
-        }
-      }
-
-      // Lokalen State aktualisieren
       _lastSessionSets = [
         for (final s in savedSets)
           {
-            'number': s['number']!,
-            'weight': s['weight']!,
-            'reps': s['reps']!,
-            'rir': s['rir'] ?? '',
-            'note': s['note'] ?? '',
+            'number': s['number'].toString(),
+            'weight': s['weight'].toString(),
+            'reps': s['reps'].toString(),
+            'rir': (s['rir'] ?? '').toString(),
+            'note': (s['note'] ?? '').toString(),
           }
       ];
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
       _lastSessionId = sessionId;
-      _sets.removeWhere((s) => s['done'] == 'true');
+
+      _sets.removeWhere((s) => s['done'] == true || s['done'] == 'true');
+      if (_sets.isEmpty) {
+        _sets = [
+          {
+            'number': '1',
+            'weight': '',
+            'reps': '',
+            'rir': '',
+            'note': '',
+            'done': false,
+          }
+        ];
+      }
       for (var i = 0; i < _sets.length; i++) {
         _sets[i]['number'] = '${i + 1}';
       }
-      if (_sets.isEmpty) {
-        _sets.add({
-          'number': '1',
-          'weight': '',
-          'reps': '',
-          'rir': '',
-          'note': '',
-          'done': 'false',
-        });
-      }
+
       notifyListeners();
+      return true;
     } catch (e, st) {
-      _log('DeviceProvider.saveWorkoutSession error: $e', st);
       _error = e.toString();
+      _log('DeviceProvider.saveWorkoutSession error: $e', st);
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
     }
   }
 
