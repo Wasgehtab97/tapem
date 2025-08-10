@@ -77,14 +77,26 @@ Future<void> main() async {
   // Load .env
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  final app = await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseFirestore.instance.settings = const Settings(
+  final FirebaseApp app;
+  if (Firebase.apps.isNotEmpty) {
+    if (kDebugMode) {
+      debugPrint('Using existing Firebase app');
+    }
+    app = Firebase.app();
+  } else {
+    app = await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    if (kDebugMode) {
+      debugPrint('Initialized Firebase app');
+    }
+  }
+
+  FirebaseFirestore.instanceFor(app: app).settings = const Settings(
     persistenceEnabled: true,
   );
 
-  fb_auth.FirebaseAuth.instance.setSettings(
+  fb_auth.FirebaseAuth.instanceFor(app: app).setSettings(
     appVerificationDisabledForTesting: true,
   );
 
