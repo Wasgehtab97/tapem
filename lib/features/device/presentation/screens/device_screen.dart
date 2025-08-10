@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/widgets/gradient_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -14,6 +15,7 @@ import 'package:tapem/core/providers/training_plan_provider.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
+import '../widgets/set_card.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
@@ -63,6 +65,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final locale = Localizations.localeOf(context).toString();
+    final loc = AppLocalizations.of(context)!;
     final planProv = context.watch<TrainingPlanProvider>();
     final plannedEntry = planProv.entryForDate(
       widget.deviceId,
@@ -98,7 +101,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               padding: const EdgeInsets.only(right: 8.0),
               child: XpInfoButton(xp: prov.xp, level: prov.level),
             ),
-          FeedbackButton(deviceId: widget.deviceId),
+          FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Verlauf',
@@ -198,49 +201,42 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
                     else ...[
+                      Text(
+                        loc.newSessionTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (var entry in prov.sets.asMap().entries)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: SetCard(
+                            index: entry.key,
+                            set: entry.value,
+                            previous: entry.key < prov.lastSessionSets.length
+                                ? prov.lastSessionSets[entry.key]
+                                : null,
+                          ),
+                        ),
+                      TextButton.icon(
+                        onPressed: prov.addSet,
+                        icon: const Icon(Icons.add),
+                        label: Text(loc.addSetButton),
+                      ),
+                      const SizedBox(height: 8),
                       Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadius.card),
                         ),
                         child: Container(
                           decoration: DeviceLevelStyle.widgetDecorationFor(
                             prov.level,
-                            opacity: 0.4,
+                            opacity: 0.6,
                           ),
                           padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Text(
-                                'Neue Session',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              for (var entry in prov.sets.asMap().entries)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: _SessionSetRow(
-                                    index: entry.key,
-                                    set: entry.value,
-                                  ),
-                                ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  prov.addSet();
-                                },
-                                icon: const Icon(Icons.add),
-                                label: const Text('Set hinzufügen'),
-                              ),
-                              const Divider(),
-                              const RestTimerWidget(),
-                            ],
-                          ),
+                          child: const RestTimerWidget(),
                         ),
                       ),
                     ],
@@ -258,39 +254,45 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text('Abbrechen'),
+                    child: Text(loc.cancelButton),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: GradientButton(
                     onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        try {
-                          await prov.saveWorkoutSession(
-                            context: context,
-                            gymId: widget.gymId,
-                            userId: context.read<AuthProvider>().userId!,
-                            showInLeaderboard:
-                                context
-                                    .read<AuthProvider>()
-                                    .showInLeaderboard ??
-                                true,
-                            overwrite: prov.editingLastSession,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Session gespeichert'),
-                            ),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
-                        }
+                      if (!_formKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(loc.pleaseCheckInputs)),
+                        );
+                        return;
+                      }
+                      if (prov.completedCount == 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(loc.noCompletedSets)),
+                        );
+                        return;
+                      }
+                      try {
+                        await prov.saveWorkoutSession(
+                          context: context,
+                          gymId: widget.gymId,
+                          userId: context.read<AuthProvider>().userId!,
+                          showInLeaderboard:
+                              context.read<AuthProvider>().showInLeaderboard ??
+                                  true,
+                          overwrite: prov.editingLastSession,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(loc.sessionSaved)),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${loc.errorPrefix}: $e')),
+                        );
                       }
                     },
-                    child: const Text('Speichern'),
+                    child: Text(loc.saveButton),
                   ),
                 ),
               ],
@@ -442,96 +444,3 @@ class _PlannedTable extends StatelessWidget {
   }
 }
 
-class _SessionSetRow extends StatefulWidget {
-  final int index;
-  final Map<String, String> set;
-
-  const _SessionSetRow({required this.index, required this.set});
-
-  @override
-  State<_SessionSetRow> createState() => _SessionSetRowState();
-}
-
-class _SessionSetRowState extends State<_SessionSetRow> {
-  bool _showExtras = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final prov = context.read<DeviceProvider>();
-    return Dismissible(
-      key: ValueKey('set-${widget.index}-${widget.set['number']}'),
-      direction: DismissDirection.horizontal,
-      confirmDismiss: (dir) async {
-        if (dir == DismissDirection.startToEnd) {
-          return true;
-        }
-        setState(() => _showExtras = !_showExtras);
-        return false;
-      },
-      onDismissed: (_) => prov.removeSet(widget.index),
-      child: Row(
-        children: [
-          SizedBox(width: 24, child: Text(widget.set['number']!)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextFormField(
-              initialValue: widget.set['weight'],
-              decoration: const InputDecoration(labelText: 'kg', isDense: true),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              onChanged: (v) => prov.updateSet(widget.index, weight: v),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Gewicht?';
-                if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                  return 'Zahl eingeben';
-                }
-                return null;
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextFormField(
-              initialValue: widget.set['reps'],
-              decoration: const InputDecoration(labelText: 'x', isDense: true),
-              keyboardType: TextInputType.number,
-              onChanged: (v) => prov.updateSet(widget.index, reps: v),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Wdh.?';
-                if (int.tryParse(v) == null) return 'Ganzzahl';
-                return null;
-              },
-            ),
-          ),
-          if (_showExtras) ...[
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: widget.set['rir'],
-                decoration: const InputDecoration(
-                  labelText: 'RIR',
-                  isDense: true,
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) => prov.updateSet(widget.index, rir: v),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: TextFormField(
-                initialValue: widget.set['note'],
-                decoration: const InputDecoration(
-                  labelText: 'Notiz',
-                  isDense: true,
-                ),
-                onChanged: (v) => prov.updateSet(widget.index, note: v),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}

@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/gym_provider.dart';
-
 class FeedbackButton extends StatelessWidget {
+  final String gymId;
   final String deviceId;
 
-  const FeedbackButton({Key? key, required this.deviceId}) : super(key: key);
+  const FeedbackButton({Key? key, required this.gymId, required this.deviceId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,6 @@ class FeedbackButton extends StatelessWidget {
                 final text = controller.text.trim();
                 if (text.isNotEmpty) {
                   final auth = context.read<AuthProvider>();
-                  final gymId = context.read<GymProvider>().currentGymId;
                   final userId = auth.userId ?? '';
                   await context.read<FeedbackProvider>().submitFeedback(
                     gymId: gymId,

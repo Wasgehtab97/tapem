@@ -120,7 +120,14 @@ class DeviceProvider extends ChangeNotifier {
 
       // Session initialisieren
       _sets = [
-        {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
+        {
+          'number': '1',
+          'weight': '',
+          'reps': '',
+          'rir': '',
+          'note': '',
+          'done': 'false',
+        },
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
@@ -149,6 +156,7 @@ class DeviceProvider extends ChangeNotifier {
       'reps': '',
       'rir': '',
       'note': '',
+      'done': 'false',
     });
     notifyListeners();
   }
@@ -166,6 +174,9 @@ class DeviceProvider extends ChangeNotifier {
     if (rir != null) current['rir'] = rir;
     if (note != null) current['note'] = note;
     current['number'] = '${index + 1}';
+    if (!current.containsKey('done')) {
+      current['done'] = 'false';
+    }
     _sets[index] = current;
     notifyListeners();
   }
@@ -178,10 +189,34 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleSetDone(int index) {
+    final s = _sets[index];
+    final w = s['weight']?.trim() ?? '';
+    final r = s['reps']?.trim() ?? '';
+    final valid =
+        w.isNotEmpty && double.tryParse(w.replaceAll(',', '.')) != null &&
+            r.isNotEmpty && int.tryParse(r) != null;
+    if (!valid) {
+      _error = 'Bitte gültiges Gewicht und Wiederholungen angeben.';
+      notifyListeners();
+      return;
+    }
+    final current = s['done'] == 'true';
+    s['done'] = (!current).toString();
+    _sets[index] = Map<String, String>.from(s);
+    notifyListeners();
+  }
+
+  int get completedCount =>
+      _sets.where((s) => s['done'] == 'true').length;
+
   /// Lädt die zuletzt gespeicherte Session in die Eingabefelder
   void startEditLastSession() {
     if (_lastSessionSets.isEmpty) return;
-    _sets = [for (final set in _lastSessionSets) Map<String, String>.from(set)];
+    _sets = [
+      for (final set in _lastSessionSets)
+        {...set, 'done': 'false'}
+    ];
     _note = _lastSessionNote;
     _editingLastSession = true;
     notifyListeners();
@@ -229,7 +264,13 @@ class DeviceProvider extends ChangeNotifier {
           overwrite && _lastSessionId != null ? _lastSessionId! : _uuid.v4();
       final ts = Timestamp.now();
       final batch = _firestore.batch();
-      final savedSets = List<Map<String, String>>.from(_sets);
+      final savedSets =
+          _sets.where((s) => s['done'] == 'true').map((s) => Map<String, String>.from(s)).toList();
+      if (savedSets.isEmpty) {
+        _error = 'Keine abgeschlossenen Sätze.';
+        notifyListeners();
+        return;
+      }
 
       final logsCol = _firestore
           .collection('gyms')
@@ -250,6 +291,7 @@ class DeviceProvider extends ChangeNotifier {
 
       // Workout-Logs schreiben
       for (var set in savedSets) {
+        set.remove('done');
         final logDoc = logsCol.doc();
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
@@ -318,15 +360,35 @@ class DeviceProvider extends ChangeNotifier {
         }
       }
 
-      // Lokalen State zurücksetzen
-      _lastSessionSets = savedSets;
+      // Lokalen State aktualisieren
+      _lastSessionSets = [
+        for (final s in savedSets)
+          {
+            'number': s['number']!,
+            'weight': s['weight']!,
+            'reps': s['reps']!,
+            'rir': s['rir'] ?? '',
+            'note': s['note'] ?? '',
+          }
+      ];
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
       _lastSessionId = sessionId;
       _editingLastSession = false;
-      _sets = [
-        {'number': '1', 'weight': '', 'reps': '', 'rir': '', 'note': ''},
-      ];
+      _sets.removeWhere((s) => s['done'] == 'true');
+      for (var i = 0; i < _sets.length; i++) {
+        _sets[i]['number'] = '${i + 1}';
+      }
+      if (_sets.isEmpty) {
+        _sets.add({
+          'number': '1',
+          'weight': '',
+          'reps': '',
+          'rir': '',
+          'note': '',
+          'done': 'false',
+        });
+      }
       notifyListeners();
     } catch (e, st) {
       _log('DeviceProvider.saveWorkoutSession error: $e', st);

@@ -140,6 +140,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get repsRequired => 'reps?';
 
   @override
+  String get numberInvalid => 'Enter a number';
+
+  @override
+  String get intRequired => 'Integer';
+
+  @override
+  String get newSessionTitle => 'New session';
+
+  @override
+  String get pleaseCheckInputs => 'Please check inputs';
+
+  @override
+  String get noCompletedSets => 'No completed sets';
+
+  @override
+  String get sessionSaved => 'Session saved';
+
+  @override
+  String get setCompleteTooltip => 'Complete set';
+
+  @override
+  String get setReopenTooltip => 'Reopen set';
+
+  @override
   String get registerButton => 'Register';
 
   @override

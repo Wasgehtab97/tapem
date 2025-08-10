@@ -210,6 +210,46 @@
     "description": "Validierungsmeldung, wenn Wiederholungen fehlen"
   },
 
+  "numberInvalid": "Zahl eingeben",
+  "@numberInvalid": {
+    "description": "Validierung, wenn eine Zahl erwartet wird"
+  },
+
+  "intRequired": "Ganzzahl",
+  "@intRequired": {
+    "description": "Validierung, wenn eine Ganzzahl erwartet wird"
+  },
+
+  "newSessionTitle": "Neue Session",
+  "@newSessionTitle": {
+    "description": "Überschrift für neue Session"
+  },
+
+  "pleaseCheckInputs": "Bitte Eingaben prüfen",
+  "@pleaseCheckInputs": {
+    "description": "Snackbar, wenn das Formular ungültig ist"
+  },
+
+  "noCompletedSets": "Keine abgeschlossenen Sätze",
+  "@noCompletedSets": {
+    "description": "Snackbar, wenn keine Sätze abgeschlossen sind"
+  },
+
+  "sessionSaved": "Session gespeichert",
+  "@sessionSaved": {
+    "description": "Snackbar nach erfolgreichem Speichern"
+  },
+
+  "setCompleteTooltip": "Satz abschließen",
+  "@setCompleteTooltip": {
+    "description": "Tooltip für Check-Button"
+  },
+
+  "setReopenTooltip": "Satz wieder öffnen",
+  "@setReopenTooltip": {
+    "description": "Tooltip wenn Satz abgeschlossen ist"
+  },
+
   "registerButton": "Registrieren",
   "@registerButton": {
     "description": "Beschriftung für den Registrieren-Knopf"
