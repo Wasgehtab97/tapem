@@ -21,21 +21,23 @@ class AuthProvider extends ChangeNotifier {
   final SetShowInLeaderboardUseCase _setShowInLbUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final ResetPasswordUseCase _resetPasswordUC;
+  final fb_auth.FirebaseAuth _auth;
 
   UserData? _user;
   bool _isLoading = false;
   String? _error;
   String? _selectedGymCode;
 
-  AuthProvider({AuthRepositoryImpl? repo})
-    : _loginUC = LoginUseCase(repo),
-      _registerUC = RegisterUseCase(repo),
+  AuthProvider({AuthRepositoryImpl? repo, fb_auth.FirebaseAuth? auth})
+    : _loginUC = LoginUseCase(repo, auth),
+      _registerUC = RegisterUseCase(repo, auth),
       _logoutUC = LogoutUseCase(repo),
       _currentUC = GetCurrentUserUseCase(repo),
       _setUsernameUC = SetUsernameUseCase(repo),
       _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
       _checkUsernameUC = CheckUsernameAvailable(repo),
-      _resetPasswordUC = ResetPasswordUseCase(repo) {
+      _resetPasswordUC = ResetPasswordUseCase(repo),
+      _auth = auth ?? fb_auth.FirebaseAuth.instance {
     _loadCurrentUser();
   }
 
@@ -64,7 +66,7 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+      final fbUser = _auth.currentUser;
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};

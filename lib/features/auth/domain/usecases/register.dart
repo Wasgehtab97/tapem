@@ -9,15 +9,17 @@ import '../repositories/auth_repository.dart';
 /// damit Custom Claims (z.B. role) direkt verfügbar sind.
 class RegisterUseCase {
   final AuthRepository _repo;
-  RegisterUseCase([AuthRepository? repo])
-    : _repo = repo ?? AuthRepositoryImpl();
+  final fb_auth.FirebaseAuth _auth;
+  RegisterUseCase([AuthRepository? repo, fb_auth.FirebaseAuth? auth])
+      : _repo = repo ?? AuthRepositoryImpl(),
+        _auth = auth ?? fb_auth.FirebaseAuth.instance;
 
   Future<UserData> execute(String email, String password, String gymId) async {
     // 1) Nutzerkonto anlegen und UserData in Firestore speichern
     final user = await _repo.register(email, password, gymId);
 
     // 2) ID-Token forcieren, damit Custom Claims aktualisiert werden
-    final fb_auth.User? fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+    final fb_auth.User? fbUser = _auth.currentUser;
     if (fbUser != null) {
       await fbUser.reload();
       await fbUser.getIdToken(true);

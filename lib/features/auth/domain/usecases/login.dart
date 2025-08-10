@@ -9,14 +9,17 @@ import '../repositories/auth_repository.dart';
 /// (z.B. role) sofort zur Verfügung stehen.
 class LoginUseCase {
   final AuthRepository _repo;
-  LoginUseCase([AuthRepository? repo]) : _repo = repo ?? AuthRepositoryImpl();
+  final fb_auth.FirebaseAuth _auth;
+  LoginUseCase([AuthRepository? repo, fb_auth.FirebaseAuth? auth])
+      : _repo = repo ?? AuthRepositoryImpl(),
+        _auth = auth ?? fb_auth.FirebaseAuth.instance;
 
   Future<UserData> execute(String email, String password) async {
     // 1) Authentifizieren und UserData aus Firestore holen
     final user = await _repo.login(email, password);
 
     // 2) ID-Token forcieren, damit Custom Claims aktualisiert werden
-    final fb_auth.User? fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+    final fb_auth.User? fbUser = _auth.currentUser;
     if (fbUser != null) {
       await fbUser.reload();
       await fbUser.getIdToken(true);

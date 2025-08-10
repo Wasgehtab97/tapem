@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../../../app_router.dart';
@@ -26,7 +27,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _error = null;
     });
     try {
-      await fb_auth.FirebaseAuth.instance.confirmPasswordReset(
+      await context.read<fb_auth.FirebaseAuth>().confirmPasswordReset(
         code: widget.oobCode,
         newPassword: _password,
       );

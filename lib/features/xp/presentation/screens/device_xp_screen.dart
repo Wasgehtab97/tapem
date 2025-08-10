@@ -44,7 +44,7 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
             title: Text(d.name),
             trailing: Text('$xp XP'),
             onTap: () async {
-              final fs = FirebaseFirestore.instance;
+              final fs = context.read<FirebaseFirestore>();
               final gymId = gymProv.currentGymId;
               final snap =
                   await fs

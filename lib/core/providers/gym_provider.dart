@@ -1,21 +1,25 @@
 // lib/core/providers/gym_provider.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
-import 'package:tapem/features/gym/data/repositories/gym_repository_impl.dart';
 import 'package:tapem/features/gym/domain/usecases/get_gym_by_id.dart';
 import 'package:tapem/features/gym/domain/models/gym_config.dart';
-import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
-import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/features/gym/domain/repositories/gym_repository.dart';
+import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 
 /// Lädt Gym-Details und zugehörige Geräte für eine Gym-ID.
 class GymProvider extends ChangeNotifier {
+  final GymRepository _gymRepo;
+  final DeviceRepository _deviceRepo;
   GymConfig? _gym;
   List<Device> _devices = [];
   bool _isLoading = false;
   String? _error;
+
+  GymProvider({required GymRepository gymRepo, required DeviceRepository deviceRepo})
+      : _gymRepo = gymRepo,
+        _deviceRepo = deviceRepo;
 
   GymConfig? get gym => _gym;
   List<Device> get devices => _devices;
@@ -31,10 +35,8 @@ class GymProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final gymRepo = GymRepositoryImpl(FirestoreGymSource());
-      _gym = await GetGymById(gymRepo).execute(gymId);
-      final deviceRepo = DeviceRepositoryImpl(FirestoreDeviceSource());
-      _devices = await GetDevicesForGym(deviceRepo).execute(_gym!.id);
+      _gym = await GetGymById(_gymRepo).execute(gymId);
+      _devices = await GetDevicesForGym(_deviceRepo).execute(_gym!.id);
     } catch (e, st) {
       _error = 'Fehler beim Laden: ${e.toString()}';
       debugPrintStack(label: 'GymProvider.loadGymData', stackTrace: st);

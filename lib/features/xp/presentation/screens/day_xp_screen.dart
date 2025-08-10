@@ -27,7 +27,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
       if (gymId.isEmpty) {
         return [];
       }
-      final fs = FirebaseFirestore.instance;
+      final fs = context.read<FirebaseFirestore>();
       final snap =
           await fs.collection('gyms').doc(gymId).collection('users').get();
       final List<LeaderboardEntry> data = [];
@@ -81,7 +81,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
     if (gymId.isEmpty) {
       return;
     }
-    final fs = FirebaseFirestore.instance;
+    final fs = context.read<FirebaseFirestore>();
     debugPrint('👀 listen leaderboard gymId=$gymId');
     _lbSub = fs
         .collection('gyms')
