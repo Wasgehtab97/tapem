@@ -44,6 +44,10 @@ class FirestoreExerciseSource {
     return _col(gymId, deviceId).doc(ex.id).set(ex.toJson());
   }
 
+  Future<void> updateExercise(String gymId, String deviceId, Exercise ex) {
+    return _col(gymId, deviceId).doc(ex.id).update(ex.toJson());
+  }
+
   Future<void> deleteExercise(String gymId, String deviceId, String exId) {
     return _col(gymId, deviceId).doc(exId).delete();
   }

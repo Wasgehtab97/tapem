@@ -8,6 +8,7 @@ abstract class ExerciseRepository {
     String userId,
   );
   Future<void> createExercise(String gymId, String deviceId, Exercise ex);
+  Future<void> updateExercise(String gymId, String deviceId, Exercise ex);
   Future<void> deleteExercise(
     String gymId,
     String deviceId,

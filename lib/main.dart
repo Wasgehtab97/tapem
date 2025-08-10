@@ -59,6 +59,7 @@ import 'features/device/domain/repositories/exercise_repository.dart';
 import 'features/device/domain/usecases/get_exercises_for_device.dart';
 import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
+import 'features/device/domain/usecases/update_exercise_usecase.dart';
 
 import 'features/report/data/repositories/report_repository_impl.dart';
 import 'features/report/domain/usecases/get_device_usage_stats.dart';
@@ -156,6 +157,9 @@ class AppEntry extends StatelessWidget {
         Provider<DeleteExerciseUseCase>(
           create: (c) => DeleteExerciseUseCase(c.read<ExerciseRepository>()),
         ),
+        Provider<UpdateExerciseUseCase>(
+          create: (c) => UpdateExerciseUseCase(c.read<ExerciseRepository>()),
+        ),
 
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
@@ -198,6 +202,7 @@ class AppEntry extends StatelessWidget {
                 getEx: c.read<GetExercisesForDevice>(),
                 createEx: c.read<CreateExerciseUseCase>(),
                 deleteEx: c.read<DeleteExerciseUseCase>(),
+                updateEx: c.read<UpdateExerciseUseCase>(),
               ),
         ),
         ChangeNotifierProvider(
