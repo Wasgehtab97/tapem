@@ -5,6 +5,7 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'muscle_group_selector_list.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
@@ -24,12 +25,15 @@ class ExerciseBottomSheet extends StatefulWidget {
 
 class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   late TextEditingController _nameCtr;
+  late TextEditingController _searchCtr;
   final Set<String> _selected = {};
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     _nameCtr = TextEditingController(text: widget.exercise?.name ?? '');
+    _searchCtr = TextEditingController();
     _selected.addAll(widget.exercise?.muscleGroupIds ?? const []);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MuscleGroupProvider>().loadGroups(context);
@@ -37,9 +41,15 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   }
 
   @override
+  void dispose() {
+    _nameCtr.dispose();
+    _searchCtr.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final groups = context.watch<MuscleGroupProvider>().groups;
     final auth = context.read<AuthProvider>();
     final userId = auth.userId!;
 
@@ -58,8 +68,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
             padding: const EdgeInsets.all(16),
             child: Text(
               widget.exercise == null
-                  ? loc.multiDeviceAddExerciseTitle
-                  : loc.multiDeviceEditExerciseTitle,
+                  ? loc.exerciseAddTitle
+                  : loc.exerciseEditTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
@@ -67,8 +77,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _nameCtr,
-              decoration:
-                  InputDecoration(labelText: loc.multiDeviceNameFieldLabel),
+              decoration: InputDecoration(labelText: loc.exerciseNameLabel),
               onChanged: (_) => setState(() {}),
               autofocus: true,
             ),
@@ -76,28 +85,32 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(loc.multiDeviceMuscleGroupSection,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              loc.exerciseMuscleGroupsLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                for (final g in groups)
-                  FilterChip(
-                    label: Text(g.name),
-                    selected: _selected.contains(g.id),
-                    onSelected: (v) => setState(() {
-                      if (v) {
-                        _selected.add(g.id);
-                      } else {
-                        _selected.remove(g.id);
-                      }
-                    }),
-                  ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchCtr,
+              decoration: InputDecoration(
+                hintText: loc.exerciseSearchMuscleGroupsHint,
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 240,
+            child: MuscleGroupSelectorList(
+              initialSelection: _selected.toList(),
+              filter: _query,
+              onChanged: (ids) => setState(() {
+                _selected
+                  ..clear()
+                  ..addAll(ids);
+              }),
             ),
           ),
           Row(
@@ -105,7 +118,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               const SizedBox(width: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(loc.multiDeviceCancel),
+                child: Text(loc.commonCancel),
               ),
               const Spacer(),
               TextButton(
@@ -147,7 +160,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                         Navigator.pop(context, ex);
                       }
                     : null,
-                child: Text(loc.multiDeviceSave),
+                child: Text(loc.commonSave),
               ),
               const SizedBox(width: 16),
             ],

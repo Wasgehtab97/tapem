@@ -348,4 +348,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get multiDeviceMuscleGroupFilterAll => 'All muscle groups';
+
+  @override
+  String get exerciseAddTitle => 'Add exercise';
+
+  @override
+  String get exerciseEditTitle => 'Edit exercise';
+
+  @override
+  String get exerciseNameLabel => 'Name';
+
+  @override
+  String get exerciseMuscleGroupsLabel => 'Muscle groups';
+
+  @override
+  String get exerciseSearchMuscleGroupsHint => 'Search muscle groups...';
+
+  @override
+  String get exerciseNoMuscleGroups => 'No muscle groups available';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String a11yMgSelected(Object name) {
+    return 'Muscle group: $name, selected';
+  }
+
+  @override
+  String a11yMgUnselected(Object name) {
+    return 'Muscle group: $name, not selected';
+  }
 }
