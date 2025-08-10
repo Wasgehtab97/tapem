@@ -1,46 +1,84 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
-/// Runtime feature flags loaded from remote config or environment.
+/// Runtime feature flags backed by Firebase Remote Config.
 class FeatureFlags extends ChangeNotifier {
-  FeatureFlags._();
+  FeatureFlags._(this._rc);
 
-  static final FeatureFlags instance = FeatureFlags._();
+  final FirebaseRemoteConfig _rc;
 
   bool _uiSetsTableV1 = false;
-
   bool get uiSetsTableV1 => _uiSetsTableV1;
 
-  final FirebaseRemoteConfig _remoteConfig = FirebaseRemoteConfig.instance;
+  /// Bootstrap the feature flags service.
+  static Future<FeatureFlags> init(FirebaseApp app) async {
+    final rc = FirebaseRemoteConfig.instanceFor(app: app);
+    final flags = FeatureFlags._(rc);
+    await flags._bootstrap();
+    return flags;
+  }
 
-  /// Loads feature flags from remote config and environment overrides.
-  Future<void> load() async {
-    bool value = false;
-    try {
-      await _remoteConfig.fetchAndActivate();
-      value = _remoteConfig.getBool('ui_sets_table_v1');
-    } catch (_) {
-      // Ignore, fallback below.
-    }
+  Future<void> _bootstrap() async {
+    await _rcSafe(() async {
+      await _rc.setConfigSettings(RemoteConfigSettings(
+        fetchTimeout: const Duration(seconds: 10),
+        minimumFetchInterval:
+            kDebugMode ? Duration.zero : const Duration(minutes: 30),
+      ));
+      await _rc.setDefaults(const {
+        'ui_sets_table_v1': false,
+      });
+      await _rc.fetchAndActivate();
+    });
 
-    // Debug override via --dart-define=UI_SETS_TABLE_V1=true
-    const env = String.fromEnvironment('UI_SETS_TABLE_V1');
-    if (env.isNotEmpty) {
-      value = env.toLowerCase() == 'true';
-    }
-    _setUiSetsTableV1(value);
+    _updateFromRemoteConfig();
 
-    // Listen for future remote config updates.
-    _remoteConfig.onConfigUpdated.listen((event) async {
-      await _remoteConfig.activate();
-      _setUiSetsTableV1(_remoteConfig.getBool('ui_sets_table_v1'));
+    _rc.onConfigUpdated.listen((_) async {
+      await _rcSafe(() async {
+        await _rc.activate();
+        _updateFromRemoteConfig();
+      });
     });
   }
 
-  void _setUiSetsTableV1(bool value) {
+  Future<void> _rcSafe(Future<void> Function() cb) async {
+    try {
+      await cb();
+    } catch (e, s) {
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: e, stack: s),
+      );
+    }
+  }
+
+  void _updateFromRemoteConfig() {
+    bool value = false;
+    String source = 'default';
+
+    try {
+      value = _rc.getBool('ui_sets_table_v1');
+      source = 'rc';
+    } catch (e, s) {
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: e, stack: s),
+      );
+    }
+
+    const env = String.fromEnvironment('UI_SETS_TABLE_V1');
+    if (env.isNotEmpty) {
+      value = env.toLowerCase() == 'true';
+      source = 'define';
+    }
+
+    if (kDebugMode) {
+      debugPrint('FeatureFlags.uiSetsTableV1 from $source => $value');
+    }
+
     if (_uiSetsTableV1 != value) {
       _uiSetsTableV1 = value;
       notifyListeners();
     }
   }
 }
+
