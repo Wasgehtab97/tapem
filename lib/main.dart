@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart'
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
@@ -16,7 +18,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
-import 'firebase_options.dart';
+import 'bootstrap/firebase_bootstrap.dart';
 import 'app_router.dart';
 import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/core/providers/app_provider.dart';
@@ -91,60 +93,41 @@ import 'core/feature_flags.dart';
 /// Global navigator key for NFC navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-Future<FirebaseApp> _getOrCreateFirebaseApp() async {
-  if (Firebase.apps.isNotEmpty) {
-    if (kDebugMode) debugPrint('Using existing Firebase app');
-    return Firebase.app();
-  }
-  if (kDebugMode) debugPrint('Initializing Firebase app');
-  return Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load .env
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  final app = await _getOrCreateFirebaseApp();
-
-  final firestore = FirebaseFirestore.instanceFor(app: app);
-  firestore.settings = const Settings(persistenceEnabled: true);
-
-  final auth = fb_auth.FirebaseAuth.instanceFor(app: app);
-  auth.setSettings(appVerificationDisabledForTesting: true);
-
-  debugPrint('Firebase bootstrap complete (default app name: ${app.name})');
+  final fb = await firebaseBootstrap();
 
   await initializeDateFormatting();
 
-  final flags = await FeatureFlags.init(app);
+  final flags = await FeatureFlags.init(fb.remoteConfig);
   runApp(AppEntry(
     featureFlags: flags,
-    app: app,
-    firestore: firestore,
-    auth: auth,
+    firebase: fb,
   ));
 }
 
 class AppEntry extends StatelessWidget {
   final FeatureFlags featureFlags;
-  final FirebaseApp app;
-  final FirebaseFirestore firestore;
-  final fb_auth.FirebaseAuth auth;
+  final FirebaseBootstrap firebase;
   const AppEntry({
     Key? key,
     required this.featureFlags,
-    required this.app,
-    required this.firestore,
-    required this.auth,
+    required this.firebase,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Prepare report use cases
+    final app = firebase.app;
+    final firestore = firebase.firestore;
+    final auth = firebase.auth;
+    final rc = firebase.remoteConfig;
+    final functions = firebase.functions;
+
     final reportRepo = ReportRepositoryImpl(FirestoreReportSource(firestore));
     final usageUC = GetDeviceUsageStats(reportRepo);
     final logsUC = GetAllLogTimestamps(reportRepo);
@@ -154,6 +137,9 @@ class AppEntry extends StatelessWidget {
         Provider<FirebaseApp>.value(value: app),
         Provider<FirebaseFirestore>.value(value: firestore),
         Provider<fb_auth.FirebaseAuth>.value(value: auth),
+        Provider<FirebaseRemoteConfig>.value(value: rc),
+        if (functions != null)
+          Provider<FirebaseFunctions>.value(value: functions),
         ChangeNotifierProvider<FeatureFlags>.value(value: featureFlags),
 
         // NFC

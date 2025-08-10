@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,8 +11,7 @@ class FeatureFlags extends ChangeNotifier {
   bool get uiSetsTableV1 => _uiSetsTableV1;
 
   /// Bootstrap the feature flags service.
-  static Future<FeatureFlags> init(FirebaseApp app) async {
-    final rc = FirebaseRemoteConfig.instanceFor(app: app);
+  static Future<FeatureFlags> init(FirebaseRemoteConfig rc) async {
     final flags = FeatureFlags._(rc);
     await flags._bootstrap();
     return flags;

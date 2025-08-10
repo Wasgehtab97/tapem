@@ -59,7 +59,8 @@ class _BrandingScreenState extends State<BrandingScreen> {
       _error = null;
     });
 
-    final callable = FirebaseFunctions.instance.httpsCallable('updateBranding');
+    final callable =
+        context.read<FirebaseFunctions>().httpsCallable('updateBranding');
     try {
       await callable.call(<String, dynamic>{
         'gymId': gymId,
