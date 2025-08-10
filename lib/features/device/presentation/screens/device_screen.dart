@@ -131,8 +131,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
           if (prov.device!.isMulti) const MultiDeviceBanner(),
           if (prov.device!.isMulti && currentExercise != null)
             ExerciseHeader(
-              name: currentExercise!.name,
-              muscleGroupIds: currentExercise!.muscleGroupIds,
+              name: currentExercise.name,
+              muscleGroupIds: currentExercise.muscleGroupIds,
               onChange: () {
                 Navigator.of(context).pushReplacementNamed(
                   AppRouter.exerciseList,
