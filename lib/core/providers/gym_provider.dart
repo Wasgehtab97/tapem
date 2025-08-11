@@ -43,4 +43,18 @@ class GymProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void patchDeviceGroups(
+    String deviceId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  ) {
+    final i = _devices.indexWhere((d) => d.uid == deviceId);
+    if (i == -1) return;
+    _devices[i] = _devices[i].copyWith(
+      primaryMuscleGroups: primaryGroups,
+      secondaryMuscleGroups: secondaryGroups,
+    );
+    notifyListeners();
+  }
 }

@@ -323,6 +323,25 @@ void main() {
 
       expect(provider.error, 'Heute bereits gespeichert.');
     });
+
+    test('patchDeviceGroups updates device and notifies', () async {
+      final provider = DeviceProvider(
+        firestore: FakeFirebaseFirestore(),
+        getDevicesForGym: GetDevicesForGym(
+          FakeDeviceRepository([
+            Device(uid: 'd1', id: 1, name: 'D'),
+          ]),
+        ),
+        log: (_, [__]) {},
+      );
+      await provider.loadDevices('g1');
+      var calls = 0;
+      provider.addListener(() => calls++);
+      provider.patchDeviceGroups('d1', ['p'], ['s']);
+      expect(provider.devices.first.primaryMuscleGroups, ['p']);
+      expect(provider.devices.first.secondaryMuscleGroups, ['s']);
+      expect(calls, 1);
+    });
   });
 }
 

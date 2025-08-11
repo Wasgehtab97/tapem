@@ -88,6 +88,7 @@ void main() {
       name: 'Bench',
       description: 'Eleiko',
       primaryMuscleGroups: const ['chest'],
+      secondaryMuscleGroups: const ['back'],
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -118,6 +119,33 @@ void main() {
       ),
     );
     expect(find.byType(MuscleChips), findsNothing);
+  });
+
+  testWidgets('orders primary then secondary chips with styles', (tester) async {
+    final device = Device(
+      uid: '1',
+      id: 1,
+      name: 'Bench',
+      description: 'Eleiko',
+      primaryMuscleGroups: const ['chest'],
+      secondaryMuscleGroups: const ['back'],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangeNotifierProvider(
+          create: (_) => _makeProvider(),
+          child: DeviceCard(device: device),
+        ),
+      ),
+    );
+    final chips = tester.widgetList<Chip>(find.byType(Chip)).toList();
+    final context = tester.element(find.byType(DeviceCard));
+    final theme = Theme.of(context);
+    expect((chips[0].label as Text).data, 'Chest');
+    expect(chips[0].backgroundColor, theme.colorScheme.primary);
+    expect((chips[1].label as Text).data, 'Back');
+    final shape = chips[1].shape as StadiumBorder;
+    expect(shape.side.color, theme.colorScheme.tertiary);
   });
 }
 
