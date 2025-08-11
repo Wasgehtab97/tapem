@@ -103,10 +103,9 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           SizedBox(
             height: 280,
             child: MuscleGroupListSelector(
-              deviceId: widget.deviceId,
               initialSelection: _selectedGroupIds,
-              filter: _filter,
               onChanged: (ids) => setState(() => _selectedGroupIds = ids),
+              filter: _filter,
             ),
           ),
           Row(
