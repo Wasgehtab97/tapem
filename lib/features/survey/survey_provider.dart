@@ -23,7 +23,7 @@ class SurveyProvider extends ChangeNotifier {
   List<Survey> openSurveys = [];
   List<Survey> closedSurveys = [];
   String? _error;
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   String? get error => _error;
   bool get isLoading => _isLoading;

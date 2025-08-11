@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('SessionTimerBar ticks and completes respecting mute',
       (tester) async {
     final ticks = <Duration>[];
@@ -11,15 +12,15 @@ void main() {
     int soundCalls = 0;
     int hapticCalls = 0;
 
-    ServicesBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'SystemSound.play') soundCalls++;
       if (call.method == 'HapticFeedback.mediumImpact') hapticCalls++;
       return null;
     });
     addTearDown(() {
-      ServicesBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null);
+      messenger.setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
     await tester.pumpWidget(MaterialApp(

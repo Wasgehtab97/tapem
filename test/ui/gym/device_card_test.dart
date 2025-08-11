@@ -10,7 +10,6 @@ import 'package:tapem/features/muscle_group/domain/repositories/muscle_group_rep
 import 'package:tapem/features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
 import 'package:tapem/features/muscle_group/domain/usecases/save_muscle_group.dart';
 import 'package:tapem/features/muscle_group/domain/usecases/delete_muscle_group.dart';
-import 'package:tapem/features/history/domain/repositories/history_repository.dart';
 import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
@@ -28,9 +27,13 @@ class _DummyMuscleGroupRepo implements MuscleGroupRepository {
   Future<void> saveMuscleGroup(String gymId, MuscleGroup group) async {}
 }
 
-class _DummyHistoryRepo implements HistoryRepository {
+class _FakeHistoryRepo implements GetHistoryForDeviceRepository {
   @override
-  Future<List<WorkoutLog>> getHistory(String gymId, String deviceId, String userId) async => [];
+  Future<List<WorkoutLog>> getHistory({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) async => [];
 }
 
 class _DummyDeviceRepo implements DeviceRepository {
@@ -59,7 +62,7 @@ MuscleGroupProvider _makeProvider() {
     getGroups: GetMuscleGroupsForGym(repo),
     saveGroup: SaveMuscleGroup(repo),
     deleteGroup: DeleteMuscleGroup(repo),
-    getHistory: GetHistoryForDevice(_DummyHistoryRepo()),
+    getHistory: GetHistoryForDevice(_FakeHistoryRepo()),
     updateDeviceGroups: UpdateDeviceMuscleGroupsUseCase(_DummyDeviceRepo()),
     setDeviceGroups: SetDeviceMuscleGroupsUseCase(_DummyDeviceRepo()),
   );

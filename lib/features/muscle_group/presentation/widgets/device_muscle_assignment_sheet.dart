@@ -50,7 +50,6 @@ class _DeviceMuscleAssignmentSheetState
       case MuscleRegion.legs:
         return 'Legs';
       case MuscleRegion.core:
-      default:
         return 'Core';
     }
   }
