@@ -15,7 +15,6 @@ import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
-import '../widgets/rest_timer_widget.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
 import '../widgets/multi_device_banner.dart';
@@ -24,6 +23,7 @@ import '../widgets/exercise_bottom_sheet.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
+import 'package:tapem/ui/timer/session_timer_bar.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -43,6 +43,7 @@ class DeviceScreen extends StatefulWidget {
 
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _showTimer = true;
 
   @override
   void initState() {
@@ -128,6 +129,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
       floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
       body: Column(
         children: [
+          if (_showTimer)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: SessionTimerBar(
+                total: const Duration(seconds: 90),
+                onClose: () => setState(() => _showTimer = false),
+              ),
+            ),
           if (prov.device!.isMulti) const MultiDeviceBanner(),
           if (prov.device!.isMulti && currentExercise != null)
             ExerciseHeader(
@@ -295,20 +304,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         onPressed: prov.addSet,
                         icon: const Icon(Icons.add),
                         label: Text(loc.addSetButton),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                        ),
-                        child: Container(
-                          decoration: DeviceLevelStyle.widgetDecorationFor(
-                            prov.level,
-                            opacity: 0.6,
-                          ),
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: const RestTimerWidget(),
-                        ),
                       ),
                     ],
                   ],
@@ -522,7 +517,6 @@ class _PlannedTable extends StatelessWidget {
               Text('Notiz: ${entry.notes!}'),
             ],
             const Divider(),
-            const RestTimerWidget(),
           ],
         ),
       ),
