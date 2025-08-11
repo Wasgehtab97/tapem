@@ -32,7 +32,10 @@ class ExerciseHeader extends StatelessWidget {
                 children: [
                   Text(name, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 4),
-                  MuscleChips(muscleGroupIds: muscleGroupIds),
+                  MuscleChips(
+                    primaryIds: muscleGroupIds,
+                    secondaryIds: const [],
+                  ),
                 ],
               ),
             ),

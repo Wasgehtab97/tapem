@@ -97,7 +97,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
           return ListTile(
             leading: const Icon(Icons.fitness_center),
             title: Text(ex.name),
-            subtitle: MuscleChips(muscleGroupIds: ex.muscleGroupIds),
+            subtitle: MuscleChips(
+              primaryIds: ex.muscleGroupIds,
+              secondaryIds: const [],
+            ),
             onTap: () {
               Navigator.of(context).pushNamed(
                 AppRouter.device,
