@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:tapem/features/muscle_group/presentation/widgets/muscle_group_label_chip.dart';
+import 'package:tapem/ui/muscles/muscle_group_card.dart';
 
 class MuscleChips extends StatelessWidget {
   final List<String> muscleGroupIds;
@@ -14,7 +14,7 @@ class MuscleChips extends StatelessWidget {
       runSpacing: 4,
       children: [
         for (final id in muscleGroupIds)
-          MuscleGroupLabelChip(muscleGroupId: id),
+          MuscleGroupCard(muscleGroupId: id),
       ],
     );
   }

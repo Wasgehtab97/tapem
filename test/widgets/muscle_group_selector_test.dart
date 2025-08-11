@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/features/muscle_group/presentation/widgets/muscle_group_selector.dart';
+import 'package:tapem/ui/muscles/muscle_group_selector.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/repositories/muscle_group_repository.dart';
