@@ -23,7 +23,6 @@ class MuscleChips extends StatelessWidget {
       case MuscleRegion.legs:
         return 'Legs';
       case MuscleRegion.core:
-      default:
         return 'Core';
     }
   }
@@ -37,20 +36,20 @@ class MuscleChips extends StatelessWidget {
     final theme = Theme.of(context);
     final groups = context.watch<MuscleGroupProvider>().groups;
 
-    MuscleRegion _regionFor(String id, MuscleGroup? g) {
+    MuscleRegion regionFor(String id, MuscleGroup? g) {
       if (g != null) return g.region;
       return MuscleRegion.values.firstWhereOrNull((r) => r.name == id) ?? MuscleRegion.core;
     }
 
-    String _nameFor(String id) {
+    String nameFor(String id) {
       final g = groups.firstWhereOrNull((e) => e.id == id);
-      final region = _regionFor(id, g);
+      final region = regionFor(id, g);
       if (g != null && g.name.trim().isNotEmpty) return g.name;
       return _fallbackName(region);
     }
 
-    Widget _buildChip(String id, bool primary) {
-      final name = _nameFor(id);
+    Widget buildChip(String id, bool primary) {
+      final name = nameFor(id);
       final color = primary ? theme.colorScheme.primary : theme.colorScheme.tertiary;
       final textColor = primary ? theme.colorScheme.onPrimary : theme.colorScheme.tertiary;
       return Semantics(
@@ -74,8 +73,8 @@ class MuscleChips extends StatelessWidget {
       spacing: 4,
       runSpacing: 4,
       children: [
-        for (final id in primaryIds) _buildChip(id, true),
-        for (final id in secondaryIds) _buildChip(id, false),
+        for (final id in primaryIds) buildChip(id, true),
+        for (final id in secondaryIds) buildChip(id, false),
       ],
     );
   }
