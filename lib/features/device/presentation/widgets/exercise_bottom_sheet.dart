@@ -27,7 +27,7 @@ class ExerciseBottomSheet extends StatefulWidget {
 class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   late TextEditingController _nameCtr;
   late TextEditingController _searchCtr;
-  final Set<String> _selected = {};
+  final Set<String> _selectedGroupIds = {};
   String _query = '';
 
   @override
@@ -35,7 +35,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     super.initState();
     _nameCtr = TextEditingController(text: widget.exercise?.name ?? '');
     _searchCtr = TextEditingController();
-    _selected.addAll(widget.exercise?.muscleGroupIds ?? const []);
+    _selectedGroupIds.addAll(widget.exercise?.muscleGroupIds ?? const []);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MuscleGroupProvider>().loadGroups(context);
     });
@@ -56,7 +56,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     final theme = Theme.of(context);
 
     final canSave =
-        _nameCtr.text.trim().isNotEmpty && _selected.isNotEmpty;
+        _nameCtr.text.trim().isNotEmpty && _selectedGroupIds.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -92,7 +92,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          if (_selected.isNotEmpty) ...[
+          if (_selectedGroupIds.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
@@ -105,7 +105,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               label: loc.exerciseSelectedMuscleGroups,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: MuscleChips(muscleGroupIds: _selected.toList()),
+                child: MuscleChips(
+                    muscleGroupIds: _selectedGroupIds.toList()),
               ),
             ),
           ] else
@@ -130,10 +131,10 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           SizedBox(
             height: 240,
             child: MuscleGroupSelector(
-              initialSelection: _selected.toList(),
+              initialSelection: _selectedGroupIds.toList(),
               filter: _query,
               onChanged: (ids) => setState(() {
-                _selected
+                _selectedGroupIds
                   ..clear()
                   ..addAll(ids);
               }),
@@ -159,7 +160,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             widget.deviceId,
                             name,
                             userId,
-                            muscleGroupIds: _selected.toList(),
+                            muscleGroupIds: _selectedGroupIds.toList(),
                           );
                         } else {
                           await exProv.updateExercise(
@@ -168,11 +169,11 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             widget.exercise!.id,
                             name,
                             userId,
-                            muscleGroupIds: _selected.toList(),
+                            muscleGroupIds: _selectedGroupIds.toList(),
                           );
                           ex = widget.exercise!.copyWith(
                             name: name,
-                            muscleGroupIds: _selected.toList(),
+                            muscleGroupIds: _selectedGroupIds.toList(),
                           );
                         }
                         await context
@@ -180,7 +181,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             .assignExercise(
                               context,
                               ex.id,
-                              _selected.toList(),
+                              _selectedGroupIds.toList(),
                             );
                         if (!mounted) return;
                         Navigator.pop(context, ex);

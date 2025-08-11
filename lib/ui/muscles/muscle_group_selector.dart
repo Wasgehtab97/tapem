@@ -69,27 +69,35 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
         runSpacing: 4,
         children: [
           for (final g in groups)
-            Semantics(
-              label: _selected.contains(g.id)
-                  ? loc.a11yMgSelected(g.name)
-                  : loc.a11yMgUnselected(g.name),
-              child: FilterChip(
-                key: ValueKey(g.id),
-                avatar: CircleAvatar(
-                  backgroundColor: colorForRegion(g.region, theme),
-                  radius: 6,
+            Builder(builder: (context) {
+              final isSelected = _selected.contains(g.id);
+              return Semantics(
+                label: isSelected
+                    ? loc.a11yMgSelected(g.name)
+                    : loc.a11yMgUnselected(g.name),
+                child: FilterChip(
+                  key: ValueKey(g.id),
+                  avatar: CircleAvatar(
+                    backgroundColor: colorForRegion(g.region, theme),
+                    radius: 6,
+                  ),
+                  label: Text(
+                    g.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
+                  ),
+                  selected: isSelected,
+                  selectedColor: theme.colorScheme.primary,
+                  checkmarkColor: theme.colorScheme.onPrimary,
+                  onSelected: (_) => _toggle(g.id),
                 ),
-                label: Text(
-                  g.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                selected: _selected.contains(g.id),
-                selectedColor: theme.colorScheme.primary,
-                checkmarkColor: theme.colorScheme.onPrimary,
-                onSelected: (_) => _toggle(g.id),
-              ),
-            ),
+              );
+            }),
         ],
       ),
     );
