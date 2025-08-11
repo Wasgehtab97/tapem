@@ -128,8 +128,8 @@ void main() {
       ),
       MuscleGroup(
         id: 'm2',
-        name: 'Back',
-        region: MuscleRegion.back,
+        name: 'Lats',
+        region: MuscleRegion.lats,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
@@ -202,8 +202,8 @@ void main() {
       ),
       MuscleGroup(
         id: 'm2',
-        name: 'Back',
-        region: MuscleRegion.back,
+        name: 'Lats',
+        region: MuscleRegion.lats,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],

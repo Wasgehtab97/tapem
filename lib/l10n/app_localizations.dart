@@ -805,6 +805,11 @@ abstract class AppLocalizations {
 
   /// Semantics label for unselected muscle group
   String a11yMgUnselected(Object name);
+
+  String get muscleCatUpperFront;
+  String get muscleCatUpperBack;
+  String get muscleCatCore;
+  String get muscleCatLower;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

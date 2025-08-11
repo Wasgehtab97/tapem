@@ -488,5 +488,13 @@
   "@a11yMgUnselected": {
     "description": "Semantics for unselected muscle group",
     "placeholders": {"name": {}}
-  }
+  },
+  "muscleCatUpperFront": "Upper body - front",
+  "@muscleCatUpperFront": {"description": "Section label for front upper body"},
+  "muscleCatUpperBack": "Upper body - back",
+  "@muscleCatUpperBack": {"description": "Section label for back upper body"},
+  "muscleCatCore": "Core",
+  "@muscleCatCore": {"description": "Section label for core"},
+  "muscleCatLower": "Lower body",
+  "@muscleCatLower": {"description": "Section label for lower body"}
 }

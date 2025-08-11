@@ -125,7 +125,7 @@ class _HarnessState extends State<_Harness> {
 void main() {
   final groups = [
     MuscleGroup(id: 'chest', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: 'legs', name: 'Legs', region: MuscleRegion.legs),
+    MuscleGroup(id: 'legs', name: 'Quadriceps', region: MuscleRegion.quadriceps),
   ];
   testWidgets('muscle filter reduces list', (tester) async {
     await tester.pumpWidget(

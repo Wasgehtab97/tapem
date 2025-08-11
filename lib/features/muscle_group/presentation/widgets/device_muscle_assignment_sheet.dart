@@ -40,27 +40,66 @@ class _DeviceMuscleAssignmentSheetState
 
   static const List<MuscleRegion> _order = [
     MuscleRegion.chest,
-    MuscleRegion.shoulders,
-    MuscleRegion.legs,
-    MuscleRegion.back,
-    MuscleRegion.arms,
-    MuscleRegion.core,
+    MuscleRegion.anteriorDeltoid,
+    MuscleRegion.biceps,
+    MuscleRegion.wristFlexors,
+    MuscleRegion.lats,
+    MuscleRegion.midBack,
+    MuscleRegion.posteriorDeltoid,
+    MuscleRegion.upperTrapezius,
+    MuscleRegion.triceps,
+    MuscleRegion.rectusAbdominis,
+    MuscleRegion.obliques,
+    MuscleRegion.transversusAbdominis,
+    MuscleRegion.quadriceps,
+    MuscleRegion.hamstrings,
+    MuscleRegion.glutes,
+    MuscleRegion.adductors,
+    MuscleRegion.abductors,
+    MuscleRegion.calves,
+    MuscleRegion.tibialisAnterior,
   ];
 
   String _regionLabel(MuscleRegion region) {
     switch (region) {
       case MuscleRegion.chest:
         return 'Chest';
-      case MuscleRegion.back:
-        return 'Back';
-      case MuscleRegion.shoulders:
-        return 'Shoulders';
-      case MuscleRegion.arms:
-        return 'Arms';
-      case MuscleRegion.legs:
-        return 'Legs';
-      case MuscleRegion.core:
-        return 'Core';
+      case MuscleRegion.anteriorDeltoid:
+        return 'Anterior Deltoid';
+      case MuscleRegion.biceps:
+        return 'Biceps';
+      case MuscleRegion.wristFlexors:
+        return 'Wrist Flexors';
+      case MuscleRegion.lats:
+        return 'Lats';
+      case MuscleRegion.midBack:
+        return 'Mid Back';
+      case MuscleRegion.posteriorDeltoid:
+        return 'Posterior Deltoid';
+      case MuscleRegion.upperTrapezius:
+        return 'Upper Trapezius';
+      case MuscleRegion.triceps:
+        return 'Triceps';
+      case MuscleRegion.rectusAbdominis:
+        return 'Rectus Abdominis';
+      case MuscleRegion.obliques:
+        return 'Obliques';
+      case MuscleRegion.transversusAbdominis:
+        return 'Transversus Abdominis';
+      case MuscleRegion.quadriceps:
+        return 'Quadriceps';
+      case MuscleRegion.hamstrings:
+        return 'Hamstrings';
+      case MuscleRegion.glutes:
+        return 'Glutes';
+      case MuscleRegion.adductors:
+        return 'Adductors';
+      case MuscleRegion.abductors:
+        return 'Abductors';
+      case MuscleRegion.calves:
+        return 'Calves';
+      case MuscleRegion.tibialisAnterior:
+        return 'Tibialis Anterior';
     }
   }
 
@@ -76,13 +115,8 @@ class _DeviceMuscleAssignmentSheetState
     for (final g in groups) {
       byRegion.putIfAbsent(g.region, () => []).add(g);
     }
-    const canonicalNames = {
-      MuscleRegion.chest: 'chest',
-      MuscleRegion.back: 'back',
-      MuscleRegion.shoulders: 'shoulders',
-      MuscleRegion.arms: 'arms',
-      MuscleRegion.legs: 'legs',
-      MuscleRegion.core: 'core',
+    final canonicalNames = {
+      for (var r in MuscleRegion.values) r: r.name.toLowerCase()
     };
     for (final r in MuscleRegion.values) {
       final list = byRegion[r];

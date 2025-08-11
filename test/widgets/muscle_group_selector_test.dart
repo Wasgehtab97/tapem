@@ -76,7 +76,7 @@ class FakeMuscleGroupProvider extends MuscleGroupProvider {
 void main() {
   final groups = [
     MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: '2', name: 'Back', region: MuscleRegion.back),
+    MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
   ];
 
   testWidgets('MuscleGroupSelector shows names and toggles', (tester) async {

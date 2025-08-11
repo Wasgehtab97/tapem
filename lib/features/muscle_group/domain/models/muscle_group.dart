@@ -1,4 +1,29 @@
-enum MuscleRegion { chest, back, shoulders, arms, core, legs }
+enum MuscleCategory { upperFront, upperBack, core, lower }
+
+enum MuscleRegion {
+  chest(MuscleCategory.upperFront),
+  anteriorDeltoid(MuscleCategory.upperFront),
+  biceps(MuscleCategory.upperFront),
+  wristFlexors(MuscleCategory.upperFront),
+  lats(MuscleCategory.upperBack),
+  midBack(MuscleCategory.upperBack),
+  posteriorDeltoid(MuscleCategory.upperBack),
+  upperTrapezius(MuscleCategory.upperBack),
+  triceps(MuscleCategory.upperBack),
+  rectusAbdominis(MuscleCategory.core),
+  obliques(MuscleCategory.core),
+  transversusAbdominis(MuscleCategory.core),
+  quadriceps(MuscleCategory.lower),
+  hamstrings(MuscleCategory.lower),
+  glutes(MuscleCategory.lower),
+  adductors(MuscleCategory.lower),
+  abductors(MuscleCategory.lower),
+  calves(MuscleCategory.lower),
+  tibialisAnterior(MuscleCategory.lower);
+
+  final MuscleCategory category;
+  const MuscleRegion(this.category);
+}
 
 class MuscleGroup {
   final String id;
@@ -11,13 +36,14 @@ class MuscleGroup {
   MuscleGroup({
     required this.id,
     required this.name,
-    this.region = MuscleRegion.core,
+    this.region = MuscleRegion.rectusAbdominis,
     List<String>? primaryDeviceIds,
     List<String>? secondaryDeviceIds,
     List<String>? exerciseIds,
-  }) : primaryDeviceIds = List.unmodifiable(primaryDeviceIds ?? []),
-       secondaryDeviceIds = List.unmodifiable(secondaryDeviceIds ?? []),
-       exerciseIds = List.unmodifiable(exerciseIds ?? []);
+  })
+      : primaryDeviceIds = List.unmodifiable(primaryDeviceIds ?? []),
+        secondaryDeviceIds = List.unmodifiable(secondaryDeviceIds ?? []),
+        exerciseIds = List.unmodifiable(exerciseIds ?? []);
 
   /// Convenience getter combining both device lists
   List<String> get deviceIds =>
@@ -45,7 +71,7 @@ class MuscleGroup {
         name: json['name'] as String? ?? '',
         region: MuscleRegion.values.firstWhere(
           (r) => r.name == json['region'],
-          orElse: () => MuscleRegion.core,
+          orElse: () => MuscleRegion.rectusAbdominis,
         ),
         primaryDeviceIds:
             (json['primaryDeviceIds'] as List<dynamic>? ?? [])
@@ -64,6 +90,7 @@ class MuscleGroup {
   Map<String, dynamic> toJson() => {
     'name': name,
     'region': region.name,
+    'majorCategory': region.category.name,
     'primaryDeviceIds': primaryDeviceIds,
     'secondaryDeviceIds': secondaryDeviceIds,
     'exerciseIds': exerciseIds,

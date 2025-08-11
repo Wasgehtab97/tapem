@@ -84,7 +84,7 @@ class _FakeAuthProvider extends ChangeNotifier implements AuthProvider {
 
 void main() {
   final groups = [
-    MuscleGroup(id: '1', name: 'Latissimus dorsi', region: MuscleRegion.back),
+    MuscleGroup(id: '1', name: 'Latissimus dorsi', region: MuscleRegion.lats),
   ];
 
   testWidgets('preview updates when selecting muscle groups', (tester) async {
