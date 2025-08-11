@@ -81,12 +81,17 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
                 ),
                 label: Text(
                   g.name,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 selected: _selected.contains(g.id),
                 selectedColor: theme.colorScheme.primary,
                 checkmarkColor: theme.colorScheme.onPrimary,
+                labelStyle: TextStyle(
+                  color: _selected.contains(g.id)
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface,
+                ),
                 onSelected: (_) => _toggle(g.id),
               ),
             ),
