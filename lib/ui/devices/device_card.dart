@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class DeviceCard extends StatelessWidget {
   final Device device;
   final VoidCallback? onTap;
-  const DeviceCard({super.key, required this.device, this.onTap});
+  final VoidCallback? onAssignMuscles;
+  final VoidCallback? onResetMuscles;
+
+  const DeviceCard({
+    super.key,
+    required this.device,
+    this.onTap,
+    this.onAssignMuscles,
+    this.onResetMuscles,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = device.description;
     final idText = device.id.toString();
+    final loc = AppLocalizations.of(context)!;
     return Semantics(
       label: '${device.name}, ${brand.isNotEmpty ? '$brand, ' : ''}ID $idText',
       button: true,
@@ -60,7 +71,38 @@ class DeviceCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('ID: $idText', style: theme.textTheme.labelSmall),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('ID: $idText', style: theme.textTheme.labelSmall),
+                          if (onAssignMuscles != null || onResetMuscles != null)
+                            PopupMenuButton<_Menu>(
+                              tooltip: loc.assignMuscleGroups,
+                              onSelected: (v) {
+                                switch (v) {
+                                  case _Menu.assign:
+                                    onAssignMuscles?.call();
+                                    break;
+                                  case _Menu.reset:
+                                    onResetMuscles?.call();
+                                    break;
+                                }
+                              },
+                              itemBuilder: (ctx) => [
+                                if (onAssignMuscles != null)
+                                  PopupMenuItem(
+                                    value: _Menu.assign,
+                                    child: Text(loc.assignMuscleGroups),
+                                  ),
+                                if (onResetMuscles != null)
+                                  PopupMenuItem(
+                                    value: _Menu.reset,
+                                    child: Text(loc.resetMuscleGroups),
+                                  ),
+                              ],
+                            ),
+                        ],
+                      ),
                       if (!device.isMulti &&
                           (device.primaryMuscleGroups.isNotEmpty ||
                               device.secondaryMuscleGroups.isNotEmpty))
@@ -85,4 +127,6 @@ class DeviceCard extends StatelessWidget {
     );
   }
 }
+
+enum _Menu { assign, reset }
 

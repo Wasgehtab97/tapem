@@ -779,6 +779,27 @@ abstract class AppLocalizations {
   /// Common save button
   String get commonSave;
 
+  /// Title for muscle group admin page
+  String get muscleAdminTitle;
+
+  /// Button to clear search and filters
+  String get resetFilters;
+
+  /// Menu item to assign muscle groups
+  String get assignMuscleGroups;
+
+  /// Menu item to reset muscle groups
+  String get resetMuscleGroups;
+
+  /// Confirmation message for resetting muscle groups
+  String get resetMuscleGroupsConfirm;
+
+  /// Chip label for sorting by name
+  String get filterNameChip;
+
+  /// Chip label for muscle filter
+  String get filterMuscleChip;
+
   /// Semantics label for selected muscle group
   String a11yMgSelected(Object name);
 

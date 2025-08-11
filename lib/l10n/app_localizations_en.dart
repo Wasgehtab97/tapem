@@ -377,6 +377,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonSave => 'Save';
 
   @override
+  String get muscleAdminTitle => 'Manage muscle groups';
+
+  @override
+  String get resetFilters => 'Reset filters';
+
+  @override
+  String get assignMuscleGroups => 'Assign muscle groups';
+
+  @override
+  String get resetMuscleGroups => 'Reset muscle groups';
+
+  @override
+  String get resetMuscleGroupsConfirm =>
+      'Clear primary and secondary muscle groups?';
+
+  @override
+  String get filterNameChip => 'Name';
+
+  @override
+  String get filterMuscleChip => 'Muscle';
+
+  @override
   String a11yMgSelected(Object name) {
     return 'Muscle group: $name, selected';
   }
