@@ -71,7 +71,7 @@ class _DeviceMuscleAssignmentSheetState
   }
 
   Map<MuscleRegion, MuscleGroup?> _canonical(List<MuscleGroup> groups) {
-    final map = {for (var r in MuscleRegion.values) r: null};
+    final map = <MuscleRegion, MuscleGroup?>{for (var r in MuscleRegion.values) r: null};
     final byRegion = <MuscleRegion, List<MuscleGroup>>{};
     for (final g in groups) {
       byRegion.putIfAbsent(g.region, () => []).add(g);
