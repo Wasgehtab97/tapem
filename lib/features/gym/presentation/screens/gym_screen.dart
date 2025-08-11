@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
@@ -112,7 +113,31 @@ class _GymScreenState extends State<GymScreen>
                           return Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
-                            child: DeviceCard(device: d),
+                            child: DeviceCard(
+                              device: d,
+                              onTap: () {
+                                final nav = Navigator.of(context);
+                                final idStr = d.id.toString();
+                                if (d.isMulti) {
+                                  nav.pushNamed(
+                                    AppRouter.exerciseList,
+                                    arguments: {
+                                      'gymId': gymId,
+                                      'deviceId': idStr,
+                                    },
+                                  );
+                                } else {
+                                  nav.pushNamed(
+                                    AppRouter.device,
+                                    arguments: {
+                                      'gymId': gymId,
+                                      'deviceId': idStr,
+                                      'exerciseId': idStr,
+                                    },
+                                  );
+                                }
+                              },
+                            ),
                           );
                         },
                       ),
