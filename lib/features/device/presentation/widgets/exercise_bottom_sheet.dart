@@ -26,8 +26,8 @@ class ExerciseBottomSheet extends StatefulWidget {
 class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   late TextEditingController _nameCtr;
   late TextEditingController _searchCtr;
-  final Set<String> _selectedGroupIds = {};
-  String _query = '';
+  List<String> _selectedGroupIds = [];
+  String _filter = '';
 
   @override
   void initState() {
@@ -96,20 +96,16 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               decoration: InputDecoration(
                 hintText: loc.exerciseSearchMuscleGroupsHint,
               ),
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) => setState(() => _filter = v),
             ),
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 240,
+            height: 280,
             child: MuscleGroupListSelector(
-              initialSelection: _selectedGroupIds.toList(),
-              filter: _query,
-              onChanged: (ids) => setState(() {
-                _selectedGroupIds
-                  ..clear()
-                  ..addAll(ids);
-              }),
+              initialSelection: _selectedGroupIds,
+              filter: _filter,
+              onChanged: (ids) => setState(() => _selectedGroupIds = ids),
             ),
           ),
           Row(
@@ -132,7 +128,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             widget.deviceId,
                             name,
                             userId,
-                            muscleGroupIds: _selectedGroupIds.toList(),
+                            muscleGroupIds: _selectedGroupIds,
                           );
                         } else {
                           await exProv.updateExercise(
@@ -141,11 +137,11 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             widget.exercise!.id,
                             name,
                             userId,
-                            muscleGroupIds: _selectedGroupIds.toList(),
+                            muscleGroupIds: _selectedGroupIds,
                           );
                           ex = widget.exercise!.copyWith(
                             name: name,
-                            muscleGroupIds: _selectedGroupIds.toList(),
+                            muscleGroupIds: _selectedGroupIds,
                           );
                         }
                         await context
@@ -153,7 +149,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                             .assignExercise(
                               context,
                               ex.id,
-                              _selectedGroupIds.toList(),
+                              _selectedGroupIds,
                             );
                         if (!mounted) return;
                         Navigator.pop(context, ex);
