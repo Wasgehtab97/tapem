@@ -23,12 +23,29 @@ class MuscleGroupListSelector extends StatefulWidget {
 }
 
 class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
-  late Set<String> _selected;
+  late List<String> _selected;
 
   @override
   void initState() {
     super.initState();
-    _selected = widget.initialSelection.toSet();
+    _selected = List.of(widget.initialSelection);
+  }
+
+  String _regionFallbackName(MuscleRegion r) {
+    switch (r) {
+      case MuscleRegion.chest:
+        return 'Chest';
+      case MuscleRegion.back:
+        return 'Back';
+      case MuscleRegion.shoulders:
+        return 'Shoulders';
+      case MuscleRegion.arms:
+        return 'Arms';
+      case MuscleRegion.legs:
+        return 'Legs';
+      case MuscleRegion.core:
+        return 'Core';
+    }
   }
 
   void _toggle(String id) {
@@ -38,8 +55,8 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       } else {
         _selected.add(id);
       }
-      widget.onChanged(_selected.toList());
     });
+    widget.onChanged(_selected);
   }
 
   @override
@@ -53,7 +70,10 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     }
 
     final groups = prov.groups
-        .where((g) => g.name.toLowerCase().contains(widget.filter.toLowerCase()))
+        .where((g) {
+          final name = g.name.isNotEmpty ? g.name : _regionFallbackName(g.region);
+          return name.toLowerCase().contains(widget.filter.toLowerCase());
+        })
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -67,23 +87,40 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       itemBuilder: (context, index) {
         final g = groups[index];
         final selected = _selected.contains(g.id);
-        return ListTile(
+        final displayName = g.name.isNotEmpty ? g.name : _regionFallbackName(g.region);
+        final textStyle = theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface);
+        return InkWell(
           onTap: () => _toggle(g.id),
-          leading: CircleAvatar(
-            backgroundColor: colorForRegion(g.region, theme),
-          ),
-          title: Text(
-            g.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: Checkbox(
-            value: selected,
-            onChanged: (_) => _toggle(g.id),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: colorForRegion(g.region, theme),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle,
+                  ),
+                ),
+                Checkbox(
+                  value: selected,
+                  onChanged: (_) => _toggle(g.id),
+                ),
+              ],
+            ),
           ),
         );
       },
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) => Divider(
+        color: theme.colorScheme.outlineVariant,
+        height: 1,
+      ),
       itemCount: groups.length,
     );
   }
