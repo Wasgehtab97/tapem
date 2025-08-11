@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/features/muscle_group/presentation/widgets/device_muscle_assignment_sheet.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class FakeMuscleGroupProvider extends ChangeNotifier implements MuscleGroupProvider {
   final List<MuscleGroup> _groups;
@@ -47,6 +48,8 @@ Future<void> _openSheet(WidgetTester tester, MuscleGroupProvider prov) async {
     ChangeNotifierProvider<MuscleGroupProvider>.value(
       value: prov,
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => TextButton(
@@ -74,7 +77,7 @@ Future<void> _openSheet(WidgetTester tester, MuscleGroupProvider prov) async {
 }
 
 void main() {
-  testWidgets('shows six unique primary options with arms and core', (tester) async {
+  testWidgets('tab counts update and exclusivity', (tester) async {
     final prov = FakeMuscleGroupProvider([
       MuscleGroup(id: 'c1', name: 'Chest', region: MuscleRegion.chest),
       MuscleGroup(id: 'c2', name: 'Pecs', region: MuscleRegion.chest),
@@ -88,11 +91,30 @@ void main() {
 
     await _openSheet(tester, prov);
 
-    expect(find.byType(Radio), findsNWidgets(6));
-    expect(find.bySemanticsLabel('Biceps, primär auswählen'), findsOneWidget);
-    expect(find.bySemanticsLabel('Rectus Abdominis, primär auswählen'), findsOneWidget);
-    expect(find.bySemanticsLabel('Chest, primär auswählen'), findsOneWidget);
-    expect(find.bySemanticsLabel('Lats, primär auswählen'), findsOneWidget);
+    // initially counts 0 / 0
+    expect(find.text('Primary (0)'), findsOneWidget);
+    expect(find.text('Secondary (0)'), findsOneWidget);
+
+    // select a primary
+    await tester.tap(find.text('Biceps').first);
+    await tester.pump();
+    expect(find.text('Primary (1)'), findsOneWidget);
+
+    // switch to secondary tab and select two
+    await tester.tap(find.text('Secondary (0)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lats').first);
+    await tester.pump();
+    await tester.tap(find.text('Mid Back').first);
+    await tester.pump();
+    expect(find.text('Secondary (2)'), findsOneWidget);
+
+    // selecting primary removes from secondary
+    await tester.tap(find.text('Primary (1)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lats').first);
+    await tester.pump();
+    expect(find.text('Secondary (1)'), findsOneWidget);
   });
 
   testWidgets('saving creates missing region and assigns', (tester) async {
@@ -102,10 +124,10 @@ void main() {
 
     await _openSheet(tester, prov);
 
-    await tester.tap(find.bySemanticsLabel('Biceps, primär auswählen'));
+    await tester.tap(find.text('Biceps').first);
     await tester.pump();
 
-    await tester.tap(find.text('Speichern'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(prov.ensuredRegion, MuscleRegion.biceps);
@@ -120,7 +142,9 @@ void main() {
 
     await _openSheet(tester, prov);
 
-    await tester.tap(find.text('Zurücksetzen'));
+    await tester.tap(find.text('Reset'));
+    await tester.pump();
+    await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
 
     expect(prov.lastPrimary, isEmpty);

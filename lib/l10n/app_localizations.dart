@@ -794,6 +794,27 @@ abstract class AppLocalizations {
   /// Confirmation message for resetting muscle groups
   String get resetMuscleGroupsConfirm;
 
+  /// Generic muscle groups title
+  String get muscleGroupTitle;
+
+  /// Tab label for primary muscle groups
+  String get muscleTabsPrimary;
+
+  /// Tab label for secondary muscle groups
+  String get muscleTabsSecondary;
+
+  /// Label for reset button
+  String get reset;
+
+  /// Empty state text for primary tab
+  String get emptyPrimary;
+
+  /// Empty state text for secondary tab
+  String get emptySecondary;
+
+  /// Validation message when no primary group selected
+  String get mustSelectPrimary;
+
   /// Chip label for sorting by name
   String get filterNameChip;
 
