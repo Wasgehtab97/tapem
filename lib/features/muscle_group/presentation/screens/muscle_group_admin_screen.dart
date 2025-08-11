@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
@@ -7,7 +8,10 @@ import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/muscle_group/presentation/widgets/device_muscle_assignment_sheet.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/common/filter_chips_row.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
+import 'package:tapem/ui/common/search_bar.dart';
 import 'package:tapem/ui/devices/device_card.dart';
 
 class MuscleGroupAdminScreen extends StatefulWidget {
@@ -18,6 +22,7 @@ class MuscleGroupAdminScreen extends StatefulWidget {
 }
 
 class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
+  final TextEditingController _controller = TextEditingController();
   String _query = '';
   Set<String> _muscles = {};
   SortOrder _sort = SortOrder.az;
@@ -37,6 +42,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -88,58 +94,139 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     }
   }
 
+  Future<void> _resetAssignments(Device d) async {
+    final loc = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.resetMuscleGroups),
+        content: Text(loc.resetMuscleGroupsConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.resetMuscleGroups),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await context
+        .read<MuscleGroupProvider>()
+        .updateDeviceAssignments(context, d.uid, [], []);
+    context.read<DeviceProvider>().applyMuscleAssignments(d.uid, [], []);
+    HapticFeedback.lightImpact();
+  }
+
+  void _resetFilters() {
+    _controller.clear();
+    setState(() {
+      _query = '';
+      _muscles = {};
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final deviceProv = context.watch<DeviceProvider>();
     final devices = _filtered(deviceProv.devices);
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Muskelgruppen verwalten')),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SearchAndFilters(
-                query: _query,
-                onQuery: _onQuery,
-                sort: _sort,
-                onSort: (v) => setState(() => _sort = v),
-                muscleFilterIds: _muscles,
-                onMuscleFilter: (v) => setState(() => _muscles = v),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            title: Text(loc.muscleAdminTitle),
+            actions: [
+              IconButton(
+                tooltip: loc.resetFilters,
+                icon: const Icon(Icons.filter_alt_off),
+                onPressed: _resetFilters,
+              ),
+            ],
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SearchHeaderDelegate(
+              child: Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Column(
+                  children: [
+                    SearchBar(
+                      controller: _controller,
+                      onChanged: _onQuery,
+                      hint: loc.multiDeviceSearchHint,
+                    ),
+                    const SizedBox(height: 12),
+                    FilterChipsRow(
+                      sort: _sort,
+                      onSort: (v) => setState(() => _sort = v),
+                      muscleFilterIds: _muscles,
+                      onMuscleFilter: (v) => setState(() => _muscles = v),
+                      onReset: _resetFilters,
+                    ),
+                  ],
+                ),
+              ),
+              height: 120,
+            ),
+          ),
+          if (deviceProv.isLoading)
+            const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()))
+          else if (devices.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Text(loc.gymNoDevices)),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) {
+                  final d = devices[i];
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: DeviceCard(
+                      device: d,
+                      onTap: () => _openAssignSheet(d),
+                      onAssignMuscles: () => _openAssignSheet(d),
+                      onResetMuscles: () => _resetAssignments(d),
+                    ),
+                  );
+                },
+                childCount: devices.length,
               ),
             ),
-            Expanded(
-              child: deviceProv.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : devices.isEmpty
-                      ? ListView(
-                          children: [
-                            SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.5,
-                              child:
-                                  const Center(child: Text('Keine Geräte gefunden')),
-                            ),
-                          ],
-                        )
-                      : ListView.builder(
-                          itemCount: devices.length,
-                          itemBuilder: (ctx, i) {
-                            final d = devices[i];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              child: DeviceCard(
-                                device: d,
-                                onTap: () => _openAssignSheet(d),
-                              ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
+  }
+}
+
+class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+  _SearchHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant _SearchHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
   }
 }

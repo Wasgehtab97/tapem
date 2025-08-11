@@ -26,6 +26,23 @@ class FakeDeviceProvider extends ChangeNotifier implements DeviceProvider {
   @override
   Future<void> loadDevices(String gymId) async {}
   @override
+  void applyMuscleAssignments(String deviceId, List<String> primary,
+      List<String> secondary) {
+    final i = _devices.indexWhere((d) => d.uid == deviceId);
+    if (i != -1) {
+      _devices[i] = _devices[i].copyWith(
+        primaryMuscleGroups: primary,
+        secondaryMuscleGroups: secondary,
+      );
+      notifyListeners();
+    }
+  }
+
+  @override
+  void patchDeviceGroups(
+      String deviceId, List<String> primary, List<String> secondary) {}
+
+  @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -51,6 +68,29 @@ class FakeMuscleGroupProvider extends ChangeNotifier
 }
 
 void main() {
+  testWidgets('shows header title', (tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => FakeAuthProvider()),
+          ChangeNotifierProvider<DeviceProvider>(
+              create: (_) => FakeDeviceProvider(const [])),
+          ChangeNotifierProvider<MuscleGroupProvider>(
+              create: (_) => FakeMuscleGroupProvider(const [])),
+        ],
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MuscleGroupAdminScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('Muskelgruppen verwalten'), findsOneWidget);
+  });
+
   testWidgets('lists non-multi devices and filters by muscle', (tester) async {
     final devices = [
       Device(
@@ -131,5 +171,136 @@ void main() {
     await tester.tap(find.text('A'));
     await tester.pumpAndSettle();
     expect(find.text('A – Muskelgruppen'), findsOneWidget);
+  });
+
+  testWidgets('reset filter clears search and chips', (tester) async {
+    final devices = [
+      Device(
+        uid: '1',
+        id: 1,
+        name: 'A',
+        description: 'BrandA',
+        primaryMuscleGroups: const ['m1'],
+      ),
+      Device(
+        uid: '3',
+        id: 3,
+        name: 'C',
+        description: 'BrandC',
+        primaryMuscleGroups: const ['m2'],
+      ),
+    ];
+
+    final groups = [
+      MuscleGroup(
+        id: 'm1',
+        name: 'Chest',
+        region: MuscleRegion.chest,
+        primaryDeviceIds: const [],
+        secondaryDeviceIds: const [],
+        exerciseIds: const [],
+      ),
+      MuscleGroup(
+        id: 'm2',
+        name: 'Back',
+        region: MuscleRegion.back,
+        primaryDeviceIds: const [],
+        secondaryDeviceIds: const [],
+        exerciseIds: const [],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => FakeAuthProvider()),
+          ChangeNotifierProvider<DeviceProvider>(
+              create: (_) => FakeDeviceProvider(devices)),
+          ChangeNotifierProvider<MuscleGroupProvider>(
+              create: (_) => FakeMuscleGroupProvider(groups)),
+        ],
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MuscleGroupAdminScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'A');
+    await tester.pumpAndSettle();
+    expect(find.text('C'), findsNothing);
+
+    await tester.tap(find.text('Muskel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chest'));
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('A'), findsOneWidget);
+
+    await tester.tap(find.text('Filter zurücksetzen'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('C'), findsOneWidget);
+  });
+
+  testWidgets('card menu reset clears muscle assignments', (tester) async {
+    final devices = [
+      Device(
+        uid: '1',
+        id: 1,
+        name: 'A',
+        description: 'BrandA',
+        primaryMuscleGroups: const ['m1'],
+      ),
+    ];
+
+    final groups = [
+      MuscleGroup(
+        id: 'm1',
+        name: 'Chest',
+        region: MuscleRegion.chest,
+        primaryDeviceIds: const [],
+        secondaryDeviceIds: const [],
+        exerciseIds: const [],
+      ),
+    ];
+
+    final deviceProv = FakeDeviceProvider(devices);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => FakeAuthProvider()),
+          ChangeNotifierProvider<DeviceProvider>(create: (_) => deviceProv),
+          ChangeNotifierProvider<MuscleGroupProvider>(
+              create: (_) => FakeMuscleGroupProvider(groups)),
+        ],
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MuscleGroupAdminScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(deviceProv.devices.first.primaryMuscleGroups, isNotEmpty);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Muskelgruppen zurücksetzen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Muskelgruppen zurücksetzen'));
+    await tester.pumpAndSettle();
+
+    expect(deviceProv.devices.first.primaryMuscleGroups, isEmpty);
+    expect(find.text('Chest'), findsNothing);
   });
 }
