@@ -67,15 +67,15 @@ class NfcScanButton extends StatelessWidget {
               if (dev.isMulti) {
                 Navigator.of(context).pushNamed(
                   AppRouter.exerciseList,
-                  arguments: {'gymId': gymId, 'deviceId': dev.id},
+                  arguments: {'gymId': gymId, 'deviceId': dev.uid},
                 );
               } else {
                 Navigator.of(context).pushNamed(
                   AppRouter.device,
                   arguments: {
                     'gymId': gymId,
-                    'deviceId': dev.id,
-                    'exerciseId': dev.id,
+                    'deviceId': dev.uid,
+                    'exerciseId': dev.uid,
                   },
                 );
               }
