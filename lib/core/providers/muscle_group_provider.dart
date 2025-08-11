@@ -12,6 +12,8 @@ import '../../features/muscle_group/domain/models/muscle_group.dart';
 import '../../features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
 import '../../features/muscle_group/domain/usecases/save_muscle_group.dart';
 import '../../features/muscle_group/domain/usecases/delete_muscle_group.dart';
+import '../providers/device_provider.dart';
+import '../../features/muscle_group/domain/usecases/ensure_region_group.dart';
 import '../../features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 import '../../features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../../features/device/data/repositories/device_repository_impl.dart';
@@ -27,6 +29,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   final GetHistoryForDevice _getHistory;
   final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
   final SetDeviceMuscleGroupsUseCase _setDeviceGroups;
+  final EnsureRegionGroup _ensureRegionGroup;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
@@ -35,6 +38,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     GetHistoryForDevice? getHistory,
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
     SetDeviceMuscleGroupsUseCase? setDeviceGroups,
+    EnsureRegionGroup? ensureRegionGroup,
   }) : _getGroups =
            getGroups ??
            GetMuscleGroupsForGym(
@@ -62,6 +66,11 @@ class MuscleGroupProvider extends ChangeNotifier {
            setDeviceGroups ??
            SetDeviceMuscleGroupsUseCase(
              DeviceRepositoryImpl(FirestoreDeviceSource()),
+           ),
+       _ensureRegionGroup =
+           ensureRegionGroup ??
+           EnsureRegionGroup(
+             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
            );
 
   bool _isLoading = false;
@@ -73,6 +82,14 @@ class MuscleGroupProvider extends ChangeNotifier {
   String? get error => _error;
   List<MuscleGroup> get groups => List.unmodifiable(_groups);
   Map<String, int> get counts => Map.unmodifiable(_counts);
+
+  Future<String?> ensureRegionGroup(
+      BuildContext context, MuscleRegion region) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return null;
+    return _ensureRegionGroup.execute(gymId, region);
+  }
 
   Future<void> loadGroups(BuildContext context) async {
     _isLoading = true;
@@ -204,6 +221,9 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
 
+    secondaryGroupIds =
+        secondaryGroupIds.where((id) => !primaryGroupIds.contains(id)).toList();
+
     for (final g in _groups) {
       final isPrimary = primaryGroupIds.contains(g.id);
       final isSecondary = secondaryGroupIds.contains(g.id);
@@ -235,6 +255,15 @@ class MuscleGroupProvider extends ChangeNotifier {
       primaryGroupIds,
       secondaryGroupIds,
     );
+
+    try {
+      final deviceProv = Provider.of<DeviceProvider>(context, listen: false);
+      deviceProv.applyMuscleAssignments(
+        deviceId,
+        primaryGroupIds,
+        secondaryGroupIds,
+      );
+    } catch (_) {}
 
     await loadGroups(context);
   }

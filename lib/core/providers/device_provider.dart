@@ -111,6 +111,14 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyMuscleAssignments(
+    String deviceId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  ) {
+    patchDeviceGroups(deviceId, primaryGroups, secondaryGroups);
+  }
+
   /// Lädt Gerätedaten, letzte Session und Notiz
   Future<void> loadDevice({
     required String gymId,

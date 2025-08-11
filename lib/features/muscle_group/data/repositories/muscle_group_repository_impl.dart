@@ -21,4 +21,9 @@ class MuscleGroupRepositoryImpl implements MuscleGroupRepository {
   Future<void> deleteMuscleGroup(String gymId, String groupId) {
     return _source.deleteMuscleGroup(gymId, groupId);
   }
+
+  @override
+  Future<String> ensureRegionGroup(String gymId, MuscleRegion region) {
+    return _source.ensureRegionGroup(gymId, region);
+  }
 }
