@@ -1,365 +1,141 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
-
-import '../../../../core/providers/gym_provider.dart';
-import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/muscle_group_provider.dart';
-import '../../domain/models/muscle_group.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/features/muscle_group/presentation/widgets/device_muscle_assignment_sheet.dart';
+import 'package:tapem/ui/common/search_and_filters.dart';
+import 'package:tapem/ui/devices/device_card.dart';
 
 class MuscleGroupAdminScreen extends StatefulWidget {
-  const MuscleGroupAdminScreen({Key? key}) : super(key: key);
+  const MuscleGroupAdminScreen({super.key});
 
   @override
   State<MuscleGroupAdminScreen> createState() => _MuscleGroupAdminScreenState();
 }
 
 class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
-  final Uuid _uuid = const Uuid();
-  final TextEditingController _filterCtr = TextEditingController();
-  String _filter = '';
-
-  @override
-  void dispose() {
-    _filterCtr.dispose();
-    super.dispose();
-  }
+  String _query = '';
+  Set<String> _muscles = {};
+  SortOrder _sort = SortOrder.az;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      final gymId = auth.gymCode ?? '';
+      context.read<DeviceProvider>().loadDevices(gymId);
       context.read<MuscleGroupProvider>().loadGroups(context);
     });
   }
 
-  Future<void> _showEditDialog({MuscleGroup? group}) async {
-    final devices =
-        context.read<GymProvider>().devices.where((d) => !d.isMulti).toList();
-    final Set<String> selectedDevices = <String>{};
-    if (group != null) {
-      selectedDevices
-        ..addAll(group.primaryDeviceIds)
-        ..addAll(group.secondaryDeviceIds);
-    }
-    final selectedRegions =
-        group == null ? <MuscleRegion>[] : <MuscleRegion>[group.region];
-
-    showDialog<void>(
-      context: context,
-      builder:
-          (ctx) => StatefulBuilder(
-            builder:
-                (ctx2, setSt) => AlertDialog(
-                  title: Text(
-                    group == null
-                        ? 'Muskelgruppe hinzufügen'
-                        : 'Muskelgruppe bearbeiten',
-                  ),
-                  content: SizedBox(
-                    width: 300,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Wrap(
-                          spacing: 4,
-                          children: [
-                            for (final r in MuscleRegion.values)
-                              FilterChip(
-                                label: Text(r.name),
-                                selected: selectedRegions.contains(r),
-                                selectedColor:
-                                    selectedRegions.contains(r)
-                                        ? (selectedRegions.indexOf(r) == 0
-                                            ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                            : Theme.of(
-                                              context,
-                                            ).colorScheme.secondary)
-                                        : null,
-                                checkmarkColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                onSelected:
-                                    (v) => setSt(() {
-                                      if (v) {
-                                        if (!selectedRegions.contains(r)) {
-                                          selectedRegions.add(r);
-                                        }
-                                      } else {
-                                        selectedRegions.remove(r);
-                                      }
-                                    }),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Geräte',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(
-                          height: 150,
-                          child: ListView(
-                            children: [
-                              for (final d in devices)
-                                CheckboxListTile(
-                                  value: selectedDevices.contains(d.uid),
-                                  title: Text('${d.name} (${d.id})'),
-                                  onChanged:
-                                      (v) => setSt(() {
-                                        if (v == true) {
-                                          selectedDevices.add(d.uid);
-                                        } else {
-                                          selectedDevices.remove(d.uid);
-                                        }
-                                      }),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx2).pop(),
-                      child: const Text('Abbrechen'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final prov = context.read<MuscleGroupProvider>();
-                        final deviceIds = selectedDevices.toList();
-                        if (selectedRegions.isEmpty || deviceIds.isEmpty) {
-                          return;
-                        }
-                        for (var i = 0; i < selectedRegions.length; i++) {
-                          final r = selectedRegions[i];
-                          final id = group?.id ?? _uuid.v4();
-                          final newGroup = MuscleGroup(
-                            id: id,
-                            name: '',
-                            region: r,
-                            primaryDeviceIds: i == 0 ? deviceIds : const [],
-                            secondaryDeviceIds: i == 0 ? const [] : deviceIds,
-                            exerciseIds: const [],
-                          );
-                          await prov.saveGroup(context, newGroup);
-                        }
-                        if (!mounted) {
-                          return;
-                        }
-                        Navigator.of(ctx2).pop();
-                      },
-                      child: const Text('Speichern'),
-                    ),
-                  ],
-                ),
-          ),
-    );
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
-  Future<void> _showDeviceDialog(String deviceId, String deviceName) async {
-    final prov = context.read<MuscleGroupProvider>();
-    final selectedRegions = <MuscleRegion>[];
-    for (final g in prov.groups) {
-      if (g.primaryDeviceIds.contains(deviceId)) {
-        selectedRegions.insert(0, g.region);
-      } else if (g.secondaryDeviceIds.contains(deviceId)) {
-        selectedRegions.add(g.region);
-      }
-    }
+  void _onQuery(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      setState(() => _query = v);
+    });
+  }
 
-    final Map<MuscleRegion, String> groupIds = {};
-    for (final g in prov.groups) {
-      groupIds[g.region] = g.id;
-    }
+  List<Device> _filtered(List<Device> devices) {
+    final q = _query.toLowerCase();
+    final res = devices
+        .where((d) {
+          if (d.isMulti) return false;
+          final nameMatch = d.name.toLowerCase().contains(q);
+          final brandMatch = d.description.toLowerCase().contains(q);
+          return nameMatch || brandMatch;
+        })
+        .where((d) {
+          if (_muscles.isEmpty) return true;
+          final all = {...d.primaryMuscleGroups, ...d.secondaryMuscleGroups};
+          return all.any(_muscles.contains);
+        })
+        .toList();
+    res.sort((a, b) =>
+        _sort == SortOrder.az ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
+    return res;
+  }
 
-    showDialog<void>(
+  Future<void> _openAssignSheet(Device d) async {
+    await showModalBottomSheet(
       context: context,
-      builder:
-          (ctx) => StatefulBuilder(
-            builder:
-                (ctx2, setSt) => AlertDialog(
-                  title: Text('Gerät: $deviceName'),
-                  content: SizedBox(
-                    width: 300,
-                    child: Wrap(
-                      spacing: 4,
-                      children: [
-                        for (final r in MuscleRegion.values)
-                          FilterChip(
-                            label: Text(r.name),
-                            selected: selectedRegions.contains(r),
-                            selectedColor:
-                                selectedRegions.contains(r)
-                                    ? (selectedRegions.indexOf(r) == 0
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(
-                                          context,
-                                        ).colorScheme.secondary)
-                                    : null,
-                            checkmarkColor:
-                                Theme.of(context).colorScheme.onPrimary,
-                            onSelected:
-                                (v) => setSt(() {
-                                  if (v) {
-                                    if (!selectedRegions.contains(r)) {
-                                      selectedRegions.add(r);
-                                    }
-                                  } else {
-                                    selectedRegions.remove(r);
-                                  }
-                                }),
-                          ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx2).pop(),
-                      child: const Text('Abbrechen'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final List<String> primary = [];
-                        final List<String> secondary = [];
-                        if (selectedRegions.isNotEmpty) {
-                          final id = groupIds[selectedRegions.first];
-                          if (id != null) {
-                            primary.add(id);
-                          }
-                          for (final r in selectedRegions.skip(1)) {
-                            final sId = groupIds[r];
-                            if (sId != null) {
-                              secondary.add(sId);
-                            }
-                          }
-                        }
-                        await prov.updateDeviceAssignments(
-                          context,
-                          deviceId,
-                          primary,
-                          secondary,
-                        );
-                        if (mounted) {
-                          Navigator.of(ctx2).pop();
-                        }
-                      },
-                      child: const Text('Speichern'),
-                    ),
-                  ],
-                ),
-          ),
+      isScrollControlled: true,
+      builder: (_) => DeviceMuscleAssignmentSheet(
+        deviceId: d.uid,
+        deviceName: d.name,
+        initialPrimary: d.primaryMuscleGroups,
+        initialSecondary: d.secondaryMuscleGroups,
+      ),
     );
+    final auth = context.read<AuthProvider>();
+    final gymId = auth.gymCode ?? '';
+    await context.read<DeviceProvider>().loadDevices(gymId);
+    await context.read<MuscleGroupProvider>().loadGroups(context);
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final groupProv = context.watch<MuscleGroupProvider>();
-    final gymProv = context.watch<GymProvider>();
-
-    final devices =
-        gymProv.devices.where((d) {
-          return groupProv.groups.any(
-            (g) =>
-                g.primaryDeviceIds.contains(d.uid) ||
-                g.secondaryDeviceIds.contains(d.uid),
-          );
-        }).toList();
-
-    final filteredDevices =
-        devices.where((d) {
-          if (_filter.isEmpty) {
-            return true;
-          }
-          final f = _filter.toLowerCase();
-          return groupProv.groups.any(
-            (g) =>
-                g.primaryDeviceIds.contains(d.uid) &&
-                g.region.name.toLowerCase().contains(f),
-          );
-        }).toList();
+    final deviceProv = context.watch<DeviceProvider>();
+    final devices = _filtered(deviceProv.devices);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Muskelgruppen verwalten')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showEditDialog(),
-        child: const Icon(Icons.add),
-      ),
-      body:
-          groupProv.isLoading || gymProv.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: _filterCtr,
-                      decoration: const InputDecoration(
-                        labelText: 'Filter Primärgruppe',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (v) => setState(() => _filter = v),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filteredDevices.length,
-                      itemBuilder: (_, i) {
-                        final device = filteredDevices[i];
-                        final primary = <MuscleGroup>[];
-                        final secondary = <MuscleGroup>[];
-                        for (final g in groupProv.groups) {
-                          if (g.primaryDeviceIds.contains(device.uid)) {
-                            primary.add(g);
-                          } else if (g.secondaryDeviceIds.contains(
-                            device.uid,
-                          )) {
-                            secondary.add(g);
-                          }
-                        }
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          child: ListTile(
-                            leading: Text('${device.id}'),
-                            title: Text(device.name),
-                            subtitle: Wrap(
-                              spacing: 4,
-                              children: [
-                                for (final g in primary)
-                                  Chip(
-                                    label: Text(g.region.name),
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.primary,
-                                    labelStyle: TextStyle(
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                for (final g in secondary)
-                                  Chip(
-                                    label: Text(g.region.name),
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.secondary,
-                                  ),
-                              ],
-                            ),
-                            onTap:
-                                () =>
-                                    _showDeviceDialog(device.uid, device.name),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SearchAndFilters(
+                query: _query,
+                onQuery: _onQuery,
+                sort: _sort,
+                onSort: (v) => setState(() => _sort = v),
+                muscleFilterIds: _muscles,
+                onMuscleFilter: (v) => setState(() => _muscles = v),
               ),
+            ),
+            Expanded(
+              child: deviceProv.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : devices.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              child:
+                                  const Center(child: Text('Keine Geräte gefunden')),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          itemCount: devices.length,
+                          itemBuilder: (ctx, i) {
+                            final d = devices[i];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: DeviceCard(
+                                device: d,
+                                onTap: () => _openAssignSheet(d),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
