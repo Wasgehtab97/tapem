@@ -117,7 +117,7 @@ class _GymScreenState extends State<GymScreen>
                               device: d,
                               onTap: () {
                                 final nav = Navigator.of(context);
-                                final idStr = d.id.toString();
+                                final idStr = d.uid;
                                 if (d.isMulti) {
                                   nav.pushNamed(
                                     AppRouter.exerciseList,
