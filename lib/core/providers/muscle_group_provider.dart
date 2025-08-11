@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
+import 'package:uuid/uuid.dart';
 
 import "../../main.dart";
 import '../providers/auth_provider.dart';
@@ -134,6 +136,26 @@ class MuscleGroupProvider extends ChangeNotifier {
     if (gymId == null) return;
     await _deleteGroup.execute(gymId, groupId);
     await loadGroups(context);
+  }
+
+  Future<MuscleGroup> getOrCreateByRegion(
+    BuildContext ctx,
+    MuscleRegion region, {
+    String? defaultName,
+  }) async {
+    final existing = _groups.firstWhereOrNull((g) => g.region == region);
+    if (existing != null) return existing;
+    final g = MuscleGroup(
+      id: const Uuid().v4(),
+      name: defaultName ?? region.toString(),
+      region: region,
+      primaryDeviceIds: const [],
+      secondaryDeviceIds: const [],
+      exerciseIds: const [],
+    );
+    await saveGroup(ctx, g);
+    await loadGroups(ctx);
+    return _groups.firstWhereOrNull((x) => x.id == g.id) ?? g;
   }
 
   Future<void> assignDevice(

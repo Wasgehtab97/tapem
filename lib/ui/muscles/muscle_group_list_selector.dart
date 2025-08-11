@@ -7,21 +7,20 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'muscle_group_color.dart';
 
 class MuscleGroupListSelector extends StatefulWidget {
-  final String? deviceId;
   final List<String> initialSelection;
   final ValueChanged<List<String>> onChanged;
   final String filter;
 
   const MuscleGroupListSelector({
     super.key,
-    this.deviceId,
     required this.initialSelection,
     required this.onChanged,
     this.filter = '',
   });
 
   @override
-  State<MuscleGroupListSelector> createState() => _MuscleGroupListSelectorState();
+  State<MuscleGroupListSelector> createState() =>
+      _MuscleGroupListSelectorState();
 }
 
 class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
@@ -61,16 +60,30 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     }
   }
 
+  Future<String> _ensureIdForRegion(
+    MuscleRegion region,
+    String idOrRegionKey,
+  ) async {
+    final prov = context.read<MuscleGroupProvider>();
+    if (prov.groups.any((g) => g.id == idOrRegionKey)) {
+      return idOrRegionKey;
+    }
+    final g = await prov.getOrCreateByRegion(
+      context,
+      region,
+      defaultName: _regionFallbackName(region),
+    );
+    return g.id;
+  }
+
   void _emit() => widget.onChanged(
         _primaryId == null
             ? []
-            : [
-                _primaryId!,
-                ..._selected.where((id) => id != _primaryId),
-              ],
+            : [_primaryId!, ..._selected.where((x) => x != _primaryId)],
       );
 
-  void _toggleSelect(String id) {
+  void _toggleSelect(String idOrRegionKey, MuscleRegion region) async {
+    final id = await _ensureIdForRegion(region, idOrRegionKey);
     setState(() {
       if (_selected.contains(id)) {
         _selected.remove(id);
@@ -86,9 +99,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   }
 
   void _setPrimary(String id) {
-    if (!_selected.contains(id)) {
-      _selected.add(id);
-    }
+    if (!_selected.contains(id)) _selected.add(id);
     setState(() => _primaryId = id);
     _emit();
   }
@@ -102,18 +113,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       final current = canonical[g.region];
       if (current == null) {
         canonical[g.region] = g;
-        continue;
-      }
-
-      final preferByDevice = widget.deviceId != null &&
-          (g.primaryDeviceIds.contains(widget.deviceId) ||
-              g.secondaryDeviceIds.contains(widget.deviceId));
-      final currentByDevice = widget.deviceId != null &&
-          (current.primaryDeviceIds.contains(widget.deviceId) ||
-              current.secondaryDeviceIds.contains(widget.deviceId));
-      final preferByName = g.name.isNotEmpty && current.name.isEmpty;
-
-      if ((preferByDevice && !currentByDevice) || preferByName) {
+      } else if (current.name.isEmpty && g.name.isNotEmpty) {
         canonical[g.region] = g;
       }
     }
@@ -136,12 +136,13 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     final entries = <_Entry>[];
     for (final r in _ordered) {
       final g = canonical[r];
-      var name = g != null && g.name.isNotEmpty ? g.name : _regionFallbackName(r);
-      if (g == null) {
-        name = '$name - not configured';
-      }
+      final name =
+          g != null && g.name.isNotEmpty ? g.name : _regionFallbackName(r);
       if (name.toLowerCase().contains(widget.filter.toLowerCase())) {
-        entries.add(_Entry(region: r, group: g, displayName: name));
+        final key = g?.id ?? r.name;
+        entries.add(
+          _Entry(region: r, group: g, displayName: name, key: key),
+        );
       }
     }
 
@@ -149,64 +150,55 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       return Center(child: Text(loc.exerciseNoMuscleGroups));
     }
 
-    final Color primaryFill = Colors.green;
-    final Color secondaryFill = Colors.blueAccent;
+    final green = theme.colorScheme.primary;
+    final blue = theme.colorScheme.tertiary;
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         final entry = entries[index];
-        final g = entry.group;
-        final disabled = g == null;
-        final isSelected = g != null && _selected.contains(g.id);
-        final isPrimary = g != null && _primaryId == g.id;
+        final id = entry.group?.id;
+        final isSel = id != null && _selected.contains(id);
+        final isPri = id != null && _primaryId == id;
         final textStyle = theme.textTheme.bodyLarge?.copyWith(
           color: theme.colorScheme.onSurface,
         );
 
-        Widget trailing;
-        if (disabled) {
-          trailing = const Icon(Icons.block);
-        } else {
-          trailing = Checkbox(
-            value: isSelected,
-            onChanged: (_) => _toggleSelect(g.id),
-            fillColor: MaterialStateProperty.resolveWith(
-              (states) => states.contains(MaterialState.selected)
-                  ? (isPrimary ? primaryFill : secondaryFill)
-                  : null,
-            ),
-            checkColor: Colors.white,
-          );
-        }
-
-        final row = Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: colorForRegion(entry.region, theme),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  entry.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textStyle,
-                ),
-              ),
-              trailing,
-            ],
-          ),
-        );
-
         return InkWell(
-          onTap: disabled ? null : () => _toggleSelect(g!.id),
-          onLongPress: disabled ? null : () => _setPrimary(g!.id),
-          child: disabled ? Opacity(opacity: 0.5, child: row) : row,
+          onTap: () => _toggleSelect(entry.key, entry.region),
+          onLongPress: () async {
+            final id = await _ensureIdForRegion(entry.region, entry.key);
+            _setPrimary(id);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: colorForRegion(entry.region, theme),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    entry.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle,
+                  ),
+                ),
+                Checkbox(
+                  value: isSel,
+                  onChanged: (_) => _toggleSelect(entry.key, entry.region),
+                  fillColor: MaterialStateProperty.resolveWith(
+                    (states) => isSel ? (isPri ? green : blue) : null,
+                  ),
+                  checkColor: theme.colorScheme.onPrimary,
+                ),
+              ],
+            ),
+          ),
         );
       },
       separatorBuilder: (_, __) => Divider(
@@ -222,7 +214,13 @@ class _Entry {
   final MuscleRegion region;
   final MuscleGroup? group;
   final String displayName;
+  final String key;
 
-  _Entry({required this.region, required this.group, required this.displayName});
+  _Entry({
+    required this.region,
+    required this.group,
+    required this.displayName,
+    required this.key,
+  });
 }
 

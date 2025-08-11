@@ -73,30 +73,53 @@ class _FakeMuscleGroupProvider extends MuscleGroupProvider {
 
   @override
   Future<void> loadGroups(BuildContext context) async {}
+
+  @override
+  Future<MuscleGroup> getOrCreateByRegion(BuildContext ctx, MuscleRegion region,
+      {String? defaultName}) async {
+    try {
+      return _groups.firstWhere((g) => g.region == region);
+    } catch (_) {
+      final g = MuscleGroup(
+        id: '${region.name}Id',
+        name: defaultName ?? region.name,
+        region: region,
+      );
+      _groups.add(g);
+      notifyListeners();
+      return g;
+    }
+  }
 }
 
 void main() {
   final groups = [
     MuscleGroup(id: 'c1', name: '', region: MuscleRegion.chest),
-    MuscleGroup(id: 'c2', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: 'c3', name: 'Other Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: 'b1', name: 'Back', region: MuscleRegion.back),
-    MuscleGroup(id: 'b2', name: 'Other Back', region: MuscleRegion.back),
+    MuscleGroup(id: 'chestId', name: 'Chest', region: MuscleRegion.chest),
+    MuscleGroup(id: 'b1', name: '', region: MuscleRegion.back),
+    MuscleGroup(id: 'backId', name: 'Back', region: MuscleRegion.back),
   ];
 
-  testWidgets('dedups regions and handles primary/secondary selection', (tester) async {
+  testWidgets('handles primary/secondary selection and on-demand creation',
+      (tester) async {
     List<String> changed = [];
 
     await tester.pumpWidget(
       ChangeNotifierProvider<MuscleGroupProvider>.value(
         value: _FakeMuscleGroupProvider(groups),
         child: MaterialApp(
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green).copyWith(
+              primary: Colors.green,
+              onPrimary: Colors.white,
+              tertiary: Colors.blueAccent,
+            ),
+          ),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MuscleGroupListSelector(
               initialSelection: const [],
-              filter: '',
               onChanged: (ids) => changed = ids,
             ),
           ),
@@ -107,25 +130,20 @@ void main() {
 
     expect(find.byType(InkWell), findsNWidgets(6));
 
-    final armsTile = find.widgetWithText(InkWell, 'Arms - not configured');
-    expect(find.descendant(of: armsTile, matching: find.byType(Checkbox)), findsNothing);
-    expect(find.descendant(of: armsTile, matching: find.byIcon(Icons.block)), findsOneWidget);
-
-    final coreTile = find.widgetWithText(InkWell, 'Core - not configured');
-    expect(find.descendant(of: coreTile, matching: find.byType(Checkbox)), findsNothing);
-
     final backTile = find.widgetWithText(InkWell, 'Back');
     await tester.tap(backTile);
     await tester.pumpAndSettle();
-    final backCheckbox = find.descendant(of: backTile, matching: find.byType(Checkbox));
-    var color = (tester.widget<Checkbox>(backCheckbox).fillColor!)
-        .resolve({MaterialState.selected});
+    final backCheckbox =
+        find.descendant(of: backTile, matching: find.byType(Checkbox));
+    var color =
+        (tester.widget<Checkbox>(backCheckbox).fillColor!).resolve({MaterialState.selected});
     expect(color, Colors.green);
 
     final chestTile = find.widgetWithText(InkWell, 'Chest');
     await tester.tap(chestTile);
     await tester.pumpAndSettle();
-    final chestCheckbox = find.descendant(of: chestTile, matching: find.byType(Checkbox));
+    final chestCheckbox =
+        find.descendant(of: chestTile, matching: find.byType(Checkbox));
     color = (tester.widget<Checkbox>(chestCheckbox).fillColor!)
         .resolve({MaterialState.selected});
     expect(color, Colors.blueAccent);
@@ -139,7 +157,12 @@ void main() {
         (tester.widget<Checkbox>(backCheckbox).fillColor!).resolve({MaterialState.selected});
     expect(chestColor, Colors.green);
     expect(backColor, Colors.blueAccent);
-    expect(changed, ['c2', 'b1']);
+    expect(changed, ['chestId', 'backId']);
+
+    final armsTile = find.widgetWithText(InkWell, 'Arms');
+    await tester.tap(armsTile);
+    await tester.pumpAndSettle();
+    expect(changed, ['chestId', 'backId', 'armsId']);
   });
 }
 
