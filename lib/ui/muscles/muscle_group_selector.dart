@@ -63,6 +63,7 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
     }
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(), // POLISH: smoother scroll in bottom sheet
       child: Wrap(
         spacing: 4,
         runSpacing: 4,

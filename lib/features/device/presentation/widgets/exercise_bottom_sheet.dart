@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_selector.dart';
+import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
@@ -52,6 +53,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     final loc = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     final userId = auth.userId!;
+    final theme = Theme.of(context);
 
     final canSave =
         _nameCtr.text.trim().isNotEmpty && _selected.isNotEmpty;
@@ -90,6 +92,30 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
+          if (_selected.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                loc.exerciseSelectedMuscleGroups,
+                style: theme.textTheme.labelLarge,
+              ),
+            ),
+            Semantics(
+              container: true,
+              label: loc.exerciseSelectedMuscleGroups,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: MuscleChips(muscleGroupIds: _selected.toList()),
+              ),
+            ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                loc.exerciseNoMuscleGroups,
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(

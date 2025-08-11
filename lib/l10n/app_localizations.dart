@@ -764,6 +764,9 @@ abstract class AppLocalizations {
   /// Header muscle groups
   String get exerciseMuscleGroupsLabel;
 
+  /// Header for selected muscle groups
+  String get exerciseSelectedMuscleGroups;
+
   /// Hint for muscle group search field
   String get exerciseSearchMuscleGroupsHint;
 

@@ -455,6 +455,8 @@
   "@exerciseNameLabel": {"description": "Exercise name label"},
   "exerciseMuscleGroupsLabel": "Muscle groups",
   "@exerciseMuscleGroupsLabel": {"description": "Header muscle groups"},
+  "exerciseSelectedMuscleGroups": "Selected",
+  "@exerciseSelectedMuscleGroups": {"description": "Header for selected muscle groups"},
   "exerciseSearchMuscleGroupsHint": "Search muscle groups...",
   "@exerciseSearchMuscleGroupsHint": {"description": "Hint for muscle group search"},
   "exerciseNoMuscleGroups": "No muscle groups available",

@@ -362,6 +362,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exerciseMuscleGroupsLabel => 'Muskelgruppen';
 
   @override
+  String get exerciseSelectedMuscleGroups => 'Ausgewählt';
+
+  @override
   String get exerciseSearchMuscleGroupsHint => 'Muskelgruppen durchsuchen...';
 
   @override
