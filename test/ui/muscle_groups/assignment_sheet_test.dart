@@ -78,21 +78,21 @@ void main() {
     final prov = FakeMuscleGroupProvider([
       MuscleGroup(id: 'c1', name: 'Chest', region: MuscleRegion.chest),
       MuscleGroup(id: 'c2', name: 'Pecs', region: MuscleRegion.chest),
-      MuscleGroup(id: 'b1', name: 'Back', region: MuscleRegion.back),
-      MuscleGroup(id: 'b2', name: 'Back2', region: MuscleRegion.back),
-      MuscleGroup(id: 's1', name: 'Shoulders', region: MuscleRegion.shoulders),
-      MuscleGroup(id: 'l1', name: 'Legs', region: MuscleRegion.legs),
-      MuscleGroup(id: 'a1', name: 'Arms', region: MuscleRegion.arms),
-      MuscleGroup(id: 'co1', name: 'Core', region: MuscleRegion.core),
+      MuscleGroup(id: 'b1', name: 'Lats', region: MuscleRegion.lats),
+      MuscleGroup(id: 'b2', name: 'Mid Back', region: MuscleRegion.midBack),
+      MuscleGroup(id: 's1', name: 'Anterior Deltoid', region: MuscleRegion.anteriorDeltoid),
+      MuscleGroup(id: 'l1', name: 'Quadriceps', region: MuscleRegion.quadriceps),
+      MuscleGroup(id: 'a1', name: 'Biceps', region: MuscleRegion.biceps),
+      MuscleGroup(id: 'co1', name: 'Rectus Abdominis', region: MuscleRegion.rectusAbdominis),
     ]);
 
     await _openSheet(tester, prov);
 
     expect(find.byType(Radio), findsNWidgets(6));
-    expect(find.bySemanticsLabel('Arms, primär auswählen'), findsOneWidget);
-    expect(find.bySemanticsLabel('Core, primär auswählen'), findsOneWidget);
+    expect(find.bySemanticsLabel('Biceps, primär auswählen'), findsOneWidget);
+    expect(find.bySemanticsLabel('Rectus Abdominis, primär auswählen'), findsOneWidget);
     expect(find.bySemanticsLabel('Chest, primär auswählen'), findsOneWidget);
-    expect(find.bySemanticsLabel('Back, primär auswählen'), findsOneWidget);
+    expect(find.bySemanticsLabel('Lats, primär auswählen'), findsOneWidget);
   });
 
   testWidgets('saving creates missing region and assigns', (tester) async {
@@ -102,14 +102,14 @@ void main() {
 
     await _openSheet(tester, prov);
 
-    await tester.tap(find.bySemanticsLabel('Arms, primär auswählen'));
+    await tester.tap(find.bySemanticsLabel('Biceps, primär auswählen'));
     await tester.pump();
 
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    expect(prov.ensuredRegion, MuscleRegion.arms);
-    expect(prov.lastPrimary, ['arms-id']);
+    expect(prov.ensuredRegion, MuscleRegion.biceps);
+    expect(prov.lastPrimary, ['biceps-id']);
     expect(prov.lastSecondary, isEmpty);
   });
 

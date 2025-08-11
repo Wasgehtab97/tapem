@@ -491,5 +491,13 @@
   "@a11yMgUnselected": {
     "description": "Semantik für nicht ausgewählte Muskelgruppe",
     "placeholders": {"name": {}}
-  }
+  },
+  "muscleCatUpperFront": "Oberkörper – vorne",
+  "@muscleCatUpperFront": {"description": "Bereichslabel Oberkörper vorne"},
+  "muscleCatUpperBack": "Oberkörper – hinten",
+  "@muscleCatUpperBack": {"description": "Bereichslabel Oberkörper hinten"},
+  "muscleCatCore": "Rumpf",
+  "@muscleCatCore": {"description": "Bereichslabel Rumpf"},
+  "muscleCatLower": "Unterkörper",
+  "@muscleCatLower": {"description": "Bereichslabel Unterkörper"}
 }

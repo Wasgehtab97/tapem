@@ -407,4 +407,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String a11yMgUnselected(Object name) {
     return 'Muscle group: $name, not selected';
   }
+
+  @override
+  String get muscleCatUpperFront => 'Upper body - front';
+
+  @override
+  String get muscleCatUpperBack => 'Upper body - back';
+
+  @override
+  String get muscleCatCore => 'Core';
+
+  @override
+  String get muscleCatLower => 'Lower body';
 }

@@ -100,8 +100,8 @@ void main() {
   final groups = [
     MuscleGroup(id: 'c1', name: '', region: MuscleRegion.chest),
     MuscleGroup(id: 'chestId', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: 'b1', name: '', region: MuscleRegion.back),
-    MuscleGroup(id: 'backId', name: 'Back', region: MuscleRegion.back),
+    MuscleGroup(id: 'b1', name: '', region: MuscleRegion.lats),
+    MuscleGroup(id: 'backId', name: 'Lats', region: MuscleRegion.lats),
   ];
 
   testWidgets('handles primary/secondary selection and on-demand creation',

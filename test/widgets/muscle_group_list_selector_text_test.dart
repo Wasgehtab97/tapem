@@ -75,7 +75,7 @@ class FakeMuscleGroupProvider extends MuscleGroupProvider {
 
 void main() {
   testWidgets('zeigt Fallback-Namen, wenn group.name leer ist', (tester) async {
-    final groups = [MuscleGroup(id: '1', name: '', region: MuscleRegion.back)];
+    final groups = [MuscleGroup(id: '1', name: '', region: MuscleRegion.lats)];
     List<String> selected = [];
     await tester.pumpWidget(
       ChangeNotifierProvider<MuscleGroupProvider>.value(

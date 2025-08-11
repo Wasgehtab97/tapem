@@ -2,18 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 
 Color colorForRegion(MuscleRegion region, ThemeData theme) {
-  switch (region) {
-    case MuscleRegion.chest:
+  switch (region.category) {
+    case MuscleCategory.upperFront:
       return Colors.red.shade300;
-    case MuscleRegion.back:
+    case MuscleCategory.upperBack:
       return Colors.blue.shade300;
-    case MuscleRegion.shoulders:
-      return Colors.orange.shade300;
-    case MuscleRegion.arms:
-      return Colors.green.shade300;
-    case MuscleRegion.core:
+    case MuscleCategory.core:
       return Colors.purple.shade300;
-    case MuscleRegion.legs:
+    case MuscleCategory.lower:
       return Colors.teal.shade300;
   }
 }

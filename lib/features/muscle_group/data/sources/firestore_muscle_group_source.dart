@@ -46,21 +46,5 @@ class FirestoreMuscleGroupSource {
   }
 
   String _canonicalName(MuscleRegion region) => region.name.toLowerCase();
-
-  String _canonicalLabel(MuscleRegion region) {
-    switch (region) {
-      case MuscleRegion.chest:
-        return 'chest';
-      case MuscleRegion.back:
-        return 'back';
-      case MuscleRegion.shoulders:
-        return 'shoulders';
-      case MuscleRegion.arms:
-        return 'arms';
-      case MuscleRegion.core:
-        return 'core';
-      case MuscleRegion.legs:
-        return 'legs';
-    }
-  }
+  String _canonicalLabel(MuscleRegion region) => region.name;
 }

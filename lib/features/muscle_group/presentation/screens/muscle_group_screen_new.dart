@@ -78,18 +78,20 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     final xpMap = <String, int>{
       'head': 0,
       'chest': regionXp[MuscleRegion.chest] ?? 0,
-      'core': regionXp[MuscleRegion.core] ?? 0,
-      'pelvis': regionXp[MuscleRegion.core] ?? 0,
-      'upper_arm_left': regionXp[MuscleRegion.arms] ?? 0,
-      'upper_arm_right': regionXp[MuscleRegion.arms] ?? 0,
-      'forearm_left': regionXp[MuscleRegion.arms] ?? 0,
-      'forearm_right': regionXp[MuscleRegion.arms] ?? 0,
-      'thigh_left': regionXp[MuscleRegion.legs] ?? 0,
-      'thigh_right': regionXp[MuscleRegion.legs] ?? 0,
-      'calf_left': regionXp[MuscleRegion.legs] ?? 0,
-      'calf_right': regionXp[MuscleRegion.legs] ?? 0,
-      'foot_left': regionXp[MuscleRegion.legs] ?? 0,
-      'foot_right': regionXp[MuscleRegion.legs] ?? 0,
+      'core': (regionXp[MuscleRegion.rectusAbdominis] ?? 0) +
+          (regionXp[MuscleRegion.obliques] ?? 0) +
+          (regionXp[MuscleRegion.transversusAbdominis] ?? 0),
+      'pelvis': regionXp[MuscleRegion.glutes] ?? 0,
+      'upper_arm_left': regionXp[MuscleRegion.biceps] ?? 0,
+      'upper_arm_right': regionXp[MuscleRegion.triceps] ?? 0,
+      'forearm_left': regionXp[MuscleRegion.wristFlexors] ?? 0,
+      'forearm_right': regionXp[MuscleRegion.wristFlexors] ?? 0,
+      'thigh_left': regionXp[MuscleRegion.quadriceps] ?? 0,
+      'thigh_right': regionXp[MuscleRegion.hamstrings] ?? 0,
+      'calf_left': regionXp[MuscleRegion.calves] ?? 0,
+      'calf_right': regionXp[MuscleRegion.calves] ?? 0,
+      'foot_left': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
+      'foot_right': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
     };
 
     final values = xpMap.values.map((e) => e.toDouble());
