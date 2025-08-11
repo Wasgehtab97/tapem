@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
@@ -24,21 +25,30 @@ class DeviceMuscleAssignmentSheet extends StatefulWidget {
 
 class _DeviceMuscleAssignmentSheetState
     extends State<DeviceMuscleAssignmentSheet> {
-  String? _primaryId;
-  late Set<String> _secondary;
+  MuscleRegion? _primary;
+  late Set<MuscleRegion> _secondary;
+  MuscleRegion? _initialPrimary;
+  late Set<MuscleRegion> _initialSecondary;
+  bool _initialized = false;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _primaryId =
-        widget.initialPrimary.isEmpty ? null : widget.initialPrimary.first;
-    _secondary = widget.initialSecondary.toSet()..remove(_primaryId);
+    _secondary = <MuscleRegion>{};
   }
 
-  String _displayName(MuscleGroup g) {
-    if (g.name.trim().isNotEmpty) return g.name;
-    switch (g.region) {
+  static const List<MuscleRegion> _order = [
+    MuscleRegion.chest,
+    MuscleRegion.shoulders,
+    MuscleRegion.legs,
+    MuscleRegion.back,
+    MuscleRegion.arms,
+    MuscleRegion.core,
+  ];
+
+  String _regionLabel(MuscleRegion region) {
+    switch (region) {
       case MuscleRegion.chest:
         return 'Chest';
       case MuscleRegion.back:
@@ -54,14 +64,81 @@ class _DeviceMuscleAssignmentSheetState
     }
   }
 
+  String _displayName(MuscleRegion region, MuscleGroup? g) {
+    final name = g?.name.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return _regionLabel(region);
+  }
+
+  Map<MuscleRegion, MuscleGroup?> _canonical(List<MuscleGroup> groups) {
+    final map = {for (var r in MuscleRegion.values) r: null};
+    final byRegion = <MuscleRegion, List<MuscleGroup>>{};
+    for (final g in groups) {
+      byRegion.putIfAbsent(g.region, () => []).add(g);
+    }
+    const canonicalNames = {
+      MuscleRegion.chest: 'chest',
+      MuscleRegion.back: 'back',
+      MuscleRegion.shoulders: 'shoulders',
+      MuscleRegion.arms: 'arms',
+      MuscleRegion.legs: 'legs',
+      MuscleRegion.core: 'core',
+    };
+    for (final r in MuscleRegion.values) {
+      final list = byRegion[r];
+      if (list == null || list.isEmpty) continue;
+      MuscleGroup chosen = list.first;
+      for (final g in list) {
+        if (g.name.toLowerCase() == canonicalNames[r]) {
+          chosen = g;
+          break;
+        }
+      }
+      map[r] = chosen;
+    }
+    return map;
+  }
+
+  bool _matchesQuery(MuscleRegion region, MuscleGroup? g) {
+    final q = _query.toLowerCase();
+    if (q.isEmpty) return true;
+    final label = _regionLabel(region).toLowerCase();
+    final name = (g?.name ?? '').toLowerCase();
+    return label.contains(q) || name.contains(q);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final groups = context.watch<MuscleGroupProvider>().groups;
-    final filtered = groups
-        .where((g) =>
-            _displayName(g).toLowerCase().contains(_query.toLowerCase()))
+    final canon = _canonical(groups);
+    if (!_initialized && groups.isNotEmpty) {
+      final idToRegion = {
+        for (final e in canon.entries)
+          if (e.value != null) e.value!.id: e.key,
+      };
+      _primary = widget.initialPrimary.isEmpty
+          ? null
+          : idToRegion[widget.initialPrimary.first];
+      _secondary = widget.initialSecondary
+          .map((id) => idToRegion[id])
+          .whereType<MuscleRegion>()
+          .toSet();
+      _secondary.remove(_primary);
+      _initialPrimary = _primary;
+      _initialSecondary = Set.of(_secondary);
+      _initialized = true;
+    }
+
+    final entries = _order
+        .map((r) => MapEntry(r, canon[r]))
+        .where((e) => _matchesQuery(e.key, e.value))
         .toList();
+
+    final canSave =
+        ((_primary != null) || _secondary.isNotEmpty) &&
+            (_primary != _initialPrimary ||
+                !setEquals(_secondary, _initialSecondary));
 
     return SafeArea(
       child: Padding(
@@ -69,8 +146,29 @@ class _DeviceMuscleAssignmentSheetState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${widget.deviceName} – Muskelgruppen',
-                style: theme.textTheme.titleLarge),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('${widget.deviceName} – Muskelgruppen',
+                      style: theme.textTheme.titleLarge),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await context
+                        .read<MuscleGroupProvider>()
+                        .updateDeviceAssignments(
+                          context,
+                          widget.deviceId,
+                          const [],
+                          const [],
+                        );
+                    if (!mounted) return;
+                    Navigator.pop(context, const {'primary': [], 'secondary': []});
+                  },
+                  child: const Text('Zurücksetzen'),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             TextField(
               decoration: const InputDecoration(
@@ -85,11 +183,13 @@ class _DeviceMuscleAssignmentSheetState
                 children: [
                   Text('Primär', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  for (final g in filtered) _buildPrimaryRow(g, theme),
+                  for (final e in entries)
+                    _buildPrimaryRow(e.key, e.value, theme),
                   const SizedBox(height: 16),
                   Text('Sekundär', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  for (final g in filtered) _buildSecondaryRow(g, theme),
+                  for (final e in entries)
+                    _buildSecondaryRow(e.key, e.value, theme),
                 ],
               ),
             ),
@@ -103,23 +203,40 @@ class _DeviceMuscleAssignmentSheetState
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () async {
-                    final primary =
-                        _primaryId == null ? const <String>[] : <String>[_primaryId!];
-                    final secondary =
-                        _secondary.where((id) => id != _primaryId).toList();
-                    await context.read<MuscleGroupProvider>().updateDeviceAssignments(
-                          context,
-                          widget.deviceId,
-                          primary,
-                          secondary,
-                        );
-                    if (!mounted) return;
-                    Navigator.pop(context, {
-                      'primary': primary,
-                      'secondary': secondary,
-                    });
-                  },
+                  onPressed: canSave
+                      ? () async {
+                          final prov =
+                              context.read<MuscleGroupProvider>();
+                          final idMap = <MuscleRegion, String>{};
+                          for (final region in {if (_primary != null) _primary!, ..._secondary}) {
+                            final g = canon[region];
+                            if (g != null) {
+                              idMap[region] = g.id;
+                            } else {
+                              final id = await prov.ensureRegionGroup(context, region);
+                              if (id != null) idMap[region] = id;
+                            }
+                          }
+                          final primaryIds = _primary == null
+                              ? <String>[]
+                              : [idMap[_primary!]!];
+                          final secondaryIds = _secondary
+                              .map((r) => idMap[r]!)
+                              .where((id) => !primaryIds.contains(id))
+                              .toList();
+                          await prov.updateDeviceAssignments(
+                            context,
+                            widget.deviceId,
+                            primaryIds,
+                            secondaryIds,
+                          );
+                          if (!mounted) return;
+                          Navigator.pop(context, {
+                            'primary': primaryIds,
+                            'secondary': secondaryIds,
+                          });
+                        }
+                      : null,
                   child: const Text('Speichern'),
                 ),
               ],
@@ -130,22 +247,23 @@ class _DeviceMuscleAssignmentSheetState
     );
   }
 
-  Widget _buildPrimaryRow(MuscleGroup g, ThemeData theme) {
-    final name = _displayName(g);
+  Widget _buildPrimaryRow(
+      MuscleRegion region, MuscleGroup? g, ThemeData theme) {
+    final name = _displayName(region, g);
     return Semantics(
-      label: '$name, Primary selector',
+      label: '$name, primär auswählen',
       child: InkWell(
         onTap: () {
           setState(() {
-            _primaryId = g.id;
-            _secondary.remove(g.id);
+            _primary = region;
+            _secondary.remove(region);
           });
         },
         child: SizedBox(
           height: 48,
           child: Row(
             children: [
-              CircleAvatar(backgroundColor: colorForRegion(g.region, theme)),
+              CircleAvatar(backgroundColor: colorForRegion(region, theme)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -155,13 +273,13 @@ class _DeviceMuscleAssignmentSheetState
                   style: TextStyle(color: theme.colorScheme.onSurface),
                 ),
               ),
-              Radio<String>(
-                value: g.id,
-                groupValue: _primaryId,
-                onChanged: (id) {
+              Radio<MuscleRegion>(
+                value: region,
+                groupValue: _primary,
+                onChanged: (r) {
                   setState(() {
-                    _primaryId = id;
-                    if (id != null) _secondary.remove(id);
+                    _primary = r;
+                    if (r != null) _secondary.remove(r);
                   });
                 },
                 fillColor: MaterialStateProperty.resolveWith(
@@ -174,21 +292,22 @@ class _DeviceMuscleAssignmentSheetState
     );
   }
 
-  Widget _buildSecondaryRow(MuscleGroup g, ThemeData theme) {
-    final name = _displayName(g);
-    final checked = _secondary.contains(g.id);
-    final disabled = _primaryId == g.id;
+  Widget _buildSecondaryRow(
+      MuscleRegion region, MuscleGroup? g, ThemeData theme) {
+    final name = _displayName(region, g);
+    final checked = _secondary.contains(region);
+    final disabled = _primary == region;
     return Semantics(
-      label: '$name, Secondary selector',
+      label: '$name, sekundär auswählen',
       child: InkWell(
         onTap: disabled
             ? null
             : () {
                 setState(() {
                   if (checked) {
-                    _secondary.remove(g.id);
+                    _secondary.remove(region);
                   } else {
-                    _secondary.add(g.id);
+                    _secondary.add(region);
                   }
                 });
               },
@@ -196,7 +315,7 @@ class _DeviceMuscleAssignmentSheetState
           height: 48,
           child: Row(
             children: [
-              CircleAvatar(backgroundColor: colorForRegion(g.region, theme)),
+              CircleAvatar(backgroundColor: colorForRegion(region, theme)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -213,9 +332,9 @@ class _DeviceMuscleAssignmentSheetState
                     : (v) {
                         setState(() {
                           if (v == true) {
-                            _secondary.add(g.id);
+                            _secondary.add(region);
                           } else {
-                            _secondary.remove(g.id);
+                            _secondary.remove(region);
                           }
                         });
                       },
