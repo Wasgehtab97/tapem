@@ -27,6 +27,10 @@ class _FakeMuscleGroupRepo implements MuscleGroupRepository {
   Future<void> saveMuscleGroup(String gymId, MuscleGroup group) async {}
   @override
   Future<void> deleteMuscleGroup(String gymId, String groupId) async {}
+
+  @override
+  Future<String> ensureRegionGroup(String gymId, MuscleRegion region) async =>
+      '${region.name}-id';
 }
 
 class _FakeHistoryRepo implements GetHistoryForDeviceRepository {
