@@ -99,26 +99,27 @@ class _DeviceMuscleAssignmentSheetState
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context, false),
+                  onPressed: () => Navigator.pop(context),
                   child: const Text('Abbrechen'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () async {
-                    await context
-                        .read<MuscleGroupProvider>()
-                        .updateDeviceAssignments(
+                    final primary =
+                        _primaryId == null ? const <String>[] : <String>[_primaryId!];
+                    final secondary =
+                        _secondary.where((id) => id != _primaryId).toList();
+                    await context.read<MuscleGroupProvider>().updateDeviceAssignments(
                           context,
                           widget.deviceId,
-                          _primaryId == null
-                              ? const []
-                              : <String>[_primaryId!],
-                          _secondary
-                              .where((id) => id != _primaryId)
-                              .toList(),
+                          primary,
+                          secondary,
                         );
                     if (!mounted) return;
-                    Navigator.pop(context, true);
+                    Navigator.pop(context, {
+                      'primary': primary,
+                      'secondary': secondary,
+                    });
                   },
                   child: const Text('Speichern'),
                 ),

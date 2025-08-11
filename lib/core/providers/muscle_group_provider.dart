@@ -232,14 +232,8 @@ class MuscleGroupProvider extends ChangeNotifier {
     await _setDeviceGroups.execute(
       gymId,
       deviceId,
-      primaryGroupIds.map((id) {
-        final g = _groups.firstWhere((e) => e.id == id);
-        return g.region.name;
-      }).toList(),
-      secondaryGroupIds.map((id) {
-        final g = _groups.firstWhere((e) => e.id == id);
-        return g.region.name;
-      }).toList(),
+      primaryGroupIds,
+      secondaryGroupIds,
     );
 
     await loadGroups(context);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/muscle_group/presentation/widgets/device_muscle_assignment_sheet.dart';
@@ -67,7 +68,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   }
 
   Future<void> _openAssignSheet(Device d) async {
-    await showModalBottomSheet(
+    final res = await showModalBottomSheet<Map<String, List<String>>>(
       context: context,
       isScrollControlled: true,
       builder: (_) => DeviceMuscleAssignmentSheet(
@@ -77,11 +78,14 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
         initialSecondary: d.secondaryMuscleGroups,
       ),
     );
-    final auth = context.read<AuthProvider>();
-    final gymId = auth.gymCode ?? '';
-    await context.read<DeviceProvider>().loadDevices(gymId);
-    await context.read<MuscleGroupProvider>().loadGroups(context);
-    if (mounted) setState(() {});
+    if (res != null) {
+      context
+          .read<DeviceProvider>()
+          .patchDeviceGroups(d.uid, res['primary'] ?? [], res['secondary'] ?? []);
+      context
+          .read<GymProvider>()
+          .patchDeviceGroups(d.uid, res['primary'] ?? [], res['secondary'] ?? []);
+    }
   }
 
   @override

@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
-import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 
 class DeviceCard extends StatelessWidget {
   final Device device;
-  final List<MuscleGroup>? groupsForDevice;
   final VoidCallback? onTap;
-  const DeviceCard({super.key, required this.device, this.groupsForDevice, this.onTap});
+  const DeviceCard({super.key, required this.device, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = device.description;
     final idText = device.id.toString();
-    final muscleIds = [
-      ...device.primaryMuscleGroups,
-      ...device.secondaryMuscleGroups,
-    ];
     return Semantics(
       label: '${device.name}, ${brand.isNotEmpty ? '$brand, ' : ''}ID $idText',
       button: true,
@@ -67,12 +61,17 @@ class DeviceCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('ID: $idText', style: theme.textTheme.labelSmall),
-                      if (!device.isMulti && muscleIds.isNotEmpty)
+                      if (!device.isMulti &&
+                          (device.primaryMuscleGroups.isNotEmpty ||
+                              device.secondaryMuscleGroups.isNotEmpty))
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: MuscleChips(muscleGroupIds: muscleIds),
+                            child: MuscleChips(
+                              primaryIds: device.primaryMuscleGroups,
+                              secondaryIds: device.secondaryMuscleGroups,
+                            ),
                           ),
                         ),
                     ],
