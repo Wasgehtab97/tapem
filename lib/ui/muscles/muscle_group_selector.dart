@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../../core/providers/muscle_group_provider.dart';
-import '../../domain/models/muscle_group.dart';
-import 'muscle_group_color.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+
+import 'muscle_group_color.dart';
 
 class MuscleGroupSelector extends StatefulWidget {
   final List<String> initialSelection;
@@ -53,8 +53,8 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
     }
 
     final groups = prov.groups
-        .where((g) =>
-            g.name.toLowerCase().contains(widget.filter.toLowerCase()))
+        .where(
+            (g) => g.name.toLowerCase().contains(widget.filter.toLowerCase()))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -94,4 +94,3 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
     );
   }
 }
-

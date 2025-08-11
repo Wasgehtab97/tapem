@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/models/muscle_group.dart';
+import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 
 Color colorForRegion(MuscleRegion region, ThemeData theme) {
   switch (region) {

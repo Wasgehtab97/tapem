@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 
-import '../../domain/models/muscle_group.dart';
-import '../../../../core/providers/muscle_group_provider.dart';
 import 'muscle_group_color.dart';
 
-class MuscleGroupLabelChip extends StatelessWidget {
+class MuscleGroupCard extends StatelessWidget {
   final String muscleGroupId;
-  const MuscleGroupLabelChip({super.key, required this.muscleGroupId});
+  const MuscleGroupCard({super.key, required this.muscleGroupId});
 
   @override
   Widget build(BuildContext context) {

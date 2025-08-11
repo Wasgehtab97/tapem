@@ -5,7 +5,7 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/features/muscle_group/presentation/widgets/muscle_group_selector.dart';
+import 'package:tapem/ui/muscles/muscle_group_selector.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
