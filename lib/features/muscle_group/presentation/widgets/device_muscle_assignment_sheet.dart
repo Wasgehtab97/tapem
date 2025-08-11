@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
+
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_color.dart';
 
+/// Bottom sheet for assigning primary and secondary muscle groups to a device.
 class DeviceMuscleAssignmentSheet extends StatefulWidget {
   final String deviceId;
   final String deviceName;
   final List<String> initialPrimary;
   final List<String> initialSecondary;
+
   const DeviceMuscleAssignmentSheet({
     super.key,
     required this.deviceId,
@@ -25,17 +29,28 @@ class DeviceMuscleAssignmentSheet extends StatefulWidget {
 
 class _DeviceMuscleAssignmentSheetState
     extends State<DeviceMuscleAssignmentSheet> {
-  MuscleRegion? _primary;
-  late Set<MuscleRegion> _secondary;
-  MuscleRegion? _initialPrimary;
-  late Set<MuscleRegion> _initialSecondary;
+  final TextEditingController _searchCtr = TextEditingController();
+
+  String? _selectedPrimaryId;
+  late Set<String> _selectedSecondaryIds;
+
+  String? _initialPrimaryId;
+  late Set<String> _initialSecondaryIds;
+
   bool _initialized = false;
-  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _secondary = <MuscleRegion>{};
+    _selectedSecondaryIds = <String>{};
+    _initialSecondaryIds = <String>{};
+    _searchCtr.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchCtr.dispose();
+    super.dispose();
   }
 
   static const List<MuscleRegion> _order = [
@@ -60,7 +75,8 @@ class _DeviceMuscleAssignmentSheetState
     MuscleRegion.tibialisAnterior,
   ];
 
-  String _regionLabel(MuscleRegion region) {
+  String _regionLabel(AppLocalizations loc, MuscleRegion region) {
+    // Using English fallback if not localized
     switch (region) {
       case MuscleRegion.chest:
         return 'Chest';
@@ -103,27 +119,18 @@ class _DeviceMuscleAssignmentSheetState
     }
   }
 
-  String _displayName(MuscleRegion region, MuscleGroup? g) {
-    final name = g?.name.trim();
-    if (name != null && name.isNotEmpty) return name;
-    return _regionLabel(region);
-  }
-
   Map<MuscleRegion, MuscleGroup?> _canonical(List<MuscleGroup> groups) {
     final map = <MuscleRegion, MuscleGroup?>{for (var r in MuscleRegion.values) r: null};
     final byRegion = <MuscleRegion, List<MuscleGroup>>{};
     for (final g in groups) {
       byRegion.putIfAbsent(g.region, () => []).add(g);
     }
-    final canonicalNames = {
-      for (var r in MuscleRegion.values) r: r.name.toLowerCase()
-    };
     for (final r in MuscleRegion.values) {
       final list = byRegion[r];
       if (list == null || list.isEmpty) continue;
       MuscleGroup chosen = list.first;
       for (final g in list) {
-        if (g.name.toLowerCase() == canonicalNames[r]) {
+        if (g.name.toLowerCase() == r.name.toLowerCase()) {
           chosen = g;
           break;
         }
@@ -133,164 +140,244 @@ class _DeviceMuscleAssignmentSheetState
     return map;
   }
 
-  bool _matchesQuery(MuscleRegion region, MuscleGroup? g) {
-    final q = _query.toLowerCase();
+  bool _matchesQuery(AppLocalizations loc, MuscleRegion region, MuscleGroup? g) {
+    final q = _searchCtr.text.toLowerCase();
     if (q.isEmpty) return true;
-    final label = _regionLabel(region).toLowerCase();
+    final label = _regionLabel(loc, region).toLowerCase();
     final name = (g?.name ?? '').toLowerCase();
     return label.contains(q) || name.contains(q);
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final groups = context.watch<MuscleGroupProvider>().groups;
     final canon = _canonical(groups);
+
     if (!_initialized && groups.isNotEmpty) {
-      final idToRegion = {
-        for (final e in canon.entries)
-          if (e.value != null) e.value!.id: e.key,
-      };
-      _primary = widget.initialPrimary.isEmpty
-          ? null
-          : idToRegion[widget.initialPrimary.first];
-      _secondary = widget.initialSecondary
-          .map((id) => idToRegion[id])
-          .whereType<MuscleRegion>()
-          .toSet();
-      _secondary.remove(_primary);
-      _initialPrimary = _primary;
-      _initialSecondary = Set.of(_secondary);
+      _selectedPrimaryId = widget.initialPrimary.isEmpty ? null : widget.initialPrimary.first;
+      _selectedSecondaryIds = widget.initialSecondary.toSet();
+      _selectedSecondaryIds.remove(_selectedPrimaryId);
+      _initialPrimaryId = _selectedPrimaryId;
+      _initialSecondaryIds = Set.of(_selectedSecondaryIds);
       _initialized = true;
     }
 
     final entries = _order
         .map((r) => MapEntry(r, canon[r]))
-        .where((e) => _matchesQuery(e.key, e.value))
+        .where((e) => _matchesQuery(loc, e.key, e.value))
         .toList();
 
-    final canSave =
-        ((_primary != null) || _secondary.isNotEmpty) &&
-            (_primary != _initialPrimary ||
-                !setEquals(_secondary, _initialSecondary));
+    final idToData = {
+      for (final e in canon.entries)
+        (e.value?.id ?? e.key.name): (region: e.key, group: e.value)
+    };
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('${widget.deviceName} – Muskelgruppen',
-                      style: theme.textTheme.titleLarge),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await context
-                        .read<MuscleGroupProvider>()
-                        .updateDeviceAssignments(
-                          context,
-                          widget.deviceId,
-                          const [],
-                          const [],
-                        );
-                    if (!mounted) return;
-                    Navigator.pop(context, const {'primary': [], 'secondary': []});
-                  },
-                  child: const Text('Zurücksetzen'),
-                ),
-              ],
+    Future<void> save() async {
+      final prov = context.read<MuscleGroupProvider>();
+      final Set<String> all = {
+        if (_selectedPrimaryId != null) _selectedPrimaryId!,
+        ..._selectedSecondaryIds,
+      };
+      final Map<String, String> resolved = {};
+      for (final id in all) {
+        final data = idToData[id];
+        if (data == null) continue;
+        if (data.group != null) {
+          resolved[id] = data.group!.id;
+        } else {
+          final newId =
+              await prov.ensureRegionGroup(context, data.region);
+          if (newId != null) {
+            resolved[id] = newId;
+          }
+        }
+      }
+      final primaryIds =
+          _selectedPrimaryId == null ? <String>[] : [resolved[_selectedPrimaryId!]!];
+      final secondaryIds = _selectedSecondaryIds
+          .map((e) => resolved[e]!)
+          .where((id) => !primaryIds.contains(id))
+          .toList();
+      await prov.updateDeviceAssignments(
+        context,
+        widget.deviceId,
+        primaryIds,
+        secondaryIds,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, {
+        'primary': primaryIds,
+        'secondary': secondaryIds,
+      });
+    }
+
+    Future<void> reset() async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          content: Text(loc.resetMuscleGroupsConfirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(loc.commonCancel),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search',
-              ),
-              onChanged: (v) => setState(() => _query = v),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                children: [
-                  Text('Primär', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  for (final e in entries)
-                    _buildPrimaryRow(e.key, e.value, theme),
-                  const SizedBox(height: 16),
-                  Text('Sekundär', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  for (final e in entries)
-                    _buildSecondaryRow(e.key, e.value, theme),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Abbrechen'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: canSave
-                      ? () async {
-                          final prov =
-                              context.read<MuscleGroupProvider>();
-                          final idMap = <MuscleRegion, String>{};
-                          for (final region in {if (_primary != null) _primary!, ..._secondary}) {
-                            final g = canon[region];
-                            if (g != null) {
-                              idMap[region] = g.id;
-                            } else {
-                              final id = await prov.ensureRegionGroup(context, region);
-                              if (id != null) idMap[region] = id;
-                            }
-                          }
-                          final primaryIds = _primary == null
-                              ? <String>[]
-                              : [idMap[_primary!]!];
-                          final secondaryIds = _secondary
-                              .map((r) => idMap[r]!)
-                              .where((id) => !primaryIds.contains(id))
-                              .toList();
-                          await prov.updateDeviceAssignments(
-                            context,
-                            widget.deviceId,
-                            primaryIds,
-                            secondaryIds,
-                          );
-                          if (!mounted) return;
-                          Navigator.pop(context, {
-                            'primary': primaryIds,
-                            'secondary': secondaryIds,
-                          });
-                        }
-                      : null,
-                  child: const Text('Speichern'),
-                ),
-              ],
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(loc.reset),
             ),
           ],
+        ),
+      );
+      if (confirm == true) {
+        await context.read<MuscleGroupProvider>().updateDeviceAssignments(
+              context,
+              widget.deviceId,
+              const [],
+              const [],
+            );
+        if (!mounted) return;
+        Navigator.pop(context, const {'primary': [], 'secondary': []});
+      }
+    }
+
+    final canSave = _selectedPrimaryId != null &&
+        (_selectedPrimaryId != _initialPrimaryId ||
+            !setEquals(_selectedSecondaryIds, _initialSecondaryIds));
+
+    final primaryBadge = _selectedPrimaryId == null ? 0 : 1;
+    final secondaryBadge = _selectedSecondaryIds.length;
+
+    Widget buildPrimaryList() {
+      if (entries.isEmpty) {
+        return _EmptyTab(
+          message: loc.emptyPrimary,
+          onReset: () => _searchCtr.clear(),
+        );
+      }
+      return ListView(
+        key: const PageStorageKey('primaryList'),
+        children: [
+          for (final e in entries)
+            _buildPrimaryRow(loc, theme, e.key, e.value),
+          if (_selectedPrimaryId == null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                loc.mustSelectPrimary,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+        ],
+      );
+    }
+
+    Widget buildSecondaryList() {
+      if (entries.isEmpty) {
+        return _EmptyTab(
+          message: loc.emptySecondary,
+          onReset: () => _searchCtr.clear(),
+        );
+      }
+      return ListView(
+        key: const PageStorageKey('secondaryList'),
+        children: [
+          for (final e in entries)
+            _buildSecondaryRow(loc, theme, e.key, e.value),
+        ],
+      );
+    }
+
+    return DefaultTabController(
+      length: 2,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${widget.deviceName} — ${loc.muscleGroupTitle}',
+                      style: theme.textTheme.titleLarge,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: reset,
+                    child: Text(loc.reset),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _searchCtr,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: loc.exerciseSearchMuscleGroupsHint,
+                  suffixIcon: _searchCtr.text.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () => _searchCtr.clear(),
+                          icon: const Icon(Icons.clear),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TabBar(
+                tabs: [
+                  Tab(text: '${loc.muscleTabsPrimary} ($primaryBadge)'),
+                  Tab(text: '${loc.muscleTabsSecondary} ($secondaryBadge)'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    buildPrimaryList(),
+                    buildSecondaryList(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(loc.commonCancel),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: canSave ? save : null,
+                    child: Text(loc.commonSave),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPrimaryRow(
-      MuscleRegion region, MuscleGroup? g, ThemeData theme) {
-    final name = _displayName(region, g);
+  Widget _buildPrimaryRow(AppLocalizations loc, ThemeData theme,
+      MuscleRegion region, MuscleGroup? g) {
+    final id = g?.id ?? region.name;
+    final name = (g?.name.trim().isNotEmpty ?? false)
+        ? g!.name
+        : _regionLabel(loc, region);
+    final selected = _selectedPrimaryId == id;
     return Semantics(
-      label: '$name, primär auswählen',
+      label: '$name, ${loc.muscleTabsPrimary}',
       child: InkWell(
         onTap: () {
           setState(() {
-            _primary = region;
-            _secondary.remove(region);
+            _selectedPrimaryId = id;
+            _selectedSecondaryIds.remove(id);
           });
         },
         child: SizedBox(
@@ -307,13 +394,13 @@ class _DeviceMuscleAssignmentSheetState
                   style: TextStyle(color: theme.colorScheme.onSurface),
                 ),
               ),
-              Radio<MuscleRegion>(
-                value: region,
-                groupValue: _primary,
-                onChanged: (r) {
+              Radio<String>(
+                value: id,
+                groupValue: _selectedPrimaryId,
+                onChanged: (v) {
                   setState(() {
-                    _primary = r;
-                    if (r != null) _secondary.remove(r);
+                    _selectedPrimaryId = v;
+                    if (v != null) _selectedSecondaryIds.remove(v);
                   });
                 },
                 fillColor: MaterialStateProperty.resolveWith(
@@ -326,22 +413,25 @@ class _DeviceMuscleAssignmentSheetState
     );
   }
 
-  Widget _buildSecondaryRow(
-      MuscleRegion region, MuscleGroup? g, ThemeData theme) {
-    final name = _displayName(region, g);
-    final checked = _secondary.contains(region);
-    final disabled = _primary == region;
+  Widget _buildSecondaryRow(AppLocalizations loc, ThemeData theme,
+      MuscleRegion region, MuscleGroup? g) {
+    final id = g?.id ?? region.name;
+    final name = (g?.name.trim().isNotEmpty ?? false)
+        ? g!.name
+        : _regionLabel(loc, region);
+    final checked = _selectedSecondaryIds.contains(id);
+    final disabled = _selectedPrimaryId == id;
     return Semantics(
-      label: '$name, sekundär auswählen',
+      label: '$name, ${loc.muscleTabsSecondary}',
       child: InkWell(
         onTap: disabled
             ? null
             : () {
                 setState(() {
                   if (checked) {
-                    _secondary.remove(region);
+                    _selectedSecondaryIds.remove(id);
                   } else {
-                    _secondary.add(region);
+                    _selectedSecondaryIds.add(id);
                   }
                 });
               },
@@ -366,19 +456,44 @@ class _DeviceMuscleAssignmentSheetState
                     : (v) {
                         setState(() {
                           if (v == true) {
-                            _secondary.add(region);
+                            _selectedSecondaryIds.add(id);
                           } else {
-                            _secondary.remove(region);
+                            _selectedSecondaryIds.remove(id);
                           }
                         });
                       },
                 fillColor: MaterialStateProperty.resolveWith(
                     (states) => theme.colorScheme.tertiary),
                 checkColor: theme.colorScheme.onTertiary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyTab extends StatelessWidget {
+  final String message;
+  final VoidCallback onReset;
+
+  const _EmptyTab({required this.message, required this.onReset});
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message),
+          const SizedBox(height: 8),
+          TextButton(onPressed: onReset, child: Text(loc.resetFilters)),
+        ],
       ),
     );
   }

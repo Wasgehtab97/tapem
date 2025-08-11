@@ -393,6 +393,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Clear primary and secondary muscle groups?';
 
   @override
+  String get muscleGroupTitle => 'Muscle groups';
+
+  @override
+  String get muscleTabsPrimary => 'Primary';
+
+  @override
+  String get muscleTabsSecondary => 'Secondary';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get emptyPrimary => 'No primary muscle groups';
+
+  @override
+  String get emptySecondary => 'No secondary muscle groups';
+
+  @override
+  String get mustSelectPrimary => 'Select a primary muscle group';
+
+  @override
   String get filterNameChip => 'Name';
 
   @override

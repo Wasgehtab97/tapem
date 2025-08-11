@@ -393,6 +393,27 @@ class AppLocalizationsDe extends AppLocalizations {
       'Primäre und sekundäre Muskelgruppen löschen?';
 
   @override
+  String get muscleGroupTitle => 'Muskelgruppen';
+
+  @override
+  String get muscleTabsPrimary => 'Primär';
+
+  @override
+  String get muscleTabsSecondary => 'Sekundär';
+
+  @override
+  String get reset => 'Zurücksetzen';
+
+  @override
+  String get emptyPrimary => 'Keine primären Muskelgruppen';
+
+  @override
+  String get emptySecondary => 'Keine sekundären Muskelgruppen';
+
+  @override
+  String get mustSelectPrimary => 'Bitte primäre Muskelgruppe wählen';
+
+  @override
   String get filterNameChip => 'Name';
 
   @override
