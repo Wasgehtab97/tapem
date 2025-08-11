@@ -21,7 +21,6 @@ class FilterChipsRow extends StatelessWidget {
   });
 
   Future<void> _showSortSheet(BuildContext context) async {
-    final loc = AppLocalizations.of(context)!;
     final res = await showModalBottomSheet<SortOrder>(
       context: context,
       builder: (ctx) => SafeArea(
