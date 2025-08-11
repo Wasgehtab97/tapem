@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 
 import 'package:tapem/core/providers/muscle_group_provider.dart';
@@ -370,7 +370,6 @@ class _DeviceMuscleAssignmentSheetState
     final name = (g?.name.trim().isNotEmpty ?? false)
         ? g!.name
         : _regionLabel(loc, region);
-    final selected = _selectedPrimaryId == id;
     return Semantics(
       label: '$name, ${loc.muscleTabsPrimary}',
       child: InkWell(
