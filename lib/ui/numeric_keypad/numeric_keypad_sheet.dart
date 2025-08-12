@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/widgets/gradient_button.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
+
 import 'action_rail.dart';
 import 'key_button.dart';
 
+/// Bottom sheet numeric keypad used on the device/session page.
 class NumericKeypadSheet extends StatefulWidget {
   final ValueChanged<String> onDigit;
   final VoidCallback onDecimal;
@@ -18,6 +21,10 @@ class NumericKeypadSheet extends StatefulWidget {
   final VoidCallback onHideKeyboard;
   final VoidCallback onSubmit;
   final bool isSubmitEnabled;
+  final bool canPaste;
+  final bool canCopy;
+  final bool canPlus;
+  final bool canMinus;
 
   const NumericKeypadSheet({
     super.key,
@@ -31,15 +38,18 @@ class NumericKeypadSheet extends StatefulWidget {
     required this.onHideKeyboard,
     required this.onSubmit,
     this.isSubmitEnabled = false,
+    this.canPaste = true,
+    this.canCopy = true,
+    this.canPlus = true,
+    this.canMinus = true,
   });
 
+  /// Convenience helper to show the sheet.
   static Future<void> show(BuildContext context, NumericKeypadSheet sheet) {
-    final h = MediaQuery.of(context).size.height;
-    final maxH = math.min(h * 0.45, 380.0);
+    final maxH = MediaQuery.of(context).size.height * 0.45;
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => sheet,
       constraints: BoxConstraints(maxHeight: maxH),
@@ -50,11 +60,13 @@ class NumericKeypadSheet extends StatefulWidget {
   State<NumericKeypadSheet> createState() => _NumericKeypadSheetState();
 }
 
+enum _RepeatAction { backspace, plus, minus }
+
 class _NumericKeypadSheetState extends State<NumericKeypadSheet>
     with SingleTickerProviderStateMixin {
   late final String _decimal;
   late final Ticker _ticker;
-  Duration _lastTick = Duration.zero;
+  _RepeatAction? _repeatAction;
 
   @override
   void initState() {
@@ -70,32 +82,46 @@ class _NumericKeypadSheetState extends State<NumericKeypadSheet>
   }
 
   void _onTick(Duration elapsed) {
-    if (elapsed - _lastTick >= const Duration(milliseconds: 100)) {
-      _lastTick += const Duration(milliseconds: 100);
-      widget.onBackspace(continuous: true);
+    switch (_repeatAction) {
+      case _RepeatAction.backspace:
+        widget.onBackspace(continuous: true);
+        break;
+      case _RepeatAction.plus:
+        widget.onPlus();
+        break;
+      case _RepeatAction.minus:
+        widget.onMinus();
+        break;
+      default:
+        break;
     }
+  }
+
+  void _startRepeat(_RepeatAction action) {
+    _repeatAction = action;
+    _ticker.start();
+  }
+
+  void _stopRepeat() {
+    _ticker.stop();
+    _repeatAction = null;
   }
 
   Future<void> _handlePaste() async {
     final data = await Clipboard.getData('text/plain');
     final text = data?.text ?? '';
+    var hasDecimal = false;
     for (final ch in text.split('')) {
       if (ch == _decimal) {
-        widget.onDecimal();
+        if (!hasDecimal) {
+          widget.onDecimal();
+          hasDecimal = true;
+        }
       } else if (RegExp(r'\d').hasMatch(ch)) {
         widget.onDigit(ch);
       }
     }
     widget.onPaste();
-  }
-
-  void _startBackspace() {
-    _lastTick = Duration.zero;
-    _ticker.start();
-  }
-
-  void _stopBackspace() {
-    _ticker.stop();
   }
 
   @override
@@ -106,156 +132,140 @@ class _NumericKeypadSheetState extends State<NumericKeypadSheet>
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     const gap = 8.0;
-    const railWidth = 64.0;
+    const padding = 12.0;
+    const ctaSpacing = 12.0;
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
-          child: FocusTraversalGroup(
-            child: Shortcuts(
-              shortcuts: {
-                LogicalKeySet(LogicalKeyboardKey.enter): const ActivateIntent(),
-                LogicalKeySet(LogicalKeyboardKey.numpadEnter): const ActivateIntent(),
-                LogicalKeySet(LogicalKeyboardKey.backspace): const _BackspaceIntent(),
-              },
-              child: Actions(
-                actions: {
-                  ActivateIntent: CallbackAction<ActivateIntent>(
-                    onInvoke: (_) {
-                      if (widget.isSubmitEnabled) widget.onSubmit();
-                      return null;
-                    },
-                  ),
-                  _BackspaceIntent: CallbackAction<_BackspaceIntent>(
-                    onInvoke: (_) {
-                      widget.onBackspace(continuous: false);
-                      return null;
-                    },
-                  ),
-                },
-                child: Column(
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
+        child: SafeArea(
+          top: false,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.all(padding),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availableWidth = constraints.maxWidth;
+                final availableHeight = constraints.maxHeight;
+
+                // Key size computed primarily from width.
+                final sizeFromWidth = (availableWidth - 3 * gap) / 4;
+
+                final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+                final ctaHeight = surface?.height ?? 48;
+
+                final heightForGrid =
+                    availableHeight - ctaHeight - ctaSpacing;
+                final sizeFromHeight =
+                    (heightForGrid - gap * 3) / 4;
+
+                var keySize = math.min(sizeFromWidth, sizeFromHeight);
+                keySize = math.max(44.0, keySize);
+
+                final gridWidth = keySize * 3 + gap * 2;
+                final gridHeight = keySize * 4 + gap * 3;
+
+                return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final gridWidth = constraints.maxWidth - railWidth - gap;
-                          final gridHeight = constraints.maxHeight;
-                          final cell = math.min(
-                            (gridWidth - gap * 2) / 3,
-                            (gridHeight - gap * 3) / 4,
-                          );
-                          final cellSize = math.max(cell, 44.0);
-                          final gridBoxWidth = cellSize * 3 + gap * 2;
-                          final gridBoxHeight = cellSize * 4 + gap * 3;
-                          final actionSize = math.min(cellSize, 48.0);
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: Center(
-                                  child: SizedBox(
-                                    width: gridBoxWidth,
-                                    height: gridBoxHeight,
-                                    child: GridView.builder(
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 3,
-                                        mainAxisSpacing: gap,
-                                        crossAxisSpacing: gap,
-                                        childAspectRatio: 1,
-                                      ),
-                                      itemCount: 12,
-                                      itemBuilder: (context, index) {
-                                        if (index < 9) {
-                                          final d = '${index + 1}';
-                                          return KeyButton(
-                                            size: cellSize,
-                                            semanticsLabel: 'Taste $d',
-                                            onPressed: () => widget.onDigit(d),
-                                            child: Text(d),
-                                          );
-                                        }
-                                        if (index == 9) {
-                                          return KeyButton(
-                                            size: cellSize,
-                                            semanticsLabel:
-                                                _decimal == ',' ? 'Komma' : 'Punkt',
-                                            onPressed: widget.onDecimal,
-                                            child: Text(_decimal),
-                                          );
-                                        }
-                                        if (index == 10) {
-                                          return KeyButton(
-                                            size: cellSize,
-                                            semanticsLabel: 'Taste 0',
-                                            onPressed: () => widget.onDigit('0'),
-                                            child: const Text('0'),
-                                          );
-                                        }
-                                        return KeyButton(
-                                          size: cellSize,
-                                          semanticsLabel: 'Rücktaste',
-                                          onPressed: () =>
-                                              widget.onBackspace(continuous: false),
-                                          onLongPressStart: (_) {
-                                            widget.onBackspace(continuous: true);
-                                            _startBackspace();
-                                          },
-                                        onLongPressEnd: (_) => _stopBackspace(),
-                                          child: const Icon(Icons.backspace),
-                                        );
-                                      },
-                                    ),
+                    SizedBox(
+                      height: gridHeight,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: gridWidth,
+                            child: GridView.count(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: gap,
+                              crossAxisSpacing: gap,
+                              physics:
+                                  const NeverScrollableScrollPhysics(),
+                              children: [
+                                for (var i = 1; i <= 9; i++)
+                                  KeyButton(
+                                    label: '$i',
+                                    semanticsLabel: 'Taste $i',
+                                    onTap: () => widget.onDigit('$i'),
+                                    size: keySize,
                                   ),
+                                KeyButton(
+                                  label: _decimal,
+                                  semanticsLabel:
+                                      _decimal == ',' ? 'Komma' : 'Punkt',
+                                  onTap: widget.onDecimal,
+                                  size: keySize,
                                 ),
-                              ),
-                              const SizedBox(width: gap),
-                              SizedBox(
-                                width: railWidth,
-                                child: ActionRail(
-                                  buttonSize: actionSize,
-                                  onHide: () {
-                                    widget.onHideKeyboard();
-                                    Navigator.of(context).maybePop();
+                                KeyButton(
+                                  label: '0',
+                                  semanticsLabel: 'Taste 0',
+                                  onTap: () => widget.onDigit('0'),
+                                  size: keySize,
+                                ),
+                                KeyButton(
+                                  icon: const Icon(Icons.backspace),
+                                  semanticsLabel: 'Rücktaste',
+                                  onTap: () =>
+                                      widget.onBackspace(continuous: false),
+                                  onLongPressStart: (_) {
+                                    widget.onBackspace(continuous: true);
+                                    _startRepeat(_RepeatAction.backspace);
                                   },
-                                  onPaste: _handlePaste,
-                                  onCopy: widget.onCopy,
-                                  onPlus: widget.onPlus,
-                                  onMinus: widget.onMinus,
-                                  onClose: () => Navigator.of(context).maybePop(),
+                                  onLongPressEnd: (_) => _stopRepeat(),
+                                  size: keySize,
                                 ),
-                              ),
-                            ],
-                          );
-                        },
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: gap),
+                          SizedBox(
+                            width: keySize,
+                            child: ActionRail(
+                              keySize: keySize,
+                              onHide: () {
+                                widget.onHideKeyboard();
+                                Navigator.of(context).maybePop();
+                              },
+                              onPaste: _handlePaste,
+                              onCopy: widget.onCopy,
+                              onPlus: widget.onPlus,
+                              onMinus: widget.onMinus,
+                              onClose: () => Navigator.of(context).maybePop(),
+                              onPlusLongPressStart: (_) {
+                                widget.onPlus();
+                                _startRepeat(_RepeatAction.plus);
+                              },
+                              onPlusLongPressEnd: (_) => _stopRepeat(),
+                              onMinusLongPressStart: (_) {
+                                widget.onMinus();
+                                _startRepeat(_RepeatAction.minus);
+                              },
+                              onMinusLongPressEnd: (_) => _stopRepeat(),
+                              canPaste: widget.canPaste,
+                              canCopy: widget.canCopy,
+                              canPlus: widget.canPlus,
+                              canMinus: widget.canMinus,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: ctaSpacing),
                     GradientButton(
                       onPressed:
                           widget.isSubmitEnabled ? widget.onSubmit : null,
                       child: const Text('Weiter'),
                     ),
-                    SizedBox(height: bottomPadding),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
       ),
     );
   }
-}
-
-class _BackspaceIntent extends Intent {
-  const _BackspaceIntent();
 }
