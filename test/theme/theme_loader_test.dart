@@ -30,5 +30,26 @@ void main() {
       loader.applyBranding('other', null);
       expect(loader.theme.colorScheme.primary, AppColors.accentMint);
     });
+
+    test('gym_01 surfaces are normalised to reference luminance', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding('gym_01', null);
+
+      final anchor = MagentaTones.brightnessAnchor;
+      final grad = AppGradients.brandGradient;
+      final gradLum =
+          grad.colors.map((c) => c.computeLuminance()).reduce((a, b) => a + b) /
+              grad.colors.length;
+      expect((gradLum - anchor).abs(), lessThanOrEqualTo(0.02));
+      expect(
+          (MagentaTones.surface1.computeLuminance() - anchor).abs(),
+          lessThanOrEqualTo(0.02));
+      expect(
+          (MagentaTones.surface2.computeLuminance() - (anchor + 0.025)).abs(),
+          lessThanOrEqualTo(0.02));
+      expect(
+          (MagentaTones.control.computeLuminance() - (anchor + 0.01)).abs(),
+          lessThanOrEqualTo(0.02));
+    });
   });
 }

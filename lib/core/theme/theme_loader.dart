@@ -25,6 +25,8 @@ class ThemeLoader extends ChangeNotifier {
     if (gymId == 'gym_01') {
       if (branding == null) {
         _applyMagentaDefaults();
+        MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+        notifyListeners();
         return;
       }
       final primary = branding.primaryColor != null
@@ -45,6 +47,7 @@ class ThemeLoader extends ChangeNotifier {
       );
       AppGradients.setBrandGradient(gradStart, gradEnd);
       AppGradients.setCtaGlow(MagentaColors.focus);
+      MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
       notifyListeners();
       return;
     }
@@ -70,7 +73,7 @@ class ThemeLoader extends ChangeNotifier {
       MagentaColors.secondary,
     );
     AppGradients.setCtaGlow(MagentaColors.focus);
-    notifyListeners();
+    MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
   }
 
   Color _parseHex(String hex) {
