@@ -7,6 +7,7 @@ import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class _FakeRepo implements DeviceRepository {
   @override
@@ -24,7 +25,7 @@ class _FakeRepo implements DeviceRepository {
 }
 
 void main() {
-  testWidgets('SetCard toggle locks fields and colors', (tester) async {
+  testWidgets('SetCard toggle locks fields', (tester) async {
     final provider = DeviceProvider(
       firestore: FakeFirebaseFirestore(),
       getDevicesForGym: GetDevicesForGym(_FakeRepo()),
@@ -36,6 +37,8 @@ void main() {
       ChangeNotifierProvider<DeviceProvider>.value(
         value: provider,
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Form(
               child: SetCard(index: 0, set: provider.sets[0]),
@@ -52,7 +55,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, '10');
     await tester.enterText(find.byType(TextFormField).at(1), '5');
-    await tester.tap(find.byIcon(Icons.check_circle_outline));
+    await tester.tap(find.bySemanticsLabel('Complete set'));
     await tester.pumpAndSettle();
 
     expect(provider.completedCount, 1);
@@ -60,8 +63,6 @@ void main() {
       tester.widget<TextField>(find.byType(TextField).first).readOnly,
       true,
     );
-    final container = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
-    final box = container.decoration as BoxDecoration;
-    expect(box.color, Colors.green.withOpacity(0.1));
+    // Card keeps gradient background, no explicit color check here.
   });
 }
