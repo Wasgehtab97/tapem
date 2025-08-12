@@ -45,6 +45,64 @@ class MagentaColors {
   static const Color textTertiary = Color(0xFF8C93A1);
 }
 
+/// Helper functions for toning colours while preserving hue and saturation.
+class Tone {
+  /// Returns [color] with its lightness adjusted by [delta] using HSL.
+  static Color color(Color color, double delta) {
+    final hsl = HSLColor.fromColor(color);
+    final lightness = (hsl.lightness + delta).clamp(0.0, 1.0);
+    return hsl.withLightness(lightness).toColor();
+  }
+
+  /// Applies [delta] uniformly to all colours of [gradient].
+  static LinearGradient gradient(LinearGradient gradient, double delta) {
+    return LinearGradient(
+      begin: gradient.begin,
+      end: gradient.end,
+      colors: gradient.colors.map((c) => color(c, delta)).toList(),
+    );
+  }
+}
+
+/// Dynamic tone tokens used for brightness normalisation in `gym_01`.
+class MagentaTones {
+  /// Reference luminance derived from the "Letzte Session" card.
+  static double brightnessAnchor =
+      MagentaColors.surface1.computeLuminance();
+
+  /// Tone for cards and sheets.
+  static Color surface1 = MagentaColors.surface1;
+
+  /// Tone for inputs and key tiles.
+  static Color surface2 = MagentaColors.surface2;
+
+  /// Tone for control tiles and icon backgrounds.
+  static Color control = MagentaColors.surface2;
+
+  /// Re-computes tone values based on [gradient].
+  static void normalizeFromGradient(LinearGradient gradient) {
+    // Current gradient luminance and required delta to match anchor.
+    final lums = gradient.colors.map((c) => c.computeLuminance());
+    final origLum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final delta = brightnessAnchor - origLum;
+    AppGradients.brandGradient = Tone.gradient(gradient, delta);
+
+    // Derive surface tones relative to anchor.
+    surface1 = Tone.color(
+      MagentaColors.surface1,
+      brightnessAnchor - MagentaColors.surface1.computeLuminance(),
+    );
+    surface2 = Tone.color(
+      MagentaColors.surface2,
+      brightnessAnchor + 0.025 - MagentaColors.surface2.computeLuminance(),
+    );
+    control = Tone.color(
+      MagentaColors.surface2,
+      brightnessAnchor + 0.01 - MagentaColors.surface2.computeLuminance(),
+    );
+  }
+}
+
 /// Standard spacing values based on an 8px grid.
 class AppSpacing {
   static const double xs = 8.0;
