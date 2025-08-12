@@ -8,6 +8,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 class _FakeRepo implements DeviceRepository {
   @override
@@ -25,7 +26,8 @@ class _FakeRepo implements DeviceRepository {
 }
 
 class _TestList extends StatelessWidget {
-  const _TestList();
+  final OverlayNumericKeypadController keypadController;
+  const _TestList(this.keypadController);
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
@@ -59,7 +61,11 @@ class _TestList extends StatelessWidget {
                 ),
               );
             },
-            child: SetCard(index: entry.key, set: entry.value),
+            child: SetCard(
+              index: entry.key,
+              set: entry.value,
+              keypadController: keypadController,
+            ),
           ),
       ],
     );
@@ -76,14 +82,19 @@ void main() {
     provider.addSet();
     provider.addSet();
 
+    final keypadController = OverlayNumericKeypadController();
+
     await tester.pumpWidget(
       ChangeNotifierProvider<DeviceProvider>.value(
         value: provider,
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('de'),
-          home: const Scaffold(body: _TestList()),
+        child: OverlayNumericKeypadHost(
+          controller: keypadController,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('de'),
+            home: Scaffold(body: _TestList(keypadController)),
+          ),
         ),
       ),
     );

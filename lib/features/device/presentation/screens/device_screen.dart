@@ -18,6 +18,7 @@ import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import '../widgets/multi_device_banner.dart';
 import '../widgets/exercise_header.dart';
 import '../widgets/exercise_bottom_sheet.dart';
@@ -45,6 +46,7 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _showTimer = true;
+  final _keypadController = OverlayNumericKeypadController();
 
   @override
   void initState() {
@@ -86,19 +88,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
           .firstWhere((e) => e.id == widget.exerciseId);
     } catch (_) {}
 
+    Widget scaffold;
     if (prov.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (prov.error != null || prov.device == null) {
-      return Scaffold(
+      scaffold = const Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else if (prov.error != null || prov.device == null) {
+      scaffold = Scaffold(
         appBar: AppBar(title: const Text('Gerät nicht gefunden')),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
-    }
-
-    // Single-Übung: hier bleiben
-    return Scaffold(
+    } else {
+      // Single-Übung: hier bleiben
+      scaffold = Scaffold(
       appBar: AppBar(
         title: Hero(
           tag: 'device-${prov.device!.uid}',
@@ -310,6 +310,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             previous: entry.key < prov.lastSessionSets.length
                                 ? prov.lastSessionSets[entry.key]
                                 : null,
+                            keypadController: _keypadController,
                           ),
                         ),
                         if (entry.key < prov.sets.length - 1) ...[
@@ -407,6 +408,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
           ),
         ],
       ),
+      );
+    }
+
+    return OverlayNumericKeypadHost(
+      controller: _keypadController,
+      child: scaffold,
     );
   }
 }
