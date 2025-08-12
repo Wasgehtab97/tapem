@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/widgets/gradient_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/app_router.dart';
@@ -185,62 +186,79 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                      if (prov.lastSessionSets.isNotEmpty) ...[
-                      Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                        ),
-                        child: Container(
-                          decoration: DeviceLevelStyle.widgetDecorationFor(
-                            prov.level,
-                            opacity: 0.4,
+                    if (prov.lastSessionSets.isNotEmpty) ...[
+                      Builder(builder: (context) {
+                        final surface =
+                            Theme.of(context).extension<BrandSurfaceTheme>();
+                        var gradient =
+                            surface?.gradient ?? AppGradients.brandGradient;
+                        if (surface != null) {
+                          final lums =
+                              gradient.colors.map((c) => c.computeLuminance());
+                          final lum =
+                              lums.reduce((a, b) => a + b) / gradient.colors.length;
+                          final delta = surface.luminanceRef - lum;
+                          gradient = Tone.gradient(gradient, delta);
+                        }
+                        final textColor =
+                            Theme.of(context).colorScheme.onPrimary;
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: gradient,
+                            borderRadius: surface?.radius as BorderRadius? ??
+                                BorderRadius.circular(AppRadius.card),
+                            boxShadow: surface?.shadow,
                           ),
                           padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                          child: DefaultTextStyle.merge(
+                            style: TextStyle(color: textColor),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              for (var set in prov.lastSessionSets)
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      width: 24,
-                                      child: Text(set['number']!),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Text('${set['weight']} kg'),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Text('${set['reps']} x'),
-                                    if (set['rir'] != null &&
-                                        set['rir']!.isNotEmpty) ...[
-                                      const SizedBox(width: 16),
-                                      Text('RIR ${set['rir']}'),
-                                    ],
-                                    if (set['note'] != null &&
-                                        set['note']!.isNotEmpty) ...[
-                                      const SizedBox(width: 16),
-                                      Expanded(child: Text(set['note']!)),
-                                    ],
-                                  ],
-                                ),
-                              if (prov.lastSessionNote.isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                Text('Notiz: ${prov.lastSessionNote}'),
+                                for (var set in prov.lastSessionSets)
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        width: 24,
+                                        child: Text(set['number']!),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Text('${set['weight']} kg'),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Text('${set['reps']} x'),
+                                      if (set['rir'] != null &&
+                                          set['rir']!.isNotEmpty) ...[
+                                        const SizedBox(width: 16),
+                                        Text('RIR ${set['rir']}'),
+                                      ],
+                                      if (set['note'] != null &&
+                                          set['note']!.isNotEmpty) ...[
+                                        const SizedBox(width: 16),
+                                        Expanded(child: Text(set['note']!)),
+                                      ],
+                                    ],
+                                  ),
+                                if (prov.lastSessionNote.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text('Notiz: ${prov.lastSessionNote}'),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                     ],
                     const Divider(),
                     if (plannedEntry != null)

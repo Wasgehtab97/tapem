@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/numeric_keypad.dart';
 
 /// Tokens used to style a [SetCard]. They derive their default values from the
 /// ambient [ThemeData] but can be overridden via [copyWith].
 class SetCardTheme {
-  final Gradient cardGradient;
-  final double radius;
   final EdgeInsets padding;
   final Color chipBg;
   final Color chipFg;
@@ -20,8 +20,6 @@ class SetCardTheme {
   final Color menuFg;
 
   const SetCardTheme({
-    required this.cardGradient,
-    required this.radius,
     required this.padding,
     required this.chipBg,
     required this.chipFg,
@@ -35,12 +33,6 @@ class SetCardTheme {
   factory SetCardTheme.of(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return SetCardTheme(
-      cardGradient: LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [scheme.primary, scheme.secondary],
-      ),
-      radius: 24,
       padding: const EdgeInsets.all(16),
       chipBg: scheme.surfaceVariant.withOpacity(0.7),
       chipFg: scheme.onSurface,
@@ -53,8 +45,6 @@ class SetCardTheme {
   }
 
   SetCardTheme copyWith({
-    Gradient? cardGradient,
-    double? radius,
     EdgeInsets? padding,
     Color? chipBg,
     Color? chipFg,
@@ -65,8 +55,6 @@ class SetCardTheme {
     Color? menuFg,
   }) {
     return SetCardTheme(
-      cardGradient: cardGradient ?? this.cardGradient,
-      radius: radius ?? this.radius,
       padding: padding ?? this.padding,
       chipBg: chipBg ?? this.chipBg,
       chipFg: chipFg ?? this.chipFg,
@@ -162,6 +150,15 @@ class _SetCardState extends State<SetCard> {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
     final tokens = SetCardTheme.of(context);
+    final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+
+    var gradient = surface?.gradient ?? AppGradients.brandGradient;
+    if (surface != null) {
+      final lums = gradient.colors.map((c) => c.computeLuminance());
+      final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+      final delta = surface.luminanceRef - lum;
+      gradient = Tone.gradient(gradient, delta);
+    }
 
     final doneVal = widget.set['done'];
     final done = doneVal == 'true' || doneVal == true;
@@ -171,15 +168,10 @@ class _SetCardState extends State<SetCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          gradient: tokens.cardGradient,
-          borderRadius: BorderRadius.circular(tokens.radius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.55),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          gradient: gradient,
+          borderRadius: surface?.radius as BorderRadius? ??
+              BorderRadius.circular(AppRadius.button),
+          boxShadow: surface?.shadow,
         ),
         padding: tokens.padding,
         child: Column(
@@ -436,8 +428,14 @@ class _RoundButtonState extends State<_RoundButton> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withOpacity(0.12),
-                  Colors.white.withOpacity(0.08),
+                  Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withOpacity(0.12),
+                  Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withOpacity(0.08),
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
@@ -451,8 +449,9 @@ class _RoundButtonState extends State<_RoundButton> {
             ),
             child: Icon(
               widget.icon,
-              color:
-                  widget.filled ? Colors.white : widget.tokens.menuFg,
+              color: widget.filled
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : widget.tokens.menuFg,
             ),
           ),
         ),
