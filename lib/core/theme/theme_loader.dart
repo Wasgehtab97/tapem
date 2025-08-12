@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/gym/domain/models/branding.dart';
 import 'design_tokens.dart';
 import 'theme.dart';
+import 'brand_surface_theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
@@ -26,6 +27,7 @@ class ThemeLoader extends ChangeNotifier {
       if (branding == null) {
         _applyMagentaDefaults();
         MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+        _attachBrandSurface();
         notifyListeners();
         return;
       }
@@ -48,6 +50,7 @@ class ThemeLoader extends ChangeNotifier {
       AppGradients.setBrandGradient(gradStart, gradEnd);
       AppGradients.setCtaGlow(MagentaColors.focus);
       MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+      _attachBrandSurface();
       notifyListeners();
       return;
     }
@@ -74,11 +77,17 @@ class ThemeLoader extends ChangeNotifier {
     );
     AppGradients.setCtaGlow(MagentaColors.focus);
     MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+    _attachBrandSurface();
   }
 
   Color _parseHex(String hex) {
     hex = hex.replaceFirst('#', '');
     if (hex.length == 6) hex = 'FF$hex';
     return Color(int.parse(hex, radix: 16));
+  }
+
+  void _attachBrandSurface() {
+    final ext = BrandSurfaceTheme.magentaCta();
+    _currentTheme = _currentTheme.copyWith(extensions: [ext]);
   }
 }

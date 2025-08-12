@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
 import '../../domain/models/session.dart';
 
 class DaySessionsOverview extends StatelessWidget {
@@ -33,8 +34,16 @@ class DaySessionsOverview extends StatelessWidget {
   Widget _buildCard(BuildContext context, Session session) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppGradients.brandGradient,
-        borderRadius: BorderRadius.circular(12),
+        gradient: Theme.of(context)
+                .extension<BrandSurfaceTheme>()
+                ?.gradient ??
+            AppGradients.brandGradient,
+        borderRadius: Theme.of(context)
+                .extension<BrandSurfaceTheme>()
+                ?.radius ??
+            BorderRadius.circular(12),
+        boxShadow:
+            Theme.of(context).extension<BrandSurfaceTheme>()?.shadow,
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
