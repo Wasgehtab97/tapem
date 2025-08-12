@@ -25,13 +25,14 @@ class DeviceLevelStyle {
     double opacity = 1.0,
     double brightness = -0.6,
   }) {
-    final colors =
-        AppGradients.primary.colors.map((c) => c.withOpacity(opacity)).toList();
+    final colors = AppGradients.brandGradient.colors
+        .map((c) => c.withOpacity(opacity))
+        .toList();
 
     return BoxDecoration(
       gradient: LinearGradient(
-        begin: AppGradients.primary.begin,
-        end: AppGradients.primary.end,
+        begin: AppGradients.brandGradient.begin,
+        end: AppGradients.brandGradient.end,
         colors: colors,
       ),
       borderRadius: BorderRadius.circular(AppRadius.card),

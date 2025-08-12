@@ -73,6 +73,15 @@ class NumericKeypadTheme {
     ctaHeight: ctaHeight ?? this.ctaHeight,
     textStyle: textStyle ?? this.textStyle,
   );
+
+  factory NumericKeypadTheme.fromTheme(ThemeData theme) => NumericKeypadTheme(
+        bg: theme.colorScheme.surface,
+        keyBg: theme.canvasColor,
+        keyFg: theme.colorScheme.onPrimary,
+        cta: theme.colorScheme.primary,
+        overlayPressed: theme.colorScheme.primary.withOpacity(0.15),
+        disabled: theme.colorScheme.onPrimary.withOpacity(0.4),
+      );
 }
 
 /// Convenience TextField (readOnly) – öffnet das Sheet bei Tap.
@@ -137,7 +146,7 @@ Future<void> showNumericKeypadSheet(
   NumericKeypadTheme? theme,
   bool usePlatformAdaptiveStyle = true,
 }) async {
-  final th = theme ?? const NumericKeypadTheme();
+  final th = theme ?? NumericKeypadTheme.fromTheme(Theme.of(context));
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,

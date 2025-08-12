@@ -182,7 +182,7 @@ class AppEntry extends StatelessWidget {
           create: (_) => ThemeLoader()..loadDefault(),
           update: (_, branding, loader) {
             final l = loader ?? (ThemeLoader()..loadDefault());
-            l.applyBranding(branding.branding);
+            l.applyBranding(branding.gymId, branding.branding);
             return l;
           },
         ),

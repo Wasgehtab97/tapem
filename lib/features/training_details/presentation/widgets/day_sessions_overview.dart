@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import '../../domain/models/session.dart';
 
 class DaySessionsOverview extends StatelessWidget {
@@ -30,10 +31,11 @@ class DaySessionsOverview extends StatelessWidget {
   }
 
   Widget _buildCard(BuildContext context, Session session) {
-    return Card(
-      color: const Color(0xFF1E1E1E),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppGradients.brandGradient,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -41,8 +43,8 @@ class DaySessionsOverview extends StatelessWidget {
           children: [
             Text(
               session.deviceName,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -53,30 +55,36 @@ class DaySessionsOverview extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2.0),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.fitness_center,
-                      color: Color(0xFF00E676),
+                      color: Theme.of(context).colorScheme.primary,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${set.weight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(
+                    Icon(
                       Icons.repeat,
-                      color: Color(0xFF00BCD4),
+                      color: Theme.of(context).colorScheme.secondary,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${set.reps} Wdh',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),

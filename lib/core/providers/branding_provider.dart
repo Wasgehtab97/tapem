@@ -24,14 +24,17 @@ class BrandingProvider extends ChangeNotifier {
   Branding? _branding;
   bool _isLoading = false;
   String? _error;
+  String? _gymId;
 
   Branding? get branding => _branding;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get gymId => _gymId;
 
   Future<void> loadBranding(String gymId) async {
     _isLoading = true;
     _error = null;
+    _gymId = gymId;
     notifyListeners();
     try {
       _branding = await _source.getBranding(gymId);
@@ -48,6 +51,7 @@ class BrandingProvider extends ChangeNotifier {
   void loadBrandingWithGym(String? gymId) {
     if (gymId == null || gymId.isEmpty) {
       _branding = null;
+      _gymId = null;
       notifyListeners();
       return;
     }
