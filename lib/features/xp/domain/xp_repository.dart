@@ -7,6 +7,7 @@ abstract class XpRepository {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   });
 
   Stream<int> watchDayXp({required String userId, required DateTime date});

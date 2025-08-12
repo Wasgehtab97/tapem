@@ -440,4 +440,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get muscleCatLower => 'Unterkörper';
+
+  @override
+  String trainingDayEndsAt(Object hour) {
+    return 'Trainingstag endet um $hour:00';
+  }
+
+  @override
+  String lateWorkoutsCountPrevDay(Object hour) {
+    return 'Späte Workouts zählen zum Vortag (Rollover $hour:00)';
+  }
 }

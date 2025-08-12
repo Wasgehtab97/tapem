@@ -43,6 +43,7 @@ class FakeXpRepository implements XpRepository {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   }) async {
     calls++;
   }
