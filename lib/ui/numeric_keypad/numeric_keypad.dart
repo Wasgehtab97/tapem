@@ -1,5 +1,6 @@
 // ignore_for_file: unused_field
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -154,6 +155,9 @@ Future<void> showNumericKeypadSheet(
     backgroundColor: th.bg,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    constraints: BoxConstraints(
+      maxHeight: math.min(MediaQuery.of(context).size.height * 0.45, 420),
     ),
     builder: (ctx) => _NumericKeypadSheet(
       controller: controller,
@@ -312,174 +316,205 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
     final th = widget.theme;
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final padding = MediaQuery.viewPaddingOf(context);
+    final sheetHeight =
+        math.min(MediaQuery.of(context).size.height * 0.42, 360.0);
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 12,
-          right: 12,
-          bottom: padding.bottom > 0 ? 8 : 12,
-          top: 12,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Optional: Drag handle (vor allem Android)
-            if (!isIOS)
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+    return SizedBox(
+      width: double.infinity,
+      height: sheetHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final widthBased =
+              (constraints.maxWidth - 24 - th.gap * 3) / 4;
+          final handleHeight = isIOS ? 0.0 : 16.0;
+          final bottomPad = padding.bottom > 0 ? 8.0 : 12.0;
+          final availableHeight = constraints.maxHeight -
+              12 -
+              handleHeight -
+              12 -
+              th.ctaHeight -
+              bottomPad;
+          final heightBased =
+              (availableHeight - th.gap * 5) / 5;
+          final keySide = math.min(widthBased, heightBased);
+
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 12,
+                right: 12,
+                bottom: bottomPad,
+                top: 12,
               ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Grid
-                Expanded(child: _buildGrid(th)),
-                const SizedBox(width: 8),
-                // Rail
-                _buildRail(th),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // CTA Weiter
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                height: th.ctaHeight,
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.of(context).maybePop();
-                    widget.onNext?.call();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: th.cta,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  if (!isIOS)
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    elevation: 3,
-                    shadowColor: Colors.black54,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(child: _buildGrid(th, keySide)),
+                      SizedBox(width: th.gap),
+                      _buildRail(th, keySide),
+                    ],
                   ),
-                  child: const Text('Weiter',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      height: th.ctaHeight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).maybePop();
+                          widget.onNext?.call();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: th.cta,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 20),
+                          elevation: 3,
+                          shadowColor: Colors.black54,
+                        ),
+                        child: const Text('Weiter',
+                            style:
+                                TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildGrid(NumericKeypadTheme th) {
+  Widget _buildGrid(NumericKeypadTheme th, double keySide) {
     final keys = <_KeySpec>[
-      for (final k in ['1','2','3','4','5','6','7','8','9']) _KeySpec.text(k),
+      for (final k in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+        _KeySpec.text(k),
       _KeySpec.text(_decimalSep),
       _KeySpec.text('0'),
       _KeySpec.icon(CupertinoIcons.delete_left),
     ];
 
-    return LayoutBuilder(
-      builder: (context, c) {
-        return Wrap(
-          spacing: th.gap,
-          runSpacing: th.gap,
-          children: List.generate(keys.length, (i) {
-            final spec = keys[i];
-            return _KeyButton(
-              theme: th,
-              width: (c.maxWidth - 2 * th.gap) / 3,
-              height: th.keySize,
-              icon: spec.icon,
-              label: spec.label,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                if (spec.isIcon) {
-                  _backspace();
-                } else if (spec.label == _decimalSep) {
-                  if (widget.allowsDecimal && !_hasDecimal()) _insert(_decimalSep);
-                } else {
-                  _insert(spec.label!);
+    return SizedBox(
+      height: keySide * 4 + th.gap * 3,
+      child: GridView.count(
+        crossAxisCount: 3,
+        childAspectRatio: 1,
+        mainAxisSpacing: th.gap,
+        crossAxisSpacing: th.gap,
+        physics: const NeverScrollableScrollPhysics(),
+        children: List.generate(keys.length, (i) {
+          final spec = keys[i];
+          return _KeyButton(
+            theme: th,
+            width: keySide,
+            height: keySide,
+            icon: spec.icon,
+            label: spec.label,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              if (spec.isIcon) {
+                _backspace();
+              } else if (spec.label == _decimalSep) {
+                if (widget.allowsDecimal && !_hasDecimal()) {
+                  _insert(_decimalSep);
                 }
-              },
-              onHold: spec.isIcon
-                  ? () => _backspace()
-                  : null,
-            );
-          }),
-        );
-      },
+              } else {
+                _insert(spec.label!);
+              }
+            },
+            onHold: spec.isIcon ? () => _backspace() : null,
+          );
+        }),
+      ),
     );
   }
 
-  Widget _buildRail(NumericKeypadTheme th) {
+  Widget _buildRail(NumericKeypadTheme th, double keySide) {
     final btn = (_KeySpec spec, {VoidCallback? onHold}) => Padding(
-      padding: EdgeInsets.only(bottom: th.gap),
-      child: _KeyButton(
-        theme: th,
-        width: th.railWidth,
-        height: th.keySize,
-        icon: spec.icon,
-        label: spec.label,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          spec.onTap?.call();
-        },
-        onHold: onHold,
-      ),
-    );
+          padding: EdgeInsets.only(bottom: th.gap),
+          child: _KeyButton(
+            theme: th,
+            width: keySide,
+            height: keySide,
+            icon: spec.icon,
+            label: spec.label,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              spec.onTap?.call();
+            },
+            onHold: onHold,
+          ),
+        );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        btn(_KeySpec.icon(Icons.keyboard, onTap: _toggleSystemKeyboard)),
-        btn(_KeySpec.icon(Icons.copy_all_rounded, onTap: _copy)),
-        btn(_KeySpec.icon(Icons.content_paste_rounded, onTap: _paste)),
-        // Stepper + / -
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _KeyButton(
-              theme: th, width: (th.railWidth - th.gap) / 2, height: th.keySize,
-              icon: Icons.add,
-              onTap: () {
-                final v = _parse() + widget.step;
-                _writeFormatted(v);
-              },
-              onHold: () {
-                final v = _parse() + widget.step;
-                _writeFormatted(v);
-              },
-            ),
-            SizedBox(width: th.gap),
-            _KeyButton(
-              theme: th, width: (th.railWidth - th.gap) / 2, height: th.keySize,
-              icon: Icons.remove,
-              onTap: () {
-                final v = _parse() - widget.step;
-                _writeFormatted(v);
-              },
-              onHold: () {
-                final v = _parse() - widget.step;
-                _writeFormatted(v);
-              },
-            ),
-          ],
-        ),
-        SizedBox(height: th.gap),
-        btn(_KeySpec.icon(CupertinoIcons.xmark_circle_fill, onTap: () {
-          Navigator.of(context).maybePop();
-          widget.onClosed?.call();
-        })),
-      ],
+    return SizedBox(
+      width: keySide,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          btn(_KeySpec.icon(Icons.keyboard, onTap: _toggleSystemKeyboard)),
+          btn(_KeySpec.icon(Icons.copy_all_rounded, onTap: _copy)),
+          btn(_KeySpec.icon(Icons.content_paste_rounded, onTap: _paste)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _KeyButton(
+                theme: th,
+                width: (keySide - th.gap) / 2,
+                height: keySide,
+                icon: Icons.add,
+                onTap: () {
+                  final v = _parse() + widget.step;
+                  _writeFormatted(v);
+                },
+                onHold: () {
+                  final v = _parse() + widget.step;
+                  _writeFormatted(v);
+                },
+              ),
+              SizedBox(width: th.gap),
+              _KeyButton(
+                theme: th,
+                width: (keySide - th.gap) / 2,
+                height: keySide,
+                icon: Icons.remove,
+                onTap: () {
+                  final v = _parse() - widget.step;
+                  _writeFormatted(v);
+                },
+                onHold: () {
+                  final v = _parse() - widget.step;
+                  _writeFormatted(v);
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: th.gap),
+          btn(_KeySpec.icon(CupertinoIcons.xmark_circle_fill, onTap: () {
+            Navigator.of(context).maybePop();
+            widget.onClosed?.call();
+          })),
+        ],
+      ),
     );
   }
 }
@@ -521,10 +556,7 @@ class _KeyButtonState extends State<_KeyButton> {
   @override
   Widget build(BuildContext context) {
     final th = widget.theme;
-
-    final child = Container(
-      width: widget.width,
-      height: widget.height,
+    final content = Container(
       decoration: BoxDecoration(
         color: th.keyBg,
         borderRadius: BorderRadius.circular(th.radius),
@@ -556,32 +588,37 @@ class _KeyButtonState extends State<_KeyButton> {
       ),
     );
 
-    return AnimatedScale(
-      scale: _pressed ? 0.98 : 1.0,
-      duration: const Duration(milliseconds: 80),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) {
-          setState(() => _pressed = true);
-          if (widget.onHold != null) {
-            _hold.start(onFire: widget.onHold!);
-          }
-        },
-        onTapUp: (_) {
-          setState(() => _pressed = false);
-          _hold.stop();
-          widget.onTap?.call();
-        },
-        onTapCancel: () {
-          setState(() => _pressed = false);
-          _hold.stop();
-        },
-        onLongPressStart: (_) {
-          if (widget.onHold != null) {
-            HapticFeedback.mediumImpact();
-            _hold.enableBurst();
-          }
-        },
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: AnimatedScale(
+        scale: _pressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) {
+            setState(() => _pressed = true);
+            if (widget.onHold != null) {
+              _hold.start(onFire: widget.onHold!);
+            }
+          },
+          onTapUp: (_) {
+            setState(() => _pressed = false);
+            _hold.stop();
+            widget.onTap?.call();
+          },
+          onTapCancel: () {
+            setState(() => _pressed = false);
+            _hold.stop();
+          },
+          onLongPressStart: (_) {
+            if (widget.onHold != null) {
+              HapticFeedback.mediumImpact();
+              _hold.enableBurst();
+            }
+          },
+          child: content,
+        ),
       ),
     );
   }
