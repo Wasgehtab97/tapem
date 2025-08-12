@@ -11,9 +11,7 @@ Future<void> showNumericKeypadSheet({
   required BuildContext context,
   required TextEditingController controller,
   bool allowDecimal = true,
-  VoidCallback? onSubmit,
   ValueChanged<String>? onChanged,
-  String submitLabel = 'Weiter',
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -23,9 +21,7 @@ Future<void> showNumericKeypadSheet({
     builder: (ctx) => _NumericKeypadSheet(
       controller: controller,
       allowDecimal: allowDecimal,
-      onSubmit: onSubmit,
       onChanged: onChanged,
-      submitLabel: submitLabel,
       theme: const NumericKeypadTheme(),
     ),
   );
@@ -35,7 +31,6 @@ Future<void> showNumericKeypadSheet({
 class NumericKeypadTheme {
   final double cornerRadius;
   final double gap;
-  final double ctaHeight;
   final double maxHeightPx;
   final double maxHeightFraction;
   final Color sheetBg;
@@ -43,23 +38,18 @@ class NumericKeypadTheme {
   final Color keyFg;
   final Color railBg;
   final Color railIcon;
-  final Color ctaBg;
-  final Color ctaFg;
   final Color keyBgPressed;
 
   const NumericKeypadTheme({
     this.cornerRadius = 16,
     this.gap = 6,
-    this.ctaHeight = 48,
-    this.maxHeightPx = 420,
-    this.maxHeightFraction = 0.38, // ~38% wie im Screenshot
+    this.maxHeightPx = 210,
+    this.maxHeightFraction = 0.19,
     this.sheetBg = const Color(0xFF121212),
     this.keyBg = const Color(0xFF1E1E1E),
     this.keyFg = Colors.white,
     this.railBg = const Color(0xFF0F0F0F),
     this.railIcon = Colors.white70,
-    this.ctaBg = const Color(0xFFFF8A00),
-    this.ctaFg = Colors.white,
     this.keyBgPressed = const Color(0xFF2A2A2A),
   });
 }
@@ -70,17 +60,13 @@ class NumericKeypadTheme {
 class _NumericKeypadSheet extends StatefulWidget {
   final TextEditingController controller;
   final bool allowDecimal;
-  final VoidCallback? onSubmit;
   final ValueChanged<String>? onChanged;
-  final String submitLabel;
   final NumericKeypadTheme theme;
 
   const _NumericKeypadSheet({
     required this.controller,
     required this.allowDecimal,
-    required this.onSubmit,
     required this.onChanged,
-    required this.submitLabel,
     required this.theme,
   });
 
@@ -171,8 +157,7 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
             builder: (context, c) {
               // Höhe für Grid/Row berechnen
               final gap = t.gap;
-              final ctaH = t.ctaHeight;
-              final availableH = c.maxHeight - ctaH - gap * 2;
+              final availableH = c.maxHeight - gap * 2;
               // Mindest-Key-Kante 40px, rail so breit wie Key-Kante
               final cols = 3;
               final rows = 4;
@@ -186,66 +171,37 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
               final keySide = math.max(40.0, math.min(fromWidth, fromHeight));
               final railW = math.max(48.0, keySide); // Rail ≈ Key‑Breite
 
-              return Column(
-                children: [
-                  // Grid + Rail
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.all(gap),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // 3x4 Grid
-                          Expanded(
-                            child: _KeyGrid(
-                              keySide: keySide,
-                              gap: gap,
-                              allowDecimal: widget.allowDecimal,
-                              onPressed: _tap,
-                            ),
-                          ),
-                          SizedBox(width: gap),
-                          // Action Rail
-                          ConstrainedBox(
-                            constraints: BoxConstraints(minWidth: railW, maxWidth: railW),
-                            child: _ActionRail(
-                              keySide: keySide,
-                              theme: t,
-                              onHide: () => Navigator.of(context).maybePop(),
-                              onPaste: _paste,
-                              onCopy: _copy,
-                              onPlus: () => _tap('+'),
-                              onMinus: () => _tap('-'),
-                              onBackspace: () => _tap('del'),
-                            ),
-                          ),
-                        ],
+              return Padding(
+                padding: EdgeInsets.all(gap),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 3x4 Grid
+                    Expanded(
+                      child: _KeyGrid(
+                        keySide: keySide,
+                        gap: gap,
+                        allowDecimal: widget.allowDecimal,
+                        onPressed: _tap,
                       ),
                     ),
-                  ),
-                  // CTA
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(gap, 0, gap, gap),
-                    child: SizedBox(
-                      height: t.ctaHeight,
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: t.ctaBg,
-                          foregroundColor: t.ctaFg,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          widget.onSubmit?.call();
-                          Navigator.of(context).maybePop();
-                        },
-                        child: Text(widget.submitLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    SizedBox(width: gap),
+                    // Action Rail
+                    ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: railW, maxWidth: railW),
+                      child: _ActionRail(
+                        keySide: keySide,
+                        theme: t,
+                        onHide: () => Navigator.of(context).maybePop(),
+                        onPaste: _paste,
+                        onCopy: _copy,
+                        onPlus: () => _tap('+'),
+                        onMinus: () => _tap('-'),
+                        onBackspace: () => _tap('del'),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
