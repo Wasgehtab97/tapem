@@ -256,8 +256,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       const SizedBox(height: 8),
                       for (var entry in prov.sets.asMap().entries) ...[
                         Dismissible(
-                          key: ValueKey(
-                              'set-\${entry.key}-\${entry.value['number']}'),
+                          key: ValueKey('set-${entry.key}-${entry.value['number']}'),
                           direction: DismissDirection.endToStart,
                           background: const SizedBox.shrink(),
                           secondaryBackground: Container(
