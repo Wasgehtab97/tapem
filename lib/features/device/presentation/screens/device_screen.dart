@@ -254,10 +254,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      for (var entry in prov.sets.asMap().entries)
+                      for (var entry in prov.sets.asMap().entries) ...[
                         Dismissible(
                           key: ValueKey(
-                              'set-${entry.key}-${entry.value['number']}'),
+                              'set-\${entry.key}-\${entry.value['number']}'),
                           direction: DismissDirection.endToStart,
                           background: const SizedBox.shrink(),
                           secondaryBackground: Container(
@@ -287,23 +287,32 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               ),
                             );
                           },
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 4),
-                            child: SetCard(
-                              index: entry.key,
-                              set: entry.value,
-                              previous:
-                                  entry.key < prov.lastSessionSets.length
-                                      ? prov.lastSessionSets[entry.key]
-                                      : null,
-                            ),
+                          child: SetCard(
+                            index: entry.key,
+                            set: entry.value,
+                            previous: entry.key < prov.lastSessionSets.length
+                                ? prov.lastSessionSets[entry.key]
+                                : null,
                           ),
                         ),
-                      TextButton.icon(
-                        onPressed: prov.addSet,
-                        icon: const Icon(Icons.add),
-                        label: Text(loc.addSetButton),
+                        if (entry.key < prov.sets.length - 1) ...[
+                          const SizedBox(height: 12),
+                          const Divider(thickness: 1, height: 1),
+                          const SizedBox(height: 12),
+                        ]
+                      ],
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: prov.addSet,
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            textStyle:
+                                const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: Text(loc.addSetButton),
+                        ),
                       ),
                     ],
                   ],
