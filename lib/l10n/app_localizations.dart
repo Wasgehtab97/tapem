@@ -143,6 +143,18 @@ abstract class AppLocalizations {
   /// **'Please enter a valid e-mail.'**
   String get emailInvalid;
 
+  /// Info about end of training day
+  ///
+  /// In en, this message translates to:
+  /// **'Training day ends at {hour}:00'**
+  String trainingDayEndsAt(Object hour);
+
+  /// Tooltip for late workouts
+  ///
+  /// In en, this message translates to:
+  /// **'Late workouts count toward previous day (rollover {hour}:00)'**
+  String lateWorkoutsCountPrevDay(Object hour);
+
   /// Error when e-mail address is malformed
   ///
   /// In en, this message translates to:
@@ -368,16 +380,25 @@ abstract class AppLocalizations {
   /// Snackbar when no sets are completed
   ///
   /// In en, this message translates to:
-  /// **'No completed sets'**
+  /// **'No completed sets.'**
   String get noCompletedSets;
 
   /// Error when a session has already been saved today
+  ///
+  /// In en, this message translates to:
+  /// **'Already saved today.'**
   String get todayAlreadySaved;
 
   /// Snackbar after removing a set
+  ///
+  /// In en, this message translates to:
+  /// **'Set removed'**
   String get setRemoved;
 
-  /// Label for undoing an action
+  /// Undo action
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
   String get undo;
 
   /// Snackbar after successful save
@@ -653,37 +674,37 @@ abstract class AppLocalizations {
   /// Hint below header
   ///
   /// In en, this message translates to:
-  /// **'Session counts only for daily XP & device stats.'**
+  /// **'In multi-device mode, only daily XP and device stats count.'**
   String get multiDeviceSessionHint;
 
   /// Save button for multi devices
   ///
   /// In en, this message translates to:
-  /// **'Save session (without muscle group XP)'**
+  /// **'Save session (no muscle group XP)'**
   String get multiDeviceSaveButton;
 
   /// Snackbar text after save
   ///
   /// In en, this message translates to:
-  /// **'Session saved. Daily XP & stats updated.'**
+  /// **'Session saved. Daily XP and device stats updated.'**
   String get multiDeviceSessionSaved;
 
   /// CTA new exercise
   ///
   /// In en, this message translates to:
-  /// **'New exercise'**
+  /// **'Add exercise'**
   String get multiDeviceNewExercise;
 
   /// Title of exercise list
   ///
   /// In en, this message translates to:
-  /// **'Choose exercise'**
+  /// **'Select exercise'**
   String get multiDeviceExerciseListTitle;
 
   /// Empty state exercise list
   ///
   /// In en, this message translates to:
-  /// **'No exercises available'**
+  /// **'No exercises found'**
   String get multiDeviceNoExercises;
 
   /// Bottom sheet title add
@@ -737,7 +758,7 @@ abstract class AppLocalizations {
   /// Hint in search field
   ///
   /// In en, this message translates to:
-  /// **'Search...'**
+  /// **'Search exercises...'**
   String get multiDeviceSearchHint;
 
   /// Dropdown label filter
@@ -749,100 +770,182 @@ abstract class AppLocalizations {
   /// Dropdown item all
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'All muscle groups'**
   String get multiDeviceMuscleGroupFilterAll;
 
   /// Bottom sheet title add exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercise'**
   String get exerciseAddTitle;
 
   /// Bottom sheet title edit exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Edit exercise'**
   String get exerciseEditTitle;
 
-  /// Label for exercise name field
+  /// Exercise name label
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
   String get exerciseNameLabel;
 
   /// Header muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle groups'**
   String get exerciseMuscleGroupsLabel;
 
   /// Header for selected muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
   String get exerciseSelectedMuscleGroups;
 
-  /// Hint for muscle group search field
+  /// Hint for muscle group search
+  ///
+  /// In en, this message translates to:
+  /// **'Search muscle groups...'**
   String get exerciseSearchMuscleGroupsHint;
 
   /// Empty state muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'No muscle groups available'**
   String get exerciseNoMuscleGroups;
 
-  /// Common cancel button
+  /// Common cancel
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
   String get commonCancel;
 
-  /// Common save button
+  /// Common save
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
   String get commonSave;
 
   /// Title for muscle group admin page
+  ///
+  /// In en, this message translates to:
+  /// **'Manage muscle groups'**
   String get muscleAdminTitle;
 
   /// Button to clear search and filters
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
   String get resetFilters;
 
-  /// Menu item to assign muscle groups
+  /// Menu to assign muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Assign muscle groups'**
   String get assignMuscleGroups;
 
-  /// Menu item to reset muscle groups
+  /// Menu to clear muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Reset muscle groups'**
   String get resetMuscleGroups;
 
   /// Confirmation message for resetting muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Clear primary and secondary muscle groups?'**
   String get resetMuscleGroupsConfirm;
 
   /// Generic muscle groups title
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle groups'**
   String get muscleGroupTitle;
 
-  /// Tab label for primary muscle groups
+  /// Primary muscle tab
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
   String get muscleTabsPrimary;
 
-  /// Tab label for secondary muscle groups
+  /// Secondary muscle tab
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary'**
   String get muscleTabsSecondary;
 
-  /// Label for reset button
+  /// Reset button label
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
   String get reset;
 
-  /// Empty state text for primary tab
+  /// Empty state primary tab
+  ///
+  /// In en, this message translates to:
+  /// **'No primary muscle groups'**
   String get emptyPrimary;
 
-  /// Empty state text for secondary tab
+  /// Empty state secondary tab
+  ///
+  /// In en, this message translates to:
+  /// **'No secondary muscle groups'**
   String get emptySecondary;
 
-  /// Validation message when no primary group selected
+  /// Validation when primary missing
+  ///
+  /// In en, this message translates to:
+  /// **'Select a primary muscle group'**
   String get mustSelectPrimary;
 
   /// Chip label for sorting by name
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
   String get filterNameChip;
 
   /// Chip label for muscle filter
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle'**
   String get filterMuscleChip;
 
-  /// Semantics label for selected muscle group
+  /// Semantics for selected muscle group
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle group: {name}, selected'**
   String a11yMgSelected(Object name);
 
-  /// Semantics label for unselected muscle group
+  /// Semantics for unselected muscle group
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle group: {name}, not selected'**
   String a11yMgUnselected(Object name);
 
+  /// Section label for front upper body
+  ///
+  /// In en, this message translates to:
+  /// **'Upper body - front'**
   String get muscleCatUpperFront;
+
+  /// Section label for back upper body
+  ///
+  /// In en, this message translates to:
+  /// **'Upper body - back'**
   String get muscleCatUpperBack;
+
+  /// Section label for core
+  ///
+  /// In en, this message translates to:
+  /// **'Core'**
   String get muscleCatCore;
+
+  /// Section label for lower body
+  ///
+  /// In en, this message translates to:
+  /// **'Lower body'**
   String get muscleCatLower;
-
-  /// Info about when the training day ends
-  ///
-  /// In en, this message translates to:
-  /// **'Training day ends at {hour}:00'**
-  String trainingDayEndsAt(Object hour);
-
-  /// Info for late workouts counting to previous day
-  ///
-  /// In en, this message translates to:
-  /// **'Late workouts count toward previous day (rollover {hour}:00)'**
-  String lateWorkoutsCountPrevDay(Object hour);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

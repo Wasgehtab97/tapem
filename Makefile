@@ -58,6 +58,9 @@ admin:
 
 # Pull, Dependencies, Gen, Hot Restart
 R:
+	git restore lib/l10n/app_localizations.dart \
+            lib/l10n/app_localizations_de.dart \
+            lib/l10n/app_localizations_en.dart
 	git pull
 	flutter pub get
 	flutter gen-l10n

@@ -35,6 +35,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailInvalid => 'Please enter a valid e-mail.';
 
   @override
+  String trainingDayEndsAt(Object hour) {
+    return 'Training day ends at $hour:00';
+  }
+
+  @override
+  String lateWorkoutsCountPrevDay(Object hour) {
+    return 'Late workouts count toward previous day (rollover $hour:00)';
+  }
+
+  @override
   String get invalidEmailError => 'Invalid e-mail address.';
 
   @override
@@ -389,8 +399,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetMuscleGroups => 'Reset muscle groups';
 
   @override
-  String get resetMuscleGroupsConfirm =>
-      'Clear primary and secondary muscle groups?';
+  String get resetMuscleGroupsConfirm => 'Clear primary and secondary muscle groups?';
 
   @override
   String get muscleGroupTitle => 'Muscle groups';
@@ -440,14 +449,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get muscleCatLower => 'Lower body';
-
-  @override
-  String trainingDayEndsAt(Object hour) {
-    return 'Training day ends at $hour:00';
-  }
-
-  @override
-  String lateWorkoutsCountPrevDay(Object hour) {
-    return 'Late workouts count toward previous day (rollover $hour:00)';
-  }
 }
