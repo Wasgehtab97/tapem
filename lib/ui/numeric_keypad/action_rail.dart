@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'key_button.dart';
 
+/// Vertical rail with action keys used by the numeric keypad.
 class ActionRail extends StatelessWidget {
   final VoidCallback onHide;
   final VoidCallback onPaste;
@@ -8,7 +10,15 @@ class ActionRail extends StatelessWidget {
   final VoidCallback onPlus;
   final VoidCallback onMinus;
   final VoidCallback onClose;
-  final double buttonSize;
+  final GestureLongPressStartCallback? onPlusLongPressStart;
+  final GestureLongPressEndCallback? onPlusLongPressEnd;
+  final GestureLongPressStartCallback? onMinusLongPressStart;
+  final GestureLongPressEndCallback? onMinusLongPressEnd;
+  final double keySize;
+  final bool canPaste;
+  final bool canCopy;
+  final bool canPlus;
+  final bool canMinus;
 
   const ActionRail({
     super.key,
@@ -18,49 +28,65 @@ class ActionRail extends StatelessWidget {
     required this.onPlus,
     required this.onMinus,
     required this.onClose,
-    required this.buttonSize,
+    required this.keySize,
+    this.onPlusLongPressStart,
+    this.onPlusLongPressEnd,
+    this.onMinusLongPressStart,
+    this.onMinusLongPressEnd,
+    this.canPaste = true,
+    this.canCopy = true,
+    this.canPlus = true,
+    this.canMinus = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.keyboard_hide),
           semanticsLabel: 'Tastatur ausblenden',
-          onPressed: onHide,
-          child: const Icon(Icons.keyboard_hide),
+          onTap: onHide,
+          size: keySize,
         ),
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.content_paste),
           semanticsLabel: 'Einfügen',
-          onPressed: onPaste,
-          child: const Icon(Icons.content_paste),
+          onTap: canPaste ? onPaste : null,
+          size: keySize,
+          enabled: canPaste,
         ),
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.copy),
           semanticsLabel: 'Kopieren',
-          onPressed: onCopy,
-          child: const Icon(Icons.copy),
+          onTap: canCopy ? onCopy : null,
+          size: keySize,
+          enabled: canCopy,
         ),
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.add),
           semanticsLabel: 'Plus',
-          onPressed: onPlus,
-          child: const Icon(Icons.add),
+          onTap: canPlus ? onPlus : null,
+          onLongPressStart: canPlus ? onPlusLongPressStart : null,
+          onLongPressEnd: canPlus ? onPlusLongPressEnd : null,
+          size: keySize,
+          enabled: canPlus,
         ),
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.remove),
           semanticsLabel: 'Minus',
-          onPressed: onMinus,
-          child: const Icon(Icons.remove),
+          onTap: canMinus ? onMinus : null,
+          onLongPressStart: canMinus ? onMinusLongPressStart : null,
+          onLongPressEnd: canMinus ? onMinusLongPressEnd : null,
+          size: keySize,
+          enabled: canMinus,
         ),
         KeyButton(
-          size: buttonSize,
+          icon: const Icon(Icons.close),
           semanticsLabel: 'Schließen',
-          onPressed: onClose,
-          child: const Icon(Icons.close),
+          onTap: onClose,
+          size: keySize,
         ),
       ],
     );
