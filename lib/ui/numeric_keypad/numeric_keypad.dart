@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 /// =======================
 /// Public API & Theme
@@ -196,7 +197,9 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _decimalSep = MaterialLocalizations.of(context).decimalSeparator;
+    final locale = Localizations.localeOf(context).toString();
+    _decimalSep =
+        NumberFormat.decimalPattern(locale).symbols.DECIMAL_SEP;
   }
 
   /// ===== Helpers: text editing
