@@ -56,9 +56,9 @@ class _DeviceCardState extends State<DeviceCard> {
                       radius: 28,
                       backgroundColor: Colors.transparent,
                       child: DecoratedBox(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: AppGradients.primary,
+                          gradient: AppGradients.brandGradient,
                         ),
                         child: Center(
                           child: Text(initial, style: theme.textTheme.titleLarge),
