@@ -30,6 +30,21 @@ class AppColors {
   static const Color accentAmber = Color(0xFFFFC107);
 }
 
+/// Color palette for the magenta themed gym.
+class MagentaColors {
+  static const Color primary500 = Color(0xFFFF70D0);
+  static const Color primary600 = Color(0xFFE845B6);
+  static const Color secondary = Color(0xFF9B5DE5);
+  static const Color focus = Color(0xFFFFA3E6);
+  static const Color pressedTint = Color(0xFF6E2F7E);
+  static const Color bg = Color(0xFF0B0F12);
+  static const Color surface1 = Color(0xFF12161C);
+  static const Color surface2 = Color(0xFF1A1F26);
+  static const Color textPrimary = Color(0xFFF6F7FA);
+  static const Color textSecondary = Color(0xFFC6CBD2);
+  static const Color textTertiary = Color(0xFF8C93A1);
+}
+
 /// Standard spacing values based on an 8px grid.
 class AppSpacing {
   static const double xs = 8.0;
@@ -67,12 +82,33 @@ class AppGradients {
     ],
   );
 
-  /// Primary gradient used for buttons and icons.
-  static const LinearGradient primary = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+  /// Brand gradient used for primary UI elements.
+  static LinearGradient brandGradient = const LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
     colors: [AppColors.accentMint, AppColors.accentTurquoise],
   );
+
+  /// Radial glow used for call-to-action highlights.
+  static RadialGradient ctaGlow = RadialGradient(
+    colors: [AppColors.accentMint.withOpacity(0.25), Colors.transparent],
+    radius: 0.6,
+  );
+
+  static void setBrandGradient(Color start, Color end) {
+    brandGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [start, end],
+    );
+  }
+
+  static void setCtaGlow(Color color) {
+    ctaGlow = RadialGradient(
+      colors: [color.withOpacity(0.25), Colors.transparent],
+      radius: 0.6,
+    );
+  }
 }
 
 /// Animation durations.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/gym/domain/models/branding.dart';
+import 'design_tokens.dart';
 import 'theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
@@ -11,11 +12,43 @@ class ThemeLoader extends ChangeNotifier {
   /// Setzt das Standard-Dark-Theme.
   void loadDefault() {
     _currentTheme = AppTheme.mintDarkTheme;
+    AppGradients.setBrandGradient(
+      AppColors.accentMint,
+      AppColors.accentTurquoise,
+    );
+    AppGradients.setCtaGlow(AppColors.accentMint);
     notifyListeners();
   }
 
   /// Wendet Branding-Daten auf das aktuelle Theme an.
-  void applyBranding(Branding? branding) {
+  void applyBranding(String? gymId, Branding? branding) {
+    if (gymId == 'gym_01') {
+      if (branding == null) {
+        _applyMagentaDefaults();
+        return;
+      }
+      final primary = branding.primaryColor != null
+          ? _parseHex(branding.primaryColor!)
+          : MagentaColors.primary600;
+      final secondary = branding.secondaryColor != null
+          ? _parseHex(branding.secondaryColor!)
+          : MagentaColors.secondary;
+      final gradStart = branding.gradientStart != null
+          ? _parseHex(branding.gradientStart!)
+          : MagentaColors.primary500;
+      final gradEnd = branding.gradientEnd != null
+          ? _parseHex(branding.gradientEnd!)
+          : MagentaColors.secondary;
+      _currentTheme = AppTheme.customTheme(
+        primary: primary,
+        secondary: secondary,
+      );
+      AppGradients.setBrandGradient(gradStart, gradEnd);
+      AppGradients.setCtaGlow(MagentaColors.focus);
+      notifyListeners();
+      return;
+    }
+
     if (branding == null ||
         branding.primaryColor == null ||
         branding.secondaryColor == null) {
@@ -25,6 +58,18 @@ class ThemeLoader extends ChangeNotifier {
     final primary = _parseHex(branding.primaryColor!);
     final accent = _parseHex(branding.secondaryColor!);
     _currentTheme = AppTheme.customTheme(primary: primary, secondary: accent);
+    AppGradients.setBrandGradient(primary, accent);
+    AppGradients.setCtaGlow(primary);
+    notifyListeners();
+  }
+
+  void _applyMagentaDefaults() {
+    _currentTheme = AppTheme.magentaDarkTheme;
+    AppGradients.setBrandGradient(
+      MagentaColors.primary500,
+      MagentaColors.secondary,
+    );
+    AppGradients.setCtaGlow(MagentaColors.focus);
     notifyListeners();
   }
 

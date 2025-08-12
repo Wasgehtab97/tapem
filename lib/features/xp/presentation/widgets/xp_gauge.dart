@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 /// A circular XP gauge that animates from 0 to the provided XP value.
 ///
@@ -40,21 +41,12 @@ class XpGauge extends StatelessWidget {
 
     // Helper to determine the colour at the current progress.
     Color progressColor(double value) {
-      // Mint green (#00E676) for the first 60%.
-      const mint = Color(0xFF00E676);
-      // Turquoise (#00BCD4) in the middle segment.
-      const turquoise = Color(0xFF00BCD4);
-      // Amber (#FFC107) when approaching the next level.
-      const amber = Color(0xFFFFC107);
-
-      if (value <= 0.6) {
-        return mint;
-      } else if (value <= 0.9) {
-        final t = (value - 0.6) / 0.3;
-        return Color.lerp(mint, turquoise, t)!;
+      final colors = AppGradients.brandGradient.colors;
+      if (colors.length == 1) return colors.first;
+      if (value <= 0.5) {
+        return colors.first;
       } else {
-        final t = (value - 0.9) / 0.1;
-        return Color.lerp(turquoise, amber, t)!;
+        return colors.last;
       }
     }
 
@@ -76,7 +68,8 @@ class XpGauge extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(
                   progressColor(progress),
                 ),
-                backgroundColor: const Color(0xFF3A3A3A),
+                backgroundColor:
+                    Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
               ),
             ),
             // The label text in the centre of the gauge.
@@ -88,21 +81,27 @@ class XpGauge extends StatelessWidget {
                   style: TextStyle(
                     fontSize: size * 0.22,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
                 Text(
                   '$currentXp XP',
                   style: TextStyle(
                     fontSize: size * 0.14,
-                    color: Colors.grey.shade400,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withOpacity(0.6),
                   ),
                 ),
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: size * 0.12,
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withOpacity(0.5),
                   ),
                 ),
               ],

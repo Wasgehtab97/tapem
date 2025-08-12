@@ -14,73 +14,83 @@ class AppTheme {
   static ThemeData _buildTheme({
     required Color primary,
     required Color secondary,
+    Color background = AppColors.background,
+    Color surface = AppColors.surface,
+    Color? surface2,
+    Color textPrimary = AppColors.textPrimary,
+    Color textSecondary = AppColors.textSecondary,
+    Color focus = AppColors.accentTurquoise,
+    Color? buttonColor,
   }) {
     final base = ThemeData(brightness: Brightness.dark);
     final scheme = ColorScheme.dark(
       primary: primary,
       secondary: secondary,
-      background: AppColors.background,
-      surface: AppColors.surface,
-      onPrimary: AppColors.textPrimary,
-      onSurface: AppColors.textSecondary,
+      background: background,
+      surface: surface,
+      onPrimary: textPrimary,
+      onSurface: textSecondary,
+      outline: focus,
     );
+    final btnColor = buttonColor ?? secondary;
+    final s2 = surface2 ?? surface;
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.background,
-      canvasColor: AppColors.surface,
-      cardColor: AppColors.surface,
-      hintColor: AppColors.textSecondary,
+      scaffoldBackgroundColor: background,
+      canvasColor: s2,
+      cardColor: surface,
+      hintColor: textSecondary,
       appBarTheme: const AppBarTheme(
         elevation: 0,
         backgroundColor: Colors.transparent,
         centerTitle: true,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surface,
         selectedItemColor: secondary,
-        unselectedItemColor: AppColors.textSecondary,
+        unselectedItemColor: textSecondary,
         showUnselectedLabels: true,
       ),
       textTheme: TextTheme(
         // Large display numbers
         displayLarge: GoogleFonts.inter(
-          color: AppColors.textPrimary,
+          color: textPrimary,
           fontSize: AppFontSizes.kpi,
           fontWeight: FontWeight.w700,
         ),
         titleLarge: GoogleFonts.inter(
-          color: AppColors.textPrimary,
+          color: textPrimary,
           fontSize: AppFontSizes.headline,
           fontWeight: FontWeight.w600,
         ),
         titleMedium: GoogleFonts.inter(
-          color: AppColors.textSecondary,
+          color: textSecondary,
           fontSize: AppFontSizes.title,
         ),
         bodyMedium: GoogleFonts.inter(
-          color: AppColors.textSecondary,
+          color: textSecondary,
           fontSize: AppFontSizes.body,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),
           borderSide: BorderSide(
-            color: AppColors.textSecondary.withOpacity(0.3),
+            color: textSecondary.withOpacity(0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),
-          borderSide: BorderSide(color: secondary),
+          borderSide: BorderSide(color: focus),
         ),
-        hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6)),
+        hintStyle: TextStyle(color: textSecondary.withOpacity(0.6)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: secondary,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: btnColor,
+          foregroundColor: textPrimary,
           textStyle: const TextStyle(fontWeight: FontWeight.bold),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.button),
@@ -89,8 +99,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: secondary,
-          side: BorderSide(color: secondary.withOpacity(0.5)),
+          foregroundColor: btnColor,
+          side: BorderSide(color: btnColor.withOpacity(0.5)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.button),
           ),
@@ -109,17 +119,33 @@ class AppTheme {
   static final ThemeData mintDarkTheme = _buildTheme(
     primary: AppColors.accentMint,
     secondary: AppColors.accentTurquoise,
+    buttonColor: AppColors.accentTurquoise,
   );
 
   /// An alternate theme that highlights amber accents (e.g. for warning states).
   static final ThemeData amberDarkTheme = _buildTheme(
     primary: AppColors.accentAmber,
     secondary: AppColors.accentTurquoise,
+    buttonColor: AppColors.accentTurquoise,
   );
 
   /// A neutral dark theme without strong branding accents.
   static final ThemeData neutralTheme = _buildTheme(
     primary: AppColors.accentTurquoise,
     secondary: AppColors.accentTurquoise,
+    buttonColor: AppColors.accentTurquoise,
+  );
+
+  /// Magenta dark theme for special gym branding.
+  static final ThemeData magentaDarkTheme = _buildTheme(
+    primary: MagentaColors.primary600,
+    secondary: MagentaColors.secondary,
+    background: MagentaColors.bg,
+    surface: MagentaColors.surface1,
+    surface2: MagentaColors.surface2,
+    textPrimary: MagentaColors.textPrimary,
+    textSecondary: MagentaColors.textSecondary,
+    focus: MagentaColors.focus,
+    buttonColor: MagentaColors.primary600,
   );
 }
