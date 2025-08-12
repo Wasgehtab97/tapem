@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/widgets/gradient_button.dart';
 
 /// =======================
 /// Public API & Theme
@@ -247,69 +249,6 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
   bool _hasDecimal() =>
       widget.controller.textController.text.contains(_decimalSep);
 
-  double _parse() {
-    final t = widget.controller.textController.text.trim();
-    if (t.isEmpty) return 0.0;
-    final normalized = t.replaceAll(_decimalSep, '.');
-    return double.tryParse(normalized) ?? 0.0;
-  }
-
-  void _writeFormatted(double v) {
-    // Clamp
-    if (widget.minValue != null && v < widget.minValue!) v = widget.minValue!;
-    if (widget.maxValue != null && v > widget.maxValue!) v = widget.maxValue!;
-    // Strip trailing zeros
-    String s = v.toStringAsFixed(6);
-    s = s.replaceFirst(RegExp(r'\.?0+\$'), '');
-    s = s.replaceFirst(RegExp(r'\.?0+$'), '');
-    s = s.replaceAll('.', _decimalSep);
-    widget.controller.textController
-      ..text = s
-      ..selection = TextSelection.collapsed(offset: s.length);
-  }
-
-  Future<void> _copy() async {
-    final t = widget.controller.textController.text;
-    await Clipboard.setData(ClipboardData(text: t));
-    HapticFeedback.lightImpact();
-  }
-
-  Future<void> _paste() async {
-    final data = await Clipboard.getData('text/plain');
-    final raw = data?.text ?? '';
-    final allowed = RegExp('[0-9${RegExp.escape(_decimalSep)}]');
-    final filtered = raw.split('').where((c) => allowed.hasMatch(c)).join();
-
-    if (filtered.isEmpty) return;
-    // Normalize to our single decimal sep
-    String s = filtered;
-    // Wenn mehrere Dezimalzeichen → nur das erste behalten
-    final first = s.indexOf(_decimalSep);
-    if (first != -1) {
-      s = s.replaceAll(_decimalSep, '');
-      s = s.substring(0, first) + _decimalSep + s.substring(first);
-    }
-    widget.controller.textController.text = s;
-    widget.controller.textController.selection =
-        TextSelection.collapsed(offset: s.length);
-    HapticFeedback.selectionClick();
-  }
-
-  void _toggleSystemKeyboard() {
-    // Einfach: Sheet schließen – das Host-Feld kann dann ggf. readOnly=false setzen.
-    Navigator.of(context).pop();
-    widget.onClosed?.call();
-    // Fokus bleibt auf dem Feld; System-Keyboard zeigt sich,
-    // wenn das Feld nicht readOnly ist (Host entscheidet).
-  }
-
-  final _hold = _HoldRepeater();
-
-  @override
-  void dispose() {
-    _hold.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +256,7 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final padding = MediaQuery.viewPaddingOf(context);
     final sheetHeight =
-        math.min(MediaQuery.of(context).size.height * 0.42, 360.0);
+        math.min(MediaQuery.of(context).size.height * 0.45, 420.0);
 
     return SizedBox(
       width: double.infinity,
@@ -325,18 +264,21 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final widthBased =
-              (constraints.maxWidth - 24 - th.gap * 3) / 4;
+              (constraints.maxWidth - 24 - th.gap * 2) / 3;
           final handleHeight = isIOS ? 0.0 : 16.0;
           final bottomPad = padding.bottom > 0 ? 8.0 : 12.0;
           final availableHeight = constraints.maxHeight -
               12 -
               handleHeight -
               12 -
-              th.ctaHeight -
+              (Theme.of(context)
+                      .extension<BrandSurfaceTheme>()
+                      ?.height ??
+                  th.ctaHeight) -
               bottomPad;
           final heightBased =
-              (availableHeight - th.gap * 5) / 5;
-          final keySide = math.min(widthBased, heightBased);
+              (availableHeight - th.gap * 3) / 4;
+          final keySide = math.max(48.0, math.min(widthBased, heightBased));
 
           return SafeArea(
             top: false,
@@ -360,40 +302,17 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(child: _buildGrid(th, keySide)),
-                      SizedBox(width: th.gap),
-                      _buildRail(th, keySide),
-                    ],
-                  ),
+                  _buildGrid(th, keySide),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      height: th.ctaHeight,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.of(context).maybePop();
-                          widget.onNext?.call();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: th.cta,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                          elevation: 3,
-                          shadowColor: Colors.black54,
-                        ),
-                        child: const Text('Weiter',
-                            style:
-                                TextStyle(fontWeight: FontWeight.w700)),
-                      ),
+                    child: GradientButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).maybePop();
+                        widget.onNext?.call();
+                      },
+                      child: const Text('Weiter'),
                     ),
                   ),
                 ],
@@ -449,74 +368,7 @@ class _NumericKeypadSheetState extends State<_NumericKeypadSheet> {
     );
   }
 
-  Widget _buildRail(NumericKeypadTheme th, double keySide) {
-    final btn = (_KeySpec spec, {VoidCallback? onHold}) => Padding(
-          padding: EdgeInsets.only(bottom: th.gap),
-          child: _KeyButton(
-            theme: th,
-            width: keySide,
-            height: keySide,
-            icon: spec.icon,
-            label: spec.label,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              spec.onTap?.call();
-            },
-            onHold: onHold,
-          ),
-        );
-
-    return SizedBox(
-      width: keySide,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          btn(_KeySpec.icon(Icons.keyboard, onTap: _toggleSystemKeyboard)),
-          btn(_KeySpec.icon(Icons.copy_all_rounded, onTap: _copy)),
-          btn(_KeySpec.icon(Icons.content_paste_rounded, onTap: _paste)),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _KeyButton(
-                theme: th,
-                width: (keySide - th.gap) / 2,
-                height: keySide,
-                icon: Icons.add,
-                onTap: () {
-                  final v = _parse() + widget.step;
-                  _writeFormatted(v);
-                },
-                onHold: () {
-                  final v = _parse() + widget.step;
-                  _writeFormatted(v);
-                },
-              ),
-              SizedBox(width: th.gap),
-              _KeyButton(
-                theme: th,
-                width: (keySide - th.gap) / 2,
-                height: keySide,
-                icon: Icons.remove,
-                onTap: () {
-                  final v = _parse() - widget.step;
-                  _writeFormatted(v);
-                },
-                onHold: () {
-                  final v = _parse() - widget.step;
-                  _writeFormatted(v);
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: th.gap),
-          btn(_KeySpec.icon(CupertinoIcons.xmark_circle_fill, onTap: () {
-            Navigator.of(context).maybePop();
-            widget.onClosed?.call();
-          })),
-        ],
-      ),
-    );
-  }
+  // Rail with additional actions has been removed to keep the layout compact.
 }
 
 /// Taste mit Press-Animation, Glow & optionalem Long-Press-Repeat.
@@ -556,32 +408,31 @@ class _KeyButtonState extends State<_KeyButton> {
   @override
   Widget build(BuildContext context) {
     final th = widget.theme;
-    final content = Container(
+    final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+    final radius = surface?.radius ?? BorderRadius.circular(th.radius);
+    final textStyle = surface?.textStyle ?? th.textStyle;
+    final fg = textStyle.color ?? th.keyFg;
+    final overlay = surface?.pressedOverlay ?? th.overlayPressed;
+    final content = DecoratedBox(
       decoration: BoxDecoration(
-        color: th.keyBg,
-        borderRadius: BorderRadius.circular(th.radius),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
-        ],
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x1FFFFFFF), Color(0x19FFFFFF)], // subtiler Glaslook
-        ),
+        gradient: surface?.gradient ??
+            LinearGradient(colors: [th.cta, th.cta]),
+        borderRadius: radius,
+        boxShadow: surface?.shadow,
       ),
       child: Stack(
         children: [
           Center(
             child: widget.icon != null
-                ? Icon(widget.icon, color: th.keyFg)
+                ? Icon(widget.icon, color: fg)
                 : Text(widget.label ?? '',
-                    style: th.textStyle.copyWith(color: th.keyFg)),
+                    style: textStyle.copyWith(color: fg)),
           ),
           if (_pressed)
-            Container(
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: th.overlayPressed,
-                borderRadius: BorderRadius.circular(th.radius),
+                color: overlay,
+                borderRadius: radius,
               ),
             ),
         ],
@@ -654,13 +505,10 @@ class _HoldRepeater {
 class _KeySpec {
   final String? label;
   final IconData? icon;
-  final VoidCallback? onTap;
   bool get isIcon => icon != null;
 
-  _KeySpec.text(this.label)
-      : icon = null,
-        onTap = null;
-  _KeySpec.icon(this.icon, {this.onTap}) : label = null;
+  _KeySpec.text(this.label) : icon = null;
+  _KeySpec.icon(this.icon) : label = null;
 }
 
 /*
