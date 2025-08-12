@@ -12,6 +12,7 @@ import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/day_entry.dart';
 import '../../domain/models/week_block.dart';
 import '../widgets/device_selection_dialog.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 class PlanEditorScreen extends StatefulWidget {
   const PlanEditorScreen({super.key});
@@ -23,6 +24,7 @@ class PlanEditorScreen extends StatefulWidget {
 class _PlanEditorScreenState extends State<PlanEditorScreen>
     with SingleTickerProviderStateMixin {
   late TabController _weekController;
+  final _keypadController = OverlayNumericKeypadController();
 
   @override
   void initState() {
@@ -32,10 +34,17 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
   }
 
   @override
+  void dispose() {
+    _weekController.dispose();
+    _keypadController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prov = context.watch<TrainingPlanProvider>();
     final plan = prov.currentPlan!;
-    return GestureDetector(
+    final scaffold = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
@@ -96,7 +105,10 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
         ),
         body: TabBarView(
           controller: _weekController,
-          children: [for (var w in plan.weeks) _WeekView(week: w)],
+          children: [
+            for (var w in plan.weeks)
+              _WeekView(week: w, keypadController: _keypadController)
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () async {
@@ -127,6 +139,11 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
         ),
       ),
     );
+
+    return OverlayNumericKeypadHost(
+      controller: _keypadController,
+      child: scaffold,
+    );
   }
 
   Future<DateTime?> _pickDay(BuildContext context, WeekBlock week) async {
@@ -155,7 +172,8 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
 
 class _WeekView extends StatefulWidget {
   final WeekBlock week;
-  const _WeekView({required this.week});
+  final OverlayNumericKeypadController keypadController;
+  const _WeekView({required this.week, required this.keypadController});
 
   @override
   State<_WeekView> createState() => _WeekViewState();
@@ -290,6 +308,7 @@ class _WeekViewState extends State<_WeekView>
                   dayIndex: i,
                   day: widget.week.days[i],
                   pickSource: () => _pickSourceDay(context),
+                  keypadController: widget.keypadController,
                 ),
             ],
           ),
@@ -304,12 +323,14 @@ class _DayView extends StatelessWidget {
   final int dayIndex;
   final DayEntry day;
   final Future<_DayRef?> Function() pickSource;
+  final OverlayNumericKeypadController keypadController;
 
   const _DayView({
     required this.weekNumber,
     required this.dayIndex,
     required this.day,
     required this.pickSource,
+    required this.keypadController,
   });
 
   @override
@@ -353,6 +374,7 @@ class _DayView extends StatelessWidget {
                 prov.updateExercise(weekNumber, day.date, exIndex, updated);
               }
             },
+            keypadController: keypadController,
           ),
         );
       },
@@ -364,11 +386,13 @@ class _PlanEntryEditor extends StatefulWidget {
   final ExerciseEntry entry;
   final ValueChanged<ExerciseEntry> onChanged;
   final VoidCallback onSelectDevice;
+  final OverlayNumericKeypadController keypadController;
 
   const _PlanEntryEditor({
     required this.entry,
     required this.onChanged,
     required this.onSelectDevice,
+    required this.keypadController,
   });
 
   @override
@@ -451,7 +475,10 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       labelText: 'Arbeitssätze',
                       isDense: true,
                     ),
-                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    keyboardType: TextInputType.none,
+                    onTap: () => widget.keypadController
+                        .openFor(_setsCtr, allowDecimal: false),
                     onChanged: (_) => _emitUpdate(),
                   ),
                 ),
@@ -463,7 +490,10 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       labelText: 'Wdh',
                       isDense: true,
                     ),
-                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    keyboardType: TextInputType.none,
+                    onTap: () => widget.keypadController
+                        .openFor(_repsCtr, allowDecimal: false),
                     onChanged: (_) => _emitUpdate(),
                   ),
                 ),
@@ -475,7 +505,10 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       labelText: 'RIR',
                       isDense: true,
                     ),
-                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    keyboardType: TextInputType.none,
+                    onTap: () => widget.keypadController
+                        .openFor(_rirCtr, allowDecimal: false),
                     onChanged: (_) => _emitUpdate(),
                   ),
                 ),
