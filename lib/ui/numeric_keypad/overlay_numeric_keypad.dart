@@ -210,7 +210,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                         Clipboard.setData(ClipboardData(text: controller.target?.text ?? ''));
                         HapticFeedback.lightImpact();
                       },
-                      onPlus: () => _increment(controller, +1),
+                      onPlus: () => _increment(controller, 1),
                       onMinus: () => _increment(controller, -1),
                       onBackspace: () => _applyToken(controller, 'del'),
                     ),
