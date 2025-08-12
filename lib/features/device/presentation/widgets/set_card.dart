@@ -5,7 +5,7 @@ import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/theme/brand_surface_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/ui/numeric_keypad/numeric_keypad.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 /// Tokens used to style a [SetCard]. They derive their default values from the
 /// ambient [ThemeData] but can be overridden via [copyWith].
@@ -73,12 +73,14 @@ class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
   final Map<String, String>? previous; // kept for API compatibility
+  final OverlayNumericKeypadController keypadController;
 
   const SetCard({
     super.key,
     required this.index,
     required this.set,
     this.previous,
+    required this.keypadController,
   });
 
   @override
@@ -100,6 +102,13 @@ class _SetCardState extends State<SetCard> {
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
+
+    _weightCtrl.addListener(() {
+      context.read<DeviceProvider>().updateSet(widget.index, weight: _weightCtrl.text);
+    });
+    _repsCtrl.addListener(() {
+      context.read<DeviceProvider>().updateSet(widget.index, reps: _repsCtrl.text);
+    });
   }
 
   @override
@@ -122,21 +131,11 @@ class _SetCardState extends State<SetCard> {
     super.dispose();
   }
 
-  Future<void> _openKeypad(
+  void _openKeypad(
     TextEditingController controller, {
     required bool allowDecimal,
-  }) async {
-    await showNumericKeypadSheet(
-      context: context,
-      controller: controller,
-      allowDecimal: allowDecimal,
-    );
-    final prov = context.read<DeviceProvider>();
-    if (controller == _weightCtrl) {
-      prov.updateSet(widget.index, weight: _weightCtrl.text);
-    } else {
-      prov.updateSet(widget.index, reps: _repsCtrl.text);
-    }
+  }) {
+    widget.keypadController.openFor(controller, allowDecimal: allowDecimal);
   }
 
   @override

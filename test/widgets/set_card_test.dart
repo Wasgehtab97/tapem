@@ -8,6 +8,7 @@ import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 class _FakeRepo implements DeviceRepository {
   @override
@@ -33,15 +34,24 @@ void main() {
     );
     provider.addSet();
 
+    final keypadController = OverlayNumericKeypadController();
+
     await tester.pumpWidget(
       ChangeNotifierProvider<DeviceProvider>.value(
         value: provider,
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Form(
-              child: SetCard(index: 0, set: provider.sets[0]),
+        child: OverlayNumericKeypadHost(
+          controller: keypadController,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Form(
+                child: SetCard(
+                  index: 0,
+                  set: provider.sets[0],
+                  keypadController: keypadController,
+                ),
+              ),
             ),
           ),
         ),
