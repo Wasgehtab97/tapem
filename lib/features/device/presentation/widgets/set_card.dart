@@ -90,8 +90,6 @@ class _SetCardState extends State<SetCard> {
   late final TextEditingController _repsCtrl;
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
-  late final NumericKeypadController _weightKeypad;
-  late final NumericKeypadController _repsKeypad;
 
   bool _showExtras = false;
 
@@ -102,8 +100,6 @@ class _SetCardState extends State<SetCard> {
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
-    _weightKeypad = NumericKeypadController(_weightCtrl, _weightFocus);
-    _repsKeypad = NumericKeypadController(_repsCtrl, _repsFocus);
   }
 
   @override
@@ -127,22 +123,20 @@ class _SetCardState extends State<SetCard> {
   }
 
   Future<void> _openKeypad(
-    NumericKeypadController controller, {
-    required bool allowsDecimal,
+    TextEditingController controller, {
+    required bool allowDecimal,
   }) async {
     await showNumericKeypadSheet(
-      context,
+      context: context,
       controller: controller,
-      allowsDecimal: allowsDecimal,
-      onClosed: () {
-        final prov = context.read<DeviceProvider>();
-        if (controller == _weightKeypad) {
-          prov.updateSet(widget.index, weight: _weightCtrl.text);
-        } else {
-          prov.updateSet(widget.index, reps: _repsCtrl.text);
-        }
-      },
+      allowDecimal: allowDecimal,
     );
+    final prov = context.read<DeviceProvider>();
+    if (controller == _weightCtrl) {
+      prov.updateSet(widget.index, weight: _weightCtrl.text);
+    } else {
+      prov.updateSet(widget.index, reps: _repsCtrl.text);
+    }
   }
 
   @override
@@ -188,7 +182,7 @@ class _SetCardState extends State<SetCard> {
                     label: 'kg',
                     readOnly: done,
                     tokens: tokens,
-                    onTap: () => _openKeypad(_weightKeypad, allowsDecimal: true),
+                    onTap: () => _openKeypad(_weightCtrl, allowDecimal: true),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.kgRequired;
                       if (double.tryParse(v.replaceAll(',', '.')) == null) {
@@ -206,7 +200,7 @@ class _SetCardState extends State<SetCard> {
                     label: 'x',
                     readOnly: done,
                     tokens: tokens,
-                    onTap: () => _openKeypad(_repsKeypad, allowsDecimal: false),
+                    onTap: () => _openKeypad(_repsCtrl, allowDecimal: false),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.repsRequired;
                       if (int.tryParse(v) == null) return loc.intRequired;
