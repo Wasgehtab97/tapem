@@ -41,6 +41,16 @@
   "@emailInvalid": {
     "description": "Validation message for invalid e-mail"
   },
+  "trainingDayEndsAt": "Training day ends at {hour}:00",
+  "@trainingDayEndsAt": {
+    "description": "Info about end of training day",
+    "placeholders": {"hour": {}}
+  },
+  "lateWorkoutsCountPrevDay": "Late workouts count toward previous day (rollover {hour}:00)",
+  "@lateWorkoutsCountPrevDay": {
+    "description": "Tooltip for late workouts",
+    "placeholders": {"hour": {}}
+  },
 
   "invalidEmailError": "Invalid e-mail address.",
   "@invalidEmailError": {

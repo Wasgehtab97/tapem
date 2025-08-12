@@ -14,6 +14,7 @@ class XpRepositoryImpl implements XpRepository {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   }) {
     return _source.addSessionXp(
       gymId: gymId,
@@ -23,6 +24,7 @@ class XpRepositoryImpl implements XpRepository {
       showInLeaderboard: showInLeaderboard,
       isMulti: isMulti,
       primaryMuscleGroupIds: primaryMuscleGroupIds,
+      tz: tz,
     );
   }
 

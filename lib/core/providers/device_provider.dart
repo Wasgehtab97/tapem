@@ -14,6 +14,7 @@ import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -295,6 +296,12 @@ class DeviceProvider extends ChangeNotifier {
 
       final sessionId = _uuid.v4();
       final ts = Timestamp.now();
+      String tz;
+      try {
+        tz = await FlutterTimezone.getLocalTimezone();
+      } catch (_) {
+        tz = DateTime.now().timeZoneName;
+      }
       final batch = _firestore.batch();
 
       for (final set in savedSets) {
@@ -308,6 +315,7 @@ class DeviceProvider extends ChangeNotifier {
           'weight': double.parse(set['weight']!.replaceAll(',', '.')),
           'reps': int.parse(set['reps']!),
           'note': _note,
+          'tz': tz,
         };
         if ((set['rir'] ?? '').toString().isNotEmpty) {
           data['rir'] = int.parse(set['rir']!);
@@ -339,6 +347,7 @@ class DeviceProvider extends ChangeNotifier {
           showInLeaderboard: showInLeaderboard,
           isMulti: _device!.isMulti,
           primaryMuscleGroupIds: _device!.primaryMuscleGroups,
+          tz: tz,
         );
         await Provider.of<ChallengeProvider>(context, listen: false)
             .checkChallenges(gymId, userId, _device!.uid);

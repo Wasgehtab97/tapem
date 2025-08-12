@@ -35,6 +35,7 @@ class XpProvider extends ChangeNotifier {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   }) {
     debugPrint(
       '🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId',
@@ -47,6 +48,7 @@ class XpProvider extends ChangeNotifier {
       showInLeaderboard: showInLeaderboard,
       isMulti: isMulti,
       primaryMuscleGroupIds: primaryMuscleGroupIds,
+      tz: tz,
     );
   }
 

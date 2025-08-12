@@ -831,6 +831,18 @@ abstract class AppLocalizations {
   String get muscleCatUpperBack;
   String get muscleCatCore;
   String get muscleCatLower;
+
+  /// Info about when the training day ends
+  ///
+  /// In en, this message translates to:
+  /// **'Training day ends at {hour}:00'**
+  String trainingDayEndsAt(Object hour);
+
+  /// Info for late workouts counting to previous day
+  ///
+  /// In en, this message translates to:
+  /// **'Late workouts count toward previous day (rollover {hour}:00)'**
+  String lateWorkoutsCountPrevDay(Object hour);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tapem/core/constants.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 
@@ -19,12 +20,15 @@ class FirestoreXpSource {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   }) async {
     debugPrint(
       '📥 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId isMulti=$isMulti muscles=$primaryMuscleGroupIds showLB=$showInLeaderboard',
     );
     final now = DateTime.now();
-    final dateStr = now.toIso8601String().split('T').first;
+    final logical =
+        now.subtract(const Duration(hours: AppConstants.defaultDayRolloverHour));
+    final dateStr = logical.toIso8601String().split('T').first;
     final userRef = _firestore.collection('users').doc(userId);
     final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
     final muscleRefs =
@@ -60,10 +64,11 @@ class FirestoreXpSource {
       final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
       final newDayXp = currentDayXp + LevelService.xpPerSession;
       debugPrint('👉 dayXP $currentDayXp -> $newDayXp');
+      final dayData = {'xp': newDayXp, 'tz': tz};
       if (daySnap.exists) {
-        tx.update(dayRef, {'xp': newDayXp});
+        tx.update(dayRef, dayData);
       } else {
-        tx.set(dayRef, {'xp': newDayXp});
+        tx.set(dayRef, dayData);
       }
       if (currentDayXp == 0) {
         updates['dailyXP'] =

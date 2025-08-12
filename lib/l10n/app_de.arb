@@ -41,6 +41,16 @@
   "@emailInvalid": {
     "description": "Validierungsmeldung für ungültige E-Mail"
   },
+  "trainingDayEndsAt": "Trainingstag endet um {hour}:00",
+  "@trainingDayEndsAt": {
+    "description": "Info über Ende des Trainingstags",
+    "placeholders": {"hour": {}}
+  },
+  "lateWorkoutsCountPrevDay": "Späte Workouts zählen zum Vortag (Rollover {hour}:00)",
+  "@lateWorkoutsCountPrevDay": {
+    "description": "Hinweis für späte Workouts",
+    "placeholders": {"hour": {}}
+  },
 
   "invalidEmailError": "Ungültige E-Mail-Adresse.",
   "@invalidEmailError": {

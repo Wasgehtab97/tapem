@@ -19,6 +19,7 @@ class FakeXpRepository implements XpRepository {
     required bool showInLeaderboard,
     required bool isMulti,
     required List<String> primaryMuscleGroupIds,
+    required String tz,
   }) async {
     addCalls++;
   }
@@ -79,6 +80,7 @@ void main() {
         showInLeaderboard: false,
         isMulti: false,
         primaryMuscleGroupIds: const [],
+        tz: 'UTC',
       );
       expect(repo.addCalls, 1);
       repo.dispose();
