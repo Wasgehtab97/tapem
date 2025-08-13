@@ -114,6 +114,8 @@ class OverlayNumericKeypadHost extends StatefulWidget {
 
 class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     with WidgetsBindingObserver {
+  final _keypadKey = GlobalKey();
+  final _childKey = GlobalKey();
   @override
   void initState() {
     super.initState();
@@ -150,23 +152,37 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
   Widget build(BuildContext context) {
     final keypad = widget.controller.isOpen
         ? OverlayNumericKeypad(
+            key: _keypadKey,
             controller: widget.controller,
             theme: widget.theme,
           )
         : const SizedBox.shrink();
 
-    // Insert a translucent layer that closes the keypad when tapping outside it.
     Widget result = Stack(
       children: [
-        widget.child,
+        KeyedSubtree(key: _childKey, child: widget.child),
         if (widget.controller.isOpen && widget.closeOnOutsideTap)
           Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                widget.controller.close();
-                FocusManager.instance.primaryFocus?.unfocus();
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (event) {
+                final keypadBox =
+                    _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+                final childBox =
+                    _childKey.currentContext?.findRenderObject() as RenderBox?;
+                final keypadRect = keypadBox == null
+                    ? Rect.zero
+                    : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                final childRect = childBox == null
+                    ? Rect.zero
+                    : childBox.localToGlobal(Offset.zero) & childBox.size;
+                if (!keypadRect.contains(event.position) &&
+                    !childRect.contains(event.position)) {
+                  widget.controller.close();
+                  FocusManager.instance.primaryFocus?.unfocus();
+                }
               },
+              child: const SizedBox(),
             ),
           ),
         Align(
