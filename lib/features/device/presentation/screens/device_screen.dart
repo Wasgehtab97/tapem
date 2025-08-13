@@ -46,7 +46,6 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _showTimer = true;
-  final _keypadController = OverlayNumericKeypadController();
 
   @override
   void initState() {
@@ -310,7 +309,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             previous: entry.key < prov.lastSessionSets.length
                                 ? prov.lastSessionSets[entry.key]
                                 : null,
-                            keypadController: _keypadController,
                           ),
                         ),
                         if (entry.key < prov.sets.length - 1) ...[
@@ -411,10 +409,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     }
 
-    return OverlayNumericKeypadHost(
-      controller: _keypadController,
-      child: scaffold,
-    );
+    return scaffold;
   }
 }
 
@@ -473,52 +468,79 @@ class _PlannedTable extends StatelessWidget {
                     SizedBox(width: 24, child: Text(entrySet.value['number']!)),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        key: ValueKey(
-                          'w-${entrySet.key}-${entrySet.value['weight']}',
-                        ),
-                        initialValue: entrySet.value['weight'],
-                        decoration: InputDecoration(
-                          labelText: 'kg',
-                          hintText: weightHint,
-                          isDense: true,
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        onChanged:
-                            (v) => prov.updateSet(entrySet.key, weight: v),
-                      ),
+                      child: Builder(builder: (context) {
+                        final ctr =
+                            TextEditingController(text: entrySet.value['weight']);
+                        return TextFormField(
+                          key: ValueKey(
+                            'w-${entrySet.key}-${entrySet.value['weight']}',
+                          ),
+                          controller: ctr,
+                          decoration: InputDecoration(
+                            labelText: 'kg',
+                            hintText: weightHint,
+                            isDense: true,
+                          ),
+                          readOnly: true,
+                          keyboardType: TextInputType.none,
+                          autofocus: false,
+                          onTap: () => context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(ctr, allowDecimal: true),
+                          onChanged:
+                              (v) => prov.updateSet(entrySet.key, weight: v),
+                        );
+                      }),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        key: ValueKey(
-                          'r-${entrySet.key}-${entrySet.value['reps']}',
-                        ),
-                        initialValue: entrySet.value['reps'],
-                        decoration: InputDecoration(
-                          labelText: 'x',
-                          hintText: repsHint,
-                          isDense: true,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (v) => prov.updateSet(entrySet.key, reps: v),
-                      ),
+                      child: Builder(builder: (context) {
+                        final ctr =
+                            TextEditingController(text: entrySet.value['reps']);
+                        return TextFormField(
+                          key: ValueKey(
+                            'r-${entrySet.key}-${entrySet.value['reps']}',
+                          ),
+                          controller: ctr,
+                          decoration: InputDecoration(
+                            labelText: 'x',
+                            hintText: repsHint,
+                            isDense: true,
+                          ),
+                          readOnly: true,
+                          keyboardType: TextInputType.none,
+                          autofocus: false,
+                          onTap: () => context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(ctr, allowDecimal: false),
+                          onChanged: (v) =>
+                              prov.updateSet(entrySet.key, reps: v),
+                        );
+                      }),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        key: ValueKey('rir-${entrySet.key}'),
-                        initialValue: entrySet.value['rir'],
-                        decoration: InputDecoration(
-                          labelText: 'RIR',
-                          hintText: rirHint,
-                          isDense: true,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (v) => prov.updateSet(entrySet.key, rir: v),
-                      ),
+                      child: Builder(builder: (context) {
+                        final ctr =
+                            TextEditingController(text: entrySet.value['rir']);
+                        return TextFormField(
+                          key: ValueKey('rir-${entrySet.key}'),
+                          controller: ctr,
+                          decoration: InputDecoration(
+                            labelText: 'RIR',
+                            hintText: rirHint,
+                            isDense: true,
+                          ),
+                          readOnly: true,
+                          keyboardType: TextInputType.none,
+                          autofocus: false,
+                          onTap: () => context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(ctr, allowDecimal: false),
+                          onChanged: (v) =>
+                              prov.updateSet(entrySet.key, rir: v),
+                        );
+                      }),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

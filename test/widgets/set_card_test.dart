@@ -37,8 +37,13 @@ void main() {
     final keypadController = OverlayNumericKeypadController();
 
     await tester.pumpWidget(
-      ChangeNotifierProvider<DeviceProvider>.value(
-        value: provider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          ChangeNotifierProvider<OverlayNumericKeypadController>.value(
+            value: keypadController,
+          ),
+        ],
         child: OverlayNumericKeypadHost(
           controller: keypadController,
           child: MaterialApp(
@@ -49,7 +54,6 @@ void main() {
                 child: SetCard(
                   index: 0,
                   set: provider.sets[0],
-                  keypadController: keypadController,
                 ),
               ),
             ),

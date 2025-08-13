@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/gym_provider.dart';
@@ -138,13 +139,23 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _setCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.none,
+              readOnly: true,
+              autofocus: false,
+              onTap: () => context
+                  .read<OverlayNumericKeypadController>()
+                  .openFor(_setCtrl, allowDecimal: false),
               decoration: const InputDecoration(labelText: 'Benötigte Sätze'),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _xpCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.none,
+              readOnly: true,
+              autofocus: false,
+              onTap: () => context
+                  .read<OverlayNumericKeypadController>()
+                  .openFor(_xpCtrl, allowDecimal: false),
               decoration: const InputDecoration(labelText: 'XP-Reward'),
             ),
             const SizedBox(height: 8),

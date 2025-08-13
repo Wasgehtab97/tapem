@@ -26,8 +26,7 @@ class _FakeRepo implements DeviceRepository {
 }
 
 class _TestList extends StatelessWidget {
-  final OverlayNumericKeypadController keypadController;
-  const _TestList(this.keypadController);
+  const _TestList();
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
@@ -64,7 +63,6 @@ class _TestList extends StatelessWidget {
             child: SetCard(
               index: entry.key,
               set: entry.value,
-              keypadController: keypadController,
             ),
           ),
       ],
@@ -85,15 +83,20 @@ void main() {
     final keypadController = OverlayNumericKeypadController();
 
     await tester.pumpWidget(
-      ChangeNotifierProvider<DeviceProvider>.value(
-        value: provider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          ChangeNotifierProvider<OverlayNumericKeypadController>.value(
+            value: keypadController,
+          ),
+        ],
         child: OverlayNumericKeypadHost(
           controller: keypadController,
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('de'),
-            home: Scaffold(body: _TestList(keypadController)),
+            home: const Scaffold(body: _TestList()),
           ),
         ),
       ),

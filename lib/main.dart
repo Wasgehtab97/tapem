@@ -36,6 +36,7 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
+import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -164,6 +165,7 @@ class AppEntry extends StatelessWidget {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => OverlayNumericKeypadController()),
         ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
           create: (_) => BrandingProvider(
             source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
@@ -248,7 +250,9 @@ class MyApp extends StatelessWidget {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       app = GlobalNfcListener(child: app);
     }
-    return DynamicLinkListener(child: app);
+    app = DynamicLinkListener(child: app);
+    final keypadController = context.watch<OverlayNumericKeypadController>();
+    return OverlayNumericKeypadHost(controller: keypadController, child: app);
   }
 
   MaterialApp _buildApp(ThemeData theme, Locale? locale) {
