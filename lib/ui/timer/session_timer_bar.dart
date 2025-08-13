@@ -70,7 +70,7 @@ class _SessionTimerBarState extends State<SessionTimerBar>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context)!;
     return ValueListenableBuilder<Duration>(
       valueListenable: _controller.remaining,
       builder: (context, remaining, _) {
