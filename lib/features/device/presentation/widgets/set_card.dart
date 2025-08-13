@@ -150,6 +150,7 @@ class SetCardState extends State<SetCard> {
     TextEditingController controller, {
     required bool allowDecimal,
   }) {
+    FocusScope.of(context).unfocus();
     context
         .read<OverlayNumericKeypadController>()
         .openFor(controller, allowDecimal: allowDecimal);

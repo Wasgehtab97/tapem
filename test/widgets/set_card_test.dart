@@ -49,6 +49,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => OverlayNumericKeypadHost(
             controller: keypadController,
+            outsideTapMode: OutsideTapMode.closeAfterTap,
             child: child!,
           ),
           home: Scaffold(
@@ -70,8 +71,15 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, '10');
     await tester.enterText(find.byType(TextFormField).at(1), '5');
+
+    // Open keypad then toggle while open
+    await tester.tap(find.byType(TextFormField).first);
+    await tester.pumpAndSettle();
+    expect(keypadController.isOpen, true);
+
     await tester.tap(find.bySemanticsLabel('Complete set'));
     await tester.pumpAndSettle();
+    expect(keypadController.isOpen, false);
 
     expect(provider.completedCount, 1);
     expect(
