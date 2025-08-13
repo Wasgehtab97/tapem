@@ -81,7 +81,8 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   }
 
   void _updateContentHeight(double height) {
-    if (_contentHeight != height) {
+    // avoid micro-jitter from fractional pixel changes
+    if ((_contentHeight - height).abs() > 0.5) {
       _contentHeight = height;
       notifyListeners();
     }
@@ -91,12 +92,14 @@ class OverlayNumericKeypadController extends ChangeNotifier {
 /// =======================================================
 /// HOST: Overlay-Layer über dem Screen (kein Modal)
 /// =======================================================
+enum OutsideTapMode { none, closeAfterTap }
+
 class OverlayNumericKeypadHost extends StatefulWidget {
   final OverlayNumericKeypadController controller;
   final Widget child;
   final NumericKeypadTheme theme;
   final bool interceptAndroidBack; // Back schließt Tastatur statt Route
-  final bool closeOnOutsideTap;
+  final OutsideTapMode outsideTapMode;
 
   const OverlayNumericKeypadHost({
     super.key,
@@ -104,7 +107,7 @@ class OverlayNumericKeypadHost extends StatefulWidget {
     required this.child,
     this.theme = const NumericKeypadTheme(),
     this.interceptAndroidBack = true,
-    this.closeOnOutsideTap = false,
+    this.outsideTapMode = OutsideTapMode.none,
   });
 
   @override
@@ -161,28 +164,29 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     Widget result = Stack(
       children: [
         KeyedSubtree(key: _childKey, child: widget.child),
-        if (widget.controller.isOpen && widget.closeOnOutsideTap)
+        if (widget.controller.isOpen &&
+            widget.outsideTapMode != OutsideTapMode.none)
           Positioned.fill(
             child: Listener(
               behavior: HitTestBehavior.translucent,
-              onPointerDown: (event) {
-                final keypadBox =
-                    _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                final childBox =
-                    _childKey.currentContext?.findRenderObject() as RenderBox?;
-                final keypadRect = keypadBox == null
-                    ? Rect.zero
-                    : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                final childRect = childBox == null
-                    ? Rect.zero
-                    : childBox.localToGlobal(Offset.zero) & childBox.size;
-                if (!keypadRect.contains(event.position) &&
-                    !childRect.contains(event.position)) {
-                  widget.controller.close();
-                  FocusManager.instance.primaryFocus?.unfocus();
+              onPointerUp: (event) {
+                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap) {
+                  final keypadBox =
+                      _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+                  final keypadRect = keypadBox == null
+                      ? Rect.zero
+                      : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                  if (!keypadRect.contains(event.position)) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      widget.controller.close();
+                    });
+                  }
                 }
               },
-              child: const SizedBox(),
+              child: const IgnorePointer(
+                ignoring: true,
+                child: SizedBox.expand(),
+              ),
             ),
           ),
         Align(
@@ -332,7 +336,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                     onPaste: () async {
                       final data = await Clipboard.getData('text/plain');
                       if (data?.text != null) {
-                        _pasteInto(controller, data!.text!);
+                        _pasteInto(context, controller, data!.text!);
                         _haptic(context);
                       }
                     },
@@ -344,6 +348,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                     },
                     onPlus: () => _increment(context, controller, 1),
                     onMinus: () => _increment(context, controller, -1),
+                    onDone: controller.close,
                   ),
                 ),
               ],
@@ -388,24 +393,26 @@ class OverlayNumericKeypad extends StatelessWidget {
     return commaLangs.contains(lang) ? ',' : '.';
   }
 
-  static void _pasteInto(OverlayNumericKeypadController ctl, String text) {
+  static void _pasteInto(
+    BuildContext ctx,
+    OverlayNumericKeypadController ctl,
+    String text,
+  ) {
     final t = ctl.target;
     if (t == null) return;
-    final cleaned =
-        ctl.allowDecimal
-            ? text
-                .trim()
-                .replaceAll(',', '.')
-                .replaceAll(RegExp(r'[^0-9\.]'), '')
-            : text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleaned = ctl.allowDecimal
+        ? text.trim().replaceAll(',', '.').replaceAll(RegExp(r'[^0-9\.]'), '')
+        : text.replaceAll(RegExp(r'[^0-9]'), '');
     final parts = cleaned.split('.');
-    final normalized =
-        ctl.allowDecimal && parts.length > 1
-            ? '${parts[0]}.${parts.sublist(1).join()}'
-            : cleaned;
+    final normalized = ctl.allowDecimal && parts.length > 1
+        ? '${parts[0]}.${parts.sublist(1).join()}'
+        : cleaned;
+    final display = ctl.allowDecimal
+        ? normalized.replaceAll('.', _decimalChar(ctx))
+        : normalized;
     t.value = TextEditingValue(
-      text: normalized,
-      selection: TextSelection.collapsed(offset: normalized.length),
+      text: display,
+      selection: TextSelection.collapsed(offset: display.length),
     );
   }
 
@@ -453,8 +460,11 @@ class OverlayNumericKeypad extends StatelessWidget {
     double current = 0;
     if (raw.isNotEmpty) current = double.tryParse(raw) ?? 0;
     final next = current + (step * direction);
-    final value =
+    final rawValue =
         ctl.allowDecimal ? next.toStringAsFixed(2) : next.round().toString();
+    final value = ctl.allowDecimal
+        ? rawValue.replaceAll('.', _decimalChar(ctx))
+        : rawValue;
 
     t.value = TextEditingValue(
       text: value,
@@ -556,7 +566,7 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows; // i.d.R. 4
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus;
+  final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus, onDone;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -569,6 +579,7 @@ class _ActionRailCompact extends StatelessWidget {
     required this.onCopy,
     required this.onPlus,
     required this.onMinus,
+    required this.onDone,
   });
 
   @override
@@ -585,6 +596,7 @@ class _ActionRailCompact extends StatelessWidget {
       _RailAction(Icons.paste_rounded, 'Einfügen', onPaste),
       _RailAction(Icons.remove_rounded, 'Verringern', onMinus, repeat: true),
       _RailAction(Icons.add_rounded, 'Erhöhen', onPlus, repeat: true),
+      _RailAction(Icons.done_rounded, 'Fertig', onDone),
       _RailAction(Icons.keyboard_hide_rounded, 'Tastatur ausblenden', onHide),
     ];
 

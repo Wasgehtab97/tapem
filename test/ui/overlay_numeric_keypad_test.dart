@@ -56,5 +56,43 @@ void main() {
 
     expect(controller.allowDecimal, false);
   });
+
+  testWidgets('outside tap triggers button and closes keypad', (tester) async {
+    final controller = OverlayNumericKeypadController();
+    bool pressed = false;
+    final textCtrl = TextEditingController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OverlayNumericKeypadHost(
+          controller: controller,
+          outsideTapMode: OutsideTapMode.closeAfterTap,
+          child: Scaffold(
+            body: Column(
+              children: [
+                TextField(controller: textCtrl, readOnly: true, onTap: () {
+                  controller.openFor(textCtrl);
+                }),
+                TextButton(
+                  onPressed: () => pressed = true,
+                  child: const Text('Add'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    controller.openFor(textCtrl);
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, true);
+
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    expect(pressed, true);
+    expect(controller.isOpen, false);
+  });
 }
 

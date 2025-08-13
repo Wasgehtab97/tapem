@@ -143,6 +143,13 @@ Die zugehörigen Definitionen stehen in `project/roadmap/issues_pilot.json`.
 
 ---
 
+## Changelog
+
+- `OverlayNumericKeypadHost.closeOnOutsideTap` wurde entfernt. Nutze stattdessen
+  `outsideTapMode` (z. B. `OutsideTapMode.closeAfterTap`).
+
+---
+
 ## Häufige Probleme
 
 - Falls es nach dem Entfernen oder Hinzufügen von Abhängigkeiten zu "Target of URI doesn't exist" Fehlern kommt, hilft meist ein erneutes Ausführen von
