@@ -1,5 +1,6 @@
 // lib/features/device/presentation/screens/device_screen.dart
-// ignore_for_file: use_super_parameters
+// Reordered addSet flow (open keypad first, then ensureVisible).
+// PlannedTable uses silent updates to avoid re-entrant rebuilds.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +28,9 @@ import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 
+void _dlog(String m) => debugPrint('📱 [DeviceScreen] $m');
+// void _elog(String m) => debugPrint('❗ [DeviceScreen] $m');
+
 class DeviceScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
@@ -52,8 +56,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   void initState() {
     super.initState();
+    _dlog(
+      'initState()\ndeviceId=${widget.deviceId}\nexerciseId=${widget.exerciseId}',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
+      _dlog('loadDevice() → start');
       await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
@@ -62,30 +70,42 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
       final planProv = context.read<TrainingPlanProvider>();
       if (planProv.plans.isEmpty && !planProv.isLoading) {
+        _dlog('TrainingPlanProvider.loadPlans()');
         await planProv.loadPlans(widget.gymId, auth.userId!);
       }
       if (planProv.activePlanId == null && planProv.plans.isNotEmpty) {
         await planProv.setActivePlan(planProv.plans.first.id);
       }
+      _dlog('loadDevice() → done');
       setState(() {});
     });
   }
 
   void _addSet() {
     final prov = context.read<DeviceProvider>();
+    _dlog('tap: +Set (before=${prov.sets.length})');
     prov.addSet();
+
+    // PostFrame #1: Keypad öffnen (fokussiert Gewicht)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final index = prov.sets.length - 1;
       if (index >= 0 && index < _setKeys.length) {
         final key = _setKeys[index];
-        if (key.currentContext != null) {
-          Scrollable.ensureVisible(
-            key.currentContext!,
-            alignment: 0.5,
-            duration: const Duration(milliseconds: 200),
-          );
-        }
         key.currentState?.focusWeight();
+
+        // PostFrame #2: erst NACH keypad-open scrollen (korrektes bottomPad)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (key.currentContext != null) {
+            _dlog(
+              'after add: sets=${prov.sets.length}, ensureVisible index=$index',
+            );
+            Scrollable.ensureVisible(
+              key.currentContext!,
+              alignment: 0.5,
+              duration: const Duration(milliseconds: 200),
+            );
+          }
+        });
       }
     });
   }
@@ -121,6 +141,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     } catch (_) {}
 
+    _dlog(
+      'build() isLoading=${prov.isLoading} error=${prov.error} sets=${prov.sets.length}',
+    );
+
     Widget scaffold;
     if (prov.isLoading) {
       scaffold = const Scaffold(
@@ -132,7 +156,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
     } else {
-      // Single-Übung: hier bleiben
       scaffold = Scaffold(
         appBar: AppBar(
           title: Hero(
@@ -218,6 +241,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     final mq = MediaQuery.of(context);
                     final bottomPad =
                         keypad.keypadContentHeight + mq.padding.bottom + 16;
+                    _dlog(
+                      'list bottomPad=$bottomPad keypadHeight=${keypad.keypadContentHeight}',
+                    );
                     while (_setKeys.length < prov.sets.length) {
                       _setKeys.add(GlobalKey<SetCardState>());
                     }
@@ -238,7 +264,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ),
                           const SizedBox(height: 16),
                         ],
-                        // Render new session section above history for better focus.
                         if (plannedEntry != null)
                           _PlannedTable(entry: plannedEntry)
                         else ...[
@@ -326,7 +351,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ),
                         ],
                         if (prov.lastSessionSets.isNotEmpty) ...[
-                          // History now appears after the input section.
                           const SizedBox(height: 16),
                           const Divider(),
                           Builder(
@@ -520,6 +544,18 @@ class _PlannedTableState extends State<_PlannedTable> {
   final List<TextEditingController> _repsCtrls = [];
   final List<TextEditingController> _rirCtrls = [];
 
+  // 🔒 Silent-update Mechanik
+  bool _muted = false;
+  void _setTextSilently(TextEditingController c, String text) {
+    if (c.text == text) return;
+    _muted = true;
+    c.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _muted = false;
+  }
+
   void _syncControllers(List<Map<String, dynamic>> sets) {
     while (_weightCtrls.length < sets.length) {
       final i = _weightCtrls.length;
@@ -527,12 +563,21 @@ class _PlannedTableState extends State<_PlannedTable> {
       _repsCtrls.add(TextEditingController(text: sets[i]['reps'] ?? ''));
       _rirCtrls.add(TextEditingController(text: sets[i]['rir'] ?? ''));
 
-      _weightCtrls[i]
-          .addListener(() => context.read<DeviceProvider>().updateSet(i, weight: _weightCtrls[i].text));
-      _repsCtrls[i]
-          .addListener(() => context.read<DeviceProvider>().updateSet(i, reps: _repsCtrls[i].text));
-      _rirCtrls[i]
-          .addListener(() => context.read<DeviceProvider>().updateSet(i, rir: _rirCtrls[i].text));
+      _weightCtrls[i].addListener(() {
+        if (_muted) return;
+        context.read<DeviceProvider>().updateSet(
+          i,
+          weight: _weightCtrls[i].text,
+        );
+      });
+      _repsCtrls[i].addListener(() {
+        if (_muted) return;
+        context.read<DeviceProvider>().updateSet(i, reps: _repsCtrls[i].text);
+      });
+      _rirCtrls[i].addListener(() {
+        if (_muted) return;
+        context.read<DeviceProvider>().updateSet(i, rir: _rirCtrls[i].text);
+      });
     }
 
     while (_weightCtrls.length > sets.length) {
@@ -545,9 +590,9 @@ class _PlannedTableState extends State<_PlannedTable> {
       final w = sets[i]['weight'] ?? '';
       final r = sets[i]['reps'] ?? '';
       final rir = sets[i]['rir'] ?? '';
-      if (_weightCtrls[i].text != w) _weightCtrls[i].text = w;
-      if (_repsCtrls[i].text != r) _repsCtrls[i].text = r;
-      if (_rirCtrls[i].text != rir) _rirCtrls[i].text = rir;
+      _setTextSilently(_weightCtrls[i], w);
+      _setTextSilently(_repsCtrls[i], r);
+      _setTextSilently(_rirCtrls[i], rir);
     }
   }
 
@@ -578,7 +623,7 @@ class _PlannedTableState extends State<_PlannedTable> {
     }
 
     if (widget.entry.reps != null &&
-        prov.sets.every((s) => s['reps'] != null && s['reps']!.isEmpty)) {
+        prov.sets.every((s) => (s['reps'] ?? '').toString().isEmpty)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         for (var i = 0; i < prov.sets.length; i++) {
           prov.updateSet(i, reps: widget.entry.reps!.toString());
@@ -627,11 +672,15 @@ class _PlannedTableState extends State<_PlannedTable> {
                         readOnly: true,
                         keyboardType: TextInputType.none,
                         autofocus: false,
-                        onTap: () =>
-                            context.read<OverlayNumericKeypadController>().openFor(
-                                  _weightCtrls[entrySet.key],
-                                  allowDecimal: true,
-                                ),
+                        onTap: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(
+                                _weightCtrls[entrySet.key],
+                                allowDecimal: true,
+                              );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -647,11 +696,15 @@ class _PlannedTableState extends State<_PlannedTable> {
                         readOnly: true,
                         keyboardType: TextInputType.none,
                         autofocus: false,
-                        onTap: () =>
-                            context.read<OverlayNumericKeypadController>().openFor(
-                                  _repsCtrls[entrySet.key],
-                                  allowDecimal: false,
-                                ),
+                        onTap: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(
+                                _repsCtrls[entrySet.key],
+                                allowDecimal: false,
+                              );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -667,11 +720,15 @@ class _PlannedTableState extends State<_PlannedTable> {
                         readOnly: true,
                         keyboardType: TextInputType.none,
                         autofocus: false,
-                        onTap: () =>
-                            context.read<OverlayNumericKeypadController>().openFor(
-                                  _rirCtrls[entrySet.key],
-                                  allowDecimal: false,
-                                ),
+                        onTap: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(
+                                _rirCtrls[entrySet.key],
+                                allowDecimal: false,
+                              );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -684,8 +741,7 @@ class _PlannedTableState extends State<_PlannedTable> {
                           labelText: 'Notiz',
                           isDense: true,
                         ),
-                        onChanged: (v) =>
-                            prov.updateSet(entrySet.key, note: v),
+                        onChanged: (v) => prov.updateSet(entrySet.key, note: v),
                       ),
                     ),
                     IconButton(
@@ -700,7 +756,8 @@ class _PlannedTableState extends State<_PlannedTable> {
               icon: const Icon(Icons.add),
               label: const Text('Set hinzufügen'),
             ),
-            if (widget.entry.notes != null && widget.entry.notes!.isNotEmpty) ...[
+            if (widget.entry.notes != null &&
+                widget.entry.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Notiz: ${widget.entry.notes!}'),
             ],
@@ -711,4 +768,3 @@ class _PlannedTableState extends State<_PlannedTable> {
     );
   }
 }
-

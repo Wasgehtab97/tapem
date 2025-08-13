@@ -129,12 +129,13 @@ Future<void> main() async {
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
         Provider<UpdateDeviceMuscleGroupsUseCase>(
-          create: (c) =>
-              UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create:
+              (c) =>
+                  UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
         Provider<SetDeviceMuscleGroupsUseCase>(
-          create: (c) =>
-              SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create:
+              (c) => SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise
@@ -157,19 +158,27 @@ Future<void> main() async {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        Provider<OverlayNumericKeypadController>(
+
+        // ✅ Korrekt: ChangeNotifierProvider für das Overlay
+        ChangeNotifierProvider<OverlayNumericKeypadController>(
           create: (_) => OverlayNumericKeypadController(),
         ),
+
         ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
-          create: (_) => BrandingProvider(
-            source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
-          ),
-          update: (_, auth, prov) {
-            final p = prov ?? BrandingProvider(
-              source: FirestoreGymSource(
-                firestore: FirebaseFirestore.instance,
+          create:
+              (_) => BrandingProvider(
+                source: FirestoreGymSource(
+                  firestore: FirebaseFirestore.instance,
+                ),
               ),
-            );
+          update: (_, auth, prov) {
+            final p =
+                prov ??
+                BrandingProvider(
+                  source: FirestoreGymSource(
+                    firestore: FirebaseFirestore.instance,
+                  ),
+                );
             p.loadBrandingWithGym(auth.gymCode);
             return p;
           },
@@ -184,41 +193,39 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(
-          create: (_) => DeviceProvider(
-            firestore: FirebaseFirestore.instance,
-          ),
+          create: (_) => DeviceProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => MuscleGroupProvider()),
         ChangeNotifierProvider(
-          create: (c) => ExerciseProvider(
-            getEx: c.read<GetExercisesForDevice>(),
-            createEx: c.read<CreateExerciseUseCase>(),
-            deleteEx: c.read<DeleteExerciseUseCase>(),
-            updateEx: c.read<UpdateExerciseUseCase>(),
-          ),
+          create:
+              (c) => ExerciseProvider(
+                getEx: c.read<GetExercisesForDevice>(),
+                createEx: c.read<CreateExerciseUseCase>(),
+                deleteEx: c.read<DeleteExerciseUseCase>(),
+                updateEx: c.read<UpdateExerciseUseCase>(),
+              ),
         ),
         ChangeNotifierProvider(
-          create: (c) =>
-              AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
+          create:
+              (c) =>
+                  AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
         ChangeNotifierProvider(
-          create: (_) => ReportProvider(
-            getUsageStats: usageUC,
-            getLogTimestamps: logsUC,
-          ),
+          create:
+              (_) => ReportProvider(
+                getUsageStats: usageUC,
+                getLogTimestamps: logsUC,
+              ),
         ),
         ChangeNotifierProvider(
-          create: (_) => SurveyProvider(
-            firestore: FirebaseFirestore.instance,
-          ),
+          create: (_) => SurveyProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(
-          create: (_) => FeedbackProvider(
-            firestore: FirebaseFirestore.instance,
-          ),
+          create:
+              (_) => FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
@@ -236,7 +243,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
-    final keypad = context.read<OverlayNumericKeypadController>();
+    final keypad = context.read<OverlayNumericKeypadController>(); // read = ok
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -261,7 +268,11 @@ class MyApp extends StatelessWidget {
           app = GlobalNfcListener(child: app);
         }
         app = DynamicLinkListener(child: app);
-        return OverlayNumericKeypadHost(controller: keypad, child: app);
+        return OverlayNumericKeypadHost(
+          controller: keypad,
+          outsideTapMode: OutsideTapMode.closeAfterTap, // ✅ wichtig für iOS
+          child: app,
+        );
       },
     );
   }

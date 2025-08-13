@@ -1,29 +1,25 @@
-// overlay_numeric_keypad.dart
-// Geometry-driven, compact in-app numeric keyboard (3x4 + action rail without CTA)
-// Author: you + GPT-5 Thinking
+// lib/ui/numeric_keypad/overlay_numeric_keypad.dart
+// Geometry-driven numeric keypad with de-duped height notifications + logging.
 
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// ============================
-/// THEME TOKENS (zentral)
-/// ============================
-class NumericKeypadTheme {
-  final double gap; // Abstand zwischen Keys/Rail
-  final double corner; // Rundung am Sheet-Top
-  final double minKeySide; // minimale Key-Kantenlänge (Safety-Net)
-  final double minFrac; // weiches Mindestmaß relativ zur Höhe
-  final double maxFrac; // weiches Höchstmaß relativ zur Höhe
-  final double
-  heightScale; // < 1.0 macht die Tastatur flacher (z.B. 0.5 = halb so hoch)
+void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
-  final Color sheetBg; // Hintergrund zwischen den Keys (auch für Rail-Gaps)
+class NumericKeypadTheme {
+  final double gap;
+  final double corner;
+  final double minKeySide;
+  final double minFrac;
+  final double maxFrac;
+  final double heightScale;
+
+  final Color sheetBg;
   final Color keyBg;
   final Color keyFg;
-  final Color
-  railBg; // unbenutzt als Fläche (wir blenden in sheetBg), bleibt für Theme-Flex
+  final Color railBg;
   final Color railIcon;
   final Color press;
 
@@ -31,9 +27,9 @@ class NumericKeypadTheme {
     this.gap = 12.0,
     this.corner = 18.0,
     this.minKeySide = 44.0,
-    this.minFrac = 0.28, // min 28% der Screenhöhe (vor Skalierung)
-    this.maxFrac = 0.45, // max 45% (vor Skalierung)
-    this.heightScale = 0.5, // kompakt
+    this.minFrac = 0.28,
+    this.maxFrac = 0.45,
+    this.heightScale = 0.5,
     this.sheetBg = const Color(0xFF0F1012),
     this.keyBg = const Color(0xFF1A1D21),
     this.keyFg = Colors.white,
@@ -43,16 +39,14 @@ class NumericKeypadTheme {
   });
 }
 
-/// ===================================
-/// CONTROLLER: öffnet/schließt & Ziel
-/// ===================================
 class OverlayNumericKeypadController extends ChangeNotifier {
   TextEditingController? _target;
   bool _isOpen = false;
   bool allowDecimal = true;
-  double decimalStep = 2.5; // z.B. Gewichte
-  double integerStep = 1.0; // z.B. Wiederholungen
+  double decimalStep = 2.5;
+  double integerStep = 1.0;
   double _contentHeight = 0.0;
+  bool _pendingHeightNotify = false;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
@@ -68,37 +62,54 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     this.allowDecimal = allowDecimal;
     if (decimalStep != null) this.decimalStep = decimalStep;
     if (integerStep != null) this.integerStep = integerStep;
+
     FocusManager.instance.primaryFocus?.unfocus();
     SystemChannels.textInput.invokeMethod('TextInput.hide');
-    _isOpen = true;
-    notifyListeners();
+
+    if (!_isOpen) {
+      _isOpen = true;
+      _klog(
+        'openFor(tc#${controller.hashCode.toRadixString(16)} allowDecimal=$allowDecimal stepDec=$decimalStep stepInt=$integerStep text="${controller.text}")',
+      );
+      notifyListeners();
+    } else {
+      _klog(
+        'retarget(tc#${controller.hashCode.toRadixString(16)} allowDecimal=$allowDecimal text="${controller.text}")',
+      );
+    }
   }
 
   void close() {
+    if (!_isOpen) return;
     _isOpen = false;
     _contentHeight = 0.0;
+    _klog('close()');
     notifyListeners();
   }
 
   void _updateContentHeight(double height) {
-    // avoid micro-jitter from fractional pixel changes
-    if ((_contentHeight - height).abs() > 0.5) {
-      _contentHeight = height;
-      notifyListeners();
-    }
+    if ((_contentHeight - height).abs() <= 0.5) return;
+    _contentHeight = height;
+
+    if (_pendingHeightNotify) return;
+    _pendingHeightNotify = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingHeightNotify = false;
+      if (_isOpen) {
+        _klog('contentHeight=$_contentHeight');
+        notifyListeners();
+      }
+    });
   }
 }
 
-/// =======================================================
-/// HOST: Overlay-Layer über dem Screen (kein Modal)
-/// =======================================================
 enum OutsideTapMode { none, closeAfterTap }
 
 class OverlayNumericKeypadHost extends StatefulWidget {
   final OverlayNumericKeypadController controller;
   final Widget child;
   final NumericKeypadTheme theme;
-  final bool interceptAndroidBack; // Back schließt Tastatur statt Route
+  final bool interceptAndroidBack;
   final OutsideTapMode outsideTapMode;
 
   const OverlayNumericKeypadHost({
@@ -119,6 +130,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     with WidgetsBindingObserver {
   final _keypadKey = GlobalKey();
   final _childKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -153,13 +165,14 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 
   @override
   Widget build(BuildContext context) {
-    final keypad = widget.controller.isOpen
-        ? OverlayNumericKeypad(
-            key: _keypadKey,
-            controller: widget.controller,
-            theme: widget.theme,
-          )
-        : const SizedBox.shrink();
+    final keypad =
+        widget.controller.isOpen
+            ? OverlayNumericKeypad(
+              key: _keypadKey,
+              controller: widget.controller,
+              theme: widget.theme,
+            )
+            : const SizedBox.shrink();
 
     Widget result = Stack(
       children: [
@@ -170,17 +183,21 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
             child: Listener(
               behavior: HitTestBehavior.translucent,
               onPointerUp: (event) {
-                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap) {
-                  final keypadBox =
-                      _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                  final keypadRect = keypadBox == null
-                      ? Rect.zero
-                      : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                  if (!keypadRect.contains(event.position)) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      widget.controller.close();
-                    });
-                  }
+                final keypadBox =
+                    _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+                final keypadRect =
+                    keypadBox == null
+                        ? Rect.zero
+                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                final inside = keypadRect.contains(event.position);
+                _klog(
+                  'outsideTap up at ${event.position} insideKeypad=$inside',
+                );
+                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap &&
+                    !inside) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) widget.controller.close();
+                  });
                 }
               },
               child: const IgnorePointer(
@@ -226,9 +243,6 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
   }
 }
 
-/// ======================================
-/// KEYPAD: 3×4 Grid + kompakte Action-Rail
-/// ======================================
 class OverlayNumericKeypad extends StatelessWidget {
   final OverlayNumericKeypadController controller;
   final NumericKeypadTheme theme;
@@ -241,22 +255,16 @@ class OverlayNumericKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- Geometrie: alles aus Constraints ableiten ---
     final media = MediaQuery.of(context);
 
-    // robust: max(viewPadding, padding) → vermeidet abgeschnittene Keys
     final safeBottom = math.max(media.viewPadding.bottom, media.padding.bottom);
 
     final size = media.size;
     final gap = theme.gap;
 
-    // 4 Spalten: 3 Grid + 1 Rail → Zellbreite
     final cellW = (size.width - 3 * gap) / 4.0;
-
-    // Basis-Höhe bei quadratischen Keys
     final idealGridH = 4 * cellW + 3 * gap;
 
-    // clampen → skalieren → Mindest-Fit sicherstellen
     final minH = size.height * theme.minFrac;
     final maxH = size.height * theme.maxFrac;
     final baseH = idealGridH.clamp(minH, maxH);
@@ -264,22 +272,22 @@ class OverlayNumericKeypad extends StatelessWidget {
     final minFitH = theme.minKeySide * 4 + 3 * gap;
     final contentH = math.max(minFitH, scaledH);
 
-    // Innenhöhe = contentH abzüglich Sheet-Paddings (oben+unten)
     final innerH = contentH - (gap + gap);
     controller._updateContentHeight(contentH);
 
-    // Zellhöhe & Aspect aus der echten Innenhöhe
     final cellH = (innerH - 3 * gap) / 4.0;
     final aspect = cellW / cellH;
 
-    // Safety: minKeySide für Rail
     final enforcedCellW = math.max(theme.minKeySide, cellW);
     final enforcedCellH = math.max(theme.minKeySide, cellH);
     final railW = enforcedCellW;
 
-    // Gesamthöhe des Sheets inkl. SafeArea
     final barHeight = contentH + safeBottom;
-    final decLabel = _decimalChar(context); // "," oder "."
+    final decLabel = _decimalChar(context);
+
+    _klog(
+      'build() size=${size.width}x${size.height} safeBottom=$safeBottom contentH=$contentH innerH=$innerH allowDecimal=${controller.allowDecimal}',
+    );
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -302,12 +310,10 @@ class OverlayNumericKeypad extends StatelessWidget {
                 ),
               ],
             ),
-            // Bottom-Padding enthält safeBottom → Tasten enden oberhalb Gestenleiste
             padding: EdgeInsets.fromLTRB(gap, gap, gap, gap + safeBottom),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // --- Grid 3×4 (snapped auf innerH) ---
                 Expanded(
                   child: SizedBox(
                     height: innerH,
@@ -322,8 +328,6 @@ class OverlayNumericKeypad extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: gap),
-
-                // --- Action-Rail (ohne Backspace & ohne CTA) ---
                 ConstrainedBox(
                   constraints: BoxConstraints.tightFor(width: railW),
                   child: _ActionRailCompact(
@@ -336,14 +340,15 @@ class OverlayNumericKeypad extends StatelessWidget {
                     onPaste: () async {
                       final data = await Clipboard.getData('text/plain');
                       if (data?.text != null) {
-                        _pasteInto(context, controller, data!.text!);
+                        _klog('paste "${data!.text}"');
+                        _pasteInto(context, controller, data.text!);
                         _haptic(context);
                       }
                     },
                     onCopy: () {
-                      Clipboard.setData(
-                        ClipboardData(text: controller.target?.text ?? ''),
-                      );
+                      final text = controller.target?.text ?? '';
+                      _klog('copy "$text"');
+                      Clipboard.setData(ClipboardData(text: text));
                       _haptic(context);
                     },
                     onPlus: () => _increment(context, controller, 1),
@@ -359,7 +364,6 @@ class OverlayNumericKeypad extends StatelessWidget {
     );
   }
 
-  // ------- Helpers -------
   static void _haptic(BuildContext ctx) {
     switch (Theme.of(ctx).platform) {
       case TargetPlatform.iOS:
@@ -400,16 +404,22 @@ class OverlayNumericKeypad extends StatelessWidget {
   ) {
     final t = ctl.target;
     if (t == null) return;
-    final cleaned = ctl.allowDecimal
-        ? text.trim().replaceAll(',', '.').replaceAll(RegExp(r'[^0-9\.]'), '')
-        : text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleaned =
+        ctl.allowDecimal
+            ? text
+                .trim()
+                .replaceAll(',', '.')
+                .replaceAll(RegExp(r'[^0-9\.]'), '')
+            : text.replaceAll(RegExp(r'[^0-9]'), '');
     final parts = cleaned.split('.');
-    final normalized = ctl.allowDecimal && parts.length > 1
-        ? '${parts[0]}.${parts.sublist(1).join()}'
-        : cleaned;
-    final display = ctl.allowDecimal
-        ? normalized.replaceAll('.', _decimalChar(ctx))
-        : normalized;
+    final normalized =
+        ctl.allowDecimal && parts.length > 1
+            ? '${parts[0]}.${parts.sublist(1).join()}'
+            : cleaned;
+    final display =
+        ctl.allowDecimal
+            ? normalized.replaceAll('.', _decimalChar(ctx))
+            : normalized;
     t.value = TextEditingValue(
       text: display,
       selection: TextSelection.collapsed(offset: display.length),
@@ -429,16 +439,17 @@ class OverlayNumericKeypad extends StatelessWidget {
       if (v.isNotEmpty) v = v.substring(0, v.length - 1);
     } else if (token == 'dec') {
       if (!ctl.allowDecimal) return;
-      // nur ein Dezimaltrennzeichen zulassen – Punkt ODER Komma
       if (!(v.contains('.') || v.contains(','))) {
-        final char = _decimalChar(ctx);
-        v += char;
+        v += _decimalChar(ctx);
       }
     } else if (RegExp(r'^[0-9]$').hasMatch(token)) {
       v += token;
     } else {
       return;
     }
+    _klog(
+      'key token="$token" tc#${t.hashCode.toRadixString(16)}: "${t.text}" → "$v"',
+    );
     t.value = TextEditingValue(
       text: v,
       selection: TextSelection.collapsed(offset: v.length),
@@ -462,10 +473,14 @@ class OverlayNumericKeypad extends StatelessWidget {
     final next = current + (step * direction);
     final rawValue =
         ctl.allowDecimal ? next.toStringAsFixed(2) : next.round().toString();
-    final value = ctl.allowDecimal
-        ? rawValue.replaceAll('.', _decimalChar(ctx))
-        : rawValue;
+    final value =
+        ctl.allowDecimal
+            ? rawValue.replaceAll('.', _decimalChar(ctx))
+            : rawValue;
 
+    _klog(
+      '${direction > 0 ? 'plus' : 'minus'} step=$step from="$raw" → "$value"',
+    );
     t.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
@@ -474,14 +489,11 @@ class OverlayNumericKeypad extends StatelessWidget {
   }
 }
 
-/// ===============================
-/// GRID (3×4) – deterministisch
-/// ===============================
 class _KeyGrid extends StatelessWidget {
-  final double aspect; // width/height einer Zelle
+  final double aspect;
   final double gap;
   final bool allowDecimal;
-  final String decimalLabel; // UI-Label für das Dezimalzeichen
+  final String decimalLabel;
   final NumericKeypadTheme theme;
   final ValueChanged<String> onKey;
 
@@ -552,18 +564,10 @@ class _KeySpec {
   });
 }
 
-/// =============================================
-/// ACTION-RAIL (kompakt) – ohne CTA & ohne Backspace
-/// Reihenfolge:
-/// 1) Kopieren | 2) Einfügen
-/// 3) Minus    | 4) Plus
-/// 5) Tastatur ausblenden (volle Breite unten)
-/// Hintergründe & Gaps identisch zum Grid (sheetBg), damit es „aus einem Guss“ wirkt.
-/// =============================================
 class _ActionRailCompact extends StatelessWidget {
-  final double gridCellWidth; // Breite einer Grid-Zelle
-  final double gridCellHeight; // Höhe einer Grid-Zelle
-  final int totalGridRows; // i.d.R. 4
+  final double gridCellWidth;
+  final double gridCellHeight;
+  final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
   final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus, onDone;
@@ -584,13 +588,9 @@ class _ActionRailCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Gesamthöhe, die das Grid nebenan belegt:
     final availableH =
         totalGridRows * gridCellHeight + (totalGridRows - 1) * gap;
 
-    // copy (oben links) | paste (oben rechts)
-    // minus (mitte links) | plus (mitte rechts)
-    // hide (unten vollbreit)
     final actions = <_RailAction>[
       _RailAction(Icons.copy_rounded, 'Kopieren', onCopy),
       _RailAction(Icons.paste_rounded, 'Einfügen', onPaste),
@@ -600,13 +600,12 @@ class _ActionRailCompact extends StatelessWidget {
       _RailAction(Icons.keyboard_hide_rounded, 'Tastatur ausblenden', onHide),
     ];
 
-    final rowsNeeded = (actions.length / 2).ceil(); // für die Höhe
+    final rowsNeeded = (actions.length / 2).ceil();
     final totalRowGaps = math.max(0, rowsNeeded - 1);
 
-    // Kachel-Seite (pixel-snapped, damit keine Haarlinien entstehen)
     final sideV = (availableH - totalRowGaps * gap) / rowsNeeded;
     final sideH = (gridCellWidth - gap) / 2;
-    final side = math.max(28.0, math.min(sideV, sideH)).floorToDouble(); // snap
+    final side = math.max(28.0, math.min(sideV, sideH)).floorToDouble();
 
     Widget squareBtn(_RailAction a) => _RailBtnSquare(
       side: side,
@@ -639,7 +638,6 @@ class _ActionRailCompact extends StatelessWidget {
         );
         i += 2;
       } else {
-        // letzte einzelne Kachel → volle Breite
         rows.add(
           SizedBox(
             height: side,
@@ -652,9 +650,7 @@ class _ActionRailCompact extends StatelessWidget {
     }
 
     return Container(
-      // WICHTIG: identischer Hintergrund wie die Gaps im Grid
       color: theme.sheetBg,
-      // leichte Abrundung nur außen, damit das ganze Sheet eine Einheit bleibt
       child: ClipRRect(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(theme.corner),
@@ -677,9 +673,8 @@ class _RailAction {
   _RailAction(this.icon, this.label, this.onTap, {this.repeat = false});
 }
 
-/// kleines (auch vollbreit verwendbares) Rail-Icon
 class _RailBtnSquare extends StatefulWidget {
-  final double side; // Höhe des Rasters; Breite kann variieren (Expanded)
+  final double side;
   final IconData icon;
   final String semanticsLabel;
   final VoidCallback onTap;
@@ -736,11 +731,10 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
         onTapUp: (_) => _stop(),
         onTapCancel: _stop,
         child: Container(
-          // volle Breite, Höhe vom umschließenden SizedBox (side)
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: th.keyBg, // identisch zu den Ziffern-Keys
+            color: th.keyBg,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
@@ -751,9 +745,6 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
   }
 }
 
-/// ===============================
-/// KEY BUTTON (responsiv, Semantics)
-/// ===============================
 class _KeyButton extends StatefulWidget {
   final String? label;
   final IconData? icon;

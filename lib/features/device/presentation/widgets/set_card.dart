@@ -1,3 +1,6 @@
+// lib/features/device/presentation/widgets/set_card.dart
+// SetCard with silent controller updates to prevent re-entrant rebuilds.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,8 +10,8 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
-/// Tokens used to style a [SetCard]. They derive their default values from the
-/// ambient [ThemeData] but can be overridden via [copyWith].
+void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
+
 class SetCardTheme {
   final EdgeInsets padding;
   final Color chipBg;
@@ -67,16 +70,12 @@ class SetCardTheme {
   }
 }
 
-/// Visual density options for [SetCard].
-/// Enables a compact layout so more sets fit on screen.
 enum SetCardSize { regular, dense }
 
-/// Card representing a single workout set. Only visual styling has changed –
-/// callbacks and state handling remain untouched.
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
-  final Map<String, String>? previous; // kept for API compatibility
+  final Map<String, String>? previous;
   final SetCardSize size;
   const SetCard({
     super.key,
@@ -100,6 +99,18 @@ class SetCardState extends State<SetCard> {
 
   bool _showExtras = false;
 
+  // 🔒 Silent-update Mechanik
+  bool _muteCtrls = false;
+  void _setTextSilently(TextEditingController c, String text) {
+    if (c.text == text) return;
+    _muteCtrls = true;
+    c.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _muteCtrls = false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -111,32 +122,54 @@ class SetCardState extends State<SetCard> {
     _rirFocus = FocusNode();
 
     _weightCtrl.addListener(() {
-      context.read<DeviceProvider>().updateSet(widget.index, weight: _weightCtrl.text);
+      if (_muteCtrls) return;
+      _slog(widget.index, 'weight → "${_weightCtrl.text}"');
+      context.read<DeviceProvider>().updateSet(
+        widget.index,
+        weight: _weightCtrl.text,
+      );
     });
     _repsCtrl.addListener(() {
-      context.read<DeviceProvider>().updateSet(widget.index, reps: _repsCtrl.text);
+      if (_muteCtrls) return;
+      _slog(widget.index, 'reps → "${_repsCtrl.text}"');
+      context.read<DeviceProvider>().updateSet(
+        widget.index,
+        reps: _repsCtrl.text,
+      );
     });
     _rirCtrl.addListener(() {
-      context.read<DeviceProvider>().updateSet(widget.index, rir: _rirCtrl.text);
+      if (_muteCtrls) return;
+      _slog(widget.index, 'rir → "${_rirCtrl.text}"');
+      context.read<DeviceProvider>().updateSet(
+        widget.index,
+        rir: _rirCtrl.text,
+      );
     });
   }
 
   @override
   void didUpdateWidget(covariant SetCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.set['weight'] != widget.set['weight']) {
-      _weightCtrl.text = widget.set['weight'] as String? ?? '';
+    final w = widget.set['weight'] as String? ?? '';
+    final r = widget.set['reps'] as String? ?? '';
+    final rir = widget.set['rir'] as String? ?? '';
+    if (oldWidget.set['weight'] != w) {
+      _slog(widget.index, 'didUpdateWidget sync weight "$w"');
+      _setTextSilently(_weightCtrl, w);
     }
-    if (oldWidget.set['reps'] != widget.set['reps']) {
-      _repsCtrl.text = widget.set['reps'] as String? ?? '';
+    if (oldWidget.set['reps'] != r) {
+      _slog(widget.index, 'didUpdateWidget sync reps "$r"');
+      _setTextSilently(_repsCtrl, r);
     }
-    if (oldWidget.set['rir'] != widget.set['rir']) {
-      _rirCtrl.text = widget.set['rir'] as String? ?? '';
+    if (oldWidget.set['rir'] != rir) {
+      _slog(widget.index, 'didUpdateWidget sync rir "$rir"');
+      _setTextSilently(_rirCtrl, rir);
     }
   }
 
   @override
   void dispose() {
+    _slog(widget.index, 'dispose()');
     _weightCtrl.dispose();
     _repsCtrl.dispose();
     _rirCtrl.dispose();
@@ -150,17 +183,16 @@ class SetCardState extends State<SetCard> {
     TextEditingController controller, {
     required bool allowDecimal,
   }) {
+    _slog(
+      widget.index,
+      'open keypad allowDecimal=$allowDecimal text="${controller.text}"',
+    );
     FocusScope.of(context).unfocus();
-    context
-        .read<OverlayNumericKeypadController>()
-        .openFor(controller, allowDecimal: allowDecimal);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Scrollable.ensureVisible(
-        context,
-        alignment: 0.1,
-        duration: const Duration(milliseconds: 200),
-      );
-    });
+    context.read<OverlayNumericKeypadController>().openFor(
+      controller,
+      allowDecimal: allowDecimal,
+    );
+    // Hinweis: ensureVisible nach dem Öffnen separat aufrufen (DeviceScreen macht das).
   }
 
   void focusWeight() {
@@ -189,7 +221,7 @@ class SetCardState extends State<SetCard> {
     }
 
     final doneVal = widget.set['done'];
-    final done = doneVal == 'true' || doneVal == true;
+    final done = doneVal == true || doneVal == 'true';
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
@@ -197,7 +229,8 @@ class SetCardState extends State<SetCard> {
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           gradient: gradient,
-          borderRadius: surface?.radius as BorderRadius? ??
+          borderRadius:
+              surface?.radius as BorderRadius? ??
               BorderRadius.circular(AppRadius.button),
           boxShadow: surface?.shadow,
         ),
@@ -251,19 +284,24 @@ class SetCardState extends State<SetCard> {
                 SizedBox(width: dense ? 8 : 12),
                 _RoundButton(
                   tokens: tokens,
-                  icon: done ? Icons.check : Icons.check,
+                  icon: Icons.check,
                   filled: done,
                   semantics:
                       done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                   dense: dense,
                   onTap: () {
+                    _slog(
+                      widget.index,
+                      'tap: toggle done (form validate then provider)',
+                    );
                     final form = Form.of(context);
                     if (!form.validate()) {
+                      _slog(widget.index, 'toggle blocked: invalid form');
                       HapticFeedback.lightImpact();
                       return;
                     }
                     HapticFeedback.lightImpact();
-                    prov.toggleSetDone(widget.index);
+                    context.read<DeviceProvider>().toggleSetDone(widget.index);
                   },
                 ),
                 SizedBox(width: dense ? 6 : 8),
@@ -274,10 +312,9 @@ class SetCardState extends State<SetCard> {
                   semantics: 'Mehr Optionen',
                   dense: dense,
                   onTap: () {
+                    _slog(widget.index, 'tap: more options → ${!_showExtras}');
                     HapticFeedback.lightImpact();
-                    setState(() {
-                      _showExtras = !_showExtras;
-                    });
+                    setState(() => _showExtras = !_showExtras);
                   },
                 ),
               ],
@@ -290,15 +327,17 @@ class SetCardState extends State<SetCard> {
                     child: TextFormField(
                       controller: _rirCtrl,
                       focusNode: _rirFocus,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'RIR',
                         isDense: true,
                       ),
                       readOnly: true,
                       keyboardType: TextInputType.none,
-                      onTap: done
-                          ? null
-                          : () => _openKeypad(_rirCtrl, allowDecimal: false),
+                      onTap:
+                          done
+                              ? null
+                              : () =>
+                                  _openKeypad(_rirCtrl, allowDecimal: false),
                     ),
                   ),
                   SizedBox(width: dense ? 8 : 12),
@@ -311,12 +350,14 @@ class SetCardState extends State<SetCard> {
                         labelText: loc.noteFieldLabel,
                         isDense: true,
                       ),
-                      onChanged: (v) =>
-                          prov.updateSet(widget.index, note: v),
+                      onChanged: (v) {
+                        _slog(widget.index, 'note → "$v"');
+                        prov.updateSet(widget.index, note: v);
+                      },
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ],
         ),
@@ -389,32 +430,30 @@ class _InputPill extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white.withOpacity(0.12),
-              Colors.white.withOpacity(0.08),
-            ],
+            colors: [Color(0x1FFFFFFF), Color(0x14FFFFFF)],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: focusNode.hasFocus
-                ? tokens.chipBorder
-                : tokens.chipFg.withOpacity(0.3),
+            color:
+                focusNode.hasFocus
+                    ? tokens.chipBorder
+                    : tokens.chipFg.withOpacity(0.3),
             width: 1.3,
           ),
-          boxShadow: focusNode.hasFocus
-              ? [
-                  BoxShadow(
-                    color: tokens.chipBorder.withOpacity(0.4),
-                    blurRadius: 8,
-                  ),
-                ]
-              : null,
+          boxShadow:
+              focusNode.hasFocus
+                  ? [
+                    BoxShadow(
+                      color: tokens.chipBorder.withOpacity(0.4),
+                      blurRadius: 8,
+                    ),
+                  ]
+                  : null,
         ),
-        padding:
-            EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
         alignment: Alignment.center,
         child: TextFormField(
           controller: controller,
@@ -477,34 +516,28 @@ class _RoundButtonState extends State<_RoundButton> {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withOpacity(0.12),
-                  Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withOpacity(0.08),
-                ],
+                colors: [Color(0x1FFFFFFF), Color(0x14FFFFFF)],
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: widget.filled
-                    ? widget.tokens.doneOn
-                    : widget.tokens.chipFg.withOpacity(0.3),
+                color:
+                    widget.filled
+                        ? widget.tokens.doneOn
+                        : widget.tokens.chipFg.withOpacity(0.3),
                 width: 1.3,
               ),
-              color: widget.filled ? widget.tokens.doneOn : widget.tokens.menuBg,
+              color:
+                  widget.filled ? widget.tokens.doneOn : widget.tokens.menuBg,
             ),
             child: Icon(
               widget.icon,
-              color: widget.filled
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : widget.tokens.menuFg,
+              color:
+                  widget.filled
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : widget.tokens.menuFg,
             ),
           ),
         ),
@@ -512,4 +545,3 @@ class _RoundButtonState extends State<_RoundButton> {
     );
   }
 }
-

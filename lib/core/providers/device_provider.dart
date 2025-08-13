@@ -1,6 +1,9 @@
 // lib/core/providers/device_provider.dart
+// Fully instrumented provider with no-op guard and boolean 'done'.
+// Fixes re-entrant rebuilds by avoiding notify on unchanged data.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -18,13 +21,16 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
-// Replace with real logging service.
 void _defaultLog(String message, [StackTrace? stack]) {
   if (stack != null) {
     debugPrintStack(label: message, stackTrace: stack);
   } else {
     debugPrint(message);
   }
+}
+
+String _setsBrief(List<Map<String, dynamic>> sets) {
+  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},d=${s['done']}}').join(', ')}]';
 }
 
 class DeviceProvider extends ChangeNotifier {
@@ -56,16 +62,15 @@ class DeviceProvider extends ChangeNotifier {
     required FirebaseFirestore firestore,
     GetDevicesForGym? getDevicesForGym,
     LogFn? log,
-  })  : _firestore = firestore,
-        _getDevicesForGym = getDevicesForGym ??
-            GetDevicesForGym(
-              DeviceRepositoryImpl(
-                FirestoreDeviceSource(firestore: firestore),
-              ),
-            ),
-        _log = log ?? _defaultLog;
+  }) : _firestore = firestore,
+       _getDevicesForGym =
+           getDevicesForGym ??
+           GetDevicesForGym(
+             DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
+           ),
+       _log = log ?? _defaultLog;
 
-  // Öffentliche Getter
+  // Public getters
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get error => _error;
@@ -120,7 +125,6 @@ class DeviceProvider extends ChangeNotifier {
     patchDeviceGroups(deviceId, primaryGroups, secondaryGroups);
   }
 
-  /// Lädt Gerätedaten, letzte Session und Notiz
   Future<void> loadDevice({
     required String gymId,
     required String deviceId,
@@ -141,7 +145,6 @@ class DeviceProvider extends ChangeNotifier {
       _xp = 0;
       _level = 1;
 
-      // Session initialisieren
       _sets = [
         {
           'number': '1',
@@ -149,13 +152,16 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '',
           'rir': '',
           'note': '',
-          'done': 'false',
+          'done': false, // bool statt String
         },
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
       _lastSessionNote = '';
       _lastSessionId = null;
+      _log(
+        '🧩 [Provider] loadDevice initialized sets=${_sets.length} ${_setsBrief(_sets)}',
+      );
       notifyListeners();
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
@@ -163,9 +169,12 @@ class DeviceProvider extends ChangeNotifier {
       if (!_device!.isMulti) {
         await _loadUserXp(gymId, deviceId, userId);
       }
+      _log(
+        '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
+      );
     } catch (e, st) {
       _error = e.toString();
-      _log('DeviceProvider.loadDevice error: $e', st);
+      _log('❌ [Provider] loadDevice error: $e', st);
     } finally {
       _setLoading(false);
     }
@@ -178,8 +187,9 @@ class DeviceProvider extends ChangeNotifier {
       'reps': '',
       'rir': '',
       'note': '',
-      'done': 'false',
+      'done': false,
     });
+    _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
   }
 
@@ -188,6 +198,9 @@ class DeviceProvider extends ChangeNotifier {
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
+    _log(
+      '↩️ [Provider] insertSetAt($index) → count=${_sets.length} ${_setsBrief(_sets)}',
+    );
     notifyListeners();
   }
 
@@ -198,57 +211,75 @@ class DeviceProvider extends ChangeNotifier {
     String? rir,
     String? note,
   }) {
-    final current = Map<String, dynamic>.from(_sets[index]);
-    if (weight != null) current['weight'] = weight;
-    if (reps != null) current['reps'] = reps;
-    if (rir != null) current['rir'] = rir;
-    if (note != null) current['note'] = note;
-    current['number'] = '${index + 1}';
-    if (!current.containsKey('done')) {
-      current['done'] = 'false';
+    final before = Map<String, dynamic>.from(_sets[index]);
+    final after = Map<String, dynamic>.from(before);
+
+    if (weight != null) after['weight'] = weight;
+    if (reps != null) after['reps'] = reps;
+    if (rir != null) after['rir'] = rir;
+    if (note != null) after['note'] = note;
+
+    after['number'] = '${index + 1}';
+    after['done'] = (after['done'] == true || after['done'] == 'true');
+
+    if (mapEquals(before, after)) {
+      // No-op → kein notify
+      return;
     }
-    _sets[index] = current;
+    _sets[index] = after;
+    _log('✏️ [Provider] updateSet($index) $before → $after');
     notifyListeners();
   }
 
   void removeSet(int index) {
+    final removed = _sets[index];
     _sets.removeAt(index);
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
+    _log(
+      '🗑️ [Provider] removeSet($index) removed=$removed → count=${_sets.length} ${_setsBrief(_sets)}',
+    );
     notifyListeners();
   }
 
   void toggleSetDone(int index) {
     final s = _sets[index];
-    final w = s['weight']?.trim() ?? '';
-    final r = s['reps']?.trim() ?? '';
+    final w = (s['weight'] ?? '').toString().trim();
+    final r = (s['reps'] ?? '').toString().trim();
+
     final valid =
-        w.isNotEmpty && double.tryParse(w.replaceAll(',', '.')) != null &&
-            r.isNotEmpty && int.tryParse(r) != null;
+        w.isNotEmpty &&
+        double.tryParse(w.replaceAll(',', '.')) != null &&
+        r.isNotEmpty &&
+        int.tryParse(r) != null;
+
     if (!valid) {
       _error = 'Bitte gültiges Gewicht und Wiederholungen angeben.';
+      _log(
+        '⚠️ [Provider] toggleSetDone($index) blocked: invalid w="$w" r="$r"',
+      );
       notifyListeners();
       return;
     }
-    final current = s['done'] == 'true' || s['done'] == true;
-    s['done'] = (!current).toString();
+
+    final before = Map<String, dynamic>.from(s);
+    final current = (s['done'] == true || s['done'] == 'true');
+    s['done'] = !current;
     _sets[index] = Map<String, dynamic>.from(s);
+    _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
   }
 
   int get completedCount =>
-      _sets.where((s) {
-        final d = s['done'];
-        return d == 'true' || d == true;
-      }).length;
+      _sets.where((s) => (s['done'] == true || s['done'] == 'true')).length;
 
   void setNote(String text) {
     _note = text;
+    _log('📝 [Provider] setNote "$text"');
     notifyListeners();
   }
 
-  /// Speichert die Session-Logs, die User-Note und aktualisiert XP/Challenges
   Future<bool> saveWorkoutSession({
     required BuildContext context,
     required String gymId,
@@ -259,14 +290,17 @@ class DeviceProvider extends ChangeNotifier {
 
     _error = null;
     _isSaving = true;
+    _log('💾 [Provider] saveWorkoutSession start sets=${_setsBrief(_sets)}');
     notifyListeners();
 
     try {
-      _log('💾 saveWorkoutSession device=${_device!.uid} sets=${_sets.length}');
       final savedSets =
-          _sets.where((s) => s['done'] == true || s['done'] == 'true').toList();
+          _sets
+              .where((s) => (s['done'] == true || s['done'] == 'true'))
+              .toList();
       if (savedSets.isEmpty) {
         _error = 'Keine abgeschlossenen Sätze.';
+        _log('⚠️ [Provider] save aborted: no completed sets');
         return false;
       }
 
@@ -281,16 +315,21 @@ class DeviceProvider extends ChangeNotifier {
           .doc(_device!.uid)
           .collection('logs');
 
-      final existingToday = await logsCol
-          .where('userId', isEqualTo: userId)
-          .where('exerciseId', isEqualTo: _currentExerciseId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-          .limit(1)
-          .get();
+      final existingToday =
+          await logsCol
+              .where('userId', isEqualTo: userId)
+              .where('exerciseId', isEqualTo: _currentExerciseId)
+              .where(
+                'timestamp',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+              )
+              .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+              .limit(1)
+              .get();
 
       if (existingToday.docs.isNotEmpty) {
         _error = 'Heute bereits gespeichert.';
+        _log('⚠️ [Provider] save aborted: already saved today');
         return false;
       }
 
@@ -336,7 +375,7 @@ class DeviceProvider extends ChangeNotifier {
       batch.set(noteRef, {'note': _note, 'updatedAt': ts});
 
       await batch.commit();
-      _log('📚 logs stored for session=$sessionId');
+      _log('📚 [Provider] logs stored session=$sessionId');
 
       try {
         await Provider.of<XpProvider>(context, listen: false).addSessionXp(
@@ -349,10 +388,12 @@ class DeviceProvider extends ChangeNotifier {
           primaryMuscleGroupIds: _device!.primaryMuscleGroups,
           tz: tz,
         );
-        await Provider.of<ChallengeProvider>(context, listen: false)
-            .checkChallenges(gymId, userId, _device!.uid);
+        await Provider.of<ChallengeProvider>(
+          context,
+          listen: false,
+        ).checkChallenges(gymId, userId, _device!.uid);
       } catch (e, st) {
-        _log('⚠️ XP/Challenges error: $e', st);
+        _log('⚠️ [Provider] XP/Challenges error: $e', st);
       }
 
       _lastSessionSets = [
@@ -363,13 +404,13 @@ class DeviceProvider extends ChangeNotifier {
             'reps': s['reps'].toString(),
             'rir': (s['rir'] ?? '').toString(),
             'note': (s['note'] ?? '').toString(),
-          }
+          },
       ];
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
       _lastSessionId = sessionId;
 
-      _sets.removeWhere((s) => s['done'] == true || s['done'] == 'true');
+      _sets.removeWhere((s) => (s['done'] == true || s['done'] == 'true'));
       if (_sets.isEmpty) {
         _sets = [
           {
@@ -379,18 +420,21 @@ class DeviceProvider extends ChangeNotifier {
             'rir': '',
             'note': '',
             'done': false,
-          }
+          },
         ];
       }
       for (var i = 0; i < _sets.length; i++) {
         _sets[i]['number'] = '${i + 1}';
       }
 
+      _log(
+        '✅ [Provider] save done. remainingSets=${_setsBrief(_sets)} lastSessionId=$sessionId',
+      );
       notifyListeners();
       return true;
     } catch (e, st) {
       _error = e.toString();
-      _log('DeviceProvider.saveWorkoutSession error: $e', st);
+      _log('❌ [Provider] saveWorkoutSession error: $e', st);
       return false;
     } finally {
       _isSaving = false;
@@ -446,6 +490,9 @@ class DeviceProvider extends ChangeNotifier {
     _lastSessionDate = ts;
     _lastSessionNote = note;
     _lastSessionId = sid;
+    _log(
+      '📜 [Provider] loaded last session id=$sid sets=${_lastSessionSets.length}',
+    );
     notifyListeners();
   }
 
@@ -454,8 +501,8 @@ class DeviceProvider extends ChangeNotifier {
     String deviceId,
     String userId,
   ) async {
-    final userNoteDoc =
-        _firestore
+    final snap =
+        await _firestore
             .collection('gyms')
             .doc(gymId)
             .collection('devices')
@@ -463,9 +510,10 @@ class DeviceProvider extends ChangeNotifier {
             .collection('userNotes')
             .doc(userId)
             .get();
-    if ((await userNoteDoc).exists) {
-      final data = (await userNoteDoc).data()!;
+    if (snap.exists) {
+      final data = snap.data()!;
       _note = data['note'] as String? ?? '';
+      _log('📝 [Provider] loaded user note "${_note.replaceAll('\n', '\\n')}"');
       notifyListeners();
     }
   }
@@ -488,11 +536,13 @@ class DeviceProvider extends ChangeNotifier {
       _xp = 0;
       _level = 1;
     }
+    _log('⭐ [Provider] load XP level=$_level xp=$_xp');
     notifyListeners();
   }
 
   void _setLoading(bool value) {
     _isLoading = value;
+    _log('⏳ [Provider] isLoading=$value');
     notifyListeners();
   }
 }
