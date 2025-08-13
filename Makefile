@@ -19,10 +19,10 @@ ios:
 
 # Android auf echtem Gerät
 android:
-	fvm flutter clean
-	fvm flutter pub get
-	fvm flutter gen-l10n
-	fvm flutter run --release -d $(ANDROID_ID)
+	flutter clean
+	flutter pub get
+	flutter gen-l10n
+	flutter run --release -d $(ANDROID_ID)
 
 # Android Emulator starten und App ausführen
 android-emu:
