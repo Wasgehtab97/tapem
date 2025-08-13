@@ -185,7 +185,83 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    // Render new session section above history for better focus.
+                    if (plannedEntry != null)
+                      _PlannedTable(entry: plannedEntry)
+                    else ...[
+                      Text(
+                        loc.newSessionTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (var entry in prov.sets.asMap().entries) ...[
+                        Dismissible(
+                          key: ValueKey('set-${entry.key}-${entry.value['number']}'),
+                          direction: DismissDirection.endToStart,
+                          background: const SizedBox.shrink(),
+                          secondaryBackground: Container(
+                            alignment: Alignment.centerRight,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            color: Colors.red.withOpacity(0.15),
+                            child:
+                                const Icon(Icons.delete, semanticLabel: 'Löschen'),
+                          ),
+                          onDismissed: (_) {
+                            final removed =
+                                Map<String, dynamic>.from(entry.value);
+                            final removedIndex = entry.key;
+                            context
+                                .read<DeviceProvider>()
+                                .removeSet(entry.key);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(loc.setRemoved),
+                                action: SnackBarAction(
+                                  label: loc.undo,
+                                  onPressed: () => context
+                                      .read<DeviceProvider>()
+                                      .insertSetAt(removedIndex, removed),
+                                ),
+                              ),
+                            );
+                          },
+                          child: SetCard(
+                            index: entry.key,
+                            set: entry.value,
+                            previous: entry.key < prov.lastSessionSets.length
+                                ? prov.lastSessionSets[entry.key]
+                                : null,
+                            size: SetCardSize.dense,
+                          ),
+                        ),
+                        if (entry.key < prov.sets.length - 1) ...[
+                          const SizedBox(height: 8),
+                          const Divider(thickness: 1, height: 1),
+                          const SizedBox(height: 8),
+                        ]
+                      ],
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: prov.addSet,
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            textStyle:
+                                const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: Text(loc.addSetButton),
+                        ),
+                      ),
+                    ],
                     if (prov.lastSessionSets.isNotEmpty) ...[
+                      // History now appears after the input section.
+                      const SizedBox(height: 16),
+                      const Divider(),
                       Builder(builder: (context) {
                         final surface =
                             Theme.of(context).extension<BrandSurfaceTheme>();
@@ -258,78 +334,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ),
                         );
                       }),
-                    ],
-                    const Divider(),
-                    if (plannedEntry != null)
-                      _PlannedTable(entry: plannedEntry)
-                    else ...[
-                      Text(
-                        loc.newSessionTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (var entry in prov.sets.asMap().entries) ...[
-                        Dismissible(
-                          key: ValueKey('set-${entry.key}-${entry.value['number']}'),
-                          direction: DismissDirection.endToStart,
-                          background: const SizedBox.shrink(),
-                          secondaryBackground: Container(
-                            alignment: Alignment.centerRight,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                            color: Colors.red.withOpacity(0.15),
-                            child:
-                                const Icon(Icons.delete, semanticLabel: 'Löschen'),
-                          ),
-                          onDismissed: (_) {
-                            final removed =
-                                Map<String, dynamic>.from(entry.value);
-                            final removedIndex = entry.key;
-                            context
-                                .read<DeviceProvider>()
-                                .removeSet(entry.key);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(loc.setRemoved),
-                                action: SnackBarAction(
-                                  label: loc.undo,
-                                  onPressed: () => context
-                                      .read<DeviceProvider>()
-                                      .insertSetAt(removedIndex, removed),
-                                ),
-                              ),
-                            );
-                          },
-                          child: SetCard(
-                            index: entry.key,
-                            set: entry.value,
-                            previous: entry.key < prov.lastSessionSets.length
-                                ? prov.lastSessionSets[entry.key]
-                                : null,
-                          ),
-                        ),
-                        if (entry.key < prov.sets.length - 1) ...[
-                          const SizedBox(height: 12),
-                          const Divider(thickness: 1, height: 1),
-                          const SizedBox(height: 12),
-                        ]
-                      ],
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: prov.addSet,
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            textStyle:
-                                const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          icon: const Icon(Icons.add),
-                          label: Text(loc.addSetButton),
-                        ),
-                      ),
                     ],
                   ],
                 ),

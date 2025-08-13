@@ -67,17 +67,23 @@ class SetCardTheme {
   }
 }
 
+/// Visual density options for [SetCard].
+/// Enables a compact layout so more sets fit on screen.
+enum SetCardSize { regular, dense }
+
 /// Card representing a single workout set. Only visual styling has changed –
 /// callbacks and state handling remain untouched.
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
   final Map<String, String>? previous; // kept for API compatibility
+  final SetCardSize size;
   const SetCard({
     super.key,
     required this.index,
     required this.set,
     this.previous,
+    this.size = SetCardSize.regular,
   });
 
   @override
@@ -153,7 +159,13 @@ class _SetCardState extends State<SetCard> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
-    final tokens = SetCardTheme.of(context);
+    var tokens = SetCardTheme.of(context);
+    final dense = widget.size == SetCardSize.dense;
+    if (dense) {
+      tokens = tokens.copyWith(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      );
+    }
     final surface = Theme.of(context).extension<BrandSurfaceTheme>();
 
     var gradient = surface?.gradient ?? AppGradients.brandGradient;
@@ -183,8 +195,12 @@ class _SetCardState extends State<SetCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _IndexBadge(tokens: tokens, index: widget.index + 1),
-                const SizedBox(width: 12),
+                _IndexBadge(
+                  tokens: tokens,
+                  index: widget.index + 1,
+                  dense: dense,
+                ),
+                SizedBox(width: dense ? 8 : 12),
                 Expanded(
                   child: _InputPill(
                     controller: _weightCtrl,
@@ -192,6 +208,7 @@ class _SetCardState extends State<SetCard> {
                     label: 'kg',
                     readOnly: done,
                     tokens: tokens,
+                    dense: dense,
                     onTap: () => _openKeypad(_weightCtrl, allowDecimal: true),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.kgRequired;
@@ -202,7 +219,7 @@ class _SetCardState extends State<SetCard> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: dense ? 8 : 12),
                 Expanded(
                   child: _InputPill(
                     controller: _repsCtrl,
@@ -210,6 +227,7 @@ class _SetCardState extends State<SetCard> {
                     label: 'x',
                     readOnly: done,
                     tokens: tokens,
+                    dense: dense,
                     onTap: () => _openKeypad(_repsCtrl, allowDecimal: false),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.repsRequired;
@@ -218,12 +236,14 @@ class _SetCardState extends State<SetCard> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: dense ? 8 : 12),
                 _RoundButton(
                   tokens: tokens,
                   icon: done ? Icons.check : Icons.check,
                   filled: done,
-                  semantics: done ? loc.setReopenTooltip : loc.setCompleteTooltip,
+                  semantics:
+                      done ? loc.setReopenTooltip : loc.setCompleteTooltip,
+                  dense: dense,
                   onTap: () {
                     final form = Form.of(context);
                     if (!form.validate()) {
@@ -234,12 +254,13 @@ class _SetCardState extends State<SetCard> {
                     prov.toggleSetDone(widget.index);
                   },
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: dense ? 6 : 8),
                 _RoundButton(
                   tokens: tokens,
                   icon: _showExtras ? Icons.expand_less : Icons.more_horiz,
                   filled: false,
                   semantics: 'Mehr Optionen',
+                  dense: dense,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     setState(() {
@@ -250,25 +271,25 @@ class _SetCardState extends State<SetCard> {
               ],
             ),
             if (_showExtras) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: dense ? 8 : 12),
               Row(
                 children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _rirCtrl,
-                        focusNode: _rirFocus,
-                        decoration: InputDecoration(
-                          labelText: 'RIR',
-                          isDense: true,
-                        ),
-                        readOnly: true,
-                        keyboardType: TextInputType.none,
-                        onTap: done
-                            ? null
-                            : () => _openKeypad(_rirCtrl, allowDecimal: false),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _rirCtrl,
+                      focusNode: _rirFocus,
+                      decoration: InputDecoration(
+                        labelText: 'RIR',
+                        isDense: true,
                       ),
+                      readOnly: true,
+                      keyboardType: TextInputType.none,
+                      onTap: done
+                          ? null
+                          : () => _openKeypad(_rirCtrl, allowDecimal: false),
                     ),
-                  const SizedBox(width: 12),
+                  ),
+                  SizedBox(width: dense ? 8 : 12),
                   Expanded(
                     flex: 2,
                     child: TextFormField(
@@ -295,24 +316,33 @@ class _SetCardState extends State<SetCard> {
 class _IndexBadge extends StatelessWidget {
   final SetCardTheme tokens;
   final int index;
-  const _IndexBadge({required this.tokens, required this.index});
+  final bool dense;
+  const _IndexBadge({
+    required this.tokens,
+    required this.index,
+    this.dense = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Set $index',
       child: Container(
-        width: 32,
-        height: 32,
+        width: dense ? 28 : 32,
+        height: dense ? 28 : 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tokens.chipBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(dense ? 14 : 16),
           border: Border.all(color: tokens.chipFg.withOpacity(0.2)),
         ),
         child: Text(
           '$index',
-          style: TextStyle(color: tokens.chipFg, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: tokens.chipFg,
+            fontWeight: FontWeight.w600,
+            fontSize: dense ? 14 : null,
+          ),
         ),
       ),
     );
@@ -327,6 +357,7 @@ class _InputPill extends StatelessWidget {
   final SetCardTheme tokens;
   final VoidCallback onTap;
   final String? Function(String?)? validator;
+  final bool dense;
 
   const _InputPill({
     required this.controller,
@@ -336,6 +367,7 @@ class _InputPill extends StatelessWidget {
     required this.tokens,
     required this.onTap,
     this.validator,
+    this.dense = false,
   });
 
   @override
@@ -369,7 +401,8 @@ class _InputPill extends StatelessWidget {
                 ]
               : null,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding:
+            EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
         alignment: Alignment.center,
         child: TextFormField(
           controller: controller,
@@ -380,7 +413,9 @@ class _InputPill extends StatelessWidget {
           decoration: InputDecoration(
             border: InputBorder.none,
             labelText: label,
+            labelStyle: dense ? const TextStyle(fontSize: 14) : null,
           ),
+          style: dense ? const TextStyle(fontSize: 14) : null,
           validator: validator,
         ),
       ),
@@ -394,12 +429,14 @@ class _RoundButton extends StatefulWidget {
   final bool filled;
   final String semantics;
   final VoidCallback onTap;
+  final bool dense;
   const _RoundButton({
     required this.tokens,
     required this.icon,
     required this.filled,
     required this.semantics,
     required this.onTap,
+    this.dense = false,
   });
 
   @override
@@ -411,7 +448,7 @@ class _RoundButtonState extends State<_RoundButton> {
 
   @override
   Widget build(BuildContext context) {
-    final size = 44.0;
+    final size = widget.dense ? 40.0 : 44.0;
     final scale = _pressed ? 0.98 : 1.0;
     return Semantics(
       label: widget.semantics,
