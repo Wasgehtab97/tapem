@@ -46,6 +46,8 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _showTimer = true;
+  final _scrollController = ScrollController();
+  final List<GlobalKey<SetCardState>> _setKeys = [];
 
   @override
   void initState() {
@@ -67,6 +69,23 @@ class _DeviceScreenState extends State<DeviceScreen> {
       }
       setState(() {});
     });
+  }
+
+  void _addSet() {
+    final prov = context.read<DeviceProvider>();
+    prov.addSet();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_setKeys.isNotEmpty) {
+        final key = _setKeys.last;
+        key.currentState?.focusWeight();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -169,22 +188,24 @@ class _DeviceScreenState extends State<DeviceScreen> {
               child: Text(loc.multiDeviceSessionHint),
             ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (prov.device!.description.isNotEmpty) ...[
-                      Text(
-                        prov.device!.description,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
+            child: Form(
+              key: _formKey,
+              child: Consumer<OverlayNumericKeypadController>(
+                builder: (context, keypad, _) {
+                  final bottomPad = keypad.keypadContentHeight + 16;
+                  return ListView(
+                    controller: _scrollController,
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
+                    children: [
+                      if (prov.device!.description.isNotEmpty) ...[
+                        Text(
+                          prov.device!.description,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                      ],
                     // Render new session section above history for better focus.
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
@@ -198,25 +219,23 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 8),
                       for (var entry in prov.sets.asMap().entries) ...[
+                        if (_setKeys.length <= entry.key) {
+                          _setKeys.add(GlobalKey<SetCardState>());
+                        }
                         Dismissible(
                           key: ValueKey('set-${entry.key}-${entry.value['number']}'),
                           direction: DismissDirection.endToStart,
                           background: const SizedBox.shrink(),
                           secondaryBackground: Container(
                             alignment: Alignment.centerRight,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             color: Colors.red.withOpacity(0.15),
-                            child:
-                                const Icon(Icons.delete, semanticLabel: 'Löschen'),
+                            child: const Icon(Icons.delete, semanticLabel: 'Löschen'),
                           ),
                           onDismissed: (_) {
-                            final removed =
-                                Map<String, dynamic>.from(entry.value);
+                            final removed = Map<String, dynamic>.from(entry.value);
                             final removedIndex = entry.key;
-                            context
-                                .read<DeviceProvider>()
-                                .removeSet(entry.key);
+                            context.read<DeviceProvider>().removeSet(entry.key);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(loc.setRemoved),
@@ -230,6 +249,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             );
                           },
                           child: SetCard(
+                            key: _setKeys[entry.key],
                             index: entry.key,
                             set: entry.value,
                             previous: entry.key < prov.lastSessionSets.length
@@ -246,12 +266,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ],
                       Center(
                         child: TextButton.icon(
-                          onPressed: prov.addSet,
+                          onPressed: _addSet,
                           style: TextButton.styleFrom(
                             foregroundColor:
                                 Theme.of(context).colorScheme.primary,
-                            textStyle:
-                                const TextStyle(fontWeight: FontWeight.bold),
+                            textStyle: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           icon: const Icon(Icons.add),
                           label: Text(loc.addSetButton),
@@ -335,8 +354,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         );
                       }),
                     ],
-                  ],
-                ),
+                  ];
+                },
               ),
             ),
           ),

@@ -87,10 +87,10 @@ class SetCard extends StatefulWidget {
   });
 
   @override
-  State<SetCard> createState() => _SetCardState();
+  State<SetCard> createState() => SetCardState();
 }
 
-class _SetCardState extends State<SetCard> {
+class SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
   late final TextEditingController _rirCtrl;
@@ -153,6 +153,17 @@ class _SetCardState extends State<SetCard> {
     context
         .read<OverlayNumericKeypadController>()
         .openFor(controller, allowDecimal: allowDecimal);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.1,
+        duration: const Duration(milliseconds: 200),
+      );
+    });
+  }
+
+  void focusWeight() {
+    _openKeypad(_weightCtrl, allowDecimal: true);
   }
 
   @override
