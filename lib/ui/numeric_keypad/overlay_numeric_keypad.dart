@@ -143,9 +143,20 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
           )
         : const SizedBox.shrink();
 
+    // Insert a translucent layer that closes the keypad when tapping outside it.
     Widget result = Stack(
       children: [
         widget.child,
+        if (widget.controller.isOpen)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                widget.controller.close();
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
+            ),
+          ),
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSwitcher(
