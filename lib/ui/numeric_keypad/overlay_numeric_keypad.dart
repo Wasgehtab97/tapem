@@ -58,12 +58,12 @@ class OverlayNumericKeypadController extends ChangeNotifier {
 
   void openFor(
     TextEditingController controller, {
-    bool allowDecimalParam = true,
+    bool allowDecimal = true,
     double? decimalStep,
     double? integerStep,
   }) {
     _target = controller;
-    allowDecimal = allowDecimalParam;
+    this.allowDecimal = allowDecimal;
     if (decimalStep != null) this.decimalStep = decimalStep;
     if (integerStep != null) this.integerStep = integerStep;
     FocusManager.instance.primaryFocus?.unfocus();

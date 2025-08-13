@@ -37,5 +37,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.isOpen, false);
   });
+
+  testWidgets('allowDecimal parameter sets controller flag', (tester) async {
+    final controller = OverlayNumericKeypadController();
+    final textCtrl = TextEditingController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OverlayNumericKeypadHost(
+          controller: controller,
+          child: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    controller.openFor(textCtrl, allowDecimal: false);
+    await tester.pump();
+
+    expect(controller.allowDecimal, false);
+  });
 }
 
