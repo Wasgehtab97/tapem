@@ -35,6 +35,8 @@ lib/
 
 Weitere Details zum State-Management stehen in [docs/provider_structure.md](docs/provider_structure.md).
 
+Eine Übersicht über die Steuerung des Pausen-Timers findet sich in [docs/device_timer.md](docs/device_timer.md).
+
 ---
 
 ## Voraussetzungen

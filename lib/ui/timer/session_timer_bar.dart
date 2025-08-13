@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'session_timer_controller.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class SessionTimerBar extends StatefulWidget {
-  final Duration total;
-  final bool initiallyRunning;
-  final bool muted;
+  final Duration initialDuration;
   final ValueChanged<Duration>? onTick;
   final VoidCallback? onDone;
   final VoidCallback? onClose;
-  final VoidCallback? onMuteToggle;
 
   const SessionTimerBar({
     super.key,
-    required this.total,
-    this.initiallyRunning = false,
-    this.muted = false,
+    required this.initialDuration,
     this.onTick,
     this.onDone,
     this.onClose,
-    this.onMuteToggle,
   });
 
   @override
@@ -28,19 +23,23 @@ class SessionTimerBar extends StatefulWidget {
 
 class _SessionTimerBarState extends State<SessionTimerBar>
     with SingleTickerProviderStateMixin {
+  static const _durations = [60, 90, 120, 150, 180];
+  late int _selectedIndex;
   late final SessionTimerController _controller;
 
   @override
   void initState() {
     super.initState();
+    final initialSeconds = widget.initialDuration.inSeconds;
+    _selectedIndex = _durations.indexOf(initialSeconds);
+    if (_selectedIndex == -1) {
+      _selectedIndex = _durations.indexOf(90);
+    }
     _controller = SessionTimerController(
-      total: widget.total,
-      initiallyRunning: widget.initiallyRunning,
+      total: Duration(seconds: _durations[_selectedIndex]),
       onTick: widget.onTick,
       onDone: () {
-        if (!widget.muted) {
-          SystemSound.play(SystemSoundType.click);
-        }
+        SystemSound.play(SystemSoundType.click);
         HapticFeedback.mediumImpact();
         widget.onDone?.call();
       },
@@ -61,21 +60,29 @@ class _SessionTimerBarState extends State<SessionTimerBar>
     return '$m:$r';
   }
 
+  void _changeDuration(int delta) {
+    setState(() {
+      _selectedIndex =
+          (_selectedIndex + delta).clamp(0, _durations.length - 1);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context);
     return ValueListenableBuilder<Duration>(
       valueListenable: _controller.remaining,
       builder: (context, remaining, _) {
         final progress =
-            1 - (remaining.inMilliseconds / widget.total.inMilliseconds).clamp(0.0, 1.0);
+            1 - (remaining.inMilliseconds / _controller.total.inMilliseconds).clamp(0.0, 1.0);
         final textColor = Color.lerp(
           theme.colorScheme.onSurface,
           theme.colorScheme.onPrimary,
           progress,
         );
         return Semantics(
-          label: 'Rest timer',
+          label: loc.timerPauseLabel,
           value: _fmt(remaining),
           child: Material(
             elevation: 2,
@@ -105,22 +112,27 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                   ),
                   Row(
                     children: [
-                      ValueListenableBuilder<bool>(
-                        valueListenable: _controller.running,
-                        builder: (context, running, _) => IconButton(
-                          tooltip: running ? 'Pause' : 'Start',
-                          icon:
-                              Icon(running ? Icons.pause : Icons.play_arrow),
-                          onPressed: running
-                              ? _controller.pause
-                              : _controller.resume,
-                        ),
+                      IconButton(
+                        tooltip: loc.timerStart,
+                        icon: const Icon(Icons.play_arrow),
+                        onPressed: () => _controller.startWith(
+                            Duration(seconds: _durations[_selectedIndex])),
                       ),
                       IconButton(
-                        tooltip: widget.muted ? 'Unmute' : 'Mute',
-                        icon: Icon(
-                            widget.muted ? Icons.volume_off : Icons.volume_up),
-                        onPressed: widget.onMuteToggle,
+                        tooltip: loc.timerDecrease,
+                        icon: const Icon(Icons.remove),
+                        onPressed: () =>
+                            _changeDuration(-1),
+                      ),
+                      Text(
+                        '${_durations[_selectedIndex]} ${loc.secondsAbbreviation}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      IconButton(
+                        tooltip: loc.timerIncrease,
+                        icon: const Icon(Icons.add),
+                        onPressed: () =>
+                            _changeDuration(1),
                       ),
                       Expanded(
                         child: Center(

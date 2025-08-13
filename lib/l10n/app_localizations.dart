@@ -533,6 +533,18 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get timerDuration;
 
+  /// Tooltip for increasing timer duration
+  ///
+  /// In en, this message translates to:
+  /// **'Increase timer duration'**
+  String get timerIncrease;
+
+  /// Tooltip for decreasing timer duration
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease timer duration'**
+  String get timerDecrease;
+
   /// Error when no user is found
   ///
   /// In en, this message translates to:

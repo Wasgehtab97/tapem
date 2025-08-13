@@ -366,6 +366,16 @@
     "description": "Label for timer duration dropdown"
   },
 
+  "timerIncrease": "Increase timer duration",
+  "@timerIncrease": {
+    "description": "Tooltip for increasing timer duration"
+  },
+
+  "timerDecrease": "Decrease timer duration",
+  "@timerDecrease": {
+    "description": "Tooltip for decreasing timer duration"
+  },
+
   "userNotFound": "User not found.",
   "@userNotFound": {
     "description": "Error when no user is found"
