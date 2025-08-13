@@ -86,18 +86,19 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<DeviceProvider>.value(value: provider),
-          ChangeNotifierProvider<OverlayNumericKeypadController>.value(
+          Provider<OverlayNumericKeypadController>.value(
             value: keypadController,
           ),
         ],
-        child: OverlayNumericKeypadHost(
-          controller: keypadController,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('de'),
-            home: const Scaffold(body: _TestList()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          builder: (context, child) => OverlayNumericKeypadHost(
+            controller: keypadController,
+            child: child!,
           ),
+          home: const Scaffold(body: _TestList()),
         ),
       ),
     );

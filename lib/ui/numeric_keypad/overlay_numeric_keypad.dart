@@ -58,16 +58,16 @@ class OverlayNumericKeypadController extends ChangeNotifier {
 
   void openFor(
     TextEditingController controller, {
-    bool allowDecimal = true,
+    bool allowDecimalParam = true,
     double? decimalStep,
     double? integerStep,
   }) {
-    FocusManager.instance.primaryFocus?.unfocus();
-    SystemChannels.textInput.invokeMethod('TextInput.hide');
     _target = controller;
-    this.allowDecimal = allowDecimal;
+    allowDecimal = allowDecimalParam;
     if (decimalStep != null) this.decimalStep = decimalStep;
     if (integerStep != null) this.integerStep = integerStep;
+    FocusManager.instance.primaryFocus?.unfocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     _isOpen = true;
     notifyListeners();
   }
@@ -136,26 +136,16 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 
   @override
   Widget build(BuildContext context) {
-    final keypad =
-        widget.controller.isOpen
-            ? OverlayNumericKeypad(
-                controller: widget.controller,
-                theme: widget.theme,
-              )
-            : const SizedBox.shrink();
+    final keypad = widget.controller.isOpen
+        ? OverlayNumericKeypad(
+            controller: widget.controller,
+            theme: widget.theme,
+          )
+        : const SizedBox.shrink();
 
-    Widget baseChild = widget.child;
-    if (widget.controller.isOpen) {
-      baseChild = MediaQuery.removeViewInsets(
-        context: context,
-        removeBottom: true,
-        child: baseChild,
-      );
-    }
-
-    final content = Stack(
+    Widget result = Stack(
       children: [
-        baseChild,
+        widget.child,
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSwitcher(
@@ -168,18 +158,28 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
       ],
     );
 
-    if (!widget.interceptAndroidBack) return content;
+    if (widget.controller.isOpen) {
+      final mq = MediaQuery.of(context);
+      result = MediaQuery(
+        data: mq.copyWith(viewInsets: mq.viewInsets.copyWith(bottom: 0)),
+        child: result,
+      );
+    }
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (widget.controller.isOpen) {
-          widget.controller.close();
-          return false;
-        }
-        return true;
-      },
-      child: content,
-    );
+    if (widget.interceptAndroidBack) {
+      result = WillPopScope(
+        onWillPop: () async {
+          if (widget.controller.isOpen) {
+            widget.controller.close();
+            return false;
+          }
+          return true;
+        },
+        child: result,
+      );
+    }
+
+    return result;
   }
 }
 
