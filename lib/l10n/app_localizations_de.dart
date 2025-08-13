@@ -240,6 +240,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get timerDuration => 'Dauer';
 
   @override
+  String get timerIncrease => 'Timerdauer erhöhen';
+
+  @override
+  String get timerDecrease => 'Timerdauer verringern';
+
+  @override
   String get userNotFound => 'Nutzer nicht gefunden.';
 
   @override

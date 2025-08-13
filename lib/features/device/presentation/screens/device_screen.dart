@@ -193,7 +193,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: SessionTimerBar(
-                  total: const Duration(seconds: 90),
+                  initialDuration: const Duration(seconds: 90),
                   onClose: () => setState(() => _showTimer = false),
                 ),
               ),

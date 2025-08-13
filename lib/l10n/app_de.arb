@@ -368,6 +368,16 @@
     "description": "Beschriftung für Auswahl der Timer-Dauer"
   },
 
+  "timerIncrease": "Timerdauer erhöhen",
+  "@timerIncrease": {
+    "description": "Schaltfläche Timerdauer erhöhen"
+  },
+
+  "timerDecrease": "Timerdauer verringern",
+  "@timerDecrease": {
+    "description": "Schaltfläche Timerdauer verringern"
+  },
+
   "userNotFound": "Nutzer nicht gefunden.",
   "@userNotFound": {
     "description": "Fehlermeldung, wenn Nutzer nicht gefunden wurde"

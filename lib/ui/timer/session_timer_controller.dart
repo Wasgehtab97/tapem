@@ -3,12 +3,13 @@ import 'package:flutter/scheduler.dart';
 
 class SessionTimerController {
   SessionTimerController({
-    required this.total,
+    required Duration total,
     bool initiallyRunning = false,
     this.onTick,
     this.onDone,
     required TickerProvider vsync,
-  })  : remaining = ValueNotifier(total),
+  })  : _total = total,
+        remaining = ValueNotifier(total),
         running = ValueNotifier(initiallyRunning) {
     _ticker = vsync.createTicker(_onTick);
     if (initiallyRunning) {
@@ -16,7 +17,7 @@ class SessionTimerController {
     }
   }
 
-  final Duration total;
+  Duration _total;
   final ValueNotifier<Duration> remaining;
   final ValueNotifier<bool> running;
   final ValueChanged<Duration>? onTick;
@@ -30,7 +31,7 @@ class SessionTimerController {
     final dt = elapsed - _lastTick;
     _lastTick = elapsed;
     _elapsed += dt;
-    final left = total - _elapsed;
+    final left = _total - _elapsed;
     if (left <= Duration.zero) {
       remaining.value = Duration.zero;
       running.value = false;
@@ -67,7 +68,7 @@ class SessionTimerController {
     _ticker.stop();
     _elapsed = Duration.zero;
     _lastTick = Duration.zero;
-    remaining.value = total;
+      remaining.value = _total;
     running.value = false;
   }
 
@@ -76,5 +77,13 @@ class SessionTimerController {
     remaining.dispose();
     running.dispose();
   }
+
+  void startWith(Duration total) {
+    _total = total;
+    reset();
+    resume();
+  }
+
+  Duration get total => _total;
 }
 
