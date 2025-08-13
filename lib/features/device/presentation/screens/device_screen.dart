@@ -90,8 +90,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
     });
   }
 
+  void _closeKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.read<OverlayNumericKeypadController>().close();
+  }
+
   @override
   void dispose() {
+    _closeKeyboard();
     _scrollController.dispose();
     super.dispose();
   }
@@ -148,6 +154,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               icon: const Icon(Icons.history),
               tooltip: 'Verlauf',
               onPressed: () {
+                _closeKeyboard();
                 Navigator.of(
                   context,
                 ).pushNamed(AppRouter.history, arguments: widget.deviceId);
@@ -173,6 +180,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 name: currentExercise.name,
                 muscleGroupIds: currentExercise.muscleGroupIds,
                 onChange: () {
+                  _closeKeyboard();
                   Navigator.of(context).pushReplacementNamed(
                     AppRouter.exerciseList,
                     arguments: {
@@ -421,6 +429,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
+                        _closeKeyboard();
                         Navigator.pop(context);
                       },
                       child: Text(loc.cancelButton),
@@ -497,36 +506,91 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 }
 
-class _PlannedTable extends StatelessWidget {
+class _PlannedTable extends StatefulWidget {
   final ExerciseEntry entry;
 
   const _PlannedTable({required this.entry});
 
   @override
+  State<_PlannedTable> createState() => _PlannedTableState();
+}
+
+class _PlannedTableState extends State<_PlannedTable> {
+  final List<TextEditingController> _weightCtrls = [];
+  final List<TextEditingController> _repsCtrls = [];
+  final List<TextEditingController> _rirCtrls = [];
+
+  void _syncControllers(List<Map<String, dynamic>> sets) {
+    while (_weightCtrls.length < sets.length) {
+      final i = _weightCtrls.length;
+      _weightCtrls.add(TextEditingController(text: sets[i]['weight'] ?? ''));
+      _repsCtrls.add(TextEditingController(text: sets[i]['reps'] ?? ''));
+      _rirCtrls.add(TextEditingController(text: sets[i]['rir'] ?? ''));
+
+      _weightCtrls[i]
+          .addListener(() => context.read<DeviceProvider>().updateSet(i, weight: _weightCtrls[i].text));
+      _repsCtrls[i]
+          .addListener(() => context.read<DeviceProvider>().updateSet(i, reps: _repsCtrls[i].text));
+      _rirCtrls[i]
+          .addListener(() => context.read<DeviceProvider>().updateSet(i, rir: _rirCtrls[i].text));
+    }
+
+    while (_weightCtrls.length > sets.length) {
+      _weightCtrls.removeLast().dispose();
+      _repsCtrls.removeLast().dispose();
+      _rirCtrls.removeLast().dispose();
+    }
+
+    for (var i = 0; i < sets.length; i++) {
+      final w = sets[i]['weight'] ?? '';
+      final r = sets[i]['reps'] ?? '';
+      final rir = sets[i]['rir'] ?? '';
+      if (_weightCtrls[i].text != w) _weightCtrls[i].text = w;
+      if (_repsCtrls[i].text != r) _repsCtrls[i].text = r;
+      if (_rirCtrls[i].text != rir) _rirCtrls[i].text = rir;
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _weightCtrls) {
+      c.dispose();
+    }
+    for (final c in _repsCtrls) {
+      c.dispose();
+    }
+    for (final c in _rirCtrls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
 
-    if (prov.sets.length < entry.totalSets) {
+    if (prov.sets.length < widget.entry.totalSets) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        while (prov.sets.length < entry.totalSets) {
+        while (prov.sets.length < widget.entry.totalSets) {
           prov.addSet();
         }
       });
     }
 
-    // Prefill repetitions from the training plan so the value ist sichtbar
-    if (entry.reps != null &&
+    if (widget.entry.reps != null &&
         prov.sets.every((s) => s['reps'] != null && s['reps']!.isEmpty)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         for (var i = 0; i < prov.sets.length; i++) {
-          prov.updateSet(i, reps: entry.reps!.toString());
+          prov.updateSet(i, reps: widget.entry.reps!.toString());
         }
       });
     }
 
-    final weightHint = entry.weight?.toString();
-    final repsHint = entry.reps?.toString();
-    final rirHint = entry.rir > 0 ? entry.rir.toString() : null;
+    _syncControllers(prov.sets);
+
+    final weightHint = widget.entry.weight?.toString();
+    final repsHint = widget.entry.reps?.toString();
+    final rirHint = widget.entry.rir > 0 ? widget.entry.rir.toString() : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -552,90 +616,62 @@ class _PlannedTable extends StatelessWidget {
                     SizedBox(width: 24, child: Text(entrySet.value['number']!)),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final ctr = TextEditingController(
-                            text: entrySet.value['weight'],
-                          );
-                          return TextFormField(
-                            key: ValueKey(
-                              'w-${entrySet.key}-${entrySet.value['weight']}',
-                            ),
-                            controller: ctr,
-                            decoration: InputDecoration(
-                              labelText: 'kg',
-                              hintText: weightHint,
-                              isDense: true,
-                            ),
-                            readOnly: true,
-                            keyboardType: TextInputType.none,
-                            autofocus: false,
-                            onTap:
-                                () => context
-                                    .read<OverlayNumericKeypadController>()
-                                    .openFor(ctr, allowDecimal: true),
-                            onChanged:
-                                (v) => prov.updateSet(entrySet.key, weight: v),
-                          );
-                        },
+                      child: TextFormField(
+                        key: ValueKey('w-${entrySet.key}'),
+                        controller: _weightCtrls[entrySet.key],
+                        decoration: InputDecoration(
+                          labelText: 'kg',
+                          hintText: weightHint,
+                          isDense: true,
+                        ),
+                        readOnly: true,
+                        keyboardType: TextInputType.none,
+                        autofocus: false,
+                        onTap: () =>
+                            context.read<OverlayNumericKeypadController>().openFor(
+                                  _weightCtrls[entrySet.key],
+                                  allowDecimal: true,
+                                ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final ctr = TextEditingController(
-                            text: entrySet.value['reps'],
-                          );
-                          return TextFormField(
-                            key: ValueKey(
-                              'r-${entrySet.key}-${entrySet.value['reps']}',
-                            ),
-                            controller: ctr,
-                            decoration: InputDecoration(
-                              labelText: 'x',
-                              hintText: repsHint,
-                              isDense: true,
-                            ),
-                            readOnly: true,
-                            keyboardType: TextInputType.none,
-                            autofocus: false,
-                            onTap:
-                                () => context
-                                    .read<OverlayNumericKeypadController>()
-                                    .openFor(ctr, allowDecimal: false),
-                            onChanged:
-                                (v) => prov.updateSet(entrySet.key, reps: v),
-                          );
-                        },
+                      child: TextFormField(
+                        key: ValueKey('r-${entrySet.key}'),
+                        controller: _repsCtrls[entrySet.key],
+                        decoration: InputDecoration(
+                          labelText: 'x',
+                          hintText: repsHint,
+                          isDense: true,
+                        ),
+                        readOnly: true,
+                        keyboardType: TextInputType.none,
+                        autofocus: false,
+                        onTap: () =>
+                            context.read<OverlayNumericKeypadController>().openFor(
+                                  _repsCtrls[entrySet.key],
+                                  allowDecimal: false,
+                                ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final ctr = TextEditingController(
-                            text: entrySet.value['rir'],
-                          );
-                          return TextFormField(
-                            key: ValueKey('rir-${entrySet.key}'),
-                            controller: ctr,
-                            decoration: InputDecoration(
-                              labelText: 'RIR',
-                              hintText: rirHint,
-                              isDense: true,
-                            ),
-                            readOnly: true,
-                            keyboardType: TextInputType.none,
-                            autofocus: false,
-                            onTap:
-                                () => context
-                                    .read<OverlayNumericKeypadController>()
-                                    .openFor(ctr, allowDecimal: false),
-                            onChanged:
-                                (v) => prov.updateSet(entrySet.key, rir: v),
-                          );
-                        },
+                      child: TextFormField(
+                        key: ValueKey('rir-${entrySet.key}'),
+                        controller: _rirCtrls[entrySet.key],
+                        decoration: InputDecoration(
+                          labelText: 'RIR',
+                          hintText: rirHint,
+                          isDense: true,
+                        ),
+                        readOnly: true,
+                        keyboardType: TextInputType.none,
+                        autofocus: false,
+                        onTap: () =>
+                            context.read<OverlayNumericKeypadController>().openFor(
+                                  _rirCtrls[entrySet.key],
+                                  allowDecimal: false,
+                                ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -648,7 +684,8 @@ class _PlannedTable extends StatelessWidget {
                           labelText: 'Notiz',
                           isDense: true,
                         ),
-                        onChanged: (v) => prov.updateSet(entrySet.key, note: v),
+                        onChanged: (v) =>
+                            prov.updateSet(entrySet.key, note: v),
                       ),
                     ),
                     IconButton(
@@ -663,9 +700,9 @@ class _PlannedTable extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text('Set hinzufügen'),
             ),
-            if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+            if (widget.entry.notes != null && widget.entry.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('Notiz: ${entry.notes!}'),
+              Text('Notiz: ${widget.entry.notes!}'),
             ],
             const Divider(),
           ],
@@ -674,3 +711,4 @@ class _PlannedTable extends StatelessWidget {
     );
   }
 }
+
