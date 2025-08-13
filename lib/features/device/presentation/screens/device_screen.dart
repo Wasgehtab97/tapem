@@ -75,8 +75,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final prov = context.read<DeviceProvider>();
     prov.addSet();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_setKeys.isNotEmpty) {
-        final key = _setKeys.last;
+      final index = prov.sets.length - 1;
+      if (index >= 0 && index < _setKeys.length) {
+        final key = _setKeys[index];
+        if (key.currentContext != null) {
+          Scrollable.ensureVisible(
+            key.currentContext!,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 200),
+          );
+        }
         key.currentState?.focusWeight();
       }
     });
@@ -192,12 +200,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
               key: _formKey,
               child: Consumer<OverlayNumericKeypadController>(
                 builder: (context, keypad, _) {
-                  final bottomPad = keypad.keypadContentHeight + 16;
+                  final mq = MediaQuery.of(context);
+                  final bottomPad =
+                      keypad.keypadContentHeight + mq.padding.bottom + 16;
                   while (_setKeys.length < prov.sets.length) {
                     _setKeys.add(GlobalKey<SetCardState>());
                   }
+                  if (_setKeys.length > prov.sets.length) {
+                    _setKeys.removeRange(prov.sets.length, _setKeys.length);
+                  }
                   return ListView(
                     controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                     children: [
                       if (prov.device!.description.isNotEmpty) ...[
@@ -221,56 +235,64 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      for (var entry in prov.sets.asMap().entries) ...[
-                        Dismissible(
-                          key: ValueKey('set-${entry.key}-${entry.value['number']}'),
-                          direction: DismissDirection.endToStart,
-                          background: const SizedBox.shrink(),
-                          secondaryBackground: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            color: Colors.red.withOpacity(0.15),
-                            child: const Icon(Icons.delete, semanticLabel: 'Löschen'),
-                          ),
-                          onDismissed: (_) {
-                            final removed = Map<String, dynamic>.from(entry.value);
-                            final removedIndex = entry.key;
-                            context.read<DeviceProvider>().removeSet(entry.key);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(loc.setRemoved),
-                                action: SnackBarAction(
-                                  label: loc.undo,
-                                  onPressed: () => context
-                                      .read<DeviceProvider>()
-                                      .insertSetAt(removedIndex, removed),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: prov.sets.length,
+                        itemBuilder: (context, index) {
+                          final set = prov.sets[index];
+                          final prev = index < prov.lastSessionSets.length
+                              ? prov.lastSessionSets[index]
+                              : null;
+                          return Dismissible(
+                            key: ValueKey('set-${set['number']}'),
+                            direction: DismissDirection.endToStart,
+                            background: const SizedBox.shrink(),
+                            secondaryBackground: Container(
+                              alignment: Alignment.centerRight,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              color: Colors.red.withOpacity(0.15),
+                              child:
+                                  const Icon(Icons.delete, semanticLabel: 'Löschen'),
+                            ),
+                            onDismissed: (_) {
+                              final removed = Map<String, dynamic>.from(set);
+                              context.read<DeviceProvider>().removeSet(index);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(loc.setRemoved),
+                                  action: SnackBarAction(
+                                    label: loc.undo,
+                                    onPressed: () => context
+                                        .read<DeviceProvider>()
+                                        .insertSetAt(index, removed),
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          child: SetCard(
-                            key: _setKeys[entry.key],
-                            index: entry.key,
-                            set: entry.value,
-                            previous: entry.key < prov.lastSessionSets.length
-                                ? prov.lastSessionSets[entry.key]
-                                : null,
-                            size: SetCardSize.dense,
-                          ),
+                              );
+                            },
+                            child: SetCard(
+                              key: _setKeys[index],
+                              index: index,
+                              set: set,
+                              previous: prev,
+                              size: SetCardSize.dense,
+                            ),
+                          );
+                        },
+                        separatorBuilder: (_, __) => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(thickness: 1, height: 1),
                         ),
-                        if (entry.key < prov.sets.length - 1) ...[
-                          const SizedBox(height: 8),
-                          const Divider(thickness: 1, height: 1),
-                          const SizedBox(height: 8),
-                        ]
-                      ],
+                      ),
                       Center(
                         child: TextButton.icon(
                           onPressed: _addSet,
                           style: TextButton.styleFrom(
                             foregroundColor:
                                 Theme.of(context).colorScheme.primary,
-                            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                            textStyle:
+                                const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           icon: const Icon(Icons.add),
                           label: Text(loc.addSetButton),
