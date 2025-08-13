@@ -52,9 +52,11 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   bool allowDecimal = true;
   double decimalStep = 2.5; // z.B. Gewichte
   double integerStep = 1.0; // z.B. Wiederholungen
+  double _contentHeight = 0.0;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
+  double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
 
   void openFor(
     TextEditingController controller, {
@@ -74,7 +76,15 @@ class OverlayNumericKeypadController extends ChangeNotifier {
 
   void close() {
     _isOpen = false;
+    _contentHeight = 0.0;
     notifyListeners();
+  }
+
+  void _updateContentHeight(double height) {
+    if (_contentHeight != height) {
+      _contentHeight = height;
+      notifyListeners();
+    }
   }
 }
 
@@ -86,6 +96,7 @@ class OverlayNumericKeypadHost extends StatefulWidget {
   final Widget child;
   final NumericKeypadTheme theme;
   final bool interceptAndroidBack; // Back schließt Tastatur statt Route
+  final bool closeOnOutsideTap;
 
   const OverlayNumericKeypadHost({
     super.key,
@@ -93,6 +104,7 @@ class OverlayNumericKeypadHost extends StatefulWidget {
     required this.child,
     this.theme = const NumericKeypadTheme(),
     this.interceptAndroidBack = true,
+    this.closeOnOutsideTap = false,
   });
 
   @override
@@ -147,7 +159,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     Widget result = Stack(
       children: [
         widget.child,
-        if (widget.controller.isOpen)
+        if (widget.controller.isOpen && widget.closeOnOutsideTap)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -234,6 +246,7 @@ class OverlayNumericKeypad extends StatelessWidget {
 
     // Innenhöhe = contentH abzüglich Sheet-Paddings (oben+unten)
     final innerH = contentH - (gap + gap);
+    controller._updateContentHeight(contentH);
 
     // Zellhöhe & Aspect aus der echten Innenhöhe
     final cellH = (innerH - 3 * gap) / 4.0;
