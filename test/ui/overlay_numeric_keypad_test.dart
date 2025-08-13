@@ -21,6 +21,10 @@ void main() {
 
     expect(find.byType(OverlayNumericKeypad), findsOneWidget);
 
+    // viewInsets.bottom should stay at 0 while overlay is visible
+    final hostCtx = tester.element(find.byType(OverlayNumericKeypadHost));
+    expect(MediaQuery.of(hostCtx).viewInsets.bottom, 0);
+
     await tester.tap(find.text('1'));
     await tester.pump();
     expect(textCtrl.text, '1');

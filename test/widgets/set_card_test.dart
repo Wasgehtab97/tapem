@@ -40,21 +40,22 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<DeviceProvider>.value(value: provider),
-          ChangeNotifierProvider<OverlayNumericKeypadController>.value(
+          Provider<OverlayNumericKeypadController>.value(
             value: keypadController,
           ),
         ],
-        child: OverlayNumericKeypadHost(
-          controller: keypadController,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Form(
-                child: SetCard(
-                  index: 0,
-                  set: provider.sets[0],
-                ),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => OverlayNumericKeypadHost(
+            controller: keypadController,
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Form(
+              child: SetCard(
+                index: 0,
+                set: provider.sets[0],
               ),
             ),
           ),
