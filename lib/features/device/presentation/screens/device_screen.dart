@@ -193,6 +193,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
               child: Consumer<OverlayNumericKeypadController>(
                 builder: (context, keypad, _) {
                   final bottomPad = keypad.keypadContentHeight + 16;
+                  while (_setKeys.length < prov.sets.length) {
+                    _setKeys.add(GlobalKey<SetCardState>());
+                  }
                   return ListView(
                     controller: _scrollController,
                     padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
@@ -219,9 +222,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                       const SizedBox(height: 8),
                       for (var entry in prov.sets.asMap().entries) ...[
-                        if (_setKeys.length <= entry.key) {
-                          _setKeys.add(GlobalKey<SetCardState>());
-                        }
                         Dismissible(
                           key: ValueKey('set-${entry.key}-${entry.value['number']}'),
                           direction: DismissDirection.endToStart,
@@ -354,7 +354,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         );
                       }),
                     ],
-                  ];
+                  );
                 },
               ),
             ),
