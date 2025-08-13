@@ -73,14 +73,11 @@ class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
   final Map<String, String>? previous; // kept for API compatibility
-  final OverlayNumericKeypadController keypadController;
-
   const SetCard({
     super.key,
     required this.index,
     required this.set,
     this.previous,
-    required this.keypadController,
   });
 
   @override
@@ -90,8 +87,10 @@ class SetCard extends StatefulWidget {
 class _SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
+  late final TextEditingController _rirCtrl;
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
+  late final FocusNode _rirFocus;
 
   bool _showExtras = false;
 
@@ -100,14 +99,19 @@ class _SetCardState extends State<SetCard> {
     super.initState();
     _weightCtrl = TextEditingController(text: widget.set['weight'] as String?);
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
+    _rirCtrl = TextEditingController(text: widget.set['rir'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
+    _rirFocus = FocusNode();
 
     _weightCtrl.addListener(() {
       context.read<DeviceProvider>().updateSet(widget.index, weight: _weightCtrl.text);
     });
     _repsCtrl.addListener(() {
       context.read<DeviceProvider>().updateSet(widget.index, reps: _repsCtrl.text);
+    });
+    _rirCtrl.addListener(() {
+      context.read<DeviceProvider>().updateSet(widget.index, rir: _rirCtrl.text);
     });
   }
 
@@ -120,14 +124,19 @@ class _SetCardState extends State<SetCard> {
     if (oldWidget.set['reps'] != widget.set['reps']) {
       _repsCtrl.text = widget.set['reps'] as String? ?? '';
     }
+    if (oldWidget.set['rir'] != widget.set['rir']) {
+      _rirCtrl.text = widget.set['rir'] as String? ?? '';
+    }
   }
 
   @override
   void dispose() {
     _weightCtrl.dispose();
     _repsCtrl.dispose();
+    _rirCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
+    _rirFocus.dispose();
     super.dispose();
   }
 
@@ -135,7 +144,9 @@ class _SetCardState extends State<SetCard> {
     TextEditingController controller, {
     required bool allowDecimal,
   }) {
-    widget.keypadController.openFor(controller, allowDecimal: allowDecimal);
+    context
+        .read<OverlayNumericKeypadController>()
+        .openFor(controller, allowDecimal: allowDecimal);
   }
 
   @override
@@ -242,20 +253,21 @@ class _SetCardState extends State<SetCard> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: TextFormField(
-                      readOnly: done,
-                      initialValue: widget.set['rir'] as String?,
-                      decoration: InputDecoration(
-                        labelText: 'RIR',
-                        isDense: true,
+                    Expanded(
+                      child: TextFormField(
+                        controller: _rirCtrl,
+                        focusNode: _rirFocus,
+                        decoration: InputDecoration(
+                          labelText: 'RIR',
+                          isDense: true,
+                        ),
+                        readOnly: true,
+                        keyboardType: TextInputType.none,
+                        onTap: done
+                            ? null
+                            : () => _openKeypad(_rirCtrl, allowDecimal: false),
                       ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (v) =>
-                          prov.updateSet(widget.index, rir: v),
                     ),
-                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
@@ -362,10 +374,9 @@ class _InputPill extends StatelessWidget {
         child: TextFormField(
           controller: controller,
           focusNode: focusNode,
-          readOnly: readOnly,
-          onTap: onTap,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          readOnly: true,
+          onTap: readOnly ? null : onTap,
+          keyboardType: TextInputType.none,
           decoration: InputDecoration(
             border: InputBorder.none,
             labelText: label,

@@ -62,6 +62,8 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     double? decimalStep,
     double? integerStep,
   }) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     _target = controller;
     this.allowDecimal = allowDecimal;
     if (decimalStep != null) this.decimalStep = decimalStep;
@@ -137,14 +139,23 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     final keypad =
         widget.controller.isOpen
             ? OverlayNumericKeypad(
-              controller: widget.controller,
-              theme: widget.theme,
-            )
+                controller: widget.controller,
+                theme: widget.theme,
+              )
             : const SizedBox.shrink();
+
+    Widget baseChild = widget.child;
+    if (widget.controller.isOpen) {
+      baseChild = MediaQuery.removeViewInsets(
+        context: context,
+        removeBottom: true,
+        child: baseChild,
+      );
+    }
 
     final content = Stack(
       children: [
-        widget.child,
+        baseChild,
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSwitcher(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 import 'package:intl/intl.dart';
 
@@ -173,7 +174,12 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Wochen',
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.none,
+                          readOnly: true,
+                          autofocus: false,
+                          onTap: () => context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(weeksCtr, allowDecimal: false),
                         ),
                       ],
                     ),
