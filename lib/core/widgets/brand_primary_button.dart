@@ -19,7 +19,11 @@ class BrandPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).extension<AppBrandTheme>();
-    final radius = surface?.radius ?? BorderRadius.circular(AppRadius.button);
+    // `InkWell` requires a [BorderRadius], while the theme exposes a
+    // [BorderRadiusGeometry]. Cast to [BorderRadius] so the same radius can
+    // be used for the decoration and the ink ripple.
+    final borderRadius =
+        (surface?.radius ?? BorderRadius.circular(AppRadius.button)) as BorderRadius;
     final gradient = surface?.gradient ?? AppGradients.brandGradient;
     final shadow = surface?.shadow;
     final overlay = surface?.pressedOverlay ?? Colors.black26;
@@ -31,7 +35,7 @@ class BrandPrimaryButton extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: radius,
+        borderRadius: borderRadius,
         boxShadow: shadow,
       ),
       child: Semantics(
@@ -40,7 +44,7 @@ class BrandPrimaryButton extends StatelessWidget {
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
-            borderRadius: radius,
+            borderRadius: borderRadius,
             splashColor: overlay,
             highlightColor: overlay,
             onTap: onPressed,
