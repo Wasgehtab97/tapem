@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/utils/context_extensions.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_outlined_card.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 
 class DeviceCard extends StatefulWidget {
   final Device device;
@@ -37,7 +37,7 @@ class _DeviceCardState extends State<DeviceCard> {
           onTapDown: _onTapDown,
           onTapCancel: _onTapEnd,
           onTapUp: _onTapEnd,
-          child: BrandOutlinedCard(
+          child: BrandOutline(
             onTap: widget.onTap,
             child: SizedBox(
               height: 140,

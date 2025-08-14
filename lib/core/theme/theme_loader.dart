@@ -115,6 +115,7 @@ class ThemeLoader extends ChangeNotifier {
         ? AppBrandTheme.magenta()
         : AppBrandTheme.defaultTheme().copyWith(
             gradient: AppGradients.brandGradient,
+            outlineGradient: AppGradients.brandGradient,
             focusRing: focus,
             onBrand: foreground,
           );
