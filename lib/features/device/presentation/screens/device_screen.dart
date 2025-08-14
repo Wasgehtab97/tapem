@@ -129,14 +129,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
       widget.exerciseId,
       DateTime.now(),
     );
-    final exProv = context.watch<ExerciseProvider>();
-    Exercise? currentExercise;
-    try {
-      currentExercise = exProv.exercises.firstWhere(
-        (e) => e.id == widget.exerciseId,
-      );
-    } catch (_) {}
-
     _dlog(
       'build() isLoading=${prov.isLoading} error=${prov.error} sets=${prov.sets.length}',
     );

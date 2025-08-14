@@ -21,7 +21,9 @@ class BrandGradientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final surface = theme.extension<BrandSurfaceTheme>();
-    final radius = borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card);
+    final BorderRadius radius =
+        (borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card))
+            as BorderRadius;
     final gradient = surface?.gradient ?? AppGradients.brandGradient;
     final shadow = surface?.shadow;
     final overlay = surface?.pressedOverlay ?? Colors.black26;
