@@ -86,6 +86,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get historyListTitle => 'Vergangene Workouts';
 
   @override
+  String get historyOverviewTitle => 'Übersicht';
+
+  @override
+  String get historyWorkouts => 'Workouts';
+
+  @override
+  String get historySetsAvg => 'Sets (Ø)';
+
+  @override
+  String get historyHeaviest => 'Schwerstes';
+
+  @override
+  String get historySessionsChartTitle => 'Sitzungen im Verlauf';
+
+  @override
   String homeWelcome(Object user) {
     return 'Willkommen, $user';
   }
