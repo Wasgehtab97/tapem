@@ -71,18 +71,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           final maxListHeight =
               min(MediaQuery.of(ctx2).size.height * 0.4, 300.0);
           return AlertDialog(
-            scrollable: true,
             title: const Text('Neues Gerät anlegen'),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                  const SizedBox(height: 8),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(labelText: 'Name'),
+                      ),
+                      const SizedBox(height: 8),
                   TextField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
@@ -94,8 +96,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     'Muskelgruppen',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: maxListHeight),
+                  SizedBox(
+                    height: maxListHeight,
                     child: ListView(
                       shrinkWrap: true,
                       children: [
@@ -133,9 +135,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                 ],
+                ),
               ),
             ),
-            actions: [
+          ),
+          actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx2).pop(false),
                 child: const Text('Abbrechen'),
