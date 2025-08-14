@@ -9,6 +9,8 @@ import '../../../survey/survey_provider.dart';
 import '../../../survey/survey.dart';
 import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../../core/providers/report_provider.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/widgets/brand_action_tile.dart';
 
 class ReportScreenNew extends StatelessWidget {
   final String gymId;
@@ -30,60 +32,45 @@ class ReportScreenNew extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Report')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DeviceUsageChart(usageData: data),
-            const SizedBox(height: 24),
-            Card(
-              elevation: 2,
-              child: ListTile(
-                leading: const Icon(Icons.feedback_outlined),
-                title: const Text('Feedback'),
-                subtitle: Text(
-                  openCount > 0
-                      ? '$openCount offene Einträge'
-                      : 'Kein offenes Feedback',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FeedbackOverviewScreen(gymId: gymId),
-                    ),
-                  );
-                },
-              ),
+            const SizedBox(height: AppSpacing.md),
+            BrandActionTile(
+              leadingIcon: Icons.feedback_outlined,
+              title: 'Feedback',
+              subtitle: openCount > 0
+                  ? '$openCount offene Einträge'
+                  : 'Kein offenes Feedback',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FeedbackOverviewScreen(gymId: gymId),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.add_circle_outline),
-                    title: const Text('Umfrage erstellen'),
-                    onTap: () => _showCreateSurveyDialog(context),
+            const SizedBox(height: AppSpacing.sm),
+            BrandActionTile(
+              leadingIcon: Icons.add_circle_outline,
+              title: 'Umfrage erstellen',
+              onTap: () => _showCreateSurveyDialog(context),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            BrandActionTile(
+              leadingIcon: Icons.poll,
+              title: 'Umfragen ansehen',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SurveyOverviewScreen(gymId: gymId),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.poll),
-                    title: const Text('Umfragen ansehen'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SurveyOverviewScreen(gymId: gymId),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ),

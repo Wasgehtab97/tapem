@@ -1,9 +1,9 @@
 // lib/features/gym/presentation/widgets/device_card.dart
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/utils/context_extensions.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_outlined_card.dart';
 
 class DeviceCard extends StatefulWidget {
   final Device device;
@@ -33,17 +33,12 @@ class _DeviceCardState extends State<DeviceCard> {
       child: AnimatedScale(
         duration: AppDurations.short,
         scale: _scale,
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.card),
+        child: GestureDetector(
+          onTapDown: _onTapDown,
+          onTapCancel: _onTapEnd,
+          onTapUp: _onTapEnd,
+          child: BrandOutlinedCard(
             onTap: widget.onTap,
-            onTapDown: _onTapDown,
-            onTapCancel: _onTapEnd,
-            onTapUp: _onTapEnd,
             child: SizedBox(
               height: 140,
               child: Padding(

@@ -14,6 +14,7 @@ import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -188,43 +189,65 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _loading
               ? const Center(child: CircularProgressIndicator())
               : Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: Column(
                   children: [
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: const Text('Gerät anlegen'),
+                    BrandPrimaryButton(
                       onPressed: _showCreateDialog,
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add),
+                          SizedBox(width: AppSpacing.xs),
+                          Text('Gerät anlegen'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.fitness_center),
-                      label: const Text('Muskelgruppen'),
+                    const SizedBox(height: AppSpacing.sm),
+                    BrandPrimaryButton(
                       onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).pushNamed(AppRouter.manageMuscleGroups);
+                        Navigator.of(context)
+                            .pushNamed(AppRouter.manageMuscleGroups);
                       },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fitness_center),
+                          SizedBox(width: AppSpacing.xs),
+                          Text('Muskelgruppen'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.brush),
-                      label: const Text('Branding'),
+                    const SizedBox(height: AppSpacing.sm),
+                    BrandPrimaryButton(
                       onPressed: () {
                         Navigator.of(context).pushNamed(AppRouter.branding);
                       },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.brush),
+                          SizedBox(width: AppSpacing.xs),
+                          Text('Branding'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.flag),
-                      label: const Text('Challenges verwalten'),
+                    const SizedBox(height: AppSpacing.sm),
+                    BrandPrimaryButton(
                       onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).pushNamed(AppRouter.manageChallenges);
+                        Navigator.of(context)
+                            .pushNamed(AppRouter.manageChallenges);
                       },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.flag),
+                          SizedBox(width: AppSpacing.xs),
+                          Text('Challenges verwalten'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.md),
                     Expanded(
                       child: ListView.separated(
                         itemCount: _devices.length,

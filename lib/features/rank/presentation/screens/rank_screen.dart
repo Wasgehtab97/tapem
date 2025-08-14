@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_action_tile.dart';
 
 class RankScreen extends StatefulWidget {
   final String gymId;
@@ -49,38 +51,24 @@ class _RankScreenState extends State<RankScreen>
             controller: _tabController,
             children: [
               ListView(
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
-                  Card(
-                    margin: const EdgeInsets.all(8),
-                    child: ListTile(
-                      title: const Text('XP je Muskelgruppe'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap:
-                          () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRouter.xpOverview),
-                    ),
+                  BrandActionTile(
+                    title: 'XP je Muskelgruppe',
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
                   ),
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    child: ListTile(
-                      title: const Text('XP je Trainingstag'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap:
-                          () =>
-                              Navigator.of(context).pushNamed(AppRouter.dayXp),
-                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  BrandActionTile(
+                    title: 'XP je Trainingstag',
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.dayXp),
                   ),
-                  Card(
-                    margin: const EdgeInsets.all(8),
-                    child: ListTile(
-                      title: const Text('XP je Gerät'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap:
-                          () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRouter.deviceXp),
-                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  BrandActionTile(
+                    title: 'XP je Gerät',
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.deviceXp),
                   ),
                 ],
               ),
