@@ -217,25 +217,27 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
               label: entry.displayName,
               child: SizedBox(
                 height: 48,
-                child: FilterChip(
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  avatar: CircleAvatar(
-                    backgroundColor: colorForRegion(entry.region, theme),
-                    radius: 8,
-                  ),
-                  label: Text(
-                    entry.displayName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  selected: isSel,
-                  onSelected: (_) => _toggleSelect(entry.key, entry.region),
+                child: GestureDetector(
                   onLongPress: () async {
                     final id =
                         await _ensureIdForRegion(entry.region, entry.key);
                     _setPrimary(id);
                   },
-                  selectedColor: isPri ? green : blue,
-                  showCheckmark: true,
+                  child: FilterChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    avatar: CircleAvatar(
+                      backgroundColor: colorForRegion(entry.region, theme),
+                      radius: 8,
+                    ),
+                    label: Text(
+                      entry.displayName,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    selected: isSel,
+                    onSelected: (_) => _toggleSelect(entry.key, entry.region),
+                    selectedColor: isPri ? green : blue,
+                    showCheckmark: true,
+                  ),
                 ),
               ),
             );
