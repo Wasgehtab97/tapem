@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/gym/domain/models/branding.dart';
 import 'design_tokens.dart';
 import 'theme.dart';
-import 'brand_surface_theme.dart';
+import 'app_brand_theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
@@ -18,6 +18,10 @@ class ThemeLoader extends ChangeNotifier {
       AppColors.accentTurquoise,
     );
     AppGradients.setCtaGlow(AppColors.accentMint);
+    _attachBrandTheme(
+      focus: AppColors.accentTurquoise,
+      foreground: AppColors.textPrimary,
+    );
     notifyListeners();
   }
 
@@ -27,7 +31,11 @@ class ThemeLoader extends ChangeNotifier {
       if (branding == null) {
         _applyMagentaDefaults();
         MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-        _attachBrandSurface();
+        _attachBrandTheme(
+          focus: MagentaColors.focus,
+          foreground: MagentaColors.textPrimary,
+          useMagenta: true,
+        );
         notifyListeners();
         return;
       }
@@ -50,7 +58,11 @@ class ThemeLoader extends ChangeNotifier {
       AppGradients.setBrandGradient(gradStart, gradEnd);
       AppGradients.setCtaGlow(MagentaColors.focus);
       MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-      _attachBrandSurface();
+      _attachBrandTheme(
+        focus: MagentaColors.focus,
+        foreground: MagentaColors.textPrimary,
+        useMagenta: true,
+      );
       notifyListeners();
       return;
     }
@@ -66,6 +78,10 @@ class ThemeLoader extends ChangeNotifier {
     _currentTheme = AppTheme.customTheme(primary: primary, secondary: accent);
     AppGradients.setBrandGradient(primary, accent);
     AppGradients.setCtaGlow(primary);
+    _attachBrandTheme(
+      focus: accent,
+      foreground: AppColors.textPrimary,
+    );
     notifyListeners();
   }
 
@@ -77,7 +93,11 @@ class ThemeLoader extends ChangeNotifier {
     );
     AppGradients.setCtaGlow(MagentaColors.focus);
     MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-    _attachBrandSurface();
+    _attachBrandTheme(
+      focus: MagentaColors.focus,
+      foreground: MagentaColors.textPrimary,
+      useMagenta: true,
+    );
   }
 
   Color _parseHex(String hex) {
@@ -86,8 +106,18 @@ class ThemeLoader extends ChangeNotifier {
     return Color(int.parse(hex, radix: 16));
   }
 
-  void _attachBrandSurface() {
-    final ext = BrandSurfaceTheme.magentaCta();
+  void _attachBrandTheme({
+    required Color focus,
+    required Color foreground,
+    bool useMagenta = false,
+  }) {
+    final ext = useMagenta
+        ? AppBrandTheme.magenta()
+        : AppBrandTheme.defaultTheme().copyWith(
+            gradient: AppGradients.brandGradient,
+            focusRing: focus,
+            onBrand: foreground,
+          );
     _currentTheme = _currentTheme.copyWith(extensions: [ext]);
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/brand_surface_theme.dart';
+import '../theme/app_brand_theme.dart';
 import '../theme/design_tokens.dart';
 
 /// Reusable card container with the brand gradient and rounded corners.
@@ -20,13 +20,14 @@ class BrandGradientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final surface = theme.extension<BrandSurfaceTheme>();
+    final surface = theme.extension<AppBrandTheme>();
     final BorderRadius radius =
         (borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card))
             as BorderRadius;
     final gradient = surface?.gradient ?? AppGradients.brandGradient;
     final shadow = surface?.shadow;
     final overlay = surface?.pressedOverlay ?? Colors.black26;
+    final onBrand = surface?.onBrand ?? Colors.white;
 
     Widget content = Container(
       decoration: BoxDecoration(
@@ -35,7 +36,13 @@ class BrandGradientCard extends StatelessWidget {
         boxShadow: shadow,
       ),
       padding: padding ?? const EdgeInsets.all(AppSpacing.sm),
-      child: child,
+      child: DefaultTextStyle.merge(
+        style: TextStyle(color: onBrand),
+        child: IconTheme(
+          data: IconThemeData(color: onBrand),
+          child: child,
+        ),
+      ),
     );
 
     if (onTap != null) {
@@ -72,7 +79,7 @@ class BrandGradientHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+    final surface = Theme.of(context).extension<AppBrandTheme>();
     final baseRadius = surface?.radius as BorderRadius? ?? BorderRadius.circular(AppRadius.card);
     final radius = expanded
         ? BorderRadius.only(topLeft: baseRadius.topLeft, topRight: baseRadius.topRight)

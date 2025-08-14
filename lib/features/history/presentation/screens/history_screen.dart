@@ -10,7 +10,7 @@ import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
-import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -391,13 +391,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Text(
                   value,
                   style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onPrimary),
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onPrimary.withOpacity(0.8)),
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
@@ -423,13 +422,12 @@ class _HistoryExpansionTileState extends State<_HistoryExpansionTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final surface = theme.extension<BrandSurfaceTheme>();
+    final surface = theme.extension<AppBrandTheme>();
     final baseRadius = surface?.radius as BorderRadius? ?? BorderRadius.circular(AppRadius.card);
     final bottomRadius = BorderRadius.only(
       bottomLeft: baseRadius.bottomLeft,
       bottomRight: baseRadius.bottomRight,
     );
-    final onPrimary = theme.colorScheme.onPrimary;
 
     return Column(
       children: [
@@ -441,12 +439,11 @@ class _HistoryExpansionTileState extends State<_HistoryExpansionTile> {
               Expanded(
                 child: Text(
                   widget.title,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: onPrimary),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
               Icon(
                 _expanded ? Icons.expand_less : Icons.expand_more,
-                color: onPrimary,
               ),
             ],
           ),

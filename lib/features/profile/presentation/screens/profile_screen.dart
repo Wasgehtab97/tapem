@@ -9,6 +9,7 @@ import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -206,7 +207,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: BrandPrimaryButton(
+              semanticsLabel: 'Umfragen',
               onPressed: () {
                 final gymId = context.read<GymProvider>().currentGymId;
                 final userId = context.read<AuthProvider>().userId ?? '';
