@@ -66,110 +66,115 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     showDialog<bool>(
       context: context,
-      builder:
-          (ctx) => StatefulBuilder(
-            builder:
-                (ctx2, setSt) => AlertDialog(
-                  title: const Text('Neues Gerät anlegen'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameCtrl,
-                        decoration: const InputDecoration(labelText: 'Name'),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: descCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Beschreibung',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Muskelgruppen',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(
-                        height: 150,
-                        child: ListView(
-                          children: [
-                            for (final g in muscleProv.groups)
-                              CheckboxListTile(
-                                value: selectedGroups.contains(g.id),
-                                title: Text(g.name),
-                                onChanged:
-                                    (v) => setSt(() {
-                                      if (v == true) {
-                                        selectedGroups.add(g.id);
-                                      } else {
-                                        selectedGroups.remove(g.id);
-                                      }
-                                    }),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Text('Mehrere Übungen?'),
-                          Switch(
-                            value: isMulti,
-                            onChanged: (v) => setSt(() => isMulti = v),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setSt) {
+          final maxListHeight =
+              min(MediaQuery.of(ctx2).size.height * 0.4, 300.0);
+          return AlertDialog(
+            scrollable: true,
+            title: const Text('Neues Gerät anlegen'),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: descCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Beschreibung',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Muskelgruppen',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxListHeight),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final g in muscleProv.groups)
+                          CheckboxListTile(
+                            value: selectedGroups.contains(g.id),
+                            title: Text(g.name),
+                            onChanged: (v) => setSt(() {
+                              if (v == true) {
+                                selectedGroups.add(g.id);
+                              } else {
+                                selectedGroups.remove(g.id);
+                              }
+                            }),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Device ID: $newId',
-                        style: TextStyle(
-                          fontSize: AppFontSizes.body,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('Mehrere Übungen?'),
+                      Switch(
+                        value: isMulti,
+                        onChanged: (v) => setSt(() => isMulti = v),
                       ),
                     ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx2).pop(false),
-                      child: const Text('Abbrechen'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Device ID: $newId',
+                    style: TextStyle(
+                      fontSize: AppFontSizes.body,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Token neu laden, damit Custom-Claims aktuell sind
-                        final fbUser =
-                            fb_auth.FirebaseAuth.instance.currentUser;
-                        if (fbUser != null) {
-                          await fbUser.getIdToken(true);
-                        }
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx2).pop(false),
+                child: const Text('Abbrechen'),
+              ),
+              BrandPrimaryButton(
+                onPressed: () async {
+                  // Token neu laden, damit Custom-Claims aktuell sind
+                  final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+                  if (fbUser != null) {
+                    await fbUser.getIdToken(true);
+                  }
 
-                        final device = Device(
-                          uid: newUid,
-                          id: newId,
-                          name: nameCtrl.text.trim(),
-                          description: descCtrl.text.trim(),
-                          isMulti: isMulti,
-                        );
-                        await _createUC.execute(
-                          gymId: gymId,
-                          device: device,
-                          isMulti: isMulti,
-                          muscleGroupIds: selectedGroups.toList(),
-                        );
-                        await muscleProv.assignDevice(
-                          context,
-                          newUid,
-                          selectedGroups.toList(),
-                        );
-                        Navigator.of(ctx2).pop(true);
-                        await _loadDevices();
-                      },
-                      child: const Text('Erstellen'),
-                    ),
-                  ],
-                ),
-          ),
+                  final device = Device(
+                    uid: newUid,
+                    id: newId,
+                    name: nameCtrl.text.trim(),
+                    description: descCtrl.text.trim(),
+                    isMulti: isMulti,
+                  );
+                  await _createUC.execute(
+                    gymId: gymId,
+                    device: device,
+                    isMulti: isMulti,
+                    muscleGroupIds: selectedGroups.toList(),
+                  );
+                  await muscleProv.assignDevice(
+                    context,
+                    newUid,
+                    selectedGroups.toList(),
+                  );
+                  Navigator.of(ctx2).pop(true);
+                  await _loadDevices();
+                },
+                child: const Text('Erstellen'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
