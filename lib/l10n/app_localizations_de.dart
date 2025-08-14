@@ -430,6 +430,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exerciseNoMuscleGroups => 'Keine Muskelgruppen verfügbar';
 
   @override
+  String get exerciseEdit_clearAll => 'Alle entfernen';
+
+  @override
+  String get exerciseEdit_reset => 'Zurücksetzen';
+
+  @override
+  String get exerciseEdit_discardChangesTitle => 'Änderungen verwerfen?';
+
+  @override
+  String get exerciseEdit_discardChangesMessage => 'Deine Änderungen gehen verloren.';
+
+  @override
+  String get exerciseEdit_keepEditing => 'Weiter bearbeiten';
+
+  @override
+  String get exerciseEdit_discard => 'Verwerfen';
+
+  @override
   String get commonCancel => 'Abbrechen';
 
   @override

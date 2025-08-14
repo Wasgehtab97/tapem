@@ -7,14 +7,19 @@ class ExerciseDto {
   final String id;
   final String name;
   final String userId;
-  final List<String> muscleGroupIds;
+  final List<String> primaryMuscleGroupIds;
+  final List<String> secondaryMuscleGroupIds;
 
   ExerciseDto({
     required this.id,
     required this.name,
     required this.userId,
-    List<String>? muscleGroupIds,
-  }) : muscleGroupIds = List.from(muscleGroupIds ?? []);
+    List<String>? primaryMuscleGroupIds,
+    List<String>? secondaryMuscleGroupIds,
+  })  : primaryMuscleGroupIds =
+            List.from(primaryMuscleGroupIds ?? []),
+        secondaryMuscleGroupIds =
+            List.from(secondaryMuscleGroupIds ?? []);
 
   factory ExerciseDto.fromJson(Map<String, dynamic> json) =>
       _$ExerciseDtoFromJson(json);

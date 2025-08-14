@@ -32,6 +32,14 @@ class FirestoreExerciseSource {
         'id': doc.id,
         'name': data['name'] as String,
         'userId': data['userId'] as String,
+        'primaryMuscleGroupIds':
+            (data['primaryMuscleGroupIds'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList(),
+        'secondaryMuscleGroupIds':
+            (data['secondaryMuscleGroupIds'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList(),
         'muscleGroupIds':
             (data['muscleGroupIds'] as List<dynamic>? ?? [])
                 .map((e) => e.toString())
@@ -46,6 +54,19 @@ class FirestoreExerciseSource {
 
   Future<void> updateExercise(String gymId, String deviceId, Exercise ex) {
     return _col(gymId, deviceId).doc(ex.id).update(ex.toJson());
+  }
+
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    String exId,
+    List<String> primary,
+    List<String> secondary,
+  ) {
+    return _col(gymId, deviceId).doc(exId).update({
+      'primaryMuscleGroupIds': primary,
+      'secondaryMuscleGroupIds': secondary,
+    });
   }
 
   Future<void> deleteExercise(String gymId, String deviceId, String exId) {

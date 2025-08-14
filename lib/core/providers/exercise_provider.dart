@@ -5,22 +5,26 @@ import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.d
 import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
 
 class ExerciseProvider extends ChangeNotifier {
   final GetExercisesForDevice _getEx;
   final CreateExerciseUseCase _createEx;
   final DeleteExerciseUseCase _deleteEx;
   final UpdateExerciseUseCase _updateEx;
+  final UpdateExerciseMuscleGroupsUseCase _updateMuscles;
 
   ExerciseProvider({
     required GetExercisesForDevice getEx,
     required CreateExerciseUseCase createEx,
     required DeleteExerciseUseCase deleteEx,
     required UpdateExerciseUseCase updateEx,
+    required UpdateExerciseMuscleGroupsUseCase updateMuscles,
   }) : _getEx = getEx,
        _createEx = createEx,
        _deleteEx = deleteEx,
-       _updateEx = updateEx;
+       _updateEx = updateEx,
+       _updateMuscles = updateMuscles;
 
   List<Exercise> _exercises = [];
   bool _isLoading = false;
@@ -53,14 +57,16 @@ class ExerciseProvider extends ChangeNotifier {
     String deviceId,
     String name,
     String userId, {
-    List<String>? muscleGroupIds,
+    List<String>? primaryMuscleGroupIds,
+    List<String>? secondaryMuscleGroupIds,
   }) async {
     final ex = await _createEx.execute(
       gymId,
       deviceId,
       name,
       userId,
-      muscleGroupIds: muscleGroupIds,
+      primaryMuscleGroupIds: primaryMuscleGroupIds,
+      secondaryMuscleGroupIds: secondaryMuscleGroupIds,
     );
     await loadExercises(gymId, deviceId, userId);
     return ex;
@@ -82,15 +88,44 @@ class ExerciseProvider extends ChangeNotifier {
     String exerciseId,
     String name,
     String userId, {
-    List<String>? muscleGroupIds,
+    List<String>? primaryMuscleGroupIds,
+    List<String>? secondaryMuscleGroupIds,
   }) async {
     final ex = Exercise(
       id: exerciseId,
       name: name,
       userId: userId,
-      muscleGroupIds: muscleGroupIds ?? const [],
+      primaryMuscleGroupIds: primaryMuscleGroupIds ?? const [],
+      secondaryMuscleGroupIds: secondaryMuscleGroupIds ?? const [],
     );
     await _updateEx.execute(gymId, deviceId, ex);
     await loadExercises(gymId, deviceId, userId);
+  }
+
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+    List<String> primaryIds,
+    List<String> secondaryIds,
+  ) async {
+    await _updateMuscles.execute(
+      gymId,
+      deviceId,
+      exerciseId,
+      primaryIds,
+      secondaryIds,
+    );
+    final idx = _exercises.indexWhere((e) => e.id == exerciseId);
+    if (idx != -1) {
+      _exercises[idx] = _exercises[idx].copyWith(
+        primaryMuscleGroupIds: primaryIds,
+        secondaryMuscleGroupIds: secondaryIds,
+      );
+      notifyListeners();
+    } else {
+      await loadExercises(gymId, deviceId, userId);
+    }
   }
 }

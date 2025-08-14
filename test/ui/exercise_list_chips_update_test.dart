@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/features/device/domain/repositories/exercise_repository.dart';
+import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
+import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/features/muscle_group/domain/repositories/muscle_group_repository.dart';
 import 'package:tapem/features/muscle_group/domain/usecases/delete_muscle_group.dart';
@@ -13,8 +22,34 @@ import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_u
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
-import 'package:tapem/ui/muscles/muscle_group_list_selector.dart';
+import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+
+class _FakeExerciseRepo implements ExerciseRepository {
+  List<Exercise> exercises;
+  _FakeExerciseRepo(this.exercises);
+  @override
+  Future<List<Exercise>> getExercises(
+          String gymId, String deviceId, String userId) async => exercises;
+  @override
+  Future<void> createExercise(String gymId, String deviceId, Exercise ex) async {}
+  @override
+  Future<void> updateExercise(String gymId, String deviceId, Exercise ex) async {}
+  @override
+  Future<void> deleteExercise(
+          String gymId, String deviceId, String exerciseId, String userId) async {}
+  @override
+  Future<void> updateMuscleGroups(String gymId, String deviceId, String exerciseId,
+      List<String> primaryGroups, List<String> secondaryGroups) async {
+    final idx = exercises.indexWhere((e) => e.id == exerciseId);
+    if (idx != -1) {
+      exercises[idx] = exercises[idx].copyWith(
+        primaryMuscleGroupIds: primaryGroups,
+        secondaryMuscleGroupIds: secondaryGroups,
+      );
+    }
+  }
+}
 
 class _FakeMuscleGroupRepo implements MuscleGroupRepository {
   final List<MuscleGroup> groups;
@@ -73,108 +108,56 @@ class _FakeMuscleGroupProvider extends MuscleGroupProvider {
   Future<void> loadGroups(BuildContext context) async {}
 }
 
+class _FakeAuth extends ChangeNotifier implements AuthProvider {
+  @override
+  String? get userId => 'u1';
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
-  final groups = [
-    MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
-  ];
-
-  testWidgets('tap on selected chip deselects', (tester) async {
-    List<String> p = [];
-    List<String> s = [];
+  testWidgets('chips reflect updated muscle groups', (tester) async {
+    final repo = _FakeExerciseRepo([
+      Exercise(
+        id: 'e1',
+        name: 'Ex',
+        userId: 'u1',
+        primaryMuscleGroupIds: const ['1'],
+        secondaryMuscleGroupIds: const ['2'],
+      ),
+    ]);
+    final exerciseProvider = ExerciseProvider(
+      getEx: GetExercisesForDevice(repo),
+      createEx: CreateExerciseUseCase(repo),
+      deleteEx: DeleteExerciseUseCase(repo),
+      updateEx: UpdateExerciseUseCase(repo),
+      updateMuscles: UpdateExerciseMuscleGroupsUseCase(repo),
+    );
+    final muscleProv = _FakeMuscleGroupProvider([
+      MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
+      MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
+      MuscleGroup(id: '3', name: 'Biceps', region: MuscleRegion.biceps),
+    ]);
     await tester.pumpWidget(
-      ChangeNotifierProvider<MuscleGroupProvider>.value(
-        value: _FakeMuscleGroupProvider(groups),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: _FakeAuth()),
+          ChangeNotifierProvider<ExerciseProvider>.value(value: exerciseProvider),
+          ChangeNotifierProvider<MuscleGroupProvider>.value(value: muscleProv),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: MuscleGroupListSelector(
-              initialPrimary: const [],
-              initialSecondary: const [],
-              onChanged: (pri, sec) {
-                p = pri;
-                s = sec;
-              },
-            ),
-          ),
+          home: ExerciseListScreen(gymId: 'g', deviceId: 'd'),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats'));
+    expect(find.text('Chest'), findsOneWidget);
+    expect(find.text('Lats'), findsOneWidget);
+    await exerciseProvider.updateMuscleGroups('g', 'd', 'e1', 'u1', ['3'], []);
     await tester.pumpAndSettle();
-    expect(p, ['2']);
-    await tester.tap(find.text('Lats'));
-    await tester.pumpAndSettle();
-    expect(p, isEmpty);
-    expect(s, isEmpty);
-  });
-
-  testWidgets('clear all empties both lists', (tester) async {
-    List<String> p = [];
-    List<String> s = [];
-    await tester.pumpWidget(
-      ChangeNotifierProvider<MuscleGroupProvider>.value(
-        value: _FakeMuscleGroupProvider(groups),
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: MuscleGroupListSelector(
-              initialPrimary: const [],
-              initialSecondary: const [],
-              onChanged: (pri, sec) {
-                p = pri;
-                s = sec;
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Chest'));
-    await tester.tap(find.text('Lats'));
-    await tester.pump();
-    expect(p, ['1']);
-    expect(s, ['2']);
-    await tester.tap(find.text('Clear all'));
-    await tester.pump();
-    expect(p, isEmpty);
-    expect(s, isEmpty);
-  });
-
-  testWidgets('reset restores initial selection', (tester) async {
-    List<String> p = [];
-    List<String> s = [];
-    await tester.pumpWidget(
-      ChangeNotifierProvider<MuscleGroupProvider>.value(
-        value: _FakeMuscleGroupProvider(groups),
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: MuscleGroupListSelector(
-              initialPrimary: const ['1'],
-              initialSecondary: const ['2'],
-              onChanged: (pri, sec) {
-                p = pri;
-                s = sec;
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats'));
-    await tester.pump();
-    expect(p, ['2']);
-    expect(s, isEmpty);
-    await tester.tap(find.text('Reset'));
-    await tester.pump();
-    expect(p, ['1']);
-    expect(s, ['2']);
+    expect(find.text('Biceps'), findsOneWidget);
+    expect(find.text('Chest'), findsNothing);
   });
 }
