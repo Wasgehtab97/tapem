@@ -46,6 +46,63 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     MuscleRegion.tibialisAnterior,
   ];
 
+  /// Display categories for grouping muscle regions.
+  static const List<_Category> _categories = [
+    _Category.chest,
+    _Category.shoulders,
+    _Category.arms,
+    _Category.back,
+    _Category.core,
+    _Category.legs,
+  ];
+
+  _Category _categoryFor(MuscleRegion r) {
+    switch (r) {
+      case MuscleRegion.chest:
+        return _Category.chest;
+      case MuscleRegion.anteriorDeltoid:
+      case MuscleRegion.posteriorDeltoid:
+      case MuscleRegion.upperTrapezius:
+        return _Category.shoulders;
+      case MuscleRegion.biceps:
+      case MuscleRegion.triceps:
+      case MuscleRegion.wristFlexors:
+        return _Category.arms;
+      case MuscleRegion.lats:
+      case MuscleRegion.midBack:
+        return _Category.back;
+      case MuscleRegion.rectusAbdominis:
+      case MuscleRegion.obliques:
+      case MuscleRegion.transversusAbdominis:
+        return _Category.core;
+      case MuscleRegion.quadriceps:
+      case MuscleRegion.hamstrings:
+      case MuscleRegion.glutes:
+      case MuscleRegion.adductors:
+      case MuscleRegion.abductors:
+      case MuscleRegion.calves:
+      case MuscleRegion.tibialisAnterior:
+        return _Category.legs;
+    }
+  }
+
+  String _categoryLabel(_Category c, AppLocalizations loc) {
+    switch (c) {
+      case _Category.chest:
+        return loc.muscleCategoryChest;
+      case _Category.shoulders:
+        return loc.muscleCategoryShoulders;
+      case _Category.arms:
+        return loc.muscleCategoryArms;
+      case _Category.back:
+        return loc.muscleCategoryBack;
+      case _Category.core:
+        return loc.muscleCategoryCore;
+      case _Category.legs:
+        return loc.muscleCategoryLegs;
+    }
+  }
+
   late List<String> _selected;
   String? _primaryId;
 
@@ -172,78 +229,87 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
 
     final canonical = _buildCanonical(prov.groups);
 
-    final entries = <_Entry>[];
+    final Map<_Category, List<_Entry>> byCat = {
+      for (final c in _categories) c: [],
+    };
     for (final r in _ordered) {
       final g = canonical[r];
       final name =
           g != null && g.name.isNotEmpty ? g.name : _regionFallbackName(r);
       if (name.toLowerCase().contains(widget.filter.toLowerCase())) {
         final key = g?.id ?? r.name;
-        entries.add(
-          _Entry(region: r, group: g, displayName: name, key: key),
-        );
+        byCat[_categoryFor(r)]!
+            .add(_Entry(region: r, group: g, displayName: name, key: key));
       }
     }
 
-    if (entries.isEmpty) {
+    final hasEntries = byCat.values.any((e) => e.isNotEmpty);
+    if (!hasEntries) {
       return Center(child: Text(loc.exerciseNoMuscleGroups));
     }
 
     final green = theme.colorScheme.primary;
     final blue = theme.colorScheme.tertiary;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 400 ? 3 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(8),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            mainAxisExtent: 48,
-          ),
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            final id = entry.group?.id;
-            final isSel = id != null && _selected.contains(id);
-            final isPri = id != null && _primaryId == id;
-            return Semantics(
-              selected: isSel,
-              button: true,
-              label: entry.displayName,
-              child: SizedBox(
-                height: 48,
-                child: GestureDetector(
-                  onLongPress: () async {
-                    final id =
-                        await _ensureIdForRegion(entry.region, entry.key);
-                    _setPrimary(id);
-                  },
-                  child: FilterChip(
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    avatar: CircleAvatar(
-                      backgroundColor: colorForRegion(entry.region, theme),
-                      radius: 8,
-                    ),
-                    label: Text(
-                      entry.displayName,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    selected: isSel,
-                    onSelected: (_) => _toggleSelect(entry.key, entry.region),
-                    selectedColor: isPri ? green : blue,
-                    showCheckmark: true,
-                  ),
-                ),
+    return ListView(
+      padding: const EdgeInsets.all(8),
+      children: [
+        for (final c in _categories)
+          if (byCat[c]!.isNotEmpty) ...[
+            Semantics(
+              header: true,
+              child: Text(
+                _categoryLabel(c, loc),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-            );
-          },
-        );
-      },
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final entry in byCat[c]!)
+                  SizedBox(
+                    height: 48,
+                    child: Semantics(
+                      selected: entry.group?.id != null &&
+                          _selected.contains(entry.group!.id),
+                      button: true,
+                      label: entry.displayName,
+                      child: GestureDetector(
+                        onLongPress: () async {
+                          final id = await _ensureIdForRegion(
+                              entry.region, entry.key);
+                          _setPrimary(id);
+                        },
+                        child: FilterChip(
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          avatar: CircleAvatar(
+                            backgroundColor:
+                                colorForRegion(entry.region, theme),
+                            radius: 8,
+                          ),
+                          label:
+                              Text(entry.displayName, softWrap: true, maxLines: 2),
+                          selected: entry.group?.id != null &&
+                              _selected.contains(entry.group!.id),
+                          onSelected: (_) =>
+                              _toggleSelect(entry.key, entry.region),
+                          selectedColor: entry.group?.id != null &&
+                                  _primaryId == entry.group!.id
+                              ? green
+                              : blue,
+                          showCheckmark: true,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+      ],
     );
   }
 }
@@ -261,4 +327,6 @@ class _Entry {
     required this.key,
   });
 }
+
+enum _Category { chest, shoulders, arms, back, core, legs }
 

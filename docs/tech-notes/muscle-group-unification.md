@@ -10,7 +10,6 @@ This note summarises how muscle groups are resolved and rendered across the admi
 ## Exercise flow
 - **Bottom sheet**: `lib/features/device/presentation/widgets/exercise_bottom_sheet.dart` embeds `MuscleGroupSelector` for multi-select chips with labels and colours.
 - **List tiles**: `MuscleChips` renders `MuscleGroupLabelChip` for each selected id, showing name + colour.
-- **Header**: `ExerciseHeader` also uses `MuscleChips` so names remain visible.
 
 ## Shared widgets
 - `MuscleGroupLabelChip` resolves id → name/colour through `MuscleGroupProvider`.

@@ -113,6 +113,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No muscle groups available'), findsOneWidget);
+    // Category heading should be visible
+    expect(find.text('Back'), findsOneWidget);
     await tester.tap(find.text('Latissimus dorsi'));
     await tester.pump();
     expect(find.text('Selected'), findsOneWidget);
