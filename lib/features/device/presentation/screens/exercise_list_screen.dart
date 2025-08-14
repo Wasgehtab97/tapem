@@ -98,8 +98,8 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             leading: const Icon(Icons.fitness_center),
             title: Text(ex.name),
             subtitle: MuscleChips(
-              primaryIds: ex.muscleGroupIds,
-              secondaryIds: const [],
+              primaryIds: ex.primaryMuscleGroupIds,
+              secondaryIds: ex.secondaryMuscleGroupIds,
             ),
             onTap: () {
               Navigator.of(context).pushNamed(

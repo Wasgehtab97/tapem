@@ -13,13 +13,15 @@ class CreateExerciseUseCase {
     String deviceId,
     String name,
     String userId, {
-    List<String>? muscleGroupIds,
+    List<String>? primaryMuscleGroupIds,
+    List<String>? secondaryMuscleGroupIds,
   }) {
     final ex = Exercise(
       id: _uuid.v4(),
       name: name,
       userId: userId,
-      muscleGroupIds: muscleGroupIds,
+      primaryMuscleGroupIds: primaryMuscleGroupIds,
+      secondaryMuscleGroupIds: secondaryMuscleGroupIds,
     );
     return _repo.createExercise(gymId, deviceId, ex).then((_) => ex);
   }

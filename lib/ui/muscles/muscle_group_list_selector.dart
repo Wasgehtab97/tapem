@@ -7,13 +7,15 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'muscle_group_color.dart';
 
 class MuscleGroupListSelector extends StatefulWidget {
-  final List<String> initialSelection;
-  final ValueChanged<List<String>> onChanged;
+  final List<String> initialPrimary;
+  final List<String> initialSecondary;
+  final void Function(List<String> primary, List<String> secondary) onChanged;
   final String filter;
 
   const MuscleGroupListSelector({
     super.key,
-    required this.initialSelection,
+    required this.initialPrimary,
+    required this.initialSecondary,
     required this.onChanged,
     this.filter = '',
   });
@@ -105,12 +107,16 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
 
   late List<String> _selected;
   String? _primaryId;
+  late List<String> _initialPrimary;
+  late List<String> _initialSecondary;
 
   @override
   void initState() {
     super.initState();
-    _selected = List.of(widget.initialSelection);
-    _primaryId = _selected.isNotEmpty ? _selected.first : null;
+    _selected = [...widget.initialPrimary, ...widget.initialSecondary];
+    _primaryId = widget.initialPrimary.isNotEmpty ? widget.initialPrimary.first : null;
+    _initialPrimary = List.of(widget.initialPrimary);
+    _initialSecondary = List.of(widget.initialSecondary);
   }
 
   String _regionFallbackName(MuscleRegion r) {
@@ -173,9 +179,8 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   }
 
   void _emit() => widget.onChanged(
-        _primaryId == null
-            ? []
-            : [_primaryId!, ..._selected.where((x) => x != _primaryId)],
+        _primaryId == null ? [] : [_primaryId!],
+        _selected.where((x) => x != _primaryId).toList(),
       );
 
   void _toggleSelect(String idOrRegionKey, MuscleRegion region) async {
@@ -197,6 +202,22 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   void _setPrimary(String id) {
     if (!_selected.contains(id)) _selected.add(id);
     setState(() => _primaryId = id);
+    _emit();
+  }
+
+  void _clear() {
+    setState(() {
+      _selected.clear();
+      _primaryId = null;
+    });
+    _emit();
+  }
+
+  void _reset() {
+    setState(() {
+      _selected = [..._initialPrimary, ..._initialSecondary];
+      _primaryId = _initialPrimary.isNotEmpty ? _initialPrimary.first : null;
+    });
     _emit();
   }
 
@@ -251,64 +272,86 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     final green = theme.colorScheme.primary;
     final blue = theme.colorScheme.tertiary;
 
-    return ListView(
-      padding: const EdgeInsets.all(8),
+    return Column(
       children: [
-        for (final c in _categories)
-          if (byCat[c]!.isNotEmpty) ...[
-            Semantics(
-              header: true,
-              child: Text(
-                _categoryLabel(c, loc),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: _clear,
+                child: Text(loc.exerciseEdit_clearAll),
               ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final entry in byCat[c]!)
-                  SizedBox(
-                    height: 48,
-                    child: Semantics(
-                      selected: entry.group?.id != null &&
-                          _selected.contains(entry.group!.id),
-                      button: true,
-                      label: entry.displayName,
-                      child: GestureDetector(
-                        onLongPress: () async {
-                          final id = await _ensureIdForRegion(
-                              entry.region, entry.key);
-                          _setPrimary(id);
-                        },
-                        child: FilterChip(
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          avatar: CircleAvatar(
-                            backgroundColor:
-                                colorForRegion(entry.region, theme),
-                            radius: 8,
-                          ),
-                          label:
-                              Text(entry.displayName, softWrap: true, maxLines: 2),
-                          selected: entry.group?.id != null &&
-                              _selected.contains(entry.group!.id),
-                          onSelected: (_) =>
-                              _toggleSelect(entry.key, entry.region),
-                          selectedColor: entry.group?.id != null &&
-                                  _primaryId == entry.group!.id
-                              ? green
-                              : blue,
-                          showCheckmark: true,
-                        ),
-                      ),
+              TextButton(
+                onPressed: _reset,
+                child: Text(loc.exerciseEdit_reset),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(8),
+            children: [
+              for (final c in _categories)
+                if (byCat[c]!.isNotEmpty) ...[
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      _categoryLabel(c, loc),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final entry in byCat[c]!)
+                        SizedBox(
+                          height: 48,
+                          child: Semantics(
+                            selected: entry.group?.id != null &&
+                                _selected.contains(entry.group!.id),
+                            button: true,
+                            label: entry.displayName,
+                            child: GestureDetector(
+                              onLongPress: () async {
+                                final id = await _ensureIdForRegion(
+                                    entry.region, entry.key);
+                                _setPrimary(id);
+                              },
+                              child: FilterChip(
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                avatar: CircleAvatar(
+                                  backgroundColor:
+                                      colorForRegion(entry.region, theme),
+                                  radius: 8,
+                                ),
+                                label: Text(entry.displayName,
+                                    softWrap: true, maxLines: 2),
+                                selected: entry.group?.id != null &&
+                                    _selected.contains(entry.group!.id),
+                                onSelected: (_) =>
+                                    _toggleSelect(entry.key, entry.region),
+                                selectedColor: entry.group?.id != null &&
+                                        _primaryId == entry.group!.id
+                                    ? green
+                                    : blue,
+                                showCheckmark: true,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+            ],
+          ),
+        ),
       ],
     );
   }

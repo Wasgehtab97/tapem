@@ -61,6 +61,7 @@ import 'features/device/domain/usecases/get_exercises_for_device.dart';
 import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
+import 'features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
 
 import 'features/report/data/repositories/report_repository_impl.dart';
 import 'features/report/domain/usecases/get_device_usage_stats.dart';
@@ -154,6 +155,10 @@ Future<void> main() async {
         Provider<UpdateExerciseUseCase>(
           create: (c) => UpdateExerciseUseCase(c.read<ExerciseRepository>()),
         ),
+        Provider<UpdateExerciseMuscleGroupsUseCase>(
+          create: (c) =>
+              UpdateExerciseMuscleGroupsUseCase(c.read<ExerciseRepository>()),
+        ),
 
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
@@ -206,6 +211,7 @@ Future<void> main() async {
                 createEx: c.read<CreateExerciseUseCase>(),
                 deleteEx: c.read<DeleteExerciseUseCase>(),
                 updateEx: c.read<UpdateExerciseUseCase>(),
+                updateMuscles: c.read<UpdateExerciseMuscleGroupsUseCase>(),
               ),
         ),
         ChangeNotifierProvider(

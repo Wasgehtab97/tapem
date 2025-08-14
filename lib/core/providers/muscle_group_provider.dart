@@ -211,6 +211,33 @@ class MuscleGroupProvider extends ChangeNotifier {
     await loadGroups(context);
   }
 
+  Future<void> updateExerciseAssignments(
+    BuildContext context,
+    String exerciseId,
+    List<String> primaryGroupIds,
+    List<String> secondaryGroupIds,
+  ) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    if (gymId == null) return;
+    final all = {
+      ...primaryGroupIds,
+      ...secondaryGroupIds,
+    };
+    for (final g in _groups) {
+      final contains = all.contains(g.id);
+      if (contains && !g.exerciseIds.contains(exerciseId)) {
+        final updated = g.copyWith(exerciseIds: [...g.exerciseIds, exerciseId]);
+        await _saveGroup.execute(gymId, updated);
+      } else if (!contains && g.exerciseIds.contains(exerciseId)) {
+        final newIds = List<String>.from(g.exerciseIds)..remove(exerciseId);
+        final updated = g.copyWith(exerciseIds: newIds);
+        await _saveGroup.execute(gymId, updated);
+      }
+    }
+    await loadGroups(context);
+  }
+
   Future<void> updateDeviceAssignments(
     BuildContext context,
     String deviceId,

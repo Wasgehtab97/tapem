@@ -896,6 +896,42 @@ abstract class AppLocalizations {
   /// **'No muscle groups available'**
   String get exerciseNoMuscleGroups;
 
+  /// Clear all selected muscle groups
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get exerciseEdit_clearAll;
+
+  /// Reset muscle groups to initial selection
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get exerciseEdit_reset;
+
+  /// Discard confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get exerciseEdit_discardChangesTitle;
+
+  /// Discard confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes will be lost.'**
+  String get exerciseEdit_discardChangesMessage;
+
+  /// Cancel discard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get exerciseEdit_keepEditing;
+
+  /// Confirm discard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get exerciseEdit_discard;
+
   /// Common cancel
   ///
   /// In en, this message translates to:

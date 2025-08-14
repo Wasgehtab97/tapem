@@ -9,6 +9,13 @@ abstract class ExerciseRepository {
   );
   Future<void> createExercise(String gymId, String deviceId, Exercise ex);
   Future<void> updateExercise(String gymId, String deviceId, Exercise ex);
+  Future<void> updateMuscleGroups(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    List<String> primaryGroups,
+    List<String> secondaryGroups,
+  );
   Future<void> deleteExercise(
     String gymId,
     String deviceId,
