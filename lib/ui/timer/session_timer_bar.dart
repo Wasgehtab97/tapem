@@ -7,14 +7,12 @@ class SessionTimerBar extends StatefulWidget {
   final Duration initialDuration;
   final ValueChanged<Duration>? onTick;
   final VoidCallback? onDone;
-  final VoidCallback? onClose;
 
   const SessionTimerBar({
     super.key,
     required this.initialDuration,
     this.onTick,
     this.onDone,
-    this.onClose,
   });
 
   @override
@@ -145,11 +143,7 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                           ),
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'Close',
-                        icon: const Icon(Icons.close),
-                        onPressed: widget.onClose,
-                      ),
+                      const SizedBox(width: 8),
                     ],
                   ),
                 ],

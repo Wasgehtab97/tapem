@@ -88,4 +88,10 @@ void main() {
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgets('close button is not rendered', (tester) async {
+    await tester.pumpWidget(
+        _wrap(const SessionTimerBar(initialDuration: Duration(seconds: 60))));
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
 }

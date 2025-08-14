@@ -739,7 +739,6 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Muscle groups'**
-  String get multiDeviceMuscleGroupSection;
 
   /// Cancel in bottom sheet
   ///
@@ -757,7 +756,6 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Change'**
-  String get multiDeviceChangeExercise;
 
   /// Button to edit exercise
   ///
@@ -782,6 +780,13 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All muscle groups'**
   String get multiDeviceMuscleGroupFilterAll;
+
+  String get muscleCategoryChest;
+  String get muscleCategoryShoulders;
+  String get muscleCategoryArms;
+  String get muscleCategoryBack;
+  String get muscleCategoryCore;
+  String get muscleCategoryLegs;
 
   /// Bottom sheet title add exercise
   ///

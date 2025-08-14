@@ -20,7 +20,6 @@ import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
-import '../widgets/exercise_header.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
@@ -47,7 +46,6 @@ class DeviceScreen extends StatefulWidget {
 
 class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _showTimer = true;
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
 
@@ -187,29 +185,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
         body: Column(
           children: [
-            if (_showTimer)
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: SessionTimerBar(
-                  initialDuration: const Duration(seconds: 90),
-                  onClose: () => setState(() => _showTimer = false),
-                ),
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: SessionTimerBar(
+                initialDuration: Duration(seconds: 90),
               ),
-            if (prov.device!.isMulti && currentExercise != null)
-              ExerciseHeader(
-                name: currentExercise.name,
-                muscleGroupIds: currentExercise.muscleGroupIds,
-                onChange: () {
-                  _closeKeyboard();
-                  Navigator.of(context).pushReplacementNamed(
-                    AppRouter.exerciseList,
-                    arguments: {
-                      'gymId': widget.gymId,
-                      'deviceId': widget.deviceId,
-                    },
-                  );
-                },
-              ),
+            ),
             Expanded(
               child: Form(
                 key: _formKey,

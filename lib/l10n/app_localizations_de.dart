@@ -340,16 +340,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get multiDeviceNameFieldLabel => 'Name';
 
   @override
-  String get multiDeviceMuscleGroupSection => 'Muskelgruppen';
-
-  @override
   String get multiDeviceCancel => 'Abbrechen';
 
   @override
   String get multiDeviceSave => 'Speichern';
-
-  @override
-  String get multiDeviceChangeExercise => 'Wechseln';
 
   @override
   String get multiDeviceEditExerciseButton => 'Bearbeiten';
@@ -362,6 +356,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get multiDeviceMuscleGroupFilterAll => 'Alle Muskelgruppen';
+
+  @override
+  String get muscleCategoryChest => 'Brust';
+
+  @override
+  String get muscleCategoryShoulders => 'Schultern';
+
+  @override
+  String get muscleCategoryArms => 'Arme';
+
+  @override
+  String get muscleCategoryBack => 'Rücken';
+
+  @override
+  String get muscleCategoryCore => 'Rumpf';
+
+  @override
+  String get muscleCategoryLegs => 'Beine';
 
   @override
   String get exerciseAddTitle => 'Übung hinzufügen';
