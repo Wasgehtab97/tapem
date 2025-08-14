@@ -18,6 +18,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
   final EdgeInsetsGeometry padding;
   final double luminanceRef;
   final Color onBrand;
+  final Color outline;
 
   const AppBrandTheme({
     required this.gradient,
@@ -30,6 +31,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     required this.padding,
     required this.luminanceRef,
     required this.onBrand,
+    required this.outline,
   });
 
   @override
@@ -44,6 +46,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     EdgeInsetsGeometry? padding,
     double? luminanceRef,
     Color? onBrand,
+    Color? outline,
   }) {
     return AppBrandTheme(
       gradient: gradient ?? this.gradient,
@@ -56,6 +59,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: padding ?? this.padding,
       luminanceRef: luminanceRef ?? this.luminanceRef,
       onBrand: onBrand ?? this.onBrand,
+      outline: outline ?? this.outline,
     );
   }
 
@@ -80,6 +84,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: EdgeInsets.lerp(padding as EdgeInsets?, other.padding as EdgeInsets?, t) ?? padding,
       luminanceRef: lerpDouble(luminanceRef, other.luminanceRef, t) ?? luminanceRef,
       onBrand: Color.lerp(onBrand, other.onBrand, t) ?? onBrand,
+      outline: Color.lerp(outline, other.outline, t) ?? outline,
     );
   }
 
@@ -108,6 +113,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       luminanceRef: lum,
       onBrand: AppColors.textPrimary,
+      outline: gradient.colors.first,
     );
   }
 
@@ -127,6 +133,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       luminanceRef: lum,
       onBrand: MagentaColors.textPrimary,
+      outline: gradient.colors.first,
     );
   }
 }

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
-import 'package:intl/intl.dart';
-
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/widgets/brand_primary_button.dart';
 import 'plan_editor_screen.dart';
 import 'import_plan_screen.dart';
 
@@ -107,11 +107,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.extended(
-            heroTag: 'import',
-            icon: const Icon(Icons.upload_file),
-            label: const Text('Importieren'),
+          BrandPrimaryButton(
             onPressed: () {
               Navigator.of(context)
                   .push(
@@ -119,12 +117,17 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   )
                   .then((_) => _reload());
             },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.upload_file),
+                SizedBox(width: AppSpacing.xs),
+                Text('Importieren'),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'new',
-            icon: const Icon(Icons.add),
-            label: const Text('Neu'),
+          const SizedBox(height: AppSpacing.sm),
+          BrandPrimaryButton(
             onPressed: () async {
               final cfg = await _askConfig(context);
               if (cfg != null && context.mounted) {
@@ -143,6 +146,14 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                     .then((_) => _reload());
               }
             },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add),
+                SizedBox(width: AppSpacing.xs),
+                Text('Neu'),
+              ],
+            ),
           ),
         ],
       ),
