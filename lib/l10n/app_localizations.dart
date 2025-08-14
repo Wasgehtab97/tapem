@@ -263,6 +263,42 @@ abstract class AppLocalizations {
   /// **'Sessions over time'**
   String get historySessionsChartTitle;
 
+  /// Axis title for date
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get historyAxisDate;
+
+  /// Axis title for E1RM chart
+  ///
+  /// In en, this message translates to:
+  /// **'E1RM'**
+  String get historyAxisE1rm;
+
+  /// Axis title for sessions chart
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get historyAxisSessions;
+
+  /// Placeholder when no history data is available
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get historyNoData;
+
+  /// Semantics label for E1RM chart
+  ///
+  /// In en, this message translates to:
+  /// **'E1RM over time chart'**
+  String get historyE1rmChartSemantics;
+
+  /// Semantics label for sessions chart
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions over time chart'**
+  String get historySessionsChartSemantics;
+
   /// Greeting on the Home screen
   ///
   /// In en, this message translates to:

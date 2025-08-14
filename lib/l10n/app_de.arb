@@ -138,6 +138,30 @@
   "@historySessionsChartTitle": {
     "description": "Überschrift für den Sitzungsverlauf"
   },
+  "historyAxisDate": "Datum",
+  "@historyAxisDate": {
+    "description": "Achsentitel für Datum"
+  },
+  "historyAxisE1rm": "E1RM",
+  "@historyAxisE1rm": {
+    "description": "Achsentitel für E1RM-Chart"
+  },
+  "historyAxisSessions": "Sitzungen",
+  "@historyAxisSessions": {
+    "description": "Achsentitel für Sitzungs-Chart"
+  },
+  "historyNoData": "Keine Daten",
+  "@historyNoData": {
+    "description": "Placeholder wenn keine Verlaufsdaten vorhanden"
+  },
+  "historyE1rmChartSemantics": "E1RM-Verlauf",
+  "@historyE1rmChartSemantics": {
+    "description": "Semantik-Label für E1RM-Chart"
+  },
+  "historySessionsChartSemantics": "Sitzungen im Verlauf",
+  "@historySessionsChartSemantics": {
+    "description": "Semantik-Label für Sitzungs-Chart"
+  },
 
   "homeWelcome": "Willkommen, {user}",
   "@homeWelcome": {

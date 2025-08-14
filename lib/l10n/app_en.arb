@@ -138,6 +138,30 @@
   "@historySessionsChartTitle": {
     "description": "Heading for sessions over time chart"
   },
+  "historyAxisDate": "Date",
+  "@historyAxisDate": {
+    "description": "Axis title for date"
+  },
+  "historyAxisE1rm": "E1RM",
+  "@historyAxisE1rm": {
+    "description": "Axis title for E1RM chart"
+  },
+  "historyAxisSessions": "Sessions",
+  "@historyAxisSessions": {
+    "description": "Axis title for sessions chart"
+  },
+  "historyNoData": "No data",
+  "@historyNoData": {
+    "description": "Placeholder when no history data is available"
+  },
+  "historyE1rmChartSemantics": "E1RM over time chart",
+  "@historyE1rmChartSemantics": {
+    "description": "Semantics label for E1RM chart"
+  },
+  "historySessionsChartSemantics": "Sessions over time chart",
+  "@historySessionsChartSemantics": {
+    "description": "Semantics label for sessions chart"
+  },
 
   "homeWelcome": "Welcome, {user}",
   "@homeWelcome": {
