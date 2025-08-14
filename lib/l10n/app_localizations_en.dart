@@ -348,10 +348,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multiDeviceBannerOk => 'OK';
 
   @override
-
-  @override
-
-  @override
   String get multiDeviceSessionSaved => 'Session saved. Daily XP and device stats updated.';
 
   @override
@@ -382,15 +378,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multiDeviceEditExerciseButton => 'Edit';
 
   @override
-  String get multiDeviceSearchHint => 'Search exercises...';
-
-  @override
-  String get multiDeviceMuscleGroupFilter => 'Filter by muscle group';
-
-  @override
-  String get multiDeviceMuscleGroupFilterAll => 'All muscle groups';
-
-  @override
   String get muscleCategoryChest => 'Chest';
 
   @override
@@ -407,6 +394,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get muscleCategoryLegs => 'Legs';
+
+  @override
+  String get multiDeviceSearchHint => 'Search exercises...';
+
+  @override
+  String get multiDeviceMuscleGroupFilter => 'Filter by muscle group';
+
+  @override
+  String get multiDeviceMuscleGroupFilterAll => 'All muscle groups';
 
   @override
   String get exerciseAddTitle => 'Add exercise';

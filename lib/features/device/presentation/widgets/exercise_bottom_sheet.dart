@@ -43,20 +43,21 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     final loc = AppLocalizations.of(context)!;
     final res = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.exerciseEdit_discardChangesTitle),
-        content: Text(loc.exerciseEdit_discardChangesMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(loc.exerciseEdit_keepEditing),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(loc.exerciseEdit_discardChangesTitle),
+            content: Text(loc.exerciseEdit_discardChangesMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(loc.exerciseEdit_keepEditing),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(loc.exerciseEdit_discard),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(loc.exerciseEdit_discard),
-          ),
-        ],
-      ),
     );
     return res ?? false;
   }
@@ -67,8 +68,9 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     _nameCtr = TextEditingController(text: widget.exercise?.name ?? '');
     _searchCtr = TextEditingController();
     _primaryIds = List.of(widget.exercise?.primaryMuscleGroupIds ?? const []);
-    _secondaryIds =
-        List.of(widget.exercise?.secondaryMuscleGroupIds ?? const []);
+    _secondaryIds = List.of(
+      widget.exercise?.secondaryMuscleGroupIds ?? const [],
+    );
     _initialPrimary = List.of(_primaryIds);
     _initialSecondary = List.of(_secondaryIds);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,7 +93,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     final hasChanges = _hasChanges;
     final canSave =
         _nameCtr.text.trim().isNotEmpty &&
-            (widget.exercise == null || hasChanges);
+        (widget.exercise == null || hasChanges);
 
     return WillPopScope(
       onWillPop: _confirmDiscard,
@@ -103,117 +105,119 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              widget.exercise == null
-                  ? loc.exerciseAddTitle
-                  : loc.exerciseEditTitle,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _nameCtr,
-              decoration: InputDecoration(labelText: loc.exerciseNameLabel),
-              onChanged: (_) => setState(() {}),
-              autofocus: true,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              loc.exerciseMuscleGroupsLabel,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchCtr,
-              decoration: InputDecoration(
-                hintText: loc.exerciseSearchMuscleGroupsHint,
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                widget.exercise == null
+                    ? loc.exerciseAddTitle
+                    : loc.exerciseEditTitle,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              onChanged: (v) => setState(() => _filter = v),
             ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 300,
-            child: MuscleGroupListSelector(
-              initialPrimary: _initialPrimary,
-              initialSecondary: _initialSecondary,
-              onChanged: (p, s) =>
-                  setState(() {
-                    _primaryIds = p;
-                    _secondaryIds = s;
-                  }),
-              filter: _filter,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _nameCtr,
+                decoration: InputDecoration(labelText: loc.exerciseNameLabel),
+                onChanged: (_) => setState(() {}),
+                autofocus: true,
+              ),
             ),
-          ),
-          Row(
-            children: [
-              const SizedBox(width: 16),
-              TextButton(
-                onPressed: () async {
-                  if (await _confirmDiscard()) {
-                    if (context.mounted) Navigator.pop(context);
-                  }
-                },
-                child: Text(loc.commonCancel),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                loc.exerciseMuscleGroupsLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: canSave
-                    ? () async {
-                        final name = _nameCtr.text.trim();
-                        final exProv = context.read<ExerciseProvider>();
-                        Exercise ex;
-                        if (widget.exercise == null) {
-                          ex = await exProv.addExercise(
-                            widget.gymId,
-                            widget.deviceId,
-                            name,
-                            userId,
-                            primaryMuscleGroupIds: _primaryIds,
-                            secondaryMuscleGroupIds: _secondaryIds,
-                          );
-                        } else {
-                          await exProv.updateExercise(
-                            widget.gymId,
-                            widget.deviceId,
-                            widget.exercise!.id,
-                            name,
-                            userId,
-                            primaryMuscleGroupIds: _primaryIds,
-                            secondaryMuscleGroupIds: _secondaryIds,
-                          );
-                          ex = widget.exercise!.copyWith(
-                            name: name,
-                            primaryMuscleGroupIds: _primaryIds,
-                            secondaryMuscleGroupIds: _secondaryIds,
-                          );
-                        }
-                        await context
-                            .read<MuscleGroupProvider>()
-                            .updateExerciseAssignments(
-                              context,
-                              ex.id,
-                              _primaryIds,
-                              _secondaryIds,
-                            );
-                        if (!mounted) return;
-                        Navigator.pop(context, ex);
-                      }
-                    : null,
-                child: Text(loc.commonSave),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _searchCtr,
+                decoration: InputDecoration(
+                  hintText: loc.exerciseSearchMuscleGroupsHint,
+                ),
+                onChanged: (v) => setState(() => _filter = v),
               ),
-              const SizedBox(width: 16),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 300,
+              child: MuscleGroupListSelector(
+                initialPrimary: _initialPrimary,
+                initialSecondary: _initialSecondary,
+                onChanged:
+                    (p, s) => setState(() {
+                      _primaryIds = p;
+                      _secondaryIds = s;
+                    }),
+                filter: _filter,
+              ),
+            ),
+            Row(
+              children: [
+                const SizedBox(width: 16),
+                TextButton(
+                  onPressed: () async {
+                    if (await _confirmDiscard()) {
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  child: Text(loc.commonCancel),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed:
+                      canSave
+                          ? () async {
+                            final name = _nameCtr.text.trim();
+                            final exProv = context.read<ExerciseProvider>();
+                            Exercise ex;
+                            if (widget.exercise == null) {
+                              ex = await exProv.addExercise(
+                                widget.gymId,
+                                widget.deviceId,
+                                name,
+                                userId,
+                                primaryMuscleGroupIds: _primaryIds,
+                                secondaryMuscleGroupIds: _secondaryIds,
+                              );
+                            } else {
+                              await exProv.updateExercise(
+                                widget.gymId,
+                                widget.deviceId,
+                                widget.exercise!.id,
+                                name,
+                                userId,
+                                primaryMuscleGroupIds: _primaryIds,
+                                secondaryMuscleGroupIds: _secondaryIds,
+                              );
+                              ex = widget.exercise!.copyWith(
+                                name: name,
+                                primaryMuscleGroupIds: _primaryIds,
+                                secondaryMuscleGroupIds: _secondaryIds,
+                              );
+                            }
+                            await context
+                                .read<MuscleGroupProvider>()
+                                .updateExerciseAssignments(
+                                  context,
+                                  ex.id,
+                                  _primaryIds,
+                                  _secondaryIds,
+                                );
+                            if (!mounted) return;
+                            Navigator.pop(context, ex);
+                          }
+                          : null,
+                  child: Text(loc.commonSave),
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

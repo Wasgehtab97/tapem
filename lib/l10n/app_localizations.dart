@@ -749,16 +749,6 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get multiDeviceBannerOk;
 
-  /// Hint below header
-  ///
-  /// In en, this message translates to:
-  /// **'In multi-device mode, only daily XP and device stats count.'**
-
-  /// Save button for multi devices
-  ///
-  /// In en, this message translates to:
-  /// **'Save session (no muscle group XP)'**
-
   /// Snackbar text after save
   ///
   /// In en, this message translates to:
@@ -801,11 +791,6 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get multiDeviceNameFieldLabel;
 
-  /// Header muscle groups
-  ///
-  /// In en, this message translates to:
-  /// **'Muscle groups'**
-
   /// Cancel in bottom sheet
   ///
   /// In en, this message translates to:
@@ -818,16 +803,47 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get multiDeviceSave;
 
-  /// Button to change exercise
-  ///
-  /// In en, this message translates to:
-  /// **'Change'**
-
   /// Button to edit exercise
   ///
   /// In en, this message translates to:
   /// **'Edit'**
   String get multiDeviceEditExerciseButton;
+
+  /// Muscle category chest
+  ///
+  /// In en, this message translates to:
+  /// **'Chest'**
+  String get muscleCategoryChest;
+
+  /// Muscle category shoulders
+  ///
+  /// In en, this message translates to:
+  /// **'Shoulders'**
+  String get muscleCategoryShoulders;
+
+  /// Muscle category arms
+  ///
+  /// In en, this message translates to:
+  /// **'Arms'**
+  String get muscleCategoryArms;
+
+  /// Muscle category back
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get muscleCategoryBack;
+
+  /// Muscle category core
+  ///
+  /// In en, this message translates to:
+  /// **'Core'**
+  String get muscleCategoryCore;
+
+  /// Muscle category legs
+  ///
+  /// In en, this message translates to:
+  /// **'Legs'**
+  String get muscleCategoryLegs;
 
   /// Hint in search field
   ///
@@ -846,13 +862,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All muscle groups'**
   String get multiDeviceMuscleGroupFilterAll;
-
-  String get muscleCategoryChest;
-  String get muscleCategoryShoulders;
-  String get muscleCategoryArms;
-  String get muscleCategoryBack;
-  String get muscleCategoryCore;
-  String get muscleCategoryLegs;
 
   /// Bottom sheet title add exercise
   ///
