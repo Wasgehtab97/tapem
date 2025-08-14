@@ -20,6 +20,24 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
   final Color onBrand;
   final Color outline;
 
+  /// Gradient used for brand outlines.
+  final LinearGradient outlineGradient;
+
+  /// Fallback solid colour for high contrast modes.
+  final Color outlineColorFallback;
+
+  /// Width of the outline stroke.
+  final double outlineWidth;
+
+  /// Corner radius for outlined surfaces.
+  final BorderRadiusGeometry outlineRadius;
+
+  /// Glow or shadow applied when an outlined element is selected.
+  final List<BoxShadow> outlineShadow;
+
+  /// Opacity applied when an outlined element is disabled.
+  final double outlineDisabledOpacity;
+
   const AppBrandTheme({
     required this.gradient,
     required this.radius,
@@ -32,6 +50,12 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     required this.luminanceRef,
     required this.onBrand,
     required this.outline,
+    required this.outlineGradient,
+    required this.outlineColorFallback,
+    required this.outlineWidth,
+    required this.outlineRadius,
+    required this.outlineShadow,
+    required this.outlineDisabledOpacity,
   });
 
   @override
@@ -47,6 +71,12 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     double? luminanceRef,
     Color? onBrand,
     Color? outline,
+    LinearGradient? outlineGradient,
+    Color? outlineColorFallback,
+    double? outlineWidth,
+    BorderRadiusGeometry? outlineRadius,
+    List<BoxShadow>? outlineShadow,
+    double? outlineDisabledOpacity,
   }) {
     return AppBrandTheme(
       gradient: gradient ?? this.gradient,
@@ -60,6 +90,13 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       luminanceRef: luminanceRef ?? this.luminanceRef,
       onBrand: onBrand ?? this.onBrand,
       outline: outline ?? this.outline,
+      outlineGradient: outlineGradient ?? this.outlineGradient,
+      outlineColorFallback: outlineColorFallback ?? this.outlineColorFallback,
+      outlineWidth: outlineWidth ?? this.outlineWidth,
+      outlineRadius: outlineRadius ?? this.outlineRadius,
+      outlineShadow: outlineShadow ?? this.outlineShadow,
+      outlineDisabledOpacity:
+          outlineDisabledOpacity ?? this.outlineDisabledOpacity,
     );
   }
 
@@ -85,6 +122,36 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       luminanceRef: lerpDouble(luminanceRef, other.luminanceRef, t) ?? luminanceRef,
       onBrand: Color.lerp(onBrand, other.onBrand, t) ?? onBrand,
       outline: Color.lerp(outline, other.outline, t) ?? outline,
+      outlineGradient: LinearGradient(
+        begin: outlineGradient.begin,
+        end: outlineGradient.end,
+        colors: List.generate(
+          outlineGradient.colors.length,
+          (i) => Color.lerp(
+            outlineGradient.colors[i],
+            other.outlineGradient.colors[i],
+            t,
+          )!,
+        ),
+      ),
+      outlineColorFallback:
+          Color.lerp(outlineColorFallback, other.outlineColorFallback, t) ??
+              outlineColorFallback,
+      outlineWidth: lerpDouble(outlineWidth, other.outlineWidth, t) ??
+          outlineWidth,
+      outlineRadius: BorderRadius.lerp(
+            outlineRadius as BorderRadius?,
+            other.outlineRadius as BorderRadius?,
+            t,
+          ) ??
+          outlineRadius,
+      outlineShadow: _lerpShadowList(outlineShadow, other.outlineShadow, t),
+      outlineDisabledOpacity: lerpDouble(
+            outlineDisabledOpacity,
+            other.outlineDisabledOpacity,
+            t,
+          ) ??
+          outlineDisabledOpacity,
     );
   }
 
@@ -102,6 +169,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     final gradient = AppGradients.brandGradient;
     final lums = gradient.colors.map((c) => c.computeLuminance());
     final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final outlineColor = gradient.colors.first;
     return AppBrandTheme(
       gradient: gradient,
       radius: BorderRadius.circular(AppRadius.button),
@@ -113,7 +181,15 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       luminanceRef: lum,
       onBrand: AppColors.textPrimary,
-      outline: gradient.colors.first,
+      outline: outlineColor,
+      outlineGradient: gradient,
+      outlineColorFallback: outlineColor,
+      outlineWidth: 2,
+      outlineRadius: BorderRadius.circular(AppRadius.card),
+      outlineShadow: [
+        BoxShadow(color: outlineColor.withOpacity(0.5), blurRadius: 8),
+      ],
+      outlineDisabledOpacity: 0.4,
     );
   }
 
@@ -122,6 +198,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     final gradient = AppGradients.brandGradient;
     final lums = gradient.colors.map((c) => c.computeLuminance());
     final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final outlineColor = gradient.colors.first;
     return AppBrandTheme(
       gradient: gradient,
       radius: BorderRadius.circular(AppRadius.button),
@@ -133,7 +210,15 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       luminanceRef: lum,
       onBrand: MagentaColors.textPrimary,
-      outline: gradient.colors.first,
+      outline: outlineColor,
+      outlineGradient: gradient,
+      outlineColorFallback: outlineColor,
+      outlineWidth: 2,
+      outlineRadius: BorderRadius.circular(AppRadius.card),
+      outlineShadow: [
+        BoxShadow(color: gradient.colors.last.withOpacity(0.5), blurRadius: 8),
+      ],
+      outlineDisabledOpacity: 0.4,
     );
   }
 }
