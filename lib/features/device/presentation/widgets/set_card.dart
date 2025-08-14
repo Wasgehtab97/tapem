@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
@@ -210,7 +210,7 @@ class SetCardState extends State<SetCard> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       );
     }
-    final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+    final surface = Theme.of(context).extension<AppBrandTheme>();
 
     var gradient = surface?.gradient ?? AppGradients.brandGradient;
     if (surface != null) {
@@ -536,7 +536,7 @@ class _RoundButtonState extends State<_RoundButton> {
               widget.icon,
               color:
                   widget.filled
-                      ? Theme.of(context).colorScheme.onPrimary
+                      ? Theme.of(context).extension<AppBrandTheme>()?.onBrand ?? Theme.of(context).colorScheme.onPrimary
                       : widget.tokens.menuFg,
             ),
           ),

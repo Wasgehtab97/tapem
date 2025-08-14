@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:tapem/core/widgets/gradient_button.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/app_router.dart';
@@ -327,46 +327,19 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           const Divider(),
                           Builder(
                             builder: (context) {
-                              final surface =
-                                  Theme.of(
-                                    context,
-                                  ).extension<BrandSurfaceTheme>();
-                              var gradient =
-                                  surface?.gradient ??
-                                  AppGradients.brandGradient;
-                              if (surface != null) {
-                                final lums = gradient.colors.map(
-                                  (c) => c.computeLuminance(),
-                                );
-                                final lum =
-                                    lums.reduce((a, b) => a + b) /
-                                    gradient.colors.length;
-                                final delta = surface.luminanceRef - lum;
-                                gradient = Tone.gradient(gradient, delta);
-                              }
-                              final textColor =
-                                  Theme.of(context).colorScheme.onPrimary;
-                              return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                                decoration: BoxDecoration(
-                                  gradient: gradient,
-                                  borderRadius:
-                                      surface?.radius as BorderRadius? ??
-                                      BorderRadius.circular(AppRadius.card),
-                                  boxShadow: surface?.shadow,
-                                ),
-                                padding: const EdgeInsets.all(AppSpacing.sm),
-                                child: DefaultTextStyle.merge(
-                                  style: TextStyle(color: textColor),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: BrandGradientCard(
+                                  padding:
+                                      const EdgeInsets.all(AppSpacing.sm),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       Text(
                                         'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.w600,
-                                          color: textColor,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -433,7 +406,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: GradientButton(
+                    child: BrandPrimaryButton(
                       onPressed:
                           prov.hasSessionToday || prov.isSaving
                               ? null

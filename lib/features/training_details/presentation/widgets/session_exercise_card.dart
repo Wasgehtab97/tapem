@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import '../../domain/models/session.dart';
 
 /// A reusable card displaying a session's sets for a single device/exercise.
@@ -19,7 +20,8 @@ class SessionExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final onBrand =
+        Theme.of(context).extension<AppBrandTheme>()?.onBrand ?? Colors.white;
     return BrandGradientCard(
       padding: padding,
       child: Column(
@@ -27,8 +29,7 @@ class SessionExerciseCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(
-              color: theme.colorScheme.onPrimary,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -38,7 +39,7 @@ class SessionExerciseCard extends StatelessWidget {
             Text(
               subtitle!,
               style: TextStyle(
-                color: theme.colorScheme.onPrimary.withOpacity(0.7),
+                color: onBrand.withOpacity(0.7),
                 fontSize: 14,
               ),
             ),
@@ -49,30 +50,28 @@ class SessionExerciseCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 2.0),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.fitness_center,
-                    color: theme.colorScheme.primary,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${set.weight.toStringAsFixed(1)} kg',
                     style: TextStyle(
-                      color: theme.colorScheme.onPrimary.withOpacity(0.7),
+                      color: onBrand.withOpacity(0.7),
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(
+                  const Icon(
                     Icons.repeat,
-                    color: theme.colorScheme.secondary,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${set.reps} Wdh',
                     style: TextStyle(
-                      color: theme.colorScheme.onPrimary.withOpacity(0.7),
+                      color: onBrand.withOpacity(0.7),
                       fontSize: 14,
                     ),
                   ),

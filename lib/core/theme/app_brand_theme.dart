@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 
 import 'design_tokens.dart';
 
-/// Theme extension that describes the shared brand surface used by call-to-
-/// action elements in `gym_01`.
-class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
+/// Theme extension that exposes the global brand tokens such as
+/// gradient, radii, shadows and foreground colours.
+class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
   final LinearGradient gradient;
   final BorderRadiusGeometry radius;
   final List<BoxShadow> shadow;
@@ -17,8 +17,9 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
   final double height;
   final EdgeInsetsGeometry padding;
   final double luminanceRef;
+  final Color onBrand;
 
-  const BrandSurfaceTheme({
+  const AppBrandTheme({
     required this.gradient,
     required this.radius,
     required this.shadow,
@@ -28,10 +29,11 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
     required this.height,
     required this.padding,
     required this.luminanceRef,
+    required this.onBrand,
   });
 
   @override
-  BrandSurfaceTheme copyWith({
+  AppBrandTheme copyWith({
     LinearGradient? gradient,
     BorderRadiusGeometry? radius,
     List<BoxShadow>? shadow,
@@ -41,8 +43,9 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
     double? height,
     EdgeInsetsGeometry? padding,
     double? luminanceRef,
+    Color? onBrand,
   }) {
-    return BrandSurfaceTheme(
+    return AppBrandTheme(
       gradient: gradient ?? this.gradient,
       radius: radius ?? this.radius,
       shadow: shadow ?? this.shadow,
@@ -52,13 +55,14 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
       height: height ?? this.height,
       padding: padding ?? this.padding,
       luminanceRef: luminanceRef ?? this.luminanceRef,
+      onBrand: onBrand ?? this.onBrand,
     );
   }
 
   @override
-  BrandSurfaceTheme lerp(ThemeExtension<BrandSurfaceTheme>? other, double t) {
-    if (other is! BrandSurfaceTheme) return this;
-    return BrandSurfaceTheme(
+  AppBrandTheme lerp(ThemeExtension<AppBrandTheme>? other, double t) {
+    if (other is! AppBrandTheme) return this;
+    return AppBrandTheme(
       gradient: LinearGradient(
         begin: gradient.begin,
         end: gradient.end,
@@ -75,6 +79,7 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
       height: lerpDouble(height, other.height, t) ?? height,
       padding: EdgeInsets.lerp(padding as EdgeInsets?, other.padding as EdgeInsets?, t) ?? padding,
       luminanceRef: lerpDouble(luminanceRef, other.luminanceRef, t) ?? luminanceRef,
+      onBrand: Color.lerp(onBrand, other.onBrand, t) ?? onBrand,
     );
   }
 
@@ -87,12 +92,31 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
     });
   }
 
-  /// Creates the magenta/violet CTA preset used for `gym_01`.
-  static BrandSurfaceTheme magentaCta() {
+  /// Default CTA theme using the global AppGradients.brandGradient.
+  static AppBrandTheme defaultTheme() {
     final gradient = AppGradients.brandGradient;
     final lums = gradient.colors.map((c) => c.computeLuminance());
     final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
-    return BrandSurfaceTheme(
+    return AppBrandTheme(
+      gradient: gradient,
+      radius: BorderRadius.circular(AppRadius.button),
+      shadow: const [BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4))],
+      pressedOverlay: Colors.black26,
+      focusRing: AppColors.accentTurquoise,
+      textStyle: const TextStyle(fontWeight: FontWeight.bold),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      luminanceRef: lum,
+      onBrand: AppColors.textPrimary,
+    );
+  }
+
+  /// Magenta/violet CTA preset used for `gym_01`.
+  static AppBrandTheme magenta() {
+    final gradient = AppGradients.brandGradient;
+    final lums = gradient.colors.map((c) => c.computeLuminance());
+    final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    return AppBrandTheme(
       gradient: gradient,
       radius: BorderRadius.circular(AppRadius.button),
       shadow: const [BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4))],
@@ -100,8 +124,9 @@ class BrandSurfaceTheme extends ThemeExtension<BrandSurfaceTheme> {
       focusRing: MagentaColors.focus,
       textStyle: const TextStyle(fontWeight: FontWeight.bold),
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       luminanceRef: lum,
+      onBrand: MagentaColors.textPrimary,
     );
   }
 }
