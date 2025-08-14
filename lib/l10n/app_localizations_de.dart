@@ -101,6 +101,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get historySessionsChartTitle => 'Sitzungen im Verlauf';
 
   @override
+  String get historyAxisDate => 'Datum';
+
+  @override
+  String get historyAxisE1rm => 'E1RM';
+
+  @override
+  String get historyAxisSessions => 'Sitzungen';
+
+  @override
+  String get historyNoData => 'Keine Daten';
+
+  @override
+  String get historyE1rmChartSemantics => 'E1RM-Verlauf';
+
+  @override
+  String get historySessionsChartSemantics => 'Sitzungen im Verlauf';
+
+  @override
   String homeWelcome(Object user) {
     return 'Willkommen, $user';
   }

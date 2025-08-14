@@ -101,6 +101,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historySessionsChartTitle => 'Sessions over time';
 
   @override
+  String get historyAxisDate => 'Date';
+
+  @override
+  String get historyAxisE1rm => 'E1RM';
+
+  @override
+  String get historyAxisSessions => 'Sessions';
+
+  @override
+  String get historyNoData => 'No data';
+
+  @override
+  String get historyE1rmChartSemantics => 'E1RM over time chart';
+
+  @override
+  String get historySessionsChartSemantics => 'Sessions over time chart';
+
+  @override
   String homeWelcome(Object user) {
     return 'Welcome, $user';
   }

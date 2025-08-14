@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:tapem/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 import 'package:tapem/core/providers/history_provider.dart';
+import 'package:tapem/core/utils/nice_scale.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceId;
@@ -22,11 +23,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // jetzt mit benannten Parametern
       context.read<HistoryProvider>().loadHistory(
-        context: context,
-        deviceId: widget.deviceId,
-      );
+            context: context,
+            deviceId: widget.deviceId,
+          );
     });
   }
 
@@ -36,6 +36,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final prov = context.watch<HistoryProvider>();
+    final smallStyle = textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface.withOpacity(0.6),
+      fontSize: 10,
+    );
 
     if (prov.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -48,35 +52,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     final e1rmPoints = prov.e1rmChart;
-    if (e1rmPoints.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
-        body: const Center(child: Text('Keine Daten')),
-      );
-    }
-    final dates = e1rmPoints.map((e) => e.date).toList();
-    final values = e1rmPoints.map((e) => e.value).toList();
-    final spots = values
+    final sessionPoints = prov.sessionsChart;
+    final localeString = Localizations.localeOf(context).toString();
+
+    final e1rmValues = e1rmPoints.map((e) => e.value).toList();
+    final e1rmScale = NiceScale.fromValues(e1rmValues,
+        tickCount: 6, clampMinZero: true);
+    final e1rmSpots = e1rmValues
         .asMap()
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
-    final minY = values.reduce((a, b) => a < b ? a : b) * 0.9;
-    final maxY = values.reduce((a, b) => a > b ? a : b) * 1.1;
+    final e1rmDateInterval =
+        e1rmPoints.isEmpty ? 1 : (e1rmPoints.length / 6).ceil().clamp(1, e1rmPoints.length);
 
-    final sessionPoints = prov.sessionsChart;
-    final sessionDates = sessionPoints.map((e) => e.date).toList();
     final sessionValues = sessionPoints.map((e) => e.value).toList();
+    final sessionScale = NiceScale.fromValues(sessionValues,
+        tickCount: 6, forceMinZero: true);
     final sessionSpots = sessionValues
         .asMap()
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
-    final sessionsMaxY = sessionValues.isEmpty
-        ? 1.0
-        : sessionValues.reduce((a, b) => a > b ? a : b) * 1.1;
+    final sessionDateInterval = sessionPoints.isEmpty
+        ? 1
+        : (sessionPoints.length / 6).ceil().clamp(1, sessionPoints.length);
 
-    // Gruppieren der Logs für die Listendarstellung
     final sessionsMap = <String, List<WorkoutLog>>{};
     for (var log in prov.logs) {
       sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
@@ -86,210 +87,253 @@ class _HistoryScreenState extends State<HistoryScreen> {
         return b.value.first.timestamp.compareTo(a.value.first.timestamp);
       });
 
-    final localeString = Localizations.localeOf(context).toString();
+    Widget buildE1rmChart() {
+      if (e1rmPoints.isEmpty) {
+        return SizedBox(
+            height: 200,
+            child: Center(child: Text(loc.historyNoData, style: textTheme.bodySmall)));
+      }
+      final dates = e1rmPoints.map((e) => e.date).toList();
+      return Semantics(
+        label: loc.historyE1rmChartSemantics,
+        child: SizedBox(
+          height: 200,
+          child: LineChart(
+            LineChartData(
+              minY: e1rmScale.min,
+              maxY: e1rmScale.max,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: e1rmScale.tickSpacing,
+              ),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  axisNameWidget: Text(loc.historyAxisDate, style: smallStyle),
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    interval: e1rmDateInterval.toDouble(),
+                    getTitlesWidget: (value, meta) {
+                      final i = value.toInt();
+                      if (i < 0 || i >= dates.length) {
+                        return const SizedBox();
+                      }
+                      final d = dates[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          DateFormat.Md(localeString).format(d),
+                          style: smallStyle,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  axisNameWidget: Text(loc.historyAxisE1rm, style: smallStyle),
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    interval: e1rmScale.tickSpacing,
+                    getTitlesWidget: (value, meta) => Text(
+                      value.toStringAsFixed(0),
+                      style: smallStyle,
+                    ),
+                  ),
+                ),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: e1rmSpots,
+                  isCurved: true,
+                  curveSmoothness: 0.2,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(show: false),
+                  belowBarData: BarAreaData(show: false),
+                ),
+              ],
+              lineTouchData: LineTouchData(enabled: false),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildSessionsChart() {
+      if (sessionPoints.isEmpty) {
+        return SizedBox(
+            height: 200,
+            child: Center(child: Text(loc.historyNoData, style: textTheme.bodySmall)));
+      }
+      final dates = sessionPoints.map((e) => e.date).toList();
+      return Semantics(
+        label: loc.historySessionsChartSemantics,
+        child: SizedBox(
+          height: 200,
+          child: LineChart(
+            LineChartData(
+              minY: sessionScale.min,
+              maxY: sessionScale.max,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: sessionScale.tickSpacing,
+              ),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  axisNameWidget: Text(loc.historyAxisDate, style: smallStyle),
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    interval: sessionDateInterval.toDouble(),
+                    getTitlesWidget: (value, meta) {
+                      final i = value.toInt();
+                      if (i < 0 || i >= dates.length) {
+                        return const SizedBox();
+                      }
+                      final d = dates[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          DateFormat.Md(localeString).format(d),
+                          style: smallStyle,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  axisNameWidget: Text(loc.historyAxisSessions, style: smallStyle),
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    interval: sessionScale.tickSpacing,
+                    getTitlesWidget: (value, meta) => Text(
+                      value.toStringAsFixed(0),
+                      style: smallStyle,
+                    ),
+                  ),
+                ),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: sessionSpots,
+                  isCurved: true,
+                  curveSmoothness: 0.2,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(show: false),
+                  belowBarData: BarAreaData(show: false),
+                ),
+              ],
+              lineTouchData: LineTouchData(enabled: false),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              loc.historyChartTitle,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  minY: minY,
-                  maxY: maxY,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: (maxY - minY) / 5,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    loc.historyOverviewTitle,
+                    style:
+                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 32,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          final i = value.toInt();
-                          if (i < 0 || i >= dates.length) {
-                            return const SizedBox();
-                          }
-                          final d = dates[i];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              DateFormat.Md(localeString).format(d),
-                              style: textTheme.bodySmall,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        interval: (maxY - minY) / 5,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toStringAsFixed(0),
-                            style: textTheme.bodySmall,
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _kpiRing(loc.historyWorkouts, prov.workoutCount.toString()),
+                      _kpiRing(loc.historySetsAvg,
+                          prov.setsPerSessionAvg.toStringAsFixed(1)),
+                      _kpiRing(loc.historyHeaviest,
+                          '${prov.heaviest.toStringAsFixed(1)} kg'),
+                    ],
                   ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      curveSmoothness: 0.2,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
-                      belowBarData: BarAreaData(show: false),
-                    ),
-                  ],
-                  lineTouchData: LineTouchData(enabled: false),
-                ),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              loc.historyOverviewTitle,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _kpiBadge(loc.historyWorkouts, prov.workoutCount.toString()),
-                _kpiBadge(loc.historySetsAvg,
-                    prov.setsPerSessionAvg.toStringAsFixed(1)),
-                _kpiBadge(
-                    loc.historyHeaviest, '${prov.heaviest.toStringAsFixed(1)} kg'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              loc.historySessionsChartTitle,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  minY: 0,
-                  maxY: sessionsMaxY,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: sessionsMaxY / 5,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.historyChartTitle,
+                    style:
+                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 32,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          final i = value.toInt();
-                          if (i < 0 || i >= sessionDates.length) {
-                            return const SizedBox();
-                          }
-                          final d = sessionDates[i];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              DateFormat.Md(localeString).format(d),
-                              style: textTheme.bodySmall,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        interval: sessionsMaxY / 5,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toStringAsFixed(0),
-                            style: textTheme.bodySmall,
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                  const SizedBox(height: 8),
+                  buildE1rmChart(),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.historySessionsChartTitle,
+                    style:
+                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: sessionSpots,
-                      isCurved: true,
-                      curveSmoothness: 0.2,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
-                      belowBarData: BarAreaData(show: false),
-                    ),
-                  ],
-                  lineTouchData: LineTouchData(enabled: false),
-                ),
+                  const SizedBox(height: 8),
+                  buildSessionsChart(),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              loc.historyListTitle,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                loc.historyListTitle,
+                style:
+                    textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sessionEntries.length,
-                itemBuilder: (_, idx) {
-                  final logs = [...sessionEntries[idx].value]
-                    ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-                  final titleDate = DateFormat.yMMMMd(
-                    localeString,
-                  ).format(logs.first.timestamp);
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, idx) {
+                final logs = [...sessionEntries[idx].value]
+                  ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                final titleDate = DateFormat.yMMMMd(localeString)
+                    .format(logs.first.timestamp);
 
-                  final sets = logs
-                      .map((l) => SessionSet(weight: l.weight, reps: l.reps))
-                      .toList();
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
+                final sets = logs
+                    .map((l) => SessionSet(weight: l.weight, reps: l.reps))
+                    .toList();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Card(
                     child: ExpansionTile(
                       title: Text(
                         titleDate,
@@ -303,38 +347,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
+              childCount: sessionEntries.length,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _kpiBadge(String label, String value) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall,
           ),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
     );
   }
+
+  Widget _kpiRing(String label, String value) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: '$label: $value',
+      child: SizedBox(
+        width: 80,
+        height: 80,
+        child: Card(
+          color: theme.colorScheme.primaryContainer,
+          shape: const CircleBorder(),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(label, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
