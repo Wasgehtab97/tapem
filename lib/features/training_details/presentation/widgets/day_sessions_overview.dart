@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/theme/brand_surface_theme.dart';
 import '../../domain/models/session.dart';
+import 'session_exercise_card.dart';
 
 class DaySessionsOverview extends StatelessWidget {
   final List<Session> sessions;
@@ -19,90 +18,19 @@ class DaySessionsOverview extends StatelessWidget {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children:
-              sessions.map((session) {
-                return SizedBox(
+          children: sessions
+              .map(
+                (session) => SizedBox(
                   width: cardWidth,
-                  child: _buildCard(context, session),
-                );
-              }).toList(),
+                  child: SessionExerciseCard(
+                    deviceName: session.deviceName,
+                    sets: session.sets,
+                  ),
+                ),
+              )
+              .toList(),
         );
       },
-    );
-  }
-
-  Widget _buildCard(BuildContext context, Session session) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: Theme.of(context)
-                .extension<BrandSurfaceTheme>()
-                ?.gradient ??
-            AppGradients.brandGradient,
-        borderRadius: Theme.of(context)
-                .extension<BrandSurfaceTheme>()
-                ?.radius ??
-            BorderRadius.circular(12),
-        boxShadow:
-            Theme.of(context).extension<BrandSurfaceTheme>()?.shadow,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              session.deviceName,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            for (final set in session.sets)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.fitness_center,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${set.weight.toStringAsFixed(1)} kg',
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.repeat,
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${set.reps} Wdh',
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

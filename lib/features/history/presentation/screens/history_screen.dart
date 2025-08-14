@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +6,8 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
+import 'package:tapem/features/training_details/domain/models/session.dart';
+import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceId;
@@ -47,41 +47,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    // Gruppieren und Chart-Logik
-    final sessionsMap = <String, List<WorkoutLog>>{};
-    for (var log in prov.logs) {
-      sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
-    }
-    final sessionEntries =
-        sessionsMap.entries.toList()..sort((a, b) {
-          return b.value.first.timestamp.compareTo(a.value.first.timestamp);
-        });
-
-    final dates = <DateTime>[];
-    final values = <double>[];
-    for (var e in sessionEntries) {
-      final logs = [...e.value]
-        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      dates.add(logs.first.timestamp);
-      final e1rms = logs.map((l) => l.weight * (1 + l.reps / 30));
-      values.add(e1rms.reduce(max));
-    }
-
-    if (values.isEmpty) {
+    final e1rmPoints = prov.e1rmChart;
+    if (e1rmPoints.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
         body: const Center(child: Text('Keine Daten')),
       );
     }
+    final dates = e1rmPoints.map((e) => e.date).toList();
+    final values = e1rmPoints.map((e) => e.value).toList();
+    final spots = values
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final minY = values.reduce((a, b) => a < b ? a : b) * 0.9;
+    final maxY = values.reduce((a, b) => a > b ? a : b) * 1.1;
 
-    final spots =
-        values
-            .asMap()
-            .entries
-            .map((e) => FlSpot(e.key.toDouble(), e.value))
-            .toList();
-    final minY = values.reduce(min) * 0.9;
-    final maxY = values.reduce(max) * 1.1;
+    final sessionPoints = prov.sessionsChart;
+    final sessionDates = sessionPoints.map((e) => e.date).toList();
+    final sessionValues = sessionPoints.map((e) => e.value).toList();
+    final sessionSpots = sessionValues
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final sessionsMaxY = sessionValues.isEmpty
+        ? 1.0
+        : sessionValues.reduce((a, b) => a > b ? a : b) * 1.1;
+
+    // Gruppieren der Logs für die Listendarstellung
+    final sessionsMap = <String, List<WorkoutLog>>{};
+    for (var log in prov.logs) {
+      sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
+    }
+    final sessionEntries = sessionsMap.entries.toList()
+      ..sort((a, b) {
+        return b.value.first.timestamp.compareTo(a.value.first.timestamp);
+      });
 
     final localeString = Localizations.localeOf(context).toString();
 
@@ -170,6 +173,102 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             const SizedBox(height: 16),
             Text(
+              loc.historyOverviewTitle,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _kpiBadge(loc.historyWorkouts, prov.workoutCount.toString()),
+                _kpiBadge(loc.historySetsAvg,
+                    prov.setsPerSessionAvg.toStringAsFixed(1)),
+                _kpiBadge(
+                    loc.historyHeaviest, '${prov.heaviest.toStringAsFixed(1)} kg'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              loc.historySessionsChartTitle,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  minY: 0,
+                  maxY: sessionsMaxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: sessionsMaxY / 5,
+                  ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          final i = value.toInt();
+                          if (i < 0 || i >= sessionDates.length) {
+                            return const SizedBox();
+                          }
+                          final d = sessionDates[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              DateFormat.Md(localeString).format(d),
+                              style: textTheme.bodySmall,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: sessionsMaxY / 5,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toStringAsFixed(0),
+                            style: textTheme.bodySmall,
+                          );
+                        },
+                      ),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: sessionSpots,
+                      isCurved: true,
+                      curveSmoothness: 0.2,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(show: false),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(enabled: false),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
               loc.historyListTitle,
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -186,6 +285,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     localeString,
                   ).format(logs.first.timestamp);
 
+                  final sets = logs
+                      .map((l) => SessionSet(weight: l.weight, reps: l.reps))
+                      .toList();
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: ExpansionTile(
@@ -193,28 +295,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         titleDate,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      children:
-                          logs
-                              .map(
-                                (log) => ListTile(
-                                  title: Text(
-                                    '${log.weight} kg × ${log.reps} Wdh.',
-                                  ),
-                                  subtitle: Row(
-                                    children: [
-                                      if (log.rir != null)
-                                        Text('RIR ${log.rir}'),
-                                      if (log.note != null &&
-                                          log.note!.isNotEmpty) ...[
-                                        if (log.rir != null)
-                                          const SizedBox(width: 8),
-                                        Expanded(child: Text(log.note!)),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                      children: [
+                        SessionExerciseCard(
+                          deviceName: widget.deviceId,
+                          sets: sets,
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -222,6 +309,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _kpiBadge(String label, String value) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall,
+          ),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }

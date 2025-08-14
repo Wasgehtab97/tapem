@@ -118,6 +118,27 @@
     "description": "Überschrift für die Liste vergangener Workouts"
   },
 
+  "historyOverviewTitle": "Übersicht",
+  "@historyOverviewTitle": {
+    "description": "Überschrift für die Verlaufsübersicht"
+  },
+  "historyWorkouts": "Workouts",
+  "@historyWorkouts": {
+    "description": "KPI Bezeichnung für Anzahl Workouts"
+  },
+  "historySetsAvg": "Sets (Ø)",
+  "@historySetsAvg": {
+    "description": "KPI Bezeichnung für durchschnittliche Sets pro Workout"
+  },
+  "historyHeaviest": "Schwerstes",
+  "@historyHeaviest": {
+    "description": "KPI Bezeichnung für höchstes Gewicht"
+  },
+  "historySessionsChartTitle": "Sitzungen im Verlauf",
+  "@historySessionsChartTitle": {
+    "description": "Überschrift für den Sitzungsverlauf"
+  },
+
   "homeWelcome": "Willkommen, {user}",
   "@homeWelcome": {
     "description": "Begrüßung im Home-Screen",

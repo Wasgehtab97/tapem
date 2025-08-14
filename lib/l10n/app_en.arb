@@ -118,6 +118,27 @@
     "description": "Heading for the list of past workouts"
   },
 
+  "historyOverviewTitle": "Overview",
+  "@historyOverviewTitle": {
+    "description": "Heading for history overview section"
+  },
+  "historyWorkouts": "Workouts",
+  "@historyWorkouts": {
+    "description": "KPI label for workout count"
+  },
+  "historySetsAvg": "Sets (Ø)",
+  "@historySetsAvg": {
+    "description": "KPI label for average sets per session"
+  },
+  "historyHeaviest": "Heaviest",
+  "@historyHeaviest": {
+    "description": "KPI label for heaviest weight"
+  },
+  "historySessionsChartTitle": "Sessions over time",
+  "@historySessionsChartTitle": {
+    "description": "Heading for sessions over time chart"
+  },
+
   "homeWelcome": "Welcome, {user}",
   "@homeWelcome": {
     "description": "Greeting on the Home screen",

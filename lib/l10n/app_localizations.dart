@@ -233,6 +233,36 @@ abstract class AppLocalizations {
   /// **'Past workouts'**
   String get historyListTitle;
 
+  /// Heading for history overview section
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get historyOverviewTitle;
+
+  /// KPI label for workout count
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get historyWorkouts;
+
+  /// KPI label for average sets per session
+  ///
+  /// In en, this message translates to:
+  /// **'Sets (Ø)'**
+  String get historySetsAvg;
+
+  /// KPI label for heaviest weight
+  ///
+  /// In en, this message translates to:
+  /// **'Heaviest'**
+  String get historyHeaviest;
+
+  /// Heading for sessions over time chart
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions over time'**
+  String get historySessionsChartTitle;
+
   /// Greeting on the Home screen
   ///
   /// In en, this message translates to:
