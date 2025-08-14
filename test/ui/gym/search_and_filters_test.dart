@@ -36,6 +36,7 @@ class _FakeHistoryRepo implements GetHistoryForDeviceRepository {
     required String gymId,
     required String deviceId,
     required String userId,
+    String? exerciseId,
   }) async => [];
 }
 

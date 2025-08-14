@@ -44,6 +44,7 @@ class HistoryProvider extends ChangeNotifier {
   Future<void> loadHistory({
     required BuildContext context,
     required String deviceId,
+    String? exerciseId,
   }) async {
     _isLoading = true;
     _error = null;
@@ -61,6 +62,7 @@ class HistoryProvider extends ChangeNotifier {
         gymId: gymId,
         deviceId: deviceId,
         userId: userId,
+        exerciseId: exerciseId,
       );
       _computeStats();
     } catch (e, st) {

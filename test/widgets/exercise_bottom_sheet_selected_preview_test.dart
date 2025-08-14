@@ -35,7 +35,12 @@ class _FakeMuscleGroupRepo implements MuscleGroupRepository {
 
 class _FakeHistoryRepo implements GetHistoryForDeviceRepository {
   @override
-  Future<List<WorkoutLog>> getHistory({required String gymId, required String deviceId, required String userId}) async => [];
+  Future<List<WorkoutLog>> getHistory({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    String? exerciseId,
+  }) async => [];
 }
 
 class _FakeDeviceRepo implements DeviceRepository {

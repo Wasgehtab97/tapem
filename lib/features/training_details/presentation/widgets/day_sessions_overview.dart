@@ -23,7 +23,8 @@ class DaySessionsOverview extends StatelessWidget {
                 (session) => SizedBox(
                   width: cardWidth,
                   child: SessionExerciseCard(
-                    deviceName: session.deviceName,
+                    title: session.deviceName,
+                    subtitle: session.deviceDescription,
                     sets: session.sets,
                   ),
                 ),

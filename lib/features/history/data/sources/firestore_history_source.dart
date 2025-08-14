@@ -14,17 +14,20 @@ class FirestoreHistorySource {
     required String gymId,
     required String deviceId,
     required String userId,
+    String? exerciseId,
   }) async {
-    final snapshot =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .doc(deviceId)
-            .collection('logs')
-            .where('userId', isEqualTo: userId)
-            .orderBy('timestamp', descending: true)
-            .get();
+    var query = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('logs')
+        .where('userId', isEqualTo: userId);
+    if (exerciseId != null) {
+      query = query.where('exerciseId', isEqualTo: exerciseId);
+    }
+    // Composite index on userId+exerciseId+timestamp may be required.
+    final snapshot = await query.orderBy('timestamp', descending: true).get();
 
     return snapshot.docs.map((doc) => WorkoutLogDto.fromDocument(doc)).toList();
   }

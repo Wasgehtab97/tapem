@@ -13,6 +13,7 @@ class WorkoutLogDto {
 
   final String userId;
   final String sessionId;
+  final String? exerciseId;
 
   @JsonKey(fromJson: _timestampToDate, toJson: _dateToTimestamp)
   final DateTime timestamp;
@@ -25,6 +26,7 @@ class WorkoutLogDto {
   WorkoutLogDto({
     required this.userId,
     required this.sessionId,
+    this.exerciseId,
     required this.timestamp,
     required this.weight,
     required this.reps,
@@ -50,6 +52,7 @@ class WorkoutLogDto {
     id: id,
     userId: userId,
     sessionId: sessionId,
+    exerciseId: exerciseId,
     timestamp: timestamp,
     weight: weight,
     reps: reps,
