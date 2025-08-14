@@ -1,0 +1,85 @@
+import 'package:flutter/material.dart';
+import '../theme/brand_surface_theme.dart';
+import '../theme/design_tokens.dart';
+
+/// Reusable card container with the brand gradient and rounded corners.
+class BrandGradientCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final BorderRadiusGeometry? borderRadius;
+  final VoidCallback? onTap;
+
+  const BrandGradientCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.borderRadius,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surface = theme.extension<BrandSurfaceTheme>();
+    final radius = borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card);
+    final gradient = surface?.gradient ?? AppGradients.brandGradient;
+    final shadow = surface?.shadow;
+    final overlay = surface?.pressedOverlay ?? Colors.black26;
+
+    Widget content = Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: radius,
+        boxShadow: shadow,
+      ),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.sm),
+      child: child,
+    );
+
+    if (onTap != null) {
+      content = Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: radius,
+          splashColor: overlay,
+          highlightColor: overlay,
+          onTap: onTap,
+          child: content,
+        ),
+      );
+    }
+
+    return content;
+  }
+}
+
+/// Gradient header used for expansion tiles.
+class BrandGradientHeader extends StatelessWidget {
+  final Widget child;
+  final bool expanded;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
+
+  const BrandGradientHeader({
+    super.key,
+    required this.child,
+    this.expanded = false,
+    this.onTap,
+    this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Theme.of(context).extension<BrandSurfaceTheme>();
+    final baseRadius = surface?.radius as BorderRadius? ?? BorderRadius.circular(AppRadius.card);
+    final radius = expanded
+        ? BorderRadius.only(topLeft: baseRadius.topLeft, topRight: baseRadius.topRight)
+        : baseRadius;
+    return BrandGradientCard(
+      borderRadius: radius,
+      padding: padding ?? const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+      onTap: onTap,
+      child: child,
+    );
+  }
+}

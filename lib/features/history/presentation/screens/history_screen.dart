@@ -9,6 +9,9 @@ import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/theme/brand_surface_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceId;
@@ -333,19 +336,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     .toList();
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Card(
-                    child: ExpansionTile(
-                      title: Text(
-                        titleDate,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      children: [
-                        SessionExerciseCard(
-                          deviceName: widget.deviceId,
-                          sets: sets,
-                          padding: const EdgeInsets.all(12),
-                        ),
-                      ],
+                  child: _HistoryExpansionTile(
+                    title: titleDate,
+                    child: SessionExerciseCard(
+                      deviceName: widget.deviceId,
+                      sets: sets,
+                      padding: const EdgeInsets.all(12),
                     ),
                   ),
                 );
@@ -366,9 +362,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: SizedBox(
         width: 80,
         height: 80,
-        child: Card(
-          color: theme.colorScheme.primaryContainer,
-          shape: const CircleBorder(),
+        child: BrandGradientCard(
+          borderRadius: BorderRadius.circular(40),
+          padding: EdgeInsets.zero,
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -376,15 +372,76 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Text(
                   value,
                   style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                      ?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onPrimary),
                 ),
                 const SizedBox(height: 4),
-                Text(label, style: theme.textTheme.bodySmall),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onPrimary.withOpacity(0.8)),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HistoryExpansionTile extends StatefulWidget {
+  final String title;
+  final Widget child;
+  const _HistoryExpansionTile({required this.title, required this.child});
+
+  @override
+  State<_HistoryExpansionTile> createState() => _HistoryExpansionTileState();
+}
+
+class _HistoryExpansionTileState extends State<_HistoryExpansionTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surface = theme.extension<BrandSurfaceTheme>();
+    final baseRadius = surface?.radius as BorderRadius? ?? BorderRadius.circular(AppRadius.card);
+    final bottomRadius = BorderRadius.only(
+      bottomLeft: baseRadius.bottomLeft,
+      bottomRight: baseRadius.bottomRight,
+    );
+    final onPrimary = theme.colorScheme.onPrimary;
+
+    return Column(
+      children: [
+        BrandGradientHeader(
+          expanded: _expanded,
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: TextStyle(fontWeight: FontWeight.bold, color: onPrimary),
+                ),
+              ),
+              Icon(
+                _expanded ? Icons.expand_less : Icons.expand_more,
+                color: onPrimary,
+              ),
+            ],
+          ),
+        ),
+        if (_expanded)
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: bottomRadius,
+            ),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: widget.child,
+          ),
+      ],
     );
   }
 }
