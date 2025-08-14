@@ -15,7 +15,20 @@ import 'package:tapem/core/theme/design_tokens.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceId;
-  const HistoryScreen({Key? key, required this.deviceId}) : super(key: key);
+  final String deviceName;
+  final String? deviceDescription;
+  final bool isMulti;
+  final String? exerciseId;
+  final String? exerciseName;
+  const HistoryScreen({
+    Key? key,
+    required this.deviceId,
+    required this.deviceName,
+    this.deviceDescription,
+    this.isMulti = false,
+    this.exerciseId,
+    this.exerciseName,
+  }) : super(key: key);
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -29,6 +42,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context.read<HistoryProvider>().loadHistory(
             context: context,
             deviceId: widget.deviceId,
+            exerciseId: widget.isMulti ? widget.exerciseId : null,
           );
     });
   }
@@ -47,9 +61,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (prov.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final title = widget.isMulti ? (widget.exerciseName ?? '') : widget.deviceName;
+    final subtitle = widget.deviceDescription ?? '';
+    final fullTitle =
+        subtitle.isNotEmpty ? '$title — $subtitle' : title;
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
+        appBar: AppBar(title: Text(fullTitle)),
         body: Center(child: Text('${loc.errorPrefix}: ${prov.error}')),
       );
     }
@@ -245,7 +263,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.historyTitle(widget.deviceId))),
+        appBar: AppBar(title: Text(fullTitle)),
       body: CustomScrollView(
         slivers: [
           SliverPadding(
@@ -339,7 +357,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: _HistoryExpansionTile(
                     title: titleDate,
                     child: SessionExerciseCard(
-                      deviceName: widget.deviceId,
+                      title: title,
+                      subtitle: subtitle.isNotEmpty ? subtitle : null,
                       sets: sets,
                       padding: const EdgeInsets.all(12),
                     ),

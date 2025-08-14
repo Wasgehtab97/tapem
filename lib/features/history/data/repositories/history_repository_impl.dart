@@ -13,11 +13,13 @@ class HistoryRepositoryImpl implements GetHistoryForDeviceRepository {
     required String gymId,
     required String deviceId,
     required String userId,
+    String? exerciseId,
   }) async {
     final dtos = await _source.getLogs(
       gymId: gymId,
       deviceId: deviceId,
       userId: userId,
+      exerciseId: exerciseId,
     );
     return dtos.map((d) => d.toModel()).toList();
   }

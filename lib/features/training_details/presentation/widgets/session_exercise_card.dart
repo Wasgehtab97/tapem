@@ -4,13 +4,15 @@ import '../../domain/models/session.dart';
 
 /// A reusable card displaying a session's sets for a single device/exercise.
 class SessionExerciseCard extends StatelessWidget {
-  final String deviceName;
+  final String title;
+  final String? subtitle;
   final List<SessionSet> sets;
   final EdgeInsetsGeometry padding;
 
   const SessionExerciseCard({
     Key? key,
-    required this.deviceName,
+    required this.title,
+    this.subtitle,
     required this.sets,
     this.padding = const EdgeInsets.all(12.0),
   }) : super(key: key);
@@ -24,13 +26,23 @@ class SessionExerciseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            deviceName,
+            title,
             style: TextStyle(
               color: theme.colorScheme.onPrimary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: TextStyle(
+                color: theme.colorScheme.onPrimary.withOpacity(0.7),
+                fontSize: 14,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           for (final set in sets)
             Padding(

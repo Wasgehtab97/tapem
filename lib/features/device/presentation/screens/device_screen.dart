@@ -166,9 +166,31 @@ class _DeviceScreenState extends State<DeviceScreen> {
               tooltip: 'Verlauf',
               onPressed: () {
                 _closeKeyboard();
-                Navigator.of(
-                  context,
-                ).pushNamed(AppRouter.history, arguments: widget.deviceId);
+                final deviceProv = context.read<DeviceProvider>();
+                String? exerciseName;
+                if (deviceProv.device?.isMulti ?? false) {
+                  final exProv = context.read<ExerciseProvider>();
+                  exerciseName = exProv.exercises
+                      .firstWhere(
+                        (e) => e.id == widget.exerciseId,
+                        orElse: () =>
+                            Exercise(id: '', name: 'Unknown', userId: ''),
+                      )
+                      .name;
+                }
+                Navigator.of(context).pushNamed(
+                  AppRouter.history,
+                  arguments: {
+                    'deviceId': widget.deviceId,
+                    'deviceName': deviceProv.device?.name ?? widget.deviceId,
+                    'deviceDescription': deviceProv.device?.description,
+                    'isMulti': deviceProv.device?.isMulti ?? false,
+                    if (deviceProv.device?.isMulti ?? false)
+                      'exerciseId': widget.exerciseId,
+                    if (deviceProv.device?.isMulti ?? false)
+                      'exerciseName': exerciseName,
+                  },
+                );
               },
             ),
           ],

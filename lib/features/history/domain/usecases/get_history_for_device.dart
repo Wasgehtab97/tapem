@@ -8,6 +8,7 @@ abstract class GetHistoryForDeviceRepository {
     required String gymId,
     required String deviceId,
     required String userId,
+    String? exerciseId,
   });
 }
 
@@ -20,7 +21,12 @@ class GetHistoryForDevice {
     required String gymId,
     required String deviceId,
     required String userId,
+    String? exerciseId,
   }) {
-    return _repo.getHistory(gymId: gymId, deviceId: deviceId, userId: userId);
+    return _repo.getHistory(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+        exerciseId: exerciseId);
   }
 }

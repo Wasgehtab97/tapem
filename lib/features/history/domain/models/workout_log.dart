@@ -5,6 +5,7 @@ class WorkoutLog {
   final String id;
   final String userId;
   final String sessionId;
+  final String? exerciseId;
   final DateTime timestamp;
   final double weight;
   final int reps;
@@ -15,6 +16,7 @@ class WorkoutLog {
     required this.id,
     required this.userId,
     required this.sessionId,
+    this.exerciseId,
     required this.timestamp,
     required this.weight,
     required this.reps,

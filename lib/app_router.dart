@@ -92,9 +92,16 @@ class AppRouter {
         );
 
       case history:
-        final deviceId = settings.arguments as String? ?? '';
+        final args = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
-          builder: (_) => HistoryScreen(deviceId: deviceId),
+          builder: (_) => HistoryScreen(
+            deviceId: args['deviceId'] as String,
+            deviceName: args['deviceName'] as String,
+            deviceDescription: args['deviceDescription'] as String?,
+            isMulti: args['isMulti'] as bool? ?? false,
+            exerciseId: args['exerciseId'] as String?,
+            exerciseName: args['exerciseName'] as String?,
+          ),
         );
 
       case report:
