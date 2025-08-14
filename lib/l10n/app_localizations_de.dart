@@ -315,10 +315,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get multiDeviceBannerOk => 'OK';
 
   @override
-  String get multiDeviceSessionHint => 'Im Mehrgeräte-Modus werden nur Tages-XP und Gerätestatistiken berücksichtigt.';
 
   @override
-  String get multiDeviceSaveButton => 'Session speichern (ohne Muskelgruppen-XP)';
 
   @override
   String get multiDeviceSessionSaved => 'Session gespeichert. Tages-XP und Stats aktualisiert.';

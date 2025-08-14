@@ -430,16 +430,11 @@
   "publicProfilePublic": "Öffentlich",
   "@publicProfilePublic": {"description": "Option für öffentliches Profil"},
   "publicProfilePrivate": "Privat",
-  "@publicProfilePrivate": {"description": "Option für privates Profil"}
-
-  ,"multiDeviceBannerText": "Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.",
+  "@publicProfilePrivate": {"description": "Option für privates Profil"},
+  "multiDeviceBannerText": "Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.",
   "@multiDeviceBannerText": {"description": "Hinweisbanner für Mehrgeräte"},
   "multiDeviceBannerOk": "OK",
   "@multiDeviceBannerOk": {"description": "Banner schließen"},
-  "multiDeviceSessionHint": "Im Mehrgeräte-Modus werden nur Tages-XP und Gerätestatistiken berücksichtigt.",
-  "@multiDeviceSessionHint": {"description": "Hinweis unter Header"},
-  "multiDeviceSaveButton": "Session speichern (ohne Muskelgruppen-XP)",
-  "@multiDeviceSaveButton": {"description": "Speichern-Button für Mehrgeräte"},
   "multiDeviceSessionSaved": "Session gespeichert. Tages-XP und Stats aktualisiert.",
   "@multiDeviceSessionSaved": {"description": "Snackbar-Text nach Speichern"},
   "multiDeviceNewExercise": "Übung hinzufügen",

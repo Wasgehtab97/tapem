@@ -81,7 +81,7 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               autofocus: true,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -99,9 +99,9 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
               onChanged: (v) => setState(() => _filter = v),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           SizedBox(
-            height: 280,
+            height: 300,
             child: MuscleGroupListSelector(
               initialSelection: _selectedGroupIds,
               onChanged: (ids) => setState(() => _selectedGroupIds = ids),

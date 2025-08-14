@@ -315,10 +315,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multiDeviceBannerOk => 'OK';
 
   @override
-  String get multiDeviceSessionHint => 'In multi-device mode, only daily XP and device stats count.';
 
   @override
-  String get multiDeviceSaveButton => 'Save session (no muscle group XP)';
 
   @override
   String get multiDeviceSessionSaved => 'Session saved. Daily XP and device stats updated.';

@@ -687,13 +687,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'In multi-device mode, only daily XP and device stats count.'**
-  String get multiDeviceSessionHint;
 
   /// Save button for multi devices
   ///
   /// In en, this message translates to:
   /// **'Save session (no muscle group XP)'**
-  String get multiDeviceSaveButton;
 
   /// Snackbar text after save
   ///
