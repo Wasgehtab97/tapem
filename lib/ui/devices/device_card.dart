@@ -30,7 +30,7 @@ class DeviceCard extends StatelessWidget {
         color: theme.colorScheme.surfaceVariant,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
+          side: BorderSide(color: theme.colorScheme.primary),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
