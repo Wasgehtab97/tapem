@@ -192,59 +192,56 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     final green = theme.colorScheme.primary;
     final blue = theme.colorScheme.tertiary;
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        final id = entry.group?.id;
-        final isSel = id != null && _selected.contains(id);
-        final isPri = id != null && _primaryId == id;
-        final textStyle = theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
-        );
-
-        return InkWell(
-          onTap: () => _toggleSelect(entry.key, entry.region),
-          onLongPress: () async {
-            final id = await _ensureIdForRegion(entry.region, entry.key);
-            _setPrimary(id);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: colorForRegion(entry.region, theme),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    entry.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textStyle,
-                  ),
-                ),
-                Checkbox(
-                  value: isSel,
-                  onChanged: (_) => _toggleSelect(entry.key, entry.region),
-                  fillColor: MaterialStateProperty.resolveWith(
-                    (states) => isSel ? (isPri ? green : blue) : null,
-                  ),
-                  checkColor: theme.colorScheme.onPrimary,
-                ),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 400 ? 3 : 2;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            mainAxisExtent: 48,
           ),
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            final id = entry.group?.id;
+            final isSel = id != null && _selected.contains(id);
+            final isPri = id != null && _primaryId == id;
+            return Semantics(
+              selected: isSel,
+              button: true,
+              label: entry.displayName,
+              child: SizedBox(
+                height: 48,
+                child: FilterChip(
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  avatar: CircleAvatar(
+                    backgroundColor: colorForRegion(entry.region, theme),
+                    radius: 8,
+                  ),
+                  label: Text(
+                    entry.displayName,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  selected: isSel,
+                  onSelected: (_) => _toggleSelect(entry.key, entry.region),
+                  onLongPress: () async {
+                    final id =
+                        await _ensureIdForRegion(entry.region, entry.key);
+                    _setPrimary(id);
+                  },
+                  selectedColor: isPri ? green : blue,
+                  showCheckmark: true,
+                ),
+              ),
+            );
+          },
         );
       },
-      separatorBuilder: (_, __) => Divider(
-        color: theme.colorScheme.outlineVariant,
-        height: 1,
-      ),
-      itemCount: entries.length,
     );
   }
 }

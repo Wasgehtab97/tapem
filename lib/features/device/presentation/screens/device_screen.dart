@@ -20,9 +20,7 @@ import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
-import '../widgets/multi_device_banner.dart';
 import '../widgets/exercise_header.dart';
-import '../widgets/exercise_bottom_sheet.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
@@ -197,7 +195,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   onClose: () => setState(() => _showTimer = false),
                 ),
               ),
-            if (prov.device!.isMulti) const MultiDeviceBanner(),
             if (prov.device!.isMulti && currentExercise != null)
               ExerciseHeader(
                 name: currentExercise.name,
@@ -212,26 +209,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     },
                   );
                 },
-                onEdit: () async {
-                  await showModalBottomSheet<Exercise>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder:
-                        (_) => ExerciseBottomSheet(
-                          gymId: widget.gymId,
-                          deviceId: widget.deviceId,
-                          exercise: currentExercise,
-                        ),
-                  );
-                },
-              ),
-            if (prov.device!.isMulti)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Text(loc.multiDeviceSessionHint),
               ),
             Expanded(
               child: Form(
@@ -511,11 +488,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       child:
                           prov.isSaving
                               ? const CircularProgressIndicator()
-                              : Text(
-                                prov.device!.isMulti
-                                    ? loc.multiDeviceSaveButton
-                                    : loc.saveButton,
-                              ),
+                              : Text(loc.saveButton),
                     ),
                   ),
                 ],
