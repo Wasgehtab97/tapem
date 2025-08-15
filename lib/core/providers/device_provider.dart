@@ -18,6 +18,9 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:tapem/core/drafts/session_draft.dart';
+import 'package:tapem/core/drafts/session_draft_repository.dart';
+import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -38,6 +41,7 @@ class DeviceProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
   final LogFn _log;
   final Uuid _uuid = const Uuid();
+  final SessionDraftRepository _draftRepo;
 
   List<Device> _devices = [];
 
@@ -57,18 +61,23 @@ class DeviceProvider extends ChangeNotifier {
   int _level = 1;
 
   late String _currentExerciseId;
+  String? _draftKey;
+  int? _draftCreatedAt;
+  Timer? _draftSaveTimer;
 
   DeviceProvider({
     required FirebaseFirestore firestore,
     GetDevicesForGym? getDevicesForGym,
     LogFn? log,
-  }) : _firestore = firestore,
-       _getDevicesForGym =
-           getDevicesForGym ??
-           GetDevicesForGym(
-             DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
-           ),
-       _log = log ?? _defaultLog;
+    SessionDraftRepository? draftRepo,
+  })  : _firestore = firestore,
+        _getDevicesForGym =
+            getDevicesForGym ??
+            GetDevicesForGym(
+              DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
+            ),
+        _log = log ?? _defaultLog,
+        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl();
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -142,6 +151,19 @@ class DeviceProvider extends ChangeNotifier {
       );
       _currentExerciseId = exerciseId;
 
+      final newKey = buildDraftKey(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        isMulti: _device!.isMulti,
+      );
+      if (_draftKey != null && _draftKey != newKey) {
+        await _draftRepo.delete(_draftKey!);
+      }
+      _draftKey = newKey;
+      await _draftRepo.deleteExpired(DateTime.now().millisecondsSinceEpoch);
+
       _xp = 0;
       _level = 1;
 
@@ -169,6 +191,7 @@ class DeviceProvider extends ChangeNotifier {
       if (!_device!.isMulti) {
         await _loadUserXp(gymId, deviceId, userId);
       }
+      await _restoreDraft();
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
@@ -191,6 +214,7 @@ class DeviceProvider extends ChangeNotifier {
     });
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void insertSetAt(int index, Map<String, dynamic> set) {
@@ -202,6 +226,7 @@ class DeviceProvider extends ChangeNotifier {
       '↩️ [Provider] insertSetAt($index) → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void updateSet(
@@ -229,6 +254,7 @@ class DeviceProvider extends ChangeNotifier {
     _sets[index] = after;
     _log('✏️ [Provider] updateSet($index) $before → $after');
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void removeSet(int index) {
@@ -241,6 +267,7 @@ class DeviceProvider extends ChangeNotifier {
       '🗑️ [Provider] removeSet($index) removed=$removed → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void toggleSetDone(int index) {
@@ -269,6 +296,7 @@ class DeviceProvider extends ChangeNotifier {
     _sets[index] = Map<String, dynamic>.from(s);
     _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   int get completedCount =>
@@ -277,6 +305,90 @@ class DeviceProvider extends ChangeNotifier {
   void setNote(String text) {
     _note = text;
     _log('📝 [Provider] setNote "$text"');
+    notifyListeners();
+    _scheduleDraftSave();
+  }
+
+  bool _isDraftEmpty() {
+    if (_note.trim().isNotEmpty) return false;
+    for (final s in _sets) {
+      final w = (s['weight'] ?? '').toString().trim();
+      final r = (s['reps'] ?? '').toString().trim();
+      final rir = (s['rir'] ?? '').toString().trim();
+      final n = (s['note'] ?? '').toString().trim();
+      final d = s['done'] == true || s['done'] == 'true';
+      if (w.isNotEmpty || r.isNotEmpty || rir.isNotEmpty || n.isNotEmpty || d) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _scheduleDraftSave() {
+    final key = _draftKey;
+    if (key == null) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer =
+        Timer(const Duration(milliseconds: kDeviceDraftDebounceMs), _saveDraftNow);
+  }
+
+  Future<void> _saveDraftNow() async {
+    final key = _draftKey;
+    if (key == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_isDraftEmpty()) {
+      await _draftRepo.delete(key);
+      return;
+    }
+    final draft = SessionDraft(
+      deviceId: _device!.uid,
+      exerciseId: _device!.isMulti ? _currentExerciseId : null,
+      createdAt: _draftCreatedAt ?? now,
+      updatedAt: now,
+      note: _note,
+      sets: [
+        for (var i = 0; i < _sets.length; i++)
+          SetDraft(
+            index: i + 1,
+            weight: (_sets[i]['weight'] ?? '').toString(),
+            reps: (_sets[i]['reps'] ?? '').toString(),
+            rir: (_sets[i]['rir'] ?? '').toString().isEmpty
+                ? null
+                : (_sets[i]['rir']).toString(),
+            note: (_sets[i]['note'] ?? '').toString().isEmpty
+                ? null
+                : (_sets[i]['note']).toString(),
+            done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
+          ),
+      ],
+    );
+    await _draftRepo.put(key, draft);
+    _draftCreatedAt = draft.createdAt;
+  }
+
+  Future<void> _restoreDraft() async {
+    final key = _draftKey;
+    if (key == null) return;
+    final draft = await _draftRepo.get(key);
+    if (draft == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - draft.updatedAt > draft.ttlMs) {
+      await _draftRepo.delete(key);
+      return;
+    }
+    _draftCreatedAt = draft.createdAt;
+    _note = draft.note;
+    _sets = [
+      for (var i = 0; i < draft.sets.length; i++)
+        {
+          'number': '${i + 1}',
+          'weight': draft.sets[i].weight,
+          'reps': draft.sets[i].reps,
+          'rir': draft.sets[i].rir ?? '',
+          'note': draft.sets[i].note ?? '',
+          'done': draft.sets[i].done,
+        },
+    ];
     notifyListeners();
   }
 
@@ -430,6 +542,10 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '✅ [Provider] save done. remainingSets=${_setsBrief(_sets)} lastSessionId=$sessionId',
       );
+      if (_draftKey != null) {
+        await _draftRepo.delete(_draftKey!);
+      }
+      _draftCreatedAt = null;
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -538,6 +654,13 @@ class DeviceProvider extends ChangeNotifier {
     }
     _log('⭐ [Provider] load XP level=$_level xp=$_xp');
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _draftSaveTimer?.cancel();
+    unawaited(_saveDraftNow());
+    super.dispose();
   }
 
   void _setLoading(bool value) {
