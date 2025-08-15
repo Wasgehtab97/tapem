@@ -37,6 +37,7 @@ import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'core/drafts/session_draft_repository_impl.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -198,7 +199,10 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(
-          create: (_) => DeviceProvider(firestore: FirebaseFirestore.instance),
+          create: (_) => DeviceProvider(
+            firestore: FirebaseFirestore.instance,
+            draftRepo: SessionDraftRepositoryImpl(),
+          ),
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),

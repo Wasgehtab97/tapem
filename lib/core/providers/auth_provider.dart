@@ -11,6 +11,7 @@ import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
+import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -136,6 +137,7 @@ class AuthProvider extends ChangeNotifier {
       _selectedGymCode = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('selectedGymCode');
+      await SessionDraftRepositoryImpl().deleteAll();
       _setLoading(false);
     }
   }
