@@ -93,9 +93,13 @@ class SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
   late final TextEditingController _rirCtrl;
+  late final TextEditingController _dropWeightCtrl;
+  late final TextEditingController _dropRepsCtrl;
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
   late final FocusNode _rirFocus;
+  late final FocusNode _dropWeightFocus;
+  late final FocusNode _dropRepsFocus;
 
   bool _showExtras = false;
 
@@ -117,9 +121,15 @@ class SetCardState extends State<SetCard> {
     _weightCtrl = TextEditingController(text: widget.set['weight'] as String?);
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
     _rirCtrl = TextEditingController(text: widget.set['rir'] as String?);
+    _dropWeightCtrl =
+        TextEditingController(text: widget.set['dropWeight'] as String?);
+    _dropRepsCtrl =
+        TextEditingController(text: widget.set['dropReps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
     _rirFocus = FocusNode();
+    _dropWeightFocus = FocusNode();
+    _dropRepsFocus = FocusNode();
 
     _weightCtrl.addListener(() {
       if (_muteCtrls) return;
@@ -145,6 +155,24 @@ class SetCardState extends State<SetCard> {
         rir: _rirCtrl.text,
       );
     });
+    _dropWeightCtrl.addListener(() {
+      if (_muteCtrls) return;
+      _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
+      context.read<DeviceProvider>().updateSet(
+        widget.index,
+        dropWeight: _dropWeightCtrl.text,
+        dropReps: _dropRepsCtrl.text,
+      );
+    });
+    _dropRepsCtrl.addListener(() {
+      if (_muteCtrls) return;
+      _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
+      context.read<DeviceProvider>().updateSet(
+        widget.index,
+        dropWeight: _dropWeightCtrl.text,
+        dropReps: _dropRepsCtrl.text,
+      );
+    });
   }
 
   @override
@@ -153,6 +181,8 @@ class SetCardState extends State<SetCard> {
     final w = widget.set['weight'] as String? ?? '';
     final r = widget.set['reps'] as String? ?? '';
     final rir = widget.set['rir'] as String? ?? '';
+    final dw = widget.set['dropWeight'] as String? ?? '';
+    final dr = widget.set['dropReps'] as String? ?? '';
     if (oldWidget.set['weight'] != w) {
       _slog(widget.index, 'didUpdateWidget sync weight "$w"');
       _setTextSilently(_weightCtrl, w);
@@ -165,6 +195,14 @@ class SetCardState extends State<SetCard> {
       _slog(widget.index, 'didUpdateWidget sync rir "$rir"');
       _setTextSilently(_rirCtrl, rir);
     }
+    if (oldWidget.set['dropWeight'] != dw) {
+      _slog(widget.index, 'didUpdateWidget sync dropWeight "$dw"');
+      _setTextSilently(_dropWeightCtrl, dw);
+    }
+    if (oldWidget.set['dropReps'] != dr) {
+      _slog(widget.index, 'didUpdateWidget sync dropReps "$dr"');
+      _setTextSilently(_dropRepsCtrl, dr);
+    }
   }
 
   @override
@@ -173,9 +211,13 @@ class SetCardState extends State<SetCard> {
     _weightCtrl.dispose();
     _repsCtrl.dispose();
     _rirCtrl.dispose();
+    _dropWeightCtrl.dispose();
+    _dropRepsCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
     _rirFocus.dispose();
+    _dropWeightFocus.dispose();
+    _dropRepsFocus.dispose();
     super.dispose();
   }
 
@@ -198,6 +240,21 @@ class SetCardState extends State<SetCard> {
   void focusWeight() {
     _openKeypad(_weightCtrl, allowDecimal: true);
   }
+
+  String? _validateDrop(String? _) {
+    final loc = AppLocalizations.of(context)!;
+    final dw = _dropWeightCtrl.text.trim();
+    final dr = _dropRepsCtrl.text.trim();
+    if (dw.isEmpty && dr.isEmpty) return null;
+    if (dw.isEmpty || dr.isEmpty) return loc.dropFillBoth;
+    final base = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
+    final drop = double.tryParse(dw.replaceAll(',', '.'));
+    if (base == null || drop == null) return loc.numberInvalid;
+    if (drop >= base) return loc.dropWeightTooHigh;
+    final reps = int.tryParse(dr);
+    if (reps == null || reps < 1) return loc.dropRepsInvalid;
+    return null;
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +279,9 @@ class SetCardState extends State<SetCard> {
 
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
+    final dropActive =
+        (widget.set['dropWeight'] ?? '').toString().isNotEmpty &&
+            (widget.set['dropReps'] ?? '').toString().isNotEmpty;
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
@@ -245,6 +305,10 @@ class SetCardState extends State<SetCard> {
                   index: widget.index + 1,
                   dense: dense,
                 ),
+                if (dropActive) ...[
+                  SizedBox(width: dense ? 4 : 6),
+                  _DropBadge(tokens: tokens, dense: dense),
+                ],
                 SizedBox(width: dense ? 8 : 12),
                 Expanded(
                   child: _InputPill(
@@ -325,6 +389,45 @@ class SetCardState extends State<SetCard> {
                 children: [
                   Expanded(
                     child: TextFormField(
+                      controller: _dropWeightCtrl,
+                      focusNode: _dropWeightFocus,
+                      decoration: InputDecoration(
+                        labelText: loc.dropKgFieldLabel,
+                        isDense: true,
+                      ),
+                      readOnly: true,
+                      keyboardType: TextInputType.none,
+                      validator: _validateDrop,
+                      onTap: done
+                          ? null
+                          : () => _openKeypad(_dropWeightCtrl, allowDecimal: true),
+                    ),
+                  ),
+                  SizedBox(width: dense ? 8 : 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _dropRepsCtrl,
+                      focusNode: _dropRepsFocus,
+                      decoration: InputDecoration(
+                        labelText: loc.dropRepsFieldLabel,
+                        isDense: true,
+                      ),
+                      readOnly: true,
+                      keyboardType: TextInputType.none,
+                      validator: _validateDrop,
+                      onTap: done
+                          ? null
+                          : () =>
+                              _openKeypad(_dropRepsCtrl, allowDecimal: false),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: dense ? 8 : 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
                       controller: _rirCtrl,
                       focusNode: _rirFocus,
                       decoration: const InputDecoration(
@@ -333,11 +436,9 @@ class SetCardState extends State<SetCard> {
                       ),
                       readOnly: true,
                       keyboardType: TextInputType.none,
-                      onTap:
-                          done
-                              ? null
-                              : () =>
-                                  _openKeypad(_rirCtrl, allowDecimal: false),
+                      onTap: done
+                          ? null
+                          : () => _openKeypad(_rirCtrl, allowDecimal: false),
                     ),
                   ),
                   SizedBox(width: dense ? 8 : 12),
@@ -396,6 +497,37 @@ class _IndexBadge extends StatelessWidget {
             fontWeight: FontWeight.w600,
             fontSize: dense ? 14 : null,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DropBadge extends StatelessWidget {
+  final SetCardTheme tokens;
+  final bool dense;
+  const _DropBadge({
+    required this.tokens,
+    this.dense = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: dense ? 24 : 28,
+      height: dense ? 24 : 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: tokens.chipBg,
+        borderRadius: BorderRadius.circular(dense ? 12 : 14),
+        border: Border.all(color: tokens.chipFg.withOpacity(0.2)),
+      ),
+      child: Text(
+        '↘︎',
+        style: TextStyle(
+          color: tokens.chipFg,
+          fontWeight: FontWeight.w600,
+          fontSize: dense ? 14 : 16,
         ),
       ),
     );

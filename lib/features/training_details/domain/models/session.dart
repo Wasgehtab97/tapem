@@ -22,5 +22,12 @@ class Session {
 class SessionSet {
   final double weight;
   final int reps;
-  SessionSet({required this.weight, required this.reps});
+  final double? dropWeightKg;
+  final int? dropReps;
+  SessionSet({
+    required this.weight,
+    required this.reps,
+    this.dropWeightKg,
+    this.dropReps,
+  });
 }

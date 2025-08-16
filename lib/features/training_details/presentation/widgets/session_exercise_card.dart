@@ -48,33 +48,49 @@ class SessionExerciseCard extends StatelessWidget {
           for (final set in sets)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.fitness_center,
-                    size: 16,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.fitness_center,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${set.weight.toStringAsFixed(1)} kg',
+                        style: TextStyle(
+                          color: onBrand.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.repeat,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${set.reps} Wdh',
+                        style: TextStyle(
+                          color: onBrand.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${set.weight.toStringAsFixed(1)} kg',
-                    style: TextStyle(
-                      color: onBrand.withOpacity(0.7),
-                      fontSize: 14,
+                  if (set.dropWeightKg != null && set.dropReps != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 2),
+                      child: Text(
+                        '↘︎ ${set.dropWeightKg!.toStringAsFixed(1)} kg × ${set.dropReps}',
+                        style: TextStyle(
+                          color: onBrand.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.repeat,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${set.reps} Wdh',
-                    style: TextStyle(
-                      color: onBrand.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
                 ],
               ),
             ),

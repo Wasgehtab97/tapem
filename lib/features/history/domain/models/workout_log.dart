@@ -11,6 +11,8 @@ class WorkoutLog {
   final int reps;
   final int? rir;
   final String? note;
+  final double? dropWeightKg;
+  final int? dropReps;
 
   WorkoutLog({
     required this.id,
@@ -22,5 +24,7 @@ class WorkoutLog {
     required this.reps,
     this.rir,
     this.note,
+    this.dropWeightKg,
+    this.dropReps,
   });
 }

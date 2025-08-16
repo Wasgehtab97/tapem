@@ -99,6 +99,8 @@ void main() {
         'weight': 50.0,
         'reps': 10,
         'note': 'n',
+        'dropWeightKg': 40.0,
+        'dropReps': 5,
       });
       await logsCol.add({
         'deviceId': 'd1',
@@ -140,6 +142,8 @@ void main() {
 
       expect(provider.device?.uid, 'd1');
       expect(provider.lastSessionSets.length, 2);
+      expect(provider.lastSessionSets.first['dropWeight'], '40.0');
+      expect(provider.lastSessionSets.first['dropReps'], '5');
     });
 
     testWidgets('saveWorkoutSession writes log and adds XP', (tester) async {
@@ -163,7 +167,8 @@ void main() {
         exerciseId: 'ex1',
         userId: 'u1',
       );
-      provider.updateSet(0, weight: '70', reps: '6');
+      provider.updateSet(0,
+          weight: '70', reps: '6', dropWeight: '60', dropReps: '5');
       provider.toggleSetDone(0);
       provider.setNote('test');
 
@@ -198,6 +203,8 @@ void main() {
           .collection('logs')
           .get();
       expect(logs.docs.length, 1);
+      expect(logs.docs.first.data()['dropWeightKg'], 60.0);
+      expect(logs.docs.first.data()['dropReps'], 5);
       expect(xpRepo.calls, 1);
       expect(chRepo.calls, 1);
     });

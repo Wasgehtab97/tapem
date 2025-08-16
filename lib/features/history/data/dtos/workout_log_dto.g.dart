@@ -16,6 +16,8 @@ WorkoutLogDto _$WorkoutLogDtoFromJson(Map<String, dynamic> json) =>
       reps: (json['reps'] as num).toInt(),
       rir: json['rir'] as int?,
       note: json['setNote'] as String?,
+      dropWeightKg: (json['dropWeightKg'] as num?)?.toDouble(),
+      dropReps: (json['dropReps'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
@@ -28,4 +30,6 @@ Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
       'reps': instance.reps,
       if (instance.rir != null) 'rir': instance.rir,
       if (instance.note != null) 'setNote': instance.note,
+      if (instance.dropWeightKg != null) 'dropWeightKg': instance.dropWeightKg,
+      if (instance.dropReps != null) 'dropReps': instance.dropReps,
     };

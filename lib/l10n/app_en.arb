@@ -275,6 +275,27 @@
     "description": "Validation when an integer is expected"
   },
 
+  "dropFillBoth": "Fill both drop fields or clear them.",
+  "@dropFillBoth": {
+    "description": "Validation when only one drop field is filled"
+  },
+
+  "dropWeightTooHigh": "Drop kg must be less than base",
+  "@dropWeightTooHigh": {
+    "description": "Validation when drop kg >= base"
+  },
+
+  "dropRepsInvalid": "Drop reps min 1",
+  "@dropRepsInvalid": {
+    "description": "Validation when drop reps < 1"
+  },
+
+  "dropKgFieldLabel": "Drop KG",
+  "@dropKgFieldLabel": {"description": "Label for drop kg field"},
+
+  "dropRepsFieldLabel": "Drop reps",
+  "@dropRepsFieldLabel": {"description": "Label for drop reps field"},
+
   "newSessionTitle": "New session",
   "@newSessionTitle": {
     "description": "Heading for new session"

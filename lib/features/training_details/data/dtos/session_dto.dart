@@ -10,6 +10,8 @@ class SessionDto {
   final DateTime timestamp;
   final double weight;
   final int reps;
+  final double? dropWeightKg;
+  final int? dropReps;
   final String note;
   final DocumentReference<Map<String, dynamic>> reference;
 
@@ -20,6 +22,8 @@ class SessionDto {
     required this.timestamp,
     required this.weight,
     required this.reps,
+    this.dropWeightKg,
+    this.dropReps,
     required this.note,
     required this.reference,
   });
@@ -38,6 +42,8 @@ class SessionDto {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),
+      dropWeightKg: (data['dropWeightKg'] as num?)?.toDouble(),
+      dropReps: (data['dropReps'] as num?)?.toInt(),
       note: data['note'] as String? ?? '',
       reference: doc.reference,
     );
