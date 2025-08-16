@@ -75,7 +75,7 @@ enum SetCardSize { regular, dense }
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
-  final Map<String, String>? previous;
+  final Map<String, dynamic>? previous;
   final SetCardSize size;
   const SetCard({
     super.key,
