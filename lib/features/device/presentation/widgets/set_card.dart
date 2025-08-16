@@ -178,6 +178,20 @@ class SetCardState extends State<SetCard> {
       _dropWeightFocuses.add(wf);
       _dropRepsFocuses.add(rf);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final i = _dropWeightCtrls.length - 1;
+      if (i < 0) return;
+      FocusScope.of(context).requestFocus(_dropWeightFocuses[i]);
+      _openKeypad(_dropWeightCtrls[i], allowDecimal: true);
+      final ctx = _dropWeightFocuses[i].context;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.5,
+          duration: const Duration(milliseconds: 200),
+        );
+      }
+    });
   }
 
   String? _validateDrop(int i, String? _) {

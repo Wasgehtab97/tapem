@@ -176,34 +176,39 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 
     Widget result = Stack(
       children: [
-        KeyedSubtree(key: _childKey, child: widget.child),
+        IgnorePointer(
+          ignoring: widget.controller.isOpen,
+          child: KeyedSubtree(key: _childKey, child: widget.child),
+        ),
         if (widget.controller.isOpen &&
             widget.outsideTapMode != OutsideTapMode.none)
           Positioned.fill(
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerUp: (event) {
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (event) {
                 final keypadBox =
                     _keypadKey.currentContext?.findRenderObject() as RenderBox?;
                 final keypadRect =
                     keypadBox == null
                         ? Rect.zero
                         : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                final inside = keypadRect.contains(event.position);
-                _klog(
-                  'outsideTap up at ${event.position} insideKeypad=$inside',
-                );
-                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap &&
-                    !inside) {
+                final inside = keypadRect.contains(event.globalPosition);
+                if (inside) {
+                  _klog('outsideTap: insideKeypad=true -> action=ignored');
+                  return;
+                }
+                final action = widget.outsideTapMode ==
+                        OutsideTapMode.closeAfterTap
+                    ? 'dismiss'
+                    : 'ignored';
+                _klog('outsideTap: insideKeypad=false -> action=$action');
+                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) widget.controller.close();
                   });
                 }
               },
-              child: const IgnorePointer(
-                ignoring: true,
-                child: SizedBox.expand(),
-              ),
+              child: const SizedBox.expand(),
             ),
           ),
         Align(
