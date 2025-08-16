@@ -79,3 +79,10 @@ rules:
 
 rules-dev:
 	$(MAKE) rules FIREBASE_CONFIG=firebase.dev.json
+
+# 
+alter-stand:
+	git fetch origin
+	git checkout a_gpt5 
+	git reset --hard (hier die alte branch einfügen)
+	git push --force-with-lease origin a_gpt5
