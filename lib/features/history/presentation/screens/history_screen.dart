@@ -5,8 +5,9 @@ import 'package:provider/provider.dart';
 
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/core/utils/nice_scale.dart';
-import 'package:tapem/features/history/domain/models/workout_log.dart';
-import 'package:tapem/features/training_details/domain/models/session.dart';
+import 'package:tapem/features/history/domain/models/workout_log.dart' as history;
+import 'package:tapem/features/training_details/domain/models/session.dart'
+    as session_models;
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
@@ -99,7 +100,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ? 1
         : (sessionPoints.length / 6).ceil().clamp(1, sessionPoints.length);
 
-    final sessionsMap = <String, List<WorkoutLog>>{};
+    final sessionsMap = <String, List<history.WorkoutLog>>{};
     for (var log in prov.logs) {
       sessionsMap.putIfAbsent(log.sessionId, () => []).add(log);
     }
@@ -350,11 +351,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     .format(logs.first.timestamp);
 
                 final sets = logs
-                    .map((l) => SessionSet(
+                    .map((l) => session_models.SessionSet(
                           weight: l.weight,
                           reps: l.reps,
                           dropSets: l.dropSets
-                              .map((d) => DropSet(
+                              .map((d) => session_models.DropSet(
                                     weightKg: d.weightKg,
                                     reps: d.reps,
                                   ))
