@@ -360,6 +360,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                             ),
                                             const SizedBox(width: 16),
                                             Text('${set['reps']} x'),
+                                            if (set['dropWeight'] != null &&
+                                                set['dropWeight']!
+                                                    .isNotEmpty) ...[
+                                              const SizedBox(width: 16),
+                                              Text(
+                                                '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall,
+                                              ),
+                                            ],
                                             if (set['rir'] != null &&
                                                 set['rir']!.isNotEmpty) ...[
                                               const SizedBox(width: 16),

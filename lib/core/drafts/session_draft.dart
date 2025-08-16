@@ -21,6 +21,8 @@ class SetDraft {
   final String? rir;
   final String? tempo;
   final String? note;
+  final String? dropWeight;
+  final String? dropReps;
   final bool done;
 
   SetDraft({
@@ -30,6 +32,8 @@ class SetDraft {
     this.rir,
     this.tempo,
     this.note,
+    this.dropWeight,
+    this.dropReps,
     this.done = false,
   });
 
@@ -40,6 +44,8 @@ class SetDraft {
         rir: json['rir'] as String?,
         tempo: json['tempo'] as String?,
         note: json['note'] as String?,
+        dropWeight: json['dropWeight'] as String?,
+        dropReps: json['dropReps'] as String?,
         done: json['done'] as bool? ?? false,
       );
 
@@ -50,6 +56,8 @@ class SetDraft {
         if (rir != null) 'rir': rir,
         if (tempo != null) 'tempo': tempo,
         if (note != null) 'note': note,
+        if (dropWeight != null) 'dropWeight': dropWeight,
+        if (dropReps != null) 'dropReps': dropReps,
         'done': done,
       };
 }

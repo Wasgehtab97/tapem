@@ -275,6 +275,27 @@
     "description": "Validierung, wenn eine Ganzzahl erwartet wird"
   },
 
+  "dropFillBoth": "Beide Drop-Felder ausfüllen oder leeren.",
+  "@dropFillBoth": {
+    "description": "Validierung, wenn nur ein Drop-Feld ausgefüllt ist"
+  },
+
+  "dropWeightTooHigh": "Drop KG muss kleiner als Basis sein",
+  "@dropWeightTooHigh": {
+    "description": "Validierung, wenn Drop-KG >= Basis"
+  },
+
+  "dropRepsInvalid": "Drop WDH min 1",
+  "@dropRepsInvalid": {
+    "description": "Validierung, wenn Drop-WDH < 1"
+  },
+
+  "dropKgFieldLabel": "Drop KG",
+  "@dropKgFieldLabel": {"description": "Label für Drop-KG-Feld"},
+
+  "dropRepsFieldLabel": "Drop WDH",
+  "@dropRepsFieldLabel": {"description": "Label für Drop-WDH-Feld"},
+
   "newSessionTitle": "Neue Session",
   "@newSessionTitle": {
     "description": "Überschrift für neue Session"

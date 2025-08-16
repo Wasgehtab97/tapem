@@ -431,6 +431,36 @@ abstract class AppLocalizations {
   /// **'Integer'**
   String get intRequired;
 
+  /// Validation when only one drop field is filled
+  ///
+  /// In en, this message translates to:
+  /// **'Fill both drop fields or clear them.'**
+  String get dropFillBoth;
+
+  /// Validation when drop kg is >= base
+  ///
+  /// In en, this message translates to:
+  /// **'Drop kg must be less than base'**
+  String get dropWeightTooHigh;
+
+  /// Validation when drop reps is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Drop reps min 1'**
+  String get dropRepsInvalid;
+
+  /// Label for drop kg field
+  ///
+  /// In en, this message translates to:
+  /// **'Drop KG'**
+  String get dropKgFieldLabel;
+
+  /// Label for drop reps field
+  ///
+  /// In en, this message translates to:
+  /// **'Drop reps'**
+  String get dropRepsFieldLabel;
+
   /// Heading for new session
   ///
   /// In en, this message translates to:

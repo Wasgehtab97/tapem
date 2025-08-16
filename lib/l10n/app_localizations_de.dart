@@ -189,6 +189,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get intRequired => 'Ganzzahl';
 
   @override
+  String get dropFillBoth => 'Beide Drop-Felder ausfüllen oder leeren.';
+
+  @override
+  String get dropWeightTooHigh => 'Drop KG muss kleiner als Basis sein';
+
+  @override
+  String get dropRepsInvalid => 'Drop WDH min 1';
+
+  @override
+  String get dropKgFieldLabel => 'Drop KG';
+
+  @override
+  String get dropRepsFieldLabel => 'Drop WDH';
+
+  @override
   String get newSessionTitle => 'Neue Session';
 
   @override

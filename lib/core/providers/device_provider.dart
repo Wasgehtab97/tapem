@@ -33,7 +33,7 @@ void _defaultLog(String message, [StackTrace? stack]) {
 }
 
 String _setsBrief(List<Map<String, dynamic>> sets) {
-  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},d=${s['done']}}').join(', ')}]';
+  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}').join(', ')}]';
 }
 
 class DeviceProvider extends ChangeNotifier {
@@ -174,6 +174,8 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '',
           'rir': '',
           'note': '',
+          'dropWeight': '',
+          'dropReps': '',
           'done': false, // bool statt String
         },
       ];
@@ -210,6 +212,8 @@ class DeviceProvider extends ChangeNotifier {
       'reps': '',
       'rir': '',
       'note': '',
+      'dropWeight': '',
+      'dropReps': '',
       'done': false,
     });
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
@@ -235,6 +239,8 @@ class DeviceProvider extends ChangeNotifier {
     String? reps,
     String? rir,
     String? note,
+    String? dropWeight,
+    String? dropReps,
   }) {
     final before = Map<String, dynamic>.from(_sets[index]);
     final after = Map<String, dynamic>.from(before);
@@ -243,6 +249,15 @@ class DeviceProvider extends ChangeNotifier {
     if (reps != null) after['reps'] = reps;
     if (rir != null) after['rir'] = rir;
     if (note != null) after['note'] = note;
+    if (dropWeight != null) after['dropWeight'] = dropWeight;
+    if (dropReps != null) after['dropReps'] = dropReps;
+
+    final dw = (after['dropWeight'] ?? '').toString().trim();
+    final dr = (after['dropReps'] ?? '').toString().trim();
+    if (dw.isEmpty || dr.isEmpty) {
+      after['dropWeight'] = '';
+      after['dropReps'] = '';
+    }
 
     after['number'] = '${index + 1}';
     after['done'] = (after['done'] == true || after['done'] == 'true');
@@ -316,8 +331,16 @@ class DeviceProvider extends ChangeNotifier {
       final r = (s['reps'] ?? '').toString().trim();
       final rir = (s['rir'] ?? '').toString().trim();
       final n = (s['note'] ?? '').toString().trim();
+      final dw = (s['dropWeight'] ?? '').toString().trim();
+      final dr = (s['dropReps'] ?? '').toString().trim();
       final d = s['done'] == true || s['done'] == 'true';
-      if (w.isNotEmpty || r.isNotEmpty || rir.isNotEmpty || n.isNotEmpty || d) {
+      if (w.isNotEmpty ||
+          r.isNotEmpty ||
+          rir.isNotEmpty ||
+          n.isNotEmpty ||
+          dw.isNotEmpty ||
+          dr.isNotEmpty ||
+          d) {
         return false;
       }
     }
@@ -358,6 +381,12 @@ class DeviceProvider extends ChangeNotifier {
             note: (_sets[i]['note'] ?? '').toString().isEmpty
                 ? null
                 : (_sets[i]['note']).toString(),
+            dropWeight: (_sets[i]['dropWeight'] ?? '').toString().isEmpty
+                ? null
+                : (_sets[i]['dropWeight']).toString(),
+            dropReps: (_sets[i]['dropReps'] ?? '').toString().isEmpty
+                ? null
+                : (_sets[i]['dropReps']).toString(),
             done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
           ),
       ],
@@ -386,6 +415,8 @@ class DeviceProvider extends ChangeNotifier {
           'reps': draft.sets[i].reps,
           'rir': draft.sets[i].rir ?? '',
           'note': draft.sets[i].note ?? '',
+          'dropWeight': draft.sets[i].dropWeight ?? '',
+          'dropReps': draft.sets[i].dropReps ?? '',
           'done': draft.sets[i].done,
         },
     ];
@@ -473,6 +504,12 @@ class DeviceProvider extends ChangeNotifier {
         }
         if ((set['note'] ?? '').toString().isNotEmpty) {
           data['setNote'] = set['note'];
+        }
+        if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
+            (set['dropReps'] ?? '').toString().isNotEmpty) {
+          data['dropWeightKg'] =
+              double.parse(set['dropWeight']!.replaceAll(',', '.'));
+          data['dropReps'] = int.parse(set['dropReps']!);
         }
         batch.set(ref, data);
       }
@@ -601,6 +638,8 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '${entry.value.data()['reps']}',
           'rir': '${entry.value.data()['rir'] ?? ''}',
           'note': '${entry.value.data()['setNote'] ?? ''}',
+          'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
+          'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
         },
     ];
     _lastSessionDate = ts;

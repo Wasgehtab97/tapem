@@ -189,6 +189,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get intRequired => 'Integer';
 
   @override
+  String get dropFillBoth => 'Fill both drop fields or clear them.';
+
+  @override
+  String get dropWeightTooHigh => 'Drop kg must be less than base';
+
+  @override
+  String get dropRepsInvalid => 'Drop reps min 1';
+
+  @override
+  String get dropKgFieldLabel => 'Drop KG';
+
+  @override
+  String get dropRepsFieldLabel => 'Drop reps';
+
+  @override
   String get newSessionTitle => 'New session';
 
   @override

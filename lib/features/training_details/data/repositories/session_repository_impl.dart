@@ -54,10 +54,14 @@ class SessionRepositoryImpl implements SessionRepository {
         }
       }
 
-      final sets =
-          list
-              .map((dto) => SessionSet(weight: dto.weight, reps: dto.reps))
-              .toList();
+      final sets = list
+          .map((dto) => SessionSet(
+                weight: dto.weight,
+                reps: dto.reps,
+                dropWeightKg: dto.dropWeightKg,
+                dropReps: dto.dropReps,
+              ))
+          .toList();
 
       sessions.add(
         Session(

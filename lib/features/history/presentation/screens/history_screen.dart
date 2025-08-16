@@ -350,7 +350,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     .format(logs.first.timestamp);
 
                 final sets = logs
-                    .map((l) => SessionSet(weight: l.weight, reps: l.reps))
+                    .map((l) => SessionSet(
+                          weight: l.weight,
+                          reps: l.reps,
+                          dropWeightKg: l.dropWeightKg,
+                          dropReps: l.dropReps,
+                        ))
                     .toList();
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
