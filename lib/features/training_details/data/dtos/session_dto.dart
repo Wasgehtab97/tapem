@@ -10,8 +10,7 @@ class SessionDto {
   final DateTime timestamp;
   final double weight;
   final int reps;
-  final double? dropWeightKg;
-  final int? dropReps;
+  final List<DropSetDto> dropSets;
   final String note;
   final DocumentReference<Map<String, dynamic>> reference;
 
@@ -22,8 +21,7 @@ class SessionDto {
     required this.timestamp,
     required this.weight,
     required this.reps,
-    this.dropWeightKg,
-    this.dropReps,
+    this.dropSets = const [],
     required this.note,
     required this.reference,
   });
@@ -42,10 +40,38 @@ class SessionDto {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),
-      dropWeightKg: (data['dropWeightKg'] as num?)?.toDouble(),
-      dropReps: (data['dropReps'] as num?)?.toInt(),
+      dropSets: _readDropSets(data),
       note: data['note'] as String? ?? '',
       reference: doc.reference,
     );
   }
+
+  static List<DropSetDto> _readDropSets(Map<String, dynamic> data) {
+    final raw = data['dropSets'];
+    if (raw is List) {
+      return raw
+          .map((e) => DropSetDto.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    final dw = (data['dropWeightKg'] as num?)?.toDouble();
+    final dr = (data['dropReps'] as num?)?.toInt();
+    if (dw != null && dr != null) {
+      return [DropSetDto(weightKg: dw, reps: dr)];
+    }
+    return [];
+  }
+}
+
+class DropSetDto {
+  final double weightKg;
+  final int reps;
+
+  DropSetDto({required this.weightKg, required this.reps});
+
+  factory DropSetDto.fromJson(Map<String, dynamic> json) => DropSetDto(
+        weightKg: (json['weightKg'] as num).toDouble(),
+        reps: (json['reps'] as num).toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {'weightKg': weightKg, 'reps': reps};
 }

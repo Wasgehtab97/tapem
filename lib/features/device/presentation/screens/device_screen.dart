@@ -343,7 +343,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      for (var set in prov.lastSessionSets)
+                                      for (var set in prov.lastSessionSets) ...[
                                         Row(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -360,17 +360,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                             ),
                                             const SizedBox(width: 16),
                                             Text('${set['reps']} x'),
-                                            if (set['dropWeight'] != null &&
-                                                set['dropWeight']!
-                                                    .isNotEmpty) ...[
-                                              const SizedBox(width: 16),
-                                              Text(
-                                                '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall,
-                                              ),
-                                            ],
                                             if (set['rir'] != null &&
                                                 set['rir']!.isNotEmpty) ...[
                                               const SizedBox(width: 16),
@@ -385,6 +374,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                             ],
                                           ],
                                         ),
+                                        for (final drop in (set['dropSets'] as List? ?? []))
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 40),
+                                            child: Text(
+                                              '↘︎ ${drop['weight']} kg × ${drop['reps']}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
+                                            ),
+                                          ),
+                                      ],
                                       if (prov.lastSessionNote.isNotEmpty) ...[
                                         const SizedBox(height: 8),
                                         Text('Notiz: ${prov.lastSessionNote}'),

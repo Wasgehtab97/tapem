@@ -11,8 +11,7 @@ class WorkoutLog {
   final int reps;
   final int? rir;
   final String? note;
-  final double? dropWeightKg;
-  final int? dropReps;
+  final List<DropSet> dropSets;
 
   WorkoutLog({
     required this.id,
@@ -24,7 +23,13 @@ class WorkoutLog {
     required this.reps,
     this.rir,
     this.note,
-    this.dropWeightKg,
-    this.dropReps,
+    this.dropSets = const [],
   });
+}
+
+class DropSet {
+  final double weightKg;
+  final int reps;
+
+  DropSet({required this.weightKg, required this.reps});
 }

@@ -353,8 +353,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     .map((l) => SessionSet(
                           weight: l.weight,
                           reps: l.reps,
-                          dropWeightKg: l.dropWeightKg,
-                          dropReps: l.dropReps,
+                          dropSets: l.dropSets
+                              .map((d) => DropSet(
+                                    weightKg: d.weightKg,
+                                    reps: d.reps,
+                                  ))
+                              .toList(),
                         ))
                     .toList();
                 return Padding(
