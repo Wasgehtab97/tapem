@@ -33,7 +33,7 @@ void _defaultLog(String message, [StackTrace? stack]) {
 }
 
 String _setsBrief(List<Map<String, dynamic>> sets) {
-  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}').join(', ')}]';
+  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},drops=${(s['dropSets'] as List?)?.length ?? 0},d=${s['done']}}').join(', ')}]';
 }
 
 class DeviceProvider extends ChangeNotifier {
@@ -53,7 +53,7 @@ class DeviceProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _sets = [];
   String _note = '';
 
-  List<Map<String, String>> _lastSessionSets = [];
+  List<Map<String, dynamic>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
   String? _lastSessionId;
@@ -87,7 +87,7 @@ class DeviceProvider extends ChangeNotifier {
   List<Device> get devices => List.unmodifiable(_devices);
   List<Map<String, dynamic>> get sets => List.unmodifiable(_sets);
   String get note => _note;
-  List<Map<String, String>> get lastSessionSets =>
+  List<Map<String, dynamic>> get lastSessionSets =>
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
@@ -174,8 +174,7 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '',
           'rir': '',
           'note': '',
-          'dropWeight': '',
-          'dropReps': '',
+          'dropSets': <Map<String, String>>[],
           'done': false, // bool statt String
         },
       ];
@@ -212,8 +211,7 @@ class DeviceProvider extends ChangeNotifier {
       'reps': '',
       'rir': '',
       'note': '',
-      'dropWeight': '',
-      'dropReps': '',
+      'dropSets': <Map<String, String>>[],
       'done': false,
     });
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
@@ -239,8 +237,7 @@ class DeviceProvider extends ChangeNotifier {
     String? reps,
     String? rir,
     String? note,
-    String? dropWeight,
-    String? dropReps,
+    List<Map<String, String>>? dropSets,
   }) {
     final before = Map<String, dynamic>.from(_sets[index]);
     final after = Map<String, dynamic>.from(before);
@@ -249,14 +246,12 @@ class DeviceProvider extends ChangeNotifier {
     if (reps != null) after['reps'] = reps;
     if (rir != null) after['rir'] = rir;
     if (note != null) after['note'] = note;
-    if (dropWeight != null) after['dropWeight'] = dropWeight;
-    if (dropReps != null) after['dropReps'] = dropReps;
-
-    final dw = (after['dropWeight'] ?? '').toString().trim();
-    final dr = (after['dropReps'] ?? '').toString().trim();
-    if (dw.isEmpty || dr.isEmpty) {
-      after['dropWeight'] = '';
-      after['dropReps'] = '';
+    if (dropSets != null) {
+      after['dropSets'] = dropSets
+          .where((ds) =>
+              (ds['weight'] ?? '').trim().isNotEmpty &&
+              (ds['reps'] ?? '').trim().isNotEmpty)
+          .toList();
     }
 
     after['number'] = '${index + 1}';
@@ -331,15 +326,18 @@ class DeviceProvider extends ChangeNotifier {
       final r = (s['reps'] ?? '').toString().trim();
       final rir = (s['rir'] ?? '').toString().trim();
       final n = (s['note'] ?? '').toString().trim();
-      final dw = (s['dropWeight'] ?? '').toString().trim();
-      final dr = (s['dropReps'] ?? '').toString().trim();
+      final drops = (s['dropSets'] as List?)?.where((ds) {
+            final w = (ds['weight'] ?? '').toString().trim();
+            final r = (ds['reps'] ?? '').toString().trim();
+            return w.isNotEmpty || r.isNotEmpty;
+          }).toList() ??
+          [];
       final d = s['done'] == true || s['done'] == 'true';
       if (w.isNotEmpty ||
           r.isNotEmpty ||
           rir.isNotEmpty ||
           n.isNotEmpty ||
-          dw.isNotEmpty ||
-          dr.isNotEmpty ||
+          drops.isNotEmpty ||
           d) {
         return false;
       }
@@ -381,12 +379,13 @@ class DeviceProvider extends ChangeNotifier {
             note: (_sets[i]['note'] ?? '').toString().isEmpty
                 ? null
                 : (_sets[i]['note']).toString(),
-            dropWeight: (_sets[i]['dropWeight'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['dropWeight']).toString(),
-            dropReps: (_sets[i]['dropReps'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['dropReps']).toString(),
+            dropSets: [
+              for (final ds in (_sets[i]['dropSets'] as List?) ?? [])
+                DropSetDraft(
+                  weight: (ds['weight'] ?? '').toString(),
+                  reps: (ds['reps'] ?? '').toString(),
+                ),
+            ],
             done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
           ),
       ],
@@ -415,8 +414,13 @@ class DeviceProvider extends ChangeNotifier {
           'reps': draft.sets[i].reps,
           'rir': draft.sets[i].rir ?? '',
           'note': draft.sets[i].note ?? '',
-          'dropWeight': draft.sets[i].dropWeight ?? '',
-          'dropReps': draft.sets[i].dropReps ?? '',
+          'dropSets': [
+            for (final ds in draft.sets[i].dropSets)
+              {
+                'weight': ds.weight,
+                'reps': ds.reps,
+              },
+          ],
           'done': draft.sets[i].done,
         },
     ];
@@ -505,11 +509,16 @@ class DeviceProvider extends ChangeNotifier {
         if ((set['note'] ?? '').toString().isNotEmpty) {
           data['setNote'] = set['note'];
         }
-        if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
-            (set['dropReps'] ?? '').toString().isNotEmpty) {
-          data['dropWeightKg'] =
-              double.parse(set['dropWeight']!.replaceAll(',', '.'));
-          data['dropReps'] = int.parse(set['dropReps']!);
+        final drops = (set['dropSets'] as List?) ?? [];
+        if (drops.isNotEmpty) {
+          data['dropSets'] = [
+            for (final ds in drops)
+              {
+                'weightKg':
+                    double.parse((ds['weight'] as String).replaceAll(',', '.')),
+                'reps': int.parse(ds['reps'] as String),
+              },
+          ];
         }
         batch.set(ref, data);
       }
@@ -553,6 +562,13 @@ class DeviceProvider extends ChangeNotifier {
             'reps': s['reps'].toString(),
             'rir': (s['rir'] ?? '').toString(),
             'note': (s['note'] ?? '').toString(),
+            'dropSets': [
+              for (final ds in (s['dropSets'] as List?) ?? [])
+                {
+                  'weight': (ds['weight'] ?? '').toString(),
+                  'reps': (ds['reps'] ?? '').toString(),
+                },
+            ],
           },
       ];
       _lastSessionDate = ts.toDate();
@@ -568,6 +584,7 @@ class DeviceProvider extends ChangeNotifier {
             'reps': '',
             'rir': '',
             'note': '',
+            'dropSets': <Map<String, String>>[],
             'done': false,
           },
         ];
@@ -593,6 +610,26 @@ class DeviceProvider extends ChangeNotifier {
       _isSaving = false;
       notifyListeners();
     }
+  }
+
+  List<Map<String, String>> _readDropSets(Map<String, dynamic> data) {
+    final raw = data['dropSets'];
+    if (raw is List) {
+      return raw
+          .map((e) => {
+                'weight': '${e['weightKg'] ?? e['weight']}',
+                'reps': '${e['reps'] ?? ''}',
+              })
+          .toList();
+    }
+    final dw = data['dropWeightKg'];
+    final dr = data['dropReps'];
+    if (dw != null && dr != null) {
+      return [
+        {'weight': '$dw', 'reps': '$dr'},
+      ];
+    }
+    return [];
   }
 
   Future<void> _loadLastSession(
@@ -638,8 +675,7 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '${entry.value.data()['reps']}',
           'rir': '${entry.value.data()['rir'] ?? ''}',
           'note': '${entry.value.data()['setNote'] ?? ''}',
-          'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
-          'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
+          'dropSets': _readDropSets(entry.value.data()),
         },
     ];
     _lastSessionDate = ts;

@@ -80,11 +80,11 @@ class SessionExerciseCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (set.dropWeightKg != null && set.dropReps != null)
+                  for (final drop in set.dropSets)
                     Padding(
                       padding: const EdgeInsets.only(left: 20, top: 2),
                       child: Text(
-                        '↘︎ ${set.dropWeightKg!.toStringAsFixed(1)} kg × ${set.dropReps}',
+                        '↘︎ ${drop.weightKg.toStringAsFixed(1)} kg × ${drop.reps}',
                         style: TextStyle(
                           color: onBrand.withOpacity(0.6),
                           fontSize: 12,

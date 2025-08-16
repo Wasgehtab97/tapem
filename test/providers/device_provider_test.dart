@@ -99,8 +99,9 @@ void main() {
         'weight': 50.0,
         'reps': 10,
         'note': 'n',
-        'dropWeightKg': 40.0,
-        'dropReps': 5,
+        'dropSets': [
+          {'weightKg': 40.0, 'reps': 5},
+        ],
       });
       await logsCol.add({
         'deviceId': 'd1',
@@ -142,8 +143,8 @@ void main() {
 
       expect(provider.device?.uid, 'd1');
       expect(provider.lastSessionSets.length, 2);
-      expect(provider.lastSessionSets.first['dropWeight'], '40.0');
-      expect(provider.lastSessionSets.first['dropReps'], '5');
+      expect(provider.lastSessionSets.first['dropSets'][0]['weight'], '40.0');
+      expect(provider.lastSessionSets.first['dropSets'][0]['reps'], '5');
     });
 
     testWidgets('saveWorkoutSession writes log and adds XP', (tester) async {
@@ -168,7 +169,9 @@ void main() {
         userId: 'u1',
       );
       provider.updateSet(0,
-          weight: '70', reps: '6', dropWeight: '60', dropReps: '5');
+          weight: '70', reps: '6', dropSets: [
+        {'weight': '60', 'reps': '5'}
+      ]);
       provider.toggleSetDone(0);
       provider.setNote('test');
 
@@ -203,8 +206,10 @@ void main() {
           .collection('logs')
           .get();
       expect(logs.docs.length, 1);
-      expect(logs.docs.first.data()['dropWeightKg'], 60.0);
-      expect(logs.docs.first.data()['dropReps'], 5);
+      final drop = logs.docs.first.data()['dropSets'] as List;
+      expect(drop.length, 1);
+      expect(drop.first['weightKg'], 60.0);
+      expect(drop.first['reps'], 5);
       expect(xpRepo.calls, 1);
       expect(chRepo.calls, 1);
     });

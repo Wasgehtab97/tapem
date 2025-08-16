@@ -58,8 +58,9 @@ class SessionRepositoryImpl implements SessionRepository {
           .map((dto) => SessionSet(
                 weight: dto.weight,
                 reps: dto.reps,
-                dropWeightKg: dto.dropWeightKg,
-                dropReps: dto.dropReps,
+                dropSets: dto.dropSets
+                    .map((ds) => DropSet(weightKg: ds.weightKg, reps: ds.reps))
+                    .toList(),
               ))
           .toList();
 

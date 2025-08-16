@@ -14,6 +14,23 @@ String buildDraftKey({
   return '$gymId:$userId:$deviceId:$ex';
 }
 
+class DropSetDraft {
+  final String weight;
+  final String reps;
+
+  DropSetDraft({this.weight = '', this.reps = ''});
+
+  factory DropSetDraft.fromJson(Map<String, dynamic> json) => DropSetDraft(
+        weight: json['weight'] as String? ?? '',
+        reps: json['reps'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'weight': weight,
+        'reps': reps,
+      };
+}
+
 class SetDraft {
   final int index;
   final String weight;
@@ -21,8 +38,7 @@ class SetDraft {
   final String? rir;
   final String? tempo;
   final String? note;
-  final String? dropWeight;
-  final String? dropReps;
+  final List<DropSetDraft> dropSets;
   final bool done;
 
   SetDraft({
@@ -32,22 +48,31 @@ class SetDraft {
     this.rir,
     this.tempo,
     this.note,
-    this.dropWeight,
-    this.dropReps,
+    this.dropSets = const [],
     this.done = false,
   });
 
-  factory SetDraft.fromJson(Map<String, dynamic> json) => SetDraft(
-        index: json['index'] as int,
-        weight: json['weight'] as String? ?? '',
-        reps: json['reps'] as String? ?? '',
-        rir: json['rir'] as String?,
-        tempo: json['tempo'] as String?,
-        note: json['note'] as String?,
-        dropWeight: json['dropWeight'] as String?,
-        dropReps: json['dropReps'] as String?,
-        done: json['done'] as bool? ?? false,
-      );
+  factory SetDraft.fromJson(Map<String, dynamic> json) {
+    final List<dynamic>? dropsRaw = json['dropSets'] as List<dynamic>?;
+    List<DropSetDraft> drops =
+        dropsRaw?.map((e) => DropSetDraft.fromJson(Map<String, dynamic>.from(e))).toList() ?? [];
+    // backward compatibility: old single drop fields
+    final dw = json['dropWeight'] as String?;
+    final dr = json['dropReps'] as String?;
+    if (drops.isEmpty && (dw != null || dr != null)) {
+      drops = [DropSetDraft(weight: dw ?? '', reps: dr ?? '')];
+    }
+    return SetDraft(
+      index: json['index'] as int,
+      weight: json['weight'] as String? ?? '',
+      reps: json['reps'] as String? ?? '',
+      rir: json['rir'] as String?,
+      tempo: json['tempo'] as String?,
+      note: json['note'] as String?,
+      dropSets: drops,
+      done: json['done'] as bool? ?? false,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'index': index,
@@ -56,8 +81,8 @@ class SetDraft {
         if (rir != null) 'rir': rir,
         if (tempo != null) 'tempo': tempo,
         if (note != null) 'note': note,
-        if (dropWeight != null) 'dropWeight': dropWeight,
-        if (dropReps != null) 'dropReps': dropReps,
+        if (dropSets.isNotEmpty)
+          'dropSets': dropSets.map((e) => e.toJson()).toList(),
         'done': done,
       };
 }
