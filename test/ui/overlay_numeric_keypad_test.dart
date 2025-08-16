@@ -66,7 +66,6 @@ void main() {
       MaterialApp(
         home: OverlayNumericKeypadHost(
           controller: controller,
-          outsideTapMode: OutsideTapMode.closeAfterTap,
           child: Scaffold(
             body: Column(
               children: [
@@ -91,7 +90,7 @@ void main() {
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
 
-    expect(pressed, true);
+    expect(pressed, false);
     expect(controller.isOpen, false);
   });
 }

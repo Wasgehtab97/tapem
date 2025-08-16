@@ -8,6 +8,48 @@ import 'package:flutter/services.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
+// Simple routing registry for numeric keypad targets.
+enum KeypadTargetType { numeric, plus, text }
+
+class KeypadTarget {
+  final String id;
+  final FocusNode? focusNode;
+  final TextEditingController? controller;
+  final bool allowDecimal;
+  final double? decimalStep;
+  final double? integerStep;
+  final GlobalKey? key;
+  final VoidCallback? onPressed;
+  final KeypadTargetType type;
+
+  KeypadTarget({
+    required this.id,
+    this.focusNode,
+    this.controller,
+    this.allowDecimal = true,
+    this.decimalStep,
+    this.integerStep,
+    this.key,
+    this.onPressed,
+    required this.type,
+  });
+}
+
+class KeypadTargetRegistry {
+  static final _targets = <String, KeypadTarget>{};
+
+  static void register(KeypadTarget t) {
+    _targets.remove(t.id);
+    _targets[t.id] = t;
+  }
+
+  static void unregister(String id) {
+    _targets.remove(id);
+  }
+
+  static Iterable<KeypadTarget> get targets => _targets.values;
+}
+
 class NumericKeypadTheme {
   final double gap;
   final double corner;
@@ -103,14 +145,11 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   }
 }
 
-enum OutsideTapMode { none, closeAfterTap }
-
 class OverlayNumericKeypadHost extends StatefulWidget {
   final OverlayNumericKeypadController controller;
   final Widget child;
   final NumericKeypadTheme theme;
   final bool interceptAndroidBack;
-  final OutsideTapMode outsideTapMode;
 
   const OverlayNumericKeypadHost({
     super.key,
@@ -118,7 +157,6 @@ class OverlayNumericKeypadHost extends StatefulWidget {
     required this.child,
     this.theme = const NumericKeypadTheme(),
     this.interceptAndroidBack = true,
-    this.outsideTapMode = OutsideTapMode.none,
   });
 
   @override
@@ -176,38 +214,12 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 
     Widget result = Stack(
       children: [
-        IgnorePointer(
-          ignoring: widget.controller.isOpen,
-          child: KeyedSubtree(key: _childKey, child: widget.child),
-        ),
-        if (widget.controller.isOpen &&
-            widget.outsideTapMode != OutsideTapMode.none)
+        KeyedSubtree(key: _childKey, child: widget.child),
+        if (widget.controller.isOpen)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapUp: (event) {
-                final keypadBox =
-                    _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                final keypadRect =
-                    keypadBox == null
-                        ? Rect.zero
-                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                final inside = keypadRect.contains(event.globalPosition);
-                if (inside) {
-                  _klog('outsideTap: insideKeypad=true -> action=ignored');
-                  return;
-                }
-                final action = widget.outsideTapMode ==
-                        OutsideTapMode.closeAfterTap
-                    ? 'dismiss'
-                    : 'ignored';
-                _klog('outsideTap: insideKeypad=false -> action=$action');
-                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) widget.controller.close();
-                  });
-                }
-              },
+              onTapUp: _handleTap,
               child: const SizedBox.expand(),
             ),
           ),
@@ -245,6 +257,66 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     }
 
     return result;
+  }
+
+  Rect? _rectForTarget(KeypadTarget t) {
+    RenderBox? box;
+    if (t.key != null) {
+      box = t.key!.currentContext?.findRenderObject() as RenderBox?;
+    } else if (t.focusNode?.context != null) {
+      box = t.focusNode!.context!.findRenderObject() as RenderBox?;
+    }
+    if (box == null) return null;
+    final offset = box.localToGlobal(Offset.zero);
+    return offset & box.size;
+  }
+
+  void _handleTap(TapUpDetails event) {
+    final pos = event.globalPosition;
+    final keypadBox = _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+    final keypadRect =
+        keypadBox == null ? Rect.zero : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+    if (keypadRect.contains(pos)) {
+      _klog('KEYPAD_ROUTER tap at=${pos.dx},${pos.dy} hit=keypad action=ignore');
+      return;
+    }
+
+    for (final t in KeypadTargetRegistry.targets.toList().reversed) {
+      final rect = _rectForTarget(t);
+      if (rect != null && rect.contains(pos)) {
+        switch (t.type) {
+          case KeypadTargetType.numeric:
+            widget.controller.openFor(
+              t.controller!,
+              allowDecimal: t.allowDecimal,
+              decimalStep: t.decimalStep,
+              integerStep: t.integerStep,
+            );
+            t.focusNode?.requestFocus();
+            final ctx = t.focusNode?.context;
+            if (ctx != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Scrollable.ensureVisible(ctx,
+                    alignment: 0.5,
+                    duration: const Duration(milliseconds: 200));
+              });
+            }
+            _klog('KEYPAD_ROUTER tap at=${pos.dx},${pos.dy} hit=numeric:${t.id} action=retarget');
+            return;
+          case KeypadTargetType.plus:
+            t.onPressed?.call();
+            _klog('KEYPAD_ROUTER tap at=${pos.dx},${pos.dy} hit=plus:${t.id} action=addDrop');
+            return;
+          case KeypadTargetType.text:
+            widget.controller.close();
+            t.focusNode?.requestFocus();
+            _klog('KEYPAD_ROUTER tap at=${pos.dx},${pos.dy} hit=text:${t.id} action=dismiss');
+            return;
+        }
+      }
+    }
+    widget.controller.close();
+    _klog('KEYPAD_ROUTER tap at=${pos.dx},${pos.dy} hit=none action=dismiss');
   }
 }
 

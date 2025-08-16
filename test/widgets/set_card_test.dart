@@ -49,7 +49,6 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => OverlayNumericKeypadHost(
             controller: keypadController,
-            outsideTapMode: OutsideTapMode.closeAfterTap,
             child: child!,
           ),
           home: Scaffold(

@@ -98,8 +98,12 @@ class SetCardState extends State<SetCard> {
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
   late final FocusNode _rirFocus;
+  final FocusNode _noteFocus = FocusNode();
   final List<FocusNode> _dropWeightFocuses = [];
   final List<FocusNode> _dropRepsFocuses = [];
+
+  final GlobalKey _plusKey = GlobalKey();
+  final List<String> _registeredIds = [];
 
   bool _showExtras = false;
 
@@ -163,6 +167,7 @@ class SetCardState extends State<SetCard> {
       _dropWeightFocuses.add(wf);
       _dropRepsFocuses.add(rf);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerTargets());
   }
 
   void _addDropSet() {
@@ -179,6 +184,7 @@ class SetCardState extends State<SetCard> {
       _dropRepsFocuses.add(rf);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registerTargets();
       final i = _dropWeightCtrls.length - 1;
       if (i < 0) return;
       FocusScope.of(context).requestFocus(_dropWeightFocuses[i]);
@@ -192,6 +198,69 @@ class SetCardState extends State<SetCard> {
         );
       }
     });
+  }
+
+  void _unregisterTargets() {
+    for (final id in _registeredIds) {
+      KeypadTargetRegistry.unregister(id);
+    }
+    _registeredIds.clear();
+  }
+
+  void _registerTargets() {
+    _unregisterTargets();
+    String base(String suffix) => 'set${widget.index}_$suffix';
+    void add(KeypadTarget t) {
+      KeypadTargetRegistry.register(t);
+      _registeredIds.add(t.id);
+    }
+
+    add(KeypadTarget(
+      id: base('weight'),
+      focusNode: _weightFocus,
+      controller: _weightCtrl,
+      allowDecimal: true,
+      type: KeypadTargetType.numeric,
+    ));
+    add(KeypadTarget(
+      id: base('reps'),
+      focusNode: _repsFocus,
+      controller: _repsCtrl,
+      allowDecimal: false,
+      type: KeypadTargetType.numeric,
+    ));
+    for (var i = 0; i < _dropWeightCtrls.length; i++) {
+      add(KeypadTarget(
+        id: base('drop${i}_w'),
+        focusNode: _dropWeightFocuses[i],
+        controller: _dropWeightCtrls[i],
+        allowDecimal: true,
+        type: KeypadTargetType.numeric,
+      ));
+      add(KeypadTarget(
+        id: base('drop${i}_r'),
+        focusNode: _dropRepsFocuses[i],
+        controller: _dropRepsCtrls[i],
+        allowDecimal: false,
+        type: KeypadTargetType.numeric,
+      ));
+    }
+    add(KeypadTarget(
+      id: base('rir'),
+      focusNode: _rirFocus,
+      type: KeypadTargetType.text,
+    ));
+    add(KeypadTarget(
+      id: base('note'),
+      focusNode: _noteFocus,
+      type: KeypadTargetType.text,
+    ));
+    add(KeypadTarget(
+      id: base('plus'),
+      key: _plusKey,
+      onPressed: _addDropSet,
+      type: KeypadTargetType.plus,
+    ));
   }
 
   String? _validateDrop(int i, String? _) {
@@ -245,6 +314,7 @@ class SetCardState extends State<SetCard> {
         rir: _rirCtrl.text,
       );
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerTargets());
   }
 
   @override
@@ -276,6 +346,7 @@ class SetCardState extends State<SetCard> {
         _setTextSilently(_dropRepsCtrls[i], dr);
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerTargets());
   }
 
   @override
@@ -299,6 +370,8 @@ class SetCardState extends State<SetCard> {
     for (final f in _dropRepsFocuses) {
       f.dispose();
     }
+    _noteFocus.dispose();
+    _unregisterTargets();
     super.dispose();
   }
 
@@ -491,6 +564,7 @@ class SetCardState extends State<SetCard> {
                         ),
                         if (i == _dropWeightCtrls.length - 1)
                           IconButton(
+                            key: _plusKey,
                             icon: const Icon(Icons.add),
                             onPressed: done ? null : _addDropSet,
                           ),
@@ -508,11 +582,8 @@ class SetCardState extends State<SetCard> {
                             labelText: 'RIR',
                             isDense: true,
                           ),
-                          readOnly: true,
-                          keyboardType: TextInputType.none,
-                          onTap: done
-                              ? null
-                              : () => _openKeypad(_rirCtrl, allowDecimal: false),
+                          readOnly: done,
+                          keyboardType: TextInputType.number,
                         ),
                       ),
                       SizedBox(width: dense ? 8 : 12),
@@ -525,6 +596,7 @@ class SetCardState extends State<SetCard> {
                             labelText: loc.noteFieldLabel,
                             isDense: true,
                           ),
+                          focusNode: _noteFocus,
                           onChanged: (v) {
                             _slog(widget.index, 'note → "$v"');
                             prov.updateSet(widget.index, note: v);
