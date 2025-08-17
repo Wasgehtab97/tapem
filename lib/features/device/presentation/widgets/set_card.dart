@@ -598,7 +598,7 @@ class _InputPill extends StatelessWidget {
         child: TextFormField(
           controller: controller,
           focusNode: focusNode,
-          enabled: !widget.readOnly,
+          enabled: !readOnly,
           readOnly: true,
           onTap: readOnly ? null : onTap,
           keyboardType: TextInputType.none,

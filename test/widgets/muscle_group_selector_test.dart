@@ -15,6 +15,8 @@ import 'package:tapem/features/device/domain/repositories/device_repository.dart
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class _FakeMuscleGroupRepo implements MuscleGroupRepository {
   final List<MuscleGroup> groups;

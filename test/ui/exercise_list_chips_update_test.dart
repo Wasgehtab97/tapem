@@ -20,6 +20,8 @@ import 'package:tapem/features/history/domain/usecases/get_history_for_device.da
 import 'package:tapem/features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
