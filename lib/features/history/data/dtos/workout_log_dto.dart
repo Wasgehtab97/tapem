@@ -24,6 +24,7 @@ class WorkoutLogDto {
   final String? note;
   final double? dropWeightKg;
   final int? dropReps;
+  final List<DropSetDto>? dropSets;
 
   WorkoutLogDto({
     required this.userId,
@@ -36,6 +37,7 @@ class WorkoutLogDto {
     this.note,
     this.dropWeightKg,
     this.dropReps,
+    this.dropSets,
   });
 
   factory WorkoutLogDto.fromJson(Map<String, dynamic> json) =>
@@ -62,10 +64,26 @@ class WorkoutLogDto {
     reps: reps,
     rir: rir,
     note: note,
-    dropWeightKg: dropWeightKg,
-    dropReps: dropReps,
+    dropSets: dropSets?.map((e) => DropSet(weightKg: e.weightKg, reps: e.reps)).toList() ??
+        (dropWeightKg != null && dropReps != null
+            ? [DropSet(weightKg: dropWeightKg!, reps: dropReps!)]
+            : []),
   );
 
   static DateTime _timestampToDate(Timestamp ts) => ts.toDate();
   static Timestamp _dateToTimestamp(DateTime date) => Timestamp.fromDate(date);
+}
+
+class DropSetDto {
+  final double weightKg;
+  final int reps;
+
+  DropSetDto({required this.weightKg, required this.reps});
+
+  factory DropSetDto.fromJson(Map<String, dynamic> json) => DropSetDto(
+        weightKg: (json['weightKg'] as num).toDouble(),
+        reps: (json['reps'] as num).toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {'weightKg': weightKg, 'reps': reps};
 }

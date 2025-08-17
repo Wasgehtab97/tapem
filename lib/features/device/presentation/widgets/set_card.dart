@@ -9,6 +9,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/ui/numeric_keypad/keypad_target_registry.dart';
 
 void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
 
@@ -75,7 +76,7 @@ enum SetCardSize { regular, dense }
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
-  final Map<String, String>? previous;
+  final Map<String, dynamic>? previous;
   final SetCardSize size;
   const SetCard({
     super.key,
@@ -93,13 +94,32 @@ class SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
   late final TextEditingController _rirCtrl;
-  late final TextEditingController _dropWeightCtrl;
-  late final TextEditingController _dropRepsCtrl;
+  final List<TextEditingController> _dropWeightCtrls = [];
+  final List<TextEditingController> _dropRepsCtrls = [];
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
   late final FocusNode _rirFocus;
-  late final FocusNode _dropWeightFocus;
-  late final FocusNode _dropRepsFocus;
+  final List<FocusNode> _dropWeightFocuses = [];
+  final List<FocusNode> _dropRepsFocuses = [];
+
+  // Keys for registry hit-testing
+  final GlobalKey _weightKey = GlobalKey();
+  final GlobalKey _repsKey = GlobalKey();
+  final GlobalKey _plusKey = GlobalKey();
+  final GlobalKey _rirKey = GlobalKey();
+  final List<GlobalKey> _dropWeightKeys = [];
+  final List<GlobalKey> _dropRepsKeys = [];
+  final GlobalKey _noteKey = GlobalKey();
+  late final KeypadTarget _weightTarget;
+  late final KeypadTarget _repsTarget;
+  late final KeypadTarget _plusTarget;
+  late final KeypadTarget _rirTarget;
+  late final KeypadTarget _noteTarget;
+  final List<KeypadTarget> _dropWeightTargets = [];
+  final List<KeypadTarget> _dropRepsTargets = [];
+  bool _baseTargetsRegistered = false;
+  late final TextEditingController _noteCtrl;
+  late final FocusNode _noteFocus;
 
   bool _showExtras = false;
 
@@ -115,21 +135,196 @@ class SetCardState extends State<SetCard> {
     _muteCtrls = false;
   }
 
+  void _onDropChanged() {
+    if (_muteCtrls) return;
+    _syncDropSets();
+  }
+
+  void _syncDropSets() {
+    final drops = <Map<String, String>>[];
+    for (var i = 0; i < _dropWeightCtrls.length; i++) {
+      drops.add({
+        'weight': _dropWeightCtrls[i].text,
+        'reps': _dropRepsCtrls[i].text,
+      });
+    }
+    context
+        .read<DeviceProvider>()
+        .updateSet(widget.index, dropSets: drops);
+  }
+
+  void _rebuildDropCtrls(List drops) {
+    for (final c in _dropWeightCtrls) {
+      c.dispose();
+    }
+    for (final c in _dropRepsCtrls) {
+      c.dispose();
+    }
+    for (final f in _dropWeightFocuses) {
+      f.dispose();
+    }
+    for (final f in _dropRepsFocuses) {
+      f.dispose();
+    }
+    _dropWeightCtrls.clear();
+    _dropRepsCtrls.clear();
+    _dropWeightFocuses.clear();
+    _dropRepsFocuses.clear();
+    _dropWeightKeys.clear();
+    _dropRepsKeys.clear();
+
+    for (final d in drops) {
+      final w = TextEditingController(text: d['weight'] as String?);
+      final r = TextEditingController(text: d['reps'] as String?);
+      final wf = FocusNode();
+      final rf = FocusNode();
+      w.addListener(_onDropChanged);
+      r.addListener(_onDropChanged);
+      _dropWeightCtrls.add(w);
+      _dropRepsCtrls.add(r);
+      _dropWeightFocuses.add(wf);
+      _dropRepsFocuses.add(rf);
+      _dropWeightKeys.add(GlobalKey());
+      _dropRepsKeys.add(GlobalKey());
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerTargets());
+  }
+
+  void _addDropSet() {
+    setState(() {
+      final w = TextEditingController();
+      final r = TextEditingController();
+      final wf = FocusNode();
+      final rf = FocusNode();
+      w.addListener(_onDropChanged);
+      r.addListener(_onDropChanged);
+      _dropWeightCtrls.add(w);
+      _dropRepsCtrls.add(r);
+      _dropWeightFocuses.add(wf);
+      _dropRepsFocuses.add(rf);
+      _dropWeightKeys.add(GlobalKey());
+      _dropRepsKeys.add(GlobalKey());
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final i = _dropWeightCtrls.length - 1;
+      if (i < 0) return;
+      FocusScope.of(context).requestFocus(_dropWeightFocuses[i]);
+      _openKeypad(_dropWeightCtrls[i], allowDecimal: true);
+      final ctx = _dropWeightFocuses[i].context;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.5,
+          duration: const Duration(milliseconds: 200),
+        );
+      }
+      _registerTargets();
+    });
+  }
+
+  void _registerTargets() {
+    final reg = KeypadTargetRegistry.instance;
+
+    if (!_baseTargetsRegistered) {
+      _weightTarget = KeypadTarget(
+        id: 'set${widget.index}-weight',
+        type: KeypadTargetType.numeric,
+        controller: _weightCtrl,
+        focusNode: _weightFocus,
+        allowDecimal: true,
+        getRect: () => globalRectFromKey(_weightKey),
+      );
+      _repsTarget = KeypadTarget(
+        id: 'set${widget.index}-reps',
+        type: KeypadTargetType.numeric,
+        controller: _repsCtrl,
+        focusNode: _repsFocus,
+        allowDecimal: false,
+        getRect: () => globalRectFromKey(_repsKey),
+      );
+      _plusTarget = KeypadTarget(
+        id: 'set${widget.index}-plus',
+        type: KeypadTargetType.plus,
+        onCommand: _addDropSet,
+        getRect: () => globalRectFromKey(_plusKey),
+      );
+      _rirTarget = KeypadTarget(
+        id: 'set${widget.index}-rir',
+        type: KeypadTargetType.text,
+        focusNode: _rirFocus,
+        getRect: () => globalRectFromKey(_rirKey),
+      );
+      _noteTarget = KeypadTarget(
+        id: 'set${widget.index}-note',
+        type: KeypadTargetType.text,
+        focusNode: _noteFocus,
+        getRect: () => globalRectFromKey(_noteKey),
+      );
+      reg.register(_weightTarget);
+      reg.register(_repsTarget);
+      reg.register(_plusTarget);
+      reg.register(_rirTarget);
+      reg.register(_noteTarget);
+      _baseTargetsRegistered = true;
+    }
+
+    for (final t in _dropWeightTargets) reg.unregister(t);
+    for (final t in _dropRepsTargets) reg.unregister(t);
+    _dropWeightTargets.clear();
+    _dropRepsTargets.clear();
+
+    for (var i = 0; i < _dropWeightCtrls.length; i++) {
+      final wTarget = KeypadTarget(
+        id: 'set${widget.index}-drop${i}-weight',
+        type: KeypadTargetType.numeric,
+        controller: _dropWeightCtrls[i],
+        focusNode: _dropWeightFocuses[i],
+        allowDecimal: true,
+        getRect: () => globalRectFromKey(_dropWeightKeys[i]),
+      );
+      final rTarget = KeypadTarget(
+        id: 'set${widget.index}-drop${i}-reps',
+        type: KeypadTargetType.numeric,
+        controller: _dropRepsCtrls[i],
+        focusNode: _dropRepsFocuses[i],
+        allowDecimal: false,
+        getRect: () => globalRectFromKey(_dropRepsKeys[i]),
+      );
+      _dropWeightTargets.add(wTarget);
+      _dropRepsTargets.add(rTarget);
+      reg.register(wTarget);
+      reg.register(rTarget);
+    }
+  }
+
+  String? _validateDrop(int i, String? _) {
+    final loc = AppLocalizations.of(context)!;
+    final dw = _dropWeightCtrls[i].text.trim();
+    final dr = _dropRepsCtrls[i].text.trim();
+    if (dw.isEmpty && dr.isEmpty) return null;
+    if (dw.isEmpty || dr.isEmpty) return loc.dropFillBoth;
+    final base = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
+    final drop = double.tryParse(dw.replaceAll(',', '.'));
+    if (base == null || drop == null) return loc.numberInvalid;
+    if (drop >= base) return loc.dropWeightTooHigh;
+    final reps = int.tryParse(dr);
+    if (reps == null || reps < 1) return loc.dropRepsInvalid;
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
     _weightCtrl = TextEditingController(text: widget.set['weight'] as String?);
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
     _rirCtrl = TextEditingController(text: widget.set['rir'] as String?);
-    _dropWeightCtrl =
-        TextEditingController(text: widget.set['dropWeight'] as String?);
-    _dropRepsCtrl =
-        TextEditingController(text: widget.set['dropReps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
     _rirFocus = FocusNode();
-    _dropWeightFocus = FocusNode();
-    _dropRepsFocus = FocusNode();
+    _noteCtrl = TextEditingController(text: widget.set['note'] as String?);
+    _noteFocus = FocusNode();
+
+    _rebuildDropCtrls(widget.set['dropSets'] as List? ?? []);
 
     _weightCtrl.addListener(() {
       if (_muteCtrls) return;
@@ -155,24 +350,16 @@ class SetCardState extends State<SetCard> {
         rir: _rirCtrl.text,
       );
     });
-    _dropWeightCtrl.addListener(() {
+    _noteCtrl.addListener(() {
       if (_muteCtrls) return;
-      _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
+      _slog(widget.index, 'note → "${_noteCtrl.text}"');
       context.read<DeviceProvider>().updateSet(
         widget.index,
-        dropWeight: _dropWeightCtrl.text,
-        dropReps: _dropRepsCtrl.text,
+        note: _noteCtrl.text,
       );
     });
-    _dropRepsCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        dropWeight: _dropWeightCtrl.text,
-        dropReps: _dropRepsCtrl.text,
-      );
-    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerTargets());
   }
 
   @override
@@ -181,8 +368,7 @@ class SetCardState extends State<SetCard> {
     final w = widget.set['weight'] as String? ?? '';
     final r = widget.set['reps'] as String? ?? '';
     final rir = widget.set['rir'] as String? ?? '';
-    final dw = widget.set['dropWeight'] as String? ?? '';
-    final dr = widget.set['dropReps'] as String? ?? '';
+    final note = widget.set['note'] as String? ?? '';
     if (oldWidget.set['weight'] != w) {
       _slog(widget.index, 'didUpdateWidget sync weight "$w"');
       _setTextSilently(_weightCtrl, w);
@@ -195,29 +381,54 @@ class SetCardState extends State<SetCard> {
       _slog(widget.index, 'didUpdateWidget sync rir "$rir"');
       _setTextSilently(_rirCtrl, rir);
     }
-    if (oldWidget.set['dropWeight'] != dw) {
-      _slog(widget.index, 'didUpdateWidget sync dropWeight "$dw"');
-      _setTextSilently(_dropWeightCtrl, dw);
+    if (oldWidget.set['note'] != note) {
+      _slog(widget.index, 'didUpdateWidget sync note "$note"');
+      _setTextSilently(_noteCtrl, note);
     }
-    if (oldWidget.set['dropReps'] != dr) {
-      _slog(widget.index, 'didUpdateWidget sync dropReps "$dr"');
-      _setTextSilently(_dropRepsCtrl, dr);
+    final drops = (widget.set['dropSets'] as List? ?? []);
+    if (_dropWeightCtrls.length != drops.length) {
+      _rebuildDropCtrls(drops);
+    } else {
+      for (var i = 0; i < drops.length; i++) {
+        final dw = drops[i]['weight'] as String? ?? '';
+        final dr = drops[i]['reps'] as String? ?? '';
+        _setTextSilently(_dropWeightCtrls[i], dw);
+        _setTextSilently(_dropRepsCtrls[i], dr);
+      }
     }
   }
 
   @override
   void dispose() {
     _slog(widget.index, 'dispose()');
+    final reg = KeypadTargetRegistry.instance;
+    reg.unregister(_weightTarget);
+    reg.unregister(_repsTarget);
+    reg.unregister(_plusTarget);
+    reg.unregister(_rirTarget);
+    reg.unregister(_noteTarget);
+    for (final t in _dropWeightTargets) reg.unregister(t);
+    for (final t in _dropRepsTargets) reg.unregister(t);
     _weightCtrl.dispose();
     _repsCtrl.dispose();
     _rirCtrl.dispose();
-    _dropWeightCtrl.dispose();
-    _dropRepsCtrl.dispose();
+    _noteCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
     _rirFocus.dispose();
-    _dropWeightFocus.dispose();
-    _dropRepsFocus.dispose();
+    _noteFocus.dispose();
+    for (final c in _dropWeightCtrls) {
+      c.dispose();
+    }
+    for (final c in _dropRepsCtrls) {
+      c.dispose();
+    }
+    for (final f in _dropWeightFocuses) {
+      f.dispose();
+    }
+    for (final f in _dropRepsFocuses) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -240,21 +451,6 @@ class SetCardState extends State<SetCard> {
   void focusWeight() {
     _openKeypad(_weightCtrl, allowDecimal: true);
   }
-
-  String? _validateDrop(String? _) {
-    final loc = AppLocalizations.of(context)!;
-    final dw = _dropWeightCtrl.text.trim();
-    final dr = _dropRepsCtrl.text.trim();
-    if (dw.isEmpty && dr.isEmpty) return null;
-    if (dw.isEmpty || dr.isEmpty) return loc.dropFillBoth;
-    final base = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
-    final drop = double.tryParse(dw.replaceAll(',', '.'));
-    if (base == null || drop == null) return loc.numberInvalid;
-    if (drop >= base) return loc.dropWeightTooHigh;
-    final reps = int.tryParse(dr);
-    if (reps == null || reps < 1) return loc.dropRepsInvalid;
-    return null;
-    }
 
   @override
   Widget build(BuildContext context) {
@@ -280,8 +476,7 @@ class SetCardState extends State<SetCard> {
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
     final dropActive =
-        (widget.set['dropWeight'] ?? '').toString().isNotEmpty &&
-            (widget.set['dropReps'] ?? '').toString().isNotEmpty;
+        ((widget.set['dropSets'] as List?)?.isNotEmpty ?? false);
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
@@ -312,6 +507,7 @@ class SetCardState extends State<SetCard> {
                 SizedBox(width: dense ? 8 : 12),
                 Expanded(
                   child: _InputPill(
+                    fieldKey: _weightKey,
                     controller: _weightCtrl,
                     focusNode: _weightFocus,
                     label: 'kg',
@@ -331,6 +527,7 @@ class SetCardState extends State<SetCard> {
                 SizedBox(width: dense ? 8 : 12),
                 Expanded(
                   child: _InputPill(
+                    fieldKey: _repsKey,
                     controller: _repsCtrl,
                     focusNode: _repsFocus,
                     label: 'x',
@@ -378,84 +575,97 @@ class SetCardState extends State<SetCard> {
                   onTap: () {
                     _slog(widget.index, 'tap: more options → ${!_showExtras}');
                     HapticFeedback.lightImpact();
-                    setState(() => _showExtras = !_showExtras);
+                    setState(() {
+                      _showExtras = !_showExtras;
+                      if (_showExtras && _dropWeightCtrls.isEmpty) {
+                        _addDropSet();
+                      }
+                    });
                   },
                 ),
               ],
             ),
             if (_showExtras) ...[
               SizedBox(height: dense ? 8 : 12),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dropWeightCtrl,
-                      focusNode: _dropWeightFocus,
-                      decoration: InputDecoration(
-                        labelText: loc.dropKgFieldLabel,
-                        isDense: true,
-                      ),
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      validator: _validateDrop,
-                      onTap: done
-                          ? null
-                          : () => _openKeypad(_dropWeightCtrl, allowDecimal: true),
+                  for (var i = 0; i < _dropWeightCtrls.length; i++) ...[
+                    Row(
+                      children: [
+                        Text('Drop', style: Theme.of(context).textTheme.bodySmall),
+                        SizedBox(width: dense ? 8 : 12),
+                        Expanded(
+                          child: _InputPill(
+                            fieldKey: _dropWeightKeys[i],
+                            controller: _dropWeightCtrls[i],
+                            focusNode: _dropWeightFocuses[i],
+                            label: 'kg',
+                            readOnly: done,
+                            tokens: tokens,
+                            dense: dense,
+                            onTap: () =>
+                                _openKeypad(_dropWeightCtrls[i], allowDecimal: true),
+                            validator: (v) => _validateDrop(i, v),
+                          ),
+                        ),
+                        SizedBox(width: dense ? 8 : 12),
+                        Expanded(
+                          child: _InputPill(
+                            fieldKey: _dropRepsKeys[i],
+                            controller: _dropRepsCtrls[i],
+                            focusNode: _dropRepsFocuses[i],
+                            label: 'x',
+                            readOnly: done,
+                            tokens: tokens,
+                            dense: dense,
+                            onTap: () =>
+                                _openKeypad(_dropRepsCtrls[i], allowDecimal: false),
+                            validator: (v) => _validateDrop(i, v),
+                          ),
+                        ),
+                        if (i == _dropWeightCtrls.length - 1)
+                          IconButton(
+                            key: _plusKey,
+                            icon: const Icon(Icons.add),
+                            onPressed: done ? null : _addDropSet,
+                          ),
+                      ],
                     ),
-                  ),
-                  SizedBox(width: dense ? 8 : 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dropRepsCtrl,
-                      focusNode: _dropRepsFocus,
-                      decoration: InputDecoration(
-                        labelText: loc.dropRepsFieldLabel,
-                        isDense: true,
+                    SizedBox(height: dense ? 8 : 12),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          key: _rirKey,
+                          controller: _rirCtrl,
+                          focusNode: _rirFocus,
+                          decoration: const InputDecoration(
+                            labelText: 'RIR',
+                            isDense: true,
+                          ),
+                          readOnly: true,
+                          keyboardType: TextInputType.none,
+                          onTap: done
+                              ? null
+                              : () => _openKeypad(_rirCtrl, allowDecimal: false),
+                        ),
                       ),
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      validator: _validateDrop,
-                      onTap: done
-                          ? null
-                          : () =>
-                              _openKeypad(_dropRepsCtrl, allowDecimal: false),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: dense ? 8 : 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _rirCtrl,
-                      focusNode: _rirFocus,
-                      decoration: const InputDecoration(
-                        labelText: 'RIR',
-                        isDense: true,
+                      SizedBox(width: dense ? 8 : 12),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          key: _noteKey,
+                          controller: _noteCtrl,
+                          focusNode: _noteFocus,
+                          readOnly: done,
+                          decoration: InputDecoration(
+                            labelText: loc.noteFieldLabel,
+                            isDense: true,
+                          ),
+                        ),
                       ),
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      onTap: done
-                          ? null
-                          : () => _openKeypad(_rirCtrl, allowDecimal: false),
-                    ),
-                  ),
-                  SizedBox(width: dense ? 8 : 12),
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      readOnly: done,
-                      initialValue: widget.set['note'] as String?,
-                      decoration: InputDecoration(
-                        labelText: loc.noteFieldLabel,
-                        isDense: true,
-                      ),
-                      onChanged: (v) {
-                        _slog(widget.index, 'note → "$v"');
-                        prov.updateSet(widget.index, note: v);
-                      },
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -543,6 +753,7 @@ class _InputPill extends StatelessWidget {
   final VoidCallback onTap;
   final String? Function(String?)? validator;
   final bool dense;
+  final Key? fieldKey;
 
   const _InputPill({
     required this.controller,
@@ -553,11 +764,13 @@ class _InputPill extends StatelessWidget {
     required this.onTap,
     this.validator,
     this.dense = false,
+    this.fieldKey,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      key: fieldKey,
       onTap: readOnly ? null : () => onTap(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),

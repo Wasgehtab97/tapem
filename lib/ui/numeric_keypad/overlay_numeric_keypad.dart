@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tapem/ui/numeric_keypad/keypad_target_registry.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -177,33 +178,73 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     Widget result = Stack(
       children: [
         KeyedSubtree(key: _childKey, child: widget.child),
-        if (widget.controller.isOpen &&
-            widget.outsideTapMode != OutsideTapMode.none)
+        if (widget.controller.isOpen)
           Positioned.fill(
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerUp: (event) {
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (event) {
                 final keypadBox =
                     _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                final keypadRect =
-                    keypadBox == null
-                        ? Rect.zero
-                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                final inside = keypadRect.contains(event.position);
-                _klog(
-                  'outsideTap up at ${event.position} insideKeypad=$inside',
-                );
-                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap &&
-                    !inside) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) widget.controller.close();
-                  });
+                final keypadRect = keypadBox == null
+                    ? Rect.zero
+                    : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                final pos = event.globalPosition;
+                if (keypadRect.contains(pos)) {
+                  _klog('KEYPAD_ROUTER tap at=$pos hit=keypad action=ignore');
+                  return;
                 }
+
+                final targets = KeypadTargetRegistry.instance.targets.reversed;
+                for (final t in targets) {
+                  final rect = t.getRect();
+                  if (rect.contains(pos)) {
+                    switch (t.type) {
+                      case KeypadTargetType.numeric:
+                        _klog('KEYPAD_ROUTER tap at=$pos hit=numeric:${t.id} action=retarget');
+                        widget.controller.openFor(
+                          t.controller!,
+                          allowDecimal: t.allowDecimal,
+                          decimalStep: t.decimalStep,
+                          integerStep: t.integerStep,
+                        );
+                        _klog(
+                          'RETARGET to=${t.id} allowDecimal=${t.allowDecimal} stepDec=${t.decimalStep} stepInt=${t.integerStep}',
+                        );
+                        FocusScope.of(context).requestFocus(t.focusNode);
+                        final setBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+                        final setRect = setBox == null
+                            ? Rect.zero
+                            : setBox.localToGlobal(Offset.zero) & setBox.size;
+                        final within = setRect.contains(pos);
+                        _klog('FOCUS to=${t.id} withinSetCard=$within');
+                        final ctx = t.focusNode?.context;
+                        if (ctx != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Scrollable.ensureVisible(
+                              ctx,
+                              alignment: 0.5,
+                              duration: const Duration(milliseconds: 200),
+                            );
+                          });
+                        }
+                        return;
+                      case KeypadTargetType.plus:
+                        _klog('KEYPAD_ROUTER tap at=$pos hit=plus:${t.id} action=addDrop');
+                        t.onCommand?.call();
+                        return;
+                      case KeypadTargetType.text:
+                        _klog('KEYPAD_ROUTER tap at=$pos hit=text:${t.id} action=dismiss');
+                        widget.controller.close();
+                        FocusScope.of(context).requestFocus(t.focusNode);
+                        return;
+                    }
+                  }
+                }
+
+                _klog('KEYPAD_ROUTER tap at=$pos hit=none action=dismiss');
+                widget.controller.close();
               },
-              child: const IgnorePointer(
-                ignoring: true,
-                child: SizedBox.expand(),
-              ),
+              child: const SizedBox.expand(),
             ),
           ),
         Align(

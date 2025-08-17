@@ -18,6 +18,9 @@ WorkoutLogDto _$WorkoutLogDtoFromJson(Map<String, dynamic> json) =>
       note: json['setNote'] as String?,
       dropWeightKg: (json['dropWeightKg'] as num?)?.toDouble(),
       dropReps: (json['dropReps'] as num?)?.toInt(),
+      dropSets: (json['dropSets'] as List<dynamic>?)
+          ?.map((e) => DropSetDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
@@ -32,4 +35,6 @@ Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
       if (instance.note != null) 'setNote': instance.note,
       if (instance.dropWeightKg != null) 'dropWeightKg': instance.dropWeightKg,
       if (instance.dropReps != null) 'dropReps': instance.dropReps,
+      if (instance.dropSets != null)
+        'dropSets': instance.dropSets!.map((e) => e.toJson()).toList(),
     };

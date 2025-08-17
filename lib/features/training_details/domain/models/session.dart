@@ -22,12 +22,18 @@ class Session {
 class SessionSet {
   final double weight;
   final int reps;
-  final double? dropWeightKg;
-  final int? dropReps;
+  final List<DropSet> dropSets;
+
   SessionSet({
     required this.weight,
     required this.reps,
-    this.dropWeightKg,
-    this.dropReps,
+    this.dropSets = const [],
   });
+}
+
+class DropSet {
+  final double weightKg;
+  final int reps;
+
+  DropSet({required this.weightKg, required this.reps});
 }
