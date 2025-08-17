@@ -8,6 +8,7 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/challenges/domain/repositories/challenge_repository.dart';
 import 'package:tapem/features/challenges/domain/models/challenge.dart';

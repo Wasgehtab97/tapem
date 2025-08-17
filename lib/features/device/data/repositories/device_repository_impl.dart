@@ -13,6 +13,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
 
   DocumentSnapshot? _lastSnapshotCursor;
 
+  @override
   DocumentSnapshot? get lastSnapshotCursor => _lastSnapshotCursor;
 
   @override

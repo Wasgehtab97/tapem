@@ -11,6 +11,7 @@ import 'package:tapem/features/device/data/repositories/device_repository_impl.d
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
+import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
