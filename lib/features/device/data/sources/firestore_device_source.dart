@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/device.dart';
+import '../../domain/models/device_session_snapshot.dart';
 import '../dtos/device_dto.dart';
 
 class FirestoreDeviceSource {
@@ -11,13 +12,12 @@ class FirestoreDeviceSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<List<DeviceDto>> getDevicesForGym(String gymId) async {
-    final snap =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .orderBy('id')
-            .get();
+    final snap = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .orderBy('id')
+        .get();
     return snap.docs.map((doc) => DeviceDto.fromDocument(doc)).toList();
   }
 
@@ -83,5 +83,56 @@ class FirestoreDeviceSource {
       'muscleGroups': all,
       'muscleGroupIds': all,
     });
+  }
+
+  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) {
+    final ref = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(snapshot.deviceId)
+        .collection('sessions')
+        .doc(snapshot.sessionId);
+    return ref.set(snapshot.toJson());
+  }
+
+  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
+    required String gymId,
+    required String deviceId,
+    required int limit,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query q = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('sessions')
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+    if (startAfter != null) {
+      q = q.startAfterDocument(startAfter);
+    }
+    final snap = await q.get();
+    return snap.docs
+        .map((d) => DeviceSessionSnapshot.fromJson(d.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<DeviceSessionSnapshot?> getSnapshotBySessionId({
+    required String gymId,
+    required String deviceId,
+    required String sessionId,
+  }) async {
+    final ref = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('sessions')
+        .doc(sessionId);
+    final snap = await ref.get();
+    if (!snap.exists) return null;
+    return DeviceSessionSnapshot.fromJson(snap.data()!);
   }
 }
