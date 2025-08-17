@@ -56,6 +56,27 @@ class _FakeDeviceRepo implements DeviceRepository {
   Future<void> setMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) async {}
   @override
   Future<void> updateMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) async {}
+
+  @override
+  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
+
+  @override
+  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
+    required String gymId,
+    required String deviceId,
+    required int limit,
+    DocumentSnapshot? startAfter,
+  }) async => <DeviceSessionSnapshot>[];
+
+  @override
+  Future<DeviceSessionSnapshot?> getSnapshotBySessionId({
+    required String gymId,
+    required String deviceId,
+    required String sessionId,
+  }) async => null;
+
+  @override
+  DocumentSnapshot? get lastSnapshotCursor => null;
 }
 
 class FakeMuscleGroupProvider extends MuscleGroupProvider {

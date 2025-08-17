@@ -85,7 +85,10 @@ class FirestoreDeviceSource {
     });
   }
 
-  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) {
+  Future<void> writeSessionSnapshot(
+    String gymId,
+    DeviceSessionSnapshot snapshot,
+  ) {
     final ref = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -93,16 +96,18 @@ class FirestoreDeviceSource {
         .doc(snapshot.deviceId)
         .collection('sessions')
         .doc(snapshot.sessionId);
-    return ref.set(snapshot.toJson());
+    final data = snapshot.toJson();
+    data['createdAt'] = FieldValue.serverTimestamp();
+    return ref.set(data);
   }
 
-  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchSessionSnapshotsPaginated({
     required String gymId,
     required String deviceId,
     required int limit,
     DocumentSnapshot? startAfter,
-  }) async {
-    Query q = _firestore
+  }) {
+    Query<Map<String, dynamic>> q = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('devices')
@@ -113,10 +118,7 @@ class FirestoreDeviceSource {
     if (startAfter != null) {
       q = q.startAfterDocument(startAfter);
     }
-    final snap = await q.get();
-    return snap.docs
-        .map((d) => DeviceSessionSnapshot.fromJson(d.data() as Map<String, dynamic>))
-        .toList();
+    return q.get();
   }
 
   Future<DeviceSessionSnapshot?> getSnapshotBySessionId({
