@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
@@ -42,6 +43,7 @@ class DeviceProvider extends ChangeNotifier {
   final LogFn _log;
   final Uuid _uuid = const Uuid();
   final SessionDraftRepository _draftRepo;
+  final DeviceRepository deviceRepository;
 
   List<Device> _devices = [];
 
@@ -65,16 +67,25 @@ class DeviceProvider extends ChangeNotifier {
   int? _draftCreatedAt;
   Timer? _draftSaveTimer;
 
+  // Snapshots (Historie zum Blättern)
+  final List<DeviceSessionSnapshot> _sessionSnapshots = [];
+  DocumentSnapshot? _lastSnapshotCursor;
+  bool _snapshotsHasMore = true;
+  bool _snapshotsLoading = false;
+
   DeviceProvider({
     required FirebaseFirestore firestore,
+    DeviceRepository? deviceRepository,
     GetDevicesForGym? getDevicesForGym,
     LogFn? log,
     SessionDraftRepository? draftRepo,
   })  : _firestore = firestore,
+        deviceRepository =
+            deviceRepository ?? DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
         _getDevicesForGym =
-            getDevicesForGym ??
-            GetDevicesForGym(
-              DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
+            getDevicesForGym ?? GetDevicesForGym(
+              deviceRepository ??
+                  DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
             ),
         _log = log ?? _defaultLog,
         _draftRepo = draftRepo ?? SessionDraftRepositoryImpl();
@@ -107,8 +118,39 @@ class DeviceProvider extends ChangeNotifier {
   int get xp => _xp;
   int get level => _level;
 
+  List<DeviceSessionSnapshot> get sessionSnapshots =>
+      List.unmodifiable(_sessionSnapshots);
+  bool get hasMoreSnapshots => _snapshotsHasMore;
+  bool get isLoadingSnapshots => _snapshotsLoading;
+
   Future<void> loadDevices(String gymId) async {
     _devices = await _getDevicesForGym.execute(gymId);
+    notifyListeners();
+  }
+
+  Future<void> loadMoreSnapshots({
+    required String gymId,
+    required String deviceId,
+    int pageSize = 10,
+  }) async {
+    if (_snapshotsLoading || !_snapshotsHasMore) return;
+    _snapshotsLoading = true;
+    notifyListeners();
+
+    final page = await deviceRepository.fetchSessionSnapshotsPaginated(
+      gymId: gymId,
+      deviceId: deviceId,
+      limit: pageSize,
+      startAfter: _lastSnapshotCursor,
+    );
+
+    if (page.isNotEmpty) {
+      _sessionSnapshots.addAll(page);
+      _lastSnapshotCursor = deviceRepository.lastSnapshotCursor;
+    }
+    _snapshotsHasMore = page.length == pageSize;
+    _snapshotsLoading = false;
+    _log('SNAPSHOT_PAGE_LOAD(${page.length}, $_snapshotsHasMore)');
     notifyListeners();
   }
 
@@ -194,6 +236,11 @@ class DeviceProvider extends ChangeNotifier {
         await _loadUserXp(gymId, deviceId, userId);
       }
       await _restoreDraft();
+      unawaited(loadMoreSnapshots(
+        gymId: gymId,
+        deviceId: deviceId,
+        pageSize: 10,
+      ));
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
@@ -523,8 +570,17 @@ class DeviceProvider extends ChangeNotifier {
           .doc(userId);
       batch.set(noteRef, {'note': _note, 'updatedAt': ts});
 
+      final snapshot = _buildSnapshot(
+        sessionId: sessionId,
+        device: _device!,
+        exerciseId: _currentExerciseId,
+      );
+
       await batch.commit();
       _log('📚 [Provider] logs stored session=$sessionId');
+
+      await deviceRepository.writeSessionSnapshot(gymId, snapshot);
+      _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
 
       try {
         await Provider.of<XpProvider>(context, listen: false).addSessionXp(
@@ -593,6 +649,49 @@ class DeviceProvider extends ChangeNotifier {
       _isSaving = false;
       notifyListeners();
     }
+  }
+
+  DeviceSessionSnapshot _buildSnapshot({
+    required String sessionId,
+    required Device device,
+    String? exerciseId,
+  }) {
+    return DeviceSessionSnapshot(
+      sessionId: sessionId,
+      deviceId: device.uid,
+      exerciseId: exerciseId,
+      createdAt: DateTime.now(),
+      note: _note,
+      sets: _sets
+          .map(
+            (s) => SetEntry(
+              kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
+              reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+              rir: (s['rir']?.toString().isEmpty ?? true)
+                  ? null
+                  : int.tryParse(s['rir'].toString()),
+              done: s['done'] == true || s['done'] == 'true',
+              note: s['note'] as String?,
+              drops: (s['dropWeight']?.toString().isNotEmpty == true &&
+                      s['dropReps']?.toString().isNotEmpty == true)
+                  ? [
+                      DropEntry(
+                        kg: num.tryParse(
+                                s['dropWeight']!.toString().replaceAll(',', '.')) ??
+                            0,
+                        reps:
+                            int.tryParse(s['dropReps']!.toString()) ?? 0,
+                      )
+                    ]
+                  : const [],
+            ),
+          )
+          .toList(),
+      renderVersion: 1,
+      uiHints: {
+        'plannedTableCollapsed': false,
+      },
+    );
   }
 
   Future<void> _loadLastSession(

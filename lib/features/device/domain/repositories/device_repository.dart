@@ -40,4 +40,6 @@ abstract class DeviceRepository {
     required String deviceId,
     required String sessionId,
   });
+
+  DocumentSnapshot? get lastSnapshotCursor;
 }

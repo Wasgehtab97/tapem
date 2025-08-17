@@ -77,12 +77,14 @@ class SetCard extends StatefulWidget {
   final Map<String, dynamic> set;
   final Map<String, String>? previous;
   final SetCardSize size;
+  final bool readOnly;
   const SetCard({
     super.key,
     required this.index,
     required this.set,
     this.previous,
     this.size = SetCardSize.regular,
+    this.readOnly = false,
   });
 
   @override
@@ -131,48 +133,50 @@ class SetCardState extends State<SetCard> {
     _dropWeightFocus = FocusNode();
     _dropRepsFocus = FocusNode();
 
-    _weightCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'weight → "${_weightCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        weight: _weightCtrl.text,
-      );
-    });
-    _repsCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'reps → "${_repsCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        reps: _repsCtrl.text,
-      );
-    });
-    _rirCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'rir → "${_rirCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        rir: _rirCtrl.text,
-      );
-    });
-    _dropWeightCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        dropWeight: _dropWeightCtrl.text,
-        dropReps: _dropRepsCtrl.text,
-      );
-    });
-    _dropRepsCtrl.addListener(() {
-      if (_muteCtrls) return;
-      _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
-      context.read<DeviceProvider>().updateSet(
-        widget.index,
-        dropWeight: _dropWeightCtrl.text,
-        dropReps: _dropRepsCtrl.text,
-      );
-    });
+    if (!widget.readOnly) {
+      _weightCtrl.addListener(() {
+        if (_muteCtrls) return;
+        _slog(widget.index, 'weight → "${_weightCtrl.text}"');
+        context.read<DeviceProvider>().updateSet(
+          widget.index,
+          weight: _weightCtrl.text,
+        );
+      });
+      _repsCtrl.addListener(() {
+        if (_muteCtrls) return;
+        _slog(widget.index, 'reps → "${_repsCtrl.text}"');
+        context.read<DeviceProvider>().updateSet(
+          widget.index,
+          reps: _repsCtrl.text,
+        );
+      });
+      _rirCtrl.addListener(() {
+        if (_muteCtrls) return;
+        _slog(widget.index, 'rir → "${_rirCtrl.text}"');
+        context.read<DeviceProvider>().updateSet(
+          widget.index,
+          rir: _rirCtrl.text,
+        );
+      });
+      _dropWeightCtrl.addListener(() {
+        if (_muteCtrls) return;
+        _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
+        context.read<DeviceProvider>().updateSet(
+          widget.index,
+          dropWeight: _dropWeightCtrl.text,
+          dropReps: _dropRepsCtrl.text,
+        );
+      });
+      _dropRepsCtrl.addListener(() {
+        if (_muteCtrls) return;
+        _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
+        context.read<DeviceProvider>().updateSet(
+          widget.index,
+          dropWeight: _dropWeightCtrl.text,
+          dropReps: _dropRepsCtrl.text,
+        );
+      });
+    }
   }
 
   @override
@@ -395,6 +399,7 @@ class SetCardState extends State<SetCard> {
                         labelText: loc.dropKgFieldLabel,
                         isDense: true,
                       ),
+                      enabled: !widget.readOnly,
                       readOnly: true,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
@@ -412,6 +417,7 @@ class SetCardState extends State<SetCard> {
                         labelText: loc.dropRepsFieldLabel,
                         isDense: true,
                       ),
+                      enabled: !widget.readOnly,
                       readOnly: true,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
@@ -434,6 +440,7 @@ class SetCardState extends State<SetCard> {
                         labelText: 'RIR',
                         isDense: true,
                       ),
+                      enabled: !widget.readOnly,
                       readOnly: true,
                       keyboardType: TextInputType.none,
                       onTap: done
@@ -445,7 +452,8 @@ class SetCardState extends State<SetCard> {
                   Expanded(
                     flex: 2,
                     child: TextFormField(
-                      readOnly: done,
+                      enabled: !widget.readOnly,
+                      readOnly: widget.readOnly || done,
                       initialValue: widget.set['note'] as String?,
                       decoration: InputDecoration(
                         labelText: loc.noteFieldLabel,
@@ -590,6 +598,7 @@ class _InputPill extends StatelessWidget {
         child: TextFormField(
           controller: controller,
           focusNode: focusNode,
+          enabled: !widget.readOnly,
           readOnly: true,
           onTap: readOnly ? null : onTap,
           keyboardType: TextInputType.none,

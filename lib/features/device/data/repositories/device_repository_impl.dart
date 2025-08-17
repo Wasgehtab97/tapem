@@ -11,6 +11,10 @@ class DeviceRepositoryImpl implements DeviceRepository {
   final FirestoreDeviceSource _source;
   DeviceRepositoryImpl(this._source);
 
+  DocumentSnapshot? _lastSnapshotCursor;
+
+  DocumentSnapshot? get lastSnapshotCursor => _lastSnapshotCursor;
+
   @override
   Future<List<Device>> getDevicesForGym(String gymId) async {
     final dtos = await _source.getDevicesForGym(gymId);
@@ -79,13 +83,17 @@ class DeviceRepositoryImpl implements DeviceRepository {
     required String deviceId,
     required int limit,
     DocumentSnapshot? startAfter,
-  }) {
-    return _source.fetchSessionSnapshotsPaginated(
+  }) async {
+    final snap = await _source.fetchSessionSnapshotsPaginated(
       gymId: gymId,
       deviceId: deviceId,
       limit: limit,
       startAfter: startAfter,
     );
+    _lastSnapshotCursor = snap.docs.isNotEmpty ? snap.docs.last : null;
+    return snap.docs
+        .map((d) => DeviceSessionSnapshot.fromJson(d.data()))
+        .toList();
   }
 
   @override
