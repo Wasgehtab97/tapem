@@ -8,6 +8,7 @@ class DeviceSessionSnapshot {
   final String deviceId;
   final String? exerciseId;
   final DateTime createdAt;
+  final String userId;
   final String? note;
   final List<SetEntry> sets;
   final int renderVersion;
@@ -18,6 +19,7 @@ class DeviceSessionSnapshot {
     required this.deviceId,
     this.exerciseId,
     required this.createdAt,
+    required this.userId,
     this.note,
     required this.sets,
     this.renderVersion = 1,
@@ -30,6 +32,7 @@ class DeviceSessionSnapshot {
       deviceId: j['deviceId'] as String,
       exerciseId: j['exerciseId'] as String?,
       createdAt: (j['createdAt'] as Timestamp).toDate(),
+      userId: j['userId'] as String? ?? '',
       note: j['note'] as String?,
       sets: (j['sets'] as List<dynamic>? ?? [])
           .map((e) => SetEntry.fromJson(Map<String, dynamic>.from(e)))
@@ -44,6 +47,7 @@ class DeviceSessionSnapshot {
         'deviceId': deviceId,
         'exerciseId': exerciseId,
         'createdAt': Timestamp.fromDate(createdAt),
+        'userId': userId,
         'note': note,
         'sets': sets.map((s) => s.toJson()).toList(),
         'renderVersion': renderVersion,

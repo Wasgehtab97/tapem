@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'read_only_snapshot_page.dart';
 
 class DevicePager extends StatefulWidget {
@@ -9,12 +10,14 @@ class DevicePager extends StatefulWidget {
   final DeviceProvider provider;
   final String gymId;
   final String deviceId;
+  final String userId;
   const DevicePager({
     super.key,
     required this.editablePage,
     required this.provider,
     required this.gymId,
     required this.deviceId,
+    required this.userId,
   });
 
   @override
@@ -67,6 +70,18 @@ class DevicePagerState extends State<DevicePager> {
     final prov = widget.provider;
     final itemCount = 1 + prov.sessionSnapshots.length;
 
+    if ((_currentIndex == 0 || _currentIndex == 1) &&
+        prov.hasMoreSnapshots &&
+        prov.sessionSnapshots.length < 20) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        prov.prefetchSnapshots(
+          gymId: widget.gymId,
+          deviceId: widget.deviceId,
+          userId: widget.userId,
+        );
+      });
+    }
+
     final pageView = PageView.builder(
       controller: _pc,
       reverse: true,
@@ -75,10 +90,11 @@ class DevicePagerState extends State<DevicePager> {
       onPageChanged: (index) {
         setState(() => _currentIndex = index);
         HapticFeedback.lightImpact();
-        if (index >= itemCount - 2 && prov.hasMoreSnapshots) {
+        if (index >= itemCount - 3 && prov.hasMoreSnapshots) {
           prov.loadMoreSnapshots(
             gymId: widget.gymId,
             deviceId: widget.deviceId,
+            userId: widget.userId,
           );
         }
       },
@@ -90,6 +106,9 @@ class DevicePagerState extends State<DevicePager> {
     );
 
     final isEditor = _pc.hasClients ? _pc.page?.round() == 0 : true;
+
+    final current =
+        _currentIndex > 0 ? prov.sessionSnapshots[_currentIndex - 1] : null;
 
     return Stack(
       children: [
@@ -111,7 +130,7 @@ class DevicePagerState extends State<DevicePager> {
           onRightEdgeSwipe: _goToNextSession,
         ),
         _buildChevrons(itemCount),
-        _buildBottomDate(prov),
+        _buildBottomDateOrDots(current),
       ],
     );
   }
@@ -137,18 +156,22 @@ class DevicePagerState extends State<DevicePager> {
     );
   }
 
-  Widget _buildBottomDate(DeviceProvider prov) {
-    return Positioned(
-      bottom: 8,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: _currentIndex == 0
-            ? const SizedBox.shrink()
-            : Text(
-                DateFormat('dd.MM.yyyy')
-                    .format(prov.sessionSnapshots[_currentIndex - 1].createdAt),
-              ),
+  Widget _buildBottomDateOrDots(DeviceSessionSnapshot? current) {
+    if (current == null) return const SizedBox.shrink();
+    final date =
+        DateFormat('dd.MM.yyyy • HH:mm').format(current.createdAt);
+    return SafeArea(
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(date, style: const TextStyle(fontSize: 12)),
+        ),
       ),
     );
   }

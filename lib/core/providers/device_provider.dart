@@ -73,6 +73,7 @@ class DeviceProvider extends ChangeNotifier {
   DocumentSnapshot? _lastSnapshotCursor;
   bool _snapshotsHasMore = true;
   bool _snapshotsLoading = false;
+  Timer? _prefetchTimer;
 
   DeviceProvider({
     required FirebaseFirestore firestore,
@@ -132,6 +133,7 @@ class DeviceProvider extends ChangeNotifier {
   Future<void> loadMoreSnapshots({
     required String gymId,
     required String deviceId,
+    required String userId,
     int pageSize = 10,
   }) async {
     if (_snapshotsLoading || !_snapshotsHasMore) return;
@@ -141,6 +143,7 @@ class DeviceProvider extends ChangeNotifier {
     final page = await deviceRepository.fetchSessionSnapshotsPaginated(
       gymId: gymId,
       deviceId: deviceId,
+      userId: userId,
       limit: pageSize,
       startAfter: _lastSnapshotCursor,
     );
@@ -234,6 +237,12 @@ class DeviceProvider extends ChangeNotifier {
       _snapshotsHasMore = true;
       _snapshotsLoading = false;
       notifyListeners();
+
+      await loadMoreSnapshots(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
       await _loadUserNote(gymId, deviceId, userId);
@@ -470,6 +479,25 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void prefetchSnapshots({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    int target = 20,
+  }) {
+    if (_prefetchTimer?.isActive ?? false) return;
+    if (!_snapshotsHasMore || _snapshotsLoading) return;
+    if (_sessionSnapshots.length >= target) return;
+    _prefetchTimer = Timer(const Duration(milliseconds: 800), () {
+      loadMoreSnapshots(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
+      _log('SNAPSHOT_PREFETCH(triggered: true)');
+    });
+  }
+
   Future<bool> saveWorkoutSession({
     required BuildContext context,
     required String gymId,
@@ -574,6 +602,7 @@ class DeviceProvider extends ChangeNotifier {
         sessionId: sessionId,
         device: _device!,
         exerciseId: _currentExerciseId,
+        userId: userId,
       );
 
       await batch.commit();
@@ -655,12 +684,14 @@ class DeviceProvider extends ChangeNotifier {
     required String sessionId,
     required Device device,
     String? exerciseId,
+    required String userId,
   }) {
     return DeviceSessionSnapshot(
       sessionId: sessionId,
       deviceId: device.uid,
       exerciseId: exerciseId,
       createdAt: DateTime.now(),
+      userId: userId,
       note: _note,
       sets: _sets
           .map(

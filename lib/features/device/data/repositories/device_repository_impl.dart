@@ -6,6 +6,7 @@ import '../../domain/models/device.dart';
 import '../../domain/models/device_session_snapshot.dart';
 import '../../domain/repositories/device_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class DeviceRepositoryImpl implements DeviceRepository {
   final FirestoreDeviceSource _source;
@@ -82,15 +83,39 @@ class DeviceRepositoryImpl implements DeviceRepository {
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
     required String gymId,
     required String deviceId,
+    required String userId,
     required int limit,
     DocumentSnapshot? startAfter,
   }) async {
-    final snap = await _source.fetchSessionSnapshotsPaginated(
+    var snap = await _source.fetchSessionSnapshotsPage(
       gymId: gymId,
       deviceId: deviceId,
+      userId: userId,
       limit: limit,
       startAfter: startAfter,
     );
+
+    if (snap.docs.isEmpty && startAfter == null) {
+      snap = await _source.fetchSessionSnapshotsPage(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: null,
+        limit: limit,
+        startAfter: startAfter,
+      );
+      bool backfilled = false;
+      for (final d in snap.docs) {
+        final data = d.data();
+        if (data['userId'] == null) {
+          backfilled = true;
+          d.reference.update({'userId': userId}).catchError((_) {});
+        }
+      }
+      if (backfilled) {
+        debugPrint('SNAPSHOT_BACKFILL(userId: set)');
+      }
+    }
+
     _lastSnapshotCursor = snap.docs.isNotEmpty ? snap.docs.last : null;
     return snap.docs
         .map((d) => DeviceSessionSnapshot.fromJson(d.data()))

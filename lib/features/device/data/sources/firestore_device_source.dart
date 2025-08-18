@@ -101,10 +101,11 @@ class FirestoreDeviceSource {
     return ref.set(data);
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> fetchSessionSnapshotsPaginated({
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchSessionSnapshotsPage({
     required String gymId,
     required String deviceId,
-    required int limit,
+    required String? userId,
+    int limit = 10,
     DocumentSnapshot? startAfter,
   }) {
     Query<Map<String, dynamic>> q = _firestore
@@ -112,9 +113,13 @@ class FirestoreDeviceSource {
         .doc(gymId)
         .collection('devices')
         .doc(deviceId)
-        .collection('sessions')
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+        .collection('sessions');
+
+    if (userId != null) {
+      q = q.where('userId', isEqualTo: userId);
+    }
+
+    q = q.orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {
       q = q.startAfterDocument(startAfter);
     }
