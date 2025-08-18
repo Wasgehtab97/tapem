@@ -583,7 +583,7 @@ class _InputPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: readOnly ? null : () => onTap(),
+      onTap: readOnly ? null : () => onTap?.call(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
