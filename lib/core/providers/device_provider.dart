@@ -23,6 +23,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
+import 'package:tapem/core/config/feature_flags.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -244,7 +245,9 @@ class DeviceProvider extends ChangeNotifier {
         userId: userId,
       );
 
-      await _loadLastSession(gymId, deviceId, exerciseId, userId);
+      if (FF.isLastSessionVisible) {
+        await _loadLastSession(gymId, deviceId, exerciseId, userId);
+      }
       await _loadUserNote(gymId, deviceId, userId);
       if (!_device!.isMulti) {
         await _loadUserXp(gymId, deviceId, userId);
