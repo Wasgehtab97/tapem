@@ -15,6 +15,7 @@ class _FakeDeviceRepository implements DeviceRepository {
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
     required String gymId,
     required String deviceId,
+    required String userId,
     required int limit,
     DocumentSnapshot? startAfter,
   }) async => snaps;
@@ -32,6 +33,7 @@ void main() {
       sessionId: 's1',
       deviceId: 'd1',
       createdAt: DateTime(2023, 1, 1),
+      userId: 'u1',
       note: 'snapnote',
       sets: const [SetEntry(kg: 10, reps: 5)],
     );
@@ -40,7 +42,7 @@ void main() {
       firestore: FakeFirebaseFirestore(),
       deviceRepository: repo,
     );
-    await prov.loadMoreSnapshots(gymId: 'g', deviceId: 'd');
+    await prov.loadMoreSnapshots(gymId: 'g', deviceId: 'd', userId: 'u1');
 
     await tester.pumpWidget(MaterialApp(
       home: DevicePager(
@@ -48,6 +50,7 @@ void main() {
         provider: prov,
         gymId: 'g',
         deviceId: 'd',
+        userId: 'u1',
       ),
     ));
 

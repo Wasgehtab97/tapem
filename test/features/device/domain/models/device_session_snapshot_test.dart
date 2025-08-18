@@ -9,6 +9,7 @@ void main() {
       deviceId: 'd1',
       exerciseId: 'e1',
       createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      userId: 'u1',
       note: 'note',
       sets: const [
         SetEntry(
@@ -25,6 +26,7 @@ void main() {
     final json = snapshot.toJson();
     expect(json['sessionId'], 's1');
     expect(json['deviceId'], 'd1');
+    expect(json['userId'], 'u1');
     expect((json['createdAt'] as Timestamp).millisecondsSinceEpoch, 0);
 
     final decoded = DeviceSessionSnapshot.fromJson(json);

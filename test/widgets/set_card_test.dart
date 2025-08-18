@@ -33,6 +33,7 @@ class _FakeRepo implements DeviceRepository {
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
     required String gymId,
     required String deviceId,
+    required String userId,
     required int limit,
     DocumentSnapshot? startAfter,
   }) async => <DeviceSessionSnapshot>[];

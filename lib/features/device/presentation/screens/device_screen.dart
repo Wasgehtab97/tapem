@@ -66,12 +66,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
         exerciseId: widget.exerciseId,
         userId: auth.userId!,
       );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<DeviceProvider>().loadMoreSnapshots(
-              gymId: widget.gymId,
-              deviceId: widget.deviceId,
-            );
-      });
       final planProv = context.read<TrainingPlanProvider>();
       if (planProv.plans.isEmpty && !planProv.isLoading) {
         _dlog('TrainingPlanProvider.loadPlans()');
@@ -417,6 +411,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
+    final auth = context.watch<AuthProvider>();
     final locale = Localizations.localeOf(context).toString();
     final loc = AppLocalizations.of(context)!;
     final planProv = context.watch<TrainingPlanProvider>();
@@ -503,6 +498,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           key: _pagerKey,
           gymId: widget.gymId,
           deviceId: prov.device!.uid,
+          userId: auth.userId!,
           provider: prov,
           editablePage:
               _buildEditablePage(prov, loc, locale, plannedEntry),
