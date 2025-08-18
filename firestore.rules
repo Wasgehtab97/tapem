@@ -170,9 +170,11 @@ service cloud.firestore {
       // ---- Users subcollection ----
       // Users are referenced under their gym as well
       match /users/{userId} {
-        // v1 hardening: membership lifecycle admin-only (membership_admin_only)
         allow read: if inGym(gymId);
-        allow create, update, delete: if isAdmin(gymId);
+        allow create: if request.auth != null &&
+                       request.auth.uid == userId &&
+                       request.resource.data.role == 'member';
+        allow update, delete: if isAdmin(gymId);
       }
       match /users/{userId}/{doc=**} {
         allow read, write: if ownerOrAdmin(gymId, userId);
