@@ -37,15 +37,16 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, String>> sets) {
   final vm = <SessionSetVM>[];
   var ordinal = 1;
   for (final s in sets) {
-    final drops = (s['dropWeight'] != null && s['dropWeight']!.isNotEmpty &&
-            s['dropReps'] != null && s['dropReps']!.isNotEmpty)
-        ? [
-            DropEntry(
-              kg: num.tryParse(s['dropWeight']!) ?? 0,
-              reps: int.tryParse(s['dropReps']!) ?? 0,
-            )
-          ]
-        : const [];
+    final List<DropEntry> drops =
+        (s['dropWeight'] != null && s['dropWeight']!.isNotEmpty &&
+                s['dropReps'] != null && s['dropReps']!.isNotEmpty)
+            ? [
+                DropEntry(
+                  kg: num.tryParse(s['dropWeight']!) ?? 0,
+                  reps: int.tryParse(s['dropReps']!) ?? 0,
+                )
+              ]
+            : <DropEntry>[];
     vm.add(SessionSetVM(
       ordinal: ordinal++,
       kg: num.tryParse(s['weight'] ?? '0') ?? 0,

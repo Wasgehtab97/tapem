@@ -245,7 +245,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                     ],
-                    if (lastSets.isNotEmpty && lastDate != null) ...[
+                    if (lastSets.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       Builder(
@@ -263,7 +263,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 }
                               },
                               child: LastSessionCard(
-                                date: lastDate!,
+                                date: lastDate,
                                 sets: lastSets,
                                 note: lastNote,
                               ),
@@ -271,7 +271,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           );
                         },
                       ),
-                    ],
                     ],
                   ],
                 );
