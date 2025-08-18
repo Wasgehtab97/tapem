@@ -383,7 +383,7 @@ class _DeviceMuscleAssignmentSheetState
           height: 48,
           child: Row(
             children: [
-              CircleAvatar(backgroundColor: colorForRegion(region, theme)),
+              CircleAvatar(backgroundColor: colorForRegion(region)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -438,7 +438,7 @@ class _DeviceMuscleAssignmentSheetState
           height: 48,
           child: Row(
             children: [
-              CircleAvatar(backgroundColor: colorForRegion(region, theme)),
+              CircleAvatar(backgroundColor: colorForRegion(region)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(

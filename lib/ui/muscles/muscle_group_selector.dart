@@ -103,7 +103,7 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
                       child: FilterChip(
                         key: ValueKey(g.id),
                         avatar: CircleAvatar(
-                          backgroundColor: colorForRegion(g.region, theme),
+                          backgroundColor: colorForRegion(g.region),
                           radius: 6,
                         ),
                         label: Text(
