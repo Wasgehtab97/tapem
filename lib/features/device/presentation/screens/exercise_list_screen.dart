@@ -58,6 +58,31 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     }
   }
 
+  Future<void> _deleteExercise(Exercise ex) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Übung löschen'),
+        content: Text('Übung "${ex.name}" wirklich löschen?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final userId = context.read<AuthProvider>().userId!;
+    await context
+        .read<ExerciseProvider>()
+        .removeExercise(widget.gymId, widget.deviceId, ex.id, userId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -111,10 +136,20 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 },
               );
             },
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _openAdd(ex),
-              tooltip: loc.multiDeviceEditExerciseButton,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _openAdd(ex),
+                  tooltip: loc.multiDeviceEditExerciseButton,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _deleteExercise(ex),
+                  tooltip: 'Übung löschen',
+                ),
+              ],
             ),
           );
         },

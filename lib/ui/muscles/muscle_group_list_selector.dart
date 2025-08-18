@@ -257,6 +257,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       final g = canonical[r];
       final name =
           g != null && g.name.isNotEmpty ? g.name : _regionFallbackName(r);
+      if (name.toLowerCase() == 'arms' && _categoryFor(r) == _Category.core) {
+        continue;
+      }
       if (name.toLowerCase().contains(widget.filter.toLowerCase())) {
         final key = g?.id ?? r.name;
         byCat[_categoryFor(r)]!
@@ -327,7 +330,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
                                     MaterialTapTargetSize.shrinkWrap,
                                 avatar: CircleAvatar(
                                   backgroundColor:
-                                      colorForRegion(entry.region, theme),
+                                      colorForRegion(entry.region),
                                   radius: 8,
                                 ),
                                 label: Text(entry.displayName,

@@ -25,7 +25,7 @@ class MuscleGroupCard extends StatelessWidget {
       child: Chip(
         visualDensity: VisualDensity.compact,
         avatar: CircleAvatar(
-          backgroundColor: colorForRegion(group.region, theme),
+          backgroundColor: colorForRegion(group.region),
           radius: 6,
         ),
         label: Text(
