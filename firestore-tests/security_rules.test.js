@@ -71,10 +71,16 @@ describe('Security Rules v1', function () {
       await assertSucceeds(ref.get());
     });
 
-    it('prevents membership self-write (membership_admin_only)', async () => {
-      const db = userA().firestore();
-      const ref = db.collection('gyms').doc('G1').collection('users').doc('userA');
-      await assertFails(ref.set({ role: 'member' }));
+    it('allows user to create own membership', async () => {
+      const db = noMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('noMember');
+      await assertSucceeds(ref.set({ role: 'member' }));
+    });
+
+    it('blocks user from creating admin membership', async () => {
+      const db = testEnv.authenticatedContext('rogueUser', {}).firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('rogueUser');
+      await assertFails(ref.set({ role: 'admin' }));
     });
 
     it('allows admin membership write', async () => {

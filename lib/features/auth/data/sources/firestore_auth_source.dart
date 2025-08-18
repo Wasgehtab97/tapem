@@ -52,8 +52,16 @@ class FirestoreAuthSource {
     );
     await _firestore.collection('users').doc(uid).set(dto.toJson());
 
-    // v1 hardening: membership creation is admin-only (membership_admin_only)
-    // Admins must add the user to a gym via server-side process.
+    // create gym membership so the user can access gym data
+    await _firestore
+        .collection('gyms')
+        .doc(gym.id)
+        .collection('users')
+        .doc(uid)
+        .set({
+      'role': 'member',
+      'createdAt': now,
+    });
 
     return dto;
   }
