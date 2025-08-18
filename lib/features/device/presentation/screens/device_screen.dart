@@ -246,7 +246,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                     ],
-                    if (FF.isLastSessionVisible &&
+                    if ((FF.showLastSessionOnDevicePage ||
+                            FF.runtimeShowLastSessionOnDevicePage) &&
                         lastDate != null &&
                         lastSets.isNotEmpty) ...[
                       const SizedBox(height: 16),
@@ -265,7 +266,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                 }
                               },
                               child: LastSessionCard(
-                                date: lastDate!,
+                                date: lastDate,
                                 sets: lastSets,
                                 note: lastNote,
                               ),
