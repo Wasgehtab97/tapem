@@ -1,193 +1,92 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ----- Helper Functions -----
+
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // verify the request comes from the user's own gym
-    // either via custom claim `gymId` or membership document
-    function inGym(gymId) {
-      return isSignedIn() && (
-        request.auth.token.gymId == gymId ||
-        exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid))
-      );
+    function isMember(gymId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/gyms/$(gymId)/members/$(request.auth.uid));
     }
 
-    // check admin role for this gym
-    // admin can be indicated via custom claim or the role field in the gym membership
     function isAdmin(gymId) {
-      return inGym(gymId) && (
-        request.auth.token.role == 'admin' ||
-        get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/gyms/$(gymId)/members/$(request.auth.uid)).data.role == "admin";
     }
 
-    // convenience helpers
-    function ownerOrAdmin(gymId, userId) {
-      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
-    }
-    function requestOwnerInGym(gymId) {
-      return inGym(gymId) && request.resource.data.userId == request.auth.uid;
-    }
-    function resourceOwnerOrAdmin(gymId) {
-      // v1 hardening: ensure read access requires gym membership (logs_owner_cross_gym)
-      return (inGym(gymId) && resource.data.userId == request.auth.uid) ||
-             isAdmin(gymId);
+    // ---- Users ----
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && uid == request.auth.uid;
     }
 
-
-    // Exercise is shared globally (no userId field or empty)
-    function isPublicExercise() {
-      return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
-    }
-
-    // requestor is the owner of a user document
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isOwnerInGym(gymId, userId) {
-      return inGym(gymId) && request.auth.uid == userId;
-    }
-
-    // check if the request targets only the gym document itself
-    function isGymDocument(gymId) {
-      return resource.__name__ ==
-             "/databases/" + database + "/documents/gyms/" + gymId;
-    }
-
-    // Allow users to read their own log documents across all gyms.
-    match /{path=**}/logs/{logId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    // ----- User documents -----
-    // Only the authenticated user may read/write their user profile
-    match /users/{userId} {
-      allow create: if isOwner(userId);
-      // Allow signed-in users to read usernames for availability checks
-      allow read: if isSignedIn();
-      // Permit username updates right after registration
-      allow update: if isOwner(userId);
-    }
-
-    // Allow access to any nested collections under the user document
-    match /users/{userId}/{document=**} {
-      allow read, write: if isOwner(userId);
-    }
-
-    // ----- Gyms -----
+    // ---- Gyms ----
     match /gyms/{gymId} {
-      // Gym documents are readable for everyone to validate gym codes.
-      // Public fields: name, code, logoUrl
-      // v1 hardening: document contains no sensitive fields (gym_document_public)
-      allow read: if true;
-      allow write: if isAdmin(gymId);
 
-      // ---- Devices collection ----
+      // Mitgliedschaft verwalten
+      match /members/{uid} {
+        // Mitglied seinen eigenen Eintrag anlegen/lesen, wenn Gym openEnrollment == true
+        allow create: if isSignedIn()
+                      && uid == request.auth.uid
+                      && get(/databases/$(database)/documents/gyms/$(gymId)).data.openEnrollment == true;
+        allow read:   if isSignedIn() && (uid == request.auth.uid || isAdmin(gymId));
+        allow update, delete: if isAdmin(gymId) || (isSignedIn() && uid == request.auth.uid);
+      }
+
+      // Branding darf nur von Mitgliedern gelesen werden
+      match /config/branding {
+        allow read: if isMember(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // Muskelgruppen nur für Mitglieder lesbar
+      match /muscleGroups/{muscleId} {
+        allow read: if isMember(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // Devices & Subcollections
       match /devices/{deviceId} {
-        // v1 hardening: block cross-gym reads (device_cross_gym)
-        allow read: if inGym(gymId);
+        allow read: if isMember(gymId);
         allow write: if isAdmin(gymId);
 
-        // Logs are appended by the owning user only. They are immutable.
+        // Snapshots (Session “Seiten”)
+        match /sessions/{sessionId} {
+          // Besitzer darf seine eigenen Snapshots lesen/schreiben
+          allow read: if isMember(gymId) && resource.data.userId == request.auth.uid;
+          allow create: if isMember(gymId)
+                        && request.resource.data.userId == request.auth.uid
+                        && request.resource.data.keys().hasOnly([
+                          'sessionId','deviceId','exerciseId','createdAt','userId',
+                          'note','sets','renderVersion','uiHints'
+                        ]);
+          // Optional Update/Deletion nur Admin oder Owner
+          allow update, delete: if isAdmin(gymId) ||
+                                (isMember(gymId) && resource.data.userId == request.auth.uid);
+        }
+
+        // Logs (einzelne Satz-Logs)
         match /logs/{logId} {
-          allow create: if requestOwnerInGym(gymId);
-          // v1 hardening: owner must belong to gym (logs_owner_cross_gym)
-          allow read: if resourceOwnerOrAdmin(gymId);
-          allow update, delete: if false;
+          allow read: if isMember(gymId) && resource.data.userId == request.auth.uid;
+          allow create: if isMember(gymId)
+                        && request.resource.data.userId == request.auth.uid;
+          allow update, delete: if isAdmin(gymId) ||
+                                (isMember(gymId) && resource.data.userId == request.auth.uid);
         }
 
-        // Each user manages their own notes for the device.
-        match /userNotes/{userId} {
-          allow read, write: if ownerOrAdmin(gymId, userId);
-        }
-
-        // Leaderboard entries are updated per user.
-        match /leaderboard/{userId}/{doc=**} {
-          // v1 hardening: enforce userId match; TODO server-side writes (leaderboard_owner_only)
-          allow read, write: if ownerOrAdmin(gymId, userId) &&
-                             request.resource.data.userId == userId;
-        }
-
-        // Custom exercises per user
+        // Exercises
         match /exercises/{exerciseId} {
-          allow read: if isAdmin(gymId) ||
-                       (inGym(gymId) &&
-                        (request.auth.uid == resource.data.userId || isPublicExercise()));
-          allow write: if inGym(gymId) &&
-                          (request.auth.uid == request.resource.data.userId ||
-                           request.auth.uid == resource.data.userId) ||
-                        isAdmin(gymId);
+          allow read: if isMember(gymId) && (
+              resource.data.ownerId == request.auth.uid ||
+              resource.data.visibility == 'public'
+          );
+          allow create: if isMember(gymId)
+                        && request.resource.data.ownerId == request.auth.uid;
+          allow update, delete: if isAdmin(gymId) ||
+                                (isMember(gymId) && resource.data.ownerId == request.auth.uid);
         }
       }
-
-      // ---- Surveys ----
-      match /surveys/{surveyId} {
-        allow read: if inGym(gymId);
-        allow create, update, delete: if isAdmin(gymId);
-
-        // Users submit answers; only admins read all answers
-        match /answers/{answerId} {
-          allow create: if isOwnerInGym(gymId, request.auth.uid);
-          allow read: if isAdmin(gymId);
-          allow update, delete: if false;
-        }
-      }
-
-      // ---- Feedback ----
-      match /feedback/{entryId} {
-        // v1 hardening: limit feedback reads to admins (feedback_access)
-        allow create: if inGym(gymId) &&
-          request.resource.data.userId == request.auth.uid;
-        allow read, update, delete: if isAdmin(gymId);
-      }
-
-      // ---- Training plans ----
-      match /trainingPlans/{planId}/{subdoc=**} {
-        // v1 hardening: require gym membership and creator/admin (training_plan_scoping)
-        allow read, write: if inGym(gymId) && (
-          isAdmin(gymId) ||
-          request.auth.uid == request.resource.data.createdBy ||
-          request.auth.uid == resource.data.createdBy
-        );
-      }
-
-      // ---- Muscle groups ----
-      match /muscleGroups/{groupId} {
-        allow read: if inGym(gymId);
-        allow write: if isAdmin(gymId);
-      }
-
-      // ---- Challenges ----
-      match /challenges/{type}/{docId}/{sub=**} {
-        allow read: if inGym(gymId);
-        allow write: if isAdmin(gymId);
-      }
-
-      // ---- Users subcollection ----
-      // Users are referenced under their gym as well
-      match /users/{userId} {
-        // v1 hardening: membership lifecycle admin-only (membership_admin_only)
-        allow read: if inGym(gymId);
-        allow create, update, delete: if isAdmin(gymId);
-      }
-      match /users/{userId}/{doc=**} {
-        allow read, write: if ownerOrAdmin(gymId, userId);
-      }
-
-      // Fallback for any other documents inside gyms
-      match /{document=**} {
-        allow read: if inGym(gymId);
-        allow write: if isAdmin(gymId);
-      }
-    }
-
-    // Deny everything else by default
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }

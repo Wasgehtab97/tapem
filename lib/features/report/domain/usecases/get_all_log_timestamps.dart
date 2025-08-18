@@ -5,7 +5,7 @@ class GetAllLogTimestamps {
   final ReportRepository _repo;
   GetAllLogTimestamps(this._repo);
 
-  Future<List<DateTime>> execute(String gymId) {
-    return _repo.fetchAllLogTimestamps(gymId);
+  Future<List<DateTime>> execute(String gymId, String userId) {
+    return _repo.fetchAllLogTimestamps(gymId, userId);
   }
 }

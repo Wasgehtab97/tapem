@@ -2,8 +2,8 @@
 
 abstract class ReportRepository {
   /// Gibt pro Geräte-ID die Anzahl aller Logs zurück.
-  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId);
+  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId, String userId);
 
   /// Liefert alle Log-Timestamps (über alle Geräte) für den Heatmap.
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId);
+  Future<List<DateTime>> fetchAllLogTimestamps(String gymId, String userId);
 }

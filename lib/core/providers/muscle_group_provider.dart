@@ -21,6 +21,9 @@ import '../../features/device/data/sources/firestore_device_source.dart';
 import '../../features/history/data/sources/firestore_history_source.dart';
 import '../../features/history/data/repositories/history_repository_impl.dart';
 import '../../features/history/domain/usecases/get_history_for_device.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tapem/core/services/membership_service.dart';
 
 class MuscleGroupProvider extends ChangeNotifier {
   final GetMuscleGroupsForGym _getGroups;
@@ -104,8 +107,29 @@ class MuscleGroupProvider extends ChangeNotifier {
         throw Exception('Benutzer nicht eingeloggt');
       }
 
-      _groups = await _getGroups.execute(gymId);
-      await _loadCounts(gymId, userId);
+      final service = MembershipService(FirebaseFirestore.instance, FirebaseAuth.instance);
+      Future<void> run() async {
+        _groups = await _getGroups.execute(gymId);
+        await _loadCounts(gymId, userId);
+      }
+
+      await service.ensureMembership(gymId: gymId);
+      await run();
+    } on FirebaseException catch (e, st) {
+      if (e.code == 'permission-denied') {
+        debugPrint('RULES_DENIED(gyms/' + gymId + '/muscleGroups)');
+        try {
+          final service = MembershipService(FirebaseFirestore.instance, FirebaseAuth.instance);
+          await service.ensureMembership(gymId: gymId);
+          await run();
+        } catch (e2, st2) {
+          _error = e2.toString();
+          debugPrintStack(label: 'MuscleGroupProvider.loadGroups', stackTrace: st2);
+        }
+      } else {
+        _error = e.toString();
+        debugPrintStack(label: 'MuscleGroupProvider.loadGroups', stackTrace: st);
+      }
     } catch (e, st) {
       _error = e.toString();
       debugPrintStack(label: 'MuscleGroupProvider.loadGroups', stackTrace: st);

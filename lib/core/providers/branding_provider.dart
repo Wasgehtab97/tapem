@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tapem/core/services/membership_service.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 
@@ -18,8 +21,8 @@ class BrandingProvider extends ChangeNotifier {
   final LogFn _log;
 
   BrandingProvider({required FirestoreGymSource source, LogFn? log})
-    : _source = source,
-      _log = log ?? _defaultLog;
+      : _source = source,
+        _log = log ?? _defaultLog;
 
   Branding? _branding;
   bool _isLoading = false;
@@ -36,8 +39,33 @@ class BrandingProvider extends ChangeNotifier {
     _error = null;
     _gymId = gymId;
     notifyListeners();
-    try {
+
+    final service =
+        MembershipService(FirebaseFirestore.instance, FirebaseAuth.instance);
+
+    Future<void> run() async {
       _branding = await _source.getBranding(gymId);
+    }
+
+    try {
+      await service.ensureMembership(gymId: gymId);
+      await run();
+    } on FirebaseException catch (e, st) {
+      if (e.code == 'permission-denied') {
+        _log('RULES_DENIED(gyms/$gymId/config/branding)');
+        try {
+          await service.ensureMembership(gymId: gymId);
+          await run();
+        } catch (e2, st2) {
+          _error = 'Fehler beim Laden: ${e2.toString()}';
+          _log('BrandingProvider.loadBranding error: $e2', st2);
+          _branding = null;
+        }
+      } else {
+        _error = 'Fehler beim Laden: ${e.toString()}';
+        _log('BrandingProvider.loadBranding error: $e', st);
+        _branding = null;
+      }
     } catch (e, st) {
       _error = 'Fehler beim Laden: ${e.toString()}';
       _log('BrandingProvider.loadBranding error: $e', st);

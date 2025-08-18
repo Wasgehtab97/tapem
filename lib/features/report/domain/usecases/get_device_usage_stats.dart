@@ -5,7 +5,7 @@ class GetDeviceUsageStats {
   final ReportRepository _repo;
   GetDeviceUsageStats(this._repo);
 
-  Future<Map<String, int>> execute(String gymId) {
-    return _repo.fetchUsageCountPerMachine(gymId);
+  Future<Map<String, int>> execute(String gymId, String userId) {
+    return _repo.fetchUsageCountPerMachine(gymId, userId);
   }
 }
