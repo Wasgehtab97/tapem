@@ -19,6 +19,7 @@ import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
+import '../widgets/device_pager.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
@@ -48,6 +49,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
+  final _pagerKey = GlobalKey<DevicePagerState>();
 
   @override
   void initState() {
@@ -64,6 +66,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
         exerciseId: widget.exerciseId,
         userId: auth.userId!,
       );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<DeviceProvider>().loadMoreSnapshots(
+              gymId: widget.gymId,
+              deviceId: widget.deviceId,
+            );
+      });
       final planProv = context.read<TrainingPlanProvider>();
       if (planProv.plans.isEmpty && !planProv.isLoading) {
         _dlog('TrainingPlanProvider.loadPlans()');
@@ -109,6 +117,283 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void _closeKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
     context.read<OverlayNumericKeypadController>().close();
+  }
+
+  Widget _buildEditablePage(
+    DeviceProvider prov,
+    AppLocalizations loc,
+    String locale,
+    ExerciseEntry? plannedEntry,
+  ) {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(8),
+          child: SessionTimerBar(
+            initialDuration: Duration(seconds: 90),
+          ),
+        ),
+        Expanded(
+          child: Form(
+            key: _formKey,
+            child: Consumer<OverlayNumericKeypadController>(
+              builder: (context, keypad, _) {
+                final mq = MediaQuery.of(context);
+                final bottomPad =
+                    keypad.keypadContentHeight + mq.padding.bottom + 16;
+                _dlog(
+                  'list bottomPad=$bottomPad keypadHeight=${keypad.keypadContentHeight}',
+                );
+                while (_setKeys.length < prov.sets.length) {
+                  _setKeys.add(GlobalKey<SetCardState>());
+                }
+                if (_setKeys.length > prov.sets.length) {
+                  _setKeys.removeRange(prov.sets.length, _setKeys.length);
+                }
+                return ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
+                  children: [
+                    if (prov.device!.description.isNotEmpty) ...[
+                      Text(
+                        prov.device!.description,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (plannedEntry != null)
+                      _PlannedTable(entry: plannedEntry)
+                    else ...[
+                      Text(
+                        loc.newSessionTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: prov.sets.length,
+                        itemBuilder: (context, index) {
+                          final set = prov.sets[index];
+                          final prev = index < prov.lastSessionSets.length
+                              ? prov.lastSessionSets[index]
+                              : null;
+                          return Dismissible(
+                            key: ValueKey('set-${set['number']}'),
+                            direction: DismissDirection.endToStart,
+                            background: const SizedBox.shrink(),
+                            secondaryBackground: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              color: Colors.red.withOpacity(0.15),
+                              child: const Icon(
+                                Icons.delete,
+                                semanticLabel: 'Löschen',
+                              ),
+                            ),
+                            onDismissed: (_) {
+                              final removed = Map<String, dynamic>.from(set);
+                              context
+                                  .read<DeviceProvider>()
+                                  .removeSet(index);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(loc.setRemoved),
+                                  action: SnackBarAction(
+                                    label: loc.undo,
+                                    onPressed: () => context
+                                        .read<DeviceProvider>()
+                                        .insertSetAt(index, removed),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: SetCard(
+                              key: _setKeys[index],
+                              index: index,
+                              set: set,
+                              previous: prev,
+                              size: SetCardSize.dense,
+                            ),
+                          );
+                        },
+                        separatorBuilder: (_, __) => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(thickness: 1, height: 1),
+                        ),
+                      ),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: _addSet,
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: Text(loc.addSetButton),
+                        ),
+                      ),
+                    ],
+                    if (prov.lastSessionSets.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      Builder(
+                        builder: (context) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: BrandGradientCard(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  for (final set in prov.lastSessionSets)
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('${set['number']}. '),
+                                        const SizedBox(width: 12),
+                                        BrandGradientCard(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.sm,
+                                            vertical: AppSpacing.xs,
+                                          ),
+                                          child: Text(
+                                            '${set['weight']} kg',
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text('${set['reps']} x'),
+                                        if (set['dropWeight'] != null &&
+                                            set['dropWeight']!.isNotEmpty) ...[
+                                          const SizedBox(width: 16),
+                                          Text(
+                                            '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                        ],
+                                        if (set['rir'] != null &&
+                                            set['rir']!.isNotEmpty) ...[
+                                          const SizedBox(width: 16),
+                                          Text('RIR ${set['rir']}'),
+                                        ],
+                                        if (set['note'] != null &&
+                                            set['note']!.isNotEmpty) ...[
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Text(set['note']!),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  if (prov.lastSessionNote.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text('Notiz: ${prov.lastSessionNote}'),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    _closeKeyboard();
+                    Navigator.pop(context);
+                  },
+                  child: Text(loc.cancelButton),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: BrandPrimaryButton(
+                  onPressed: prov.hasSessionToday || prov.isSaving
+                      ? null
+                      : () async {
+                          if (!_formKey.currentState!.validate()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(loc.pleaseCheckInputs),
+                              ),
+                            );
+                            return;
+                          }
+                          if (prov.completedCount == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(loc.noCompletedSets),
+                              ),
+                            );
+                            return;
+                          }
+                          final auth = context.read<AuthProvider>();
+                          final ok = await prov.saveWorkoutSession(
+                            context: context,
+                            gymId: widget.gymId,
+                            userId: auth.userId!,
+                            showInLeaderboard:
+                                auth.showInLeaderboard ?? true,
+                          );
+                          if (!ok) {
+                            final msg =
+                                prov.error ?? 'Speichern fehlgeschlagen.';
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(SnackBar(content: Text(msg)));
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                prov.device!.isMulti
+                                    ? loc.multiDeviceSessionSaved
+                                    : loc.sessionSaved,
+                              ),
+                            ),
+                          );
+                        },
+                  child: prov.isSaving
+                      ? const CircularProgressIndicator()
+                      : Text(loc.saveButton),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -162,6 +447,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
             FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
             IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Zur aktuellen Session',
+              onPressed: () =>
+                  _pagerKey.currentState?.animateToPage(0),
+            ),
+            IconButton(
               icon: const Icon(Icons.history),
               tooltip: 'Verlauf',
               onPressed: () {
@@ -197,283 +488,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
-        body: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: SessionTimerBar(
-                initialDuration: Duration(seconds: 90),
-              ),
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: Consumer<OverlayNumericKeypadController>(
-                  builder: (context, keypad, _) {
-                    final mq = MediaQuery.of(context);
-                    final bottomPad =
-                        keypad.keypadContentHeight + mq.padding.bottom + 16;
-                    _dlog(
-                      'list bottomPad=$bottomPad keypadHeight=${keypad.keypadContentHeight}',
-                    );
-                    while (_setKeys.length < prov.sets.length) {
-                      _setKeys.add(GlobalKey<SetCardState>());
-                    }
-                    if (_setKeys.length > prov.sets.length) {
-                      _setKeys.removeRange(prov.sets.length, _setKeys.length);
-                    }
-                    return ListView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-                      children: [
-                        if (prov.device!.description.isNotEmpty) ...[
-                          Text(
-                            prov.device!.description,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (plannedEntry != null)
-                          _PlannedTable(entry: plannedEntry)
-                        else ...[
-                          Text(
-                            loc.newSessionTitle,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: prov.sets.length,
-                            itemBuilder: (context, index) {
-                              final set = prov.sets[index];
-                              final prev =
-                                  index < prov.lastSessionSets.length
-                                      ? prov.lastSessionSets[index]
-                                      : null;
-                              return Dismissible(
-                                key: ValueKey('set-${set['number']}'),
-                                direction: DismissDirection.endToStart,
-                                background: const SizedBox.shrink(),
-                                secondaryBackground: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  color: Colors.red.withOpacity(0.15),
-                                  child: const Icon(
-                                    Icons.delete,
-                                    semanticLabel: 'Löschen',
-                                  ),
-                                ),
-                                onDismissed: (_) {
-                                  final removed = Map<String, dynamic>.from(
-                                    set,
-                                  );
-                                  context.read<DeviceProvider>().removeSet(
-                                    index,
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(loc.setRemoved),
-                                      action: SnackBarAction(
-                                        label: loc.undo,
-                                        onPressed:
-                                            () => context
-                                                .read<DeviceProvider>()
-                                                .insertSetAt(index, removed),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: SetCard(
-                                  key: _setKeys[index],
-                                  index: index,
-                                  set: set,
-                                  previous: prev,
-                                  size: SetCardSize.dense,
-                                ),
-                              );
-                            },
-                            separatorBuilder:
-                                (_, __) => const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
-                                  child: Divider(thickness: 1, height: 1),
-                                ),
-                          ),
-                          Center(
-                            child: TextButton.icon(
-                              onPressed: _addSet,
-                              style: TextButton.styleFrom(
-                                foregroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                textStyle: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              icon: const Icon(Icons.add),
-                              label: Text(loc.addSetButton),
-                            ),
-                          ),
-                        ],
-                        if (prov.lastSessionSets.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          Builder(
-                            builder: (context) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: BrandGradientCard(
-                                  padding:
-                                      const EdgeInsets.all(AppSpacing.sm),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      for (var set in prov.lastSessionSets)
-                                        Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            SizedBox(
-                                              width: 24,
-                                              child: Text(set['number']!),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            Expanded(
-                                              child: Text(
-                                                '${set['weight']} kg',
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            Text('${set['reps']} x'),
-                                            if (set['dropWeight'] != null &&
-                                                set['dropWeight']!
-                                                    .isNotEmpty) ...[
-                                              const SizedBox(width: 16),
-                                              Text(
-                                                '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall,
-                                              ),
-                                            ],
-                                            if (set['rir'] != null &&
-                                                set['rir']!.isNotEmpty) ...[
-                                              const SizedBox(width: 16),
-                                              Text('RIR ${set['rir']}'),
-                                            ],
-                                            if (set['note'] != null &&
-                                                set['note']!.isNotEmpty) ...[
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: Text(set['note']!),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      if (prov.lastSessionNote.isNotEmpty) ...[
-                                        const SizedBox(height: 8),
-                                        Text('Notiz: ${prov.lastSessionNote}'),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _closeKeyboard();
-                        Navigator.pop(context);
-                      },
-                      child: Text(loc.cancelButton),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: BrandPrimaryButton(
-                      onPressed:
-                          prov.hasSessionToday || prov.isSaving
-                              ? null
-                              : () async {
-                                if (!_formKey.currentState!.validate()) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(loc.pleaseCheckInputs),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (prov.completedCount == 0) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(loc.noCompletedSets),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                final auth = context.read<AuthProvider>();
-                                final ok = await prov.saveWorkoutSession(
-                                  context: context,
-                                  gymId: widget.gymId,
-                                  userId: auth.userId!,
-                                  showInLeaderboard:
-                                      auth.showInLeaderboard ?? true,
-                                );
-                                if (!ok) {
-                                  final msg =
-                                      prov.error ?? 'Speichern fehlgeschlagen.';
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(SnackBar(content: Text(msg)));
-                                  return;
-                                }
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      prov.device!.isMulti
-                                          ? loc.multiDeviceSessionSaved
-                                          : loc.sessionSaved,
-                                    ),
-                                  ),
-                                );
-                              },
-                      child:
-                          prov.isSaving
-                              ? const CircularProgressIndicator()
-                              : Text(loc.saveButton),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        body: DevicePager(
+          key: _pagerKey,
+          gymId: widget.gymId,
+          deviceId: prov.device!.uid,
+          provider: prov,
+          editablePage:
+              _buildEditablePage(prov, loc, locale, plannedEntry),
         ),
       );
     }

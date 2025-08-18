@@ -319,10 +319,12 @@ class SetCardState extends State<SetCard> {
                     controller: _weightCtrl,
                     focusNode: _weightFocus,
                     label: 'kg',
-                    readOnly: done,
+                    readOnly: done || widget.readOnly,
                     tokens: tokens,
                     dense: dense,
-                    onTap: () => _openKeypad(_weightCtrl, allowDecimal: true),
+                    onTap: widget.readOnly
+                        ? null
+                        : () => _openKeypad(_weightCtrl, allowDecimal: true),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.kgRequired;
                       if (double.tryParse(v.replaceAll(',', '.')) == null) {
@@ -338,10 +340,12 @@ class SetCardState extends State<SetCard> {
                     controller: _repsCtrl,
                     focusNode: _repsFocus,
                     label: 'x',
-                    readOnly: done,
+                    readOnly: done || widget.readOnly,
                     tokens: tokens,
                     dense: dense,
-                    onTap: () => _openKeypad(_repsCtrl, allowDecimal: false),
+                    onTap: widget.readOnly
+                        ? null
+                        : () => _openKeypad(_repsCtrl, allowDecimal: false),
                     validator: (v) {
                       if (v == null || v.isEmpty) return loc.repsRequired;
                       if (int.tryParse(v) == null) return loc.intRequired;
@@ -357,20 +361,24 @@ class SetCardState extends State<SetCard> {
                   semantics:
                       done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                   dense: dense,
-                  onTap: () {
-                    _slog(
-                      widget.index,
-                      'tap: toggle done (form validate then provider)',
-                    );
-                    final form = Form.of(context);
-                    if (!form.validate()) {
-                      _slog(widget.index, 'toggle blocked: invalid form');
-                      HapticFeedback.lightImpact();
-                      return;
-                    }
-                    HapticFeedback.lightImpact();
-                    context.read<DeviceProvider>().toggleSetDone(widget.index);
-                  },
+                  onTap: widget.readOnly
+                      ? null
+                      : () {
+                          _slog(
+                            widget.index,
+                            'tap: toggle done (form validate then provider)',
+                          );
+                          final form = Form.of(context);
+                          if (!form.validate()) {
+                            _slog(widget.index, 'toggle blocked: invalid form');
+                            HapticFeedback.lightImpact();
+                            return;
+                          }
+                          HapticFeedback.lightImpact();
+                          context
+                              .read<DeviceProvider>()
+                              .toggleSetDone(widget.index);
+                        },
                 ),
                 SizedBox(width: dense ? 6 : 8),
                 _RoundButton(
@@ -379,11 +387,16 @@ class SetCardState extends State<SetCard> {
                   filled: false,
                   semantics: 'Mehr Optionen',
                   dense: dense,
-                  onTap: () {
-                    _slog(widget.index, 'tap: more options → ${!_showExtras}');
-                    HapticFeedback.lightImpact();
-                    setState(() => _showExtras = !_showExtras);
-                  },
+                  onTap: widget.readOnly
+                      ? null
+                      : () {
+                          _slog(
+                            widget.index,
+                            'tap: more options → ${!_showExtras}',
+                          );
+                          HapticFeedback.lightImpact();
+                          setState(() => _showExtras = !_showExtras);
+                        },
                 ),
               ],
             ),
@@ -403,9 +416,10 @@ class SetCardState extends State<SetCard> {
                       readOnly: true,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
-                      onTap: done
+                      onTap: done || widget.readOnly
                           ? null
-                          : () => _openKeypad(_dropWeightCtrl, allowDecimal: true),
+                          : () =>
+                              _openKeypad(_dropWeightCtrl, allowDecimal: true),
                     ),
                   ),
                   SizedBox(width: dense ? 8 : 12),
@@ -421,10 +435,12 @@ class SetCardState extends State<SetCard> {
                       readOnly: true,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
-                      onTap: done
+                      onTap: done || widget.readOnly
                           ? null
-                          : () =>
-                              _openKeypad(_dropRepsCtrl, allowDecimal: false),
+                          : () => _openKeypad(
+                                _dropRepsCtrl,
+                                allowDecimal: false,
+                              ),
                     ),
                   ),
                 ],
@@ -443,9 +459,10 @@ class SetCardState extends State<SetCard> {
                       enabled: !widget.readOnly,
                       readOnly: true,
                       keyboardType: TextInputType.none,
-                      onTap: done
+                      onTap: done || widget.readOnly
                           ? null
-                          : () => _openKeypad(_rirCtrl, allowDecimal: false),
+                          : () =>
+                              _openKeypad(_rirCtrl, allowDecimal: false),
                     ),
                   ),
                   SizedBox(width: dense ? 8 : 12),
@@ -548,7 +565,7 @@ class _InputPill extends StatelessWidget {
   final String label;
   final bool readOnly;
   final SetCardTheme tokens;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String? Function(String?)? validator;
   final bool dense;
 
@@ -558,7 +575,7 @@ class _InputPill extends StatelessWidget {
     required this.label,
     required this.readOnly,
     required this.tokens,
-    required this.onTap,
+    this.onTap,
     this.validator,
     this.dense = false,
   });
@@ -620,14 +637,14 @@ class _RoundButton extends StatefulWidget {
   final IconData icon;
   final bool filled;
   final String semantics;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool dense;
   const _RoundButton({
     required this.tokens,
     required this.icon,
     required this.filled,
     required this.semantics,
-    required this.onTap,
+    this.onTap,
     this.dense = false,
   });
 
@@ -646,9 +663,15 @@ class _RoundButtonState extends State<_RoundButton> {
       label: widget.semantics,
       button: true,
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
+        onTapDown: widget.onTap == null
+            ? null
+            : (_) => setState(() => _pressed = true),
+        onTapUp: widget.onTap == null
+            ? null
+            : (_) => setState(() => _pressed = false),
+        onTapCancel: widget.onTap == null
+            ? null
+            : () => setState(() => _pressed = false),
         onTap: widget.onTap,
         child: AnimatedScale(
           scale: scale,
