@@ -252,66 +252,77 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         builder: (context) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: BrandGradientCard(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onHorizontalDragEnd: (d) {
+                                final v = d.primaryVelocity ?? 0;
+                                if (v > 250) {
+                                  _pagerKey.currentState?.goToPreviousSession();
+                                } else if (v < -250) {
+                                  _pagerKey.currentState?.goToNextSession();
+                                }
+                              },
+                              child: BrandGradientCard(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  for (final set in prov.lastSessionSets)
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text('${set['number']}. '),
-                                        const SizedBox(width: 12),
-                                        BrandGradientCard(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm,
-                                            vertical: AppSpacing.xs,
-                                          ),
-                                          child: Text(
-                                            '${set['weight']} kg',
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text('${set['reps']} x'),
-                                        if (set['dropWeight'] != null &&
-                                            set['dropWeight']!.isNotEmpty) ...[
-                                          const SizedBox(width: 16),
-                                          Text(
-                                            '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                        ],
-                                        if (set['rir'] != null &&
-                                            set['rir']!.isNotEmpty) ...[
-                                          const SizedBox(width: 16),
-                                          Text('RIR ${set['rir']}'),
-                                        ],
-                                        if (set['note'] != null &&
-                                            set['note']!.isNotEmpty) ...[
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Text(set['note']!),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  if (prov.lastSessionNote.isNotEmpty) ...[
                                     const SizedBox(height: 8),
-                                    Text('Notiz: ${prov.lastSessionNote}'),
+                                    for (final set in prov.lastSessionSets)
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text('${set['number']}. '),
+                                          const SizedBox(width: 12),
+                                          BrandGradientCard(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.sm,
+                                              vertical: AppSpacing.xs,
+                                            ),
+                                            child: Text(
+                                              '${set['weight']} kg',
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Text('${set['reps']} x'),
+                                          if (set['dropWeight'] != null &&
+                                              set['dropWeight']!.isNotEmpty) ...[
+                                            const SizedBox(width: 16),
+                                            Text(
+                                              '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
+                                            ),
+                                          ],
+                                          if (set['rir'] != null &&
+                                              set['rir']!.isNotEmpty) ...[
+                                            const SizedBox(width: 16),
+                                            Text('RIR ${set['rir']}'),
+                                          ],
+                                          if (set['note'] != null &&
+                                              set['note']!.isNotEmpty) ...[
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Text(set['note']!),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    if (prov.lastSessionNote.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Text('Notiz: ${prov.lastSessionNote}'),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                           );
