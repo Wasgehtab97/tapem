@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'set_card.dart';
@@ -33,24 +34,35 @@ class ReadOnlySnapshotPage extends StatelessWidget {
             itemCount: snapshot.sets.length,
             itemBuilder: (context, i) {
               final s = snapshot.sets[i];
-              return SetCard(
-                index: i,
-                set: {
-                  'number': '${i + 1}',
-                  'weight': s.kg.toString(),
-                  'reps': s.reps.toString(),
-                  'rir': s.rir?.toString() ?? '',
-                  'note': s.note,
-                  'dropWeight': s.drops.isNotEmpty
-                      ? s.drops.first.kg.toString()
-                      : '',
-                  'dropReps': s.drops.isNotEmpty
-                      ? s.drops.first.reps.toString()
-                      : '',
-                  'done': s.done,
-                },
-                readOnly: true,
-                size: SetCardSize.dense,
+              final drops = s.drops.isNotEmpty ? s.drops : _legacyDrops(snapshot, i);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SetCard(
+                    index: i,
+                    set: {
+                      'number': '${i + 1}',
+                      'weight': s.kg.toString(),
+                      'reps': s.reps.toString(),
+                      'rir': s.rir?.toString() ?? '',
+                      'note': s.note,
+                      'dropWeight': '',
+                      'dropReps': '',
+                      'done': s.done,
+                    },
+                    readOnly: true,
+                    size: SetCardSize.dense,
+                  ),
+                  if (drops.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0, top: 6),
+                      child: Column(
+                        children: [
+                          for (final d in drops) _MiniSetCardDrop(d),
+                        ],
+                      ),
+                    ),
+                ],
               );
             },
             separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -65,6 +77,54 @@ class ReadOnlySnapshotPage extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  List<DropEntry> _legacyDrops(DeviceSessionSnapshot snap, int setIndex) {
+    final hint = snap.uiHints?['legacyDrops'] as List<dynamic>?;
+    if (hint == null) return const [];
+    for (final e in hint) {
+      final map = Map<String, dynamic>.from(e);
+      if (map['set'] == setIndex) {
+        final list = (map['drops'] as List<dynamic>? ?? [])
+            .map((d) => DropEntry.fromJson(Map<String, dynamic>.from(d)))
+            .toList();
+        return list;
+      }
+    }
+    return const [];
+  }
+}
+
+class _MiniSetCardDrop extends StatelessWidget {
+  final DropEntry d;
+  const _MiniSetCardDrop(this.d);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [
+            Colors.deepPurple.withOpacity(0.22),
+            Colors.pink.withOpacity(0.18),
+          ],
+        ),
+        border: Border.all(color: Colors.white12, width: 0.5),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.south_east, size: 14),
+          const SizedBox(width: 8),
+          Text('${d.kg} kg',
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const Spacer(),
+          Text('${d.reps} ×',
+              style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+        ],
+      ),
     );
   }
 }

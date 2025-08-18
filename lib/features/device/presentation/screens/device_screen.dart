@@ -19,6 +19,8 @@ import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/set_card.dart';
+import '../models/session_set_vm.dart';
+import '../widgets/last_session_card.dart';
 import '../widgets/device_pager.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
@@ -144,6 +146,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 if (_setKeys.length > prov.sets.length) {
                   _setKeys.removeRange(prov.sets.length, _setKeys.length);
                 }
+                final lastSnap = prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+                final lastSets = lastSnap != null ? mapSnapshotToVM(lastSnap) : mapLegacySetsToVM(prov.lastSessionSets);
+                final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
+                final lastNote = lastSnap?.note ?? prov.lastSessionNote;
                 return ListView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -239,7 +245,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                     ],
-                    if (prov.lastSessionSets.isNotEmpty) ...[
+                    if (lastSets.isNotEmpty && lastDate != null) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       Builder(
@@ -256,72 +262,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                                   _pagerKey.currentState?.goToNextSession();
                                 }
                               },
-                              child: BrandGradientCard(
-                                padding: const EdgeInsets.all(AppSpacing.sm),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(prov.lastSessionDate!)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    for (final set in prov.lastSessionSets)
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text('${set['number']}. '),
-                                          const SizedBox(width: 12),
-                                          BrandGradientCard(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: AppSpacing.sm,
-                                              vertical: AppSpacing.xs,
-                                            ),
-                                            child: Text(
-                                              '${set['weight']} kg',
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Text('${set['reps']} x'),
-                                          if (set['dropWeight'] != null &&
-                                              set['dropWeight']!.isNotEmpty) ...[
-                                            const SizedBox(width: 16),
-                                            Text(
-                                              '↘︎ ${set['dropWeight']} kg × ${set['dropReps']}',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall,
-                                            ),
-                                          ],
-                                          if (set['rir'] != null &&
-                                              set['rir']!.isNotEmpty) ...[
-                                            const SizedBox(width: 16),
-                                            Text('RIR ${set['rir']}'),
-                                          ],
-                                          if (set['note'] != null &&
-                                              set['note']!.isNotEmpty) ...[
-                                            const SizedBox(width: 16),
-                                            Expanded(
-                                              child: Text(set['note']!),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    if (prov.lastSessionNote.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Text('Notiz: ${prov.lastSessionNote}'),
-                                    ],
-                                  ],
-                                ),
+                              child: LastSessionCard(
+                                date: lastDate!,
+                                sets: lastSets,
+                                note: lastNote,
                               ),
                             ),
                           );
                         },
                       ),
+                    ],
                     ],
                   ],
                 );
