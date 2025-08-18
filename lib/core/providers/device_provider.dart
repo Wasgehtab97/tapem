@@ -229,6 +229,10 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '🧩 [Provider] loadDevice initialized sets=${_sets.length} ${_setsBrief(_sets)}',
       );
+      _sessionSnapshots.clear();
+      _lastSnapshotCursor = null;
+      _snapshotsHasMore = true;
+      _snapshotsLoading = false;
       notifyListeners();
 
       await _loadLastSession(gymId, deviceId, exerciseId, userId);
@@ -237,11 +241,6 @@ class DeviceProvider extends ChangeNotifier {
         await _loadUserXp(gymId, deviceId, userId);
       }
       await _restoreDraft();
-      unawaited(loadMoreSnapshots(
-        gymId: gymId,
-        deviceId: deviceId,
-        pageSize: 10,
-      ));
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
