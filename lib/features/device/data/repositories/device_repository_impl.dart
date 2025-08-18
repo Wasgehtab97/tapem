@@ -87,7 +87,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
     required int limit,
     DocumentSnapshot? startAfter,
   }) async {
-    var snap = await _source.fetchSessionSnapshotsPage(
+    final snap = await _source.fetchSessionSnapshotsPage(
       gymId: gymId,
       deviceId: deviceId,
       userId: userId,
@@ -96,7 +96,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
     );
 
     if (snap.docs.isEmpty && startAfter == null) {
-      snap = await _source.fetchSessionSnapshotsPage(
+      final legacy = await _source.fetchSessionSnapshotsPage(
         gymId: gymId,
         deviceId: deviceId,
         userId: null,
@@ -104,7 +104,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
         startAfter: startAfter,
       );
       bool backfilled = false;
-      for (final d in snap.docs) {
+      for (final d in legacy.docs) {
         final data = d.data();
         if (data['userId'] == null) {
           backfilled = true;

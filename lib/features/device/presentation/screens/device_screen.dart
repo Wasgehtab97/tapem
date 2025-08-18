@@ -9,6 +9,7 @@ import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/config/feature_flags.dart';
 
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -245,9 +246,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                     ],
-                    if (lastDate != null && lastSets.isNotEmpty) ...[
+                    if (FF.isLastSessionVisible &&
+                        lastDate != null &&
+                        lastSets.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      const Divider(),
                       Builder(
                         builder: (context) {
                           return Padding(
@@ -271,6 +273,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           );
                         },
                       ),
+                      const SizedBox(height: 12),
                     ],
                   ],
                 );
