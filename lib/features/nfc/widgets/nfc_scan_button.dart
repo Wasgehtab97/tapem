@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class NfcScanButton extends StatelessWidget {
   const NfcScanButton({super.key});
@@ -13,6 +14,7 @@ class NfcScanButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProv = context.read<AuthProvider>();
     final getDeviceUC = context.read<GetDeviceByNfcCode>();
+    final membership = context.read<MembershipService>();
 
     return IconButton(
       icon: const Icon(Icons.nfc),
@@ -62,6 +64,8 @@ class NfcScanButton extends StatelessWidget {
                 );
                 return;
               }
+
+              await membership.ensureMembership(gymId, authProv.userId!);
 
               // Navigation basierend auf dev.isMulti
               if (dev.isMulti) {

@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/presentation/widgets/device_pager.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class _FakeDeviceRepository implements DeviceRepository {
   final List<DeviceSessionSnapshot> snaps;
@@ -27,6 +28,11 @@ class _FakeDeviceRepository implements DeviceRepository {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {}
+}
+
 void main() {
   testWidgets('pager direction and swipe handlers', (tester) async {
     final snapshot = DeviceSessionSnapshot(
@@ -41,6 +47,7 @@ void main() {
     final prov = DeviceProvider(
       firestore: FakeFirebaseFirestore(),
       deviceRepository: repo,
+      membership: FakeMembershipService(),
     );
     await prov.loadMoreSnapshots(gymId: 'g', deviceId: 'd', userId: 'u1');
 

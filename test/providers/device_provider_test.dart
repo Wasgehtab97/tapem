@@ -15,6 +15,7 @@ import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
 import 'package:tapem/features/challenges/domain/models/completed_challenge.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class FakeDeviceRepository implements DeviceRepository {
   FakeDeviceRepository(this.devices);
@@ -53,6 +54,11 @@ class FakeDeviceRepository implements DeviceRepository {
 
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;
+}
+
+class FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {}
 }
 
 class FakeXpRepository implements XpRepository {
@@ -154,6 +160,7 @@ void main() {
         getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
         firestore: firestore,
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
 
       await provider.loadDevice(
@@ -183,6 +190,7 @@ void main() {
         getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
         firestore: firestore,
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
       await provider.loadDevice(
         gymId: 'g1',
@@ -244,6 +252,7 @@ void main() {
         getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
         firestore: firestore,
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
       await provider.loadDevice(
         gymId: 'g1',
@@ -285,6 +294,7 @@ void main() {
         firestore: FakeFirebaseFirestore(),
         getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([])),
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
       provider.addSet();
       provider.updateSet(0, weight: '10');
@@ -309,6 +319,7 @@ void main() {
         getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
         firestore: firestore,
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
       await provider.loadDevice(
         gymId: 'g1',
@@ -364,8 +375,9 @@ void main() {
           ]),
         ),
         log: (_, [__]) {},
+        membership: FakeMembershipService(),
       );
-      await provider.loadDevices('g1');
+      await provider.loadDevices('g1', 'u1');
       var calls = 0;
       provider.addListener(() => calls++);
       provider.patchDeviceGroups('d1', ['p'], ['s']);

@@ -21,6 +21,8 @@ import '../../features/device/data/sources/firestore_device_source.dart';
 import '../../features/history/data/sources/firestore_history_source.dart';
 import '../../features/history/data/repositories/history_repository_impl.dart';
 import '../../features/history/domain/usecases/get_history_for_device.dart';
+import '../../services/membership_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MuscleGroupProvider extends ChangeNotifier {
   final GetMuscleGroupsForGym _getGroups;
@@ -30,6 +32,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
   final SetDeviceMuscleGroupsUseCase _setDeviceGroups;
   final EnsureRegionGroup _ensureRegionGroup;
+  final MembershipService _membership;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
@@ -39,7 +42,8 @@ class MuscleGroupProvider extends ChangeNotifier {
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
     SetDeviceMuscleGroupsUseCase? setDeviceGroups,
     EnsureRegionGroup? ensureRegionGroup,
-  }) : _getGroups =
+    MembershipService? membership,
+  })  : _getGroups =
            getGroups ??
            GetMuscleGroupsForGym(
              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
@@ -69,9 +73,10 @@ class MuscleGroupProvider extends ChangeNotifier {
            ),
        _ensureRegionGroup =
            ensureRegionGroup ??
-           EnsureRegionGroup(
-             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-           );
+          EnsureRegionGroup(
+            MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+          ),
+        _membership = membership ?? FirestoreMembershipService();
 
   bool _isLoading = false;
   String? _error;
@@ -104,7 +109,20 @@ class MuscleGroupProvider extends ChangeNotifier {
         throw Exception('Benutzer nicht eingeloggt');
       }
 
-      _groups = await _getGroups.execute(gymId);
+      await _membership.ensureMembership(gymId, userId);
+      try {
+        _groups = await _getGroups.execute(gymId);
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied') {
+          debugPrint('RULES_DENIED path=gyms/$gymId/muscleGroups op=read');
+          await _membership.ensureMembership(gymId, userId);
+          debugPrint(
+              'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/muscleGroups op=read');
+          _groups = await _getGroups.execute(gymId);
+        } else {
+          rethrow;
+        }
+      }
       await _loadCounts(gymId, userId);
     } catch (e, st) {
       _error = e.toString();

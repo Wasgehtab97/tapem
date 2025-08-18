@@ -24,7 +24,7 @@ class FakeDeviceProvider extends ChangeNotifier implements DeviceProvider {
   @override
   bool get isLoading => false;
   @override
-  Future<void> loadDevices(String gymId) async {}
+  Future<void> loadDevices(String gymId, String uid) async {}
   @override
   void applyMuscleAssignments(String deviceId, List<String> primary,
       List<String> secondary) {

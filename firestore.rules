@@ -100,6 +100,13 @@ service cloud.firestore {
           allow update, delete: if false;
         }
 
+        // Session snapshots per user
+        match /sessions/{sessionId} {
+          allow create: if requestOwnerInGym(gymId);
+          allow read: if resourceOwnerOrAdmin(gymId);
+          allow update, delete: if false;
+        }
+
         // Each user manages their own notes for the device.
         match /userNotes/{userId} {
           allow read, write: if ownerOrAdmin(gymId, userId);

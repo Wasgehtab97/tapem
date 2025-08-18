@@ -38,6 +38,7 @@ import 'package:tapem/features/survey/survey_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'core/drafts/session_draft_repository_impl.dart';
+import 'services/membership_service.dart';
 
 import 'features/nfc/data/nfc_service.dart';
 import 'features/nfc/domain/usecases/read_nfc_code.dart';
@@ -170,22 +171,26 @@ Future<void> main() async {
           create: (_) => OverlayNumericKeypadController(),
         ),
 
-        ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
-          create:
-              (_) => BrandingProvider(
-                source: FirestoreGymSource(
-                  firestore: FirebaseFirestore.instance,
-                ),
-              ),
-          update: (_, auth, prov) {
-            final p =
-                prov ??
+        Provider<MembershipService>(
+          create: (_) => FirestoreMembershipService(),
+        ),
+        ChangeNotifierProxyProvider2<AuthProvider, MembershipService,
+            BrandingProvider>(
+          create: (c, auth, m) => BrandingProvider(
+            source: FirestoreGymSource(
+              firestore: FirebaseFirestore.instance,
+            ),
+            membership: m,
+          ),
+          update: (_, auth, m, prov) {
+            final p = prov ??
                 BrandingProvider(
                   source: FirestoreGymSource(
                     firestore: FirebaseFirestore.instance,
                   ),
+                  membership: m,
                 );
-            p.loadBrandingWithGym(auth.gymCode);
+            p.loadBrandingWithGym(auth.gymCode, auth.userId);
             return p;
           },
         ),
@@ -199,15 +204,20 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(
-          create: (_) => DeviceProvider(
+          create: (c) => DeviceProvider(
             firestore: FirebaseFirestore.instance,
             draftRepo: SessionDraftRepositoryImpl(),
+            membership: c.read<MembershipService>(),
           ),
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => MuscleGroupProvider()),
+        ChangeNotifierProvider(
+          create: (c) => MuscleGroupProvider(
+            membership: c.read<MembershipService>(),
+          ),
+        ),
         ChangeNotifierProvider(
           create:
               (c) => ExerciseProvider(
