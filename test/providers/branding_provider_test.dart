@@ -3,6 +3,7 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/features/gym/domain/models/gym_config.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class FakeGymSource implements FirestoreGymSource {
   FakeGymSource({this.branding, this.throwError});
@@ -22,6 +23,11 @@ class FakeGymSource implements FirestoreGymSource {
   }
 }
 
+class FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -30,9 +36,10 @@ void main() {
       final source = FakeGymSource(branding: Branding(logoUrl: 'x'));
       final provider = BrandingProvider(
         source: source,
+        membership: FakeMembershipService(),
         log: (_, [__]) {},
       );
-      await provider.loadBranding('g1');
+      await provider.loadBranding('g1', 'u1');
       expect(provider.branding?.logoUrl, 'x');
       expect(provider.error, isNull);
     });
@@ -41,9 +48,10 @@ void main() {
       final source = FakeGymSource(branding: null);
       final provider = BrandingProvider(
         source: source,
+        membership: FakeMembershipService(),
         log: (_, [__]) {},
       );
-      await provider.loadBranding('g1');
+      await provider.loadBranding('g1', 'u1');
       expect(provider.branding, isNull);
     });
 
@@ -51,9 +59,10 @@ void main() {
       final source = FakeGymSource(throwError: true);
       final provider = BrandingProvider(
         source: source,
+        membership: FakeMembershipService(),
         log: (_, [__]) {},
       );
-      await provider.loadBranding('g1');
+      await provider.loadBranding('g1', 'u1');
       expect(provider.branding, isNull);
       expect(provider.error, isNotNull);
     });

@@ -34,7 +34,7 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final gymId = auth.gymCode ?? '';
-      context.read<DeviceProvider>().loadDevices(gymId);
+      context.read<DeviceProvider>().loadDevices(gymId, auth.userId!);
       context.read<MuscleGroupProvider>().loadGroups(context);
     });
   }

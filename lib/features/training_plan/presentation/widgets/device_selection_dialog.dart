@@ -15,7 +15,7 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
   final gymId = context.read<AuthProvider>().gymCode!;
   final userId = context.read<AuthProvider>().userId!;
   final deviceProv = context.read<DeviceProvider>();
-  await deviceProv.loadDevices(gymId);
+  await deviceProv.loadDevices(gymId, userId);
   final devices = deviceProv.devices;
   final exProv = context.read<ExerciseProvider>();
 

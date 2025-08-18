@@ -24,6 +24,8 @@ import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/services/membership_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -46,6 +48,7 @@ class DeviceProvider extends ChangeNotifier {
   final Uuid _uuid = const Uuid();
   final SessionDraftRepository _draftRepo;
   final DeviceRepository deviceRepository;
+  final MembershipService _membership;
 
   List<Device> _devices = [];
 
@@ -82,6 +85,7 @@ class DeviceProvider extends ChangeNotifier {
     GetDevicesForGym? getDevicesForGym,
     LogFn? log,
     SessionDraftRepository? draftRepo,
+    required MembershipService membership,
   })  : _firestore = firestore,
         deviceRepository =
             deviceRepository ?? DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
@@ -91,7 +95,8 @@ class DeviceProvider extends ChangeNotifier {
                   DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
             ),
         _log = log ?? _defaultLog,
-        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl();
+        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
+        _membership = membership;
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -126,8 +131,20 @@ class DeviceProvider extends ChangeNotifier {
   bool get hasMoreSnapshots => _snapshotsHasMore;
   bool get isLoadingSnapshots => _snapshotsLoading;
 
-  Future<void> loadDevices(String gymId) async {
-    _devices = await _getDevicesForGym.execute(gymId);
+  Future<void> loadDevices(String gymId, String uid) async {
+    await _membership.ensureMembership(gymId, uid);
+    try {
+      _devices = await _getDevicesForGym.execute(gymId);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        _log('RULES_DENIED path=gyms/$gymId/devices op=read');
+        await _membership.ensureMembership(gymId, uid);
+        _log('RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read');
+        _devices = await _getDevicesForGym.execute(gymId);
+      } else {
+        rethrow;
+      }
+    }
     notifyListeners();
   }
 
@@ -140,14 +157,32 @@ class DeviceProvider extends ChangeNotifier {
     if (_snapshotsLoading || !_snapshotsHasMore) return;
     _snapshotsLoading = true;
     notifyListeners();
-
-    final page = await deviceRepository.fetchSessionSnapshotsPaginated(
-      gymId: gymId,
-      deviceId: deviceId,
-      userId: userId,
-      limit: pageSize,
-      startAfter: _lastSnapshotCursor,
-    );
+    await _membership.ensureMembership(gymId, userId);
+    List<DeviceSessionSnapshot> page;
+    try {
+      page = await deviceRepository.fetchSessionSnapshotsPaginated(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+        limit: pageSize,
+        startAfter: _lastSnapshotCursor,
+      );
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        _log('RULES_DENIED path=gyms/$gymId/devices/$deviceId/sessions op=read');
+        await _membership.ensureMembership(gymId, userId);
+        _log('RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices/$deviceId/sessions op=read');
+        page = await deviceRepository.fetchSessionSnapshotsPaginated(
+          gymId: gymId,
+          deviceId: deviceId,
+          userId: userId,
+          limit: pageSize,
+          startAfter: _lastSnapshotCursor,
+        );
+      } else {
+        rethrow;
+      }
+    }
 
     if (page.isNotEmpty) {
       _sessionSnapshots.addAll(page);
@@ -191,7 +226,20 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      final devices = await _getDevicesForGym.execute(gymId);
+      await _membership.ensureMembership(gymId, userId);
+      List<Device> devices;
+      try {
+        devices = await _getDevicesForGym.execute(gymId);
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied') {
+          _log('RULES_DENIED path=gyms/$gymId/devices op=read');
+          await _membership.ensureMembership(gymId, userId);
+          _log('RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read');
+          devices = await _getDevicesForGym.execute(gymId);
+        } else {
+          rethrow;
+        }
+      }
       _device = devices.firstWhere(
         (d) => d.uid == deviceId,
         orElse: () => throw Exception('Device not found'),

@@ -11,6 +11,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class _FakeRepo implements DeviceRepository {
   @override
@@ -49,12 +50,18 @@ class _FakeRepo implements DeviceRepository {
   DocumentSnapshot? get lastSnapshotCursor => null;
 }
 
+class FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {}
+}
+
 void main() {
   testWidgets('SetCard toggle locks fields', (tester) async {
     final provider = DeviceProvider(
       firestore: FakeFirebaseFirestore(),
       getDevicesForGym: GetDevicesForGym(_FakeRepo()),
       log: (_, [__]) {},
+      membership: FakeMembershipService(),
     );
     provider.addSet();
 
