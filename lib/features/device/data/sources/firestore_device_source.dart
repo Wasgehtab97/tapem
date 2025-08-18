@@ -104,7 +104,7 @@ class FirestoreDeviceSource {
   Future<QuerySnapshot<Map<String, dynamic>>> fetchSessionSnapshotsPage({
     required String gymId,
     required String deviceId,
-    required String? userId,
+    required String userId,
     int limit = 10,
     DocumentSnapshot? startAfter,
   }) {
@@ -113,11 +113,8 @@ class FirestoreDeviceSource {
         .doc(gymId)
         .collection('devices')
         .doc(deviceId)
-        .collection('sessions');
-
-    if (userId != null) {
-      q = q.where('userId', isEqualTo: userId);
-    }
+        .collection('sessions')
+        .where('userId', isEqualTo: userId);
 
     q = q.orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {

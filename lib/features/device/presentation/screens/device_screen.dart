@@ -4,6 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tapem/core/services/membership_service.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -62,6 +65,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
+      await MembershipService(FirebaseFirestore.instance, FirebaseAuth.instance).ensureMembership(gymId: widget.gymId);
       _dlog('loadDevice() → start');
       await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,

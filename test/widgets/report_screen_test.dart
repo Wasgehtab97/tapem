@@ -15,9 +15,9 @@ class FakeReportRepository implements ReportRepository {
   final Map<String, int> usage;
   final List<DateTime> times;
   @override
-  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId) async => usage;
+  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId, String userId) async => usage;
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;
+  Future<List<DateTime>> fetchAllLogTimestamps(String gymId, String userId) async => times;
 }
 
 void main() {

@@ -21,8 +21,8 @@ class ReportProvider extends ChangeNotifier {
   }) : _getUsage = getUsageStats,
        _getTimestamps = getLogTimestamps;
 
-  Future<void> loadReport(String gymId) async {
-    if (gymId.isEmpty) {
+  Future<void> loadReport(String gymId, String userId) async {
+    if (gymId.isEmpty || userId.isEmpty) {
       state = ReportState.initial;
       notifyListeners();
       return;
@@ -30,8 +30,8 @@ class ReportProvider extends ChangeNotifier {
     state = ReportState.loading;
     notifyListeners();
     try {
-      usageCounts = await _getUsage.execute(gymId);
-      heatmapDates = await _getTimestamps.execute(gymId);
+      usageCounts = await _getUsage.execute(gymId, userId);
+      heatmapDates = await _getTimestamps.execute(gymId, userId);
       state = ReportState.loaded;
     } catch (e) {
       errorMessage = e.toString();

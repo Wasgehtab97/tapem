@@ -6,7 +6,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:tapem/core/services/membership_service.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -190,7 +192,10 @@ class DeviceProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
 
-    try {
+    final service =
+        MembershipService(FirebaseFirestore.instance, FirebaseAuth.instance);
+
+    Future<void> run() async {
       final devices = await _getDevicesForGym.execute(gymId);
       _device = devices.firstWhere(
         (d) => d.uid == deviceId,
@@ -256,6 +261,25 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
+    }
+
+    try {
+      await service.ensureMembership(gymId: gymId);
+      await run();
+    } on FirebaseException catch (e, st) {
+      if (e.code == 'permission-denied') {
+        _log('RULES_DENIED(gyms/$gymId/devices/$deviceId)');
+        try {
+          await service.ensureMembership(gymId: gymId);
+          await run();
+        } catch (e2, st2) {
+          _error = e2.toString();
+          _log('❌ [Provider] loadDevice error: $e2', st2);
+        }
+      } else {
+        _error = e.toString();
+        _log('❌ [Provider] loadDevice error: $e', st);
+      }
     } catch (e, st) {
       _error = e.toString();
       _log('❌ [Provider] loadDevice error: $e', st);

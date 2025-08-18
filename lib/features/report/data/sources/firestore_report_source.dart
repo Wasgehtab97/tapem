@@ -23,6 +23,7 @@ class FirestoreReportSource {
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> fetchLogsForDevice(
     String gymId,
     String deviceId,
+    String userId,
   ) {
     return _fs
         .collection('gyms')
@@ -30,6 +31,7 @@ class FirestoreReportSource {
         .collection('devices')
         .doc(deviceId)
         .collection('logs')
+        .where('userId', isEqualTo: userId)
         .get()
         .then((snap) => snap.docs);
   }

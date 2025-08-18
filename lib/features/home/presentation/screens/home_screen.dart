@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (code != null && code.isNotEmpty) {
         gymProv.loadGymData(code).then((_) {
           final id = gymProv.currentGymId;
-          reportProv.loadReport(id);
+          reportProv.loadReport(id, authProv.userId!);
         });
       }
       if (authProv.userName == null || authProv.userName!.isEmpty) {

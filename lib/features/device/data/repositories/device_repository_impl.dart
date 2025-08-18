@@ -95,26 +95,6 @@ class DeviceRepositoryImpl implements DeviceRepository {
       startAfter: startAfter,
     );
 
-    if (snap.docs.isEmpty && startAfter == null) {
-      final legacy = await _source.fetchSessionSnapshotsPage(
-        gymId: gymId,
-        deviceId: deviceId,
-        userId: null,
-        limit: limit,
-        startAfter: startAfter,
-      );
-      bool backfilled = false;
-      for (final d in legacy.docs) {
-        final data = d.data();
-        if (data['userId'] == null) {
-          backfilled = true;
-          d.reference.update({'userId': userId}).catchError((_) {});
-        }
-      }
-      if (backfilled) {
-        debugPrint('SNAPSHOT_BACKFILL(userId: set)');
-      }
-    }
 
     _lastSnapshotCursor = snap.docs.isNotEmpty ? snap.docs.last : null;
     return snap.docs

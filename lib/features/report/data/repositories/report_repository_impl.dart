@@ -10,13 +10,13 @@ class ReportRepositoryImpl implements ReportRepository {
     : _source = source ?? FirestoreReportSource();
 
   @override
-  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId) async {
+  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId, String userId) async {
     final devices = await _source.fetchDevices(gymId);
     final Map<String, int> counts = {};
 
     for (final deviceDoc in devices) {
       final deviceId = deviceDoc.id;
-      final logs = await _source.fetchLogsForDevice(gymId, deviceId);
+      final logs = await _source.fetchLogsForDevice(gymId, deviceId, userId);
 
       // Einzigartige sessionId sammeln
       final sessionIds = <String>{};
@@ -34,13 +34,13 @@ class ReportRepositoryImpl implements ReportRepository {
   }
 
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async {
+  Future<List<DateTime>> fetchAllLogTimestamps(String gymId, String userId) async {
     final devices = await _source.fetchDevices(gymId);
     final List<DateTime> allTimestamps = [];
 
     for (final deviceDoc in devices) {
       final deviceId = deviceDoc.id;
-      final logs = await _source.fetchLogsForDevice(gymId, deviceId);
+      final logs = await _source.fetchLogsForDevice(gymId, deviceId, userId);
       for (final logDoc in logs) {
         final data = logDoc.data();
         final ts = data?['timestamp'];
