@@ -25,7 +25,6 @@ import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -293,7 +292,8 @@ class DeviceProvider extends ChangeNotifier {
         userId: userId,
       );
 
-      if (FF.isLastSessionVisible) {
+      if (FF.showLastSessionOnDevicePage ||
+          FF.runtimeShowLastSessionOnDevicePage) {
         await _loadLastSession(gymId, deviceId, exerciseId, userId);
       }
       await _loadUserNote(gymId, deviceId, userId);

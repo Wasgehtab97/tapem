@@ -176,11 +176,11 @@ Future<void> main() async {
         ),
         ChangeNotifierProxyProvider2<AuthProvider, MembershipService,
             BrandingProvider>(
-          create: (c, auth, m) => BrandingProvider(
+          create: (c) => BrandingProvider(
             source: FirestoreGymSource(
               firestore: FirebaseFirestore.instance,
             ),
-            membership: m,
+            membership: c.read<MembershipService>(),
           ),
           update: (_, auth, m, prov) {
             final p = prov ??
