@@ -86,3 +86,10 @@ alter-stand:
 	git checkout a_gpt5 
 	git reset --hard (hier die alte branch einfügen)
 	git push --force-with-lease origin a_gpt5
+
+# APK Release
+apk-release:
+	flutter clean
+	flutter pub get
+	flutter gen-l10n
+	flutter build apk --release

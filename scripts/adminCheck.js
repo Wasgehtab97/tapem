@@ -8,7 +8,7 @@ admin.initializeApp({
   // projectId: 'dein-firebase-projekt-id',
 });
 
-const uid = 'BdEMGJkrE6MjGC9i3uH909MKCim1';
+const uid = 'WUNNP9ruwFMggXDp90ZIRNXUC4r1';
 admin.auth().getUser(uid)
   .then(userRec => {
     console.log('Custom Claims:', userRec.customClaims);

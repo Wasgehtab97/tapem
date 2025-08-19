@@ -437,13 +437,13 @@ abstract class AppLocalizations {
   /// **'Fill both drop fields or clear them.'**
   String get dropFillBoth;
 
-  /// Validation when drop kg is >= base
+  /// Validation when drop kg >= base
   ///
   /// In en, this message translates to:
   /// **'Drop kg must be less than base'**
   String get dropWeightTooHigh;
 
-  /// Validation when drop reps is invalid
+  /// Validation when drop reps < 1
   ///
   /// In en, this message translates to:
   /// **'Drop reps min 1'**
