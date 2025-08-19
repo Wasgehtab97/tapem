@@ -130,6 +130,7 @@ serviceAccount*.json
 **/GoogleService-Info.plist
 functions/.runtimeconfig.json
 **/key.properties
+!ios/Runner/GoogleService-Info.plist
 
 # Scripts secrets
 scripts/*.json
@@ -141,3 +142,4 @@ serviceAccount*.json
 **/serviceAccount*.json
 functions/.runtimeconfig.json
 **/key.properties
+!ios/Runner/GoogleService-Info.plist
