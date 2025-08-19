@@ -3,11 +3,9 @@
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- NFC-Entitlements: sowohl NDEF als auch Tag-Reader erlauben -->
   <key>com.apple.developer.nfc.readersession.formats</key>
   <array>
     <string>NDEF</string>
-    <string>TAG</string>
   </array>
 </dict>
 </plist>

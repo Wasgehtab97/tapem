@@ -65,8 +65,13 @@
   <key>UIApplicationSupportsIndirectInputEvents</key>
   <true/>
 
-  <!-- NFC Usage Description -->
   <key>NFCReaderUsageDescription</key>
-  <string>Wir nutzen NFC, um Trainingsgeräte durch das Halten an dein iPhone automatisch zu erkennen.</string>
+  <string>NFC is used to scan tapem tags in the gym.</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Camera is used to attach photos to feedback.</string>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>Photo library access is used to pick files/images.</string>
+  <key>NSPhotoLibraryAddUsageDescription</key>
+  <string>Used to save exported images/files if needed.</string>
 </dict>
 </plist>
