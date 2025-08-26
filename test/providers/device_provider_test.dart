@@ -20,6 +20,8 @@ import 'package:tapem/services/membership_service.dart';
 class FakeDeviceRepository implements DeviceRepository {
   FakeDeviceRepository(this.devices);
   final List<Device> devices;
+  DeviceSessionSnapshot? lastSnapshot;
+
   @override
   Future<List<Device>> getDevicesForGym(String gymId) async => devices;
   @override
@@ -29,12 +31,16 @@ class FakeDeviceRepository implements DeviceRepository {
   @override
   Future<void> deleteDevice(String gymId, String deviceId) => throw UnimplementedError();
   @override
-  Future<void> updateMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) => throw UnimplementedError();
+  Future<void> updateMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) =>
+      throw UnimplementedError();
   @override
-  Future<void> setMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) => throw UnimplementedError();
+  Future<void> setMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) =>
+      throw UnimplementedError();
 
   @override
-  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
+  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {
+    lastSnapshot = snapshot;
+  }
 
   @override
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
@@ -238,6 +244,56 @@ void main() {
       expect(logs.docs.first.data()['dropReps'], 5);
       expect(xpRepo.calls, 1);
       expect(chRepo.calls, 1);
+    });
+
+    testWidgets('saveWorkoutSession snapshot keeps decimal weight',
+        (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'd1',
+        id: 1,
+        name: 'Device',
+        primaryMuscleGroups: const ['m1'],
+      );
+      final repo = FakeDeviceRepository([device]);
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(repo),
+        firestore: firestore,
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'd1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, weight: '17,5', reps: '8');
+      provider.toggleSetDone(0);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<XpProvider>.value(
+                value: XpProvider(repo: FakeXpRepository())),
+            ChangeNotifierProvider<ChallengeProvider>.value(
+                value: ChallengeProvider(repo: FakeChallengeRepository())),
+            ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          ],
+          child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        ),
+      );
+
+      final ctx = tester.element(find.byType(SizedBox));
+      final ok = await provider.saveWorkoutSession(
+        context: ctx,
+        gymId: 'g1',
+        userId: 'u1',
+        showInLeaderboard: false,
+      );
+      expect(ok, isTrue);
+      expect(repo.lastSnapshot, isNotNull);
+      expect(repo.lastSnapshot!.sets.first.kg, 17.5);
     });
 
     testWidgets('saveWorkoutSession without completed sets aborts', (tester) async {

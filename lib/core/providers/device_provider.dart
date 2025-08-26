@@ -747,7 +747,9 @@ class DeviceProvider extends ChangeNotifier {
       sets: _sets
           .map(
             (s) => SetEntry(
-              kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
+              kg: num.tryParse(
+                      s['weight']?.toString().replaceAll(',', '.') ?? '0') ??
+                  0,
               reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
               rir: (s['rir']?.toString().isEmpty ?? true)
                   ? null
