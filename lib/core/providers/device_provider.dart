@@ -85,17 +85,21 @@ class DeviceProvider extends ChangeNotifier {
     LogFn? log,
     SessionDraftRepository? draftRepo,
     required MembershipService membership,
-  })  : _firestore = firestore,
-        deviceRepository =
-            deviceRepository ?? DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
-        _getDevicesForGym =
-            getDevicesForGym ?? GetDevicesForGym(
-              deviceRepository ??
-                  DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
-            ),
-        _log = log ?? _defaultLog,
-        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
-        _membership = membership;
+  }) : _firestore = firestore,
+       deviceRepository =
+           deviceRepository ??
+           DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
+       _getDevicesForGym =
+           getDevicesForGym ??
+           GetDevicesForGym(
+             deviceRepository ??
+                 DeviceRepositoryImpl(
+                   FirestoreDeviceSource(firestore: firestore),
+                 ),
+           ),
+       _log = log ?? _defaultLog,
+       _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
+       _membership = membership;
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -168,9 +172,13 @@ class DeviceProvider extends ChangeNotifier {
       );
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
-        _log('RULES_DENIED path=gyms/$gymId/devices/$deviceId/sessions op=read');
+        _log(
+          'RULES_DENIED path=gyms/$gymId/devices/$deviceId/sessions op=read',
+        );
         await _membership.ensureMembership(gymId, userId);
-        _log('RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices/$deviceId/sessions op=read');
+        _log(
+          'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices/$deviceId/sessions op=read',
+        );
         page = await deviceRepository.fetchSessionSnapshotsPaginated(
           gymId: gymId,
           deviceId: deviceId,
@@ -233,7 +241,9 @@ class DeviceProvider extends ChangeNotifier {
         if (e.code == 'permission-denied') {
           _log('RULES_DENIED path=gyms/$gymId/devices op=read');
           await _membership.ensureMembership(gymId, userId);
-          _log('RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read');
+          _log(
+            'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read',
+          );
           devices = await _getDevicesForGym.execute(gymId);
         } else {
           rethrow;
@@ -286,11 +296,7 @@ class DeviceProvider extends ChangeNotifier {
       _snapshotsLoading = false;
       notifyListeners();
 
-      await loadMoreSnapshots(
-        gymId: gymId,
-        deviceId: deviceId,
-        userId: userId,
-      );
+      await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
 
       if (FF.showLastSessionOnDevicePage ||
           FF.runtimeShowLastSessionOnDevicePage) {
@@ -458,8 +464,10 @@ class DeviceProvider extends ChangeNotifier {
     final key = _draftKey;
     if (key == null) return;
     _draftSaveTimer?.cancel();
-    _draftSaveTimer =
-        Timer(const Duration(milliseconds: kDeviceDraftDebounceMs), _saveDraftNow);
+    _draftSaveTimer = Timer(
+      const Duration(milliseconds: kDeviceDraftDebounceMs),
+      _saveDraftNow,
+    );
   }
 
   Future<void> _saveDraftNow() async {
@@ -540,11 +548,7 @@ class DeviceProvider extends ChangeNotifier {
     if (!_snapshotsHasMore || _snapshotsLoading) return;
     if (_sessionSnapshots.length >= target) return;
     _prefetchTimer = Timer(const Duration(milliseconds: 800), () {
-      loadMoreSnapshots(
-        gymId: gymId,
-        deviceId: deviceId,
-        userId: userId,
-      );
+      loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
       _log('SNAPSHOT_PREFETCH(triggered: true)');
     });
   }
@@ -563,10 +567,9 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final savedSets =
-          _sets
-              .where((s) => (s['done'] == true || s['done'] == 'true'))
-              .toList();
+      final savedSets = _sets
+          .where((s) => (s['done'] == true || s['done'] == 'true'))
+          .toList();
       if (savedSets.isEmpty) {
         _error = 'Keine abgeschlossenen Sätze.';
         _log('⚠️ [Provider] save aborted: no completed sets');
@@ -584,17 +587,16 @@ class DeviceProvider extends ChangeNotifier {
           .doc(_device!.uid)
           .collection('logs');
 
-      final existingToday =
-          await logsCol
-              .where('userId', isEqualTo: userId)
-              .where('exerciseId', isEqualTo: _currentExerciseId)
-              .where(
-                'timestamp',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
-              )
-              .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-              .limit(1)
-              .get();
+      final existingToday = await logsCol
+          .where('userId', isEqualTo: userId)
+          .where('exerciseId', isEqualTo: _currentExerciseId)
+          .where(
+            'timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .limit(1)
+          .get();
 
       if (existingToday.docs.isNotEmpty) {
         _error = 'Heute bereits gespeichert.';
@@ -633,8 +635,9 @@ class DeviceProvider extends ChangeNotifier {
         }
         if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
             (set['dropReps'] ?? '').toString().isNotEmpty) {
-          data['dropWeightKg'] =
-              double.parse(set['dropWeight']!.replaceAll(',', '.'));
+          data['dropWeightKg'] = double.parse(
+            set['dropWeight']!.replaceAll(',', '.'),
+          );
           data['dropReps'] = int.parse(set['dropReps']!);
         }
         batch.set(ref, data);
@@ -747,32 +750,36 @@ class DeviceProvider extends ChangeNotifier {
       sets: _sets
           .map(
             (s) => SetEntry(
-              kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
+              kg:
+                  num.tryParse(
+                    s['weight']?.toString().replaceAll(',', '.') ?? '0',
+                  ) ??
+                  0,
               reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
               rir: (s['rir']?.toString().isEmpty ?? true)
                   ? null
                   : int.tryParse(s['rir'].toString()),
               done: s['done'] == true || s['done'] == 'true',
               note: s['note'] as String?,
-              drops: (s['dropWeight']?.toString().isNotEmpty == true &&
+              drops:
+                  (s['dropWeight']?.toString().isNotEmpty == true &&
                       s['dropReps']?.toString().isNotEmpty == true)
                   ? [
                       DropEntry(
-                        kg: num.tryParse(
-                                s['dropWeight']!.toString().replaceAll(',', '.')) ??
+                        kg:
+                            num.tryParse(
+                              s['dropWeight']!.toString().replaceAll(',', '.'),
+                            ) ??
                             0,
-                        reps:
-                            int.tryParse(s['dropReps']!.toString()) ?? 0,
-                      )
+                        reps: int.tryParse(s['dropReps']!.toString()) ?? 0,
+                      ),
                     ]
                   : const [],
             ),
           )
           .toList(),
       renderVersion: 1,
-      uiHints: {
-        'plannedTableCollapsed': false,
-      },
+      uiHints: {'plannedTableCollapsed': false},
     );
   }
 
@@ -789,13 +796,12 @@ class DeviceProvider extends ChangeNotifier {
         .doc(deviceId)
         .collection('logs');
 
-    final lastSnap =
-        await logsCol
-            .where('userId', isEqualTo: userId)
-            .where('exerciseId', isEqualTo: exerciseId)
-            .orderBy('timestamp', descending: true)
-            .limit(1)
-            .get();
+    final lastSnap = await logsCol
+        .where('userId', isEqualTo: userId)
+        .where('exerciseId', isEqualTo: exerciseId)
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
     if (lastSnap.docs.isEmpty) return;
 
     final data = lastSnap.docs.first.data();
@@ -803,13 +809,12 @@ class DeviceProvider extends ChangeNotifier {
     final ts = (data['timestamp'] as Timestamp).toDate();
     final note = data['note'] as String? ?? '';
 
-    final sessionDocs =
-        await logsCol
-            .where('userId', isEqualTo: userId)
-            .where('exerciseId', isEqualTo: exerciseId)
-            .where('sessionId', isEqualTo: sid)
-            .orderBy('timestamp')
-            .get();
+    final sessionDocs = await logsCol
+        .where('userId', isEqualTo: userId)
+        .where('exerciseId', isEqualTo: exerciseId)
+        .where('sessionId', isEqualTo: sid)
+        .orderBy('timestamp')
+        .get();
 
     _lastSessionSets = [
       for (var entry in sessionDocs.docs.asMap().entries)
@@ -837,15 +842,14 @@ class DeviceProvider extends ChangeNotifier {
     String deviceId,
     String userId,
   ) async {
-    final snap =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .doc(deviceId)
-            .collection('userNotes')
-            .doc(userId)
-            .get();
+    final snap = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('userNotes')
+        .doc(userId)
+        .get();
     if (snap.exists) {
       final data = snap.data()!;
       _note = data['note'] as String? ?? '';
@@ -855,15 +859,14 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   Future<void> _loadUserXp(String gymId, String deviceId, String userId) async {
-    final xpDoc =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .doc(deviceId)
-            .collection('leaderboard')
-            .doc(userId)
-            .get();
+    final xpDoc = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('leaderboard')
+        .doc(userId)
+        .get();
     if (xpDoc.exists) {
       final data = xpDoc.data()!;
       _xp = data['xp'] as int? ?? 0;
