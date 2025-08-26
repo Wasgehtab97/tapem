@@ -19,7 +19,7 @@ end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
-# → hier vor dem target block!
+# ---- Pre-install tweaks (z.B. gegen gRPC/BoringSSL Konflikte) ----
 pre_install do |installer|
   installer.pod_targets.each do |pod|
     if ['BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'].include?(pod.name)
@@ -31,8 +31,9 @@ end
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_modular_headers!
+  # Statische Frameworks sind mit Flutter/Firebase am stabilsten
   use_frameworks! :linkage => :static
+  # (Kein globales use_modular_headers! nötig)
 
   flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 
@@ -44,12 +45,19 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     flutter_additional_ios_build_settings(t)
-    # iOS 13+ und Simulator-arm64 ausschließen
     t.build_configurations.each do |c|
+      # Einheitliche Targets/Flags
       c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       c.build_settings['ENABLE_BITCODE'] = 'NO'
       c.build_settings['SWIFT_VERSION'] = '5.0'
+
+      # *** WICHTIG: Simulator darf NICHT arm64 ausschließen! ***
+      c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = ''
+
+      # Suchpfade & Linker-Flags vererben (beugt "No such module" vor)
+      c.build_settings['HEADER_SEARCH_PATHS']   = '$(inherited)'
+      c.build_settings['FRAMEWORK_SEARCH_PATHS'] = '$(inherited)'
+      c.build_settings['OTHER_LDFLAGS']         = '$(inherited)'
     end
   end
 end

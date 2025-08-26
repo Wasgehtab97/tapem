@@ -1,5 +1,11 @@
-// Pod-Einstellungen für Debug übernehmen
-#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include? "../Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include? "Generated.xcconfig"
 
-// Flutter-Variablen (durch Generated.xcconfig erzeugt)
-#include "Generated.xcconfig"
+SUPPORTED_PLATFORMS = iphonesimulator iphoneos
+EXCLUDED_ARCHS[sdk=iphonesimulator*] =
+IPHONEOS_DEPLOYMENT_TARGET = 13.0
+SWIFT_VERSION = 5.0
+ENABLE_BITCODE = NO
+OTHER_LDFLAGS = $(inherited)
+FRAMEWORK_SEARCH_PATHS = $(inherited)
+HEADER_SEARCH_PATHS = $(inherited)

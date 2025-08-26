@@ -3,10 +3,12 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform, kIsWeb;
+    show defaultTargetPlatform, TargetPlatform, kIsWeb, kReleaseMode;
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -74,30 +76,50 @@ import 'features/splash/presentation/screens/splash_screen.dart';
 /// Global navigator key for NFC navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Falls der Prozess im Hintergrund startet, Firebase erneut initialisieren.
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env
+  // .env laden (optional, fällt sonst sauber zurück)
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  // Firebase init
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: true,
-      );
-    }
-  } on FirebaseException catch (e) {
-    if (e.code != 'duplicate-app') rethrow;
+  // Firebase init (einheitlich für alle Konfigurationen)
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
 
-  // Disable reCAPTCHA for tests
-  fb_auth.FirebaseAuth.instance.setSettings(
-    appVerificationDisabledForTesting: true,
+  // App Check (iOS: DeviceCheck für TestFlight/Prod)
+  await FirebaseAppCheck.instance.activate(
+    appleProvider: AppleProvider.deviceCheck,
+    // debugProvider: kReleaseMode ? false : true, // optional: Debug im Simulator/Debug
   );
+
+  // Firestore Offline-Persistenz
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+
+  // Optional: Phone-Auth Test-Setting NUR in Debug
+  assert(() {
+    fb_auth.FirebaseAuth.instance.setSettings(
+      appVerificationDisabledForTesting: true,
+    );
+    return true;
+  }());
+
+  // Background-Messaging Handler registrieren (sicher, auch wenn ungenutzt)
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Date formatting
   await initializeDateFormatting();
@@ -132,13 +154,12 @@ Future<void> main() async {
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
         Provider<UpdateDeviceMuscleGroupsUseCase>(
-          create:
-              (c) =>
-                  UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create: (c) =>
+              UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
         Provider<SetDeviceMuscleGroupsUseCase>(
-          create:
-              (c) => SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
+          create: (c) =>
+              SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise
@@ -166,7 +187,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-        // ✅ Korrekt: ChangeNotifierProvider für das Overlay
+        // Numeric keypad
         ChangeNotifierProvider<OverlayNumericKeypadController>(
           create: (_) => OverlayNumericKeypadController(),
         ),
@@ -174,16 +195,18 @@ Future<void> main() async {
         Provider<MembershipService>(
           create: (_) => FirestoreMembershipService(),
         ),
-        ChangeNotifierProxyProvider2<AuthProvider, MembershipService,
-            BrandingProvider>(
+        ChangeNotifierProxyProvider2<
+          AuthProvider,
+          MembershipService,
+          BrandingProvider
+        >(
           create: (c) => BrandingProvider(
-            source: FirestoreGymSource(
-              firestore: FirebaseFirestore.instance,
-            ),
+            source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
             membership: c.read<MembershipService>(),
           ),
           update: (_, auth, m, prov) {
-            final p = prov ??
+            final p =
+                prov ??
                 BrandingProvider(
                   source: FirestoreGymSource(
                     firestore: FirebaseFirestore.instance,
@@ -214,38 +237,32 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(
-          create: (c) => MuscleGroupProvider(
-            membership: c.read<MembershipService>(),
+          create: (c) =>
+              MuscleGroupProvider(membership: c.read<MembershipService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => ExerciseProvider(
+            getEx: c.read<GetExercisesForDevice>(),
+            createEx: c.read<CreateExerciseUseCase>(),
+            deleteEx: c.read<DeleteExerciseUseCase>(),
+            updateEx: c.read<UpdateExerciseUseCase>(),
+            updateMuscles: c.read<UpdateExerciseMuscleGroupsUseCase>(),
           ),
         ),
         ChangeNotifierProvider(
-          create:
-              (c) => ExerciseProvider(
-                getEx: c.read<GetExercisesForDevice>(),
-                createEx: c.read<CreateExerciseUseCase>(),
-                deleteEx: c.read<DeleteExerciseUseCase>(),
-                updateEx: c.read<UpdateExerciseUseCase>(),
-                updateMuscles: c.read<UpdateExerciseMuscleGroupsUseCase>(),
-              ),
+          create: (c) =>
+              AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
         ChangeNotifierProvider(
-          create:
-              (c) =>
-                  AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
-        ),
-        ChangeNotifierProvider(
-          create:
-              (_) => ReportProvider(
-                getUsageStats: usageUC,
-                getLogTimestamps: logsUC,
-              ),
+          create: (_) =>
+              ReportProvider(getUsageStats: usageUC, getLogTimestamps: logsUC),
         ),
         ChangeNotifierProvider(
           create: (_) => SurveyProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(
-          create:
-              (_) => FeedbackProvider(firestore: FirebaseFirestore.instance),
+          create: (_) =>
+              FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
@@ -263,7 +280,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeLoader>().theme;
     final locale = context.watch<AppProvider>().locale;
-    final keypad = context.read<OverlayNumericKeypadController>(); // read = ok
+    final keypad = context.read<OverlayNumericKeypadController>();
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -280,8 +297,8 @@ class MyApp extends StatelessWidget {
       ],
       initialRoute: AppRouter.splash,
       onGenerateRoute: AppRouter.onGenerateRoute,
-      onUnknownRoute:
-          (_) => MaterialPageRoute(builder: (_) => const SplashScreen()),
+      onUnknownRoute: (_) =>
+          MaterialPageRoute(builder: (_) => const SplashScreen()),
       builder: (context, child) {
         Widget app = child!;
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -290,7 +307,7 @@ class MyApp extends StatelessWidget {
         app = DynamicLinkListener(child: app);
         return OverlayNumericKeypadHost(
           controller: keypad,
-          outsideTapMode: OutsideTapMode.closeAfterTap, // ✅ wichtig für iOS
+          outsideTapMode: OutsideTapMode.closeAfterTap,
           child: app,
         );
       },

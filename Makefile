@@ -50,7 +50,7 @@ ios-emu:
 	@sleep 5
 	fvm flutter pub get
 	fvm flutter gen-l10n
-	fvm flutter run -d $(IOS_EMU_ID)
+	fvm flutter run -d "iPhone 16 Plus"
 
 # Admin-Skript
 admin:

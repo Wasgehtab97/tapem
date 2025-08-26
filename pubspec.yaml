@@ -4,7 +4,7 @@ publish_to: none
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.7.0 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0" # passend zu Dart 3.8.1 (Flutter 3.32.8)
 
 dependencies:
   flutter:
@@ -28,18 +28,19 @@ dependencies:
   provider: ^6.1.5
   uuid: ^4.5.1
   csv: ^6.0.0
-  googleapis: ^14.0.0     # Nur falls du wirklich die Sheets-API nutzt
-  # google_sign_in: ^6.2.1
-  file_picker: ^10.2.0 
+  googleapis: ^14.0.0 # nur falls wirklich benötigt
+  file_picker: ^10.2.0
   async: ^2.11.0
 
-  # Firebase
+  # Firebase (stabile, bereits verwendete Major-Versionen)
+  firebase_core: ^3.15.2
   firebase_auth: ^5.5.3
-  firebase_core: ^3.15.1
   cloud_firestore: ^5.6.7
   cloud_functions: ^5.6.1
   firebase_storage: ^12.0.3
-  firebase_dynamic_links: ^6.1.10
+  firebase_messaging: ^15.2.10
+  firebase_app_check: ^0.3.2+10
+  # HINWEIS: firebase_dynamic_links ist eingestellt -> entfernt. Später ggf. auf Universal Links migrieren.
 
   # Charts & Kalender
   fl_chart: ^1.0.0
@@ -56,11 +57,11 @@ dependencies:
   json_annotation: ^4.9.0
   url_launcher: ^6.1.7
 
-  # Local Storage
+  # Local Storage & Timezone
   shared_preferences: ^2.4.10
   flutter_timezone: ^4.1.1
 
-  # NFC-Pakete (aus Git für Threading-Fix)
+  # NFC-Pakete (Git-Quelle für Fixes)
   nfc_manager:
     git:
       url: https://github.com/okadan/flutter-nfc-manager.git
@@ -72,6 +73,7 @@ dependencies:
   ndef_record: ^1.2.1
   flutter_nfc_kit: ^3.6.0
   ndef: ^0.3.4
+  firebase_dynamic_links: 6.1.10
 
 dev_dependencies:
   flutter_test:
@@ -82,13 +84,13 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   fake_cloud_firestore: ^3.1.0
 
-# Dependency overrides to ensure both packages use the git source
+# Overrides (behalten, damit nfc_manager konsistent aus Git kommt;
+# value_layout_builder ist erforderlich für aktuelle Abhängigkeiten)
 dependency_overrides:
   nfc_manager:
     git:
       url: https://github.com/okadan/flutter-nfc-manager.git
       path: packages/nfc_manager
-
   value_layout_builder: ^0.5.0
 
 # Icon-Konfiguration
