@@ -27,8 +27,6 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
         context.read<FriendsProvider>().markIncomingSeen();
       }
     });
-    _searchCtrl.addListener(
-        () => context.read<FriendSearchProvider>().updateQuery(_searchCtrl.text));
   }
 
   @override
@@ -164,6 +162,8 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
           padding: const EdgeInsets.all(8.0),
           child: TextField(
             controller: _searchCtrl,
+            onChanged: (v) =>
+                context.read<FriendSearchProvider>().updateQuery(v),
             decoration: InputDecoration(labelText: loc.friends_tab_search),
           ),
         ),

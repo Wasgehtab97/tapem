@@ -25,6 +25,9 @@ class FriendSearchProvider extends ChangeNotifier {
   void _startSearch() {
     _sub?.cancel();
     final q = query.trim().toLowerCase();
+    if (kDebugMode) {
+      debugPrint('[FriendSearch] search start "$q"');
+    }
     if (q.length < 2) {
       results = [];
       loading = false;
@@ -41,6 +44,9 @@ class FriendSearchProvider extends ChangeNotifier {
       notifyListeners();
     }, onError: (e) {
       error = e.toString();
+      if (kDebugMode) {
+        debugPrint('[FriendSearch] error $e');
+      }
       loading = false;
       notifyListeners();
     });
