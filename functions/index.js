@@ -197,3 +197,122 @@ exports.checkChallengesOnLog = functions.firestore
     }
     return null;
   });
+exports.sendFriendRequest = functions.https.onCall(async (data, context) => {
+  const fromUserId = context.auth && context.auth.uid;
+  if (!fromUserId) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const toUserId = data && data.toUserId;
+  if (typeof toUserId !== 'string' || toUserId === fromUserId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid toUserId');
+  }
+  const db = admin.firestore();
+  const requestId = `${fromUserId}_${toUserId}`;
+  const requestRef = db
+    .collection('users')
+    .doc(toUserId)
+    .collection('friendRequests')
+    .doc(requestId);
+  await db.runTransaction(async (tx) => {
+    const existing = await tx.get(requestRef);
+    if (existing.exists && existing.data().status === 'pending') {
+      throw new functions.https.HttpsError('already-exists', 'Request already pending');
+    }
+    tx.set(requestRef, {
+      fromUserId,
+      toUserId,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    const metaRef = db
+      .collection('users')
+      .doc(toUserId)
+      .collection('friendMeta')
+      .doc('meta');
+    tx.set(metaRef, {
+      pendingCountCache: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  return { requestId };
+});
+
+exports.updateFriendRequestStatus = functions.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const { requestId, toUserId, action } = data || {};
+  if (typeof requestId !== 'string' || typeof toUserId !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid parameters');
+  }
+  const allowed = ['accept', 'decline', 'cancel'];
+  if (!allowed.includes(action)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid action');
+  }
+  const db = admin.firestore();
+  const requestRef = db
+    .collection('users')
+    .doc(toUserId)
+    .collection('friendRequests')
+    .doc(requestId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(requestRef);
+    if (!snap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Request not found');
+    }
+    const req = snap.data();
+    if (req.status !== 'pending') {
+      return;
+    }
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    if (action === 'accept') {
+      if (uid !== toUserId) {
+        throw new functions.https.HttpsError('permission-denied', 'Only recipient may accept');
+      }
+      tx.update(requestRef, { status: 'accepted', updatedAt: now });
+      const friendRefA = db
+        .collection('users')
+        .doc(req.fromUserId)
+        .collection('friends')
+        .doc(req.toUserId);
+      const friendRefB = db
+        .collection('users')
+        .doc(req.toUserId)
+        .collection('friends')
+        .doc(req.fromUserId);
+      tx.set(friendRefA, { friendUid: req.toUserId, since: now }, { merge: true });
+      tx.set(friendRefB, { friendUid: req.fromUserId, since: now }, { merge: true });
+      const metaRef = db
+        .collection('users')
+        .doc(toUserId)
+        .collection('friendMeta')
+        .doc('meta');
+      tx.set(metaRef, {
+        pendingCountCache: admin.firestore.FieldValue.increment(-1),
+        updatedAt: now,
+      }, { merge: true });
+    } else if (action === 'decline') {
+      if (uid !== toUserId) {
+        throw new functions.https.HttpsError('permission-denied', 'Only recipient may decline');
+      }
+      tx.update(requestRef, { status: 'declined', updatedAt: now });
+      const metaRef = db
+        .collection('users')
+        .doc(toUserId)
+        .collection('friendMeta')
+        .doc('meta');
+      tx.set(metaRef, {
+        pendingCountCache: admin.firestore.FieldValue.increment(-1),
+        updatedAt: now,
+      }, { merge: true });
+    } else if (action === 'cancel') {
+      if (uid !== req.fromUserId) {
+        throw new functions.https.HttpsError('permission-denied', 'Only sender may cancel');
+      }
+      tx.update(requestRef, { status: 'canceled', updatedAt: now });
+    }
+  });
+  return { status: action };
+});
