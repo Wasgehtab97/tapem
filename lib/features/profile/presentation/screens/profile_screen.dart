@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -13,6 +14,9 @@ import 'package:tapem/core/widgets/brand_primary_button.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
+import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
+
+const bool enableFriends = true;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -27,6 +31,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
+      final uid = context.read<AuthProvider>().userId;
+      if (uid != null && context.read<FriendsProvider>() != null) {
+        context.read<FriendsProvider>().listen(uid);
+      }
     });
   }
 
@@ -163,6 +171,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(AppLocalizations.of(context)!.profileTitle),
         actions: [
           const NfcScanButton(),
+          if (enableFriends)
+            Consumer<FriendsProvider>(
+              builder: (context, friends, _) {
+                final showBadge = friends.pendingCount > 0;
+                return IconButton(
+                  icon: Stack(
+                    children: [
+                      const Icon(Icons.group),
+                      if (showBadge)
+                        const Positioned(
+                          right: 0,
+                          top: 0,
+                          child:
+                              CircleAvatar(radius: 4, backgroundColor: Colors.red),
+                        ),
+                    ],
+                  ),
+                  tooltip: 'Freundesliste',
+                  onPressed: () {
+                    Navigator.push(context, FriendsHomeScreen.route());
+                  },
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: AppLocalizations.of(context)!.settingsIconTooltip,

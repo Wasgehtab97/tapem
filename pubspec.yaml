@@ -40,6 +40,7 @@ dependencies:
   firebase_storage: ^12.0.3
   firebase_messaging: ^15.2.10
   firebase_app_check: ^0.3.2+10
+  firebase_remote_config: ^5.0.5
   # HINWEIS: firebase_dynamic_links ist eingestellt -> entfernt. Später ggf. auf Universal Links migrieren.
 
   # Charts & Kalender
