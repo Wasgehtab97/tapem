@@ -26,6 +26,8 @@ import 'package:tapem/features/xp/presentation/screens/device_xp_screen.dart';
 import 'package:tapem/features/feedback/presentation/screens/feedback_overview_screen.dart';
 import 'package:tapem/features/survey/presentation/screens/survey_overview_screen.dart';
 import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.dart';
+import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
+import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -55,6 +57,8 @@ class AppRouter {
   static const feedbackOverview = '/feedback_overview';
   static const surveyOverview = '/survey_overview';
   static const surveyVote = '/survey_vote';
+  static const friendsHome = '/friends';
+  static const friendDetail = '/friend_detail';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -188,6 +192,13 @@ class AppRouter {
                 userId: args['userId'] ?? '',
               ),
         );
+
+      case friendsHome:
+        return MaterialPageRoute(builder: (_) => const FriendsHomeScreen());
+
+      case friendDetail:
+        final uid = settings.arguments as String? ?? '';
+        return MaterialPageRoute(builder: (_) => FriendDetailScreen(uid: uid));
 
       default:
         return MaterialPageRoute(

@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
@@ -37,6 +38,12 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
+import 'package:tapem/features/friends/data/friends_api.dart';
+import 'package:tapem/features/friends/data/friends_source.dart';
+import 'package:tapem/features/friends/data/public_profile_source.dart';
+import 'package:tapem/features/friends/data/public_calendar_source.dart';
+import 'package:tapem/features/friends/providers/friends_provider.dart';
+import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'core/drafts/session_draft_repository_impl.dart';
@@ -86,6 +93,39 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+Future<void> _initMessaging() async {
+  final messaging = FirebaseMessaging.instance;
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
+  }
+  final token = await messaging.getToken();
+  if (token != null) {
+    await _registerToken(token);
+  }
+  FirebaseMessaging.instance.onTokenRefresh.listen(_registerToken);
+  FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+}
+
+Future<void> _registerToken(String token) async {
+  final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+  try {
+    await FirebaseFunctions.instance
+        .httpsCallable('registerPushToken')
+        .call({'token': token, 'platform': platform});
+  } catch (_) {}
+}
+
+void _handleMessage(RemoteMessage message) {
+  final action = message.data['action'];
+  if (action == 'open_requests') {
+    navigatorKey.currentState?.pushNamed(AppRouter.friendsHome);
+  } else if (action == 'open_friend') {
+    final uid = message.data['uid'];
+    navigatorKey.currentState
+        ?.pushNamed(AppRouter.friendDetail, arguments: uid);
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -120,6 +160,7 @@ Future<void> main() async {
 
   // Background-Messaging Handler registrieren (sicher, auch wenn ungenutzt)
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await _initMessaging();
 
   // Date formatting
   await initializeDateFormatting();
@@ -186,6 +227,30 @@ Future<void> main() async {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // Friends feature
+        Provider<FriendsApi>(create: (_) => FriendsApi()),
+        Provider<FriendsSource>(
+          create: (_) => FriendsSource(FirebaseFirestore.instance),
+        ),
+        Provider<PublicProfileSource>(
+          create: (_) => PublicProfileSource(FirebaseFirestore.instance),
+        ),
+        Provider<PublicCalendarSource>(
+          create: (_) => PublicCalendarSource(FirebaseFirestore.instance),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => FriendsProvider(
+            c.read<FriendsSource>(),
+            c.read<FriendsApi>(),
+            c.read<PublicProfileSource>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => FriendCalendarProvider(
+            c.read<PublicCalendarSource>(),
+          ),
+        ),
 
         // Numeric keypad
         ChangeNotifierProvider<OverlayNumericKeypadController>(
