@@ -584,4 +584,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friends_privacy_no_access => 'This user does not share their calendar';
+
+  @override
+  String get friends_cta_self => 'You';
+
+  @override
+  String get friends_cta_friend => 'Friend';
+
+  @override
+  String get friends_cta_pending => 'Pending';
+
+  @override
+  String get friends_action_send => 'Send request';
+
+  @override
+  String get friends_search_min_chars => 'Enter at least 2 characters';
 }
