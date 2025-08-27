@@ -24,8 +24,12 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
 
   Future<void> _loadProfile() async {
     final src = context.read<PublicProfileSource>();
-    final p = await src.getProfile(widget.uid).catchError((_) => null);
-    setState(() => _profile = p);
+    try {
+      final p = await src.getProfile(widget.uid);
+      setState(() => _profile = p);
+    } catch (_) {
+      setState(() => _profile = null);
+    }
   }
 
   @override
