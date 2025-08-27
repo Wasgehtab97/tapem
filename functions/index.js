@@ -197,6 +197,66 @@ exports.checkChallengesOnLog = functions.firestore
     }
     return null;
   });
+
+exports.mirrorPublicProfile = functions.firestore
+  .document('users/{uid}')
+  .onWrite(async (change, context) => {
+    const after = change.after.exists ? change.after.data() : null;
+    if (!after) {
+      console.log(`mirrorPublicProfile: ${context.params.uid} deleted → skip`);
+      return null;
+    }
+    const { username, usernameLower, primaryGymCode, avatarUrl, createdAt } = after;
+    const profile = {
+      username: username || '',
+      usernameLower: (usernameLower || (username ? username.toLowerCase() : '')) || '',
+      primaryGymCode: primaryGymCode || null,
+      avatarUrl: avatarUrl || null,
+      createdAt:
+        createdAt || admin.firestore.FieldValue.serverTimestamp(),
+    };
+    await admin
+      .firestore()
+      .collection('publicProfiles')
+      .doc(context.params.uid)
+      .set(profile, { merge: true });
+    console.log(`mirrorPublicProfile: mirrored ${context.params.uid}`);
+    return null;
+  });
+
+exports.backfillPublicProfiles = functions.https.onCall(async (_, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'Authentication required'
+    );
+  }
+  const db = admin.firestore();
+  const snap = await db.collection('users').get();
+  let processed = 0;
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    if (!data.username) continue;
+    const profile = {
+      username: data.username,
+      usernameLower:
+        data.usernameLower || (data.username ? data.username.toLowerCase() : ''),
+      primaryGymCode: data.primaryGymCode || null,
+      avatarUrl: data.avatarUrl || null,
+      createdAt:
+        data.createdAt || admin.firestore.FieldValue.serverTimestamp(),
+    };
+    await db
+      .collection('publicProfiles')
+      .doc(doc.id)
+      .set(profile, { merge: true });
+    processed += 1;
+  }
+  console.log(`backfillPublicProfiles: processed ${processed}`);
+  return { processed };
+});
+
 // -------------------- FRIENDS --------------------
 async function sendPushToUser(uid, message) {
   const tokensSnap = await admin

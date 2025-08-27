@@ -185,6 +185,10 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+  assert(() {
+    debugPrint('[Firebase] projectId=' + Firebase.app().options.projectId);
+    return true;
+  }());
 
   // App Check (iOS: DeviceCheck für TestFlight/Prod)
   await FirebaseAppCheck.instance.activate(

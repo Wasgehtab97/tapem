@@ -84,7 +84,10 @@ class FriendsProvider extends ChangeNotifier {
   }
 
   Future<void> markIncomingSeen() async {
-    await _guard(() => _api.markIncomingSeen());
+    await _guard(() async {
+      await _api.markIncomingSeen();
+      pendingCount = 0;
+    });
   }
 
   Set<String> friendsUids = {};
