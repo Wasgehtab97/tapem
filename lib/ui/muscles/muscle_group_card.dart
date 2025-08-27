@@ -18,7 +18,6 @@ class MuscleGroupCard extends StatelessWidget {
       orElse: () => MuscleGroup(id: '', name: '', region: MuscleRegion.rectusAbdominis),
     );
     if (group.id.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
     return Semantics(
       label: loc.a11yMgSelected(group.name),
