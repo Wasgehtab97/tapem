@@ -6,6 +6,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAuthed() {
+      return request.auth != null;
+    }
+
     // verify the request comes from the user's own gym
     // either via custom claim `gymId` or membership document
     function inGym(gymId) {
@@ -48,6 +52,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isFriend(owner, viewer) {
+      return exists(/databases/$(database)/documents/users/$(owner)/friends/$(viewer));
+    }
+
+    function sharesGym(owner, viewer) {
+      return count(
+        get(/databases/$(database)/documents/users/$(owner)).data.gymCodes ∩
+        get(/databases/$(database)/documents/users/$(viewer)).data.gymCodes
+      ) > 0;
+    }
+
     function isOwnerInGym(gymId, userId) {
       return inGym(gymId) && request.auth.uid == userId;
     }
@@ -63,19 +78,49 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    // ----- User documents -----
-    // Only the authenticated user may read/write their user profile
-    match /users/{userId} {
-      allow create: if isOwner(userId);
-      // Allow signed-in users to read usernames for availability checks
-      allow read: if isSignedIn();
-      // Permit username updates right after registration
-      allow update: if isOwner(userId);
+    // ----- Public Profiles -----
+    match /publicProfiles/{uid} {
+      allow read: if isAuthed();
+      allow write: if false;
     }
 
-    // Allow access to any nested collections under the user document
-    match /users/{userId}/{document=**} {
-      allow read, write: if isOwner(userId);
+    // ----- User documents -----
+    match /users/{uid} {
+      allow create: if isOwner(uid);
+      allow read: if isAuthed();
+      allow update: if isOwner(uid);
+
+      match /friendRequests/{reqId} {
+        allow read: if isOwner(uid) || (isAuthed() && resource.data.fromUserId == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /friends/{fid} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /publicCalendar/{month} {
+        allow read: if isOwner(uid) ||
+          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'public') ||
+          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'friends' &&
+            isFriend(uid, request.auth.uid)) ||
+          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'same_gym' &&
+            sharesGym(uid, request.auth.uid));
+        allow write: if false;
+      }
+
+      match /friendMeta/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /pushTokens/{token} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     // ----- Gyms -----

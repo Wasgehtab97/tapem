@@ -46,6 +46,20 @@ describe('Security Rules v1', function () {
       await db.collection('gyms').doc('G1').collection('trainingPlans').doc('planA').set({ createdBy: 'userA' });
       await db.collection('gyms').doc('G2').collection('trainingPlans').doc('planB').set({ createdBy: 'userB' });
       await db.collection('gyms').doc('G1').collection('feedback').doc('fb1').set({ userId: 'userA', text: 'hi' });
+
+      // Friends feature setup
+      await db.collection('users').doc('user1').set({ calendarVisibility: 'friends', gymCodes: ['G1'] });
+      await db.collection('users').doc('user2').set({ calendarVisibility: 'friends', gymCodes: ['G1'] });
+      await db.collection('users').doc('user3').set({ calendarVisibility: 'friends', gymCodes: ['G2'] });
+      await db
+        .collection('users')
+        .doc('user2')
+        .collection('friendRequests')
+        .doc('user1_user2')
+        .set({ fromUserId: 'user1', toUserId: 'user2', status: 'pending' });
+      await db.collection('users').doc('user1').collection('friends').doc('user2').set({});
+      await db.collection('users').doc('user2').collection('friends').doc('user1').set({});
+      await db.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').set({ month: '2024-01' });
     });
   });
 
@@ -57,6 +71,9 @@ describe('Security Rules v1', function () {
   const userB = () => testEnv.authenticatedContext('userB', { gymId: 'G2', role: 'member' });
   const admin = () => testEnv.authenticatedContext('adminA', { gymId: 'G1', role: 'admin' });
   const noMember = () => testEnv.authenticatedContext('noMember', {});
+  const p1 = () => testEnv.authenticatedContext('user1', {});
+  const p2 = () => testEnv.authenticatedContext('user2', {});
+  const p3 = () => testEnv.authenticatedContext('user3', {});
 
   describe('Firestore rules', () => {
     it('blocks cross-gym device read (device_cross_gym)', async () => {
@@ -116,6 +133,37 @@ describe('Security Rules v1', function () {
       await assertFails(readOther.get());
       const dbAdmin = admin().firestore();
       await assertSucceeds(dbAdmin.collection('gyms').doc('G1').collection('feedback').doc('fb1').get());
+    });
+
+    it('allows reading public profiles when authenticated', async () => {
+      const db = p1().firestore();
+      await assertSucceeds(db.collection('publicProfiles').doc('user2').get());
+    });
+
+    it('enforces friend request rules', async () => {
+      const dbRecipient = p2().firestore();
+      await assertSucceeds(dbRecipient.collection('users').doc('user2').collection('friendRequests').doc('user1_user2').get());
+      const dbSender = p1().firestore();
+      await assertSucceeds(dbSender.collection('users').doc('user2').collection('friendRequests').doc('user1_user2').get());
+      const dbOther = p3().firestore();
+      await assertFails(dbOther.collection('users').doc('user2').collection('friendRequests').doc('user1_user2').get());
+      await assertFails(dbRecipient.collection('users').doc('user2').collection('friendRequests').doc('x').set({}));
+    });
+
+    it('restricts friends list to owner', async () => {
+      const dbOwner = p1().firestore();
+      await assertSucceeds(dbOwner.collection('users').doc('user1').collection('friends').doc('user2').get());
+      const dbFriend = p2().firestore();
+      await assertFails(dbFriend.collection('users').doc('user1').collection('friends').doc('user2').get());
+    });
+
+    it('enforces public calendar visibility', async () => {
+      const ownerDb = p1().firestore();
+      await assertSucceeds(ownerDb.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').get());
+      const friendDb = p2().firestore();
+      await assertSucceeds(friendDb.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').get());
+      const otherDb = p3().firestore();
+      await assertFails(otherDb.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').get());
     });
   });
 

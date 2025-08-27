@@ -197,15 +197,46 @@ exports.checkChallengesOnLog = functions.firestore
     }
     return null;
   });
+// -------------------- FRIENDS --------------------
+async function sendPushToUser(uid, message) {
+  const tokensSnap = await admin
+    .firestore()
+    .collection('users')
+    .doc(uid)
+    .collection('pushTokens')
+    .get();
+  if (tokensSnap.empty) {
+    console.log(`FRIENDS: no push tokens for ${uid}`);
+    return;
+  }
+  const tokens = tokensSnap.docs.map((d) => d.id);
+  try {
+    await admin.messaging().sendEachForMulticast({
+      tokens,
+      ...message,
+    });
+  } catch (e) {
+    console.log(`FRIENDS: push error`, e);
+  }
+}
+
 exports.sendFriendRequest = functions.https.onCall(async (data, context) => {
   const fromUserId = context.auth && context.auth.uid;
   if (!fromUserId) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
   }
   const toUserId = data && data.toUserId;
+  const message = data && data.message;
   if (typeof toUserId !== 'string' || toUserId === fromUserId) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid toUserId');
   }
+  if (message && typeof message !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid message');
+  }
+  if (message && message.length > 300) {
+    throw new functions.https.HttpsError('invalid-argument', 'Message too long');
+  }
+
   const db = admin.firestore();
   const requestId = `${fromUserId}_${toUserId}`;
   const requestRef = db
@@ -213,29 +244,120 @@ exports.sendFriendRequest = functions.https.onCall(async (data, context) => {
     .doc(toUserId)
     .collection('friendRequests')
     .doc(requestId);
+  const rateRef = db.collection('rateLimits').doc(fromUserId);
+  const metaRef = db
+    .collection('users')
+    .doc(toUserId)
+    .collection('friendMeta')
+    .doc('meta');
+  const friendRefA = db
+    .collection('users')
+    .doc(fromUserId)
+    .collection('friends')
+    .doc(toUserId);
+  const friendRefB = db
+    .collection('users')
+    .doc(toUserId)
+    .collection('friends')
+    .doc(fromUserId);
+  const toUserRef = db.collection('users').doc(toUserId);
+  const fromUserRef = db.collection('users').doc(fromUserId);
+
   await db.runTransaction(async (tx) => {
-    const existing = await tx.get(requestRef);
-    if (existing.exists && existing.data().status === 'pending') {
-      throw new functions.https.HttpsError('already-exists', 'Request already pending');
+    const now = admin.firestore.Timestamp.now();
+    const [rateSnap, requestSnap, friendASnap, friendBSnap, toUserSnap, fromUserSnap, metaSnap] = await Promise.all([
+      tx.get(rateRef),
+      tx.get(requestRef),
+      tx.get(friendRefA),
+      tx.get(friendRefB),
+      tx.get(toUserRef),
+      tx.get(fromUserRef),
+      tx.get(metaRef),
+    ]);
+
+    if (requestSnap.exists && ['pending', 'accepted'].includes(requestSnap.data().status)) {
+      throw new functions.https.HttpsError('already-exists', 'Request already exists');
     }
-    tx.set(requestRef, {
-      fromUserId,
-      toUserId,
-      status: 'pending',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
-    const metaRef = db
-      .collection('users')
-      .doc(toUserId)
-      .collection('friendMeta')
-      .doc('meta');
-    tx.set(metaRef, {
-      pendingCountCache: admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+    if (friendASnap.exists || friendBSnap.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Users already friends');
+    }
+
+    const toData = toUserSnap.data() || {};
+    const fromData = fromUserSnap.data() || {};
+    const allow = toData.allowFriendRequests || 'everyone';
+    if (allow === 'noone') {
+      throw new functions.https.HttpsError('permission-denied', 'User does not allow requests');
+    }
+    if (allow === 'same_gym') {
+      const toGyms = toData.gymCodes || [];
+      const fromGyms = fromData.gymCodes || [];
+      const shared = toGyms.filter((g) => fromGyms.includes(g));
+      if (!shared.length) {
+        throw new functions.https.HttpsError('permission-denied', 'Users do not share a gym');
+      }
+    }
+
+    let count = 0;
+    let resetAt = now;
+    if (rateSnap.exists) {
+      const data = rateSnap.data();
+      count = data.count || 0;
+      resetAt = data.resetAt || now;
+      if (data.resetAt && data.resetAt.toMillis() + 3600000 < now.toMillis()) {
+        count = 0;
+        resetAt = now;
+      }
+    }
+    if (count >= 10) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Rate limit exceeded');
+    }
+    tx.set(rateRef, { count: count + 1, resetAt }, { merge: true });
+
+    tx.set(
+      requestRef,
+      {
+        fromUserId,
+        toUserId,
+        status: 'pending',
+        message: message || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    const pending = (metaSnap.data() && metaSnap.data().pendingCountCache) || 0;
+    tx.set(
+      metaRef,
+      {
+        pendingCountCache: pending + 1,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
   });
-  return { requestId };
+
+  // Push notification to recipient
+  try {
+    const profileSnap = await admin
+      .firestore()
+      .collection('publicProfiles')
+      .doc(fromUserId)
+      .get();
+    const username = (profileSnap.exists && profileSnap.data().username) || 'Jemand';
+    await sendPushToUser(toUserId, {
+      notification: {
+        title: 'Neue Freundschaftsanfrage',
+        body: `${username}`,
+      },
+      data: { action: 'open_requests' },
+    });
+  } catch (e) {
+    console.log('FRIENDS: push failed', e);
+  }
+
+  console.log(`FRIENDS: request ${requestId} from ${fromUserId} to ${toUserId}`);
+  return { requestId, status: 'pending' };
 });
 
 exports.updateFriendRequestStatus = functions.https.onCall(async (data, context) => {
@@ -251,12 +373,18 @@ exports.updateFriendRequestStatus = functions.https.onCall(async (data, context)
   if (!allowed.includes(action)) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid action');
   }
+  const fromUid = requestId.split('_')[0];
   const db = admin.firestore();
   const requestRef = db
     .collection('users')
     .doc(toUserId)
     .collection('friendRequests')
     .doc(requestId);
+  const metaRef = db
+    .collection('users')
+    .doc(toUserId)
+    .collection('friendMeta')
+    .doc('meta');
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(requestRef);
     if (!snap.exists) {
@@ -264,7 +392,7 @@ exports.updateFriendRequestStatus = functions.https.onCall(async (data, context)
     }
     const req = snap.data();
     if (req.status !== 'pending') {
-      return;
+      return { status: req.status };
     }
     const now = admin.firestore.FieldValue.serverTimestamp();
     if (action === 'accept') {
@@ -282,37 +410,151 @@ exports.updateFriendRequestStatus = functions.https.onCall(async (data, context)
         .doc(req.toUserId)
         .collection('friends')
         .doc(req.fromUserId);
-      tx.set(friendRefA, { friendUid: req.toUserId, since: now }, { merge: true });
-      tx.set(friendRefB, { friendUid: req.fromUserId, since: now }, { merge: true });
-      const metaRef = db
-        .collection('users')
-        .doc(toUserId)
-        .collection('friendMeta')
-        .doc('meta');
-      tx.set(metaRef, {
-        pendingCountCache: admin.firestore.FieldValue.increment(-1),
-        updatedAt: now,
-      }, { merge: true });
+      const [fromSnap, toSnap, metaSnap, friendASnap, friendBSnap] = await Promise.all([
+        tx.get(db.collection('users').doc(req.fromUserId)),
+        tx.get(db.collection('users').doc(req.toUserId)),
+        tx.get(metaRef),
+        tx.get(friendRefA),
+        tx.get(friendRefB),
+      ]);
+      if (!friendASnap.exists) {
+        tx.set(
+          friendRefA,
+          {
+            friendUid: req.toUserId,
+            since: now,
+            gymCodesAtAcceptance: [
+              ...(fromSnap.data().gymCodes || []),
+              ...(toSnap.data().gymCodes || []),
+            ],
+            createdAt: now,
+            updatedAt: now,
+          },
+          { merge: true }
+        );
+      }
+      if (!friendBSnap.exists) {
+        tx.set(
+          friendRefB,
+          {
+            friendUid: req.fromUserId,
+            since: now,
+            gymCodesAtAcceptance: [
+              ...(fromSnap.data().gymCodes || []),
+              ...(toSnap.data().gymCodes || []),
+            ],
+            createdAt: now,
+            updatedAt: now,
+          },
+          { merge: true }
+        );
+      }
+      const pending = (metaSnap.data() && metaSnap.data().pendingCountCache) || 0;
+      tx.set(metaRef, { pendingCountCache: Math.max(0, pending - 1), updatedAt: now }, { merge: true });
     } else if (action === 'decline') {
       if (uid !== toUserId) {
         throw new functions.https.HttpsError('permission-denied', 'Only recipient may decline');
       }
+      const metaSnap = await tx.get(metaRef);
+      const pending = (metaSnap.data() && metaSnap.data().pendingCountCache) || 0;
       tx.update(requestRef, { status: 'declined', updatedAt: now });
-      const metaRef = db
-        .collection('users')
-        .doc(toUserId)
-        .collection('friendMeta')
-        .doc('meta');
-      tx.set(metaRef, {
-        pendingCountCache: admin.firestore.FieldValue.increment(-1),
-        updatedAt: now,
-      }, { merge: true });
+      tx.set(metaRef, { pendingCountCache: Math.max(0, pending - 1), updatedAt: now }, { merge: true });
     } else if (action === 'cancel') {
       if (uid !== req.fromUserId) {
         throw new functions.https.HttpsError('permission-denied', 'Only sender may cancel');
       }
       tx.update(requestRef, { status: 'canceled', updatedAt: now });
+      if (req.status === 'pending') {
+        const metaSnap = await tx.get(metaRef);
+        const pending = (metaSnap.data() && metaSnap.data().pendingCountCache) || 0;
+        tx.set(metaRef, { pendingCountCache: Math.max(0, pending - 1), updatedAt: now }, { merge: true });
+      }
     }
   });
+
+  if (action === 'accept') {
+    try {
+      const profileSnap = await admin
+        .firestore()
+        .collection('publicProfiles')
+        .doc(toUserId)
+        .get();
+      const username = (profileSnap.exists && profileSnap.data().username) || 'Jemand';
+      await sendPushToUser(fromUid, {
+        notification: {
+          title: 'Anfrage akzeptiert',
+          body: `${username}`,
+        },
+        data: { action: 'open_friend', uid: toUserId },
+      });
+    } catch (e) {
+      console.log('FRIENDS: push failed', e);
+    }
+  }
+
+  console.log(`FRIENDS: request ${requestId} ${action} by ${uid}`);
   return { status: action };
+});
+
+exports.removeFriend = functions.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const otherUserId = data && data.otherUserId;
+  if (typeof otherUserId !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid otherUserId');
+  }
+  const db = admin.firestore();
+  const aRef = db.collection('users').doc(uid).collection('friends').doc(otherUserId);
+  const bRef = db.collection('users').doc(otherUserId).collection('friends').doc(uid);
+  await db.runTransaction(async (tx) => {
+    const [aSnap, bSnap] = await Promise.all([tx.get(aRef), tx.get(bRef)]);
+    if (!aSnap.exists || !bSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Not friends');
+    }
+    tx.delete(aRef);
+    tx.delete(bRef);
+  });
+  console.log(`FRIENDS: ${uid} removed ${otherUserId}`);
+  return { status: 'removed' };
+});
+
+exports.registerPushToken = functions.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const token = data && data.token;
+  const platform = data && data.platform;
+  if (typeof token !== 'string' || !token) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid token');
+  }
+  const db = admin.firestore();
+  const ref = db.collection('users').doc(uid).collection('pushTokens').doc(token);
+  await ref.set(
+    {
+      platform: platform || 'unknown',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+  return { status: 'ok' };
+});
+
+exports.setFriendRequestsSeen = functions.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const db = admin.firestore();
+  const metaRef = db.collection('users').doc(uid).collection('friendMeta').doc('meta');
+  await metaRef.set(
+    {
+      lastSeenIncomingAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+  return { status: 'ok' };
 });
