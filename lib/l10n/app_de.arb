@@ -633,5 +633,10 @@
   "friends_empty_outgoing": "Keine ausgehenden Anfragen",
   "friends_empty_friends": "Noch keine Freunde",
   "friends_empty_search": "Keine Nutzer gefunden",
-  "friends_privacy_no_access": "Dieser Nutzer teilt seinen Kalender nicht."
+  "friends_privacy_no_access": "Dieser Nutzer teilt seinen Kalender nicht.",
+  "friends_cta_self": "Du selbst",
+  "friends_cta_friend": "Freund",
+  "friends_cta_pending": "Ausstehend",
+  "friends_action_send": "Anfrage senden",
+  "friends_search_min_chars": "Mindestens 2 Zeichen eingeben"
 }

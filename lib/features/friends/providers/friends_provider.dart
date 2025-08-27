@@ -2,21 +2,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../data/friends_source.dart';
 import '../data/friends_api.dart';
-import '../data/public_profile_source.dart';
 import '../domain/models/friend.dart';
 import '../domain/models/friend_request.dart';
-import '../domain/models/public_profile.dart';
 
 class FriendsProvider extends ChangeNotifier {
   FriendsProvider(
     this._source,
     this._api,
-    this._profileSource,
   );
 
   final FriendsSource _source;
   final FriendsApi _api;
-  final PublicProfileSource _profileSource;
 
   List<Friend> friends = [];
   List<FriendRequest> incomingPending = [];
@@ -36,26 +32,39 @@ class FriendsProvider extends ChangeNotifier {
     _outgoingSub?.cancel();
     _countSub?.cancel();
 
+    selfUid = meUid;
     _friendsSub = _source.watchFriends(meUid).listen((f) {
       friends = f;
+      friendsUids = f.map((e) => e.friendUid).toSet();
       notifyListeners();
     });
     _incomingSub = _source.watchIncoming(meUid).listen((r) {
       incomingPending = r;
+      if (pendingCount < 0) {
+        pendingCount = r.length;
+      }
       notifyListeners();
     });
     _outgoingSub = _source.watchOutgoing(meUid).listen((r) {
       outgoingPending = r;
+      outgoingUids = r.map((e) => e.toUserId).toSet();
       notifyListeners();
     });
     _countSub = _source.watchPendingCount(meUid).listen((c) {
-      pendingCount = c;
+      pendingCount = c < 0 ? incomingPending.length : c;
       notifyListeners();
     });
   }
 
   Future<void> sendRequest(String toUid, {String? message}) async {
-    await _guard(() => _api.sendFriendRequest(toUid, message: message));
+    outgoingUids.add(toUid);
+    notifyListeners();
+    try {
+      await _guard(() => _api.sendFriendRequest(toUid, message: message));
+    } catch (_) {
+      outgoingUids.remove(toUid);
+      rethrow;
+    }
   }
 
   Future<void> accept(String requestId, String toUid) async {
@@ -78,11 +87,13 @@ class FriendsProvider extends ChangeNotifier {
     await _guard(() => _api.markIncomingSeen());
   }
 
-  Future<List<PublicProfile>> search(String prefix) {
-    return _profileSource
-        .searchByUsernamePrefix(prefix)
-        .firstWhere((_) => true);
-  }
+  Set<String> friendsUids = {};
+  Set<String> outgoingUids = {};
+  String? selfUid;
+
+  bool isSelf(String uid) => uid == selfUid;
+  bool isFriend(String uid) => friendsUids.contains(uid);
+  bool isOutgoing(String uid) => outgoingUids.contains(uid);
 
   Future<void> _guard(Future<void> Function() action) async {
     isBusy = true;
@@ -92,6 +103,7 @@ class FriendsProvider extends ChangeNotifier {
       await action();
     } catch (e) {
       error = e.toString();
+      rethrow;
     } finally {
       isBusy = false;
       notifyListeners();

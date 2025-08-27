@@ -50,7 +50,11 @@ class FriendsSource {
         .doc('meta');
     return metaRef.snapshots().map((snap) {
       final data = snap.data();
-      return (data?['pendingCountCache'] as int?) ?? 0;
+      if (data == null) {
+        return -1;
+      }
+      final val = data['pendingCountCache'] as int?;
+      return val ?? -1;
     });
   }
 }

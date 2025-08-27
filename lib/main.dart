@@ -46,6 +46,7 @@ import 'package:tapem/features/friends/data/public_profile_source.dart';
 import 'package:tapem/features/friends/data/public_calendar_source.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
+import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'core/drafts/session_draft_repository_impl.dart';
@@ -290,8 +291,10 @@ Future<void> main() async {
           create: (c) => FriendsProvider(
             c.read<FriendsSource>(),
             c.read<FriendsApi>(),
-            c.read<PublicProfileSource>(),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => FriendSearchProvider(c.read<PublicProfileSource>()),
         ),
         ChangeNotifierProvider(
           create: (c) => FriendCalendarProvider(c.read<PublicCalendarSource>()),

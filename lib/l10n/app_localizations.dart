@@ -1216,6 +1216,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This user does not share their calendar'**
   String get friends_privacy_no_access;
+
+  /// No description provided for @friends_cta_self.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get friends_cta_self;
+
+  /// No description provided for @friends_cta_friend.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend'**
+  String get friends_cta_friend;
+
+  /// No description provided for @friends_cta_pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get friends_cta_pending;
+
+  /// No description provided for @friends_action_send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get friends_action_send;
+
+  /// No description provided for @friends_search_min_chars.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 2 characters'**
+  String get friends_search_min_chars;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

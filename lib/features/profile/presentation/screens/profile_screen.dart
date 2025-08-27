@@ -165,10 +165,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.profileTitle),
+        title: Text(loc.profileTitle),
         actions: [
           const NfcScanButton(),
           if (enableFriends)
@@ -188,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                     ],
                   ),
-                  tooltip: 'Freundesliste',
+                  tooltip: loc.friends_title,
                   onPressed: () {
                     Navigator.push(context, FriendsHomeScreen.route());
                   },
@@ -197,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: AppLocalizations.of(context)!.settingsIconTooltip,
+            tooltip: loc.settingsIconTooltip,
             onPressed: _showSettingsDialog,
           ),
         ],
