@@ -1102,6 +1102,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lower body'**
   String get muscleCatLower;
+
+  /// No description provided for @friends_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get friends_title;
+
+  /// No description provided for @friends_tab_my_friends.
+  ///
+  /// In en, this message translates to:
+  /// **'My Friends'**
+  String get friends_tab_my_friends;
+
+  /// No description provided for @friends_tab_requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get friends_tab_requests;
+
+  /// No description provided for @friends_tab_search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get friends_tab_search;
+
+  /// No description provided for @friends_action_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get friends_action_add;
+
+  /// No description provided for @friends_action_accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get friends_action_accept;
+
+  /// No description provided for @friends_action_decline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get friends_action_decline;
+
+  /// No description provided for @friends_action_cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get friends_action_cancel;
+
+  /// No description provided for @friends_action_remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get friends_action_remove;
+
+  /// No description provided for @friends_snackbar_sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get friends_snackbar_sent;
+
+  /// No description provided for @friends_snackbar_accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Request accepted'**
+  String get friends_snackbar_accepted;
+
+  /// No description provided for @friends_snackbar_declined.
+  ///
+  /// In en, this message translates to:
+  /// **'Request declined'**
+  String get friends_snackbar_declined;
+
+  /// No description provided for @friends_snackbar_canceled.
+  ///
+  /// In en, this message translates to:
+  /// **'Request canceled'**
+  String get friends_snackbar_canceled;
+
+  /// No description provided for @friends_snackbar_removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend removed'**
+  String get friends_snackbar_removed;
+
+  /// No description provided for @friends_empty_incoming.
+  ///
+  /// In en, this message translates to:
+  /// **'No incoming requests'**
+  String get friends_empty_incoming;
+
+  /// No description provided for @friends_empty_outgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'No outgoing requests'**
+  String get friends_empty_outgoing;
+
+  /// No description provided for @friends_empty_friends.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet'**
+  String get friends_empty_friends;
+
+  /// No description provided for @friends_empty_search.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get friends_empty_search;
+
+  /// No description provided for @friends_privacy_no_access.
+  ///
+  /// In en, this message translates to:
+  /// **'This user does not share their calendar'**
+  String get friends_privacy_no_access;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2,6 +2,8 @@
 // ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform, kIsWeb;
 
@@ -80,8 +82,16 @@ import 'features/report/domain/usecases/get_all_log_timestamps.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
 
-/// Global navigator key for NFC navigation
+/// ─────────────────────────────────────────────────────────────
+/// Globales Setup
+/// ─────────────────────────────────────────────────────────────
+
+/// Navigator-Key (z.B. für Deeplinks aus Push)
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Push vorerst deaktiviert, da auf iOS-Simulator kein APNs-Token existiert.
+/// Später auf `true` setzen, wenn APNs/FCM korrekt eingerichtet sind.
+const bool kEnablePush = false;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -91,28 +101,62 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+  // Aktuell keine weitere Logik
 }
 
 Future<void> _initMessaging() async {
-  final messaging = FirebaseMessaging.instance;
-  if (defaultTargetPlatform == TargetPlatform.iOS) {
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
+  // Safe init: niemals App-Absturz provozieren
+  try {
+    final messaging = FirebaseMessaging.instance;
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // Berechtigungen holen
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint('[FCM] permission denied → skip');
+        return;
+      }
+      // Simulator hat kein APNs-Token → getToken() überspringen
+      final apns = await messaging.getAPNSToken();
+      if (apns == null) {
+        debugPrint('[FCM] no APNs token (simulator?) → skip FCM token fetch');
+        return;
+      }
+    }
+
+    final token = await messaging.getToken();
+    if (token != null) {
+      await _registerToken(token);
+    }
+
+    FirebaseMessaging.instance.onTokenRefresh.listen((t) {
+      _registerToken(
+        t,
+      ).catchError((e) => debugPrint('[FCM] onTokenRefresh error: $e'));
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  } catch (e, st) {
+    debugPrint('[FCM] init failed: $e\n$st');
   }
-  final token = await messaging.getToken();
-  if (token != null) {
-    await _registerToken(token);
-  }
-  FirebaseMessaging.instance.onTokenRefresh.listen(_registerToken);
-  FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
 }
 
 Future<void> _registerToken(String token) async {
-  final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+  final platform = defaultTargetPlatform == TargetPlatform.iOS
+      ? 'ios'
+      : 'android';
   try {
-    await FirebaseFunctions.instance
-        .httpsCallable('registerPushToken')
-        .call({'token': token, 'platform': platform});
-  } catch (_) {}
+    await FirebaseFunctions.instance.httpsCallable('registerPushToken').call({
+      'token': token,
+      'platform': platform,
+    });
+  } catch (e) {
+    debugPrint('[FCM] registerPushToken failed: $e');
+  }
 }
 
 void _handleMessage(RemoteMessage message) {
@@ -121,18 +165,20 @@ void _handleMessage(RemoteMessage message) {
     navigatorKey.currentState?.pushNamed(AppRouter.friendsHome);
   } else if (action == 'open_friend') {
     final uid = message.data['uid'];
-    navigatorKey.currentState
-        ?.pushNamed(AppRouter.friendDetail, arguments: uid);
+    navigatorKey.currentState?.pushNamed(
+      AppRouter.friendDetail,
+      arguments: uid,
+    );
   }
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env laden (optional, fällt sonst sauber zurück)
+  // .env laden (optional)
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
-  // Firebase init (einheitlich für alle Konfigurationen)
+  // Firebase init (einheitlich)
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -142,7 +188,6 @@ Future<void> main() async {
   // App Check (iOS: DeviceCheck für TestFlight/Prod)
   await FirebaseAppCheck.instance.activate(
     appleProvider: AppleProvider.deviceCheck,
-    // debugProvider: kReleaseMode ? false : true, // optional: Debug im Simulator/Debug
   );
 
   // Firestore Offline-Persistenz
@@ -158,14 +203,16 @@ Future<void> main() async {
     return true;
   }());
 
-  // Background-Messaging Handler registrieren (sicher, auch wenn ungenutzt)
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await _initMessaging();
+  // Push nur aktivieren, wenn explizit gewünscht
+  if (kEnablePush) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await _initMessaging();
+  }
 
-  // Date formatting
+  // Lokalisierung
   await initializeDateFormatting();
 
-  // Prepare report use cases
+  // Reports vorbereiten
   final reportRepo = ReportRepositoryImpl();
   final usageUC = GetDeviceUsageStats(reportRepo);
   final logsUC = GetAllLogTimestamps(reportRepo);
@@ -247,9 +294,7 @@ Future<void> main() async {
           ),
         ),
         ChangeNotifierProvider(
-          create: (c) => FriendCalendarProvider(
-            c.read<PublicCalendarSource>(),
-          ),
+          create: (c) => FriendCalendarProvider(c.read<PublicCalendarSource>()),
         ),
 
         // Numeric keypad
@@ -257,6 +302,7 @@ Future<void> main() async {
           create: (_) => OverlayNumericKeypadController(),
         ),
 
+        // Membership/Branding/Theme
         Provider<MembershipService>(
           create: (_) => FirestoreMembershipService(),
         ),
@@ -290,6 +336,8 @@ Future<void> main() async {
             return l;
           },
         ),
+
+        // Restliche Provider
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(
           create: (c) => DeviceProvider(
@@ -366,6 +414,7 @@ class MyApp extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const SplashScreen()),
       builder: (context, child) {
         Widget app = child!;
+        // NFC nur unter Android aktiv (wie vorher)
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
           app = GlobalNfcListener(child: app);
         }

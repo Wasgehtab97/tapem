@@ -527,4 +527,61 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get muscleCatLower => 'Unterkörper';
+
+  @override
+  String get friends_title => 'Freunde';
+
+  @override
+  String get friends_tab_my_friends => 'Meine Freunde';
+
+  @override
+  String get friends_tab_requests => 'Anfragen';
+
+  @override
+  String get friends_tab_search => 'Suchen';
+
+  @override
+  String get friends_action_add => 'Hinzufügen';
+
+  @override
+  String get friends_action_accept => 'Annehmen';
+
+  @override
+  String get friends_action_decline => 'Ablehnen';
+
+  @override
+  String get friends_action_cancel => 'Abbrechen';
+
+  @override
+  String get friends_action_remove => 'Entfernen';
+
+  @override
+  String get friends_snackbar_sent => 'Anfrage gesendet';
+
+  @override
+  String get friends_snackbar_accepted => 'Anfrage angenommen';
+
+  @override
+  String get friends_snackbar_declined => 'Anfrage abgelehnt';
+
+  @override
+  String get friends_snackbar_canceled => 'Anfrage abgebrochen';
+
+  @override
+  String get friends_snackbar_removed => 'Freund entfernt';
+
+  @override
+  String get friends_empty_incoming => 'Keine eingehenden Anfragen';
+
+  @override
+  String get friends_empty_outgoing => 'Keine ausgehenden Anfragen';
+
+  @override
+  String get friends_empty_friends => 'Noch keine Freunde';
+
+  @override
+  String get friends_empty_search => 'Keine Nutzer gefunden';
+
+  @override
+  String get friends_privacy_no_access => 'Dieser Nutzer teilt seinen Kalender nicht.';
 }

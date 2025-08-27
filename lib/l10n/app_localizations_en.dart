@@ -527,4 +527,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get muscleCatLower => 'Lower body';
+
+  @override
+  String get friends_title => 'Friends';
+
+  @override
+  String get friends_tab_my_friends => 'My Friends';
+
+  @override
+  String get friends_tab_requests => 'Requests';
+
+  @override
+  String get friends_tab_search => 'Search';
+
+  @override
+  String get friends_action_add => 'Add';
+
+  @override
+  String get friends_action_accept => 'Accept';
+
+  @override
+  String get friends_action_decline => 'Decline';
+
+  @override
+  String get friends_action_cancel => 'Cancel';
+
+  @override
+  String get friends_action_remove => 'Remove';
+
+  @override
+  String get friends_snackbar_sent => 'Request sent';
+
+  @override
+  String get friends_snackbar_accepted => 'Request accepted';
+
+  @override
+  String get friends_snackbar_declined => 'Request declined';
+
+  @override
+  String get friends_snackbar_canceled => 'Request canceled';
+
+  @override
+  String get friends_snackbar_removed => 'Friend removed';
+
+  @override
+  String get friends_empty_incoming => 'No incoming requests';
+
+  @override
+  String get friends_empty_outgoing => 'No outgoing requests';
+
+  @override
+  String get friends_empty_friends => 'No friends yet';
+
+  @override
+  String get friends_empty_search => 'No users found';
+
+  @override
+  String get friends_privacy_no_access => 'This user does not share their calendar';
 }

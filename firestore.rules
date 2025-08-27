@@ -1,26 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ----- Helper Functions -----
-    function isSignedIn() {
-      return request.auth != null;
-    }
 
+    // ─────────────────────────
+    // Helper Functions
+    // ─────────────────────────
     function isAuthed() {
       return request.auth != null;
     }
 
-    // verify the request comes from the user's own gym
-    // either via custom claim `gymId` or membership document
+    // Membership: either custom claim gymId or membership doc under gym
     function inGym(gymId) {
-      return isSignedIn() && (
+      return isAuthed() && (
         request.auth.token.gymId == gymId ||
         exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid))
       );
     }
 
-    // check admin role for this gym
-    // admin can be indicated via custom claim or the role field in the gym membership
+    // Admin if claim says admin OR membership role == admin
     function isAdmin(gymId) {
       return inGym(gymId) && (
         request.auth.token.role == 'admin' ||
@@ -28,88 +25,100 @@ service cloud.firestore {
       );
     }
 
-    // convenience helpers
-    function ownerOrAdmin(gymId, userId) {
-      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
-    }
-    function requestOwnerInGym(gymId) {
-      return inGym(gymId) && request.resource.data.userId == request.auth.uid;
-    }
-    function resourceOwnerOrAdmin(gymId) {
-      // v1 hardening: ensure read access requires gym membership (logs_owner_cross_gym)
-      return (inGym(gymId) && resource.data.userId == request.auth.uid) ||
-             isAdmin(gymId);
-    }
-
-
-    // Exercise is shared globally (no userId field or empty)
-    function isPublicExercise() {
-      return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
-    }
-
-    // requestor is the owner of a user document
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return isAuthed() && request.auth.uid == userId;
     }
 
+    // Friend relation exists (symmetrische Kante)
     function isFriend(owner, viewer) {
       return exists(/databases/$(database)/documents/users/$(owner)/friends/$(viewer));
     }
 
+    // Share at least one gym code (robust gegen fehlende Felder)
     function sharesGym(owner, viewer) {
-      return count(
-        get(/databases/$(database)/documents/users/$(owner)).data.gymCodes ∩
-        get(/databases/$(database)/documents/users/$(viewer)).data.gymCodes
-      ) > 0;
+      let ownerDoc = get(/databases/$(database)/documents/users/$(owner)).data;
+      let viewerDoc = get(/databases/$(database)/documents/users/$(viewer)).data;
+      let a = ownerDoc.gymCodes;
+      let b = viewerDoc.gymCodes;
+      return a != null && b != null && a.hasAny(b);
     }
 
-    function isOwnerInGym(gymId, userId) {
-      return inGym(gymId) && request.auth.uid == userId;
+    // Convenience: owner in gym or admin
+    function ownerOrAdmin(gymId, userId) {
+      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
     }
 
-    // check if the request targets only the gym document itself
-    function isGymDocument(gymId) {
-      return resource.__name__ ==
-             "/databases/" + database + "/documents/gyms/" + gymId;
+    // Write must be performed by the owner within the gym
+    function requestOwnerInGym(gymId) {
+      return inGym(gymId) && request.resource.data.userId == request.auth.uid;
     }
 
-    // Allow users to read their own log documents across all gyms.
+    // Read must refer to a doc owned by requester within gym, or admin
+    function resourceOwnerOrAdmin(gymId) {
+      return (inGym(gymId) && resource.data.userId == request.auth.uid) || isAdmin(gymId);
+    }
+
+    // Public exercise if no userId set or empty (READ context uses resource)
+    function isPublicExercise() {
+      return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
+    }
+
+    // ─────────────────────────
+    // Global logs read (owner-only)
+    // ─────────────────────────
     match /{path=**}/logs/{logId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
     }
 
-    // ----- Public Profiles -----
+    // ─────────────────────────
+    // Public Profiles (read-only for authed users)
+    // ─────────────────────────
     match /publicProfiles/{uid} {
       allow read: if isAuthed();
       allow write: if false;
     }
 
-    // ----- User documents -----
+    // ─────────────────────────
+    // Users (top-level)
+    // ─────────────────────────
     match /users/{uid} {
+      // Keep profile readable for authed users (e.g., username checks)
       allow create: if isOwner(uid);
       allow read: if isAuthed();
       allow update: if isOwner(uid);
 
+      // Friend Requests (server-managed)
       match /friendRequests/{reqId} {
-        allow read: if isOwner(uid) || (isAuthed() && resource.data.fromUserId == request.auth.uid);
-        allow write: if false;
+        // Recipient can read all their requests; Sender can read only their own request at recipient
+        allow read: if isOwner(uid) ||
+                    (isAuthed() && resource.data.fromUserId == request.auth.uid);
+        allow write: if false; // only via Cloud Functions
       }
 
+      // Friends list (owner-only read; server writes)
       match /friends/{fid} {
         allow read: if isOwner(uid);
-        allow write: if false;
+        allow write: if false; // only via Cloud Functions
       }
 
+      // Privacy-aware public calendar (server writes)
       match /publicCalendar/{month} {
-        allow read: if isOwner(uid) ||
-          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'public') ||
-          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'friends' &&
-            isFriend(uid, request.auth.uid)) ||
-          (get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'same_gym' &&
-            sharesGym(uid, request.auth.uid));
-        allow write: if false;
+        allow read: if isAuthed() && (
+          isOwner(uid) ||
+          get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'public' ||
+          (
+            get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'friends' &&
+            isFriend(uid, request.auth.uid)
+          ) ||
+          (
+            get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'same_gym' &&
+            sharesGym(uid, request.auth.uid)
+          )
+        );
+        allow write: if false; // only via Cloud Functions
       }
 
+      // Friend meta & push tokens are owner-managed
       match /friendMeta/{doc} {
         allow read, write: if isOwner(uid);
       }
@@ -118,88 +127,82 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      // Fallback for other user subcollections (owner-only)
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
     }
 
-    // ----- Gyms -----
+    // ─────────────────────────
+    // Gyms
+    // ─────────────────────────
     match /gyms/{gymId} {
-      // Gym documents are readable for everyone to validate gym codes.
-      // Public fields: name, code, logoUrl
-      // v1 hardening: document contains no sensitive fields (gym_document_public)
+      // Public gym doc (non-sensitive fields only)
       allow read: if true;
       allow write: if isAdmin(gymId);
 
-      // ---- Devices collection ----
+      // Devices
       match /devices/{deviceId} {
-        // v1 hardening: block cross-gym reads (device_cross_gym)
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
 
-        // Logs are appended by the owning user only. They are immutable.
+        // Device logs (immutable; owner append-only)
         match /logs/{logId} {
           allow create: if requestOwnerInGym(gymId);
-          // v1 hardening: owner must belong to gym (logs_owner_cross_gym)
           allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }
 
-        // Session snapshots per user
+        // Session snapshots per user (read owner/admin; write owner-only)
         match /sessions/{sessionId} {
           allow create: if requestOwnerInGym(gymId);
           allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }
 
-        // Each user manages their own notes for the device.
+        // Per-user notes for device
         match /userNotes/{userId} {
           allow read, write: if ownerOrAdmin(gymId, userId);
         }
 
-        // Leaderboard entries are updated per user.
+        // Leaderboard entries (owner/admin; enforce userId match)
         match /leaderboard/{userId}/{doc=**} {
-          // v1 hardening: enforce userId match; TODO server-side writes (leaderboard_owner_only)
           allow read, write: if ownerOrAdmin(gymId, userId) &&
                              request.resource.data.userId == userId;
         }
 
-        // Custom exercises per user
+        // Custom exercises (public or owner; admin override)
         match /exercises/{exerciseId} {
           allow read: if isAdmin(gymId) ||
                        (inGym(gymId) &&
                         (request.auth.uid == resource.data.userId || isPublicExercise()));
-          allow write: if inGym(gymId) &&
-                          (request.auth.uid == request.resource.data.userId ||
-                           request.auth.uid == resource.data.userId) ||
-                        isAdmin(gymId);
+          allow write: if inGym(gymId) && (
+                          request.auth.uid == request.resource.data.userId ||
+                          request.auth.uid == resource.data.userId
+                        ) || isAdmin(gymId);
         }
       }
 
-      // ---- Surveys ----
+      // Surveys
       match /surveys/{surveyId} {
         allow read: if inGym(gymId);
         allow create, update, delete: if isAdmin(gymId);
 
-        // Users submit answers; only admins read all answers
         match /answers/{answerId} {
-          allow create: if isOwnerInGym(gymId, request.auth.uid);
+          allow create: if inGym(gymId) && request.auth.uid == request.resource.data.userId;
           allow read: if isAdmin(gymId);
           allow update, delete: if false;
         }
       }
 
-      // ---- Feedback ----
+      // Feedback
       match /feedback/{entryId} {
-        // v1 hardening: limit feedback reads to admins (feedback_access)
-        allow create: if inGym(gymId) &&
-          request.resource.data.userId == request.auth.uid;
+        allow create: if inGym(gymId) && request.resource.data.userId == request.auth.uid;
         allow read, update, delete: if isAdmin(gymId);
       }
 
-      // ---- Training plans ----
+      // Training plans
       match /trainingPlans/{planId}/{subdoc=**} {
-        // v1 hardening: require gym membership and creator/admin (training_plan_scoping)
         allow read, write: if inGym(gymId) && (
           isAdmin(gymId) ||
           request.auth.uid == request.resource.data.createdBy ||
@@ -207,39 +210,41 @@ service cloud.firestore {
         );
       }
 
-      // ---- Muscle groups ----
+      // Muscle groups
       match /muscleGroups/{groupId} {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
       }
 
-      // ---- Challenges ----
+      // Challenges
       match /challenges/{type}/{docId}/{sub=**} {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
       }
 
-      // ---- Users subcollection ----
-      // Users are referenced under their gym as well
+      // Users subcollection under gym
       match /users/{userId} {
         allow read: if inGym(gymId);
-        allow create: if request.auth != null &&
+        allow create: if isAuthed() &&
                        request.auth.uid == userId &&
                        request.resource.data.role == 'member';
         allow update, delete: if isAdmin(gymId);
       }
+
       match /users/{userId}/{doc=**} {
         allow read, write: if ownerOrAdmin(gymId, userId);
       }
 
-      // Fallback for any other documents inside gyms
+      // Fallback inside gyms
       match /{document=**} {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
       }
     }
 
-    // Deny everything else by default
+    // ─────────────────────────
+    // Deny everything else
+    // ─────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
