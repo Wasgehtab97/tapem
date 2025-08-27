@@ -66,6 +66,14 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "sessionId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "publicProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "usernameLower", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
