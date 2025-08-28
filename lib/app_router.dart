@@ -29,6 +29,10 @@ import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.da
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/config/feature_flags.dart';
+import 'main.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -62,7 +66,22 @@ class AppRouter {
   static const friendDetail = '/friend_detail';
   static const friendTrainingCalendar = '/friend_training_calendar';
 
+  static const restrictedRoutesForMembers = {
+    report,
+    muscleGroups,
+    admin,
+    affiliate,
+    planOverview,
+  };
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    final auth = navigatorKey.currentContext?.read<AuthProvider>();
+    final isRestricted = FF.limitTabsForMembers && !(auth?.isAdmin ?? false) &&
+        restrictedRoutesForMembers.contains(settings.name);
+    if (isRestricted) {
+      return MaterialPageRoute(builder: (_) => const HomeScreen());
+    }
+
     switch (settings.name) {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());

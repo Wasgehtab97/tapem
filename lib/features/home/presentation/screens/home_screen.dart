@@ -16,6 +16,7 @@ import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/config/feature_flags.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -28,21 +29,54 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _currentIndex;
 
-  List<Widget> _buildPages(BuildContext context) {
+  List<_TabInfo> _buildTabs(BuildContext context) {
     final gymProv = context.watch<GymProvider>();
     final gymId = gymProv.currentGymId;
     final devices = gymProv.devices.where((d) => !d.isMulti).toList();
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
 
     return [
-      const GymScreen(),
-      const ProfileScreen(),
-      const ReportScreen(),
-      const MuscleGroupScreenNew(),
-      const AdminDashboardScreen(),
-      RankScreen(gymId: gymId, deviceId: deviceId),
-      const AffiliateScreen(),
-      const PlanOverviewScreen(),
+      _TabInfo(
+        const GymScreen(key: PageStorageKey('Gym')),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center), label: 'Gym'),
+      ),
+      _TabInfo(
+        const ProfileScreen(key: PageStorageKey('Profile')),
+        const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+      ),
+      _TabInfo(
+        const ReportScreen(key: PageStorageKey('Report')),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.insert_chart), label: 'Report'),
+      ),
+      _TabInfo(
+        const MuscleGroupScreenNew(key: PageStorageKey('Muskeln')),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.accessibility_new), label: 'Muskeln'),
+      ),
+      _TabInfo(
+        const AdminDashboardScreen(key: PageStorageKey('Admin')),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+      ),
+      _TabInfo(
+        RankScreen(
+            key: const PageStorageKey('Rank'),
+            gymId: gymId,
+            deviceId: deviceId),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard), label: 'Rank'),
+      ),
+      _TabInfo(
+        const AffiliateScreen(key: PageStorageKey('Affiliate')),
+        const BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
+      ),
+      _TabInfo(
+        const PlanOverviewScreen(key: PageStorageKey('Plaene')),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.event_note), label: 'Pläne'),
+      ),
     ];
   }
 
@@ -53,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Nach Login Gym laden und Report triggern
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = context.read<AuthProvider>();
+      debugPrint('[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}');
       final gymProv = context.read<GymProvider>();
       final reportProv = context.read<ReportProvider>();
       final code = authProv.gymCode;
@@ -70,10 +105,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProv = context.watch<AuthProvider>();
+    final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
     final loc = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
     final userDisplay =
-        authProv.userName ?? authProv.userEmail ?? loc.genericUser;
+        auth.userName ?? auth.userEmail ?? loc.genericUser;
+    final allTabs = _buildTabs(context);
+    final tabs = (FF.limitTabsForMembers && !isAdmin)
+        ? [allTabs[0], allTabs[1], allTabs[5]]
+        : allTabs;
+    if (_currentIndex >= tabs.length) {
+      _currentIndex = 0;
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(userDisplay),
@@ -87,34 +130,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _buildPages(context)[_currentIndex],
+      body: tabs[_currentIndex].page,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
         onTap: (i) => setState(() => _currentIndex = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Gym',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart),
-            label: 'Report',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.accessibility_new),
-            label: 'Muskeln',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.admin_panel_settings),
-            label: 'Admin',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Rank'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'Pläne'),
-        ],
+        items: [for (final t in tabs) t.item],
       ),
     );
   }
+}
+
+class _TabInfo {
+  final Widget page;
+  final BottomNavigationBarItem item;
+  const _TabInfo(this.page, this.item);
 }
