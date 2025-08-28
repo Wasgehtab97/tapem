@@ -4,6 +4,8 @@ import 'package:tapem/l10n/app_localizations.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/friend_search_provider.dart';
 import 'friend_detail_screen.dart';
+import '../../data/user_search_source.dart';
+import '../../domain/models/public_profile.dart';
 
 class FriendsHomeScreen extends StatefulWidget {
   const FriendsHomeScreen({Key? key}) : super(key: key);
@@ -17,6 +19,12 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
+  final Map<String, Future<PublicProfile?>> _profileCache = {};
+
+  Future<PublicProfile?> _fetchProfile(String uid) {
+    return _profileCache[uid] ??=
+        context.read<UserSearchSource>().getProfile(uid).catchError((_) => null);
+  }
 
   @override
   void initState() {
@@ -73,7 +81,13 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
       itemBuilder: (_, i) {
         final f = prov.friends[i];
         return ListTile(
-          title: Text(f.friendUid),
+          title: FutureBuilder<PublicProfile?>(
+            future: _fetchProfile(f.friendUid),
+            builder: (context, snapshot) {
+              final name = snapshot.data?.username ?? f.friendUid;
+              return Text(name);
+            },
+          ),
           onTap: () {
             Navigator.push(context, FriendDetailScreen.route(f.friendUid));
           },
@@ -97,7 +111,13 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   itemBuilder: (_, i) {
                     final r = prov.incomingPending[i];
                     return ListTile(
-                      title: Text(r.fromUserId),
+                      title: FutureBuilder<PublicProfile?>(
+                        future: _fetchProfile(r.fromUserId),
+                        builder: (context, snapshot) {
+                          final name = snapshot.data?.username ?? r.fromUserId;
+                          return Text(name);
+                        },
+                      ),
                       subtitle: Text(r.message ?? ''),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -135,7 +155,13 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   itemBuilder: (_, i) {
                     final r = prov.outgoingPending[i];
                     return ListTile(
-                      title: Text(r.toUserId),
+                      title: FutureBuilder<PublicProfile?>(
+                        future: _fetchProfile(r.toUserId),
+                        builder: (context, snapshot) {
+                          final name = snapshot.data?.username ?? r.toUserId;
+                          return Text(name);
+                        },
+                      ),
                       subtitle: Text(r.message ?? ''),
                       trailing: IconButton(
                         icon: const Icon(Icons.cancel),
