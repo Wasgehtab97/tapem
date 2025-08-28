@@ -553,7 +553,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get friends_action_cancel => 'Cancel';
 
   @override
+  String get friends_action_training_days => 'Training days';
+
+  @override
+  String get friends_action_open_profile => 'Open profile';
+
+  @override
   String get friends_action_remove => 'Remove';
+
+  @override
+  String get friends_remove_title => 'Remove this contact?';
+
+  @override
+  String friends_remove_message(String username) =>
+      'Do you really want to remove $username?';
+
+  @override
+  String get friends_remove_yes => 'Remove';
+
+  @override
+  String get friends_remove_no => 'Cancel';
 
   @override
   String get friends_snackbar_sent => 'Request sent';
@@ -568,7 +587,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get friends_snackbar_canceled => 'Request canceled';
 
   @override
-  String get friends_snackbar_removed => 'Friend removed';
+  String get friends_removed_snackbar => 'Contact removed';
 
   @override
   String get friends_empty_incoming => 'No incoming requests';

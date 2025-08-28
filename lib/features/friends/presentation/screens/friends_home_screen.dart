@@ -90,10 +90,6 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
             },
           ),
           onTap: () => _showFriendActions(f.friendUid),
-          trailing: IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: () => prov.removeFriend(f.friendUid),
-          ),
         );
       },
     );
@@ -191,7 +187,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('Trainingstage'),
+              title: Text(loc.friends_action_training_days),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(
@@ -202,10 +198,20 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
               },
             ),
             ListTile(
-              title: const Text('Profil öffnen'),
+              title: Text(loc.friends_action_open_profile),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, AppRouter.friendDetail, arguments: uid);
+              },
+            ),
+            ListTile(
+              title: Text(
+                loc.friends_action_remove,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _confirmRemove(uid, name);
               },
             ),
             ListTile(
@@ -216,6 +222,58 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _confirmRemove(String uid, String name) async {
+    final loc = AppLocalizations.of(context)!;
+    final prov = context.read<FriendsProvider>();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Consumer<FriendsProvider>(
+        builder: (context, p, _) => AlertDialog(
+          title: Text(loc.friends_remove_title),
+          content: Text(loc.friends_remove_message(name)),
+          actions: [
+            TextButton(
+              onPressed: p.isBusy ? null : () => Navigator.pop(ctx, false),
+              child: Text(loc.friends_remove_no),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: p.isBusy
+                  ? null
+                  : () async {
+                      try {
+                        await prov.remove(uid);
+                        if (ctx.mounted) Navigator.pop(ctx, true);
+                      } catch (_) {
+                        if (ctx.mounted) Navigator.pop(ctx, false);
+                      }
+                    },
+              child: p.isBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(loc.friends_remove_yes),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.friends_removed_snackbar)),
+      );
+    } else if (prov.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(prov.error!)),
+      );
+    }
   }
 
   Widget _searchTab(
