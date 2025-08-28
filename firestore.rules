@@ -110,7 +110,7 @@ service cloud.firestore {
       // Friends list (symmetrische Kante)
       match /friends/{fid} {
         allow read: if isOwner(uid);
-        allow create: if (request.auth.uid == uid || request.auth.uid == fid) &&
+        allow create: if isOwner(uid) &&
                         request.resource.data.friendUid == fid &&
                         request.resource.data.keys().hasOnly(['friendUid','since','createdAt','updatedAt','gymCodesAtAcceptance']) &&
                         (
@@ -119,7 +119,7 @@ service cloud.firestore {
                           exists(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)) &&
                           get(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)).data.status == 'accepted'
                         );
-        allow delete: if request.auth.uid == uid || request.auth.uid == fid;
+        allow delete: if isOwner(uid);
       }
 
       // Privacy-aware public calendar (server writes)

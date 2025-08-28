@@ -41,4 +41,15 @@ class FriendsSource {
             .map((d) => FriendRequest.fromMap(d.id, d.data()))
             .toList());
   }
+
+  Stream<List<FriendRequest>> watchOutgoingAccepted(String meUid) {
+    return _firestore
+        .collectionGroup('friendRequests')
+        .where('fromUserId', isEqualTo: meUid)
+        .where('status', isEqualTo: 'accepted')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => FriendRequest.fromMap(d.id, d.data()))
+            .toList());
+  }
 }

@@ -34,7 +34,7 @@ class FriendsApi {
           'message': message.trim(),
         'createdAt': now,
         'updatedAt': now,
-      });
+      }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
@@ -46,7 +46,6 @@ class FriendsApi {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
     final now = FieldValue.serverTimestamp();
-    final batch = _firestore.batch();
     final reqId = '${fromUid}_$me';
     final reqRef = _firestore
         .collection('users')
@@ -55,26 +54,15 @@ class FriendsApi {
         .doc(reqId);
     final myFriendRef =
         _firestore.collection('users').doc(me).collection('friends').doc(fromUid);
-    final otherFriendRef = _firestore
-        .collection('users')
-        .doc(fromUid)
-        .collection('friends')
-        .doc(me);
-    batch.update(reqRef, {'status': 'accepted', 'updatedAt': now});
-    batch.set(myFriendRef, {
-      'friendUid': fromUid,
-      'since': now,
-      'createdAt': now,
-      'updatedAt': now,
-    });
-    batch.set(otherFriendRef, {
-      'friendUid': me,
-      'since': now,
-      'createdAt': now,
-      'updatedAt': now,
-    });
     try {
-      await batch.commit();
+      await reqRef.set({'status': 'accepted', 'updatedAt': now},
+          SetOptions(merge: true));
+      await myFriendRef.set({
+        'friendUid': fromUid,
+        'since': now,
+        'createdAt': now,
+        'updatedAt': now,
+      }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
@@ -93,7 +81,7 @@ class FriendsApi {
           .doc(me)
           .collection('friendRequests')
           .doc(reqId)
-          .update({'status': 'declined', 'updatedAt': now});
+          .set({'status': 'declined', 'updatedAt': now}, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
@@ -112,7 +100,7 @@ class FriendsApi {
           .doc(toUid)
           .collection('friendRequests')
           .doc(reqId)
-          .update({'status': 'canceled', 'updatedAt': now});
+          .set({'status': 'canceled', 'updatedAt': now}, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
@@ -123,18 +111,36 @@ class FriendsApi {
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
-    final batch = _firestore.batch();
-    final myRef =
-        _firestore.collection('users').doc(me).collection('friends').doc(otherUid);
-    final otherRef = _firestore
-        .collection('users')
-        .doc(otherUid)
-        .collection('friends')
-        .doc(me);
-    batch.delete(myRef);
-    batch.delete(otherRef);
     try {
-      await batch.commit();
+      await _firestore
+          .collection('users')
+          .doc(me)
+          .collection('friends')
+          .doc(otherUid)
+          .delete();
+    } on FirebaseException catch (e) {
+      throw FriendsApiException.fromCode(e.code, e.message);
+    }
+  }
+
+  Future<void> ensureFriendEdge(String otherUid) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    final now = FieldValue.serverTimestamp();
+    final ref = _firestore
+        .collection('users')
+        .doc(me)
+        .collection('friends')
+        .doc(otherUid);
+    try {
+      await ref.set({
+        'friendUid': otherUid,
+        'since': now,
+        'createdAt': now,
+        'updatedAt': now,
+      }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
