@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/friend_calendar_provider.dart';
-import '../../data/public_profile_source.dart';
+import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
 
 class FriendDetailScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final src = context.read<PublicProfileSource>();
+    final src = context.read<UserSearchSource>();
     try {
       final p = await src.getProfile(widget.uid);
       setState(() => _profile = p);

@@ -42,7 +42,7 @@ import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
 import 'package:tapem/features/friends/data/friends_api.dart';
 import 'package:tapem/features/friends/data/friends_source.dart';
-import 'package:tapem/features/friends/data/public_profile_source.dart';
+import 'package:tapem/features/friends/data/user_search_source.dart';
 import 'package:tapem/features/friends/data/public_calendar_source.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
@@ -285,8 +285,8 @@ Future<void> main() async {
         Provider<FriendsSource>(
           create: (_) => FriendsSource(FirebaseFirestore.instance),
         ),
-        Provider<PublicProfileSource>(
-          create: (_) => PublicProfileSource(FirebaseFirestore.instance),
+        Provider<UserSearchSource>(
+          create: (_) => UserSearchSource(FirebaseFirestore.instance),
         ),
         Provider<PublicCalendarSource>(
           create: (_) => PublicCalendarSource(FirebaseFirestore.instance),
@@ -298,7 +298,7 @@ Future<void> main() async {
           ),
         ),
         ChangeNotifierProvider(
-          create: (c) => FriendSearchProvider(c.read<PublicProfileSource>()),
+          create: (c) => FriendSearchProvider(c.read<UserSearchSource>()),
         ),
         ChangeNotifierProvider(
           create: (c) => FriendCalendarProvider(c.read<PublicCalendarSource>()),

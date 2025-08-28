@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
@@ -12,8 +11,8 @@ import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
+import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
-import 'package:tapem/features/friends/data/public_profile_sync_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -22,26 +21,25 @@ class AuthProvider extends ChangeNotifier {
   final GetCurrentUserUseCase _currentUC;
   final SetUsernameUseCase _setUsernameUC;
   final SetShowInLeaderboardUseCase _setShowInLbUC;
+  final SetPublicProfileUseCase _setPublicProfileUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final ResetPasswordUseCase _resetPasswordUC;
-  final PublicProfileSyncService _publicProfileSync;
 
   UserData? _user;
   bool _isLoading = false;
   String? _error;
   String? _selectedGymCode;
 
-  AuthProvider({AuthRepositoryImpl? repo, PublicProfileSyncService? profileSync})
+  AuthProvider({AuthRepositoryImpl? repo})
     : _loginUC = LoginUseCase(repo),
       _registerUC = RegisterUseCase(repo),
       _logoutUC = LogoutUseCase(repo),
       _currentUC = GetCurrentUserUseCase(repo),
       _setUsernameUC = SetUsernameUseCase(repo),
       _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
+      _setPublicProfileUC = SetPublicProfileUseCase(repo),
       _checkUsernameUC = CheckUsernameAvailable(repo),
-      _resetPasswordUC = ResetPasswordUseCase(repo),
-      _publicProfileSync = profileSync ??
-          PublicProfileSyncService(FirebaseFirestore.instance) {
+      _resetPasswordUC = ResetPasswordUseCase(repo) {
     _loadCurrentUser();
   }
 
@@ -63,6 +61,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// Opt-out für Leaderboard
   bool? get showInLeaderboard => _user?.showInLeaderboard;
+  bool? get publicProfile => _user?.publicProfile;
 
   String? get error => _error;
 
@@ -74,16 +73,21 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
-        final user = await _currentUC.execute();
+        var user = await _currentUC.execute();
         if (user != null) {
-          _user = UserData(
-            id: user.id,
-            email: user.email,
-            userName: user.userName,
-            gymCodes: user.gymCodes,
-            showInLeaderboard: user.showInLeaderboard,
+          if (user.publicProfile != user.showInLeaderboard) {
+            try {
+              await _setPublicProfileUC.execute(
+                  user.id, user.showInLeaderboard);
+              user = user.copyWith(publicProfile: user.showInLeaderboard);
+            } catch (e, st) {
+              _error = e.toString();
+              debugPrintStack(
+                  label: 'AuthProvider._loadCurrentUser', stackTrace: st);
+            }
+          }
+          _user = user.copyWith(
             role: claims['role'] as String? ?? user.role,
-            createdAt: user.createdAt,
           );
           final prefs = await SharedPreferences.getInstance();
           final stored = prefs.getString('selectedGymCode');
@@ -92,23 +96,6 @@ class AuthProvider extends ChangeNotifier {
           } else if (user.gymCodes.isNotEmpty) {
             _selectedGymCode = user.gymCodes.first;
             await prefs.setString('selectedGymCode', _selectedGymCode!);
-          }
-          try {
-            if (_user!.showInLeaderboard) {
-              await _publicProfileSync.ensurePublicProfile(
-                _user!.id,
-                primaryGymCode: _selectedGymCode,
-              );
-            } else {
-              await _publicProfileSync.removePublicProfileIfPrivate(_user!.id);
-            }
-            _publicProfileSync.syncOnProfileChanges(
-              _user!.id,
-              primaryGymCodeProvider: () => _selectedGymCode,
-            );
-          } catch (e, st) {
-            _error = e.toString();
-            debugPrintStack(label: 'AuthProvider._loadCurrentUser', stackTrace: st);
           }
         }
       }
@@ -155,7 +142,6 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _logoutUC.execute();
     } finally {
-      _publicProfileSync.dispose();
       _user = null;
       _selectedGymCode = null;
       final prefs = await SharedPreferences.getInstance();
@@ -177,17 +163,6 @@ class AuthProvider extends ChangeNotifier {
       }
       await _setUsernameUC.execute(_user!.id, username);
       _user = _user!.copyWith(userName: username);
-      if (_user!.showInLeaderboard) {
-        try {
-          await _publicProfileSync.ensurePublicProfile(
-            _user!.id,
-            primaryGymCode: _selectedGymCode,
-          );
-        } catch (e, st) {
-          _error = e.toString();
-          debugPrintStack(label: 'AuthProvider.setUsername', stackTrace: st);
-        }
-      }
       return true;
     } catch (e) {
       _error = e.toString();
@@ -204,24 +179,20 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _setShowInLbUC.execute(_user!.id, value);
       _user = _user!.copyWith(showInLeaderboard: value);
-      if (value) {
-        try {
-          await _publicProfileSync.ensurePublicProfile(
-            _user!.id,
-            primaryGymCode: _selectedGymCode,
-          );
-        } catch (e, st) {
-          _error = e.toString();
-          debugPrintStack(label: 'AuthProvider.setShowInLeaderboard', stackTrace: st);
-        }
-      } else {
-        try {
-          await _publicProfileSync.removePublicProfileIfPrivate(_user!.id);
-        } catch (e, st) {
-          _error = e.toString();
-          debugPrintStack(label: 'AuthProvider.setShowInLeaderboard', stackTrace: st);
-        }
-      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> setPublicProfile(bool value) async {
+    if (_user == null) return;
+    _setLoading(true);
+    _error = null;
+    try {
+      await _setPublicProfileUC.execute(_user!.id, value);
+      _user = _user!.copyWith(publicProfile: value);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -248,17 +219,6 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedGymCode', code);
     notifyListeners();
-    if (_user!.showInLeaderboard) {
-      try {
-        await _publicProfileSync.ensurePublicProfile(
-          _user!.id,
-          primaryGymCode: _selectedGymCode,
-        );
-      } catch (e, st) {
-        _error = e.toString();
-        debugPrintStack(label: 'AuthProvider.selectGym', stackTrace: st);
-      }
-    }
   }
 
   void _setLoading(bool v) {
@@ -268,7 +228,6 @@ class AuthProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _publicProfileSync.dispose();
     super.dispose();
   }
 }

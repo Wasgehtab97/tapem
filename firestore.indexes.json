@@ -68,11 +68,11 @@
       ]
     },
     {
-      "collectionGroup": "publicProfiles",
+      "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "usernameLower", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "publicProfile", "order": "ASCENDING" },
+        { "fieldPath": "usernameLower", "order": "ASCENDING" }
       ]
     }
   ],

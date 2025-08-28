@@ -1,17 +1,17 @@
 # Friend Username Search
 
-The app searches in the `publicProfiles` collection. Documents mirror a subset of `users/*` fields via Cloud Functions (`mirrorPublicProfile`) and contain:
+The app now searches directly in the `users` collection. Visibility is controlled by the `publicProfile` flag. When `publicProfile == true`, basic fields are queryable:
 
 - `username`
 - `usernameLower` (lower‑cased)
-- `primaryGymCode`
+- `gymCodes[0]` (used as primary gym)
 - `avatarUrl`
-- `createdAt`
 
 ## Query
 
 ```dart
-orderBy('usernameLower')
+where('publicProfile', isEqualTo: true)
+  .orderBy('usernameLower')
   .startAt([prefix])
   .endAt([prefix + '\u{f8ff}'])
 ```
@@ -22,7 +22,7 @@ orderBy('usernameLower')
 
 ## Testing
 
-1. Ensure users have public profiles (Function + backfill).
+1. Ensure users have set `publicProfile = true` (via profile settings).
 2. Run the app, open the Friends tab → Search.
 3. Enter a prefix like `ad` or `the` (lowercase). Matching users should appear.
 4. Try full usernames to verify exact matches.

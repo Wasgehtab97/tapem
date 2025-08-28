@@ -4,6 +4,7 @@ class UserData {
   final String? userName;
   final List<String> gymCodes;
   final bool showInLeaderboard;
+  final bool publicProfile;
   final String role;
   final DateTime createdAt;
 
@@ -13,6 +14,7 @@ class UserData {
     this.userName,
     required this.gymCodes,
     required this.showInLeaderboard,
+    required this.publicProfile,
     required this.role,
     required this.createdAt,
   });
@@ -23,6 +25,7 @@ class UserData {
     String? userName,
     List<String>? gymCodes,
     bool? showInLeaderboard,
+    bool? publicProfile,
     String? role,
     DateTime? createdAt,
   }) {
@@ -32,6 +35,7 @@ class UserData {
       userName: userName ?? this.userName,
       gymCodes: gymCodes ?? this.gymCodes,
       showInLeaderboard: showInLeaderboard ?? this.showInLeaderboard,
+      publicProfile: publicProfile ?? this.publicProfile,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
     );

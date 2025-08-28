@@ -7,6 +7,7 @@ abstract class AuthRepository {
   Future<UserData?> getCurrentUser();
   Future<void> setUsername(String userId, String username);
   Future<void> setShowInLeaderboard(String userId, bool value);
+  Future<void> setPublicProfile(String userId, bool value);
   Future<bool> isUsernameAvailable(String username);
   Future<void> sendPasswordResetEmail(String email);
 }

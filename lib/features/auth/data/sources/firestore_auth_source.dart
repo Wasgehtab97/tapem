@@ -47,6 +47,7 @@ class FirestoreAuthSource {
       userNameLower: null,
       gymCodes: [gym.id],
       showInLeaderboard: true,
+      publicProfile: false,
       role: 'member',
       createdAt: now,
     );
@@ -98,6 +99,12 @@ class FirestoreAuthSource {
   Future<void> setShowInLeaderboard(String userId, bool value) async {
     await _firestore.collection('users').doc(userId).update({
       'showInLeaderboard': value,
+    });
+  }
+
+  Future<void> setPublicProfile(String userId, bool value) async {
+    await _firestore.collection('users').doc(userId).update({
+      'publicProfile': value,
     });
   }
 

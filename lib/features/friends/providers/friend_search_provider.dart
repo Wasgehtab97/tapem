@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../data/public_profile_source.dart';
+import '../data/user_search_source.dart';
 import '../domain/models/public_profile.dart';
 
 class FriendSearchProvider extends ChangeNotifier {
   FriendSearchProvider(this._source);
 
-  final PublicProfileSource _source;
+  final UserSearchSource _source;
 
   String query = '';
   List<PublicProfile> results = [];
@@ -19,7 +19,7 @@ class FriendSearchProvider extends ChangeNotifier {
   void updateQuery(String value) {
     query = value;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), _startSearch);
+    _debounce = Timer(const Duration(milliseconds: 500), _startSearch);
   }
 
   void _startSearch() {
@@ -38,7 +38,7 @@ class FriendSearchProvider extends ChangeNotifier {
     loading = true;
     error = null;
     notifyListeners();
-    _sub = _source.searchByUsernamePrefix(q).listen((res) {
+    _sub = _source.streamByUsernamePrefix(q).listen((res) {
       results = res;
       loading = false;
       notifyListeners();
