@@ -23,7 +23,8 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   Future<PublicProfile?> _fetchProfile(String uid) {
     return _profileCache[uid] ??=
-        context.read<UserSearchSource>().getProfile(uid).catchError((_) => null);
+        context.read<UserSearchSource>().getProfile(uid).then<PublicProfile?>
+            ((value) => value, onError: (_, __) => null);
   }
 
   @override
