@@ -4,6 +4,9 @@ class FF {
   // Standard auf false: „Letzte Session“-Card wird NICHT angezeigt.
   static const bool showLastSessionOnDevicePage = false;
 
+  // TODO: Deaktivieren, wenn Mitglieder wieder alle Tabs sehen dürfen
+  static const bool limitTabsForMembers = true;
+
   // Optional: für lokale Tests aktivierbar via dart-define
   // siehe: FF.runtimeShowLastSessionOnDevicePage
   static bool get runtimeShowLastSessionOnDevicePage {
