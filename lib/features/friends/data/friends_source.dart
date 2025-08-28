@@ -11,7 +11,7 @@ class FriendsSource {
         .collection('users')
         .doc(meUid)
         .collection('friends')
-        .orderBy('since', descending: true)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) =>
             snap.docs.map((d) => Friend.fromMap(d.id, d.data())).toList());
@@ -19,37 +19,33 @@ class FriendsSource {
 
   Stream<List<FriendRequest>> watchIncoming(String meUid) {
     return _firestore
-        .collection('users')
-        .doc(meUid)
         .collection('friendRequests')
+        .where('toUserId', isEqualTo: meUid)
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => FriendRequest.fromMap(d.id, d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => FriendRequest.fromMap(d.id, d.data())).toList());
   }
 
   Stream<List<FriendRequest>> watchOutgoing(String meUid) {
     return _firestore
-        .collectionGroup('friendRequests')
+        .collection('friendRequests')
         .where('fromUserId', isEqualTo: meUid)
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => FriendRequest.fromMap(d.id, d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => FriendRequest.fromMap(d.id, d.data())).toList());
   }
 
   Stream<List<FriendRequest>> watchOutgoingAccepted(String meUid) {
     return _firestore
-        .collectionGroup('friendRequests')
+        .collection('friendRequests')
         .where('fromUserId', isEqualTo: meUid)
         .where('status', isEqualTo: 'accepted')
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => FriendRequest.fromMap(d.id, d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => FriendRequest.fromMap(d.id, d.data())).toList());
   }
 }

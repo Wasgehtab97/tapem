@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../data/user_search_source.dart';
 import '../domain/models/public_profile.dart';
+import 'friends_provider.dart';
 
 class FriendSearchProvider extends ChangeNotifier {
   FriendSearchProvider(this._source);
@@ -52,11 +53,31 @@ class FriendSearchProvider extends ChangeNotifier {
     });
   }
 
+  FriendSearchCta ctaFor(String uid, FriendsProvider friends) {
+    if (friends.isSelf(uid)) return FriendSearchCta.self;
+    if (friends.isFriend(uid)) return FriendSearchCta.friend;
+    if (friends.hasIncomingPending(uid)) {
+      return FriendSearchCta.incomingPending;
+    }
+    if (friends.hasOutgoingPending(uid)) {
+      return FriendSearchCta.outgoingPending;
+    }
+    return FriendSearchCta.none;
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
     _sub?.cancel();
     super.dispose();
   }
+}
+
+enum FriendSearchCta {
+  self,
+  friend,
+  incomingPending,
+  outgoingPending,
+  none,
 }
 
