@@ -76,23 +76,25 @@
       ]
     },
     {
-      "collectionGroup": "friendRequests",
+      "collectionId": "friendRequests",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "fromUserId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "friendRequests",
+      "collectionId": "friendRequests",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "fromUserId", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" }
+        { "fieldPath": "toUserId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "users",
+      "collectionId": "users",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "publicProfile", "order": "ASCENDING" },

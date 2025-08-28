@@ -250,30 +250,75 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                 itemCount: searchProv.results.length,
                 itemBuilder: (_, i) {
                   final p = searchProv.results[i];
+                  final cta = searchProv.ctaFor(p.uid, prov);
                   Widget trailing;
-                  if (prov.isSelf(p.uid)) {
-                    trailing = Text(loc.friends_cta_self);
-                  } else if (prov.isFriend(p.uid)) {
-                    trailing = Text(loc.friends_cta_friend);
-                  } else if (prov.isOutgoing(p.uid)) {
-                    trailing = Text(loc.friends_cta_pending);
-                  } else {
-                    trailing = TextButton(
-                      onPressed: () async {
-                        try {
-                          await prov.sendRequest(p.uid);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(loc.friends_snackbar_sent)),
-                          );
-                        } catch (_) {
-                          final msg = prov.error ?? 'Error';
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(msg)),
-                          );
-                        }
-                      },
-                      child: Text(loc.friends_action_send),
-                    );
+                  switch (cta) {
+                    case FriendSearchCta.self:
+                      trailing = Text(loc.friends_cta_self);
+                      break;
+                    case FriendSearchCta.friend:
+                      trailing = Text(loc.friends_cta_friend);
+                      break;
+                    case FriendSearchCta.outgoingPending:
+                      trailing = Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(loc.friends_cta_pending),
+                          TextButton(
+                            onPressed: () async {
+                              await prov.cancel(p.uid);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.friends_snackbar_canceled)),
+                              );
+                            },
+                            child: Text(loc.friends_action_cancel),
+                          ),
+                        ],
+                      );
+                      break;
+                    case FriendSearchCta.incomingPending:
+                      trailing = Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              await prov.accept(p.uid);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.friends_snackbar_accepted)),
+                              );
+                            },
+                            child: Text(loc.friends_action_accept),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await prov.decline(p.uid);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.friends_snackbar_declined)),
+                              );
+                            },
+                            child: Text(loc.friends_action_decline),
+                          ),
+                        ],
+                      );
+                      break;
+                    case FriendSearchCta.none:
+                      trailing = TextButton(
+                        onPressed: () async {
+                          try {
+                            await prov.sendRequest(p.uid);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(loc.friends_snackbar_sent)),
+                            );
+                          } catch (_) {
+                            final msg = prov.error ?? 'Error';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(msg)),
+                            );
+                          }
+                        },
+                        child: Text(loc.friends_action_send),
+                      );
+                      break;
                   }
                   return ListTile(
                     leading: p.avatarUrl != null

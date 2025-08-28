@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class FriendsApi {
   FriendsApi({FirebaseFirestore? firestore, FirebaseAuth? auth})
@@ -9,104 +10,112 @@ class FriendsApi {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  Future<void> sendFriendRequest(String toUid, {String? message}) async {
+  Future<void> sendRequest(String toUserId, {String? message}) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
-    if (me == toUid) {
+    if (me == toUserId) {
       throw FriendsApiException(
           FriendsApiError.invalidArgument, 'Cannot send to self');
     }
-    final docId = '${me}_$toUid';
+    final docId = '${me}_$toUserId';
     final now = FieldValue.serverTimestamp();
-    final doc = _firestore
-        .collection('users')
-        .doc(toUid)
-        .collection('friendRequests')
-        .doc(docId);
+    final ref = _firestore.collection('friendRequests').doc(docId);
     try {
-      await doc.set({
+      await ref.set({
         'fromUserId': me,
-        'toUserId': toUid,
+        'toUserId': toUserId,
         'status': 'pending',
         if (message != null && message.trim().isNotEmpty)
           'message': message.trim(),
         'createdAt': now,
         'updatedAt': now,
       }, SetOptions(merge: true));
+      if (kDebugMode) {
+        debugPrint('[Friends] send to=$toUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> acceptRequest({required String fromUid}) async {
+  Future<void> cancelRequest(String toUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
+    final docId = '${me}_$toUserId';
+    final ref = _firestore.collection('friendRequests').doc(docId);
     final now = FieldValue.serverTimestamp();
-    final reqId = '${fromUid}_$me';
-    final reqRef = _firestore
-        .collection('users')
-        .doc(me)
-        .collection('friendRequests')
-        .doc(reqId);
-    final myFriendRef =
-        _firestore.collection('users').doc(me).collection('friends').doc(fromUid);
     try {
-      await reqRef.set({'status': 'accepted', 'updatedAt': now},
-          SetOptions(merge: true));
-      await myFriendRef.set({
-        'friendUid': fromUid,
-        'since': now,
-        'createdAt': now,
-        'updatedAt': now,
-      }, SetOptions(merge: true));
+      final snap = await ref.get();
+      final data = snap.data();
+      if (data == null || data['fromUserId'] != me || data['status'] != 'pending') {
+        throw FriendsApiException(FriendsApiError.failedPrecondition);
+      }
+      await ref.set({'status': 'canceled', 'updatedAt': now}, SetOptions(merge: true));
+      if (kDebugMode) {
+        debugPrint('[Friends] cancel to=$toUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> declineRequest({required String fromUid}) async {
+  Future<void> acceptRequest(String fromUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
+    final docId = '${fromUserId}_$me';
+    final ref = _firestore.collection('friendRequests').doc(docId);
     final now = FieldValue.serverTimestamp();
-    final reqId = '${fromUid}_$me';
     try {
-      await _firestore
+      final snap = await ref.get();
+      final data = snap.data();
+      if (data == null || data['toUserId'] != me || data['status'] != 'pending') {
+        throw FriendsApiException(FriendsApiError.failedPrecondition);
+      }
+      await ref.set({'status': 'accepted', 'updatedAt': now}, SetOptions(merge: true));
+      final edge = _firestore
           .collection('users')
           .doc(me)
-          .collection('friendRequests')
-          .doc(reqId)
-          .set({'status': 'declined', 'updatedAt': now}, SetOptions(merge: true));
+          .collection('friends')
+          .doc(fromUserId);
+      await edge.set({'createdAt': now}, SetOptions(merge: true));
+      if (kDebugMode) {
+        debugPrint('[Friends] accept from=$fromUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> cancelRequest({required String toUid}) async {
+  Future<void> declineRequest(String fromUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
+    final docId = '${fromUserId}_$me';
+    final ref = _firestore.collection('friendRequests').doc(docId);
     final now = FieldValue.serverTimestamp();
-    final reqId = '${me}_$toUid';
     try {
-      await _firestore
-          .collection('users')
-          .doc(toUid)
-          .collection('friendRequests')
-          .doc(reqId)
-          .set({'status': 'canceled', 'updatedAt': now}, SetOptions(merge: true));
+      final snap = await ref.get();
+      final data = snap.data();
+      if (data == null || data['toUserId'] != me || data['status'] != 'pending') {
+        throw FriendsApiException(FriendsApiError.failedPrecondition);
+      }
+      await ref.set({'status': 'declined', 'updatedAt': now}, SetOptions(merge: true));
+      if (kDebugMode) {
+        debugPrint('[Friends] decline from=$fromUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> removeFriend(String otherUid) async {
+  Future<void> removeFriend(String otherUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
@@ -116,14 +125,17 @@ class FriendsApi {
           .collection('users')
           .doc(me)
           .collection('friends')
-          .doc(otherUid)
+          .doc(otherUserId)
           .delete();
+      if (kDebugMode) {
+        debugPrint('[Friends] remove friend=$otherUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> ensureFriendEdge(String otherUid) async {
+  Future<void> ensureFriendEdge(String otherUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
@@ -133,14 +145,12 @@ class FriendsApi {
         .collection('users')
         .doc(me)
         .collection('friends')
-        .doc(otherUid);
+        .doc(otherUserId);
     try {
-      await ref.set({
-        'friendUid': otherUid,
-        'since': now,
-        'createdAt': now,
-        'updatedAt': now,
-      }, SetOptions(merge: true));
+      await ref.set({'createdAt': now}, SetOptions(merge: true));
+      if (kDebugMode) {
+        debugPrint('[Friends] ensure edge to=$otherUserId ok');
+      }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }

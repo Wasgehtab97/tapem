@@ -73,6 +73,39 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Friend Requests (top-level)
+    // ─────────────────────────
+    match /friendRequests/{reqId} {
+      allow read: if isAuthed() &&
+        (request.auth.uid == resource.data.fromUserId ||
+         request.auth.uid == resource.data.toUserId);
+
+      allow create: if request.auth.uid == request.resource.data.fromUserId &&
+        request.resource.data.fromUserId != request.resource.data.toUserId &&
+        request.resource.data.status == 'pending' &&
+        reqId == request.resource.data.fromUserId + '_' + request.resource.data.toUserId &&
+        request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp &&
+        (!('message' in request.resource.data) ||
+          (request.resource.data.message is string &&
+           request.resource.data.message.size() <= 280));
+
+      allow update: if request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+        request.resource.data.fromUserId == resource.data.fromUserId &&
+        request.resource.data.toUserId == resource.data.toUserId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt is timestamp && (
+          (request.auth.uid == resource.data.fromUserId && resource.data.status == 'pending' &&
+            request.resource.data.status == 'canceled') ||
+          (request.auth.uid == resource.data.toUserId && resource.data.status == 'pending' &&
+            (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined'))
+        );
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────
     // Users (top-level)
     // ─────────────────────────
     match /users/{uid} {
@@ -81,46 +114,12 @@ service cloud.firestore {
       allow read: if isAuthed();
       allow update: if isOwner(uid);
 
-      // Friend Requests (client-managed)
-      match /friendRequests/{reqId} {
-        // Recipient can read all; sender only their own request at recipient
-        allow read: if isOwner(uid) ||
-                      (isAuthed() && resource.data.fromUserId == request.auth.uid);
-
-        allow create: if request.auth.uid == request.resource.data.fromUserId &&
-                        uid == request.resource.data.toUserId &&
-                        request.resource.data.fromUserId != request.resource.data.toUserId &&
-                        request.resource.data.status == 'pending' &&
-                        request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
-                        request.resource.data.createdAt is timestamp &&
-                        request.resource.data.updatedAt is timestamp &&
-                        (!('message' in request.resource.data) ||
-                         (request.resource.data.message is string &&
-                          request.resource.data.message.size() <= 280));
-
-        // accept/decline by recipient; cancel by sender
-        allow update: if request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
-                        request.resource.data.fromUserId == resource.data.fromUserId &&
-                        request.resource.data.toUserId == resource.data.toUserId && (
-                          (request.auth.uid == uid && resource.data.status == 'pending' &&
-                            (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined')) ||
-                          (request.auth.uid == resource.data.fromUserId && resource.data.status == 'pending' &&
-                            request.resource.data.status == 'canceled')
-                        );
-      }
-
       // Friends list (symmetrische Kante)
       match /friends/{fid} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid) &&
-                        request.resource.data.friendUid == fid &&
-                        request.resource.data.keys().hasOnly(['friendUid','since','createdAt','updatedAt','gymCodesAtAcceptance']) &&
-                        (
-                          exists(/databases/$(database)/documents/users/$(uid)/friendRequests/$(fid + '_' + uid)) &&
-                          get(/databases/$(database)/documents/users/$(uid)/friendRequests/$(fid + '_' + uid)).data.status == 'accepted' ||
-                          exists(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)) &&
-                          get(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)).data.status == 'accepted'
-                        );
+        allow create: if isOwner(uid) && uid != fid &&
+          request.resource.data.keys().hasOnly(['createdAt']) &&
+          request.resource.data.createdAt is timestamp;
         allow delete: if isOwner(uid);
       }
 

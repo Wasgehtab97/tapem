@@ -40,12 +40,13 @@ class FriendsProvider extends ChangeNotifier {
     });
     _incomingSub = _source.watchIncoming(meUid).listen((r) {
       incomingPending = r;
+      incomingPendingUids = r.map((e) => e.fromUserId).toSet();
       pendingCount = r.length;
       notifyListeners();
     });
     _outgoingSub = _source.watchOutgoing(meUid).listen((r) {
       outgoingPending = r;
-      outgoingUids = r.map((e) => e.toUserId).toSet();
+      outgoingPendingUids = r.map((e) => e.toUserId).toSet();
       notifyListeners();
     });
     _outgoingAcceptedSub =
@@ -63,26 +64,26 @@ class FriendsProvider extends ChangeNotifier {
   }
 
   Future<void> sendRequest(String toUid, {String? message}) async {
-    outgoingUids.add(toUid);
+    outgoingPendingUids.add(toUid);
     notifyListeners();
     try {
-      await _guard(() => _api.sendFriendRequest(toUid, message: message));
+      await _guard(() => _api.sendRequest(toUid, message: message));
     } catch (_) {
-      outgoingUids.remove(toUid);
+      outgoingPendingUids.remove(toUid);
       rethrow;
     }
   }
 
   Future<void> accept(String fromUid) async {
-    await _guard(() => _api.acceptRequest(fromUid: fromUid));
+    await _guard(() => _api.acceptRequest(fromUid));
   }
 
   Future<void> decline(String fromUid) async {
-    await _guard(() => _api.declineRequest(fromUid: fromUid));
+    await _guard(() => _api.declineRequest(fromUid));
   }
 
   Future<void> cancel(String toUid) async {
-    await _guard(() => _api.cancelRequest(toUid: toUid));
+    await _guard(() => _api.cancelRequest(toUid));
   }
 
   Future<void> removeFriend(String otherUid) async {
@@ -95,12 +96,14 @@ class FriendsProvider extends ChangeNotifier {
   }
 
   Set<String> friendsUids = {};
-  Set<String> outgoingUids = {};
+  Set<String> outgoingPendingUids = {};
+  Set<String> incomingPendingUids = {};
   String? selfUid;
 
   bool isSelf(String uid) => uid == selfUid;
   bool isFriend(String uid) => friendsUids.contains(uid);
-  bool isOutgoing(String uid) => outgoingUids.contains(uid);
+  bool hasOutgoingPending(String uid) => outgoingPendingUids.contains(uid);
+  bool hasIncomingPending(String uid) => incomingPendingUids.contains(uid);
 
   Future<void> _guard(Future<void> Function() action) async {
     isBusy = true;
