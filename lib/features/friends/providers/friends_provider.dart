@@ -24,11 +24,13 @@ class FriendsProvider extends ChangeNotifier {
   StreamSubscription? _friendsSub;
   StreamSubscription? _incomingSub;
   StreamSubscription? _outgoingSub;
+  StreamSubscription? _outgoingAcceptedSub;
 
   void listen(String meUid) {
     _friendsSub?.cancel();
     _incomingSub?.cancel();
     _outgoingSub?.cancel();
+    _outgoingAcceptedSub?.cancel();
 
     selfUid = meUid;
     _friendsSub = _source.watchFriends(meUid).listen((f) {
@@ -45,6 +47,18 @@ class FriendsProvider extends ChangeNotifier {
       outgoingPending = r;
       outgoingUids = r.map((e) => e.toUserId).toSet();
       notifyListeners();
+    });
+    _outgoingAcceptedSub =
+        _source.watchOutgoingAccepted(meUid).listen((r) async {
+      for (final req in r) {
+        if (!friendsUids.contains(req.toUserId)) {
+          try {
+            await _api.ensureFriendEdge(req.toUserId);
+          } catch (_) {
+            // ignore errors; sync will retry on next event
+          }
+        }
+      }
     });
   }
 
@@ -112,6 +126,7 @@ class FriendsProvider extends ChangeNotifier {
     _friendsSub?.cancel();
     _incomingSub?.cancel();
     _outgoingSub?.cancel();
+    _outgoingAcceptedSub?.cancel();
     super.dispose();
   }
 }

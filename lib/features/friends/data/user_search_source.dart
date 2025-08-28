@@ -29,14 +29,15 @@ class UserSearchSource {
     final end = '$prefix\uf8ff';
     if (kDebugMode) {
       debugPrint(
-          '[FriendSearch] query collection=users where publicProfile=true orderBy=usernameLower startAt=$prefix endAt=$end limit=$limit');
+          '[FriendSearch] query collection=users orderBy=publicProfile,usernameLower where publicProfile=true startAt=[true,$prefix] endAt=[true,$end] limit=$limit');
     }
     return _firestore
         .collection('users')
+        .orderBy('publicProfile')
         .where('publicProfile', isEqualTo: true)
         .orderBy('usernameLower')
-        .startAt([prefix])
-        .endAt([end])
+        .startAt([true, prefix])
+        .endAt([true, end])
         .limit(limit)
         .snapshots()
         .map((snap) {
