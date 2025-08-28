@@ -71,11 +71,31 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
-    // Public Profiles (read-only for authed users)
+    // Public Profiles (owner-managed mirror of basic user info)
     // ─────────────────────────
     match /publicProfiles/{uid} {
       allow read: if isAuthed();
-      allow write: if false;
+      allow create, update, delete: if isOwner(uid) && isValidPublicProfile();
+
+      function isValidPublicProfile() {
+        let allowed = ['username', 'usernameLower', 'primaryGymCode', 'avatarUrl', 'createdAt'];
+        return request.resource.data.keys().hasOnly(allowed)
+          && request.resource.data.usernameLower is string
+          && request.resource.data.usernameLower.size() >= 1
+          && request.resource.data.usernameLower.size() <= 32
+          && (!('username' in request.resource.data) ||
+              (request.resource.data.username is string &&
+               request.resource.data.username.size() <= 32))
+          && (!('primaryGymCode' in request.resource.data) ||
+              (request.resource.data.primaryGymCode is string &&
+               request.resource.data.primaryGymCode.size() <= 32))
+          && (!('avatarUrl' in request.resource.data) ||
+              (request.resource.data.avatarUrl is string &&
+               request.resource.data.avatarUrl.size() <= 1024))
+          && (request.method == 'create'
+              ? ('createdAt' in request.resource.data && request.resource.data.createdAt is timestamp)
+              : request.resource.data.createdAt == resource.data.createdAt);
+      }
     }
 
     // ─────────────────────────
