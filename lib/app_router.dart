@@ -75,8 +75,9 @@ class AppRouter {
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final auth = navigatorKey.currentContext?.read<AuthProvider>();
-    final isRestricted = FF.limitTabsForMembers && !(auth?.isAdmin ?? false) &&
+    final authProvider = navigatorKey.currentContext?.read<AuthProvider>();
+    final isRestricted = FF.limitTabsForMembers &&
+        !(authProvider?.isAdmin ?? false) &&
         restrictedRoutesForMembers.contains(settings.name);
     if (isRestricted) {
       return MaterialPageRoute(builder: (_) => const HomeScreen());
