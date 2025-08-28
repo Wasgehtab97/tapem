@@ -24,13 +24,11 @@ class FriendsProvider extends ChangeNotifier {
   StreamSubscription? _friendsSub;
   StreamSubscription? _incomingSub;
   StreamSubscription? _outgoingSub;
-  StreamSubscription? _countSub;
 
   void listen(String meUid) {
     _friendsSub?.cancel();
     _incomingSub?.cancel();
     _outgoingSub?.cancel();
-    _countSub?.cancel();
 
     selfUid = meUid;
     _friendsSub = _source.watchFriends(meUid).listen((f) {
@@ -40,18 +38,12 @@ class FriendsProvider extends ChangeNotifier {
     });
     _incomingSub = _source.watchIncoming(meUid).listen((r) {
       incomingPending = r;
-      if (pendingCount < 0) {
-        pendingCount = r.length;
-      }
+      pendingCount = r.length;
       notifyListeners();
     });
     _outgoingSub = _source.watchOutgoing(meUid).listen((r) {
       outgoingPending = r;
       outgoingUids = r.map((e) => e.toUserId).toSet();
-      notifyListeners();
-    });
-    _countSub = _source.watchPendingCount(meUid).listen((c) {
-      pendingCount = c < 0 ? incomingPending.length : c;
       notifyListeners();
     });
   }
@@ -67,27 +59,25 @@ class FriendsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> accept(String requestId, String toUid) async {
-    await _guard(() => _api.accept(requestId, toUid));
+  Future<void> accept(String fromUid) async {
+    await _guard(() => _api.acceptRequest(fromUid: fromUid));
   }
 
-  Future<void> decline(String requestId, String toUid) async {
-    await _guard(() => _api.decline(requestId, toUid));
+  Future<void> decline(String fromUid) async {
+    await _guard(() => _api.declineRequest(fromUid: fromUid));
   }
 
-  Future<void> cancel(String requestId, String toUid) async {
-    await _guard(() => _api.cancel(requestId, toUid));
+  Future<void> cancel(String toUid) async {
+    await _guard(() => _api.cancelRequest(toUid: toUid));
   }
 
   Future<void> removeFriend(String otherUid) async {
     await _guard(() => _api.removeFriend(otherUid));
   }
 
-  Future<void> markIncomingSeen() async {
-    await _guard(() async {
-      await _api.markIncomingSeen();
-      pendingCount = 0;
-    });
+  void markIncomingSeen() {
+    pendingCount = 0;
+    notifyListeners();
   }
 
   Set<String> friendsUids = {};
@@ -105,7 +95,11 @@ class FriendsProvider extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
-      error = e.toString();
+      if (e is FriendsApiException) {
+        error = e.message ?? e.code.toString();
+      } else {
+        error = e.toString();
+      }
       rethrow;
     } finally {
       isBusy = false;
@@ -118,7 +112,6 @@ class FriendsProvider extends ChangeNotifier {
     _friendsSub?.cancel();
     _incomingSub?.cancel();
     _outgoingSub?.cancel();
-    _countSub?.cancel();
     super.dispose();
   }
 }

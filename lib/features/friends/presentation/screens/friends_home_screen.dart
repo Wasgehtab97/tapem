@@ -105,7 +105,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                           IconButton(
                             icon: const Icon(Icons.check),
                             onPressed: () async {
-                              await prov.accept(r.requestId, r.toUserId);
+                              await prov.accept(r.fromUserId);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_accepted)),
                               );
@@ -114,7 +114,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                           IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () async {
-                              await prov.decline(r.requestId, r.toUserId);
+                              await prov.decline(r.fromUserId);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_declined)),
                               );
@@ -140,7 +140,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                       trailing: IconButton(
                         icon: const Icon(Icons.cancel),
                         onPressed: () async {
-                          await prov.cancel(r.requestId, r.toUserId);
+                          await prov.cancel(r.toUserId);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(loc.friends_snackbar_canceled)),
                           );
