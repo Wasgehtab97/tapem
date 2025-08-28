@@ -97,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: true,
                   groupValue: current,
                   onChanged: (v) {
+                    if (v == null) return;
                     authProv.setShowInLeaderboard(v);
                     authProv.setPublicProfile(v);
                     Navigator.pop(context);
@@ -107,6 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: false,
                   groupValue: current,
                   onChanged: (v) {
+                    if (v == null) return;
                     authProv.setShowInLeaderboard(v);
                     authProv.setPublicProfile(v);
                     Navigator.pop(context);
