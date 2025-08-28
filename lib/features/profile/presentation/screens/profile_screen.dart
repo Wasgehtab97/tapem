@@ -97,9 +97,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: true,
                   groupValue: current,
                   onChanged: (v) {
-                    authProv.setShowInLeaderboard(v);
-                    authProv.setPublicProfile(v);
-                    Navigator.pop(context);
+                    if (v != null) {
+                      authProv.setShowInLeaderboard(v);
+                      authProv.setPublicProfile(v);
+                      Navigator.pop(context);
+                    }
                   },
                 ),
                 RadioListTile<bool>(
@@ -107,9 +109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: false,
                   groupValue: current,
                   onChanged: (v) {
-                    authProv.setShowInLeaderboard(v);
-                    authProv.setPublicProfile(v);
-                    Navigator.pop(context);
+                    if (v != null) {
+                      authProv.setShowInLeaderboard(v);
+                      authProv.setPublicProfile(v);
+                      Navigator.pop(context);
+                    }
                   },
                 ),
               ],
