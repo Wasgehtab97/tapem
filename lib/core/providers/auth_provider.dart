@@ -73,28 +73,31 @@ class AuthProvider extends ChangeNotifier {
       if (fbUser != null) {
         await fbUser.reload();
         final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
-        var user = await _currentUC.execute();
-        if (user != null) {
-          if (user.publicProfile != user.showInLeaderboard) {
+        final fetchedUser = await _currentUC.execute();
+        if (fetchedUser != null) {
+          var currentUser = fetchedUser;
+          if (currentUser.publicProfile != currentUser.showInLeaderboard) {
             try {
               await _setPublicProfileUC.execute(
-                  user.id, user.showInLeaderboard);
-              user = user.copyWith(publicProfile: user.showInLeaderboard);
+                  currentUser.id, currentUser.showInLeaderboard);
+              currentUser = currentUser.copyWith(
+                publicProfile: currentUser.showInLeaderboard,
+              );
             } catch (e, st) {
               _error = e.toString();
               debugPrintStack(
                   label: 'AuthProvider._loadCurrentUser', stackTrace: st);
             }
           }
-          _user = user.copyWith(
-            role: claims['role'] as String? ?? user.role,
+          _user = currentUser.copyWith(
+            role: claims['role'] as String? ?? currentUser.role,
           );
           final prefs = await SharedPreferences.getInstance();
           final stored = prefs.getString('selectedGymCode');
-          if (stored != null && user.gymCodes.contains(stored)) {
+          if (stored != null && currentUser.gymCodes.contains(stored)) {
             _selectedGymCode = stored;
-          } else if (user.gymCodes.isNotEmpty) {
-            _selectedGymCode = user.gymCodes.first;
+          } else if (currentUser.gymCodes.isNotEmpty) {
+            _selectedGymCode = currentUser.gymCodes.first;
             await prefs.setString('selectedGymCode', _selectedGymCode!);
           }
         }
@@ -224,10 +227,5 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool v) {
     _isLoading = v;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
