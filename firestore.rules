@@ -79,18 +79,47 @@ service cloud.firestore {
       allow read: if isAuthed();
       allow update: if isOwner(uid);
 
-      // Friend Requests (server-managed)
+      // Friend Requests (client-managed)
       match /friendRequests/{reqId} {
-        // Recipient can read all their requests; Sender can read only their own request at recipient
+        // Recipient can read all; sender only their own request at recipient
         allow read: if isOwner(uid) ||
-                    (isAuthed() && resource.data.fromUserId == request.auth.uid);
-        allow write: if false; // only via Cloud Functions
+                      (isAuthed() && resource.data.fromUserId == request.auth.uid);
+
+        allow create: if request.auth.uid == request.resource.data.fromUserId &&
+                        uid == request.resource.data.toUserId &&
+                        request.resource.data.fromUserId != request.resource.data.toUserId &&
+                        request.resource.data.status == 'pending' &&
+                        request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+                        request.resource.data.createdAt is timestamp &&
+                        request.resource.data.updatedAt is timestamp &&
+                        (!('message' in request.resource.data) ||
+                         (request.resource.data.message is string &&
+                          request.resource.data.message.size() <= 280));
+
+        // accept/decline by recipient; cancel by sender
+        allow update: if request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+                        request.resource.data.fromUserId == resource.data.fromUserId &&
+                        request.resource.data.toUserId == resource.data.toUserId && (
+                          (request.auth.uid == uid && resource.data.status == 'pending' &&
+                            (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined')) ||
+                          (request.auth.uid == resource.data.fromUserId && resource.data.status == 'pending' &&
+                            request.resource.data.status == 'canceled')
+                        );
       }
 
-      // Friends list (owner-only read; server writes)
+      // Friends list (symmetrische Kante)
       match /friends/{fid} {
         allow read: if isOwner(uid);
-        allow write: if false; // only via Cloud Functions
+        allow create: if (request.auth.uid == uid || request.auth.uid == fid) &&
+                        request.resource.data.friendUid == fid &&
+                        request.resource.data.keys().hasOnly(['friendUid','since','createdAt','updatedAt','gymCodesAtAcceptance']) &&
+                        (
+                          exists(/databases/$(database)/documents/users/$(uid)/friendRequests/$(fid + '_' + uid)) &&
+                          get(/databases/$(database)/documents/users/$(uid)/friendRequests/$(fid + '_' + uid)).data.status == 'accepted' ||
+                          exists(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)) &&
+                          get(/databases/$(database)/documents/users/$(fid)/friendRequests/$(uid + '_' + fid)).data.status == 'accepted'
+                        );
+        allow delete: if request.auth.uid == uid || request.auth.uid == fid;
       }
 
       // Privacy-aware public calendar (server writes)
@@ -132,6 +161,12 @@ service cloud.firestore {
       // Public gym doc (non-sensitive fields only)
       allow read: if true;
       allow write: if isAdmin(gymId);
+
+      // Branding / config
+      match /config/{docId} {
+        allow read: if isAuthed();
+        allow write: if isAdmin(gymId);
+      }
 
       // Devices
       match /devices/{deviceId} {

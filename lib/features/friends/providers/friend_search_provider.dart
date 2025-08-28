@@ -19,7 +19,7 @@ class FriendSearchProvider extends ChangeNotifier {
   void updateQuery(String value) {
     query = value;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), _startSearch);
+    _debounce = Timer(const Duration(milliseconds: 400), _startSearch);
   }
 
   void _startSearch() {

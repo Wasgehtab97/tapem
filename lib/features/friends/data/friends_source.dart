@@ -41,20 +41,4 @@ class FriendsSource {
             .map((d) => FriendRequest.fromMap(d.id, d.data()))
             .toList());
   }
-
-  Stream<int> watchPendingCount(String meUid) {
-    final metaRef = _firestore
-        .collection('users')
-        .doc(meUid)
-        .collection('friendMeta')
-        .doc('meta');
-    return metaRef.snapshots().map((snap) {
-      final data = snap.data();
-      if (data == null) {
-        return -1;
-      }
-      final val = data['pendingCountCache'] as int?;
-      return val ?? -1;
-    });
-  }
 }

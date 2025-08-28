@@ -78,6 +78,12 @@ Eine Übersicht über die Steuerung des Pausen-Timers findet sich in [docs/devic
    Ohne die Indexe schlagen bestimmte Abfragen fehl (z. B. "Heute bereits gespeichert?").
    Für die Freundes-Suche ist ein zusammengesetzter Index auf `users(publicProfile ASC, usernameLower ASC)` erforderlich.
 
+---
+
+## Freundes-Suche & Requests (Spark)
+
+Alle Aktionen rund um Freundschaften laufen vollständig clientseitig über Firestore. Anfragen werden unter `users/{toUid}/friendRequests/{fromUid_toUid}` gespeichert, die Freundschaft als symmetrische Kante unter `users/{uid}/friends/{friendUid}`. Die Suche filtert nur öffentliche Profile (`publicProfile == true`) und arbeitet prefix-basiert auf `usernameLower`.
+
 Hinweis: `.gitignore` schützt diese Dateien. Weitere Regeln stehen in [docs/secrets-policy.md](docs/secrets-policy.md).
 
 Die Dateien `pubspec.lock` und – sobald vorhanden – `ios/Podfile.lock` werden versioniert, um reproduzierbare Builds zu gewährleisten.

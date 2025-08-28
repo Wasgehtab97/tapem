@@ -1,74 +1,144 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FriendsApi {
-  FriendsApi({FirebaseFunctions? functions})
-      : _functions = functions ?? FirebaseFunctions.instance;
+  FriendsApi({FirebaseFirestore? firestore, FirebaseAuth? auth})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
-  final FirebaseFunctions _functions;
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-  Future<SendResult> sendFriendRequest(String toUid, {String? message}) async {
+  Future<void> sendFriendRequest(String toUid, {String? message}) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    if (me == toUid) {
+      throw FriendsApiException(
+          FriendsApiError.invalidArgument, 'Cannot send to self');
+    }
+    final docId = '${me}_$toUid';
+    final now = FieldValue.serverTimestamp();
+    final doc = _firestore
+        .collection('users')
+        .doc(toUid)
+        .collection('friendRequests')
+        .doc(docId);
     try {
-      final callable = _functions.httpsCallable('sendFriendRequest');
-      final res = await callable.call({
+      await doc.set({
+        'fromUserId': me,
         'toUserId': toUid,
-        if (message != null) 'message': message,
+        'status': 'pending',
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+        'createdAt': now,
+        'updatedAt': now,
       });
-      return SendResult.fromMap(Map<String, dynamic>.from(res.data));
-    } on FirebaseFunctionsException catch (e) {
+    } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
 
-  Future<void> accept(String requestId, String toUid) =>
-      _updateStatus(requestId, toUid, 'accept');
+  Future<void> acceptRequest({required String fromUid}) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    final now = FieldValue.serverTimestamp();
+    final batch = _firestore.batch();
+    final reqId = '${fromUid}_$me';
+    final reqRef = _firestore
+        .collection('users')
+        .doc(me)
+        .collection('friendRequests')
+        .doc(reqId);
+    final myFriendRef =
+        _firestore.collection('users').doc(me).collection('friends').doc(fromUid);
+    final otherFriendRef = _firestore
+        .collection('users')
+        .doc(fromUid)
+        .collection('friends')
+        .doc(me);
+    batch.update(reqRef, {'status': 'accepted', 'updatedAt': now});
+    batch.set(myFriendRef, {
+      'friendUid': fromUid,
+      'since': now,
+      'createdAt': now,
+      'updatedAt': now,
+    });
+    batch.set(otherFriendRef, {
+      'friendUid': me,
+      'since': now,
+      'createdAt': now,
+      'updatedAt': now,
+    });
+    try {
+      await batch.commit();
+    } on FirebaseException catch (e) {
+      throw FriendsApiException.fromCode(e.code, e.message);
+    }
+  }
 
-  Future<void> decline(String requestId, String toUid) =>
-      _updateStatus(requestId, toUid, 'decline');
+  Future<void> declineRequest({required String fromUid}) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    final now = FieldValue.serverTimestamp();
+    final reqId = '${fromUid}_$me';
+    try {
+      await _firestore
+          .collection('users')
+          .doc(me)
+          .collection('friendRequests')
+          .doc(reqId)
+          .update({'status': 'declined', 'updatedAt': now});
+    } on FirebaseException catch (e) {
+      throw FriendsApiException.fromCode(e.code, e.message);
+    }
+  }
 
-  Future<void> cancel(String requestId, String toUid) =>
-      _updateStatus(requestId, toUid, 'cancel');
+  Future<void> cancelRequest({required String toUid}) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    final now = FieldValue.serverTimestamp();
+    final reqId = '${me}_$toUid';
+    try {
+      await _firestore
+          .collection('users')
+          .doc(toUid)
+          .collection('friendRequests')
+          .doc(reqId)
+          .update({'status': 'canceled', 'updatedAt': now});
+    } on FirebaseException catch (e) {
+      throw FriendsApiException.fromCode(e.code, e.message);
+    }
+  }
 
   Future<void> removeFriend(String otherUid) async {
+    final me = _auth.currentUser?.uid;
+    if (me == null) {
+      throw FriendsApiException(FriendsApiError.unauthenticated);
+    }
+    final batch = _firestore.batch();
+    final myRef =
+        _firestore.collection('users').doc(me).collection('friends').doc(otherUid);
+    final otherRef = _firestore
+        .collection('users')
+        .doc(otherUid)
+        .collection('friends')
+        .doc(me);
+    batch.delete(myRef);
+    batch.delete(otherRef);
     try {
-      final callable = _functions.httpsCallable('removeFriend');
-      await callable.call({'otherUserId': otherUid});
-    } on FirebaseFunctionsException catch (e) {
+      await batch.commit();
+    } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);
     }
   }
-
-  Future<void> markIncomingSeen() async {
-    try {
-      final callable = _functions.httpsCallable('setFriendRequestsSeen');
-      await callable.call();
-    } on FirebaseFunctionsException catch (e) {
-      throw FriendsApiException.fromCode(e.code, e.message);
-    }
-  }
-
-  Future<void> _updateStatus(
-    String requestId,
-    String toUid,
-    String action,
-  ) async {
-    try {
-      final callable = _functions.httpsCallable('updateFriendRequestStatus');
-      await callable.call({
-        'requestId': requestId,
-        'toUserId': toUid,
-        'action': action,
-      });
-    } on FirebaseFunctionsException catch (e) {
-      throw FriendsApiException.fromCode(e.code, e.message);
-    }
-  }
-}
-
-class SendResult {
-  SendResult({required this.requestId});
-  final String requestId;
-  factory SendResult.fromMap(Map<String, dynamic> data) =>
-      SendResult(requestId: data['requestId'] as String);
 }
 
 enum FriendsApiError {
@@ -77,7 +147,7 @@ enum FriendsApiError {
   permissionDenied,
   alreadyExists,
   notFound,
-  resourceExhausted,
+  failedPrecondition,
   unknown,
 }
 
@@ -98,8 +168,9 @@ class FriendsApiException implements Exception {
         return FriendsApiException(FriendsApiError.alreadyExists, message);
       case 'not-found':
         return FriendsApiException(FriendsApiError.notFound, message);
-      case 'resource-exhausted':
-        return FriendsApiException(FriendsApiError.resourceExhausted, message);
+      case 'failed-precondition':
+        return FriendsApiException(
+            FriendsApiError.failedPrecondition, message);
       default:
         return FriendsApiException(FriendsApiError.unknown, message);
     }
