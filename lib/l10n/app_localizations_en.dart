@@ -565,8 +565,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get friends_remove_title => 'Remove this contact?';
 
   @override
-  String friends_remove_message(String username) =>
-      'Do you really want to remove $username?';
+  String friends_remove_message(Object username) {
+    return 'Do you really want to remove $username?';
+  }
 
   @override
   String get friends_remove_yes => 'Remove';
