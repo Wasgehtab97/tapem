@@ -67,7 +67,9 @@ service cloud.firestore {
     // Global logs read (owner-only)
     // ─────────────────────────
     match /{path=**}/logs/{logId} {
-      allow read: if isAuthed() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthed() &&
+        (resource.data.userId == request.auth.uid ||
+         isFriend(resource.data.userId, request.auth.uid));
     }
 
     // ─────────────────────────

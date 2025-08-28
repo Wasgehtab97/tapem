@@ -4,24 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
+  final String userId;
 
-  const TrainingDetailsScreen({Key? key, required this.date}) : super(key: key);
+  const TrainingDetailsScreen({Key? key, required this.date, required this.userId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthProvider>();
-
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
         final prov = TrainingDetailsProvider();
-        prov.loadSessions(userId: auth.userId!, date: date);
+        prov.loadSessions(userId: userId, date: date);
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(

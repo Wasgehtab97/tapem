@@ -153,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _openCalendarPopup(List<String> trainingDates) {
+  void _openCalendarPopup(String userId, List<String> trainingDates) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -162,6 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           (_) => CalendarPopup(
             trainingDates: trainingDates,
             initialYear: DateTime.now().year,
+            userId: userId,
           ),
     );
   }
@@ -170,6 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
     final loc = AppLocalizations.of(context)!;
+    final userId = context.read<AuthProvider>().userId ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -228,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => _openCalendarPopup(prov.trainingDates),
+                        onTap: () => _openCalendarPopup(userId, prov.trainingDates),
                         child: Calendar(
                           trainingDates: prov.trainingDates,
                           showNavigation: false,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/app_router.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/friend_search_provider.dart';
-import 'friend_detail_screen.dart';
 import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
 
@@ -88,9 +88,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
               return Text(name);
             },
           ),
-          onTap: () {
-            Navigator.push(context, FriendDetailScreen.route(f.friendUid));
-          },
+          onTap: () => _showFriendActions(f.friendUid),
           trailing: IconButton(
             icon: const Icon(Icons.remove_circle_outline),
             onPressed: () => prov.removeFriend(f.friendUid),
@@ -177,6 +175,45 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                 ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showFriendActions(String uid) async {
+    final profile = await _fetchProfile(uid);
+    if (!mounted) return;
+    final name = profile?.username ?? uid;
+    final loc = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Trainingstage'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  AppRouter.friendTrainingCalendar,
+                  arguments: {'uid': uid, 'name': name},
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Profil öffnen'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRouter.friendDetail, arguments: uid);
+              },
+            ),
+            ListTile(
+              title: Text(loc.cancelButton),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
