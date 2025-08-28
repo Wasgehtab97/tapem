@@ -115,20 +115,71 @@ class FriendsApi {
     }
   }
 
+  /// Removes the friendship to [otherUserId] and cleans up related data.
+  ///
+  /// Deletes friend edges and optional `friendMeta` documents for both users
+  /// and hard-deletes any non-accepted friend requests between them. The
+  /// operation is executed as a [WriteBatch] and is idempotent.
   Future<void> removeFriend(String otherUserId) async {
     final me = _auth.currentUser?.uid;
     if (me == null) {
       throw FriendsApiException(FriendsApiError.unauthenticated);
     }
+
+    final batch = _firestore.batch();
+    final meFriend = _firestore
+        .collection('users')
+        .doc(me)
+        .collection('friends')
+        .doc(otherUserId);
+    final otherFriend = _firestore
+        .collection('users')
+        .doc(otherUserId)
+        .collection('friends')
+        .doc(me);
+    final meMeta = _firestore
+        .collection('users')
+        .doc(me)
+        .collection('friendMeta')
+        .doc(otherUserId);
+    final otherMeta = _firestore
+        .collection('users')
+        .doc(otherUserId)
+        .collection('friendMeta')
+        .doc(me);
+
+    if (kDebugMode) {
+      debugPrint('[Friends] remove begin me=$me other=$otherUserId');
+      debugPrint('[Friends] delete ${meFriend.path}');
+      debugPrint('[Friends] delete ${otherFriend.path}');
+      debugPrint('[Friends] delete ${meMeta.path}');
+      debugPrint('[Friends] delete ${otherMeta.path}');
+    }
+
+    batch.delete(meFriend);
+    batch.delete(otherFriend);
+    batch.delete(meMeta);
+    batch.delete(otherMeta);
+
+    final req1 =
+        _firestore.collection('friendRequests').doc('${me}_${otherUserId}');
+    final req2 =
+        _firestore.collection('friendRequests').doc('${otherUserId}_$me');
+    for (final doc in [req1, req2]) {
+      final snap = await doc.get();
+      final data = snap.data();
+      if (data != null && data['status'] != 'accepted') {
+        if (kDebugMode) {
+          debugPrint('[Friends] delete ${doc.path}');
+        }
+        batch.delete(doc);
+      }
+    }
+
     try {
-      await _firestore
-          .collection('users')
-          .doc(me)
-          .collection('friends')
-          .doc(otherUserId)
-          .delete();
+      await batch.commit();
       if (kDebugMode) {
-        debugPrint('[Friends] remove friend=$otherUserId ok');
+        debugPrint('[Friends] remove complete me=$me other=$otherUserId');
       }
     } on FirebaseException catch (e) {
       throw FriendsApiException.fromCode(e.code, e.message);

@@ -1151,11 +1151,47 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get friends_action_cancel;
 
+  /// No description provided for @friends_action_training_days.
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get friends_action_training_days;
+
+  /// No description provided for @friends_action_open_profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open profile'**
+  String get friends_action_open_profile;
+
   /// No description provided for @friends_action_remove.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get friends_action_remove;
+
+  /// No description provided for @friends_remove_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this contact?'**
+  String get friends_remove_title;
+
+  /// No description provided for @friends_remove_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to remove {username}?'**
+  String friends_remove_message(Object username);
+
+  /// No description provided for @friends_remove_yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get friends_remove_yes;
+
+  /// No description provided for @friends_remove_no.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get friends_remove_no;
 
   /// No description provided for @friends_snackbar_sent.
   ///
@@ -1181,11 +1217,11 @@ abstract class AppLocalizations {
   /// **'Request canceled'**
   String get friends_snackbar_canceled;
 
-  /// No description provided for @friends_snackbar_removed.
+  /// No description provided for @friends_removed_snackbar.
   ///
   /// In en, this message translates to:
-  /// **'Friend removed'**
-  String get friends_snackbar_removed;
+  /// **'Contact removed'**
+  String get friends_removed_snackbar;
 
   /// No description provided for @friends_empty_incoming.
   ///

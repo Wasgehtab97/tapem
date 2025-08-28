@@ -86,9 +86,22 @@ class FriendsProvider extends ChangeNotifier {
     await _guard(() => _api.cancelRequest(toUid));
   }
 
-  Future<void> removeFriend(String otherUid) async {
-    await _guard(() => _api.removeFriend(otherUid));
+  Future<void> remove(String otherUid) async {
+    await _guard(() async {
+      await _api.removeFriend(otherUid);
+      friends.removeWhere((f) => f.friendUid == otherUid);
+      friendsUids.remove(otherUid);
+      incomingPending.removeWhere((r) => r.fromUserId == otherUid);
+      outgoingPending.removeWhere((r) => r.toUserId == otherUid);
+      incomingPendingUids.remove(otherUid);
+      outgoingPendingUids.remove(otherUid);
+      pendingCount = incomingPending.length;
+      notifyListeners();
+    });
   }
+
+  @Deprecated('Use remove')
+  Future<void> removeFriend(String otherUid) => remove(otherUid);
 
   void markIncomingSeen() {
     pendingCount = 0;
