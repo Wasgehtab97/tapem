@@ -10,11 +10,13 @@ import 'calendar.dart';
 class CalendarPopup extends StatefulWidget {
   final List<String> trainingDates;
   final int initialYear;
+  final String userId;
 
   const CalendarPopup({
     Key? key,
     required this.trainingDates,
     required this.initialYear,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -91,9 +93,10 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 onDayTap: (date) {
                   // Popup schließen und weiterleiten
                   Navigator.of(context).pop();
-                  Navigator.of(
-                    context,
-                  ).pushNamed(AppRouter.trainingDetails, arguments: date);
+                  Navigator.of(context).pushNamed(
+                    AppRouter.trainingDetails,
+                    arguments: {'userId': widget.userId, 'date': date},
+                  );
                 },
               ),
             ),

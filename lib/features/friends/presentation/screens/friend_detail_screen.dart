@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/friend_calendar_provider.dart';
 import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
 
@@ -15,10 +14,10 @@ class FriendDetailScreen extends StatefulWidget {
 
 class _FriendDetailScreenState extends State<FriendDetailScreen> {
   PublicProfile? _profile;
+
   @override
   void initState() {
     super.initState();
-    context.read<FriendCalendarProvider>().setActiveFriend(widget.uid);
     _loadProfile();
   }
 
@@ -26,43 +25,26 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     final src = context.read<UserSearchSource>();
     try {
       final p = await src.getProfile(widget.uid);
-      setState(() => _profile = p);
+      if (mounted) {
+        setState(() => _profile = p);
+      }
     } catch (_) {
-      setState(() => _profile = null);
+      if (mounted) {
+        setState(() => _profile = null);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final calendar = context
-        .read<FriendCalendarProvider>()
-        .monthStream(_currentMonth());
+    final name = _profile?.username ?? 'Profil';
     return Scaffold(
-      appBar: AppBar(title: Text(_profile?.username ?? 'Freund')),
-      body: StreamBuilder(
-        stream: calendar,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text('Dieser Nutzer teilt seinen Kalender nicht.'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final month = snapshot.data!;
-          return ListView(
-            children: month.days.entries
-                .map((e) => ListTile(
-                      title: Text('${e.key}: ${e.value.sessions}'),
-                    ))
-                .toList(),
-          );
-        },
+      appBar: AppBar(title: Text(name)),
+      body: Center(
+        child: _profile == null
+            ? const Text('Keine Daten')
+            : Text('Profil von $name'),
       ),
     );
-  }
-
-  String _currentMonth() {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
   }
 }

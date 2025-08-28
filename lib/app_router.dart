@@ -28,6 +28,7 @@ import 'package:tapem/features/survey/presentation/screens/survey_overview_scree
 import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
+import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -59,6 +60,7 @@ class AppRouter {
   static const surveyVote = '/survey_vote';
   static const friendsHome = '/friends';
   static const friendDetail = '/friend_detail';
+  static const friendTrainingCalendar = '/friend_training_calendar';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -145,9 +147,11 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SelectGymScreen());
 
       case trainingDetails:
-        final date = settings.arguments as DateTime? ?? DateTime.now();
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        final date = args['date'] as DateTime? ?? DateTime.now();
+        final userId = args['userId'] as String? ?? '';
         return MaterialPageRoute(
-          builder: (_) => TrainingDetailsScreen(date: date),
+          builder: (_) => TrainingDetailsScreen(date: date, userId: userId),
         );
 
       case planOverview:
@@ -199,6 +203,15 @@ class AppRouter {
       case friendDetail:
         final uid = settings.arguments as String? ?? '';
         return MaterialPageRoute(builder: (_) => FriendDetailScreen(uid: uid));
+
+      case friendTrainingCalendar:
+        final args = settings.arguments as Map<String, String>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => FriendTrainingCalendarScreen(
+            friendUid: args['uid'] ?? '',
+            friendName: args['name'] ?? '',
+          ),
+        );
 
       default:
         return MaterialPageRoute(
