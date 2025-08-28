@@ -140,6 +140,52 @@ describe('Security Rules v1', function () {
       await assertSucceeds(db.collection('publicProfiles').doc('user2').get());
     });
 
+    it('allows owner to write public profile and forbids others', async () => {
+      const ownerDb = p1().firestore();
+      const ref = ownerDb.collection('publicProfiles').doc('user1');
+      await assertSucceeds(
+        ref.set({
+          username: 'Alice',
+          usernameLower: 'alice',
+          createdAt: new Date(),
+        }),
+      );
+      const otherDb = p2().firestore();
+      await assertFails(
+        otherDb.collection('publicProfiles').doc('user1').set({
+          username: 'Bob',
+          usernameLower: 'bob',
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    it('enforces public profile field constraints', async () => {
+      const db = p1().firestore();
+      const ref = db.collection('publicProfiles').doc('user1');
+      await assertSucceeds(
+        ref.set({
+          username: 'Alice',
+          usernameLower: 'alice',
+          createdAt: new Date(),
+        }),
+      );
+      await assertFails(
+        ref.set({
+          usernameLower: 'alice2',
+          createdAt: new Date(Date.now() + 1000),
+        }, { merge: true }),
+      );
+      await assertFails(
+        ref.set({
+          username: 'Alice',
+          usernameLower: 'alice',
+          createdAt: new Date(),
+          foo: 'bar',
+        }),
+      );
+    });
+
     it('enforces friend request rules', async () => {
       const dbRecipient = p2().firestore();
       await assertSucceeds(dbRecipient.collection('users').doc('user2').collection('friendRequests').doc('user1_user2').get());

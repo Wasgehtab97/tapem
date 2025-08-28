@@ -15,17 +15,18 @@ class PublicProfileSource {
     return PublicProfile.fromMap(doc.id, data);
   }
 
-  Stream<List<PublicProfile>> searchByUsernamePrefix(String prefixLower,
+  Stream<List<PublicProfile>> searchByUsernamePrefix(String prefix,
       {int limit = 20}) {
-    final end = prefixLower + '\\uf8ff';
+    final q = prefix.trim().toLowerCase();
+    final end = q + '\\uf8ff';
     if (kDebugMode) {
       debugPrint(
-          '[FriendSearch] query collection=publicProfiles orderBy=usernameLower startAt=$prefixLower endAt=$end limit=$limit');
+          '[FriendSearch] query collection=publicProfiles orderBy=usernameLower startAt=$q endAt=$end limit=$limit');
     }
     return _firestore
         .collection('publicProfiles')
         .orderBy('usernameLower')
-        .startAt([prefixLower])
+        .startAt([q])
         .endAt([end])
         .limit(limit)
         .snapshots()
