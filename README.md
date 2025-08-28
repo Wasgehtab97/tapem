@@ -76,6 +76,7 @@ Eine Übersicht über die Steuerung des Pausen-Timers findet sich in [docs/devic
    firebase deploy --only firestore:indexes
    ```
    Ohne die Indexe schlagen bestimmte Abfragen fehl (z. B. "Heute bereits gespeichert?").
+   Für die Freundes-Suche ist ein zusammengesetzter Index auf `users(publicProfile ASC, usernameLower ASC)` erforderlich.
 
 Hinweis: `.gitignore` schützt diese Dateien. Weitere Regeln stehen in [docs/secrets-policy.md](docs/secrets-policy.md).
 

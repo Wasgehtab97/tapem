@@ -43,6 +43,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> setPublicProfile(String userId, bool value) {
+    return _source.setPublicProfile(userId, value);
+  }
+
+  @override
   Future<bool> isUsernameAvailable(String username) {
     return _source.isUsernameAvailable(username);
   }

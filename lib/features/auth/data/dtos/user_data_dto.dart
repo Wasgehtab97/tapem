@@ -9,6 +9,7 @@ class UserDataDto {
   final String? userNameLower;
   final List<String> gymCodes;
   final bool showInLeaderboard;
+  final bool publicProfile;
   final String role;
   final DateTime createdAt;
 
@@ -20,6 +21,7 @@ class UserDataDto {
     this.userNameLower,
     required this.gymCodes,
     required this.showInLeaderboard,
+    required this.publicProfile,
     required this.role,
     required this.createdAt,
   });
@@ -36,6 +38,7 @@ class UserDataDto {
       userNameLower: data['usernameLower'] as String?,
       gymCodes: List<String>.from(data['gymCodes'] ?? []),
       showInLeaderboard: data['showInLeaderboard'] as bool? ?? true,
+      publicProfile: data['publicProfile'] as bool? ?? false,
       role: data['role'] as String,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
@@ -48,6 +51,7 @@ class UserDataDto {
     if (userNameLower != null) 'usernameLower': userNameLower,
     'gymCodes': gymCodes,
     'showInLeaderboard': showInLeaderboard,
+    'publicProfile': publicProfile,
     'role': role,
     'createdAt': Timestamp.fromDate(createdAt),
   };
@@ -59,6 +63,7 @@ class UserDataDto {
       userName: userName,
       gymCodes: gymCodes,
       showInLeaderboard: showInLeaderboard,
+      publicProfile: publicProfile,
       role: role,
       createdAt: createdAt,
     );
