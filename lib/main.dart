@@ -96,10 +96,12 @@ const bool kEnablePush = false;
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Falls der Prozess im Hintergrund startet, Firebase erneut initialisieren.
-  if (Firebase.apps.isEmpty) {
+  try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
   }
   // Aktuell keine weitere Logik
 }
@@ -179,10 +181,12 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
   // Firebase init (einheitlich)
-  if (Firebase.apps.isEmpty) {
+  try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
   }
   assert(() {
     debugPrint('[Firebase] projectId=' + Firebase.app().options.projectId);
