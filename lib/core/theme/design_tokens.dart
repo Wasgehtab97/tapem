@@ -103,6 +103,60 @@ class MagentaTones {
   }
 }
 
+/// Color palette for the red/orange themed gym "Club Aktiv".
+class ClubAktivColors {
+  static const Color primary500 = Color(0xFFFF6A00);
+  static const Color primary600 = Color(0xFFD32F2F);
+  static const Color secondary = Color(0xFFF57C00);
+  static const Color focus = Color(0xFFFF6A00);
+  static const Color pressedTint = Color(0xFF7F1D1D);
+  static const Color bg = Color(0xFF0B0F12);
+  static const Color surface1 = Color(0xFF12161C);
+  static const Color surface2 = Color(0xFF1A1F26);
+  static const Color textPrimary = Color(0xFFF6F7FA);
+  static const Color textSecondary = Color(0xFFC6CBD2);
+  static const Color textTertiary = Color(0xFF8C93A1);
+}
+
+/// Dynamic tone tokens used for brightness normalisation in "Club Aktiv".
+class ClubAktivTones {
+  /// Reference luminance derived from the "Letzte Session" card.
+  static double brightnessAnchor =
+      ClubAktivColors.surface1.computeLuminance();
+
+  /// Tone for cards and sheets.
+  static Color surface1 = ClubAktivColors.surface1;
+
+  /// Tone for inputs and key tiles.
+  static Color surface2 = ClubAktivColors.surface2;
+
+  /// Tone for control tiles and icon backgrounds.
+  static Color control = ClubAktivColors.surface2;
+
+  /// Re-computes tone values based on [gradient].
+  static void normalizeFromGradient(LinearGradient gradient) {
+    // Current gradient luminance and required delta to match anchor.
+    final lums = gradient.colors.map((c) => c.computeLuminance());
+    final origLum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final delta = brightnessAnchor - origLum;
+    AppGradients.brandGradient = Tone.gradient(gradient, delta);
+
+    // Derive surface tones relative to anchor.
+    surface1 = Tone.color(
+      ClubAktivColors.surface1,
+      brightnessAnchor - ClubAktivColors.surface1.computeLuminance(),
+    );
+    surface2 = Tone.color(
+      ClubAktivColors.surface2,
+      brightnessAnchor + 0.025 - ClubAktivColors.surface2.computeLuminance(),
+    );
+    control = Tone.color(
+      ClubAktivColors.surface2,
+      brightnessAnchor + 0.01 - ClubAktivColors.surface2.computeLuminance(),
+    );
+  }
+}
+
 /// Standard spacing values based on an 8px grid.
 class AppSpacing {
   static const double xs = 8.0;

@@ -221,4 +221,34 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       outlineDisabledOpacity: 0.4,
     );
   }
+
+  /// Red/orange CTA preset used for "Club Aktiv".
+  static AppBrandTheme clubAktiv() {
+    final gradient = AppGradients.brandGradient;
+    final lums = gradient.colors.map((c) => c.computeLuminance());
+    final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final outlineColor = gradient.colors.first;
+    return AppBrandTheme(
+      gradient: gradient,
+      radius: BorderRadius.circular(AppRadius.button),
+      shadow:
+          const [BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4))],
+      pressedOverlay: ClubAktivColors.pressedTint.withOpacity(0.3),
+      focusRing: ClubAktivColors.focus,
+      textStyle: const TextStyle(fontWeight: FontWeight.bold),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      luminanceRef: lum,
+      onBrand: ClubAktivColors.textPrimary,
+      outline: outlineColor,
+      outlineGradient: gradient,
+      outlineColorFallback: outlineColor,
+      outlineWidth: 2,
+      outlineRadius: BorderRadius.circular(AppRadius.card),
+      outlineShadow: [
+        BoxShadow(color: gradient.colors.last.withOpacity(0.5), blurRadius: 8),
+      ],
+      outlineDisabledOpacity: 0.4,
+    );
+  }
 }
