@@ -148,4 +148,17 @@ class AppTheme {
     focus: MagentaColors.focus,
     buttonColor: MagentaColors.primary600,
   );
+
+  /// Red/orange dark theme for the "Club Aktiv" gym.
+  static final ThemeData clubAktivDarkTheme = _buildTheme(
+    primary: ClubAktivColors.primary600,
+    secondary: ClubAktivColors.secondary,
+    background: ClubAktivColors.bg,
+    surface: ClubAktivColors.surface1,
+    surface2: ClubAktivColors.surface2,
+    textPrimary: ClubAktivColors.textPrimary,
+    textSecondary: ClubAktivColors.textSecondary,
+    focus: ClubAktivColors.focus,
+    buttonColor: ClubAktivColors.primary600,
+  );
 }

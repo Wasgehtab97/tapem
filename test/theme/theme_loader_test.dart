@@ -25,6 +25,24 @@ void main() {
           equals(const Color(0xFF654321)));
     });
 
+    test('Club Aktiv without branding uses red/orange theme', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding('Club Aktiv', null);
+      expect(loader.theme.colorScheme.primary, ClubAktivColors.primary600);
+    });
+
+    test('Club Aktiv with branding applies custom colors', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding(
+        'Club Aktiv',
+        Branding(primaryColor: '#123456', secondaryColor: '#654321'),
+      );
+      expect(loader.theme.colorScheme.primary,
+          equals(const Color(0xFF123456)));
+      expect(loader.theme.colorScheme.secondary,
+          equals(const Color(0xFF654321)));
+    });
+
     test('other gyms keep default theme', () {
       final loader = ThemeLoader()..loadDefault();
       loader.applyBranding('other', null);
@@ -49,6 +67,30 @@ void main() {
           lessThanOrEqualTo(0.02));
       expect(
           (MagentaTones.control.computeLuminance() - (anchor + 0.01)).abs(),
+          lessThanOrEqualTo(0.02));
+    });
+
+    test('Club Aktiv surfaces are normalised to reference luminance', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding('Club Aktiv', null);
+
+      final anchor = ClubAktivTones.brightnessAnchor;
+      final grad = AppGradients.brandGradient;
+      final gradLum =
+          grad.colors.map((c) => c.computeLuminance()).reduce((a, b) => a + b) /
+              grad.colors.length;
+      expect((gradLum - anchor).abs(), lessThanOrEqualTo(0.02));
+      expect(
+          (ClubAktivTones.surface1.computeLuminance() - anchor).abs(),
+          lessThanOrEqualTo(0.02));
+      expect(
+          (ClubAktivTones.surface2.computeLuminance() -
+                  (anchor + 0.025))
+              .abs(),
+          lessThanOrEqualTo(0.02));
+      expect(
+          (ClubAktivTones.control.computeLuminance() - (anchor + 0.01))
+              .abs(),
           lessThanOrEqualTo(0.02));
     });
   });

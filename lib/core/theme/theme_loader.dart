@@ -67,6 +67,46 @@ class ThemeLoader extends ChangeNotifier {
       return;
     }
 
+    if (gymId == 'Club Aktiv') {
+      if (branding == null) {
+        _applyClubAktivDefaults();
+        ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+        _attachBrandTheme(
+          focus: ClubAktivColors.focus,
+          foreground: ClubAktivColors.textPrimary,
+          useClubAktiv: true,
+        );
+        notifyListeners();
+        return;
+      }
+      final primary = branding.primaryColor != null
+          ? _parseHex(branding.primaryColor!)
+          : ClubAktivColors.primary600;
+      final secondary = branding.secondaryColor != null
+          ? _parseHex(branding.secondaryColor!)
+          : ClubAktivColors.secondary;
+      final gradStart = branding.gradientStart != null
+          ? _parseHex(branding.gradientStart!)
+          : ClubAktivColors.primary500;
+      final gradEnd = branding.gradientEnd != null
+          ? _parseHex(branding.gradientEnd!)
+          : ClubAktivColors.primary600;
+      _currentTheme = AppTheme.customTheme(
+        primary: primary,
+        secondary: secondary,
+      );
+      AppGradients.setBrandGradient(gradStart, gradEnd);
+      AppGradients.setCtaGlow(ClubAktivColors.focus);
+      ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+      _attachBrandTheme(
+        focus: ClubAktivColors.focus,
+        foreground: ClubAktivColors.textPrimary,
+        useClubAktiv: true,
+      );
+      notifyListeners();
+      return;
+    }
+
     if (branding == null ||
         branding.primaryColor == null ||
         branding.secondaryColor == null) {
@@ -100,6 +140,21 @@ class ThemeLoader extends ChangeNotifier {
     );
   }
 
+  void _applyClubAktivDefaults() {
+    _currentTheme = AppTheme.clubAktivDarkTheme;
+    AppGradients.setBrandGradient(
+      ClubAktivColors.primary500,
+      ClubAktivColors.primary600,
+    );
+    AppGradients.setCtaGlow(ClubAktivColors.focus);
+    ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+    _attachBrandTheme(
+      focus: ClubAktivColors.focus,
+      foreground: ClubAktivColors.textPrimary,
+      useClubAktiv: true,
+    );
+  }
+
   Color _parseHex(String hex) {
     hex = hex.replaceFirst('#', '');
     if (hex.length == 6) hex = 'FF$hex';
@@ -110,15 +165,18 @@ class ThemeLoader extends ChangeNotifier {
     required Color focus,
     required Color foreground,
     bool useMagenta = false,
+    bool useClubAktiv = false,
   }) {
     final ext = useMagenta
         ? AppBrandTheme.magenta()
-        : AppBrandTheme.defaultTheme().copyWith(
-            gradient: AppGradients.brandGradient,
-            outlineGradient: AppGradients.brandGradient,
-            focusRing: focus,
-            onBrand: foreground,
-          );
+        : useClubAktiv
+            ? AppBrandTheme.clubAktiv()
+            : AppBrandTheme.defaultTheme().copyWith(
+                gradient: AppGradients.brandGradient,
+                outlineGradient: AppGradients.brandGradient,
+                focusRing: focus,
+                onBrand: foreground,
+              );
     _currentTheme = _currentTheme.copyWith(extensions: [ext]);
   }
 }
