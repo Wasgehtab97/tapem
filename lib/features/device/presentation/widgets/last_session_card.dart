@@ -99,9 +99,9 @@ class _DropChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.black.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24, width: 0.5),
+        border: Border.all(color: Colors.black.withOpacity(0.24), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

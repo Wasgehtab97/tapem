@@ -88,20 +88,14 @@ class XpGauge extends StatelessWidget {
                   '$currentXp XP',
                   style: TextStyle(
                     fontSize: size * 0.14,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: size * 0.12,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               ],

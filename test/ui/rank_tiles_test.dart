@@ -10,10 +10,10 @@ void main() {
     final theme = ThemeData(extensions: [
       AppBrandTheme.defaultTheme(),
       const BrandOnColors(
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onPrimary: Colors.black,
+        onSecondary: Colors.black,
         onGradient: onGrad,
-        onCta: Colors.white,
+        onCta: Colors.black,
       ),
     ]);
 

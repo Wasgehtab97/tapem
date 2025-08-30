@@ -25,7 +25,7 @@ class BrandActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onGradient =
-        Theme.of(context).extension<BrandOnColors>()?.onGradient;
+        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
     return BrandGradientCard(
       onTap: onTap,
       child: ListTile(

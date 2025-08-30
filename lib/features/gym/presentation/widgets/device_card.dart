@@ -4,6 +4,7 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/utils/context_extensions.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 
 class DeviceCard extends StatefulWidget {
   final Device device;
@@ -28,6 +29,7 @@ class _DeviceCardState extends State<DeviceCard> {
     final initial = device.name.isNotEmpty ? device.name[0].toUpperCase() : '?';
     final subtitle = device.description;
     final idText = device.id > 0 ? device.id.toString() : '–';
+    final onBrand = Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
     return Hero(
       tag: 'device-${device.uid}',
       child: AnimatedScale(
@@ -56,7 +58,10 @@ class _DeviceCardState extends State<DeviceCard> {
                           gradient: AppGradients.brandGradient,
                         ),
                         child: Center(
-                          child: Text(initial, style: theme.textTheme.titleLarge),
+                          child: Text(
+                            initial,
+                            style: theme.textTheme.titleLarge?.copyWith(color: onBrand),
+                          ),
                         ),
                       ),
                     ),
