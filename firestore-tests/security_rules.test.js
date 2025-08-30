@@ -211,6 +211,22 @@ describe('Security Rules v1', function () {
       const otherDb = p3().firestore();
       await assertFails(otherDb.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').get());
     });
+
+    it('enforces username mapping rules', async () => {
+      const db1 = p1().firestore();
+      await assertSucceeds(
+        db1.collection('usernames').doc('alice').set({ uid: 'user1', createdAt: new Date() })
+      );
+      const db2 = p2().firestore();
+      await assertFails(
+        db2.collection('usernames').doc('alice').set({ uid: 'user2', createdAt: new Date() })
+      );
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().collection('usernames').doc('bob').set({ uid: 'user2' });
+      });
+      await assertSucceeds(db2.collection('usernames').doc('bob').delete());
+      await assertFails(db1.collection('usernames').doc('bob').delete());
+    });
   });
 
   describe('Storage rules', () => {

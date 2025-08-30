@@ -315,6 +315,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usernameTaken => 'This username is already taken.';
 
   @override
+  String get usernameInvalid => 'Invalid username.';
+
+  @override
+  String get usernameHelper =>
+      '3–20 chars, letters, numbers, underscores. Can't start or end with underscore, no double underscores.';
+
+  @override
+  String usernameLowerPreview(Object lower) {
+    return 'Lowercase: $lower';
+  }
+
+  @override
   String get forgotPassword => 'Forgot password?';
 
   @override
@@ -346,6 +358,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOptionPublicProfile => 'Public profile';
+
+  @override
+  String get settingsOptionChangeUsername => 'Change username';
 
   @override
   String get publicProfileDialogTitle => 'Profile visibility';

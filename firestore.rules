@@ -106,6 +106,18 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Usernames mapping
+    // ─────────────────────────
+    match /usernames/{name} {
+      allow read: if isAuthed();
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.uid &&
+        !exists(/databases/$(database)/documents/usernames/$(name));
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update: if false;
+    }
+
+    // ─────────────────────────
     // Users (top-level)
     // ─────────────────────────
     match /users/{uid} {
