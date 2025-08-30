@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'brand_gradient_card.dart';
+import '../theme/brand_on_colors.dart';
 
 /// Navigable tile using the brand gradient background.
 class BrandActionTile extends StatelessWidget {
@@ -23,14 +24,19 @@ class BrandActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onGradient =
+        Theme.of(context).extension<BrandOnColors>()?.onGradient;
     return BrandGradientCard(
       onTap: onTap,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: leading ?? (leadingIcon != null ? Icon(leadingIcon) : null),
+        leading: leading ??
+            (leadingIcon != null
+                ? Icon(leadingIcon, color: onGradient)
+                : null),
         title: Text(title),
         subtitle: subtitle != null ? Text(subtitle!) : null,
-        trailing: trailing ?? const Icon(Icons.chevron_right),
+        trailing: trailing ?? Icon(Icons.chevron_right, color: onGradient),
       ),
     );
   }

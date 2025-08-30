@@ -20,7 +20,6 @@ class ReportScreenNew extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final usageData = context.watch<ReportProvider>().usageCounts;
-    final data = usageData.isEmpty ? _exampleUsageData(context) : usageData;
     final feedbackProvider = context.watch<FeedbackProvider>();
     if (!feedbackProvider.isLoading && feedbackProvider.entries.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -36,7 +35,7 @@ class ReportScreenNew extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DeviceUsageChart(usageData: data),
+            DeviceUsageChart(usageData: usageData),
             const SizedBox(height: AppSpacing.md),
             BrandActionTile(
               leadingIcon: Icons.feedback_outlined,
@@ -76,27 +75,6 @@ class ReportScreenNew extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Map<String, int> _exampleUsageData(BuildContext context) {
-    return {
-      'Gerät A': 120,
-      'Gerät B': 95,
-      'Gerät C': 80,
-      'Gerät D': 75,
-      'Gerät E': 60,
-      'Gerät F': 55,
-      'Gerät G': 50,
-      'Gerät H': 45,
-      'Gerät I': 40,
-      'Gerät J': 35,
-      'Gerät K': 30,
-      'Gerät L': 25,
-      'Gerät M': 20,
-      'Gerät N': 15,
-      'Gerät O': 10,
-      'Gerät P': 5,
-    };
   }
 
   void _showCreateSurveyDialog(BuildContext context) {
