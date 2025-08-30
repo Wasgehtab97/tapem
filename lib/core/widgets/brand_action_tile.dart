@@ -34,8 +34,16 @@ class BrandActionTile extends StatelessWidget {
             (leadingIcon != null
                 ? Icon(leadingIcon, color: onGradient)
                 : null),
-        title: Text(title),
-        subtitle: subtitle != null ? Text(subtitle!) : null,
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.black),
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle!,
+                style: const TextStyle(color: Colors.black),
+              )
+            : null,
         trailing: trailing ?? Icon(Icons.chevron_right, color: onGradient),
       ),
     );
