@@ -29,7 +29,7 @@ class BrandPrimaryButton extends StatelessWidget {
     final shadow = surface?.shadow;
     final overlay = surface?.pressedOverlay ?? Colors.black26;
     final onBrand =
-        Theme.of(context).extension<BrandOnColors>()?.onCta ?? Colors.white;
+        Theme.of(context).extension<BrandOnColors>()?.onCta ?? Colors.black;
     final textStyle = surface?.textStyle;
     final height = surface?.height ?? 48;
     final padding = surface?.padding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.sm);
