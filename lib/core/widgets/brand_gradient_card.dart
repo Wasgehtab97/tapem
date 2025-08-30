@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_brand_theme.dart';
 import '../theme/design_tokens.dart';
+import '../theme/brand_on_colors.dart';
 
 /// Reusable card container with the brand gradient and rounded corners.
 class BrandGradientCard extends StatelessWidget {
@@ -27,7 +28,9 @@ class BrandGradientCard extends StatelessWidget {
     final gradient = surface?.gradient ?? AppGradients.brandGradient;
     final shadow = surface?.shadow;
     final overlay = surface?.pressedOverlay ?? Colors.black26;
-    final onBrand = surface?.onBrand ?? Colors.white;
+    final onBrand =
+        Theme.of(context).extension<BrandOnColors>()?.onGradient ??
+            Colors.white;
 
     Widget content = Container(
       decoration: BoxDecoration(

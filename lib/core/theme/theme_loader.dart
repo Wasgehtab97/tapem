@@ -4,6 +4,8 @@ import '../../features/gym/domain/models/branding.dart';
 import 'design_tokens.dart';
 import 'theme.dart';
 import 'app_brand_theme.dart';
+import 'brand_on_colors.dart';
+import 'contrast.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
@@ -12,15 +14,12 @@ class ThemeLoader extends ChangeNotifier {
 
   /// Setzt das Standard-Dark-Theme.
   void loadDefault() {
-    _currentTheme = AppTheme.mintDarkTheme;
-    AppGradients.setBrandGradient(
-      AppColors.accentMint,
-      AppColors.accentTurquoise,
-    );
-    AppGradients.setCtaGlow(AppColors.accentMint);
-    _attachBrandTheme(
+    _applyBrandColors(
+      primary: AppColors.accentMint,
+      secondary: AppColors.accentTurquoise,
+      gradStart: AppColors.accentMint,
+      gradEnd: AppColors.accentTurquoise,
       focus: AppColors.accentTurquoise,
-      foreground: AppColors.textPrimary,
     );
     notifyListeners();
   }
@@ -30,12 +29,6 @@ class ThemeLoader extends ChangeNotifier {
     if (gymId == 'gym_01') {
       if (branding == null) {
         _applyMagentaDefaults();
-        MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-        _attachBrandTheme(
-          focus: MagentaColors.focus,
-          foreground: MagentaColors.textPrimary,
-          useMagenta: true,
-        );
         notifyListeners();
         return;
       }
@@ -51,16 +44,12 @@ class ThemeLoader extends ChangeNotifier {
       final gradEnd = branding.gradientEnd != null
           ? _parseHex(branding.gradientEnd!)
           : MagentaColors.secondary;
-      _currentTheme = AppTheme.customTheme(
+      _applyBrandColors(
         primary: primary,
         secondary: secondary,
-      );
-      AppGradients.setBrandGradient(gradStart, gradEnd);
-      AppGradients.setCtaGlow(MagentaColors.focus);
-      MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-      _attachBrandTheme(
+        gradStart: gradStart,
+        gradEnd: gradEnd,
         focus: MagentaColors.focus,
-        foreground: MagentaColors.textPrimary,
         useMagenta: true,
       );
       notifyListeners();
@@ -70,12 +59,6 @@ class ThemeLoader extends ChangeNotifier {
     if (gymId == 'Club Aktiv') {
       if (branding == null) {
         _applyClubAktivDefaults();
-        ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
-        _attachBrandTheme(
-          focus: ClubAktivColors.focus,
-          foreground: ClubAktivColors.textPrimary,
-          useClubAktiv: true,
-        );
         notifyListeners();
         return;
       }
@@ -91,16 +74,12 @@ class ThemeLoader extends ChangeNotifier {
       final gradEnd = branding.gradientEnd != null
           ? _parseHex(branding.gradientEnd!)
           : ClubAktivColors.primary600;
-      _currentTheme = AppTheme.customTheme(
+      _applyBrandColors(
         primary: primary,
         secondary: secondary,
-      );
-      AppGradients.setBrandGradient(gradStart, gradEnd);
-      AppGradients.setCtaGlow(ClubAktivColors.focus);
-      ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
-      _attachBrandTheme(
+        gradStart: gradStart,
+        gradEnd: gradEnd,
         focus: ClubAktivColors.focus,
-        foreground: ClubAktivColors.textPrimary,
         useClubAktiv: true,
       );
       notifyListeners();
@@ -115,44 +94,44 @@ class ThemeLoader extends ChangeNotifier {
     }
     final primary = _parseHex(branding.primaryColor!);
     final accent = _parseHex(branding.secondaryColor!);
-    _currentTheme = AppTheme.customTheme(primary: primary, secondary: accent);
-    AppGradients.setBrandGradient(primary, accent);
-    AppGradients.setCtaGlow(primary);
-    _attachBrandTheme(
+    final gradStart = branding.gradientStart != null
+        ? _parseHex(branding.gradientStart!)
+        : primary;
+    final gradEnd = branding.gradientEnd != null
+        ? _parseHex(branding.gradientEnd!)
+        : accent;
+    _applyBrandColors(
+      primary: primary,
+      secondary: accent,
+      gradStart: gradStart,
+      gradEnd: gradEnd,
       focus: accent,
-      foreground: AppColors.textPrimary,
     );
     notifyListeners();
   }
 
   void _applyMagentaDefaults() {
-    _currentTheme = AppTheme.magentaDarkTheme;
-    AppGradients.setBrandGradient(
-      MagentaColors.primary500,
-      MagentaColors.secondary,
-    );
-    AppGradients.setCtaGlow(MagentaColors.focus);
-    MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
-    _attachBrandTheme(
+    _applyBrandColors(
+      primary: MagentaColors.primary600,
+      secondary: MagentaColors.secondary,
+      gradStart: MagentaColors.primary500,
+      gradEnd: MagentaColors.secondary,
       focus: MagentaColors.focus,
-      foreground: MagentaColors.textPrimary,
       useMagenta: true,
     );
+    MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
   }
 
   void _applyClubAktivDefaults() {
-    _currentTheme = AppTheme.clubAktivDarkTheme;
-    AppGradients.setBrandGradient(
-      ClubAktivColors.primary500,
-      ClubAktivColors.primary600,
-    );
-    AppGradients.setCtaGlow(ClubAktivColors.focus);
-    ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
-    _attachBrandTheme(
+    _applyBrandColors(
+      primary: ClubAktivColors.primary600,
+      secondary: ClubAktivColors.secondary,
+      gradStart: ClubAktivColors.primary500,
+      gradEnd: ClubAktivColors.primary600,
       focus: ClubAktivColors.focus,
-      foreground: ClubAktivColors.textPrimary,
       useClubAktiv: true,
     );
+    ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
   }
 
   Color _parseHex(String hex) {
@@ -161,9 +140,49 @@ class ThemeLoader extends ChangeNotifier {
     return Color(int.parse(hex, radix: 16));
   }
 
+  void _applyBrandColors({
+    required Color primary,
+    required Color secondary,
+    required Color gradStart,
+    required Color gradEnd,
+    required Color focus,
+    bool useMagenta = false,
+    bool useClubAktiv = false,
+  }) {
+    final p = ensureForeground(primary);
+    final s = ensureForeground(secondary);
+    final g = ensureGradientForeground(gradStart, gradEnd);
+
+    _currentTheme = AppTheme.customTheme(
+      primary: p.background,
+      secondary: s.background,
+    );
+    AppGradients.setBrandGradient(g.start, g.end);
+    AppGradients.setCtaGlow(focus);
+
+    final onColors = BrandOnColors(
+      onPrimary: p.foreground,
+      onSecondary: s.foreground,
+      onGradient: g.foreground,
+      onCta: g.foreground,
+    );
+
+    final scheme = _currentTheme.colorScheme.copyWith(
+      onPrimary: onColors.onPrimary,
+      onSecondary: onColors.onSecondary,
+    );
+    _currentTheme = _currentTheme.copyWith(colorScheme: scheme);
+    _attachBrandTheme(
+      focus: focus,
+      onColors: onColors,
+      useMagenta: useMagenta,
+      useClubAktiv: useClubAktiv,
+    );
+  }
+
   void _attachBrandTheme({
     required Color focus,
-    required Color foreground,
+    required BrandOnColors onColors,
     bool useMagenta = false,
     bool useClubAktiv = false,
   }) {
@@ -175,8 +194,8 @@ class ThemeLoader extends ChangeNotifier {
                 gradient: AppGradients.brandGradient,
                 outlineGradient: AppGradients.brandGradient,
                 focusRing: focus,
-                onBrand: foreground,
+                onBrand: onColors.onCta,
               );
-    _currentTheme = _currentTheme.copyWith(extensions: [ext]);
+    _currentTheme = _currentTheme.copyWith(extensions: [ext, onColors]);
   }
 }
