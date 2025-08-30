@@ -90,5 +90,13 @@ GradientContrast ensureGradientForeground(Color start, Color end,
       opacity += 0.05;
     }
   }
+  final finalMin = [
+    contrastRatio(s, bestFg),
+    contrastRatio(e, bestFg),
+    contrastRatio(mid, bestFg),
+  ].reduce(math.min);
+  if (!finalMin.isFinite || finalMin < minRatio) {
+    return GradientContrast(start, end, Colors.black);
+  }
   return GradientContrast(s, e, bestFg);
 }

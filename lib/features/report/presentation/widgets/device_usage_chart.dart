@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/chart_interval.dart';
+
 class DeviceUsageChart extends StatefulWidget {
   final Map<String, int> usageData;
 
@@ -33,6 +35,13 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       display.add(MapEntry('Other', otherSum));
     }
 
+    if (display.isEmpty) {
+      return const SizedBox(
+        height: 220,
+        child: Center(child: Text('Keine Daten')),
+      );
+    }
+
     final bars = <BarChartGroupData>[];
     final gradient = [Colors.tealAccent, Colors.cyan, Colors.amber];
     for (var i = 0; i < display.length; i++) {
@@ -54,6 +63,10 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
 
     final maxY =
         display.map((e) => e.value).reduce((a, b) => a > b ? a : b).toDouble();
+    final yInterval = resolveAxisInterval(0, maxY, targetLabels: 5);
+    final xMax = (display.length - 1).toDouble();
+    final xInterval =
+        resolveAxisInterval(0, xMax, targetLabels: 6, maxLabels: 10);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -75,7 +88,8 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
               titlesData: FlTitlesData(
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
-                    showTitles: true,
+                    showTitles: xInterval.showTitles,
+                    interval: xInterval.interval,
                     getTitlesWidget: (value, meta) {
                       final i = value.toInt();
                       if (i < 0 || i >= display.length) return const SizedBox();
@@ -91,7 +105,9 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
                   ),
                 ),
                 leftTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true, interval: maxY / 5),
+                  sideTitles: SideTitles(
+                      showTitles: yInterval.showTitles,
+                      interval: yInterval.interval),
                 ),
                 topTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
