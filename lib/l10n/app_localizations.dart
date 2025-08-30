@@ -683,6 +683,24 @@ abstract class AppLocalizations {
   /// **'This username is already taken.'**
   String get usernameTaken;
 
+  /// Error for invalid username
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid username.'**
+  String get usernameInvalid;
+
+  /// Helper text for username rules
+  ///
+  /// In en, this message translates to:
+  /// **'3–20 chars, letters, numbers, underscores. Can't start or end with underscore, no double underscores.'**
+  String get usernameHelper;
+
+  /// Preview of lowercased username
+  ///
+  /// In en, this message translates to:
+  /// **'Lowercase: {lower}'**
+  String usernameLowerPreview(Object lower);
+
   /// Link to open password reset dialog
   ///
   /// In en, this message translates to:
@@ -748,6 +766,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Public profile'**
   String get settingsOptionPublicProfile;
+
+  /// Settings option to change the username
+  ///
+  /// In en, this message translates to:
+  /// **'Change username'**
+  String get settingsOptionChangeUsername;
 
   /// Title for public profile dialog
   ///

@@ -618,3 +618,44 @@ exports.setFriendRequestsSeen = functions.https.onCall(async (data, context) => 
   );
   return { status: 'ok' };
 });
+
+exports.changeUsername = functions.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const newUsername = data && data.newUsername;
+  if (typeof newUsername !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing username');
+  }
+  const target = newUsername.trim();
+  const regex = /^(?!_)(?!.*__)[A-Za-z0-9_]{3,20}(?<!_)$/;
+  if (!regex.test(target)) {
+    throw new functions.https.HttpsError('invalid-argument', 'username_invalid');
+  }
+  const lower = target.toLowerCase();
+  const db = admin.firestore();
+  const userRef = db.collection('users').doc(uid);
+  await db.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'user_not_found');
+    }
+    const oldLower = userSnap.data().usernameLower;
+    if (oldLower === lower) {
+      return;
+    }
+    const mappingRef = db.collection('usernames').doc(lower);
+    const mappingSnap = await tx.get(mappingRef);
+    if (mappingSnap.exists && mappingSnap.data().uid !== uid) {
+      throw new functions.https.HttpsError('already-exists', 'username_taken');
+    }
+    if (oldLower) {
+      const oldRef = db.collection('usernames').doc(oldLower);
+      tx.delete(oldRef);
+    }
+    tx.set(mappingRef, { uid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    tx.update(userRef, { username: target, usernameLower: lower });
+  });
+  return { username: target, usernameLower: lower };
+});

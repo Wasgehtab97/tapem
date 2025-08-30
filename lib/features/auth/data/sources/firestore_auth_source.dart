@@ -1,15 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 
 class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
-  FirestoreAuthSource({FirebaseAuth? auth, FirebaseFirestore? firestore})
+  FirestoreAuthSource({FirebaseAuth? auth, FirebaseFirestore? firestore, FirebaseFunctions? functions})
     : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+      _firestore = firestore ?? FirebaseFirestore.instance,
+      _functions = functions ?? FirebaseFunctions.instance;
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -79,21 +82,12 @@ class FirestoreAuthSource {
 
   Future<bool> isUsernameAvailable(String username) async {
     final lower = username.toLowerCase();
-    final query =
-        await _firestore
-            .collection('users')
-            .where('usernameLower', isEqualTo: lower)
-            .limit(1)
-            .get();
-    return query.docs.isEmpty;
+    final doc = await _firestore.collection('usernames').doc(lower).get();
+    return !doc.exists;
   }
 
   Future<void> setUsername(String userId, String username) async {
-    final lower = username.toLowerCase();
-    await _firestore.collection('users').doc(userId).update({
-      'username': username,
-      'usernameLower': lower,
-    });
+    await _functions.httpsCallable('changeUsername').call({'newUsername': username});
   }
 
   Future<void> setShowInLeaderboard(String userId, bool value) async {

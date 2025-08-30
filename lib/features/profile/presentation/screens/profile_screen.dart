@@ -15,6 +15,7 @@ import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
+import '../widgets/change_username_sheet.dart';
 
 const bool enableFriends = true;
 
@@ -147,6 +148,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _showPrivacyDialog();
                 },
                 child: Text(loc.settingsOptionPublicProfile),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  showChangeUsernameSheet(context);
+                },
+                child: Text(loc.settingsOptionChangeUsername),
               ),
             ],
           ),

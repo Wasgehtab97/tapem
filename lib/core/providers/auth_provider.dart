@@ -175,6 +175,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> checkUsernameAvailable(String username) {
+    return _checkUsernameUC.execute(username);
+  }
+
   Future<void> setShowInLeaderboard(bool value) async {
     if (_user == null) return;
     _setLoading(true);
