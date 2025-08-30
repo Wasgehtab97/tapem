@@ -4,6 +4,7 @@ import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 
 void main() {
   group('ThemeLoader', () {
@@ -47,6 +48,15 @@ void main() {
       final loader = ThemeLoader()..loadDefault();
       loader.applyBranding('other', null);
       expect(loader.theme.colorScheme.primary, AppColors.accentMint);
+    });
+
+    test('BrandOnColors tokens are black', () {
+      final loader = ThemeLoader()..loadDefault();
+      final on = loader.theme.extension<BrandOnColors>()!;
+      expect(on.onPrimary, Colors.black);
+      expect(on.onSecondary, Colors.black);
+      expect(on.onGradient, Colors.black);
+      expect(on.onCta, Colors.black);
     });
 
     test('gym_01 surfaces are normalised to reference luminance', () {
