@@ -5,7 +5,6 @@ import 'design_tokens.dart';
 import 'theme.dart';
 import 'app_brand_theme.dart';
 import 'brand_on_colors.dart';
-import 'contrast.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
@@ -149,22 +148,18 @@ class ThemeLoader extends ChangeNotifier {
     bool useMagenta = false,
     bool useClubAktiv = false,
   }) {
-    final p = ensureForeground(primary);
-    final s = ensureForeground(secondary);
-    final g = ensureGradientForeground(gradStart, gradEnd);
-
     _currentTheme = AppTheme.customTheme(
-      primary: p.background,
-      secondary: s.background,
+      primary: primary,
+      secondary: secondary,
     );
-    AppGradients.setBrandGradient(g.start, g.end);
+    AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);
 
-    final onColors = BrandOnColors(
-      onPrimary: p.foreground,
-      onSecondary: s.foreground,
-      onGradient: g.foreground,
-      onCta: g.foreground,
+    const onColors = BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
     );
 
     final scheme = _currentTheme.colorScheme.copyWith(

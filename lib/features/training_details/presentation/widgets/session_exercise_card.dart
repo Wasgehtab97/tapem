@@ -21,7 +21,7 @@ class SessionExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onBrand =
-        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.white;
+        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
     return BrandGradientCard(
       padding: padding,
       child: Column(
@@ -39,7 +39,7 @@ class SessionExerciseCard extends StatelessWidget {
             Text(
               subtitle!,
               style: TextStyle(
-                color: onBrand.withOpacity(0.7),
+                color: onBrand,
                 fontSize: 14,
               ),
             ),
@@ -61,7 +61,7 @@ class SessionExerciseCard extends StatelessWidget {
                       Text(
                         '${set.weight.toStringAsFixed(1)} kg',
                         style: TextStyle(
-                          color: onBrand.withOpacity(0.7),
+                          color: onBrand,
                           fontSize: 14,
                         ),
                       ),
@@ -74,7 +74,7 @@ class SessionExerciseCard extends StatelessWidget {
                       Text(
                         '${set.reps} Wdh',
                         style: TextStyle(
-                          color: onBrand.withOpacity(0.7),
+                          color: onBrand,
                           fontSize: 14,
                         ),
                       ),
@@ -86,7 +86,7 @@ class SessionExerciseCard extends StatelessWidget {
                       child: Text(
                         '↘︎ ${set.dropWeightKg!.toStringAsFixed(1)} kg × ${set.dropReps}',
                         style: TextStyle(
-                          color: onBrand.withOpacity(0.6),
+                          color: onBrand,
                           fontSize: 12,
                         ),
                       ),

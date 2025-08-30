@@ -30,7 +30,7 @@ class BrandGradientCard extends StatelessWidget {
     final overlay = surface?.pressedOverlay ?? Colors.black26;
     final onBrand =
         Theme.of(context).extension<BrandOnColors>()?.onGradient ??
-            Colors.white;
+            Colors.black;
 
     Widget content = Container(
       decoration: BoxDecoration(

@@ -24,8 +24,11 @@ class BrandActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final onGradient =
-        Theme.of(context).extension<BrandOnColors>()?.onGradient;
+        theme.extension<BrandOnColors>()?.onGradient ?? Colors.black;
+    final textTheme = theme.textTheme;
+
     return BrandGradientCard(
       onTap: onTap,
       child: ListTile(
@@ -37,6 +40,8 @@ class BrandActionTile extends StatelessWidget {
         title: Text(title),
         subtitle: subtitle != null ? Text(subtitle!) : null,
         trailing: trailing ?? Icon(Icons.chevron_right, color: onGradient),
+        titleTextStyle: textTheme.titleMedium?.copyWith(color: onGradient),
+        subtitleTextStyle: textTheme.bodyMedium?.copyWith(color: onGradient),
       ),
     );
   }

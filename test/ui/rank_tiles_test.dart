@@ -10,20 +10,23 @@ void main() {
     final theme = ThemeData(extensions: [
       AppBrandTheme.defaultTheme(),
       const BrandOnColors(
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onPrimary: Colors.black,
+        onSecondary: Colors.black,
         onGradient: onGrad,
-        onCta: Colors.white,
+        onCta: Colors.black,
       ),
     ]);
 
     await tester.pumpWidget(MaterialApp(
       theme: theme,
-      home: const BrandActionTile(title: 'tile'),
+      home: const BrandActionTile(title: 'tile', subtitle: 'sub'),
     ));
 
-    final text = tester.widget<Text>(find.text('tile'));
-    expect(text.style?.color, onGrad);
+    final title = tester.widget<Text>(find.text('tile'));
+    expect(title.style?.color, onGrad);
+
+    final subtitle = tester.widget<Text>(find.text('sub'));
+    expect(subtitle.style?.color, onGrad);
 
     final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_right));
     expect(icon.color, onGrad);
