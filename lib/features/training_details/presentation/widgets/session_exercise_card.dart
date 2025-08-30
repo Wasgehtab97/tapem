@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 import '../../domain/models/session.dart';
 
 /// A reusable card displaying a session's sets for a single device/exercise.
@@ -21,7 +21,7 @@ class SessionExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onBrand =
-        Theme.of(context).extension<AppBrandTheme>()?.onBrand ?? Colors.white;
+        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.white;
     return BrandGradientCard(
       padding: padding,
       child: Column(
