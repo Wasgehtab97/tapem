@@ -75,6 +75,36 @@ describe('Security Rules v1', function () {
         .collection('exercises')
         .doc('ex1')
         .set({ userId: 'user1' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('exercises')
+        .doc('exFriend')
+        .set({ userId: 'user1' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('exercises')
+        .doc('exNF')
+        .set({ userId: 'user3' });
+      await db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('exercises')
+        .doc('exPublic')
+        .set({ name: 'public' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('users')
+        .doc('adminB')
+        .set({ role: 'admin' });
     });
   });
 
@@ -91,6 +121,7 @@ describe('Security Rules v1', function () {
   const p3 = () => testEnv.authenticatedContext('user3', {});
   const friend = () => testEnv.authenticatedContext('user2', { gymId: 'G1', role: 'member' });
   const stranger = () => testEnv.authenticatedContext('user4', { gymId: 'G1', role: 'member' });
+  const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'G2', role: 'admin' });
 
   describe('Firestore rules', () => {
     it('allows cross-gym device read when authenticated', async () => {
@@ -111,19 +142,43 @@ describe('Security Rules v1', function () {
       await assertSucceeds(ref.get());
     });
 
-    it('allows friend to read custom exercise', async () => {
+    it('allows cross-gym friend to read custom exercise', async () => {
       const db = friend().firestore();
       const ref = db
         .collection('gyms')
-        .doc('G1')
+        .doc('G2')
         .collection('devices')
-        .doc('D1')
+        .doc('D2')
         .collection('exercises')
-        .doc('ex1');
+        .doc('exFriend');
       await assertSucceeds(ref.get());
     });
 
-    it('blocks non-friend from reading custom exercise', async () => {
+    it('blocks non-friend cross-gym from reading custom exercise', async () => {
+      const db = stranger().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('exercises')
+        .doc('exNF');
+      await assertFails(ref.get());
+    });
+
+    it('allows admin to read custom exercise', async () => {
+      const db = adminB().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('exercises')
+        .doc('exFriend');
+      await assertSucceeds(ref.get());
+    });
+
+    it('allows public exercise read in same gym', async () => {
       const db = stranger().firestore();
       const ref = db
         .collection('gyms')
@@ -131,8 +186,8 @@ describe('Security Rules v1', function () {
         .collection('devices')
         .doc('D1')
         .collection('exercises')
-        .doc('ex1');
-      await assertFails(ref.get());
+        .doc('exPublic');
+      await assertSucceeds(ref.get());
     });
 
     it('allows user to create own membership', async () => {
