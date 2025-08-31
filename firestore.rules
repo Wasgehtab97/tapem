@@ -58,9 +58,20 @@ service cloud.firestore {
       return (inGym(gymId) && resource.data.userId == request.auth.uid) || isAdmin(gymId);
     }
 
-    // Public exercise if no userId set or empty (READ context uses resource)
+    // Owner or friend based on a given field
+    function isOwnerOrFriend(field) {
+      return (field in resource.data) &&
+        (resource.data[field] == request.auth.uid ||
+         isFriend(resource.data[field], request.auth.uid));
+    }
+
+    function fieldEmpty(field) {
+      return !(field in resource.data) || resource.data[field] == null || resource.data[field] == '';
+    }
+
+    // Public exercise if none of the owner fields are set (READ context uses resource)
     function isPublicExercise() {
-      return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
+      return fieldEmpty('userId') && fieldEmpty('ownerId') && fieldEmpty('createdBy');
     }
 
     // ─────────────────────────
@@ -220,12 +231,11 @@ service cloud.firestore {
 
         // Custom exercises (public, owner or friends; admin override)
         match /exercises/{exerciseId} {
-          let canSeeByRelation =
-            (request.auth.uid == resource.data.userId) ||
-            isFriend(resource.data.userId, request.auth.uid) ||
+          allow read: if isAdmin(gymId) ||
+            isOwnerOrFriend('userId') ||
+            isOwnerOrFriend('ownerId') ||
+            isOwnerOrFriend('createdBy') ||
             isPublicExercise();
-
-          allow read: if isAdmin(gymId) || canSeeByRelation;
           allow write: if inGym(gymId) && (
                           request.auth.uid == request.resource.data.userId ||
                           request.auth.uid == resource.data.userId
