@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
@@ -161,12 +162,15 @@ class AuthProvider extends ChangeNotifier {
     try {
       final available = await _checkUsernameUC.execute(username);
       if (!available) {
-        _error = 'Username already taken';
+        _error = 'username_taken';
         return false;
       }
       await _setUsernameUC.execute(_user!.id, username);
       _user = _user!.copyWith(userName: username);
       return true;
+    } on FirebaseException catch (e) {
+      _error = e.code;
+      return false;
     } catch (e) {
       _error = e.toString();
       return false;

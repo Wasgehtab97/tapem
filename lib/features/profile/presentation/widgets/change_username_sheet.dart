@@ -147,7 +147,7 @@ Future<void> showChangeUsernameSheet(BuildContext context) async {
                             } else {
                               setState(() {
                                 loading = false;
-                                if (auth.error == 'Username already taken') {
+                                if (auth.error == 'username_taken') {
                                   error = loc.usernameTaken;
                                   availability = UsernameAvailability.taken;
                                 } else {
