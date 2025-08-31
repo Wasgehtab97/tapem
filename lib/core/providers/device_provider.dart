@@ -26,6 +26,7 @@ import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/time/logic_day.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -670,6 +671,16 @@ class DeviceProvider extends ChangeNotifier {
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
+      final dayKey = logicDayKey(DateTime.now().toUtc());
+      elogUi('SAVE_PERSIST_OK', {
+        'uid': userId,
+        'gymId': gymId,
+        'deviceId': _device!.uid,
+        'sessionId': sessionId,
+        'isMulti': _device!.isMulti,
+        'dayKey': dayKey,
+        'screen': 'DeviceScreen',
+      });
 
       final resolvedDeviceId = resolveDeviceId(snapshot);
       if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
