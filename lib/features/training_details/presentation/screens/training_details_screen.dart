@@ -43,13 +43,14 @@ class TrainingDetailsScreen extends StatelessWidget {
           final sessions = prov.sessions;
           return Scaffold(
             appBar: _AppBar(titleDate: date),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child:
-                  sessions.isEmpty
-                      ? const Center(child: Text('Keine Trainingseinheiten'))
-                      : DaySessionsOverview(sessions: sessions),
-            ),
+            body: sessions.isEmpty
+                ? const Center(child: Text('Keine Trainingseinheiten'))
+                : Scrollbar(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: DaySessionsOverview(sessions: sessions),
+                    ),
+                  ),
           );
         },
       ),
