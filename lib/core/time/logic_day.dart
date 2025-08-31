@@ -1,4 +1,4 @@
-String logicDayKey(DateTime now, {String? tz}) {
-  // For now, compute day key in UTC.
-  return now.toUtc().toIso8601String().split('T').first;
+String logicDayKey(DateTime nowUtc) {
+  final utc = nowUtc.toUtc();
+  return utc.toIso8601String().split('T').first;
 }

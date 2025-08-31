@@ -25,6 +25,7 @@ import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -38,6 +39,11 @@ void _defaultLog(String message, [StackTrace? stack]) {
 
 String _setsBrief(List<Map<String, dynamic>> sets) {
   return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}').join(', ')}]';
+}
+
+String? resolveDeviceId(DeviceSessionSnapshot snap) {
+  if (snap.deviceId.isNotEmpty) return snap.deviceId;
+  return null;
 }
 
 class DeviceProvider extends ChangeNotifier {
@@ -665,11 +671,29 @@ class DeviceProvider extends ChangeNotifier {
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
 
+      final resolvedDeviceId = resolveDeviceId(snapshot);
+      if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
+        elogDeviceXp('SKIP_NO_DEVICE', {
+          'sessionId': sessionId,
+          'exerciseId': _currentExerciseId,
+          'isMulti': _device!.isMulti,
+          'gymId': gymId,
+          'uid': userId,
+        });
+      } else {
+        elogDeviceXp('PROVIDER_SAVE_OK_FORWARD_XP', {
+          'uid': userId,
+          'gymId': gymId,
+          'sessionId': sessionId,
+          'deviceId': resolvedDeviceId,
+          'isMulti': _device!.isMulti,
+          'showInLeaderboard': showInLeaderboard,
+        });
         try {
           await Provider.of<XpProvider>(context, listen: false).addSessionXp(
             gymId: gymId,
             userId: userId,
-            deviceId: _device!.uid,
+            deviceId: resolvedDeviceId,
             sessionId: sessionId,
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
@@ -677,9 +701,10 @@ class DeviceProvider extends ChangeNotifier {
           await Provider.of<ChallengeProvider>(
             context,
             listen: false,
-          ).checkChallenges(gymId, userId, _device!.uid);
+          ).checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
-        _log('⚠️ [Provider] XP/Challenges error: $e', st);
+          _log('⚠️ [Provider] XP/Challenges error: $e', st);
+        }
       }
 
       _lastSessionSets = [

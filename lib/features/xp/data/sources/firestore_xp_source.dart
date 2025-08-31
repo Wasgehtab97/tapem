@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
@@ -15,80 +14,73 @@ class FirestoreXpSource {
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
 
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-    }) async {
-      final dayKey = logicDayKey(DateTime.now());
-      elogDeviceXp('ATTEMPT', {
-        'uid': userId,
-        'gymId': gymId,
-        'deviceId': deviceId,
-        'sessionId': sessionId,
-        'isMulti': isMulti,
-        'dayKey': dayKey,
-        'source': 'xp_source',
-      });
-      final dateStr = dayKey;
-      final userRef = _firestore.collection('users').doc(userId);
-      final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
-      final statsRef = _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('users')
-          .doc(userId)
-          .collection('rank')
-          .doc('stats');
+      Future<DeviceXpResult> addSessionXp({
+        required String gymId,
+        required String userId,
+        required String deviceId,
+        required String sessionId,
+        required bool showInLeaderboard,
+        required bool isMulti,
+      }) async {
+        final dayKey = logicDayKey(DateTime.now().toUtc());
+        final dateStr = dayKey;
+        final userRef = _firestore.collection('users').doc(userId);
+        final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
+        final statsRef = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(userId)
+            .collection('rank')
+            .doc('stats');
 
-      await _firestore.runTransaction((tx) async {
-        debugPrint('⏳ transaction start');
-        // All reads must happen before any writes in a transaction.
-        final daySnap = await tx.get(dayRef);
-        final statsSnap = await tx.get(statsRef);
-        final statsData = statsSnap.data() ?? {};
-        final updates = <String, dynamic>{};
+        await _firestore.runTransaction((tx) async {
+          final daySnap = await tx.get(dayRef);
+          final statsSnap = await tx.get(statsRef);
+          final statsData = statsSnap.data() ?? {};
+          final updates = <String, dynamic>{};
 
-        final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
-        final newDayXp = currentDayXp + LevelService.xpPerSession;
-        debugPrint('👉 dayXP $currentDayXp -> $newDayXp');
-        final dayData = {'xp': newDayXp};
-        if (daySnap.exists) {
-          tx.update(dayRef, dayData);
-        } else {
-          tx.set(dayRef, dayData);
-        }
-        if (currentDayXp == 0) {
-          updates['dailyXP'] =
-              (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
-        }
-
-        if (updates.isNotEmpty) {
-          if (statsSnap.exists) {
-            tx.update(statsRef, updates);
+          final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
+          final newDayXp = currentDayXp + LevelService.xpPerSession;
+          final dayData = {'xp': newDayXp};
+          if (daySnap.exists) {
+            tx.update(dayRef, dayData);
           } else {
-            tx.set(statsRef, updates);
+            tx.set(dayRef, dayData);
           }
-        }
-        debugPrint('⏳ transaction updates: $updates');
-      });
-      debugPrint('✅ stored session XP');
+          if (currentDayXp == 0) {
+            updates['dailyXP'] =
+                (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+          }
 
-      final result = await _rankSource.addXp(
-        gymId: gymId,
-        userId: userId,
-        deviceId: deviceId,
-        sessionId: sessionId,
-        showInLeaderboard: showInLeaderboard,
-      );
-      return result;
-    }
+          if (updates.isNotEmpty) {
+            if (statsSnap.exists) {
+              tx.update(statsRef, updates);
+            } else {
+              tx.set(statsRef, updates);
+            }
+          }
+        });
 
-  Stream<int> watchDayXp({required String userId, required DateTime date}) {
-    final dateStr = date.toIso8601String().split('T').first;
+        elogDeviceXp('RANK_FORWARD', {
+          'uid': userId,
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+          'dayKey': dayKey,
+        });
+        final result = await _rankSource.addXp(
+          gymId: gymId,
+          userId: userId,
+          deviceId: deviceId,
+          sessionId: sessionId,
+          showInLeaderboard: showInLeaderboard,
+        );
+        return result;
+      }
+
+    Stream<int> watchDayXp({required String userId, required DateTime date}) {
+      final dateStr = logicDayKey(date.toUtc());
     final ref = _firestore
         .collection('users')
         .doc(userId)
