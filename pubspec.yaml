@@ -84,6 +84,7 @@ dev_dependencies:
   json_serializable: ^6.7.0
   flutter_launcher_icons: ^0.14.3
   fake_cloud_firestore: ^3.1.0
+  mocktail: ^1.0.0
 
 # Overrides (behalten, damit nfc_manager konsistent aus Git kommt;
 # value_layout_builder ist erforderlich für aktuelle Abhängigkeiten)
