@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -39,11 +40,18 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   @override
   void didUpdateWidget(covariant SearchAndFilters oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.query != widget.query && _controller.text != widget.query) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _controller.text = widget.query;
-      });
+    if (oldWidget.query != widget.query) {
+      UiMutationGuard.run(
+        screen: 'SearchAndFilters',
+        widget: 'SearchAndFilters',
+        field: 'query',
+        oldValue: _controller.text,
+        newValue: widget.query,
+        reason: 'didUpdateWidget',
+        mutate: () {
+          if (mounted) _controller.text = widget.query;
+        },
+      );
     }
   }
 
