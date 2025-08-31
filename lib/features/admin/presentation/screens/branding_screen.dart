@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -59,7 +59,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
       _error = null;
     });
 
-    final callable = FirebaseFunctions.instance.httpsCallable('updateBranding');
+    final callable = FunctionsProvider.instance.httpsCallable('updateBranding');
     try {
       await callable.call(<String, dynamic>{
         'gymId': gymId,
