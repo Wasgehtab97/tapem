@@ -55,7 +55,7 @@ class ThemeLoader extends ChangeNotifier {
       return;
     }
 
-    if (gymId == 'Club Aktiv') {
+    if (gymId == 'Club Aktiv' || gymId == 'BronzeDaniel') {
       if (branding == null) {
         _applyClubAktivDefaults();
         notifyListeners();
