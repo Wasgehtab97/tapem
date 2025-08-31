@@ -8,7 +8,7 @@ Future<void> showChangeUsernameSheet(BuildContext context) async {
   final loc = AppLocalizations.of(context)!;
   final auth = context.read<AuthProvider>();
   final ctr = TextEditingController(text: auth.userName ?? '');
-  final regex = RegExp(r'^(?!_)(?!.*__)[A-Za-z0-9_]{3,20}(?<!_)$');
+  final regex = RegExp(r'^(?!_)(?!.*__)[A-Za-z0-9 _]{3,20}(?<!_)$');
   String? error;
   bool available = false;
   bool isValid(String v) => regex.hasMatch(v);

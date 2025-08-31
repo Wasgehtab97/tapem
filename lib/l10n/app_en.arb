@@ -469,7 +469,7 @@
   "@usernameTaken": {"description": "Error when username exists"},
   "usernameInvalid": "Invalid username.",
   "@usernameInvalid": {"description": "Error for invalid username"},
-  "usernameHelper": "3–20 chars, letters, numbers, underscores. Can't start or end with underscore, no double underscores.",
+  "usernameHelper": "3–20 chars, letters, numbers, spaces, underscores. Can't start or end with underscore, no double underscores.",
   "@usernameHelper": {"description": "Helper text for username rules"},
   "usernameLowerPreview": "Lowercase: {lower}",
   "@usernameLowerPreview": {"description": "Preview of lowercased username", "placeholders": {"lower": {}}},
