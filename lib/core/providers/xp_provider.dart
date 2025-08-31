@@ -1,9 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class XpProvider extends ChangeNotifier {
   final XpRepository _repo;
@@ -27,30 +31,41 @@ class XpProvider extends ChangeNotifier {
   Map<String, int> get deviceXp => _deviceXp;
   int get statsDailyXp => _statsDailyXp;
 
-  Future<void> addSessionXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-    required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
-  }) {
-    debugPrint(
-      '🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId',
-    );
-    return _repo.addSessionXp(
-      gymId: gymId,
-      userId: userId,
-      deviceId: deviceId,
-      sessionId: sessionId,
-      showInLeaderboard: showInLeaderboard,
-      isMulti: isMulti,
-      primaryMuscleGroupIds: primaryMuscleGroupIds,
-      tz: tz,
-    );
-  }
+    Future<DeviceXpResult> addSessionXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+      required bool isMulti,
+    }) async {
+      debugPrint(
+        '🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId',
+      );
+      final result = await _repo.addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: sessionId,
+        showInLeaderboard: showInLeaderboard,
+        isMulti: isMulti,
+      );
+      if (result == DeviceXpResult.okAdded) {
+        _deviceXp[deviceId] =
+            (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
+        notifyListeners();
+      }
+      elogDeviceXp(result.name.toUpperCase(), {
+        'uid': userId,
+        'gymId': gymId,
+        'deviceId': deviceId,
+        'sessionId': sessionId,
+        'isMulti': isMulti,
+        'dayKey': logicDayKey(DateTime.now()),
+        'source': 'xp_provider',
+      });
+      return result;
+    }
 
   void watchDayXp(String userId, DateTime date) {
     debugPrint('👀 provider watchDayXp userId=$userId date=$date');

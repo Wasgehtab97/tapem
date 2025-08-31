@@ -1,13 +1,13 @@
+import 'device_xp_result.dart';
+
 abstract class XpRepository {
-  Future<void> addSessionXp({
+  Future<DeviceXpResult> addSessionXp({
     required String gymId,
     required String userId,
     required String deviceId,
     required String sessionId,
     required bool showInLeaderboard,
     required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
   });
 
   Stream<int> watchDayXp({required String userId, required DateTime date});

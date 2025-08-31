@@ -665,22 +665,20 @@ class DeviceProvider extends ChangeNotifier {
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
 
-      try {
-        await Provider.of<XpProvider>(context, listen: false).addSessionXp(
-          gymId: gymId,
-          userId: userId,
-          deviceId: _device!.uid,
-          sessionId: sessionId,
-          showInLeaderboard: showInLeaderboard,
-          isMulti: _device!.isMulti,
-          primaryMuscleGroupIds: _device!.primaryMuscleGroups,
-          tz: tz,
-        );
-        await Provider.of<ChallengeProvider>(
-          context,
-          listen: false,
-        ).checkChallenges(gymId, userId, _device!.uid);
-      } catch (e, st) {
+        try {
+          await Provider.of<XpProvider>(context, listen: false).addSessionXp(
+            gymId: gymId,
+            userId: userId,
+            deviceId: _device!.uid,
+            sessionId: sessionId,
+            showInLeaderboard: showInLeaderboard,
+            isMulti: _device!.isMulti,
+          );
+          await Provider.of<ChallengeProvider>(
+            context,
+            listen: false,
+          ).checkChallenges(gymId, userId, _device!.uid);
+        } catch (e, st) {
         _log('⚠️ [Provider] XP/Challenges error: $e', st);
       }
 

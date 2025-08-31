@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:tapem/core/constants.dart';
+
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -12,114 +15,77 @@ class FirestoreXpSource {
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
 
-  Future<void> addSessionXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-    required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
-  }) async {
-    debugPrint(
-      '📥 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId isMulti=$isMulti muscles=$primaryMuscleGroupIds showLB=$showInLeaderboard',
-    );
-    final now = DateTime.now();
-    final logical =
-        now.subtract(const Duration(hours: AppConstants.defaultDayRolloverHour));
-    final dateStr = logical.toIso8601String().split('T').first;
-    final userRef = _firestore.collection('users').doc(userId);
-    final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
-    final muscleRefs =
-        primaryMuscleGroupIds
-            .map((id) => userRef.collection('muscleGroupXP').doc(id))
-            .toList()
-            .cast<DocumentReference<Map<String, dynamic>>>();
-    final statsRef = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('users')
-        .doc(userId)
-        .collection('rank')
-        .doc('stats');
+    Future<DeviceXpResult> addSessionXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+      required bool isMulti,
+    }) async {
+      final dayKey = logicDayKey(DateTime.now());
+      elogDeviceXp('ATTEMPT', {
+        'uid': userId,
+        'gymId': gymId,
+        'deviceId': deviceId,
+        'sessionId': sessionId,
+        'isMulti': isMulti,
+        'dayKey': dayKey,
+        'source': 'xp_source',
+      });
+      final dateStr = dayKey;
+      final userRef = _firestore.collection('users').doc(userId);
+      final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
+      final statsRef = _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('users')
+          .doc(userId)
+          .collection('rank')
+          .doc('stats');
 
-    await _firestore.runTransaction((tx) async {
-      debugPrint('⏳ transaction start');
-      // All reads must happen before any writes in a transaction.
-      final daySnap = await tx.get(dayRef);
-      final statsSnap = await tx.get(statsRef);
+      await _firestore.runTransaction((tx) async {
+        debugPrint('⏳ transaction start');
+        // All reads must happen before any writes in a transaction.
+        final daySnap = await tx.get(dayRef);
+        final statsSnap = await tx.get(statsRef);
+        final statsData = statsSnap.data() ?? {};
+        final updates = <String, dynamic>{};
 
-      // Preload muscle snapshots if required.
-      final muscleSnaps = <DocumentSnapshot<Map<String, dynamic>>>[];
-      if (!isMulti && muscleRefs.isNotEmpty) {
-        for (final ref in muscleRefs) {
-          muscleSnaps.add(await tx.get(ref));
+        final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
+        final newDayXp = currentDayXp + LevelService.xpPerSession;
+        debugPrint('👉 dayXP $currentDayXp -> $newDayXp');
+        final dayData = {'xp': newDayXp};
+        if (daySnap.exists) {
+          tx.update(dayRef, dayData);
+        } else {
+          tx.set(dayRef, dayData);
         }
-      }
+        if (currentDayXp == 0) {
+          updates['dailyXP'] =
+              (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+        }
 
-      final statsData = statsSnap.data() ?? {};
-      final updates = <String, dynamic>{};
-
-      final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
-      final newDayXp = currentDayXp + LevelService.xpPerSession;
-      debugPrint('👉 dayXP $currentDayXp -> $newDayXp');
-      final dayData = {'xp': newDayXp, 'tz': tz};
-      if (daySnap.exists) {
-        tx.update(dayRef, dayData);
-      } else {
-        tx.set(dayRef, dayData);
-      }
-      if (currentDayXp == 0) {
-        updates['dailyXP'] =
-            (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
-      }
-
-      if (!isMulti && muscleRefs.isNotEmpty) {
-        for (var i = 0; i < muscleRefs.length; i++) {
-          final ref = muscleRefs[i];
-          final snap = muscleSnaps[i];
-          final xp =
-              (snap.data()?['xp'] as int? ?? 0) + LevelService.xpPerSession;
-          debugPrint(
-            '👉 muscle ${ref.id} XP ${(snap.data()?['xp'] as int?) ?? 0} -> $xp',
-          );
-          if (!snap.exists) {
-            tx.set(ref, {'xp': xp});
+        if (updates.isNotEmpty) {
+          if (statsSnap.exists) {
+            tx.update(statsRef, updates);
           } else {
-            tx.update(ref, {'xp': xp});
+            tx.set(statsRef, updates);
           }
         }
+        debugPrint('⏳ transaction updates: $updates');
+      });
+      debugPrint('✅ stored session XP');
 
-        for (final id in primaryMuscleGroupIds) {
-          final field = '${id}XP';
-          updates[field] =
-              (statsData[field] as int? ?? 0) + LevelService.xpPerSession;
-        }
-      }
-
-      if (updates.isNotEmpty) {
-        if (statsSnap.exists) {
-          tx.update(statsRef, updates);
-        } else {
-          tx.set(statsRef, updates);
-        }
-      }
-      debugPrint('⏳ transaction updates: $updates');
-    });
-    debugPrint('✅ stored session XP');
-
-    if (!isMulti && showInLeaderboard) {
-      debugPrint('📤 forwarding XP to rank source');
-      await _rankSource.addXp(
+      final result = await _rankSource.addXp(
         gymId: gymId,
         userId: userId,
         deviceId: deviceId,
         sessionId: sessionId,
         showInLeaderboard: showInLeaderboard,
       );
+      return result;
     }
-  }
 
   Stream<int> watchDayXp({required String userId, required DateTime date}) {
     final dateStr = date.toIso8601String().split('T').first;

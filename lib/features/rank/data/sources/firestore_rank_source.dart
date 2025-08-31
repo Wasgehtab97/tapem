@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
+
 import '../../domain/models/level_info.dart';
 import '../../domain/services/level_service.dart';
 
@@ -10,55 +14,82 @@ class FirestoreRankSource {
   FirestoreRankSource({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Future<void> addXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-  }) async {
-    final now = DateTime.now();
-    final dateStr = now.toIso8601String().split('T').first;
-    final lbRef = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('leaderboard')
-        .doc(userId);
-    final sessionRef = lbRef.collection('sessions').doc(sessionId);
-    final dayRef = lbRef.collection('days').doc(dateStr);
+    Future<DeviceXpResult> addXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+    }) async {
+      final dayKey = logicDayKey(DateTime.now());
+      final lbUser = _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('devices')
+          .doc(deviceId)
+          .collection('leaderboard')
+          .doc(userId);
+      final lbSess = lbUser.collection('sessions').doc(sessionId);
+      final lbDay = lbUser.collection('days').doc(dayKey);
 
-    await _firestore.runTransaction((tx) async {
-      final lbSnap = await tx.get(lbRef);
-      final sessSnap = await tx.get(sessionRef);
-      final daySnap = await tx.get(dayRef);
+      return _firestore.runTransaction<DeviceXpResult>((tx) async {
+        final sessSnap = await tx.get(lbSess);
+        if (sessSnap.exists) {
+          elogDeviceXp('IDEMPOTENT_HIT', {
+            'uid': userId,
+            'gymId': gymId,
+            'deviceId': deviceId,
+            'sessionId': sessionId,
+            'dayKey': dayKey,
+          });
+          return DeviceXpResult.idempotentHit;
+        }
 
-      var info = LevelInfo.fromMap(lbSnap.data());
+        final daySnap = await tx.get(lbDay);
+        if (daySnap.exists) {
+          elogDeviceXp('ALREADY_TODAY', {
+            'uid': userId,
+            'gymId': gymId,
+            'deviceId': deviceId,
+            'sessionId': sessionId,
+            'dayKey': dayKey,
+          });
+          return DeviceXpResult.alreadyToday;
+        }
 
-      if (!lbSnap.exists) {
-        tx.set(lbRef, {
-          ...info.toMap(),
-          'showInLeaderboard': showInLeaderboard,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (!daySnap.exists) {
+        final lbSnap = await tx.get(lbUser);
+        var info = LevelInfo.fromMap(lbSnap.data());
         info = LevelService().addXp(info, LevelService.xpPerSession);
-        tx.set(dayRef, {'date': dateStr});
-        tx.update(lbRef, {
-          'xp': info.xp,
-          'level': info.level,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
 
-      if (!sessSnap.exists) {
-        tx.set(sessionRef, {'deviceId': deviceId, 'date': dateStr});
-      }
-    });
-  }
+        if (!lbSnap.exists) {
+          tx.set(lbUser, {
+            ...info.toMap(),
+            'showInLeaderboard': showInLeaderboard,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.update(lbUser, {
+            'xp': info.xp,
+            'level': info.level,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (!(lbSnap.data()?.containsKey('showInLeaderboard') ?? false))
+              'showInLeaderboard': showInLeaderboard,
+          });
+        }
+
+        tx.set(lbDay, {'date': dayKey});
+        tx.set(lbSess, {'deviceId': deviceId, 'date': dayKey});
+
+        elogDeviceXp('OK_ADDED', {
+          'uid': userId,
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+          'dayKey': dayKey,
+        });
+        return DeviceXpResult.okAdded;
+      });
+    }
 
   Stream<List<Map<String, dynamic>>> watchLeaderboard(
     String gymId,

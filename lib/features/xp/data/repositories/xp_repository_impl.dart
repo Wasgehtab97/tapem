@@ -1,4 +1,5 @@
 import '../../domain/xp_repository.dart';
+import '../../domain/device_xp_result.dart';
 import '../sources/firestore_xp_source.dart';
 
 class XpRepositoryImpl implements XpRepository {
@@ -6,15 +7,13 @@ class XpRepositoryImpl implements XpRepository {
   XpRepositoryImpl(this._source);
 
   @override
-  Future<void> addSessionXp({
+  Future<DeviceXpResult> addSessionXp({
     required String gymId,
     required String userId,
     required String deviceId,
     required String sessionId,
     required bool showInLeaderboard,
     required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
   }) {
     return _source.addSessionXp(
       gymId: gymId,
@@ -23,8 +22,6 @@ class XpRepositoryImpl implements XpRepository {
       sessionId: sessionId,
       showInLeaderboard: showInLeaderboard,
       isMulti: isMulti,
-      primaryMuscleGroupIds: primaryMuscleGroupIds,
-      tz: tz,
     );
   }
 
