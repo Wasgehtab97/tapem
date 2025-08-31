@@ -17,22 +17,21 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
   void initState() {
     super.initState();
     final auth = context.read<AuthProvider>();
-    final gymProv = context.read<GymProvider>();
-    final xpProv = context.read<XpProvider>();
-    final uid = auth.userId;
-    final gymId = gymProv.currentGymId;
-    if (uid != null && gymId.isNotEmpty) {
-      final deviceIds =
-          gymProv.devices.where((d) => !d.isMulti).map((d) => d.uid).toList();
-      xpProv.watchDeviceXp(gymId, uid, deviceIds);
-    }
+      final gymProv = context.read<GymProvider>();
+      final xpProv = context.read<XpProvider>();
+      final uid = auth.userId;
+      final gymId = gymProv.currentGymId;
+      if (uid != null && gymId.isNotEmpty) {
+        final deviceIds = gymProv.devices.map((d) => d.uid).toList();
+        xpProv.watchDeviceXp(gymId, uid, deviceIds);
+      }
   }
 
   @override
   Widget build(BuildContext context) {
-    final gymProv = context.watch<GymProvider>();
-    final xpProv = context.watch<XpProvider>();
-    final devices = gymProv.devices.where((d) => !d.isMulti).toList();
+      final gymProv = context.watch<GymProvider>();
+      final xpProv = context.watch<XpProvider>();
+      final devices = gymProv.devices.toList();
     return Scaffold(
       appBar: AppBar(title: const Text('Geräte XP')),
       body: ListView.builder(
