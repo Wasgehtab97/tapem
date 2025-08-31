@@ -217,11 +217,13 @@ service cloud.firestore {
                              request.resource.data.userId == userId;
         }
 
-        // Custom exercises (public or owner; admin override)
+        // Custom exercises (public, owner or friends; admin override)
         match /exercises/{exerciseId} {
           allow read: if isAdmin(gymId) ||
                        (inGym(gymId) &&
-                        (request.auth.uid == resource.data.userId || isPublicExercise()));
+                        (request.auth.uid == resource.data.userId ||
+                         isFriend(resource.data.userId, request.auth.uid) ||
+                         isPublicExercise()));
           allow write: if inGym(gymId) && (
                           request.auth.uid == request.resource.data.userId ||
                           request.auth.uid == resource.data.userId
