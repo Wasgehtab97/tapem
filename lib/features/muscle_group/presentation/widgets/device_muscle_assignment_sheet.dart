@@ -44,7 +44,12 @@ class _DeviceMuscleAssignmentSheetState
     super.initState();
     _selectedSecondaryIds = <String>{};
     _initialSecondaryIds = <String>{};
-    _searchCtr.addListener(() => setState(() {}));
+    _searchCtr.addListener(() {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    });
   }
 
   @override
