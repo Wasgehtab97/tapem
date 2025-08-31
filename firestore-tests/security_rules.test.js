@@ -76,9 +76,15 @@ describe('Security Rules v1', function () {
   const p3 = () => testEnv.authenticatedContext('user3', {});
 
   describe('Firestore rules', () => {
-    it('blocks cross-gym device read (device_cross_gym)', async () => {
+    it('allows cross-gym device read when authenticated', async () => {
       const db = userA().firestore();
       const ref = db.collection('gyms').doc('G2').collection('devices').doc('D2');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks device read when unauthenticated', async () => {
+      const db = testEnv.unauthenticatedContext().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('devices').doc('D1');
       await assertFails(ref.get());
     });
 

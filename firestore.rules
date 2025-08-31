@@ -189,7 +189,7 @@ service cloud.firestore {
 
       // Devices
       match /devices/{deviceId} {
-        allow read: if inGym(gymId);
+        allow read: if isAuthed();
         allow write: if isAdmin(gymId);
 
         // Device logs (immutable; owner append-only)
