@@ -161,7 +161,12 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     }
   }
 
-  void _rebuild() => setState(() {});
+  void _rebuild() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

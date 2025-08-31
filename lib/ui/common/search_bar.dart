@@ -32,7 +32,12 @@ class _SearchBarState extends State<SearchBar> {
     }
   }
 
-  void _onChanged() => setState(() {});
+  void _onChanged() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
