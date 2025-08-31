@@ -165,14 +165,13 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 
   @override
   Widget build(BuildContext context) {
-    final keypad =
-        widget.controller.isOpen
-            ? OverlayNumericKeypad(
-              key: _keypadKey,
-              controller: widget.controller,
-              theme: widget.theme,
-            )
-            : const SizedBox.shrink();
+    final keypad = widget.controller.isOpen
+        ? OverlayNumericKeypad(
+            key: _keypadKey,
+            controller: widget.controller,
+            theme: widget.theme,
+          )
+        : const SizedBox.shrink();
 
     Widget result = Stack(
       children: [
@@ -185,10 +184,9 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
               onPointerUp: (event) {
                 final keypadBox =
                     _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                final keypadRect =
-                    keypadBox == null
-                        ? Rect.zero
-                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                final keypadRect = keypadBox == null
+                    ? Rect.zero
+                    : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
                 final inside = keypadRect.contains(event.position);
                 _klog(
                   'outsideTap up at ${event.position} insideKeypad=$inside',
@@ -353,7 +351,6 @@ class OverlayNumericKeypad extends StatelessWidget {
                     },
                     onPlus: () => _increment(context, controller, 1),
                     onMinus: () => _increment(context, controller, -1),
-                    onDone: controller.close,
                   ),
                 ),
               ],
@@ -404,22 +401,16 @@ class OverlayNumericKeypad extends StatelessWidget {
   ) {
     final t = ctl.target;
     if (t == null) return;
-    final cleaned =
-        ctl.allowDecimal
-            ? text
-                .trim()
-                .replaceAll(',', '.')
-                .replaceAll(RegExp(r'[^0-9\.]'), '')
-            : text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleaned = ctl.allowDecimal
+        ? text.trim().replaceAll(',', '.').replaceAll(RegExp(r'[^0-9\.]'), '')
+        : text.replaceAll(RegExp(r'[^0-9]'), '');
     final parts = cleaned.split('.');
-    final normalized =
-        ctl.allowDecimal && parts.length > 1
-            ? '${parts[0]}.${parts.sublist(1).join()}'
-            : cleaned;
-    final display =
-        ctl.allowDecimal
-            ? normalized.replaceAll('.', _decimalChar(ctx))
-            : normalized;
+    final normalized = ctl.allowDecimal && parts.length > 1
+        ? '${parts[0]}.${parts.sublist(1).join()}'
+        : cleaned;
+    final display = ctl.allowDecimal
+        ? normalized.replaceAll('.', _decimalChar(ctx))
+        : normalized;
     t.value = TextEditingValue(
       text: display,
       selection: TextSelection.collapsed(offset: display.length),
@@ -471,12 +462,12 @@ class OverlayNumericKeypad extends StatelessWidget {
     double current = 0;
     if (raw.isNotEmpty) current = double.tryParse(raw) ?? 0;
     final next = current + (step * direction);
-    final rawValue =
-        ctl.allowDecimal ? next.toStringAsFixed(2) : next.round().toString();
-    final value =
-        ctl.allowDecimal
-            ? rawValue.replaceAll('.', _decimalChar(ctx))
-            : rawValue;
+    final rawValue = ctl.allowDecimal
+        ? next.toStringAsFixed(2)
+        : next.round().toString();
+    final value = ctl.allowDecimal
+        ? rawValue.replaceAll('.', _decimalChar(ctx))
+        : rawValue;
 
     _klog(
       '${direction > 0 ? 'plus' : 'minus'} step=$step from="$raw" → "$value"',
@@ -564,13 +555,15 @@ class _KeySpec {
   });
 }
 
+/// Action rail (right side). No "done" checkmark anymore.
+/// The "hide keyboard" button is rendered WIDE and occupies the full row.
 class _ActionRailCompact extends StatelessWidget {
   final double gridCellWidth;
   final double gridCellHeight;
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus, onDone;
+  final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -583,7 +576,6 @@ class _ActionRailCompact extends StatelessWidget {
     required this.onCopy,
     required this.onPlus,
     required this.onMinus,
-    required this.onDone,
   });
 
   @override
@@ -591,16 +583,23 @@ class _ActionRailCompact extends StatelessWidget {
     final availableH =
         totalGridRows * gridCellHeight + (totalGridRows - 1) * gap;
 
+    // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
       _RailAction(Icons.copy_rounded, 'Kopieren', onCopy),
       _RailAction(Icons.paste_rounded, 'Einfügen', onPaste),
       _RailAction(Icons.remove_rounded, 'Verringern', onMinus, repeat: true),
       _RailAction(Icons.add_rounded, 'Erhöhen', onPlus, repeat: true),
-      _RailAction(Icons.done_rounded, 'Fertig', onDone),
-      _RailAction(Icons.keyboard_hide_rounded, 'Tastatur ausblenden', onHide),
+      _RailAction(
+        Icons.keyboard_hide_rounded,
+        'Tastatur ausblenden',
+        onHide,
+        wide: true,
+      ),
     ];
 
-    final rowsNeeded = (actions.length / 2).ceil();
+    // Compute how many 1x slots we need (wide counts as 2).
+    final slotCount = actions.fold<int>(0, (sum, a) => sum + (a.wide ? 2 : 1));
+    final rowsNeeded = (slotCount / 2).ceil();
     final totalRowGaps = math.max(0, rowsNeeded - 1);
 
     final sideV = (availableH - totalRowGaps * gap) / rowsNeeded;
@@ -616,37 +615,66 @@ class _ActionRailCompact extends StatelessWidget {
       theme: theme,
     );
 
-    int i = 0;
-    final rows = <Widget>[];
-    while (i < actions.length) {
-      final left = actions[i];
-      final hasRight = (i + 1) < actions.length;
-      final right = hasRight ? actions[i + 1] : null;
+    Widget wideBtn(_RailAction a) => _RailBtnWide(
+      height: side,
+      icon: a.icon,
+      semanticsLabel: a.label,
+      onTap: a.onTap,
+      theme: theme,
+    );
 
-      if (hasRight) {
+    int slotsUsed = 0;
+    final rows = <Widget>[];
+    while (slotsUsed < slotCount) {
+      // pick next action(s)
+      final idx = actions.indexWhere((_) => true, 0);
+      // We'll consume from a moving pointer instead of recomputing; simpler:
+      // Build sequentially
+      int i = 0;
+      while (i < actions.length && actions[i]._consumed) i++;
+      if (i >= actions.length) break;
+      final a = actions[i].._consumed = true;
+      if (a.wide) {
         rows.add(
           SizedBox(
             height: side,
-            child: Row(
-              children: [
-                Expanded(child: squareBtn(left)),
-                SizedBox(width: gap),
-                Expanded(child: squareBtn(right!)),
-              ],
-            ),
+            child: Row(children: [Expanded(child: wideBtn(a))]),
           ),
         );
-        i += 2;
+        slotsUsed += 2;
       } else {
-        rows.add(
-          SizedBox(
-            height: side,
-            child: Row(children: [Expanded(child: squareBtn(left))]),
-          ),
-        );
-        i += 1;
+        // Try to pair with a second 1x action
+        int j = i + 1;
+        while (j < actions.length && actions[j]._consumed) j++;
+        _RailAction? b;
+        if (j < actions.length && !actions[j].wide) {
+          b = actions[j].._consumed = true;
+        }
+        if (b != null) {
+          rows.add(
+            SizedBox(
+              height: side,
+              child: Row(
+                children: [
+                  Expanded(child: squareBtn(a)),
+                  SizedBox(width: gap),
+                  Expanded(child: squareBtn(b)),
+                ],
+              ),
+            ),
+          );
+          slotsUsed += 2;
+        } else {
+          rows.add(
+            SizedBox(
+              height: side,
+              child: Row(children: [Expanded(child: squareBtn(a))]),
+            ),
+          );
+          slotsUsed += 1;
+        }
       }
-      if (i < actions.length) rows.add(SizedBox(height: gap));
+      if (slotsUsed < slotCount) rows.add(SizedBox(height: gap));
     }
 
     return Container(
@@ -670,7 +698,18 @@ class _RailAction {
   final String label;
   final VoidCallback onTap;
   final bool repeat;
-  _RailAction(this.icon, this.label, this.onTap, {this.repeat = false});
+  final bool wide;
+
+  // internal bookkeeping for layout
+  bool _consumed = false;
+
+  _RailAction(
+    this.icon,
+    this.label,
+    this.onTap, {
+    this.repeat = false,
+    this.wide = false,
+  });
 }
 
 class _RailBtnSquare extends StatefulWidget {
@@ -702,10 +741,9 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
     if (!widget.repeat) return;
     _timer?.cancel();
     _timer = Timer(const Duration(milliseconds: 260), () {
-      _timer = Timer.periodic(
-        const Duration(milliseconds: 70),
-        (_) => widget.onTap(),
-      );
+      _timer = Timer.periodic(const Duration(milliseconds: 70), (_) {
+        widget.onTap();
+      });
     });
   }
 
@@ -745,6 +783,44 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
   }
 }
 
+class _RailBtnWide extends StatelessWidget {
+  final double height;
+  final IconData icon;
+  final String semanticsLabel;
+  final VoidCallback onTap;
+  final NumericKeypadTheme theme;
+
+  const _RailBtnWide({
+    required this.height,
+    required this.icon,
+    required this.semanticsLabel,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final th = theme;
+    return Semantics(
+      label: semanticsLabel,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: th.keyBg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          // Icon only (consistent with compact rail); gets more visual weight
+          child: FittedBox(child: Icon(icon, color: th.railIcon)),
+        ),
+      ),
+    );
+  }
+}
+
 class _KeyButton extends StatefulWidget {
   final String? label;
   final IconData? icon;
@@ -777,10 +853,9 @@ class _KeyButtonState extends State<_KeyButton> {
     if (!widget.repeat) return;
     _timer?.cancel();
     _timer = Timer(const Duration(milliseconds: 260), () {
-      _timer = Timer.periodic(
-        const Duration(milliseconds: 70),
-        (_) => widget.onTap!.call(),
-      );
+      _timer = Timer.periodic(const Duration(milliseconds: 70), (_) {
+        widget.onTap!.call();
+      });
     });
   }
 
@@ -801,25 +876,20 @@ class _KeyButtonState extends State<_KeyButton> {
 
     final child = FittedBox(
       fit: BoxFit.scaleDown,
-      child:
-          widget.icon != null
-              ? Icon(widget.icon, color: th.keyFg)
-              : Text(
-                widget.label ?? '',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+      child: widget.icon != null
+          ? Icon(widget.icon, color: th.keyFg)
+          : Text(
+              widget.label ?? '',
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            ),
     );
 
     return Semantics(
-      label:
-          widget.semanticsLabel.isEmpty
-              ? (widget.label?.isNotEmpty == true
-                  ? 'Taste ${widget.label}'
-                  : 'Taste')
-              : widget.semanticsLabel,
+      label: widget.semanticsLabel.isEmpty
+          ? (widget.label?.isNotEmpty == true
+                ? 'Taste ${widget.label}'
+                : 'Taste')
+          : widget.semanticsLabel,
       button: true,
       child: GestureDetector(
         onTapDown: (_) => _start(),

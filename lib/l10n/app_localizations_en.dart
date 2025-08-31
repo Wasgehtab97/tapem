@@ -318,8 +318,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usernameInvalid => 'Invalid username.';
 
   @override
-  String get usernameHelper =>
-      '3–20 chars, letters, numbers, spaces.';
+  String get usernameHelper => '3–20 chars, letters, numbers, spaces.';
 
   @override
   String usernameLowerPreview(Object lower) {
