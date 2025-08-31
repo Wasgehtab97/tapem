@@ -18,25 +18,36 @@ class FirestoreSessionSource {
         .add(const Duration(days: 1))
         .subtract(const Duration(milliseconds: 1));
 
-    debugPrint(
-      '📥 FirestoreSessionSource: query logs user=$userId start=$start end=$end',
-    );
+    debugPrint('FirestoreSessionSource: read path=collectionGroup/logs owner=' +
+        userId +
+        ' start=' +
+        start.toString() +
+        ' end=' +
+        end.toString());
 
-    final snap =
-        await _firestore
-            .collectionGroup('logs')
-            .where('userId', isEqualTo: userId)
-            .where(
-              'timestamp',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-            )
-            .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
-            .get();
+    try {
+      final snap = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .where(
+            'timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+          )
+          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
+          .get();
 
-    debugPrint(
-      '📥 FirestoreSessionSource: fetched ${snap.docs.length} log docs',
-    );
+      debugPrint('FirestoreSessionSource: success path=collectionGroup/logs owner=' +
+          userId +
+          ' docs=' +
+          snap.docs.length.toString());
 
-    return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
+      return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
+    } on FirebaseException catch (e) {
+      debugPrint('FirestoreSessionSource: failure path=collectionGroup/logs owner=' +
+          userId +
+          ' code=' +
+          e.code);
+      rethrow;
+    }
   }
 }
