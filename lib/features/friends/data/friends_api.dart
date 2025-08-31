@@ -162,7 +162,7 @@ class FriendsApi {
     batch.delete(otherMeta);
 
     final req1 =
-        _firestore.collection('friendRequests').doc('${me}_${otherUserId}');
+        _firestore.collection('friendRequests').doc('${me}_$otherUserId');
     final req2 =
         _firestore.collection('friendRequests').doc('${otherUserId}_$me');
     for (final doc in [req1, req2]) {

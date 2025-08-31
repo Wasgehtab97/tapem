@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
 class FakeXpRepository implements XpRepository {
   final dayCtrl = StreamController<int>.broadcast();
@@ -10,19 +11,18 @@ class FakeXpRepository implements XpRepository {
   final deviceCtrls = <String, StreamController<int>>{};
   int addCalls = 0;
 
-  @override
-  Future<void> addSessionXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-    required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
-  }) async {
-    addCalls++;
-  }
+    @override
+    Future<DeviceXpResult> addSessionXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+      required bool isMulti,
+    }) async {
+      addCalls++;
+      return DeviceXpResult.okAdded;
+    }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) =>
@@ -72,16 +72,14 @@ void main() {
     test('addSessionXp delegates to repository', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
-      await provider.addSessionXp(
-        gymId: 'g1',
-        userId: 'u1',
-        deviceId: 'd1',
-        sessionId: 's1',
-        showInLeaderboard: false,
-        isMulti: false,
-        primaryMuscleGroupIds: const [],
-        tz: 'UTC',
-      );
+        await provider.addSessionXp(
+          gymId: 'g1',
+          userId: 'u1',
+          deviceId: 'd1',
+          sessionId: 's1',
+          showInLeaderboard: false,
+          isMulti: false,
+        );
       expect(repo.addCalls, 1);
       repo.dispose();
     });
