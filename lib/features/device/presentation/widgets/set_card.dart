@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -108,14 +109,27 @@ class SetCardState extends State<SetCard> {
 
   // 🔒 Silent-update Mechanik
   bool _muteCtrls = false;
-  void _setTextSilently(TextEditingController c, String text) {
-    if (c.text == text) return;
-    _muteCtrls = true;
-    c.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
+  void _setTextSilently(
+    TextEditingController c,
+    String text,
+    String field,
+  ) {
+    UiMutationGuard.run(
+      screen: 'DeviceScreen',
+      widget: 'SetCard',
+      field: field,
+      oldValue: c.text,
+      newValue: text,
+      reason: 'didUpdateWidget',
+      mutate: () {
+        _muteCtrls = true;
+        c.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        _muteCtrls = false;
+      },
     );
-    _muteCtrls = false;
   }
 
   @override
@@ -190,23 +204,23 @@ class SetCardState extends State<SetCard> {
     final dr = widget.set['dropReps'] as String? ?? '';
     if (oldWidget.set['weight'] != w) {
       _slog(widget.index, 'didUpdateWidget sync weight "$w"');
-      _setTextSilently(_weightCtrl, w);
+      _setTextSilently(_weightCtrl, w, 'weight');
     }
     if (oldWidget.set['reps'] != r) {
       _slog(widget.index, 'didUpdateWidget sync reps "$r"');
-      _setTextSilently(_repsCtrl, r);
+      _setTextSilently(_repsCtrl, r, 'reps');
     }
     if (oldWidget.set['rir'] != rir) {
       _slog(widget.index, 'didUpdateWidget sync rir "$rir"');
-      _setTextSilently(_rirCtrl, rir);
+      _setTextSilently(_rirCtrl, rir, 'rir');
     }
     if (oldWidget.set['dropWeight'] != dw) {
       _slog(widget.index, 'didUpdateWidget sync dropWeight "$dw"');
-      _setTextSilently(_dropWeightCtrl, dw);
+      _setTextSilently(_dropWeightCtrl, dw, 'dropWeight');
     }
     if (oldWidget.set['dropReps'] != dr) {
       _slog(widget.index, 'didUpdateWidget sync dropReps "$dr"');
-      _setTextSilently(_dropRepsCtrl, dr);
+      _setTextSilently(_dropRepsCtrl, dr, 'dropReps');
     }
   }
 
