@@ -1,29 +1,41 @@
 import '../../domain/xp_repository.dart';
 import '../../domain/device_xp_result.dart';
 import '../sources/firestore_xp_source.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 class XpRepositoryImpl implements XpRepository {
   final FirestoreXpSource _source;
   XpRepositoryImpl(this._source);
 
   @override
-  Future<DeviceXpResult> addSessionXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-    required bool isMulti,
-  }) {
-    return _source.addSessionXp(
-      gymId: gymId,
-      userId: userId,
-      deviceId: deviceId,
-      sessionId: sessionId,
-      showInLeaderboard: showInLeaderboard,
-      isMulti: isMulti,
-    );
-  }
+    Future<DeviceXpResult> addSessionXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+      required bool isMulti,
+    }) {
+      return _source
+          .addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: sessionId,
+        showInLeaderboard: showInLeaderboard,
+        isMulti: isMulti,
+      )
+          .then((result) {
+        elogDeviceXp('REPO_RETURN', {
+          'result': result.name,
+          'uid': userId,
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+        });
+        return result;
+      });
+    }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) {

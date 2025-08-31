@@ -14,82 +14,105 @@ class FirestoreRankSource {
   FirestoreRankSource({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
-    Future<DeviceXpResult> addXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-    }) async {
-      final dayKey = logicDayKey(DateTime.now());
-      final lbUser = _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(deviceId)
-          .collection('leaderboard')
-          .doc(userId);
-      final lbSess = lbUser.collection('sessions').doc(sessionId);
-      final lbDay = lbUser.collection('days').doc(dayKey);
+      Future<DeviceXpResult> addXp({
+        required String gymId,
+        required String userId,
+        required String deviceId,
+        required String sessionId,
+        required bool showInLeaderboard,
+      }) async {
+        assert(LevelService.xpPerSession == 50);
+        assert(deviceId.isNotEmpty);
+        final dayKey = logicDayKey(DateTime.now().toUtc());
+        final lbUser = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .doc(deviceId)
+            .collection('leaderboard')
+            .doc(userId);
+        final lbSess = lbUser.collection('sessions').doc(sessionId);
+        final lbDay = lbUser.collection('days').doc(dayKey);
 
-      return _firestore.runTransaction<DeviceXpResult>((tx) async {
-        final sessSnap = await tx.get(lbSess);
-        if (sessSnap.exists) {
-          elogDeviceXp('IDEMPOTENT_HIT', {
-            'uid': userId,
-            'gymId': gymId,
-            'deviceId': deviceId,
-            'sessionId': sessionId,
+        try {
+          final result = await _firestore.runTransaction<DeviceXpResult>((tx) async {
+            final userSnap = await tx.get(lbUser);
+            final daySnap = await tx.get(lbDay);
+            final sessSnap = await tx.get(lbSess);
+            elogRank('TXN_READ', {
+              'existsUser': userSnap.exists,
+              'existsDay': daySnap.exists,
+              'existsSess': sessSnap.exists,
+              'dayKey': dayKey,
+              'userPath': lbUser.path,
+              'dayPath': lbDay.path,
+              'sessPath': lbSess.path,
+            });
+
+            if (sessSnap.exists) {
+              elogRank('DECISION_IDEMPOTENT', {
+                'sessionId': sessionId,
+              });
+              return DeviceXpResult.idempotentHit;
+            }
+
+            if (daySnap.exists) {
+              elogRank('DECISION_ALREADY_TODAY', {
+                'sessionId': sessionId,
+              });
+              return DeviceXpResult.alreadyToday;
+            }
+
+            const xpDelta = LevelService.xpPerSession;
+            final xpBefore = (userSnap.data()?['xp'] as int?) ?? 0;
+            var info = LevelInfo.fromMap(userSnap.data());
+            info = LevelService().addXp(info, xpDelta);
+            final xpAfter = info.xp;
+            elogRank('DECISION_ADD', {
+              'xpDelta': xpDelta,
+              'xpBefore': xpBefore,
+              'xpAfter': xpAfter,
+            });
+
+            if (!userSnap.exists) {
+              tx.set(lbUser, {
+                ...info.toMap(),
+                'showInLeaderboard': showInLeaderboard,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            } else {
+              tx.update(lbUser, {
+                'xp': info.xp,
+                'level': info.level,
+                'updatedAt': FieldValue.serverTimestamp(),
+                if (!(userSnap.data()?.containsKey('showInLeaderboard') ?? false))
+                  'showInLeaderboard': showInLeaderboard,
+              });
+            }
+
+            tx.set(lbDay, {'creditedAt': FieldValue.serverTimestamp()});
+            tx.set(lbSess, {
+              'sessionId': sessionId,
+              'creditedAt': FieldValue.serverTimestamp(),
+            });
+
+            return DeviceXpResult.okAdded;
+          });
+
+          elogRank('TXN_COMMIT_OK', {
+            'userPath': lbUser.path,
+            'dayPath': lbDay.path,
+            'sessPath': lbSess.path,
+          });
+          return result;
+        } on FirebaseException catch (e, st) {
+          elogError('TXN_FIREBASE_ERROR', e, st, {
+            'userPath': lbUser.path,
             'dayKey': dayKey,
           });
-          return DeviceXpResult.idempotentHit;
+          return DeviceXpResult.error;
         }
-
-        final daySnap = await tx.get(lbDay);
-        if (daySnap.exists) {
-          elogDeviceXp('ALREADY_TODAY', {
-            'uid': userId,
-            'gymId': gymId,
-            'deviceId': deviceId,
-            'sessionId': sessionId,
-            'dayKey': dayKey,
-          });
-          return DeviceXpResult.alreadyToday;
-        }
-
-        final lbSnap = await tx.get(lbUser);
-        var info = LevelInfo.fromMap(lbSnap.data());
-        info = LevelService().addXp(info, LevelService.xpPerSession);
-
-        if (!lbSnap.exists) {
-          tx.set(lbUser, {
-            ...info.toMap(),
-            'showInLeaderboard': showInLeaderboard,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        } else {
-          tx.update(lbUser, {
-            'xp': info.xp,
-            'level': info.level,
-            'updatedAt': FieldValue.serverTimestamp(),
-            if (!(lbSnap.data()?.containsKey('showInLeaderboard') ?? false))
-              'showInLeaderboard': showInLeaderboard,
-          });
-        }
-
-        tx.set(lbDay, {'date': dayKey});
-        tx.set(lbSess, {'deviceId': deviceId, 'date': dayKey});
-
-        elogDeviceXp('OK_ADDED', {
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-          'dayKey': dayKey,
-        });
-        return DeviceXpResult.okAdded;
-      });
-    }
+      }
 
   Stream<List<Map<String, dynamic>>> watchLeaderboard(
     String gymId,

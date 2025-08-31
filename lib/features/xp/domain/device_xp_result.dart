@@ -1,1 +1,7 @@
-enum DeviceXpResult { okAdded, alreadyToday, idempotentHit }
+enum DeviceXpResult {
+  okAdded,
+  alreadyToday,
+  idempotentHit,
+  skipNoDevice,
+  error,
+}

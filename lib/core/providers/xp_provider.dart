@@ -39,32 +39,64 @@ class XpProvider extends ChangeNotifier {
       required bool showInLeaderboard,
       required bool isMulti,
     }) async {
-      debugPrint(
-        '🆕 addSessionXp gymId=$gymId userId=$userId deviceId=$deviceId sessionId=$sessionId',
-      );
-      final result = await _repo.addSessionXp(
-        gymId: gymId,
-        userId: userId,
-        deviceId: deviceId,
-        sessionId: sessionId,
-        showInLeaderboard: showInLeaderboard,
-        isMulti: isMulti,
-      );
-      if (result == DeviceXpResult.okAdded) {
-        _deviceXp[deviceId] =
-            (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
-        notifyListeners();
+      assert(LevelService.xpPerSession == 50);
+      if (deviceId.isEmpty) {
+        elogDeviceXp('SKIP_NO_DEVICE', {
+          'uid': userId,
+          'gymId': gymId,
+          'sessionId': sessionId,
+          'deviceId': deviceId,
+          'isMulti': isMulti,
+        });
+        return DeviceXpResult.skipNoDevice;
       }
-      elogDeviceXp(result.name.toUpperCase(), {
+      if (!showInLeaderboard) {
+        elogDeviceXp('LEADERBOARD_FLAG_INFO', {
+          'uid': userId,
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+        });
+      }
+      final dayKey = logicDayKey(DateTime.now().toUtc());
+      elogDeviceXp('XP_ADD_REQUEST', {
         'uid': userId,
         'gymId': gymId,
         'deviceId': deviceId,
         'sessionId': sessionId,
         'isMulti': isMulti,
-        'dayKey': logicDayKey(DateTime.now()),
-        'source': 'xp_provider',
+        'dayKey': dayKey,
+        'showInLeaderboard': showInLeaderboard,
       });
-      return result;
+      try {
+        final result = await _repo.addSessionXp(
+          gymId: gymId,
+          userId: userId,
+          deviceId: deviceId,
+          sessionId: sessionId,
+          showInLeaderboard: showInLeaderboard,
+          isMulti: isMulti,
+        );
+        elogDeviceXp('XP_ADD_RESPONSE', {
+          'result': result.name,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+        });
+        if (result == DeviceXpResult.okAdded) {
+          _deviceXp[deviceId] =
+              (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
+          notifyListeners();
+        }
+        return result;
+      } catch (e, st) {
+        elogError('XP_ADD_UNEXPECTED', e, st, {
+          'uid': userId,
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'sessionId': sessionId,
+        });
+        return DeviceXpResult.error;
+      }
     }
 
   void watchDayXp(String userId, DateTime date) {
