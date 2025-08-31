@@ -118,7 +118,7 @@ void main() {
       home: SessionExerciseCard(
         title: 'Bench',
         subtitle: 'Chest',
-        sets: const [SessionSet(weight: 10, reps: 5)],
+        sets: [SessionSet(weight: 10, reps: 5)],
       ),
     ));
 
