@@ -55,7 +55,7 @@ class ThemeLoader extends ChangeNotifier {
       return;
     }
 
-    if (gymId == 'Club Aktiv' || gymId == 'BronzeDaniel') {
+    if (gymId == 'Club Aktiv' || gymId == 'FitnessFirst MyZeil') {
       if (branding == null) {
         _applyClubAktivDefaults();
         notifyListeners();
@@ -184,13 +184,13 @@ class ThemeLoader extends ChangeNotifier {
     final ext = useMagenta
         ? AppBrandTheme.magenta()
         : useClubAktiv
-            ? AppBrandTheme.clubAktiv()
-            : AppBrandTheme.defaultTheme().copyWith(
-                gradient: AppGradients.brandGradient,
-                outlineGradient: AppGradients.brandGradient,
-                focusRing: focus,
-                onBrand: onColors.onCta,
-              );
+        ? AppBrandTheme.clubAktiv()
+        : AppBrandTheme.defaultTheme().copyWith(
+            gradient: AppGradients.brandGradient,
+            outlineGradient: AppGradients.brandGradient,
+            focusRing: focus,
+            onBrand: onColors.onCta,
+          );
     _currentTheme = _currentTheme.copyWith(extensions: [ext, onColors]);
   }
 }
