@@ -14,6 +14,10 @@ void elogRank(String event, Map<String, Object?> data) {
   _log('RANK', event, data);
 }
 
+void elogUi(String event, Map<String, Object?> data) {
+  _log('UI', event, data);
+}
+
 void elogError(
   String event,
   Object error,

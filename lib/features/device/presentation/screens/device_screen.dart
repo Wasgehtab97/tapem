@@ -28,9 +28,10 @@ import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/time/logic_day.dart';
 
-void _dlog(String m) => debugPrint('📱 [DeviceScreen] $m');
-// void _elog(String m) => debugPrint('❗ [DeviceScreen] $m');
+void _dlog(String m) {}
 
 class DeviceScreen extends StatefulWidget {
   final String gymId;
@@ -301,6 +302,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
                       : () async {
+                          final auth = context.read<AuthProvider>();
+                          final base = {
+                            'uid': auth.userId!,
+                            'gymId': widget.gymId,
+                            'deviceId': widget.deviceId,
+                            'isMulti': prov.device?.isMulti ?? false,
+                            'screen': 'DeviceScreen',
+                            'dayKey': logicDayKey(DateTime.now().toUtc()),
+                          };
+                          elogUi('CLICK_SAVE', base);
                           if (!_formKey.currentState!.validate()) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -317,7 +328,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             );
                             return;
                           }
-                          final auth = context.read<AuthProvider>();
+                          elogUi('SAVE_STARTED', base);
                           final ok = await prov.saveWorkoutSession(
                             context: context,
                             gymId: widget.gymId,
@@ -325,13 +336,29 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             showInLeaderboard:
                                 auth.showInLeaderboard ?? true,
                           );
+                          final sessionId = prov.lastSessionId;
                           if (!ok) {
+                            elogUi('SAVE_PERSIST_ERROR', {
+                              ...base,
+                              if (sessionId != null) 'sessionId': sessionId,
+                              'reason': prov.error ?? 'unknown',
+                            });
                             final msg =
                                 prov.error ?? 'Speichern fehlgeschlagen.';
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(SnackBar(content: Text(msg)));
+                            elogUi('SAVE_DONE', {
+                              ...base,
+                              if (sessionId != null) 'sessionId': sessionId,
+                              'result': 'error',
+                            });
                             return;
                           }
+                          elogUi('SAVE_DONE', {
+                            ...base,
+                            if (sessionId != null) 'sessionId': sessionId,
+                            'result': 'ok',
+                          });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
