@@ -38,7 +38,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('typing a valid new username enables save', (tester) async {
+  testWidgets('typing a valid new username enables save and completes flow',
+      (tester) async {
     final auth = MockAuthProvider();
     when(() => auth.userName).thenReturn('current');
     when(() => auth.checkUsernameAvailable(any())).thenAnswer((_) async => true);
@@ -51,8 +52,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     final saveFinder = find.widgetWithText(ElevatedButton, 'Speichern');
-    final button = tester.widget<ElevatedButton>(saveFinder);
-    expect(button.onPressed, isNotNull);
+    await tester.tap(saveFinder);
+    await tester.pumpAndSettle();
+
+    expect(saveFinder, findsNothing);
+    verify(() => auth.setUsername('new name')).called(1);
   });
 
   testWidgets('same username keeps save disabled', (tester) async {
