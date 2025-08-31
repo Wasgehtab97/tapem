@@ -564,7 +564,9 @@ class _PlannedTableState extends State<_PlannedTable> {
       });
     }
 
-    _syncControllers(prov.sets);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncControllers(prov.sets);
+    });
 
     final weightHint = widget.entry.weight?.toString();
     final repsHint = widget.entry.reps?.toString();
