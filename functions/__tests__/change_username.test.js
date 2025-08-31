@@ -29,6 +29,16 @@ describe('changeUsername', () => {
     await expect(wrapped({ newUsername: 'Bob' }, { auth: { uid: 'user2' } })).rejects.toThrow();
   });
 
+  it('allows spaces', async () => {
+    const uid = 'userSpace';
+    await admin.firestore().collection('users').doc(uid).set({});
+    const wrapped = fft.wrap(myFuncs.changeUsername);
+    const res = await wrapped({ newUsername: 'Alice Smith' }, { auth: { uid } });
+    expect(res.username).toBe('Alice Smith');
+    const userDoc = await admin.firestore().collection('users').doc(uid).get();
+    expect(userDoc.data().usernameLower).toBe('alice smith');
+  });
+
   it('normalizes case', async () => {
     const uid = 'user3';
     await admin.firestore().collection('users').doc(uid).set({});

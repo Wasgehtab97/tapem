@@ -319,7 +319,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usernameHelper =>
-      '3–20 chars, letters, numbers, spaces, underscores. Can't start or end with underscore, no double underscores.';
+      '3–20 chars, letters, numbers, spaces.';
 
   @override
   String usernameLowerPreview(Object lower) {
