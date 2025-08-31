@@ -36,22 +36,25 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceRef.path +
           ' owner=' +
           first.userId);
-      late DocumentSnapshot<Map<String, dynamic>> deviceSnap;
+
+      var deviceName = first.deviceId;
+      var deviceDescription = '';
+      var isMulti = false;
       try {
-        deviceSnap = await deviceRef.get();
+        final deviceSnap = await deviceRef.get();
         debugPrint('SessionRepositoryImpl: success path=' + deviceRef.path);
+        final data = deviceSnap.data();
+        if (data != null) {
+          deviceName = (data['name'] as String?) ?? first.deviceId;
+          deviceDescription = (data['description'] as String?) ?? '';
+          isMulti = (data['isMulti'] as bool?) ?? false;
+        }
       } on FirebaseException catch (e) {
         debugPrint('SessionRepositoryImpl: failure path=' +
             deviceRef.path +
             ' code=' +
             e.code);
-        rethrow;
       }
-      final data = deviceSnap.data()!;
-
-      var deviceName = (data['name'] as String?) ?? first.deviceId;
-      final deviceDescription = (data['description'] as String?) ?? '';
-      final isMulti = (data['isMulti'] as bool?) ?? false;
       debugPrint('SessionRepositoryImpl: deviceName=' +
           deviceName +
           ' isMulti=' +
