@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 
@@ -12,7 +13,7 @@ class FirestoreAuthSource {
   FirestoreAuthSource({FirebaseAuth? auth, FirebaseFirestore? firestore, FirebaseFunctions? functions})
     : _auth = auth ?? FirebaseAuth.instance,
       _firestore = firestore ?? FirebaseFirestore.instance,
-      _functions = functions ?? FirebaseFunctions.instance;
+      _functions = functions ?? FunctionsProvider.instance;
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -87,7 +88,55 @@ class FirestoreAuthSource {
   }
 
   Future<void> setUsername(String userId, String username) async {
-    await _functions.httpsCallable('changeUsername').call({'newUsername': username});
+    try {
+      await _functions
+          .httpsCallable('changeUsername')
+          .call({'newUsername': username});
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'not-found' || e.code == 'unavailable') {
+        await _fallbackSetUsername(userId, username);
+      } else if (e.code == 'already-exists' || e.message == 'username_taken') {
+        throw Exception('Username already taken');
+      } else if (e.code == 'invalid-argument') {
+        throw Exception('Invalid username');
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> _fallbackSetUsername(String userId, String username) async {
+    final target = username.trim();
+    final regex = RegExp(r'^[A-Za-z0-9 ]{3,20}$');
+    if (!regex.hasMatch(target)) {
+      throw Exception('Invalid username');
+    }
+    final lower = target.toLowerCase();
+    final userRef = _firestore.collection('users').doc(userId);
+    await _firestore.runTransaction((tx) async {
+      final userSnap = await tx.get(userRef);
+      if (!userSnap.exists) {
+        throw Exception('User not found');
+      }
+      final oldLower = userSnap.data()?['usernameLower'];
+      if (oldLower == lower) return;
+      final mappingRef = _firestore.collection('usernames').doc(lower);
+      final mappingSnap = await tx.get(mappingRef);
+      if (mappingSnap.exists && mappingSnap.data()?['uid'] != userId) {
+        throw Exception('Username already taken');
+      }
+      if (oldLower != null) {
+        tx.delete(_firestore.collection('usernames').doc(oldLower));
+      }
+      tx.set(mappingRef, {
+        'uid': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      tx.update(userRef, {
+        'username': target,
+        'usernameLower': lower,
+      });
+    });
   }
 
   Future<void> setShowInLeaderboard(String userId, bool value) async {

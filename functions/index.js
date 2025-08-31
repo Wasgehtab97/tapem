@@ -619,7 +619,9 @@ exports.setFriendRequestsSeen = functions.https.onCall(async (data, context) => 
   return { status: 'ok' };
 });
 
-exports.changeUsername = functions.https.onCall(async (data, context) => {
+exports.changeUsername = functions
+  .region('europe-west3')
+  .https.onCall(async (data, context) => {
   const uid = context.auth && context.auth.uid;
   if (!uid) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
