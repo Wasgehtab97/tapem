@@ -471,7 +471,7 @@
   "@usernameTaken": {"description": "Fehler wenn Nutzername existiert"},
   "usernameInvalid": "Ungültiger Nutzername.",
   "@usernameInvalid": {"description": "Fehler bei ungültigem Nutzernamen"},
-  "usernameHelper": "3–20 Zeichen, Buchstaben, Zahlen, Unterstrich. Nicht mit _ starten/enden, keine doppelten Unterstriche.",
+  "usernameHelper": "3–20 Zeichen, Buchstaben, Zahlen, Leerzeichen, Unterstrich. Nicht mit _ starten/enden, keine doppelten Unterstriche.",
   "@usernameHelper": {"description": "Hinweistext für Nutzernamen-Regeln"},
   "usernameLowerPreview": "Klein: {lower}",
   "@usernameLowerPreview": {"description": "Vorschau des kleingeschriebenen Nutzernamens", "placeholders": {"lower": {}}},

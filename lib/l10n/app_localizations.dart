@@ -692,7 +692,7 @@ abstract class AppLocalizations {
   /// Helper text for username rules
   ///
   /// In en, this message translates to:
-  /// **'3–20 chars, letters, numbers, underscores. Can't start or end with underscore, no double underscores.'**
+  /// **'3–20 chars, letters, numbers, spaces, underscores. Can't start or end with underscore, no double underscores.'**
   String get usernameHelper;
 
   /// Preview of lowercased username
