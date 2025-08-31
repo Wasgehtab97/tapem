@@ -10,6 +10,7 @@ import 'package:tapem/features/device/domain/repositories/device_repository.dart
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/challenges/domain/repositories/challenge_repository.dart';
 import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
@@ -61,21 +62,20 @@ class FakeMembershipService implements MembershipService {
   Future<void> ensureMembership(String gymId, String uid) async {}
 }
 
-class FakeXpRepository implements XpRepository {
-  int calls = 0;
-  @override
-  Future<void> addSessionXp({
-    required String gymId,
-    required String userId,
-    required String deviceId,
-    required String sessionId,
-    required bool showInLeaderboard,
-    required bool isMulti,
-    required List<String> primaryMuscleGroupIds,
-    required String tz,
-  }) async {
-    calls++;
-  }
+  class FakeXpRepository implements XpRepository {
+    int calls = 0;
+    @override
+    Future<DeviceXpResult> addSessionXp({
+      required String gymId,
+      required String userId,
+      required String deviceId,
+      required String sessionId,
+      required bool showInLeaderboard,
+      required bool isMulti,
+    }) async {
+      calls++;
+      return DeviceXpResult.okAdded;
+    }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) => const Stream.empty();

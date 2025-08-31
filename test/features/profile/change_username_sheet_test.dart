@@ -13,7 +13,7 @@ void main() {
     registerFallbackValue('');
   });
 
-  Future<void> _openSheet(WidgetTester tester, AuthProvider auth) async {
+    Future<void> openSheet(WidgetTester tester, AuthProvider auth) async {
     await tester.pumpWidget(
       ChangeNotifierProvider<AuthProvider>.value(
         value: auth,
@@ -46,7 +46,7 @@ void main() {
     when(() => auth.setUsername(any())).thenAnswer((_) async => true);
     when(() => auth.error).thenReturn(null);
 
-    await _openSheet(tester, auth);
+      await openSheet(tester, auth);
 
     await tester.enterText(find.byType(TextField), 'new name');
     await tester.pump(const Duration(milliseconds: 600));
@@ -66,7 +66,7 @@ void main() {
     when(() => auth.setUsername(any())).thenAnswer((_) async => true);
     when(() => auth.error).thenReturn(null);
 
-    await _openSheet(tester, auth);
+      await openSheet(tester, auth);
 
     await tester.enterText(find.byType(TextField), 'Current');
     await tester.pump(const Duration(milliseconds: 600));

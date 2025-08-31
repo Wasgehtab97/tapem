@@ -625,14 +625,15 @@ class _ActionRailCompact extends StatelessWidget {
 
     int slotsUsed = 0;
     final rows = <Widget>[];
-    while (slotsUsed < slotCount) {
-      // pick next action(s)
-      final idx = actions.indexWhere((_) => true, 0);
-      // We'll consume from a moving pointer instead of recomputing; simpler:
-      // Build sequentially
-      int i = 0;
-      while (i < actions.length && actions[i]._consumed) i++;
-      if (i >= actions.length) break;
+      while (slotsUsed < slotCount) {
+        // pick next action(s)
+        // We'll consume from a moving pointer instead of recomputing; simpler:
+        // Build sequentially
+        int i = 0;
+        while (i < actions.length && actions[i]._consumed) {
+          i++;
+        }
+        if (i >= actions.length) break;
       final a = actions[i].._consumed = true;
       if (a.wide) {
         rows.add(
@@ -644,8 +645,10 @@ class _ActionRailCompact extends StatelessWidget {
         slotsUsed += 2;
       } else {
         // Try to pair with a second 1x action
-        int j = i + 1;
-        while (j < actions.length && actions[j]._consumed) j++;
+          int j = i + 1;
+          while (j < actions.length && actions[j]._consumed) {
+            j++;
+          }
         _RailAction? b;
         if (j < actions.length && !actions[j].wide) {
           b = actions[j].._consumed = true;
