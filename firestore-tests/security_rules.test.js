@@ -51,6 +51,7 @@ describe('Security Rules v1', function () {
       await db.collection('users').doc('user1').set({ calendarVisibility: 'friends', gymCodes: ['G1'] });
       await db.collection('users').doc('user2').set({ calendarVisibility: 'friends', gymCodes: ['G1'] });
       await db.collection('users').doc('user3').set({ calendarVisibility: 'friends', gymCodes: ['G2'] });
+      await db.collection('users').doc('user4').set({ calendarVisibility: 'friends', gymCodes: ['G1'] });
       await db
         .collection('users')
         .doc('user2')
@@ -60,6 +61,20 @@ describe('Security Rules v1', function () {
       await db.collection('users').doc('user1').collection('friends').doc('user2').set({});
       await db.collection('users').doc('user2').collection('friends').doc('user1').set({});
       await db.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').set({ month: '2024-01' });
+      await db
+        .collection('gyms')
+        .doc('G1')
+        .collection('users')
+        .doc('user4')
+        .set({ role: 'member' });
+      await db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('exercises')
+        .doc('ex1')
+        .set({ userId: 'user1' });
     });
   });
 
@@ -74,6 +89,8 @@ describe('Security Rules v1', function () {
   const p1 = () => testEnv.authenticatedContext('user1', {});
   const p2 = () => testEnv.authenticatedContext('user2', {});
   const p3 = () => testEnv.authenticatedContext('user3', {});
+  const friend = () => testEnv.authenticatedContext('user2', { gymId: 'G1', role: 'member' });
+  const stranger = () => testEnv.authenticatedContext('user4', { gymId: 'G1', role: 'member' });
 
   describe('Firestore rules', () => {
     it('allows cross-gym device read when authenticated', async () => {
@@ -92,6 +109,30 @@ describe('Security Rules v1', function () {
       const db = userA().firestore();
       const ref = db.collection('gyms').doc('G1').collection('devices').doc('D1');
       await assertSucceeds(ref.get());
+    });
+
+    it('allows friend to read custom exercise', async () => {
+      const db = friend().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('exercises')
+        .doc('ex1');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks non-friend from reading custom exercise', async () => {
+      const db = stranger().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('exercises')
+        .doc('ex1');
+      await assertFails(ref.get());
     });
 
     it('allows user to create own membership', async () => {
