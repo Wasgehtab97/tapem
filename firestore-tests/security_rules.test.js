@@ -102,6 +102,22 @@ describe('Security Rules v1', function () {
       await db
         .collection('gyms')
         .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('sFriend')
+        .set({ userId: 'user1' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('sNF')
+        .set({ userId: 'user3' });
+      await db
+        .collection('gyms')
+        .doc('G2')
         .collection('users')
         .doc('adminB')
         .set({ role: 'admin' });
@@ -188,6 +204,54 @@ describe('Security Rules v1', function () {
         .collection('exercises')
         .doc('exPublic');
       await assertSucceeds(ref.get());
+    });
+
+    it('allows cross-gym friend to read session snapshot', async () => {
+      const db = friend().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('sFriend');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks non-friend cross-gym from reading session snapshot', async () => {
+      const db = stranger().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('sNF');
+      await assertFails(ref.get());
+    });
+
+    it('allows admin to read session snapshot', async () => {
+      const db = adminB().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('sFriend');
+      await assertSucceeds(ref.get());
+    });
+
+    it('denies friend from writing session snapshot', async () => {
+      const db = friend().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('devices')
+        .doc('D2')
+        .collection('sessions')
+        .doc('newSession');
+      await assertFails(ref.set({ userId: 'user2' }));
     });
 
     it('allows user to create own membership', async () => {

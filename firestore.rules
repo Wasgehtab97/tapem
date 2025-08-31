@@ -63,13 +63,6 @@ service cloud.firestore {
       return !("userId" in resource.data) || resource.data.userId == null || resource.data.userId == "";
     }
 
-    // Can view exercise when in gym or friend of owner and relation allows
-    function canViewExercise(gymId) {
-      let friend = isFriend(resource.data.userId, request.auth.uid);
-      return (inGym(gymId) || friend) &&
-             (isOwner(resource.data.userId) || friend || isPublicExercise());
-    }
-
     // ─────────────────────────
     // Global logs read (owner-only)
     // ─────────────────────────
@@ -209,7 +202,8 @@ service cloud.firestore {
         // Session snapshots per user (read owner/admin; write owner-only)
         match /sessions/{sessionId} {
           allow create: if requestOwnerInGym(gymId);
-          allow read: if resourceOwnerOrAdmin(gymId);
+          allow read: if resourceOwnerOrAdmin(gymId) ||
+                       isFriend(resource.data.userId, request.auth.uid);
           allow update, delete: if false;
         }
 
@@ -226,7 +220,12 @@ service cloud.firestore {
 
         // Custom exercises (public, owner or friends; admin override)
         match /exercises/{exerciseId} {
-          allow read: if isAdmin(gymId) || canViewExercise(gymId);
+          let canSeeByRelation =
+            (request.auth.uid == resource.data.userId) ||
+            isFriend(resource.data.userId, request.auth.uid) ||
+            isPublicExercise();
+
+          allow read: if isAdmin(gymId) || canSeeByRelation;
           allow write: if inGym(gymId) && (
                           request.auth.uid == request.resource.data.userId ||
                           request.auth.uid == resource.data.userId
