@@ -40,7 +40,10 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   void didUpdateWidget(covariant SearchAndFilters oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.query != widget.query && _controller.text != widget.query) {
-      _controller.text = widget.query;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _controller.text = widget.query;
+      });
     }
   }
 
