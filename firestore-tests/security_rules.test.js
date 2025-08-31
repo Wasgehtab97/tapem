@@ -217,9 +217,27 @@ describe('Security Rules v1', function () {
       await assertSucceeds(
         db1.collection('usernames').doc('alice').set({ uid: 'user1', createdAt: new Date() })
       );
+      await assertSucceeds(
+        db1
+          .collection('usernames')
+          .doc('alice')
+          .set({ createdAt: new Date(Date.now() + 1000) }, { merge: true })
+      );
+      await assertFails(
+        db1
+          .collection('usernames')
+          .doc('alice')
+          .set({ uid: 'user2' }, { merge: true })
+      );
       const db2 = p2().firestore();
       await assertFails(
         db2.collection('usernames').doc('alice').set({ uid: 'user2', createdAt: new Date() })
+      );
+      await assertFails(
+        db2
+          .collection('usernames')
+          .doc('alice')
+          .set({ createdAt: new Date() }, { merge: true })
       );
       await testEnv.withSecurityRulesDisabled(async (ctx) => {
         await ctx.firestore().collection('usernames').doc('bob').set({ uid: 'user2' });

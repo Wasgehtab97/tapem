@@ -114,7 +114,10 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.uid &&
         !exists(/databases/$(database)/documents/usernames/$(name));
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow update: if false;
+      allow update: if request.auth != null &&
+        request.auth.uid == resource.data.uid &&
+        (!('uid' in request.resource.data) ||
+          request.resource.data.uid == resource.data.uid);
     }
 
     // ─────────────────────────
