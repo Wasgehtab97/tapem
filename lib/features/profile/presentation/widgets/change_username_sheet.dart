@@ -7,11 +7,11 @@ import 'package:tapem/l10n/app_localizations.dart';
 Future<void> showChangeUsernameSheet(BuildContext context) async {
   final loc = AppLocalizations.of(context)!;
   final auth = context.read<AuthProvider>();
-  final ctr = TextEditingController(text: auth.userName ?? '');
-  final regex = RegExp(r'^(?!_)(?!.*__)[A-Za-z0-9 _]{3,20}(?<!_)$');
+  final ctr = TextEditingController();
+  final regex = RegExp(r'^[A-Za-z0-9 ]{3,20}$');
   String? error;
   bool available = false;
-  bool isValid(String v) => regex.hasMatch(v);
+  bool isValid(String v) => regex.hasMatch(v.trim());
   Timer? debouncer;
   bool loading = false;
 
@@ -67,8 +67,8 @@ Future<void> showChangeUsernameSheet(BuildContext context) async {
                 ),
               ),
               const SizedBox(height: 8),
-              if (ctr.text.isNotEmpty)
-                Text(loc.usernameLowerPreview(ctr.text.toLowerCase())),
+              if (ctr.text.trim().isNotEmpty)
+                Text(loc.usernameLowerPreview(ctr.text.trim().toLowerCase())),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -79,7 +79,7 @@ Future<void> showChangeUsernameSheet(BuildContext context) async {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: (!loading && available && isValid(ctr.text))
+                    onPressed: (!loading && available && isValid(ctr.text.trim()))
                         ? () async {
                             setState(() => loading = true);
                             final success = await auth.setUsername(ctr.text.trim());

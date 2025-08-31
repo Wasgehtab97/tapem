@@ -629,7 +629,7 @@ exports.changeUsername = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'Missing username');
   }
   const target = newUsername.trim();
-  const regex = /^(?!_)(?!.*__)[A-Za-z0-9_]{3,20}(?<!_)$/;
+  const regex = /^[A-Za-z0-9 ]{3,20}$/;
   if (!regex.test(target)) {
     throw new functions.https.HttpsError('invalid-argument', 'username_invalid');
   }
