@@ -11,6 +11,7 @@ class SessionDto {
   final DateTime timestamp;
   final double weight;
   final int reps;
+  final int setNumber;
   final double? dropWeightKg;
   final int? dropReps;
   final String note;
@@ -24,6 +25,7 @@ class SessionDto {
     required this.timestamp,
     required this.weight,
     required this.reps,
+    required this.setNumber,
     this.dropWeightKg,
     this.dropReps,
     required this.note,
@@ -46,6 +48,7 @@ class SessionDto {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),
+      setNumber: (data['setNumber'] as num?)?.toInt() ?? 0,
       dropWeightKg: (data['dropWeightKg'] as num?)?.toDouble(),
       dropReps: (data['dropReps'] as num?)?.toInt(),
       note: data['note'] as String? ?? '',

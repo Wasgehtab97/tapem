@@ -631,6 +631,7 @@ class DeviceProvider extends ChangeNotifier {
           'timestamp': ts,
           'weight': double.parse(set['weight']!.replaceAll(',', '.')),
           'reps': int.parse(set['reps']!),
+          'setNumber': int.parse(set['number']),
           'note': _note,
           'tz': tz,
         };

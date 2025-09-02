@@ -13,7 +13,7 @@ void main() {
       deviceDescription: '',
       timestamp: DateTime.now(),
       note: '',
-      sets: [SessionSet(weight: 10, reps: 5)],
+      sets: [SessionSet(weight: 10, reps: 5, setNumber: 1)],
     );
 
     await tester.pumpWidget(MaterialApp(
