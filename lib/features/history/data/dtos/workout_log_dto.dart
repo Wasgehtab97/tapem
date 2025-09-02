@@ -49,8 +49,9 @@ class WorkoutLogDto {
   Map<String, dynamic> toJson() => _$WorkoutLogDtoToJson(this);
 
   /// Dokument → DTO
-  factory WorkoutLogDto.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data()! as Map<String, dynamic>;
+  factory WorkoutLogDto.fromDocument(
+      DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
     data['setNumber'] = data['setNumber'] ?? data['number'];
     final dto = WorkoutLogDto.fromJson(data);
     dto.id = doc.id;
