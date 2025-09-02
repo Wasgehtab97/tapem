@@ -40,6 +40,16 @@ class SessionDto {
     final exerciseId = data['exerciseId'] as String? ?? '';
     final userId = data['userId'] as String? ?? '';
 
+    final rawNumber = data['setNumber'] ?? data['number'];
+    int setNumber;
+    if (rawNumber is num) {
+      setNumber = rawNumber.toInt();
+    } else if (rawNumber is String) {
+      setNumber = int.tryParse(rawNumber) ?? 0;
+    } else {
+      setNumber = 0;
+    }
+
     return SessionDto(
       sessionId: data['sessionId'] as String,
       deviceId: deviceId, // nicht mehr data['deviceId']
@@ -48,7 +58,7 @@ class SessionDto {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       weight: (data['weight'] as num).toDouble(),
       reps: (data['reps'] as num).toInt(),
-      setNumber: (data['setNumber'] as num?)?.toInt() ?? 0,
+      setNumber: setNumber,
       dropWeightKg: (data['dropWeightKg'] as num?)?.toDouble(),
       dropReps: (data['dropReps'] as num?)?.toInt(),
       note: data['note'] as String? ?? '',

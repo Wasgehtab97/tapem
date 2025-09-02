@@ -10,6 +10,8 @@ part 'workout_log_dto.g.dart';
 class WorkoutLogDto {
   @JsonKey(ignore: true)
   late String id;
+  @JsonKey(ignore: true)
+  late DocumentReference<Map<String, dynamic>> reference;
 
   final String userId;
   final String sessionId;
@@ -24,6 +26,8 @@ class WorkoutLogDto {
   final String? note;
   final double? dropWeightKg;
   final int? dropReps;
+  @JsonKey(fromJson: _setNumberFromJson)
+  final int setNumber;
 
   WorkoutLogDto({
     required this.userId,
@@ -36,6 +40,7 @@ class WorkoutLogDto {
     this.note,
     this.dropWeightKg,
     this.dropReps,
+    required this.setNumber,
   });
 
   factory WorkoutLogDto.fromJson(Map<String, dynamic> json) =>
@@ -46,8 +51,10 @@ class WorkoutLogDto {
   /// Dokument → DTO
   factory WorkoutLogDto.fromDocument(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
+    data['setNumber'] = data['setNumber'] ?? data['number'];
     final dto = WorkoutLogDto.fromJson(data);
     dto.id = doc.id;
+    dto.reference = doc.reference;
     return dto;
   }
 
@@ -64,8 +71,14 @@ class WorkoutLogDto {
     note: note,
     dropWeightKg: dropWeightKg,
     dropReps: dropReps,
+    setNumber: setNumber,
   );
 
   static DateTime _timestampToDate(Timestamp ts) => ts.toDate();
   static Timestamp _dateToTimestamp(DateTime date) => Timestamp.fromDate(date);
+  static int _setNumberFromJson(dynamic v) {
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/features/training_details/data/dtos/session_dto.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
@@ -27,7 +28,36 @@ class SessionRepositoryImpl implements SessionRepository {
 
     // 2) Für jede Gruppe: sortieren, Sets mappen, Namen+Description holen
     for (var entry in grouped.entries) {
-      final list = entry.value..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      final list = entry.value;
+      final rawNums = list.map((d) => d.setNumber).toList();
+      elogUi('SESSION_READ_RAW_SETS', {
+        'sessionId': entry.key,
+        'rawSetNumbers': rawNums,
+        'rawCount': list.length,
+      });
+
+      var usedKey = 'setNumber';
+      if (list.any((d) => d.setNumber <= 0)) {
+        usedKey = 'timestamp';
+        list.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        elogUi('ORDER_FALLBACK_USED', {
+          'sessionId': entry.key,
+          'reason': 'missing',
+        });
+        try {
+          await _source.backfillSetNumbers(list);
+        } catch (_) {}
+      } else {
+        list.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      }
+
+      elogUi('SESSION_SORT_APPLIED', {
+        'sessionId': entry.key,
+        'usedKey': usedKey,
+        'sortedSetNumbers': list.map((e) => e.setNumber).toList(),
+        'finalCount': list.length,
+      });
+
       final first = list.first;
 
       // Referenz aufs Device-Dokument:

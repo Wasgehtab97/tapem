@@ -75,8 +75,8 @@ class HistoryProvider extends ChangeNotifier {
   }
 
   void _computeStats() {
-    _logs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    if (_logs.isEmpty) {
+    final logsSorted = [..._logs]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    if (logsSorted.isEmpty) {
       _workoutCount = 0;
       _setsPerSessionAvg = 0;
       _heaviest = 0;
@@ -86,7 +86,7 @@ class HistoryProvider extends ChangeNotifier {
     }
 
     final sessions = <String, List<WorkoutLog>>{};
-    for (final log in _logs) {
+    for (final log in logsSorted) {
       sessions.putIfAbsent(log.sessionId, () => []).add(log);
     }
 
@@ -98,7 +98,7 @@ class HistoryProvider extends ChangeNotifier {
     _setsPerSessionAvg = double.parse(
         (_logs.length / (_workoutCount == 0 ? 1 : _workoutCount))
             .toStringAsFixed(1));
-    _heaviest = _logs.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
+    _heaviest = logsSorted.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
 
     _e1rmChart = sessionEntries.map((e) {
       final date = e.value.first.timestamp;
