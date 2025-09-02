@@ -13,6 +13,7 @@ class WorkoutLog {
   final String? note;
   final double? dropWeightKg;
   final int? dropReps;
+  final int setNumber;
 
   WorkoutLog({
     required this.id,
@@ -26,5 +27,6 @@ class WorkoutLog {
     this.note,
     this.dropWeightKg,
     this.dropReps,
+    required this.setNumber,
   });
 }

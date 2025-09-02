@@ -31,4 +31,15 @@ class FirestoreHistorySource {
 
     return snapshot.docs.map((doc) => WorkoutLogDto.fromDocument(doc)).toList();
   }
+
+  Future<void> backfillSetNumbers(List<WorkoutLogDto> dtos) async {
+    final batch = _firestore.batch();
+    for (var i = 0; i < dtos.length; i++) {
+      batch.update(dtos[i].reference, {
+        'setNumber': i + 1,
+        'backfilled': true,
+      });
+    }
+    await batch.commit();
+  }
 }

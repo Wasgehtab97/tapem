@@ -50,4 +50,15 @@ class FirestoreSessionSource {
       rethrow;
     }
   }
+
+  Future<void> backfillSetNumbers(List<SessionDto> dtos) async {
+    final batch = _firestore.batch();
+    for (var i = 0; i < dtos.length; i++) {
+      batch.update(dtos[i].reference, {
+        'setNumber': i + 1,
+        'backfilled': true,
+      });
+    }
+    await batch.commit();
+  }
 }

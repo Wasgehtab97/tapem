@@ -583,6 +583,14 @@ class DeviceProvider extends ChangeNotifier {
         return false;
       }
 
+      elogUi('SESSION_SAVE_SET_ORDER', {
+        'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
+        'reps': savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
+        'weights': savedSets
+            .map((s) => double.tryParse(s['weight']?.replaceAll(',', '.') ?? '0') ?? 0)
+            .toList(),
+      });
+
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));

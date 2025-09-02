@@ -12,6 +12,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String deviceId;
@@ -344,22 +345,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, idx) {
-                final logs = [...sessionEntries[idx].value]
-                  ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                final logs = sessionEntries[idx].value;
                 final titleDate = DateFormat.yMMMMd(localeString)
                     .format(logs.first.timestamp);
 
                 final sets = logs
-                    .asMap()
-                    .entries
                     .map((e) => SessionSet(
-                          weight: e.value.weight,
-                          reps: e.value.reps,
-                          setNumber: e.key + 1,
-                          dropWeightKg: e.value.dropWeightKg,
-                          dropReps: e.value.dropReps,
+                          weight: e.weight,
+                          reps: e.reps,
+                          setNumber: e.setNumber,
+                          dropWeightKg: e.dropWeightKg,
+                          dropReps: e.dropReps,
                         ))
                     .toList();
+                elogUi('HISTORY_CARD_RENDER', {
+                  'sessionId': sessionEntries[idx].key,
+                  'setNumbers': sets.take(10).map((s) => s.setNumber).toList(),
+                });
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: _HistoryExpansionTile(
