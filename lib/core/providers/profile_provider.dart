@@ -33,7 +33,6 @@ class ProfileProvider extends ChangeNotifier {
       final snapshot = await FirebaseFirestore.instance
           .collectionGroup('logs')
           .where('userId', isEqualTo: userId)
-          .select(['timestamp'])
           .get();
 
       final datesSet = <String>{};
