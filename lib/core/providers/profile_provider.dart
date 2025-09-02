@@ -1,20 +1,12 @@
 // lib/core/providers/profile_provider.dart
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/gym_provider.dart';
-import 'package:tapem/features/history/data/sources/firestore_history_source.dart';
-import 'package:tapem/features/history/data/repositories/history_repository_impl.dart';
-import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
 
 class ProfileProvider extends ChangeNotifier {
-  final GetHistoryForDevice _getHistory;
-
-  ProfileProvider({GetHistoryForDevice? getHistory})
-    : _getHistory =
-          getHistory ??
-          GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource()));
+  ProfileProvider();
 
   bool _isLoading = false;
   String? _error;
@@ -24,7 +16,7 @@ class ProfileProvider extends ChangeNotifier {
   String? get error => _error;
   List<String> get trainingDates => List.unmodifiable(_trainingDates);
 
-  /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users für alle Geräte.
+  /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(BuildContext context) async {
     _isLoading = true;
     _error = null;
@@ -32,31 +24,24 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final authProv = Provider.of<AuthProvider>(context, listen: false);
-      final gymId = authProv.gymCode;
       final userId = authProv.userId;
-      final devices = Provider.of<GymProvider>(context, listen: false).devices;
 
-      if (gymId == null || userId == null) {
-        throw Exception('Kein Benutzer oder Gym gefunden');
+      if (userId == null) {
+        throw Exception('Kein Benutzer gefunden');
       }
 
-      final futures = devices.map((d) {
-        return _getHistory.execute(
-          gymId: gymId,
-          deviceId: d.uid,
-          userId: userId,
-        );
-      });
+      final snapshot = await FirebaseFirestore.instance
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .select(['timestamp'])
+          .get();
 
-      final results = await Future.wait(futures);
       final datesSet = <String>{};
-      for (final logs in results) {
-        for (final log in logs) {
-          final dt = log.timestamp;
-          final key =
-              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-          datesSet.add(key);
-        }
+      for (final doc in snapshot.docs) {
+        final dt = (doc['timestamp'] as Timestamp).toDate();
+        final key =
+            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+        datesSet.add(key);
       }
 
       _trainingDates = datesSet.toList()..sort();
