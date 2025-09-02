@@ -27,7 +27,7 @@ class SessionRepositoryImpl implements SessionRepository {
 
     // 2) Für jede Gruppe: sortieren, Sets mappen, Namen+Description holen
     for (var entry in grouped.entries) {
-      final list = entry.value..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final list = entry.value..sort((a, b) => a.setNumber.compareTo(b.setNumber));
       final first = list.first;
 
       // Referenz aufs Device-Dokument:
@@ -85,6 +85,7 @@ class SessionRepositoryImpl implements SessionRepository {
           .map((dto) => SessionSet(
                 weight: dto.weight,
                 reps: dto.reps,
+                setNumber: dto.setNumber,
                 dropWeightKg: dto.dropWeightKg,
                 dropReps: dto.dropReps,
               ))
