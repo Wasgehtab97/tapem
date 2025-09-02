@@ -320,11 +320,46 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             );
                             return;
                           }
-                          if (prov.completedCount == 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(loc.noCompletedSets),
+                          final counts = prov.getSetCounts();
+                          final totalFilled =
+                              counts.done + counts.filledNotDone;
+                          if (counts.filledNotDone > 0) {
+                            elogUi('SAVE_OPEN_SETS_DIALOG', {
+                              'doneCount': counts.done,
+                              'filledNotDoneCount': counts.filledNotDone,
+                              'emptyOrIncompleteCount': counts.emptyOrIncomplete,
+                            });
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: Text(loc.notAllSetsConfirmed),
+                                content: Text(loc.notAllSetsConfirmed),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: Text(loc.cancelButton),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: Text(loc.confirmAllSets),
+                                  ),
+                                ],
                               ),
+                            );
+                            if (confirm != true) return;
+                            final added = prov.completeAllFilledNotDone();
+                            elogUi('CONFIRM_ALL_SETS', {
+                              'completedCount': added,
+                            });
+                            if (prov.completedCount == 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.noCompletedSets)),
+                              );
+                              return;
+                            }
+                          } else if (totalFilled == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(loc.noCompletedSets)),
                             );
                             return;
                           }

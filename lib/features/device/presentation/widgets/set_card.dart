@@ -11,6 +11,7 @@ import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
 
@@ -249,6 +250,7 @@ class SetCardState extends State<SetCard> {
       'open keypad allowDecimal=$allowDecimal text="${controller.text}"',
     );
     FocusScope.of(context).unfocus();
+    context.read<DeviceProvider>().setFocusedIndex(widget.index);
     context.read<OverlayNumericKeypadController>().openFor(
       controller,
       allowDecimal: allowDecimal,
@@ -265,7 +267,7 @@ class SetCardState extends State<SetCard> {
     final dw = _dropWeightCtrl.text.trim();
     final dr = _dropRepsCtrl.text.trim();
     if (dw.isEmpty && dr.isEmpty) return null;
-    if (dw.isEmpty || dr.isEmpty) return loc.dropFillBoth;
+    if (dw.isEmpty || dr.isEmpty) return null;
     final base = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     final drop = double.tryParse(dw.replaceAll(',', '.'));
     if (base == null || drop == null) return loc.numberInvalid;
@@ -273,7 +275,7 @@ class SetCardState extends State<SetCard> {
     final reps = int.tryParse(dr);
     if (reps == null || reps < 1) return loc.dropRepsInvalid;
     return null;
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +343,7 @@ class SetCardState extends State<SetCard> {
                         ? null
                         : () => _openKeypad(_weightCtrl, allowDecimal: true),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return loc.kgRequired;
+                      if (v == null || v.isEmpty) return null;
                       if (double.tryParse(v.replaceAll(',', '.')) == null) {
                         return loc.numberInvalid;
                       }
@@ -362,7 +364,7 @@ class SetCardState extends State<SetCard> {
                         ? null
                         : () => _openKeypad(_repsCtrl, allowDecimal: false),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return loc.repsRequired;
+                      if (v == null || v.isEmpty) return null;
                       if (int.tryParse(v) == null) return loc.intRequired;
                       return null;
                     },
@@ -381,18 +383,21 @@ class SetCardState extends State<SetCard> {
                       : () {
                           _slog(
                             widget.index,
-                            'tap: toggle done (form validate then provider)',
+                            'tap: toggle done via provider',
                           );
-                          final form = Form.of(context);
-                          if (!form.validate()) {
-                            _slog(widget.index, 'toggle blocked: invalid form');
-                            HapticFeedback.lightImpact();
-                            return;
-                          }
+                          final prov = context.read<DeviceProvider>();
+                          final ok = prov.toggleSetDone(widget.index);
+                          elogUi('SET_DONE_TAP', {
+                            'index': widget.index,
+                            'wasValid': ok,
+                            if (!ok) 'reasonIfBlocked': prov.error ?? 'invalid',
+                          });
                           HapticFeedback.lightImpact();
-                          context
-                              .read<DeviceProvider>()
-                              .toggleSetDone(widget.index);
+                          if (ok) {
+                            context
+                                .read<OverlayNumericKeypadController>()
+                                .close();
+                          }
                         },
                 ),
                 SizedBox(width: dense ? 6 : 8),

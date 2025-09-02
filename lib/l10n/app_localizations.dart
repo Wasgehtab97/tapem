@@ -479,6 +479,18 @@ abstract class AppLocalizations {
   /// **'No completed sets.'**
   String get noCompletedSets;
 
+  /// Dialog title when sets are unconfirmed
+  ///
+  /// In en, this message translates to:
+  /// **'Not all sets confirmed.'**
+  String get notAllSetsConfirmed;
+
+  /// Button to confirm all sets
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm All'**
+  String get confirmAllSets;
+
   /// Error when a session has already been saved today
   ///
   /// In en, this message translates to:
