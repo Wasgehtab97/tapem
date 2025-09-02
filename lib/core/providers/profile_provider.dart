@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 
 class ProfileProvider extends ChangeNotifier {
@@ -46,6 +47,9 @@ class ProfileProvider extends ChangeNotifier {
       _trainingDates = datesSet.toList()..sort();
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
+      if (e is FirebaseException && e.code == 'failed-precondition') {
+        elogError('FIRESTORE_FAILED_PRECONDITION', e.message ?? e.toString(), st);
+      }
       debugPrintStack(
         label: 'ProfileProvider.loadTrainingDates',
         stackTrace: st,
