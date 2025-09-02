@@ -385,14 +385,12 @@ class OverlayNumericKeypad extends StatelessWidget {
       'setIndexFocused': prov.focusedIndex,
       'nextToComplete': next,
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final idx = prov.completeNextFilledSet();
-      if (idx != null) {
-        elogUi('AUTO_CHECK_NEXT_OK', {'completedIndex': idx});
-      } else {
-        elogUi('AUTO_CHECK_NEXT_SKIP', {'reason': 'none'});
-      }
-    });
+    final idx = prov.completeNextFilledSet();
+    if (idx != null) {
+      elogUi('AUTO_CHECK_NEXT_OK', {'completedIndex': idx});
+    } else {
+      elogUi('AUTO_CHECK_NEXT_SKIP', {'reason': 'none'});
+    }
     _haptic(context);
   }
 

@@ -421,14 +421,13 @@ class DeviceProvider extends ChangeNotifier {
   bool toggleSetDone(int index) {
     final s = _sets[index];
     if (!_isFilled(s)) {
-      _error = 'Bitte gültiges Gewicht und Wiederholungen angeben.';
       _log(
         '⚠️ [Provider] toggleSetDone($index) blocked: invalid',
       );
-      notifyListeners();
       return false;
     }
 
+    _error = null;
     final before = Map<String, dynamic>.from(s);
     final current = (s['done'] == true || s['done'] == 'true');
     s['done'] = !current;

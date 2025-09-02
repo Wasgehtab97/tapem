@@ -303,6 +303,12 @@ class SetCardState extends State<SetCard> {
     final dropActive =
         (widget.set['dropWeight'] ?? '').toString().isNotEmpty &&
             (widget.set['dropReps'] ?? '').toString().isNotEmpty;
+    final weight = (widget.set['weight'] ?? '').toString().trim();
+    final reps = (widget.set['reps'] ?? '').toString().trim();
+    final filled = weight.isNotEmpty &&
+        double.tryParse(weight.replaceAll(',', '.')) != null &&
+        reps.isNotEmpty &&
+        int.tryParse(reps) != null;
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
@@ -378,7 +384,7 @@ class SetCardState extends State<SetCard> {
                   semantics:
                       done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                   dense: dense,
-                  onTap: widget.readOnly
+                  onTap: widget.readOnly || !filled
                       ? null
                       : () {
                           _slog(
@@ -390,7 +396,7 @@ class SetCardState extends State<SetCard> {
                           elogUi('SET_DONE_TAP', {
                             'index': widget.index,
                             'wasValid': ok,
-                            if (!ok) 'reasonIfBlocked': prov.error ?? 'invalid',
+                            if (!ok) 'reasonIfBlocked': 'invalid',
                           });
                           HapticFeedback.lightImpact();
                           if (ok) {
