@@ -213,6 +213,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCompletedSets => 'No completed sets.';
 
   @override
+  String get notAllSetsConfirmed => 'Not all sets confirmed.';
+
+  @override
+  String get confirmAllSets => 'Confirm All';
+
+  @override
   String get todayAlreadySaved => 'Already saved today.';
 
   @override

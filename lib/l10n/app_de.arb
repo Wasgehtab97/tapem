@@ -311,6 +311,11 @@
     "description": "Snackbar, wenn keine Sätze abgeschlossen sind"
   },
 
+  "notAllSetsConfirmed": "Noch nicht alle Sätze bestätigt.",
+  "@notAllSetsConfirmed": {"description": "Dialogtitel bei offenen Sätzen"},
+  "confirmAllSets": "Alle Bestätigen",
+  "@confirmAllSets": {"description": "Button zum Bestätigen aller Sätze"},
+
   "todayAlreadySaved": "Heute bereits gespeichert.",
   "@todayAlreadySaved": {
     "description": "Fehler wenn bereits eine Session gespeichert wurde"

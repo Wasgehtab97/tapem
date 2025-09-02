@@ -5,6 +5,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -348,12 +351,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                         _haptic(context);
                       }
                     },
-                    onCopy: () {
-                      final text = controller.target?.text ?? '';
-                      _klog('copy "$text"');
-                      Clipboard.setData(ClipboardData(text: text));
-                      _haptic(context);
-                    },
+                    onCheckNext: () => _checkNext(context, controller),
                     onPlus: () => _increment(context, controller, 1),
                     onMinus: () => _increment(context, controller, -1),
                   ),
@@ -374,6 +372,28 @@ class OverlayNumericKeypad extends StatelessWidget {
       default:
         HapticFeedback.selectionClick();
     }
+  }
+
+  static void _checkNext(
+    BuildContext context,
+    OverlayNumericKeypadController controller,
+  ) {
+    final prov = context.read<DeviceProvider>();
+    final next = prov.nextFilledNotDoneIndex();
+    elogUi('OVERLAY_CHECK_TAP', {
+      'deviceId': prov.device?.uid,
+      'setIndexFocused': prov.focusedIndex,
+      'nextToComplete': next,
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final idx = prov.completeNextFilledSet();
+      if (idx != null) {
+        elogUi('AUTO_CHECK_NEXT_OK', {'completedIndex': idx});
+      } else {
+        elogUi('AUTO_CHECK_NEXT_SKIP', {'reason': 'none'});
+      }
+    });
+    _haptic(context);
   }
 
   static String _decimalChar(BuildContext ctx) {
@@ -568,7 +588,7 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onPaste, onCopy, onPlus, onMinus;
+  final VoidCallback onHide, onPaste, onCheckNext, onPlus, onMinus;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -578,7 +598,7 @@ class _ActionRailCompact extends StatelessWidget {
     required this.theme,
     required this.onHide,
     required this.onPaste,
-    required this.onCopy,
+    required this.onCheckNext,
     required this.onPlus,
     required this.onMinus,
   });
@@ -590,7 +610,7 @@ class _ActionRailCompact extends StatelessWidget {
 
     // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
-      _RailAction(Icons.copy_rounded, 'Kopieren', onCopy),
+      _RailAction(Icons.check_rounded, 'Bestätigen', onCheckNext),
       _RailAction(Icons.paste_rounded, 'Einfügen', onPaste),
       _RailAction(Icons.remove_rounded, 'Verringern', onMinus, repeat: true),
       _RailAction(Icons.add_rounded, 'Erhöhen', onPlus, repeat: true),

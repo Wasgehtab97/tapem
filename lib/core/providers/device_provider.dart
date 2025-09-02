@@ -405,24 +405,28 @@ class DeviceProvider extends ChangeNotifier {
     _scheduleDraftSave();
   }
 
-  void toggleSetDone(int index) {
-    final s = _sets[index];
+  bool _isFilled(Map<String, dynamic> s) {
     final w = (s['weight'] ?? '').toString().trim();
     final r = (s['reps'] ?? '').toString().trim();
-
-    final valid =
-        w.isNotEmpty &&
+    return w.isNotEmpty &&
         double.tryParse(w.replaceAll(',', '.')) != null &&
         r.isNotEmpty &&
         int.tryParse(r) != null;
+  }
 
-    if (!valid) {
+  int? _focusedIndex;
+  int? get focusedIndex => _focusedIndex;
+  void setFocusedIndex(int? i) => _focusedIndex = i;
+
+  bool toggleSetDone(int index) {
+    final s = _sets[index];
+    if (!_isFilled(s)) {
       _error = 'Bitte gültiges Gewicht und Wiederholungen angeben.';
       _log(
-        '⚠️ [Provider] toggleSetDone($index) blocked: invalid w="$w" r="$r"',
+        '⚠️ [Provider] toggleSetDone($index) blocked: invalid',
       );
       notifyListeners();
-      return;
+      return false;
     }
 
     final before = Map<String, dynamic>.from(s);
@@ -432,6 +436,69 @@ class DeviceProvider extends ChangeNotifier {
     _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
     _scheduleDraftSave();
+    return true;
+  }
+
+  int? nextFilledNotDoneIndex() {
+    for (var i = 0; i < _sets.length; i++) {
+      final s = _sets[i];
+      if (s['done'] == true || s['done'] == 'true') continue;
+      if (_isFilled(s)) return i;
+    }
+    return null;
+  }
+
+  int? completeNextFilledSet() {
+    final idx = nextFilledNotDoneIndex();
+    if (idx == null) return null;
+    final s = Map<String, dynamic>.from(_sets[idx]);
+    s['done'] = true;
+    _sets[idx] = s;
+    _log('☑️ [Provider] completeNextFilledSet($idx)');
+    notifyListeners();
+    _scheduleDraftSave();
+    return idx;
+  }
+
+  int completeAllFilledNotDone() {
+    var count = 0;
+    for (var i = 0; i < _sets.length; i++) {
+      final s = _sets[i];
+      if (s['done'] == true || s['done'] == 'true') continue;
+      if (!_isFilled(s)) continue;
+      final after = Map<String, dynamic>.from(s);
+      after['done'] = true;
+      _sets[i] = after;
+      count++;
+    }
+    if (count > 0) {
+      _log('☑️ [Provider] completeAllFilledNotDone count=$count');
+      notifyListeners();
+      _scheduleDraftSave();
+    }
+    return count;
+  }
+
+  ({int done, int filledNotDone, int emptyOrIncomplete}) getSetCounts() {
+    var done = 0;
+    var filledNotDone = 0;
+    var emptyOrIncomplete = 0;
+    for (final s in _sets) {
+      final filled = _isFilled(s);
+      final d = s['done'] == true || s['done'] == 'true';
+      if (d && filled) {
+        done++;
+      } else if (filled) {
+        filledNotDone++;
+      } else {
+        emptyOrIncomplete++;
+      }
+    }
+    return (
+      done: done,
+      filledNotDone: filledNotDone,
+      emptyOrIncomplete: emptyOrIncomplete,
+    );
   }
 
   int get completedCount =>

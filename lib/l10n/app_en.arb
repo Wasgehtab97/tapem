@@ -311,6 +311,11 @@
     "description": "Snackbar when no sets are completed"
   },
 
+  "notAllSetsConfirmed": "Not all sets confirmed.",
+  "@notAllSetsConfirmed": {"description": "Dialog title when sets are unconfirmed"},
+  "confirmAllSets": "Confirm All",
+  "@confirmAllSets": {"description": "Button to confirm all sets"},
+
   "todayAlreadySaved": "Already saved today.",
   "@todayAlreadySaved": {
     "description": "Error when a session has already been saved today"
