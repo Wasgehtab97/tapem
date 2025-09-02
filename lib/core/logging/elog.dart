@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+const bool _enableLogging = false;
+
 void _log(String tag, String event, Map<String, Object?> data) {
+  if (!_enableLogging) return;
   final payload = jsonEncode(data);
   debugPrint('$tag $event $payload');
 }
