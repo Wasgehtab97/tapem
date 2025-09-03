@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 
 import 'brand_gradient_card.dart';
+import 'brand_outline.dart';
 import '../theme/brand_on_colors.dart';
+import '../theme/design_tokens.dart';
 
-/// Navigable tile using the brand gradient background.
+/// Visual styles for [BrandActionTile].
+enum BrandActionTileVariant {
+  /// Filled card using the brand gradient.
+  gradient,
+
+  /// Outlined surface using the brand outline style.
+  outlined,
+}
+
+/// Navigable tile using the brand gradient background or outlined surface.
 class BrandActionTile extends StatelessWidget {
   final Widget? leading;
   final IconData? leadingIcon;
@@ -14,6 +25,13 @@ class BrandActionTile extends StatelessWidget {
   final bool centerTitle;
   final bool showChevron;
   final EdgeInsetsGeometry? margin;
+
+  /// Visual variant of the tile.
+  ///
+  /// Defaults to [BrandActionTileVariant.gradient] to preserve existing
+  /// behaviour. Use [BrandActionTileVariant.outlined] for a surface styled like
+  /// the gym device cards.
+  final BrandActionTileVariant variant;
 
   const BrandActionTile({
     super.key,
@@ -26,37 +44,49 @@ class BrandActionTile extends StatelessWidget {
     this.centerTitle = false,
     this.showChevron = true,
     this.margin,
+    this.variant = BrandActionTileVariant.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
     final onGradient =
         Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
+    final titleStyle =
+        variant == BrandActionTileVariant.gradient ? TextStyle(color: onGradient) : null;
+    final subtitleStyle =
+        variant == BrandActionTileVariant.gradient ? TextStyle(color: onGradient) : null;
+
+    final tile = ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: leading ??
+          (leadingIcon != null ? Icon(leadingIcon, color: onGradient) : null),
+      title: Text(
+        title,
+        textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+        style: titleStyle,
+      ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: subtitleStyle,
+            )
+          : null,
+      trailing: showChevron
+          ? (trailing ?? Icon(Icons.chevron_right, color: onGradient))
+          : null,
+    );
+
+    final Widget card = variant == BrandActionTileVariant.gradient
+        ? BrandGradientCard(onTap: onTap, child: tile)
+        : BrandOutline(
+            onTap: onTap,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: tile,
+          );
+
     return Container(
       margin: margin,
-      child: BrandGradientCard(
-        onTap: onTap,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: leading ??
-              (leadingIcon != null
-                  ? Icon(leadingIcon, color: onGradient)
-                  : null),
-          title: Text(
-            title,
-            textAlign: centerTitle ? TextAlign.center : TextAlign.start,
-            style: const TextStyle(color: Colors.black),
-          ),
-          subtitle: subtitle != null
-              ? Text(
-                  subtitle!,
-                  style: const TextStyle(color: Colors.black),
-                )
-              : null,
-          trailing:
-              showChevron ? (trailing ?? Icon(Icons.chevron_right, color: onGradient)) : null,
-        ),
-      ),
+      child: card,
     );
   }
 }

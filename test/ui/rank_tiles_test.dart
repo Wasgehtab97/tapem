@@ -28,4 +28,20 @@ void main() {
     final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_right));
     expect(icon.color, onGrad);
   });
+
+  testWidgets('Outlined variant uses default text colour', (tester) async {
+    final theme = ThemeData(extensions: [AppBrandTheme.defaultTheme()]);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: theme,
+      home: const BrandActionTile(
+        title: 'tile',
+        variant: BrandActionTileVariant.outlined,
+        showChevron: false,
+      ),
+    ));
+
+    final text = tester.widget<Text>(find.text('tile'));
+    expect(text.style, isNull);
+  });
 }

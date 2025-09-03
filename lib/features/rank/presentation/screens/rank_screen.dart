@@ -61,6 +61,7 @@ class _RankScreenState extends State<RankScreen>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
                     centerTitle: true,
                     showChevron: false,
+                    variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
                   ),
@@ -71,6 +72,7 @@ class _RankScreenState extends State<RankScreen>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
                     centerTitle: true,
                     showChevron: false,
+                    variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
                   ),
@@ -81,6 +83,7 @@ class _RankScreenState extends State<RankScreen>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
                     centerTitle: true,
                     showChevron: false,
+                    variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
                   ),
