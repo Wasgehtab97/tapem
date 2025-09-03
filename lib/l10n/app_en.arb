@@ -67,6 +67,21 @@
     "description": "Fallback display for unknown user"
   },
 
+  "rankExperience": "Experience",
+  "@rankExperience": {
+    "description": "Title card for daily experience on rank tab"
+  },
+
+  "rankDeviceLevel": "Device level",
+  "@rankDeviceLevel": {
+    "description": "Title card for device stats on rank tab"
+  },
+
+  "rankMuscleLevel": "Muscle level",
+  "@rankMuscleLevel": {
+    "description": "Title card for muscle group stats on rank tab"
+  },
+
   "gymCodeFieldLabel": "Gym Code",
   "@gymCodeFieldLabel": {
     "description": "Label for the gym code input"

@@ -11,6 +11,9 @@ class BrandActionTile extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool centerTitle;
+  final bool showChevron;
+  final EdgeInsetsGeometry? margin;
 
   const BrandActionTile({
     super.key,
@@ -20,31 +23,39 @@ class BrandActionTile extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.centerTitle = false,
+    this.showChevron = true,
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
     final onGradient =
         Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
-    return BrandGradientCard(
-      onTap: onTap,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: leading ??
-            (leadingIcon != null
-                ? Icon(leadingIcon, color: onGradient)
-                : null),
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.black),
+    return Container(
+      margin: margin,
+      child: BrandGradientCard(
+        onTap: onTap,
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: leading ??
+              (leadingIcon != null
+                  ? Icon(leadingIcon, color: onGradient)
+                  : null),
+          title: Text(
+            title,
+            textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+            style: const TextStyle(color: Colors.black),
+          ),
+          subtitle: subtitle != null
+              ? Text(
+                  subtitle!,
+                  style: const TextStyle(color: Colors.black),
+                )
+              : null,
+          trailing:
+              showChevron ? (trailing ?? Icon(Icons.chevron_right, color: onGradient)) : null,
         ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: const TextStyle(color: Colors.black),
-              )
-            : null,
-        trailing: trailing ?? Icon(Icons.chevron_right, color: onGradient),
       ),
     );
   }

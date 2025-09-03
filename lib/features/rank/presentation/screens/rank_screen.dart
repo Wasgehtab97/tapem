@@ -5,7 +5,9 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
+/// Rank landing displayed in the "Rank" tab of the leaderboard.
 class RankScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
@@ -54,21 +56,33 @@ class _RankScreenState extends State<RankScreen>
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
                   BrandActionTile(
-                    title: 'XP je Muskelgruppe',
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  BrandActionTile(
-                    title: 'XP je Trainingstag',
+                    title: AppLocalizations.of(context)!.rankExperience,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
-                    title: 'XP je Gerät',
+                    title: AppLocalizations.of(context)!.rankDeviceLevel,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  BrandActionTile(
+                    title: AppLocalizations.of(context)!.rankMuscleLevel,
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm),
                   ),
                 ],
               ),
