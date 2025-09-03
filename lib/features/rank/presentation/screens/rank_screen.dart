@@ -5,6 +5,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class RankScreen extends StatefulWidget {
   final String gymId;
@@ -47,6 +48,7 @@ class _RankScreenState extends State<RankScreen>
       ),
       body: Consumer<RankProvider>(
         builder: (context, prov, _) {
+          final loc = AppLocalizations.of(context)!;
           return TabBarView(
             controller: _tabController,
             children: [
@@ -54,21 +56,33 @@ class _RankScreenState extends State<RankScreen>
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
                   BrandActionTile(
-                    title: 'XP je Muskelgruppe',
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  BrandActionTile(
-                    title: 'XP je Trainingstag',
+                    title: loc.rank_experience,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
-                    title: 'XP je Gerät',
+                    title: loc.rank_device_level,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  BrandActionTile(
+                    title: loc.rank_muscle_level,
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
+                    centerTitle: true,
+                    showChevron: false,
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   ),
                 ],
               ),

@@ -657,5 +657,17 @@
   "friends_cta_friend": "Freund",
   "friends_cta_pending": "Ausstehend",
   "friends_action_send": "Anfrage senden",
-  "friends_search_min_chars": "Mindestens 2 Zeichen eingeben"
+  "friends_search_min_chars": "Mindestens 2 Zeichen eingeben",
+  "rank_experience": "Erfahrung",
+  "@rank_experience": {
+    "description": "Tile auf der Rangliste für Erfahrung je Trainingstag"
+  },
+  "rank_device_level": "Geräte level",
+  "@rank_device_level": {
+    "description": "Tile auf der Rangliste für Gerätelevel"
+  },
+  "rank_muscle_level": "Mucki level",
+  "@rank_muscle_level": {
+    "description": "Tile auf der Rangliste für Muskellevel"
+  }
 }
