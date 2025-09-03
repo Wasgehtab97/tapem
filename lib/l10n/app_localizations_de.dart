@@ -639,4 +639,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get friends_search_min_chars => 'Mindestens 2 Zeichen eingeben';
+
+  @override
+  String get rank_experience => 'Erfahrung';
+
+  @override
+  String get rank_device_level => 'Geräte level';
+
+  @override
+  String get rank_muscle_level => 'Mucki level';
 }

@@ -1318,6 +1318,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter at least 2 characters'**
   String get friends_search_min_chars;
+
+  /// No description provided for @rank_experience.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get rank_experience;
+
+  /// No description provided for @rank_device_level.
+  ///
+  /// In en, this message translates to:
+  /// **'Device level'**
+  String get rank_device_level;
+
+  /// No description provided for @rank_muscle_level.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle level'**
+  String get rank_muscle_level;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
