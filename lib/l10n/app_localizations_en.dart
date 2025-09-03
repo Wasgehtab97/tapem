@@ -549,6 +549,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get muscleCatLower => 'Lower body';
 
   @override
+  String get rankExperience => 'Experience';
+
+  @override
+  String get rankDeviceLevel => 'Device level';
+
+  @override
+  String get rankMuscleLevel => 'Muscle level';
+
+  @override
   String get friends_title => 'Friends';
 
   @override

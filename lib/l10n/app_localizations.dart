@@ -1139,6 +1139,24 @@ abstract class AppLocalizations {
   /// **'Lower body'**
   String get muscleCatLower;
 
+  /// Title card for daily experience on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get rankExperience;
+
+  /// Title card for device stats on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Device level'**
+  String get rankDeviceLevel;
+
+  /// Title card for muscle group stats on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle level'**
+  String get rankMuscleLevel;
+
   /// No description provided for @friends_title.
   ///
   /// In en, this message translates to:

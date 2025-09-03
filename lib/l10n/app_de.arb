@@ -67,6 +67,21 @@
     "description": "Fallback-Anzeige für unbekannten Benutzer"
   },
 
+  "rankExperience": "Erfahrung",
+  "@rankExperience": {
+    "description": "Titelkarte für Tageserfahrung im Rank-Tab"
+  },
+
+  "rankDeviceLevel": "Geräte level",
+  "@rankDeviceLevel": {
+    "description": "Titelkarte für Gerätestatistik im Rank-Tab"
+  },
+
+  "rankMuscleLevel": "Mucki level",
+  "@rankMuscleLevel": {
+    "description": "Titelkarte für Muskelgruppenstatistik im Rank-Tab"
+  },
+
   "gymCodeFieldLabel": "Gym-Code",
   "@gymCodeFieldLabel": {
     "description": "Beschriftung für das Gym-Code-Feld"
