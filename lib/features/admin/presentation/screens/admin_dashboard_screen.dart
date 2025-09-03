@@ -15,6 +15,8 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -201,60 +203,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 child: Column(
                   children: [
-                    BrandPrimaryButton(
-                      onPressed: _showCreateDialog,
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add),
-                          SizedBox(width: AppSpacing.xs),
-                          Text('Gerät anlegen'),
-                        ],
-                      ),
+                    BrandActionTile(
+                      leadingIcon: Icons.add,
+                      title: 'Gerät anlegen',
+                      onTap: _showCreateDialog,
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    BrandPrimaryButton(
-                      onPressed: () {
+                    BrandActionTile(
+                      leadingIcon: Icons.fitness_center,
+                      title: 'Muskelgruppen',
+                      onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRouter.manageMuscleGroups);
                       },
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.fitness_center),
-                          SizedBox(width: AppSpacing.xs),
-                          Text('Muskelgruppen'),
-                        ],
-                      ),
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    BrandPrimaryButton(
-                      onPressed: () {
+                    BrandActionTile(
+                      leadingIcon: Icons.brush,
+                      title: 'Branding',
+                      onTap: () {
                         Navigator.of(context).pushNamed(AppRouter.branding);
                       },
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.brush),
-                          SizedBox(width: AppSpacing.xs),
-                          Text('Branding'),
-                        ],
-                      ),
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    BrandPrimaryButton(
-                      onPressed: () {
+                    BrandActionTile(
+                      leadingIcon: Icons.flag,
+                      title: 'Challenges verwalten',
+                      onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRouter.manageChallenges);
                       },
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flag),
-                          SizedBox(width: AppSpacing.xs),
-                          Text('Challenges verwalten'),
-                        ],
-                      ),
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Expanded(

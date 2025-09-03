@@ -10,7 +10,8 @@ import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/core/logging/elog.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -254,9 +255,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: SizedBox(
             width: double.infinity,
-            child: BrandPrimaryButton(
-              semanticsLabel: 'Umfragen',
-              onPressed: () {
+            child: BrandActionTile(
+              title: 'Umfragen',
+              onTap: () {
                 final gymId = context.read<GymProvider>().currentGymId;
                 final userId = context.read<AuthProvider>().userId ?? '';
                 Navigator.push(
@@ -269,7 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               },
-              child: const Text('Umfragen'),
+              variant: BrandActionTileVariant.outlined,
+              showChevron: false,
+              uiLogEvent: 'PROFILE_CARD_RENDER',
             ),
           ),
         ),

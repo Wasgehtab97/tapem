@@ -11,6 +11,7 @@ import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
+import '../../../../core/logging/elog.dart';
 
 class ReportScreenNew extends StatelessWidget {
   final String gymId;
@@ -51,12 +52,16 @@ class ReportScreenNew extends StatelessWidget {
                   ),
                 );
               },
+              variant: BrandActionTileVariant.outlined,
+              uiLogEvent: 'REPORT_CARD_RENDER',
             ),
             const SizedBox(height: AppSpacing.sm),
             BrandActionTile(
               leadingIcon: Icons.add_circle_outline,
               title: 'Umfrage erstellen',
               onTap: () => _showCreateSurveyDialog(context),
+              variant: BrandActionTileVariant.outlined,
+              uiLogEvent: 'REPORT_CARD_RENDER',
             ),
             const SizedBox(height: AppSpacing.sm),
             BrandActionTile(
@@ -70,6 +75,8 @@ class ReportScreenNew extends StatelessWidget {
                   ),
                 );
               },
+              variant: BrandActionTileVariant.outlined,
+              uiLogEvent: 'REPORT_CARD_RENDER',
             ),
           ],
         ),

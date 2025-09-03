@@ -6,6 +6,7 @@ import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dar
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 /// Rank landing displayed in the "Rank" tab of the leaderboard.
 class RankScreen extends StatefulWidget {
@@ -64,6 +65,7 @@ class _RankScreenState extends State<RankScreen>
                     variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
+                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
@@ -75,6 +77,7 @@ class _RankScreenState extends State<RankScreen>
                     variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
+                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
@@ -86,6 +89,7 @@ class _RankScreenState extends State<RankScreen>
                     variant: BrandActionTileVariant.outlined,
                     margin: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm),
+                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                 ],
               ),
