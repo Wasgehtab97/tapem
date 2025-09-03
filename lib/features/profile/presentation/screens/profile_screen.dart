@@ -257,6 +257,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: double.infinity,
             child: BrandActionTile(
               title: 'Umfragen',
+              centerTitle: true,
+              dense: true,
+              minVerticalPadding: 0,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               onTap: () {
                 final gymId = context.read<GymProvider>().currentGymId;
                 final userId = context.read<AuthProvider>().userId ?? '';
