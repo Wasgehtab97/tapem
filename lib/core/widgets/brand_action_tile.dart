@@ -26,6 +26,9 @@ class BrandActionTile extends StatelessWidget {
   final bool centerTitle;
   final bool showChevron;
   final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
+  final bool dense;
+  final double? minVerticalPadding;
   final String? uiLogEvent;
 
   /// Visual variant of the tile.
@@ -46,6 +49,9 @@ class BrandActionTile extends StatelessWidget {
     this.centerTitle = false,
     this.showChevron = true,
     this.margin,
+    this.padding,
+    this.dense = false,
+    this.minVerticalPadding,
     this.variant = BrandActionTileVariant.gradient,
     this.uiLogEvent,
   });
@@ -64,6 +70,8 @@ class BrandActionTile extends StatelessWidget {
 
     final tile = ListTile(
       contentPadding: EdgeInsets.zero,
+      dense: dense,
+      minVerticalPadding: minVerticalPadding,
       leading: leading ??
           (leadingIcon != null ? Icon(leadingIcon, color: onGradient) : null),
       title: Text(
@@ -83,10 +91,10 @@ class BrandActionTile extends StatelessWidget {
     );
 
     final Widget card = variant == BrandActionTileVariant.gradient
-        ? BrandGradientCard(onTap: onTap, child: tile)
+        ? BrandGradientCard(onTap: onTap, padding: padding, child: tile)
         : BrandOutline(
             onTap: onTap,
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: padding ?? const EdgeInsets.all(AppSpacing.sm),
             child: tile,
           );
 
