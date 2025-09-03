@@ -4,6 +4,7 @@ import 'brand_gradient_card.dart';
 import 'brand_outline.dart';
 import '../theme/brand_on_colors.dart';
 import '../theme/design_tokens.dart';
+import '../logging/elog.dart';
 
 /// Visual styles for [BrandActionTile].
 enum BrandActionTileVariant {
@@ -25,6 +26,7 @@ class BrandActionTile extends StatelessWidget {
   final bool centerTitle;
   final bool showChevron;
   final EdgeInsetsGeometry? margin;
+  final String? uiLogEvent;
 
   /// Visual variant of the tile.
   ///
@@ -45,10 +47,14 @@ class BrandActionTile extends StatelessWidget {
     this.showChevron = true,
     this.margin,
     this.variant = BrandActionTileVariant.gradient,
+    this.uiLogEvent,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (uiLogEvent != null) {
+      elogUi(uiLogEvent!, {'title': title});
+    }
     final onGradient =
         Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
     final titleStyle =
