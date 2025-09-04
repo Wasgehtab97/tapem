@@ -45,7 +45,7 @@ void main() {
   });
 
   testWidgets('shows remove when marked', (tester) async {
-    final dateKey = CreatineProvider.dateKeyFrom(DateTime.now());
+    final dateKey = toDateKeyLocal(DateTime.now());
     final repo = FakeRepo({dateKey});
     final prov = CreatineProvider(repository: repo);
     await prov.loadIntakeDates('u1', DateTime.now().year);

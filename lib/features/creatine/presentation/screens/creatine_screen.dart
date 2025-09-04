@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import '../../providers/creatine_provider.dart';
+import '../../data/creatine_repository.dart';
 
 class CreatineScreen extends StatefulWidget {
   final String? userId;
@@ -16,18 +17,26 @@ class CreatineScreen extends StatefulWidget {
 }
 
 class _CreatineScreenState extends State<CreatineScreen> {
-  late final String _uid;
+  String _uid = '';
 
   @override
   void initState() {
     super.initState();
-    final auth = widget.userId;
-    _uid = auth ?? '';
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<CreatineProvider>()
-          .loadIntakeDates(_uid, DateTime.now().year);
-      elogUi('creatine_open_screen', {});
+      final loc = AppLocalizations.of(context)!;
+      try {
+        _uid = (widget.userId?.trim().isNotEmpty == true)
+            ? widget.userId!.trim()
+            : currentUidOrFail();
+        context
+            .read<CreatineProvider>()
+            .loadIntakeDates(_uid, DateTime.now().year);
+        elogUi('creatine_open_screen', {});
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.errorPrefix}: $e')),
+        );
+      }
     });
   }
 
@@ -37,7 +46,7 @@ class _CreatineScreenState extends State<CreatineScreen> {
     final loc = AppLocalizations.of(context)!;
     final year = DateTime.now().year;
     final selected = prov.selectedDate;
-    final dateKey = CreatineProvider.dateKeyFrom(selected);
+    final dateKey = prov.selectedDateKey;
     final isTaken = prov.intakeDates.contains(dateKey);
     final today = DateTime.now();
     final isToday = selected.year == today.year &&
@@ -79,20 +88,23 @@ class _CreatineScreenState extends State<CreatineScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  final added = await prov.toggleIntake(_uid, dateKey);
-                  final snack = added
-                      ? loc.creatineSaved(formatted)
-                      : loc.creatineRemoved(formatted);
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(snack)));
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${loc.errorPrefix}: $e')),
-                  );
-                }
-              },
+              onPressed: (_uid.isEmpty || prov.isToggling)
+                  ? null
+                  : () async {
+                      try {
+                        final added =
+                            await prov.toggleIntake(_uid, dateKey);
+                        final snack = added
+                            ? loc.creatineSaved(formatted)
+                            : loc.creatineRemoved(formatted);
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(snack)));
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${loc.errorPrefix}: $e')),
+                        );
+                      }
+                    },
               icon: const Icon(Icons.check),
               label: Text(label),
             ),
@@ -151,16 +163,20 @@ class _SelectionOverlay extends StatelessWidget {
               : Theme.of(context).colorScheme.error;
           final width = isToday ? 3.0 : 2.0;
 
-          return Positioned(
-            left: left,
-            top: top,
-            child: Container(
-              width: cellSize,
-              height: cellSize,
-              decoration: BoxDecoration(
-                border: Border.all(color: color, width: width),
+          return Stack(
+            children: [
+              Positioned(
+                left: left,
+                top: top,
+                child: Container(
+                  width: cellSize,
+                  height: cellSize,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: color, width: width),
+                  ),
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
