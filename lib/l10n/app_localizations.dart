@@ -203,6 +203,18 @@ abstract class AppLocalizations {
   /// **'Only today or yesterday allowed.'**
   String get creatineOnlyTodayOrYesterday;
 
+  /// Label for external creatine link
+  ///
+  /// In en, this message translates to:
+  /// **'No creatine?'**
+  String get creatineNoCreatine;
+
+  /// Error when link could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open link.'**
+  String get creatineOpenLinkError;
+
   /// Error when authentication is required
   ///
   /// In en, this message translates to:

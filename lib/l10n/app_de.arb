@@ -63,6 +63,8 @@
   "@creatineRemoved": {"placeholders": {"date": {}}},
   "creatineTakenYesterday": "Gestern genommen",
   "creatineOnlyTodayOrYesterday": "Nur heute oder gestern möglich.",
+  "creatineNoCreatine": "Kein Kreatin?",
+  "creatineOpenLinkError": "Link konnte nicht geöffnet werden.",
   "signInRequiredError": "Anmeldung erforderlich.",
   "invalidDateError": "Ungültiges Datum.",
 

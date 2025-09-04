@@ -75,6 +75,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creatineOnlyTodayOrYesterday => 'Only today or yesterday allowed.';
 
   @override
+  String get creatineNoCreatine => 'No creatine?';
+
+  @override
+  String get creatineOpenLinkError => 'Could not open link.';
+
+  @override
   String get signInRequiredError => 'Sign-in required.';
 
   @override
