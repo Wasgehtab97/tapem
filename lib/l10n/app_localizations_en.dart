@@ -410,6 +410,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOptionChangeUsername => 'Change username';
 
   @override
+  String get settingsCreatineTracker => 'Creatine tracker';
+
+  @override
+  String get settingsCreatineEnable => 'Enable';
+
+  @override
+  String get settingsCreatineDisable => 'Disable';
+
+  @override
+  String get settingsCreatineEnabled => 'Enabled';
+
+  @override
+  String get settingsCreatineDisabled => 'Disabled';
+
+  @override
+  String get settingsCreatineSavedEnabled => 'Creatine tracker enabled.';
+
+  @override
+  String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
+
+  @override
   String get publicProfileDialogTitle => 'Profile visibility';
 
   @override

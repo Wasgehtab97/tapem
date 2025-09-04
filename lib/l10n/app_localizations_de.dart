@@ -410,6 +410,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsOptionChangeUsername => 'Nutzername wechseln';
 
   @override
+  String get settingsCreatineTracker => 'Kreatin-Tracker';
+
+  @override
+  String get settingsCreatineEnable => 'Aktivieren';
+
+  @override
+  String get settingsCreatineDisable => 'Deaktivieren';
+
+  @override
+  String get settingsCreatineEnabled => 'Aktiviert';
+
+  @override
+  String get settingsCreatineDisabled => 'Deaktiviert';
+
+  @override
+  String get settingsCreatineSavedEnabled => 'Kreatin-Tracker aktiviert.';
+
+  @override
+  String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
+
+  @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';
 
   @override

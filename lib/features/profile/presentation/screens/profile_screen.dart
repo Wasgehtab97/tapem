@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -36,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
         context.read<FriendsProvider>().listen(uid);
+        context.read<SettingsProvider>().load(uid);
       }
     });
   }
@@ -128,6 +130,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showCreatineSheet() {
+    final loc = AppLocalizations.of(context)!;
+    final settingsProv = context.read<SettingsProvider>();
+    final enabled = settingsProv.creatineEnabled;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(loc.settingsCreatineEnable),
+              trailing: enabled ? const Icon(Icons.check) : null,
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await settingsProv.setCreatineEnabled(true);
+                  elogUi('settings_set_creatine_enabled', {'enabled': true});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.settingsCreatineSavedEnabled)),
+                  );
+                } catch (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Fehler beim Speichern.')),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              title: Text(loc.settingsCreatineDisable),
+              trailing: enabled ? null : const Icon(Icons.check),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await settingsProv.setCreatineEnabled(false);
+                  elogUi('settings_set_creatine_enabled', {'enabled': false});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.settingsCreatineSavedDisabled)),
+                  );
+                } catch (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Fehler beim Speichern.')),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showSettingsDialog() {
     final loc = AppLocalizations.of(context)!;
     showDialog(
@@ -142,6 +196,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _showLanguageDialog();
                 },
                 child: Text(loc.settingsOptionLanguage),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  elogUi('settings_open_creatine', {});
+                  _showCreatineSheet();
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(loc.settingsCreatineTracker)),
+                    Text(context.read<SettingsProvider>().creatineEnabled
+                        ? loc.settingsCreatineEnabled
+                        : loc.settingsCreatineDisabled),
+                  ],
+                ),
               ),
               SimpleDialogOption(
                 onPressed: () {
@@ -210,13 +279,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
-          IconButton(
-            icon: const Icon(Icons.medication),
-            tooltip: loc.creatineTitle,
-            onPressed: () {
-              Navigator.pushNamed(context, AppRouter.creatine);
-            },
-          ),
+          if (context.watch<SettingsProvider>().creatineEnabled)
+            IconButton(
+              icon: const Icon(Icons.medication),
+              tooltip: loc.creatineTitle,
+              onPressed: () {
+                Navigator.pushNamed(context, AppRouter.creatine);
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: loc.settingsIconTooltip,

@@ -857,6 +857,48 @@ abstract class AppLocalizations {
   /// **'Change username'**
   String get settingsOptionChangeUsername;
 
+  /// Settings option for creatine tracker
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine tracker'**
+  String get settingsCreatineTracker;
+
+  /// Enable creatine tracker
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get settingsCreatineEnable;
+
+  /// Disable creatine tracker
+  ///
+  /// In en, this message translates to:
+  /// **'Disable'**
+  String get settingsCreatineDisable;
+
+  /// Status when creatine tracker enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get settingsCreatineEnabled;
+
+  /// Status when creatine tracker disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get settingsCreatineDisabled;
+
+  /// Snackbar when creatine tracker enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine tracker enabled.'**
+  String get settingsCreatineSavedEnabled;
+
+  /// Snackbar when creatine tracker disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine tracker disabled.'**
+  String get settingsCreatineSavedDisabled;
+
   /// Title for public profile dialog
   ///
   /// In en, this message translates to:
