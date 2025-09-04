@@ -17,6 +17,7 @@ import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import '../widgets/change_username_sheet.dart';
+import 'package:tapem/app_router.dart';
 
 const bool enableFriends = true;
 
@@ -211,6 +212,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.medication),
+            tooltip: loc.creatineTitle,
+            onPressed: () {
+              Navigator.pushNamed(context, AppRouter.creatine);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: loc.settingsIconTooltip,

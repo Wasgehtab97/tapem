@@ -155,6 +155,42 @@ abstract class AppLocalizations {
   /// **'Late workouts count toward previous day (rollover {hour}:00)'**
   String lateWorkoutsCountPrevDay(Object hour);
 
+  /// Title for creatine screen
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine'**
+  String get creatineTitle;
+
+  /// Button label when creatine taken today
+  ///
+  /// In en, this message translates to:
+  /// **'Taken today'**
+  String get creatineTakenToday;
+
+  /// Button label to confirm intake for a date
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm for {date}'**
+  String creatineConfirmForDate(Object date);
+
+  /// Button label to remove intake marking
+  ///
+  /// In en, this message translates to:
+  /// **'Remove mark'**
+  String get creatineRemoveMarking;
+
+  /// Snackbar when intake saved
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine for {date} saved'**
+  String creatineSaved(Object date);
+
+  /// Snackbar when intake removed
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine for {date} removed'**
+  String creatineRemoved(Object date);
+
   /// Error when e-mail address is malformed
   ///
   /// In en, this message translates to:

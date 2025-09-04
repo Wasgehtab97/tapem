@@ -29,6 +29,7 @@ import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.da
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
+import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -65,6 +66,7 @@ class AppRouter {
   static const friendsHome = '/friends';
   static const friendDetail = '/friend_detail';
   static const friendTrainingCalendar = '/friend_training_calendar';
+  static const creatine = '/creatine';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -232,6 +234,9 @@ class AppRouter {
             friendName: args['name'] ?? '',
           ),
         );
+
+      case creatine:
+        return MaterialPageRoute(builder: (_) => const CreatineScreen());
 
       default:
         return MaterialPageRoute(
