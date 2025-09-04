@@ -52,6 +52,16 @@
     "placeholders": {"hour": {}}
   },
 
+  "creatineTitle": "Kreatin",
+  "creatineTakenToday": "Heute genommen",
+  "creatineConfirmForDate": "Für {date} bestätigen",
+  "@creatineConfirmForDate": {"placeholders": {"date": {}}},
+  "creatineRemoveMarking": "Markierung entfernen",
+  "creatineSaved": "Kreatin für {date} gespeichert",
+  "@creatineSaved": {"placeholders": {"date": {}}},
+  "creatineRemoved": "Kreatin für {date} entfernt",
+  "@creatineRemoved": {"placeholders": {"date": {}}},
+
   "invalidEmailError": "Ungültige E-Mail-Adresse.",
   "@invalidEmailError": {
     "description": "Fehlermeldung bei ungültiger E-Mail-Adresse"

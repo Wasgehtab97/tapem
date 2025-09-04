@@ -52,6 +52,16 @@
     "placeholders": {"hour": {}}
   },
 
+  "creatineTitle": "Creatine",
+  "creatineTakenToday": "Taken today",
+  "creatineConfirmForDate": "Confirm for {date}",
+  "@creatineConfirmForDate": {"placeholders": {"date": {}}},
+  "creatineRemoveMarking": "Remove mark",
+  "creatineSaved": "Creatine for {date} saved",
+  "@creatineSaved": {"placeholders": {"date": {}}},
+  "creatineRemoved": "Creatine for {date} removed",
+  "@creatineRemoved": {"placeholders": {"date": {}}},
+
   "invalidEmailError": "Invalid e-mail address.",
   "@invalidEmailError": {
     "description": "Error when e-mail address is malformed"

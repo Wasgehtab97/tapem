@@ -45,6 +45,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get creatineTitle => 'Creatine';
+
+  @override
+  String get creatineTakenToday => 'Taken today';
+
+  @override
+  String creatineConfirmForDate(Object date) {
+    return 'Confirm for $date';
+    }
+
+  @override
+  String get creatineRemoveMarking => 'Remove mark';
+
+  @override
+  String creatineSaved(Object date) {
+    return 'Creatine for $date saved';
+  }
+
+  @override
+  String creatineRemoved(Object date) {
+    return 'Creatine for $date removed';
+  }
+
+  @override
   String get invalidEmailError => 'Invalid e-mail address.';
 
   @override
