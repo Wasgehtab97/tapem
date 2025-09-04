@@ -26,12 +26,19 @@ class ErrorRepo implements CreatineRepository {
 }
 
 void main() {
+  test('setSelectedDate sets key', () {
+    final prov = CreatineProvider(repository: FakeRepo());
+    final d = DateTime(2024, 1, 1);
+    prov.setSelectedDate(d);
+    expect(prov.selectedDateKey, toDateKeyLocal(d));
+  });
+
   test('toggleIntake adds and removes date', () async {
     final repo = FakeRepo();
     final prov = CreatineProvider(repository: repo);
     await prov.loadIntakeDates('u1', 2024);
     expect(prov.intakeDates, isEmpty);
-    final key = CreatineProvider.dateKeyFrom(DateTime(2024, 1, 1));
+    final key = toDateKeyLocal(DateTime(2024, 1, 1));
     await prov.toggleIntake('u1', key);
     expect(prov.intakeDates.contains(key), true);
     await prov.toggleIntake('u1', key);
@@ -42,7 +49,7 @@ void main() {
     final prov = CreatineProvider(repository: ErrorRepo());
     await prov.loadIntakeDates('u1', 2024);
     expect(prov.intakeDates, isEmpty);
-    final key = CreatineProvider.dateKeyFrom(DateTime(2024, 1, 1));
+    final key = toDateKeyLocal(DateTime(2024, 1, 1));
     expect(() => prov.toggleIntake('u1', key), throwsException);
   });
 }

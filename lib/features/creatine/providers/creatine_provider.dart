@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:tapem/core/logging/elog.dart';
 import '../data/creatine_repository.dart';
 
@@ -10,11 +9,14 @@ class CreatineProvider extends ChangeNotifier {
   final Set<String> _intakeDates = {};
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  bool _isToggling = false;
   Object? _error;
 
   Set<String> get intakeDates => _intakeDates;
   DateTime get selectedDate => _selectedDate;
+  String get selectedDateKey => toDateKeyLocal(_selectedDate);
   bool get isLoading => _isLoading;
+  bool get isToggling => _isToggling;
   Object? get error => _error;
 
   Future<void> loadIntakeDates(String uid, int year) async {
@@ -41,6 +43,8 @@ class CreatineProvider extends ChangeNotifier {
 
   Future<bool> toggleIntake(String uid, String dateKey) async {
     final exists = _intakeDates.contains(dateKey);
+    _isToggling = true;
+    notifyListeners();
     try {
       if (exists) {
         await _repo.deleteIntake(uid, dateKey);
@@ -50,14 +54,13 @@ class CreatineProvider extends ChangeNotifier {
         _intakeDates.add(dateKey);
       }
       elogUi('creatine_mark', {'dateKey': dateKey, 'mode': exists ? 'delete' : 'create'});
-      notifyListeners();
       return !exists;
     } catch (e) {
       _error = e;
-      notifyListeners();
       rethrow;
+    } finally {
+      _isToggling = false;
+      notifyListeners();
     }
   }
-
-  static String dateKeyFrom(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 }
