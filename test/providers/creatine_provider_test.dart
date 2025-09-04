@@ -33,15 +33,30 @@ void main() {
     expect(prov.selectedDateKey, toDateKeyLocal(d));
   });
 
+  test('canToggle only today or yesterday', () {
+    final prov = CreatineProvider(repository: FakeRepo());
+    final now = nowLocal();
+    prov.setSelectedDate(now);
+    expect(prov.canToggle, true);
+    prov.setSelectedDate(now.subtract(const Duration(days: 1)));
+    expect(prov.canToggle, true);
+    prov.setSelectedDate(now.subtract(const Duration(days: 2)));
+    expect(prov.canToggle, false);
+    prov.setSelectedDate(now.add(const Duration(days: 1)));
+    expect(prov.canToggle, false);
+  });
+
   test('toggleIntake adds and removes date', () async {
     final repo = FakeRepo();
     final prov = CreatineProvider(repository: repo);
     await prov.loadIntakeDates('u1', 2024);
     expect(prov.intakeDates, isEmpty);
-    final key = toDateKeyLocal(DateTime(2024, 1, 1));
-    await prov.toggleIntake('u1', key);
+    final d = nowLocal();
+    prov.setSelectedDate(d);
+    final key = prov.selectedDateKey;
+    await prov.toggleIntake('u1');
     expect(prov.intakeDates.contains(key), true);
-    await prov.toggleIntake('u1', key);
+    await prov.toggleIntake('u1');
     expect(prov.intakeDates.contains(key), false);
   });
 
@@ -49,7 +64,16 @@ void main() {
     final prov = CreatineProvider(repository: ErrorRepo());
     await prov.loadIntakeDates('u1', 2024);
     expect(prov.intakeDates, isEmpty);
-    final key = toDateKeyLocal(DateTime(2024, 1, 1));
-    expect(() => prov.toggleIntake('u1', key), throwsException);
+    prov.setSelectedDate(nowLocal());
+    expect(() => prov.toggleIntake('u1'), throwsException);
+  });
+
+  test('toggleIntake refuses when not allowed', () async {
+    final repo = FakeRepo();
+    final prov = CreatineProvider(repository: repo);
+    prov.setSelectedDate(DateTime(2000, 1, 1));
+    expect(prov.canToggle, false);
+    expect(() => prov.toggleIntake('u1'), throwsStateError);
+    expect(repo.dates, isEmpty);
   });
 }

@@ -69,6 +69,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get creatineTakenYesterday => 'Gestern genommen';
+
+  @override
+  String get creatineOnlyTodayOrYesterday => 'Nur heute oder gestern möglich.';
+
+  @override
+  String get signInRequiredError => 'Anmeldung erforderlich.';
+
+  @override
+  String get invalidDateError => 'Ungültiges Datum.';
+
+  @override
   String get invalidEmailError => 'Ungültige E-Mail-Adresse.';
 
   @override

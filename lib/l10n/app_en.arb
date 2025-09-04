@@ -61,6 +61,10 @@
   "@creatineSaved": {"placeholders": {"date": {}}},
   "creatineRemoved": "Creatine for {date} removed",
   "@creatineRemoved": {"placeholders": {"date": {}}},
+  "creatineTakenYesterday": "Taken yesterday",
+  "creatineOnlyTodayOrYesterday": "Only today or yesterday allowed.",
+  "signInRequiredError": "Sign-in required.",
+  "invalidDateError": "Invalid date.",
 
   "invalidEmailError": "Invalid e-mail address.",
   "@invalidEmailError": {

@@ -7,7 +7,7 @@ class CreatineProvider extends ChangeNotifier {
   CreatineProvider({required CreatineRepository repository}) : _repo = repository;
 
   final Set<String> _intakeDates = {};
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = atStartOfLocalDay(nowLocal());
   bool _isLoading = false;
   bool _isToggling = false;
   Object? _error;
@@ -16,7 +16,8 @@ class CreatineProvider extends ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   String get selectedDateKey => toDateKeyLocal(_selectedDate);
   bool get isLoading => _isLoading;
-  bool get isToggling => _isToggling;
+  bool get busy => _isToggling;
+  bool get canToggle => isTodayOrYesterday(_selectedDate);
   Object? get error => _error;
 
   Future<void> loadIntakeDates(String uid, int year) async {
@@ -37,11 +38,15 @@ class CreatineProvider extends ChangeNotifier {
   }
 
   void setSelectedDate(DateTime d) {
-    _selectedDate = DateTime(d.year, d.month, d.day);
+    _selectedDate = atStartOfLocalDay(d);
     notifyListeners();
   }
 
-  Future<bool> toggleIntake(String uid, String dateKey) async {
+  Future<bool> toggleIntake(String uid) async {
+    if (!canToggle) {
+      throw StateError('Nur heute oder gestern möglich.');
+    }
+    final dateKey = selectedDateKey;
     final exists = _intakeDates.contains(dateKey);
     _isToggling = true;
     notifyListeners();

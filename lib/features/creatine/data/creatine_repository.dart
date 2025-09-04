@@ -28,6 +28,7 @@ class CreatineRepository {
 
   Future<void> setIntake(String uid, String dateKey) async {
     final key = _requireDateKey(dateKey);
+    _requireAllowedDate(key);
     await _col(uid).doc(key).set({
       'uid': uid,
       'dateKey': key,
@@ -38,6 +39,7 @@ class CreatineRepository {
 
   Future<void> deleteIntake(String uid, String dateKey) async {
     final key = _requireDateKey(dateKey);
+    _requireAllowedDate(key);
     await _col(uid).doc(key).delete();
   }
 
@@ -48,6 +50,14 @@ class CreatineRepository {
       throw StateError('Ungültiges Datum');
     }
     return key;
+  }
+
+  void _requireAllowedDate(String key) {
+    final today = toDateKeyLocal(nowLocal());
+    final yesterday = toDateKeyLocal(nowLocal().subtract(const Duration(days: 1)));
+    if (key != today && key != yesterday) {
+      throw StateError('Nur heute oder gestern möglich.');
+    }
   }
 }
 
@@ -63,4 +73,18 @@ String toDateKeyLocal(DateTime d) {
   final local = d.toLocal();
   final normalized = DateTime(local.year, local.month, local.day);
   return DateFormat('yyyy-MM-dd').format(normalized);
+}
+
+DateTime nowLocal() => DateTime.now().toLocal();
+
+DateTime atStartOfLocalDay(DateTime d) {
+  final l = d.toLocal();
+  return DateTime(l.year, l.month, l.day);
+}
+
+bool isTodayOrYesterday(DateTime d) {
+  final day = atStartOfLocalDay(d);
+  final today = atStartOfLocalDay(nowLocal());
+  final yesterday = today.subtract(const Duration(days: 1));
+  return day.isAtSameMomentAs(today) || day.isAtSameMomentAs(yesterday);
 }

@@ -5,6 +5,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
+import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
 import '../../providers/creatine_provider.dart';
 import '../../data/creatine_repository.dart';
 
@@ -18,6 +19,24 @@ class CreatineScreen extends StatefulWidget {
 
 class _CreatineScreenState extends State<CreatineScreen> {
   String _uid = '';
+
+  Future<void> _openCalendar(CreatineProvider prov) async {
+    elogUi('creatine_open_popup', {});
+    final selected = await showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CalendarPopup(
+        trainingDates: prov.intakeDates.toList(),
+        initialYear: DateTime.now().year,
+        userId: _uid,
+        navigateOnTap: false,
+      ),
+    );
+    if (selected != null) {
+      prov.setSelectedDate(selected);
+    }
+  }
 
   @override
   void initState() {
@@ -48,19 +67,23 @@ class _CreatineScreenState extends State<CreatineScreen> {
     final selected = prov.selectedDate;
     final dateKey = prov.selectedDateKey;
     final isTaken = prov.intakeDates.contains(dateKey);
-    final today = DateTime.now();
-    final isToday = selected.year == today.year &&
-        selected.month == today.month &&
-        selected.day == today.day;
     final formatted = DateFormat('dd.MM.yyyy').format(selected);
+    final isToday = atStartOfLocalDay(selected)
+        .isAtSameMomentAs(atStartOfLocalDay(nowLocal()));
+    final isYesterday = atStartOfLocalDay(selected)
+        .isAtSameMomentAs(atStartOfLocalDay(nowLocal()).subtract(const Duration(days: 1)));
     String label;
     if (isTaken) {
       label = loc.creatineRemoveMarking;
+    } else if (isToday) {
+      label = loc.creatineTakenToday;
+    } else if (isYesterday) {
+      label = loc.creatineConfirmForDate(formatted);
     } else {
-      label = isToday
-          ? loc.creatineTakenToday
-          : loc.creatineConfirmForDate(formatted);
+      label = loc.creatineConfirmForDate(formatted);
     }
+    final canToggle = prov.canToggle;
+    final buttonEnabled = canToggle && !prov.busy && _uid.isNotEmpty;
 
     Widget body;
     if (prov.isLoading) {
@@ -74,39 +97,49 @@ class _CreatineScreenState extends State<CreatineScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  Calendar(
-                    trainingDates: prov.intakeDates.toList(),
-                    showNavigation: false,
-                    year: year,
-                    onDayTap: (d) => prov.setSelectedDate(d),
-                  ),
-                  _SelectionOverlay(date: selected, year: year),
-                ],
+              child: GestureDetector(
+                onTap: () => _openCalendar(prov),
+                child: Stack(
+                  children: [
+                    Calendar(
+                      trainingDates: prov.intakeDates.toList(),
+                      showNavigation: false,
+                      year: year,
+                    ),
+                    _SelectionOverlay(date: selected, year: year),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            ElevatedButton.icon(
-              onPressed: (_uid.isEmpty || prov.isToggling)
-                  ? null
-                  : () async {
-                      try {
-                        final added =
-                            await prov.toggleIntake(_uid, dateKey);
-                        final snack = added
-                            ? loc.creatineSaved(formatted)
-                            : loc.creatineRemoved(formatted);
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(snack)));
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${loc.errorPrefix}: $e')),
-                        );
+            GestureDetector(
+              onTap: () {
+                if (!buttonEnabled && !prov.busy && _uid.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.creatineOnlyTodayOrYesterday)),
+                  );
+                }
+              },
+              child: ElevatedButton.icon(
+                onPressed: buttonEnabled
+                    ? () async {
+                        try {
+                          final added = await prov.toggleIntake(_uid);
+                          final snack = added
+                              ? loc.creatineSaved(formatted)
+                              : loc.creatineRemoved(formatted);
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(snack)));
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${loc.errorPrefix}: $e')),
+                          );
+                        }
                       }
-                    },
-              icon: const Icon(Icons.check),
-              label: Text(label),
+                    : null,
+                icon: const Icon(Icons.check),
+                label: Text(label),
+              ),
             ),
           ],
         ),
