@@ -26,6 +26,7 @@ import 'app_router.dart';
 import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/core/providers/app_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/history_provider.dart';
@@ -284,6 +285,7 @@ Future<void> main() async {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
 
         // Friends feature
         Provider<FriendsApi>(create: (_) => FriendsApi()),

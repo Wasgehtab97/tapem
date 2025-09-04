@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -54,12 +55,21 @@ class _CreatineScreenState extends State<CreatineScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final loc = AppLocalizations.of(context)!;
       try {
         _uid = (widget.userId?.trim().isNotEmpty == true)
             ? widget.userId!.trim()
             : currentUidOrFail();
+        final settingsProv = context.read<SettingsProvider>();
+        await settingsProv.load(_uid);
+        if (!settingsProv.creatineEnabled) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.settingsCreatineSavedDisabled)),
+          );
+          Navigator.pop(context);
+          return;
+        }
         context
             .read<CreatineProvider>()
             .loadIntakeDates(_uid, DateTime.now().year);

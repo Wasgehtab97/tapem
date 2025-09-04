@@ -178,6 +178,10 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      match /settings/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+
       match /creatine_intakes/{date} {
         allow read, write: if isOwner(uid);
       }
