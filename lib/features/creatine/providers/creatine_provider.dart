@@ -38,7 +38,11 @@ class CreatineProvider extends ChangeNotifier {
   }
 
   void setSelectedDate(DateTime d) {
-    _selectedDate = atStartOfLocalDay(d);
+    final day = atStartOfLocalDay(d);
+    if (!isTodayOrYesterday(day)) {
+      return;
+    }
+    _selectedDate = day;
     notifyListeners();
   }
 

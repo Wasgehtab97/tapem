@@ -7,6 +7,7 @@ import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 class FakeRepo implements CreatineRepository {
   Set<String> dates;
@@ -67,4 +68,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(CalendarPopup), findsNothing);
   });
+
+  testWidgets('taps link button', (tester) async {
+    final repo = FakeRepo({});
+    final prov = CreatineProvider(repository: repo);
+    await prov.loadIntakeDates('u1', DateTime.now().year);
+
+    final fakeLauncher = _FakeLauncher();
+    UrlLauncherPlatform.instance = fakeLauncher;
+
+    await pumpScreen(tester, prov);
+    await tester.tap(find.text('No creatine?'));
+    await tester.pump();
+    expect(fakeLauncher.launched, true);
+  });
+}
+
+class _FakeLauncher extends UrlLauncherPlatform {
+  bool launched = false;
+  @override
+  Future<bool> launchUrl(Uri url, LaunchOptions options) async {
+    launched = true;
+    return true;
+  }
+
+  @override
+  Future<bool> canLaunchUrl(Uri url) async => true;
 }

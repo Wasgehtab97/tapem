@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/creatine_provider.dart';
 import '../../data/creatine_repository.dart';
 
@@ -33,8 +34,20 @@ class _CreatineScreenState extends State<CreatineScreen> {
         navigateOnTap: false,
       ),
     );
-    if (selected != null) {
+    if (selected != null && isTodayOrYesterday(selected)) {
       prov.setSelectedDate(selected);
+    }
+  }
+
+  Future<void> _openCreatineLink() async {
+    final url = Uri.parse('https://www.ruehl24.de/de/aminosaeuren-creatin/creatin/');
+    elogUi('creatine_link_click', {'url': url.toString()});
+    final loc = AppLocalizations.of(context)!;
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.creatineOpenLinkError)));
     }
   }
 
@@ -72,15 +85,13 @@ class _CreatineScreenState extends State<CreatineScreen> {
         .isAtSameMomentAs(atStartOfLocalDay(nowLocal()));
     final isYesterday = atStartOfLocalDay(selected)
         .isAtSameMomentAs(atStartOfLocalDay(nowLocal()).subtract(const Duration(days: 1)));
-    String label;
+    String label = '';
     if (isTaken) {
       label = loc.creatineRemoveMarking;
     } else if (isToday) {
       label = loc.creatineTakenToday;
     } else if (isYesterday) {
-      label = loc.creatineConfirmForDate(formatted);
-    } else {
-      label = loc.creatineConfirmForDate(formatted);
+      label = loc.creatineTakenYesterday;
     }
     final canToggle = prov.canToggle;
     final buttonEnabled = canToggle && !prov.busy && _uid.isNotEmpty;
@@ -99,28 +110,23 @@ class _CreatineScreenState extends State<CreatineScreen> {
             Expanded(
               child: GestureDetector(
                 onTap: () => _openCalendar(prov),
-                child: Stack(
-                  children: [
-                    Calendar(
-                      trainingDates: prov.intakeDates.toList(),
-                      showNavigation: false,
-                      year: year,
-                    ),
-                    _SelectionOverlay(date: selected, year: year),
-                  ],
+                child: Calendar(
+                  trainingDates: prov.intakeDates.toList(),
+                  showNavigation: false,
+                  year: year,
                 ),
               ),
             ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _openCreatineLink,
+                child: Text(loc.creatineNoCreatine),
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
-            GestureDetector(
-              onTap: () {
-                if (!buttonEnabled && !prov.busy && _uid.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.creatineOnlyTodayOrYesterday)),
-                  );
-                }
-              },
-              child: ElevatedButton.icon(
+            if (canToggle)
+              ElevatedButton.icon(
                 onPressed: buttonEnabled
                     ? () async {
                         try {
@@ -140,7 +146,6 @@ class _CreatineScreenState extends State<CreatineScreen> {
                 icon: const Icon(Icons.check),
                 label: Text(label),
               ),
-            ),
           ],
         ),
       );
@@ -149,70 +154,6 @@ class _CreatineScreenState extends State<CreatineScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(loc.creatineTitle)),
       body: body,
-    );
-  }
-}
-
-class _SelectionOverlay extends StatelessWidget {
-  final DateTime date;
-  final int year;
-  const _SelectionOverlay({required this.date, required this.year});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: LayoutBuilder(
-        builder: (ctx, constraints) {
-          const hPad = 16.0;
-          const margin = 1.0;
-          final firstOfYear = DateTime(year, 1, 1);
-          final lastOfYear = DateTime(year, 12, 31);
-          final startOffset = (firstOfYear.weekday + 6) % 7;
-          final gridStart = firstOfYear.subtract(Duration(days: startOffset));
-          final endOffset = 6 - ((lastOfYear.weekday + 6) % 7);
-          final gridEnd = lastOfYear.add(Duration(days: endOffset));
-          final totalDays = gridEnd.difference(gridStart).inDays + 1;
-          final weekCount = (totalDays / 7).ceil();
-
-          final usable = constraints.maxWidth - hPad * 2;
-          final rawSize = (usable - weekCount * margin * 2) / weekCount;
-          final cellSize = rawSize.clamp(4.0, usable);
-
-          final diff = date.difference(gridStart).inDays;
-          if (diff < 0 || diff >= totalDays) {
-            return const SizedBox.shrink();
-          }
-          final w = diff ~/ 7;
-          final d = diff % 7;
-          final left = hPad + w * (cellSize + margin * 2);
-          final top = 20 + 4 + d * (cellSize + margin * 2);
-
-          final today = DateTime.now();
-          final isToday = today.year == date.year &&
-              today.month == date.month &&
-              today.day == date.day;
-          final color = isToday
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.error;
-          final width = isToday ? 3.0 : 2.0;
-
-          return Stack(
-            children: [
-              Positioned(
-                left: left,
-                top: top,
-                child: Container(
-                  width: cellSize,
-                  height: cellSize,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: color, width: width),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

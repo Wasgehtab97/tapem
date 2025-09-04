@@ -63,6 +63,8 @@
   "@creatineRemoved": {"placeholders": {"date": {}}},
   "creatineTakenYesterday": "Taken yesterday",
   "creatineOnlyTodayOrYesterday": "Only today or yesterday allowed.",
+  "creatineNoCreatine": "No creatine?",
+  "creatineOpenLinkError": "Could not open link.",
   "signInRequiredError": "Sign-in required.",
   "invalidDateError": "Invalid date.",
 
