@@ -17,6 +17,7 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_overview_
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -120,14 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(userDisplay),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.of(context).pushReplacementNamed(AppRouter.auth);
-            },
-          ),
+        actions: const [
+          NfcScanButton(),
         ],
       ),
       body: tabs[_currentIndex].page,

@@ -7,7 +7,6 @@ import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
-import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
@@ -187,7 +186,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: Text(loc.profileTitle),
         actions: [
-          const NfcScanButton(),
           if (enableFriends)
             Consumer<FriendsProvider>(
               builder: (context, friends, _) {
@@ -223,6 +221,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.settings),
             tooltip: loc.settingsIconTooltip,
             onPressed: _showSettingsDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: loc.logoutTooltip,
+            onPressed: () {
+              context.read<AuthProvider>().logout();
+              Navigator.of(context).pushReplacementNamed(AppRouter.auth);
+            },
           ),
         ],
       ),
