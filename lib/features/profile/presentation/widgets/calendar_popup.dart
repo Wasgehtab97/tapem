@@ -11,12 +11,14 @@ class CalendarPopup extends StatefulWidget {
   final List<String> trainingDates;
   final int initialYear;
   final String userId;
+  final bool navigateOnTap;
 
   const CalendarPopup({
     Key? key,
     required this.trainingDates,
     required this.initialYear,
     required this.userId,
+    this.navigateOnTap = true,
   }) : super(key: key);
 
   @override
@@ -91,12 +93,13 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 year: widget.initialYear,
                 showNavigation: false,
                 onDayTap: (date) {
-                  // Popup schließen und weiterleiten
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed(
-                    AppRouter.trainingDetails,
-                    arguments: {'userId': widget.userId, 'date': date},
-                  );
+                  Navigator.of(context).pop(date);
+                  if (widget.navigateOnTap) {
+                    Navigator.of(context).pushNamed(
+                      AppRouter.trainingDetails,
+                      arguments: {'userId': widget.userId, 'date': date},
+                    );
+                  }
                 },
               ),
             ),

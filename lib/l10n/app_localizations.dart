@@ -191,6 +191,30 @@ abstract class AppLocalizations {
   /// **'Creatine for {date} removed'**
   String creatineRemoved(Object date);
 
+  /// Label when intake confirmed for yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Taken yesterday'**
+  String get creatineTakenYesterday;
+
+  /// Error when selected date is not today or yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Only today or yesterday allowed.'**
+  String get creatineOnlyTodayOrYesterday;
+
+  /// Error when authentication is required
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in required.'**
+  String get signInRequiredError;
+
+  /// Error when date is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid date.'**
+  String get invalidDateError;
+
   /// Error when e-mail address is malformed
   ///
   /// In en, this message translates to:

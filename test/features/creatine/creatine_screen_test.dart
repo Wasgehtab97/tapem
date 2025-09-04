@@ -5,6 +5,8 @@ import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dar
 import 'package:tapem/features/creatine/providers/creatine_provider.dart';
 import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
+import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
 
 class FakeRepo implements CreatineRepository {
   Set<String> dates;
@@ -51,5 +53,18 @@ void main() {
     await prov.loadIntakeDates('u1', DateTime.now().year);
     await pumpScreen(tester, prov);
     expect(find.text('Remove mark'), findsOneWidget);
+  });
+
+  testWidgets('opens popup and closes after selection', (tester) async {
+    final repo = FakeRepo({});
+    final prov = CreatineProvider(repository: repo);
+    await prov.loadIntakeDates('u1', DateTime.now().year);
+    await pumpScreen(tester, prov);
+    await tester.tap(find.byType(Calendar));
+    await tester.pumpAndSettle();
+    expect(find.byType(CalendarPopup), findsOneWidget);
+    await tester.tap(find.byType(Calendar).last);
+    await tester.pumpAndSettle();
+    expect(find.byType(CalendarPopup), findsNothing);
   });
 }
