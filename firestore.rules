@@ -141,7 +141,16 @@ service cloud.firestore {
       // Keep profile readable for authed users (e.g., username checks)
       allow create: if isOwner(uid);
       allow read: if isAuthed();
-      allow update: if isOwner(uid);
+      allow update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly([
+          'username',
+          'usernameLower',
+          'showInLeaderboard',
+          'publicProfile',
+          'avatarUrl',
+          'avatarKey',
+          'avatarUpdatedAt'
+        ]);
 
       // Friends list (symmetrische Kante)
       match /friends/{fid} {
