@@ -27,6 +27,7 @@ import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/core/recent_devices_store.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -827,6 +828,7 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '✅ [Provider] save done. remainingSets=${_setsBrief(_sets)} lastSessionId=$sessionId',
       );
+      await RecentDevicesStore.record(gymId, _device!.uid);
       if (_draftKey != null) {
         await _draftRepo.delete(_draftKey!);
       }
