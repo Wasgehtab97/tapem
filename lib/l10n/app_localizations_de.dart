@@ -711,4 +711,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get friends_search_min_chars => 'Mindestens 2 Zeichen eingeben';
+
+  @override
+  String get bodyweight => 'Körpergewicht';
+
+  @override
+  String bodyweightPlus(Object kg) {
+    return 'Körpergewicht + $kg kg';
+  }
+
+  @override
+  String get bodyweightToggleTooltip => 'Körpergewicht umschalten';
 }

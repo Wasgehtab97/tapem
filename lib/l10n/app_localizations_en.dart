@@ -711,4 +711,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friends_search_min_chars => 'Enter at least 2 characters';
+
+  @override
+  String get bodyweight => 'Bodyweight';
+
+  @override
+  String bodyweightPlus(Object kg) {
+    return 'Bodyweight + $kg kg';
+  }
+
+  @override
+  String get bodyweightToggleTooltip => 'Toggle bodyweight';
 }

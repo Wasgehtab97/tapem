@@ -356,6 +356,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           setNumber: e.setNumber,
                           dropWeightKg: e.dropWeightKg,
                           dropReps: e.dropReps,
+                          isBodyweight: e.isBodyweight,
                         ))
                     .toList();
                 elogUi('HISTORY_CARD_RENDER', {

@@ -97,12 +97,10 @@ class SetCard extends StatefulWidget {
 class SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
-  late final TextEditingController _rirCtrl;
   late final TextEditingController _dropWeightCtrl;
   late final TextEditingController _dropRepsCtrl;
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
-  late final FocusNode _rirFocus;
   late final FocusNode _dropWeightFocus;
   late final FocusNode _dropRepsFocus;
 
@@ -138,14 +136,12 @@ class SetCardState extends State<SetCard> {
     super.initState();
     _weightCtrl = TextEditingController(text: widget.set['weight'] as String?);
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
-    _rirCtrl = TextEditingController(text: widget.set['rir'] as String?);
     _dropWeightCtrl =
         TextEditingController(text: widget.set['dropWeight'] as String?);
     _dropRepsCtrl =
         TextEditingController(text: widget.set['dropReps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
-    _rirFocus = FocusNode();
     _dropWeightFocus = FocusNode();
     _dropRepsFocus = FocusNode();
 
@@ -153,9 +149,11 @@ class SetCardState extends State<SetCard> {
       _weightCtrl.addListener(() {
         if (_muteCtrls) return;
         _slog(widget.index, 'weight → "${_weightCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
+        final prov = context.read<DeviceProvider>();
+        prov.updateSet(
           widget.index,
           weight: _weightCtrl.text,
+          isBodyweight: prov.isBodyweightMode,
         );
       });
       _repsCtrl.addListener(() {
@@ -164,14 +162,6 @@ class SetCardState extends State<SetCard> {
         context.read<DeviceProvider>().updateSet(
           widget.index,
           reps: _repsCtrl.text,
-        );
-      });
-      _rirCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'rir → "${_rirCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          rir: _rirCtrl.text,
         );
       });
       _dropWeightCtrl.addListener(() {
@@ -200,7 +190,6 @@ class SetCardState extends State<SetCard> {
     super.didUpdateWidget(oldWidget);
     final w = widget.set['weight'] as String? ?? '';
     final r = widget.set['reps'] as String? ?? '';
-    final rir = widget.set['rir'] as String? ?? '';
     final dw = widget.set['dropWeight'] as String? ?? '';
     final dr = widget.set['dropReps'] as String? ?? '';
     if (oldWidget.set['weight'] != w) {
@@ -210,10 +199,6 @@ class SetCardState extends State<SetCard> {
     if (oldWidget.set['reps'] != r) {
       _slog(widget.index, 'didUpdateWidget sync reps "$r"');
       _setTextSilently(_repsCtrl, r, 'reps');
-    }
-    if (oldWidget.set['rir'] != rir) {
-      _slog(widget.index, 'didUpdateWidget sync rir "$rir"');
-      _setTextSilently(_rirCtrl, rir, 'rir');
     }
     if (oldWidget.set['dropWeight'] != dw) {
       _slog(widget.index, 'didUpdateWidget sync dropWeight "$dw"');
@@ -230,12 +215,10 @@ class SetCardState extends State<SetCard> {
     _slog(widget.index, 'dispose()');
     _weightCtrl.dispose();
     _repsCtrl.dispose();
-    _rirCtrl.dispose();
     _dropWeightCtrl.dispose();
     _dropRepsCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
-    _rirFocus.dispose();
     _dropWeightFocus.dispose();
     _dropRepsFocus.dispose();
     super.dispose();
@@ -298,6 +281,7 @@ class SetCardState extends State<SetCard> {
       gradient = Tone.gradient(gradient, delta);
     }
 
+    final prov = context.watch<DeviceProvider>();
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
     final dropActive =
@@ -305,8 +289,12 @@ class SetCardState extends State<SetCard> {
             (widget.set['dropReps'] ?? '').toString().isNotEmpty;
     final weight = (widget.set['weight'] ?? '').toString().trim();
     final reps = (widget.set['reps'] ?? '').toString().trim();
-    final filled = weight.isNotEmpty &&
-        double.tryParse(weight.replaceAll(',', '.')) != null &&
+    final isBw = widget.set['isBodyweight'] == true;
+    final filled = (isBw
+            ? (weight.isEmpty ||
+                double.tryParse(weight.replaceAll(',', '.')) != null)
+            : (weight.isNotEmpty &&
+                double.tryParse(weight.replaceAll(',', '.')) != null)) &&
         reps.isNotEmpty &&
         int.tryParse(reps) != null;
 
@@ -341,7 +329,7 @@ class SetCardState extends State<SetCard> {
                   child: _InputPill(
                     controller: _weightCtrl,
                     focusNode: _weightFocus,
-                    label: 'kg',
+                    label: prov.isBodyweightMode ? loc.bodyweight : 'kg',
                     readOnly: done || widget.readOnly,
                     tokens: tokens,
                     dense: dense,
@@ -467,45 +455,6 @@ class SetCardState extends State<SetCard> {
                                 _dropRepsCtrl,
                                 allowDecimal: false,
                               ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: dense ? 8 : 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _rirCtrl,
-                      focusNode: _rirFocus,
-                      decoration: const InputDecoration(
-                        labelText: 'RIR',
-                        isDense: true,
-                      ),
-                      enabled: !widget.readOnly,
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      onTap: done || widget.readOnly
-                          ? null
-                          : () =>
-                              _openKeypad(_rirCtrl, allowDecimal: false),
-                    ),
-                  ),
-                  SizedBox(width: dense ? 8 : 12),
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      enabled: !widget.readOnly,
-                      readOnly: widget.readOnly || done,
-                      initialValue: widget.set['note'] as String?,
-                      decoration: InputDecoration(
-                        labelText: loc.noteFieldLabel,
-                        isDense: true,
-                      ),
-                      onChanged: (v) {
-                        _slog(widget.index, 'note → "$v"');
-                        prov.updateSet(widget.index, note: v);
-                      },
                     ),
                   ),
                 ],

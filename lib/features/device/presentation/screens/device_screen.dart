@@ -468,10 +468,21 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
             FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
             IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Zur aktuellen Session',
-              onPressed: () =>
-                  _pagerKey.currentState?.animateToPage(0),
+              icon: Icon(
+                Icons.accessibility_new,
+                color: prov.isBodyweightMode
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+              ),
+              tooltip: loc.bodyweightToggleTooltip,
+              onPressed: () {
+                prov.toggleBodyweightMode();
+                elogUi('bodyweight_toggle', {
+                  'enabled': prov.isBodyweightMode,
+                  'deviceId': widget.deviceId,
+                  'exerciseId': widget.exerciseId,
+                });
+              },
             ),
             IconButton(
               icon: const Icon(Icons.history),
@@ -537,7 +548,6 @@ class _PlannedTable extends StatefulWidget {
 class _PlannedTableState extends State<_PlannedTable> {
   final List<TextEditingController> _weightCtrls = [];
   final List<TextEditingController> _repsCtrls = [];
-  final List<TextEditingController> _rirCtrls = [];
 
   // 🔒 Silent-update Mechanik
   bool _muted = false;
@@ -556,7 +566,6 @@ class _PlannedTableState extends State<_PlannedTable> {
       final i = _weightCtrls.length;
       _weightCtrls.add(TextEditingController(text: sets[i]['weight'] ?? ''));
       _repsCtrls.add(TextEditingController(text: sets[i]['reps'] ?? ''));
-      _rirCtrls.add(TextEditingController(text: sets[i]['rir'] ?? ''));
 
       _weightCtrls[i].addListener(() {
         if (_muted) return;
@@ -569,25 +578,18 @@ class _PlannedTableState extends State<_PlannedTable> {
         if (_muted) return;
         context.read<DeviceProvider>().updateSet(i, reps: _repsCtrls[i].text);
       });
-      _rirCtrls[i].addListener(() {
-        if (_muted) return;
-        context.read<DeviceProvider>().updateSet(i, rir: _rirCtrls[i].text);
-      });
     }
 
     while (_weightCtrls.length > sets.length) {
       _weightCtrls.removeLast().dispose();
       _repsCtrls.removeLast().dispose();
-      _rirCtrls.removeLast().dispose();
     }
 
     for (var i = 0; i < sets.length; i++) {
       final w = sets[i]['weight'] ?? '';
       final r = sets[i]['reps'] ?? '';
-      final rir = sets[i]['rir'] ?? '';
       _setTextSilently(_weightCtrls[i], w);
       _setTextSilently(_repsCtrls[i], r);
-      _setTextSilently(_rirCtrls[i], rir);
     }
   }
 
@@ -597,9 +599,6 @@ class _PlannedTableState extends State<_PlannedTable> {
       c.dispose();
     }
     for (final c in _repsCtrls) {
-      c.dispose();
-    }
-    for (final c in _rirCtrls) {
       c.dispose();
     }
     super.dispose();
@@ -632,7 +631,7 @@ class _PlannedTableState extends State<_PlannedTable> {
 
     final weightHint = widget.entry.weight?.toString();
     final repsHint = widget.entry.reps?.toString();
-    final rirHint = widget.entry.rir > 0 ? widget.entry.rir.toString() : null;
+    final loc = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -662,7 +661,8 @@ class _PlannedTableState extends State<_PlannedTable> {
                         key: ValueKey('w-${entrySet.key}'),
                         controller: _weightCtrls[entrySet.key],
                         decoration: InputDecoration(
-                          labelText: 'kg',
+                          labelText:
+                              prov.isBodyweightMode ? loc.bodyweight : 'kg',
                           hintText: weightHint,
                           isDense: true,
                         ),
@@ -705,42 +705,6 @@ class _PlannedTableState extends State<_PlannedTable> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        key: ValueKey('rir-${entrySet.key}'),
-                        controller: _rirCtrls[entrySet.key],
-                        decoration: InputDecoration(
-                          labelText: 'RIR',
-                          hintText: rirHint,
-                          isDense: true,
-                        ),
-                        readOnly: true,
-                        keyboardType: TextInputType.none,
-                        autofocus: false,
-                        onTap: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          context
-                              .read<OverlayNumericKeypadController>()
-                              .openFor(
-                                _rirCtrls[entrySet.key],
-                                allowDecimal: false,
-                              );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        key: ValueKey('n-${entrySet.key}'),
-                        initialValue: entrySet.value['note'],
-                        decoration: const InputDecoration(
-                          labelText: 'Notiz',
-                          isDense: true,
-                        ),
-                        onChanged: (v) => prov.updateSet(entrySet.key, note: v),
-                      ),
-                    ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () => prov.removeSet(entrySet.key),

@@ -4,16 +4,14 @@ class SessionSetVM {
   final int ordinal; // 1,2,3… only for main sets
   final num kg;
   final int reps;
-  final int? rir;
-  final String? note;
   final List<DropEntry> drops;
+  final bool isBodyweight;
   const SessionSetVM({
     required this.ordinal,
     required this.kg,
     required this.reps,
-    this.rir,
-    this.note,
     this.drops = const [],
+    this.isBodyweight = false,
   });
 }
 
@@ -25,15 +23,14 @@ List<SessionSetVM> mapSnapshotToVM(DeviceSessionSnapshot snap) {
       ordinal: ordinal++,
       kg: s.kg,
       reps: s.reps,
-      rir: s.rir,
-      note: s.note,
       drops: s.drops,
+      isBodyweight: s.isBodyweight,
     ));
   }
   return vm;
 }
 
-List<SessionSetVM> mapLegacySetsToVM(List<Map<String, String>> sets) {
+List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
   final vm = <SessionSetVM>[];
   var ordinal = 1;
   for (final s in sets) {
@@ -49,11 +46,10 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, String>> sets) {
             : <DropEntry>[];
     vm.add(SessionSetVM(
       ordinal: ordinal++,
-      kg: num.tryParse(s['weight'] ?? '0') ?? 0,
-      reps: int.tryParse(s['reps'] ?? '0') ?? 0,
-      rir: int.tryParse(s['rir'] ?? ''),
-      note: s['note'],
+      kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
+      reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
       drops: drops,
+      isBodyweight: (s['isBodyweight'] ?? 'false') == 'true',
     ));
   }
   return vm;

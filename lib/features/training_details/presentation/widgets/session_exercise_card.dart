@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import '../../domain/models/session.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 /// A reusable card displaying a session's sets for a single device/exercise.
 class SessionExerciseCard extends StatelessWidget {
@@ -58,13 +59,22 @@ class SessionExerciseCard extends StatelessWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${set.weight.toStringAsFixed(1)} kg',
-                        style: TextStyle(
-                          color: onBrand,
-                          fontSize: 14,
-                        ),
-                      ),
+                      Builder(builder: (context) {
+                        final loc = AppLocalizations.of(context)!;
+                        final wt = set.isBodyweight
+                            ? (set.weight == 0
+                                ? loc.bodyweight
+                                : loc.bodyweightPlus(
+                                    set.weight.toStringAsFixed(1)))
+                            : '${set.weight.toStringAsFixed(1)} kg';
+                        return Text(
+                          wt,
+                          style: TextStyle(
+                            color: onBrand,
+                            fontSize: 14,
+                          ),
+                        );
+                      }),
                       const SizedBox(width: 8),
                       const Icon(
                         Icons.repeat,

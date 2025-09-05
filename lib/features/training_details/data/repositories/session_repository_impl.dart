@@ -88,6 +88,7 @@ class SessionRepositoryImpl implements SessionRepository {
                 setNumber: dto.setNumber,
                 dropWeightKg: dto.dropWeightKg,
                 dropReps: dto.dropReps,
+                isBodyweight: dto.isBodyweight,
               ))
           .toList();
 

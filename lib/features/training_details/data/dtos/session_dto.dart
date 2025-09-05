@@ -16,6 +16,7 @@ class SessionDto {
   final int? dropReps;
   final String note;
   final DocumentReference<Map<String, dynamic>> reference;
+  final bool isBodyweight;
 
   SessionDto({
     required this.sessionId,
@@ -30,6 +31,7 @@ class SessionDto {
     this.dropReps,
     required this.note,
     required this.reference,
+    this.isBodyweight = false,
   });
 
   factory SessionDto.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -63,6 +65,7 @@ class SessionDto {
       dropReps: (data['dropReps'] as num?)?.toInt(),
       note: data['note'] as String? ?? '',
       reference: doc.reference,
+      isBodyweight: data['isBodyweight'] as bool? ?? false,
     );
   }
 }

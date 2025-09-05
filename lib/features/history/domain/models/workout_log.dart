@@ -9,11 +9,10 @@ class WorkoutLog {
   final DateTime timestamp;
   final double weight;
   final int reps;
-  final int? rir;
-  final String? note;
   final double? dropWeightKg;
   final int? dropReps;
   final int setNumber;
+  final bool isBodyweight;
 
   WorkoutLog({
     required this.id,
@@ -23,10 +22,9 @@ class WorkoutLog {
     required this.timestamp,
     required this.weight,
     required this.reps,
-    this.rir,
-    this.note,
     this.dropWeightKg,
     this.dropReps,
     required this.setNumber,
+    this.isBodyweight = false,
   });
 }

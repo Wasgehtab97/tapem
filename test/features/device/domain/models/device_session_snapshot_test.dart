@@ -15,11 +15,10 @@ void main() {
         SetEntry(
           kg: 20,
           reps: 10,
-          rir: 2,
           done: true,
-          note: 'set',
           drops: [DropEntry(kg: 10, reps: 5)],
         ),
+        SetEntry(kg: 0, reps: 5, isBodyweight: true),
       ],
     );
 
@@ -32,5 +31,7 @@ void main() {
     final decoded = DeviceSessionSnapshot.fromJson(json);
     expect(decoded.sessionId, snapshot.sessionId);
     expect(decoded.sets.first.drops.first.kg, 10);
+    expect(decoded.sets[1].isBodyweight, true);
+    expect(decoded.sets[1].kg, 0);
   });
 }

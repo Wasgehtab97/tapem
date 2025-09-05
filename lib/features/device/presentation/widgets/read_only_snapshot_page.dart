@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'set_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class ReadOnlySnapshotPage extends StatelessWidget {
   final DeviceSessionSnapshot snapshot;
@@ -34,6 +35,12 @@ class ReadOnlySnapshotPage extends StatelessWidget {
             itemBuilder: (context, i) {
               final s = snapshot.sets[i];
               final drops = s.drops.isNotEmpty ? s.drops : _legacyDrops(snapshot, i);
+              final loc = AppLocalizations.of(context)!;
+              final weightText = s.isBodyweight
+                  ? (s.kg == 0
+                      ? loc.bodyweight
+                      : loc.bodyweightPlus(s.kg))
+                  : s.kg.toString();
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -41,13 +48,12 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                     index: i,
                     set: {
                       'number': '${i + 1}',
-                      'weight': s.kg.toString(),
+                      'weight': weightText,
                       'reps': s.reps.toString(),
-                      'rir': s.rir?.toString() ?? '',
-                      'note': s.note,
                       'dropWeight': '',
                       'dropReps': '',
                       'done': s.done,
+                      'isBodyweight': s.isBodyweight,
                     },
                     readOnly: true,
                     size: SetCardSize.dense,
