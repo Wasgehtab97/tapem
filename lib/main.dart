@@ -46,6 +46,7 @@ import 'package:tapem/features/friends/data/friends_source.dart';
 import 'package:tapem/features/friends/data/user_search_source.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
+import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
 import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/features/creatine/providers/creatine_provider.dart';
 import 'package:tapem/features/friends/providers/friend_search_provider.dart';
@@ -306,6 +307,14 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => FriendCalendarProvider(),
+        ),
+        ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
+          create: (_) => FriendPresenceProvider(),
+          update: (_, friends, prov) {
+            prov ??= FriendPresenceProvider();
+            prov.updateUids(friends.friends.map((e) => e.friendUid).toList());
+            return prov;
+          },
         ),
 
         // Numeric keypad

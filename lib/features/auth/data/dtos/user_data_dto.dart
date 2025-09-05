@@ -12,6 +12,7 @@ class UserDataDto {
   final bool publicProfile;
   final String role;
   final DateTime createdAt;
+  final String avatarKey;
 
   UserDataDto({
     required this.userId,
@@ -24,6 +25,7 @@ class UserDataDto {
     required this.publicProfile,
     required this.role,
     required this.createdAt,
+    this.avatarKey = 'default',
   });
 
   factory UserDataDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -41,6 +43,7 @@ class UserDataDto {
       publicProfile: data['publicProfile'] as bool? ?? false,
       role: data['role'] as String,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      avatarKey: data['avatarKey'] as String? ?? 'default',
     );
   }
 
@@ -54,6 +57,7 @@ class UserDataDto {
     'publicProfile': publicProfile,
     'role': role,
     'createdAt': Timestamp.fromDate(createdAt),
+    'avatarKey': avatarKey,
   };
 
   UserData toModel() {
@@ -66,6 +70,7 @@ class UserDataDto {
       publicProfile: publicProfile,
       role: role,
       createdAt: createdAt,
+      avatarKey: avatarKey,
     );
   }
 }

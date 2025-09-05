@@ -48,6 +48,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> setAvatarKey(String userId, String avatarKey) {
+    return _source.setAvatarKey(userId, avatarKey);
+  }
+
+  @override
   Future<bool> isUsernameAvailable(String username) {
     return _source.isUsernameAvailable(username);
   }

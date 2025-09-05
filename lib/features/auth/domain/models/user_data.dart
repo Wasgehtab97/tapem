@@ -7,6 +7,7 @@ class UserData {
   final bool publicProfile;
   final String role;
   final DateTime createdAt;
+  final String avatarKey;
 
   const UserData({
     required this.id,
@@ -17,6 +18,7 @@ class UserData {
     required this.publicProfile,
     required this.role,
     required this.createdAt,
+    this.avatarKey = 'default',
   });
 
   UserData copyWith({
@@ -28,6 +30,7 @@ class UserData {
     bool? publicProfile,
     String? role,
     DateTime? createdAt,
+    String? avatarKey,
   }) {
     return UserData(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ class UserData {
       publicProfile: publicProfile ?? this.publicProfile,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
+      avatarKey: avatarKey ?? this.avatarKey,
     );
   }
 }

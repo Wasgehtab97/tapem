@@ -20,6 +20,7 @@ class UserSearchSource {
           (data['gymCodes'] is List && (data['gymCodes'] as List).isNotEmpty)
               ? (data['gymCodes'] as List).first as String
               : null,
+      avatarKey: data['avatarKey'] as String? ?? 'default',
     );
   }
 
@@ -54,6 +55,7 @@ class UserSearchSource {
               (data['gymCodes'] is List && (data['gymCodes'] as List).isNotEmpty)
                   ? (data['gymCodes'] as List).first as String
                   : null,
+          avatarKey: data['avatarKey'] as String? ?? 'default',
         );
       }).toList();
     });

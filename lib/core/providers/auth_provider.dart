@@ -13,6 +13,7 @@ import 'package:tapem/features/auth/domain/usecases/check_username_available.dar
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
+import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -23,6 +24,7 @@ class AuthProvider extends ChangeNotifier {
   final SetUsernameUseCase _setUsernameUC;
   final SetShowInLeaderboardUseCase _setShowInLbUC;
   final SetPublicProfileUseCase _setPublicProfileUC;
+  final SetAvatarKeyUseCase _setAvatarKeyUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final ResetPasswordUseCase _resetPasswordUC;
 
@@ -39,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
       _setUsernameUC = SetUsernameUseCase(repo),
       _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
       _setPublicProfileUC = SetPublicProfileUseCase(repo),
+      _setAvatarKeyUC = SetAvatarKeyUseCase(repo),
       _checkUsernameUC = CheckUsernameAvailable(repo),
       _resetPasswordUC = ResetPasswordUseCase(repo) {
     _loadCurrentUser();
@@ -48,6 +51,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   String? get userEmail => _user?.email;
   String? get userName => _user?.userName;
+  String get avatarKey => _user?.avatarKey ?? 'default';
 
   /// Liste der Gym-Codes, die diesem Nutzer zugeordnet sind
   List<String>? get gymCodes => _user?.gymCodes;
@@ -206,6 +210,23 @@ class AuthProvider extends ChangeNotifier {
       _user = _user!.copyWith(publicProfile: value);
     } catch (e) {
       _error = e.toString();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> setAvatarKey(String key) async {
+    if (_user == null) return;
+    _setLoading(true);
+    _error = null;
+    final previous = _user!.avatarKey;
+    try {
+      await _setAvatarKeyUC.execute(_user!.id, key);
+      _user = _user!.copyWith(avatarKey: key);
+    } catch (e) {
+      _error = e.toString();
+      _user = _user!.copyWith(avatarKey: previous);
+      rethrow;
     } finally {
       _setLoading(false);
     }

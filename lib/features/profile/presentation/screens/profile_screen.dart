@@ -130,6 +130,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showAvatarSheet(AuthProvider auth) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundImage: AssetImage('assets/avatars/default.png'),
+                ),
+                title: const Text('Default'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  try {
+                    await auth.setAvatarKey('default');
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Avatar aktualisiert')),
+                    );
+                  } catch (_) {
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fehler beim Speichern')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showCreatineSheet() {
     final loc = AppLocalizations.of(context)!;
     final settingsProv = context.read<SettingsProvider>();
@@ -249,7 +285,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
     final loc = AppLocalizations.of(context)!;
-    final userId = context.read<AuthProvider>().userId ?? '';
+    final auth = context.watch<AuthProvider>();
+    final userId = auth.userId ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -308,32 +345,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : prov.error != null
               ? Center(child: Text('Fehler: ${prov.error}'))
               : Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Trainingstage',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => _showAvatarSheet(auth),
+                            child: CircleAvatar(
+                              radius: 28,
+                              backgroundImage: AssetImage('assets/avatars/${auth.avatarKey}.png'),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              auth.userName ?? '',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _openCalendarPopup(userId, prov.trainingDates),
-                        child: Calendar(
-                          trainingDates: prov.trainingDates,
-                          showNavigation: false,
-                          year: DateTime.now().year,
+                      const SizedBox(height: AppSpacing.md),
+                      const Text(
+                        'Trainingstage',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                    ),
-                  ],
-              ),
-            ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _openCalendarPopup(userId, prov.trainingDates),
+                          child: Calendar(
+                            trainingDates: prov.trainingDates,
+                            showNavigation: false,
+                            year: DateTime.now().year,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),

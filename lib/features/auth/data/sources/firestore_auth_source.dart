@@ -113,6 +113,13 @@ class FirestoreAuthSource {
     });
   }
 
+  Future<void> setAvatarKey(String userId, String avatarKey) async {
+    await _firestore.collection('users').doc(userId).update({
+      'avatarKey': avatarKey,
+      'avatarUpdatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> sendPasswordResetEmail(String email) {
     final settings = ActionCodeSettings(
       url: 'https://tapem.page.link/reset',

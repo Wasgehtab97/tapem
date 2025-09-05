@@ -4,8 +4,10 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/friend_search_provider.dart';
+import '../../providers/friend_presence_provider.dart';
 import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
+import '../widgets/friend_list_tile.dart';
 
 class FriendsHomeScreen extends StatefulWidget {
   const FriendsHomeScreen({Key? key}) : super(key: key);
@@ -77,23 +79,28 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     if (prov.friends.isEmpty) {
       return Center(child: Text(loc.friends_empty_friends));
     }
+    final presence = context.watch<FriendPresenceProvider>();
     return ListView.builder(
       itemCount: prov.friends.length,
       itemBuilder: (_, i) {
         final f = prov.friends[i];
-        return ListTile(
-          title: FutureBuilder<PublicProfile?>(
-            future: _fetchProfile(f.friendUid),
-            builder: (context, snapshot) {
-              final name = snapshot.data?.username ?? f.friendUid;
-              return Text(name);
-            },
-          ),
-          onTap: () => _showFriendActions(f.friendUid),
+        return FutureBuilder<PublicProfile?>(
+          future: _fetchProfile(f.friendUid),
+          builder: (context, snapshot) {
+            final profile = snapshot.data;
+            if (profile == null) {
+              return const ListTile(title: Text('...'));
+            }
+            return FriendListTile(
+              profile: profile,
+              presence: presence.stateFor(f.friendUid),
+              onTap: () => _showFriendActions(f.friendUid),
+            );
+          },
         );
       },
     );
-    }
+  }
 
   Widget _requestsTab(FriendsProvider prov, AppLocalizations loc) {
     return Column(
