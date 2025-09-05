@@ -78,7 +78,7 @@ enum SetCardSize { regular, dense }
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
-  final Map<String, String>? previous;
+  final Map<String, dynamic>? previous;
   final SetCardSize size;
   final bool readOnly;
   const SetCard({
@@ -280,8 +280,6 @@ class SetCardState extends State<SetCard> {
       final delta = surface.luminanceRef - lum;
       gradient = Tone.gradient(gradient, delta);
     }
-
-    final prov = context.watch<DeviceProvider>();
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
     final dropActive =

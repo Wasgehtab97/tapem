@@ -87,7 +87,10 @@ void main() {
 class _FakeLauncher extends UrlLauncherPlatform {
   bool launched = false;
   @override
-  Future<bool> launchUrl(Uri url, LaunchOptions options) async {
+  LinkDelegate? linkDelegate;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
     launched = true;
     return true;
   }
