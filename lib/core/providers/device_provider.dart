@@ -67,12 +67,14 @@ class DeviceProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _sets = [];
   String _note = '';
 
-  List<Map<String, String>> _lastSessionSets = [];
+  List<Map<String, dynamic>> _lastSessionSets = [];
   DateTime? _lastSessionDate;
   String _lastSessionNote = '';
   String? _lastSessionId;
   int _xp = 0;
   int _level = 1;
+
+  bool _isBodyweightMode = false;
 
   late String _currentExerciseId;
   String? _draftKey;
@@ -117,7 +119,7 @@ class DeviceProvider extends ChangeNotifier {
   List<Device> get devices => List.unmodifiable(_devices);
   List<Map<String, dynamic>> get sets => List.unmodifiable(_sets);
   String get note => _note;
-  List<Map<String, String>> get lastSessionSets =>
+  List<Map<String, dynamic>> get lastSessionSets =>
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;
   String get lastSessionNote => _lastSessionNote;
@@ -136,6 +138,7 @@ class DeviceProvider extends ChangeNotifier {
 
   int get xp => _xp;
   int get level => _level;
+  bool get isBodyweightMode => _isBodyweightMode;
 
   List<DeviceSessionSnapshot> get sessionSnapshots =>
       List.unmodifiable(_sessionSnapshots);
@@ -284,11 +287,10 @@ class DeviceProvider extends ChangeNotifier {
           'number': '1',
           'weight': '',
           'reps': '',
-          'rir': '',
-          'note': '',
           'dropWeight': '',
           'dropReps': '',
           'done': false, // bool statt String
+          'isBodyweight': false,
         },
       ];
       _lastSessionSets = [];
@@ -331,11 +333,10 @@ class DeviceProvider extends ChangeNotifier {
       'number': '${_sets.length + 1}',
       'weight': '',
       'reps': '',
-      'rir': '',
-      'note': '',
       'dropWeight': '',
       'dropReps': '',
       'done': false,
+      'isBodyweight': _isBodyweightMode,
     });
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
@@ -343,7 +344,9 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void insertSetAt(int index, Map<String, dynamic> set) {
-    _sets.insert(index, Map<String, dynamic>.from(set));
+    final s = Map<String, dynamic>.from(set);
+    s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
+    _sets.insert(index, s);
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
@@ -358,20 +361,18 @@ class DeviceProvider extends ChangeNotifier {
     int index, {
     String? weight,
     String? reps,
-    String? rir,
-    String? note,
     String? dropWeight,
     String? dropReps,
+    bool? isBodyweight,
   }) {
     final before = Map<String, dynamic>.from(_sets[index]);
     final after = Map<String, dynamic>.from(before);
 
     if (weight != null) after['weight'] = weight;
     if (reps != null) after['reps'] = reps;
-    if (rir != null) after['rir'] = rir;
-    if (note != null) after['note'] = note;
     if (dropWeight != null) after['dropWeight'] = dropWeight;
     if (dropReps != null) after['dropReps'] = dropReps;
+    if (isBodyweight != null) after['isBodyweight'] = isBodyweight;
 
     final dw = (after['dropWeight'] ?? '').toString().trim();
     final dr = (after['dropReps'] ?? '').toString().trim();
@@ -409,10 +410,11 @@ class DeviceProvider extends ChangeNotifier {
   bool _isFilled(Map<String, dynamic> s) {
     final w = (s['weight'] ?? '').toString().trim();
     final r = (s['reps'] ?? '').toString().trim();
-    return w.isNotEmpty &&
-        double.tryParse(w.replaceAll(',', '.')) != null &&
-        r.isNotEmpty &&
-        int.tryParse(r) != null;
+    final isBw = s['isBodyweight'] == true;
+    final weightValid = isBw
+        ? (w.isEmpty || double.tryParse(w.replaceAll(',', '.')) != null)
+        : (w.isNotEmpty && double.tryParse(w.replaceAll(',', '.')) != null);
+    return weightValid && r.isNotEmpty && int.tryParse(r) != null;
   }
 
   int? _focusedIndex;
@@ -516,15 +518,11 @@ class DeviceProvider extends ChangeNotifier {
     for (final s in _sets) {
       final w = (s['weight'] ?? '').toString().trim();
       final r = (s['reps'] ?? '').toString().trim();
-      final rir = (s['rir'] ?? '').toString().trim();
-      final n = (s['note'] ?? '').toString().trim();
       final dw = (s['dropWeight'] ?? '').toString().trim();
       final dr = (s['dropReps'] ?? '').toString().trim();
       final d = s['done'] == true || s['done'] == 'true';
       if (w.isNotEmpty ||
           r.isNotEmpty ||
-          rir.isNotEmpty ||
-          n.isNotEmpty ||
           dw.isNotEmpty ||
           dr.isNotEmpty ||
           d) {
@@ -564,12 +562,6 @@ class DeviceProvider extends ChangeNotifier {
             index: i + 1,
             weight: (_sets[i]['weight'] ?? '').toString(),
             reps: (_sets[i]['reps'] ?? '').toString(),
-            rir: (_sets[i]['rir'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['rir']).toString(),
-            note: (_sets[i]['note'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['note']).toString(),
             dropWeight: (_sets[i]['dropWeight'] ?? '').toString().isEmpty
                 ? null
                 : (_sets[i]['dropWeight']).toString(),
@@ -577,6 +569,7 @@ class DeviceProvider extends ChangeNotifier {
                 ? null
                 : (_sets[i]['dropReps']).toString(),
             done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
+            isBodyweight: _sets[i]['isBodyweight'] == true,
           ),
       ],
     );
@@ -602,11 +595,10 @@ class DeviceProvider extends ChangeNotifier {
           'number': '${i + 1}',
           'weight': draft.sets[i].weight,
           'reps': draft.sets[i].reps,
-          'rir': draft.sets[i].rir ?? '',
-          'note': draft.sets[i].note ?? '',
           'dropWeight': draft.sets[i].dropWeight ?? '',
           'dropReps': draft.sets[i].dropReps ?? '',
           'done': draft.sets[i].done,
+          'isBodyweight': draft.sets[i].isBodyweight,
         },
     ];
     notifyListeners();
@@ -698,24 +690,22 @@ class DeviceProvider extends ChangeNotifier {
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
+        final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
+        final weight = double.tryParse(weightStr) ?? 0;
+        final isBw = set['isBodyweight'] == true;
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
           'userId': userId,
           'exerciseId': _currentExerciseId,
           'sessionId': sessionId,
           'timestamp': ts,
-          'weight': double.parse(set['weight']!.replaceAll(',', '.')),
+          'weight': weight,
           'reps': int.parse(set['reps']!),
           'setNumber': int.parse(set['number']),
           'note': _note,
           'tz': tz,
+          if (isBw) 'isBodyweight': true,
         };
-        if ((set['rir'] ?? '').toString().isNotEmpty) {
-          data['rir'] = int.parse(set['rir']!);
-        }
-        if ((set['note'] ?? '').toString().isNotEmpty) {
-          data['setNote'] = set['note'];
-        }
         if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
             (set['dropReps'] ?? '').toString().isNotEmpty) {
           data['dropWeightKg'] = double.parse(
@@ -800,8 +790,9 @@ class DeviceProvider extends ChangeNotifier {
             'number': s['number'].toString(),
             'weight': s['weight'].toString(),
             'reps': s['reps'].toString(),
-            'rir': (s['rir'] ?? '').toString(),
-            'note': (s['note'] ?? '').toString(),
+            'dropWeight': (s['dropWeight'] ?? '').toString(),
+            'dropReps': (s['dropReps'] ?? '').toString(),
+            'isBodyweight': s['isBodyweight'] == true,
           },
       ];
       _lastSessionDate = ts.toDate();
@@ -815,9 +806,10 @@ class DeviceProvider extends ChangeNotifier {
             'number': '1',
             'weight': '',
             'reps': '',
-            'rir': '',
-            'note': '',
             'done': false,
+            'dropWeight': '',
+            'dropReps': '',
+            'isBodyweight': _isBodyweightMode,
           },
         ];
       }
@@ -867,11 +859,7 @@ class DeviceProvider extends ChangeNotifier {
                   ) ??
                   0,
               reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
-              rir: (s['rir']?.toString().isEmpty ?? true)
-                  ? null
-                  : int.tryParse(s['rir'].toString()),
               done: s['done'] == true || s['done'] == 'true',
-              note: s['note'] as String?,
               drops:
                   (s['dropWeight']?.toString().isNotEmpty == true &&
                       s['dropReps']?.toString().isNotEmpty == true)
@@ -886,6 +874,7 @@ class DeviceProvider extends ChangeNotifier {
                       ),
                     ]
                   : const [],
+              isBodyweight: s['isBodyweight'] == true,
             ),
           )
           .toList(),
@@ -933,10 +922,9 @@ class DeviceProvider extends ChangeNotifier {
           'number': '${entry.key + 1}',
           'weight': '${entry.value.data()['weight']}',
           'reps': '${entry.value.data()['reps']}',
-          'rir': '${entry.value.data()['rir'] ?? ''}',
-          'note': '${entry.value.data()['setNote'] ?? ''}',
           'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
           'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
+          'isBodyweight': entry.value.data()['isBodyweight'] ?? false,
         },
     ];
     _lastSessionDate = ts;
@@ -987,6 +975,12 @@ class DeviceProvider extends ChangeNotifier {
       _level = 1;
     }
     _log('⭐ [Provider] load XP level=$_level xp=$_xp');
+    notifyListeners();
+  }
+
+  void toggleBodyweightMode() {
+    _isBodyweightMode = !_isBodyweightMode;
+    _log('🏋️ [Provider] bodyweightMode=$_isBodyweightMode');
     notifyListeners();
   }
 

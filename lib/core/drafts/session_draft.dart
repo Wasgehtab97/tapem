@@ -18,47 +18,43 @@ class SetDraft {
   final int index;
   final String weight;
   final String reps;
-  final String? rir;
   final String? tempo;
-  final String? note;
   final String? dropWeight;
   final String? dropReps;
   final bool done;
+  final bool isBodyweight;
 
   SetDraft({
     required this.index,
     this.weight = '',
     this.reps = '',
-    this.rir,
     this.tempo,
-    this.note,
     this.dropWeight,
     this.dropReps,
     this.done = false,
+    this.isBodyweight = false,
   });
 
   factory SetDraft.fromJson(Map<String, dynamic> json) => SetDraft(
         index: json['index'] as int,
         weight: json['weight'] as String? ?? '',
         reps: json['reps'] as String? ?? '',
-        rir: json['rir'] as String?,
         tempo: json['tempo'] as String?,
-        note: json['note'] as String?,
         dropWeight: json['dropWeight'] as String?,
         dropReps: json['dropReps'] as String?,
         done: json['done'] as bool? ?? false,
+        isBodyweight: json['isBodyweight'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
         'index': index,
         'weight': weight,
         'reps': reps,
-        if (rir != null) 'rir': rir,
         if (tempo != null) 'tempo': tempo,
-        if (note != null) 'note': note,
         if (dropWeight != null) 'dropWeight': dropWeight,
         if (dropReps != null) 'dropReps': dropReps,
         'done': done,
+        if (isBodyweight) 'isBodyweight': true,
       };
 }
 

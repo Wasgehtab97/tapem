@@ -703,4 +703,10 @@
   "friends_cta_pending": "Ausstehend",
   "friends_action_send": "Anfrage senden",
   "friends_search_min_chars": "Mindestens 2 Zeichen eingeben"
+  ,"bodyweight": "Körpergewicht"
+  ,"@bodyweight": {"description": "Label für Körpergewicht"}
+  ,"bodyweightPlus": "Körpergewicht + {kg} kg"
+  ,"@bodyweightPlus": {"description": "Körpergewicht plus Zusatzgewicht","placeholders": {"kg": {}}}
+  ,"bodyweightToggleTooltip": "Körpergewicht umschalten"
+  ,"@bodyweightToggleTooltip": {"description": "Tooltip für Bodyweight-Toggle"}
 }

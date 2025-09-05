@@ -22,12 +22,11 @@ class WorkoutLogDto {
 
   final double weight;
   final int reps;
-  final int? rir;
-  final String? note;
   final double? dropWeightKg;
   final int? dropReps;
   @JsonKey(fromJson: _setNumberFromJson)
   final int setNumber;
+  final bool isBodyweight;
 
   WorkoutLogDto({
     required this.userId,
@@ -36,11 +35,10 @@ class WorkoutLogDto {
     required this.timestamp,
     required this.weight,
     required this.reps,
-    this.rir,
-    this.note,
     this.dropWeightKg,
     this.dropReps,
     required this.setNumber,
+    this.isBodyweight = false,
   });
 
   factory WorkoutLogDto.fromJson(Map<String, dynamic> json) =>
@@ -68,11 +66,10 @@ class WorkoutLogDto {
     timestamp: timestamp,
     weight: weight,
     reps: reps,
-    rir: rir,
-    note: note,
     dropWeightKg: dropWeightKg,
     dropReps: dropReps,
     setNumber: setNumber,
+    isBodyweight: isBodyweight,
   );
 
   static DateTime _timestampToDate(Timestamp ts) => ts.toDate();

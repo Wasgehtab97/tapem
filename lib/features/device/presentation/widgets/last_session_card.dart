@@ -4,6 +4,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import '../models/session_set_vm.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class LastSessionCard extends StatelessWidget {
   final DateTime date;
@@ -44,6 +45,10 @@ class _MainSetRow extends StatelessWidget {
   const _MainSetRow({required this.s});
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final weightText = s.isBodyweight
+        ? (s.kg == 0 ? loc.bodyweight : loc.bodyweightPlus(s.kg))
+        : '${s.kg} kg';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,18 +59,10 @@ class _MainSetRow extends StatelessWidget {
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.xs,
           ),
-          child: Text('${s.kg} kg'),
+          child: Text(weightText),
         ),
         const SizedBox(width: 16),
         Text('${s.reps} x'),
-        if (s.rir != null) ...[
-          const SizedBox(width: 16),
-          Text('RIR ${s.rir}'),
-        ],
-        if (s.note != null && s.note!.isNotEmpty) ...[
-          const SizedBox(width: 16),
-          Expanded(child: Text(s.note!)),
-        ],
       ],
     );
   }

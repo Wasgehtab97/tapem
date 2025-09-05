@@ -25,11 +25,13 @@ class SessionSet {
   final int setNumber;
   final double? dropWeightKg;
   final int? dropReps;
+  final bool isBodyweight;
   SessionSet({
     required this.weight,
     required this.reps,
     required this.setNumber,
     this.dropWeightKg,
     this.dropReps,
+    this.isBodyweight = false,
   });
 }

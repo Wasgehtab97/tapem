@@ -1450,6 +1450,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter at least 2 characters'**
   String get friends_search_min_chars;
+
+  /// No description provided for @bodyweight.
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight'**
+  String get bodyweight;
+
+  /// No description provided for @bodyweightPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight + {kg} kg'**
+  String bodyweightPlus(Object kg);
+
+  /// No description provided for @bodyweightToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle bodyweight'**
+  String get bodyweightToggleTooltip;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

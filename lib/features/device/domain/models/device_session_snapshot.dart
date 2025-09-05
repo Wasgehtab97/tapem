@@ -58,38 +58,34 @@ class DeviceSessionSnapshot {
 class SetEntry {
   final num kg;
   final int reps;
-  final int? rir;
   final bool done;
-  final String? note;
   final List<DropEntry> drops;
+  final bool isBodyweight;
 
   const SetEntry({
     required this.kg,
     required this.reps,
-    this.rir,
     this.done = false,
-    this.note,
     this.drops = const [],
+    this.isBodyweight = false,
   });
 
   factory SetEntry.fromJson(Map<String, dynamic> j) => SetEntry(
         kg: j['kg'] as num,
         reps: j['reps'] as int,
-        rir: j['rir'] as int?,
         done: j['done'] as bool? ?? false,
-        note: j['note'] as String?,
         drops: (j['drops'] as List<dynamic>? ?? [])
             .map((e) => DropEntry.fromJson(Map<String, dynamic>.from(e)))
             .toList(),
+        isBodyweight: j['isBodyweight'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
         'kg': kg,
         'reps': reps,
-        'rir': rir,
         'done': done,
-        'note': note,
         'drops': drops.map((d) => d.toJson()).toList(),
+        'isBodyweight': isBodyweight,
       };
 }
 
