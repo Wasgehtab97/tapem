@@ -109,6 +109,7 @@ class _HarnessState extends State<_Harness> {
   String query = '';
   SortOrder sort = SortOrder.az;
   Set<String> muscles = {};
+  List<String> recentOrder = ['2', '1'];
   final devices = [
     Device(uid: '1', id: 1, name: 'Alpha', primaryMuscleGroups: const ['chest'], description: ''),
     Device(uid: '2', id: 2, name: 'Beta', primaryMuscleGroups: const ['legs'], description: ''),
@@ -123,7 +124,21 @@ class _HarnessState extends State<_Harness> {
       final all = {...d.primaryMuscleGroups, ...d.secondaryMuscleGroups};
       return matchesName && all.any(muscles.contains);
     }).toList()
-      ..sort((a, b) => sort == SortOrder.az ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
+      ..sort((a, b) {
+        if (sort == SortOrder.recent) {
+          final ai = recentOrder.indexOf(a.uid);
+          final bi = recentOrder.indexOf(b.uid);
+          if (ai == -1 && bi == -1) {
+            return a.name.compareTo(b.name);
+          }
+          if (ai == -1) return 1;
+          if (bi == -1) return -1;
+          return ai.compareTo(bi);
+        }
+        return sort == SortOrder.az
+            ? a.name.compareTo(b.name)
+            : b.name.compareTo(a.name);
+      });
     return Column(
       children: [
         SearchAndFilters(
@@ -186,6 +201,22 @@ void main() {
     await tester.tap(find.text('Name'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Z→A'));
+    await tester.pumpAndSettle();
+    final first = tester.widget<Text>(find.byKey(const ValueKey('device-0')));
+    expect(first.data, 'Beta');
+  });
+
+  testWidgets('recent filter sorts by last usage', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangeNotifierProvider<MuscleGroupProvider>.value(
+          value: _TestMuscleGroupProvider(groups),
+          child: const Scaffold(body: _Harness()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Zuletzt'));
     await tester.pumpAndSettle();
     final first = tester.widget<Text>(find.byKey(const ValueKey('device-0')));
     expect(first.data, 'Beta');

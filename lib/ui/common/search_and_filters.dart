@@ -5,7 +5,7 @@ import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-enum SortOrder { az, za }
+enum SortOrder { az, za, recent }
 
 class SearchAndFilters extends StatefulWidget {
   final String query;
@@ -171,6 +171,16 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
               label: const Text('Muskel'),
               selected: widget.muscleFilterIds.isNotEmpty,
               onSelected: (_) => _showMuscleSheet(),
+              shape: const StadiumBorder(),
+              selectedColor: theme.colorScheme.primaryContainer,
+              showCheckmark: false,
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              label: const Text('Zuletzt'),
+              selected: widget.sort == SortOrder.recent,
+              onSelected: (v) =>
+                  widget.onSort(v ? SortOrder.recent : SortOrder.az),
               shape: const StadiumBorder(),
               selectedColor: theme.colorScheme.primaryContainer,
               showCheckmark: false,
