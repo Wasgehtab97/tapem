@@ -25,6 +25,18 @@ service cloud.firestore {
       );
     }
 
+    // Custom claim based gym admin
+    function isGymAdmin(gymId) {
+      return isAuthed() &&
+             request.auth.token.role == 'gym_admin' &&
+             request.auth.token.gymId == gymId;
+    }
+
+    // Global admin claim
+    function isGlobalAdmin() {
+      return isAuthed() && request.auth.token.role == 'global_admin';
+    }
+
     function isOwner(userId) {
       return isAuthed() && request.auth.uid == userId;
     }
@@ -117,6 +129,14 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Avatar catalog global
+    // ─────────────────────────
+    match /catalogAvatarsGlobal/{avatarId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
+    }
+
+    // ─────────────────────────
     // Usernames mapping
     // ─────────────────────────
       match /usernames/{name} {
@@ -159,6 +179,11 @@ service cloud.firestore {
           request.resource.data.keys().hasOnly(['createdAt']) &&
           request.resource.data.createdAt is timestamp;
         allow delete: if isOwner(uid);
+      }
+
+      match /avatarsOwned/{avatarId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
       }
 
       // Privacy-aware public calendar (server writes)
@@ -213,6 +238,12 @@ service cloud.firestore {
       match /config/{docId} {
         allow read: if isAuthed();
         allow write: if isAdmin(gymId);
+      }
+
+      // Avatar catalog per gym
+      match /avatarCatalog/{avatarId} {
+        allow read: if inGym(gymId);
+        allow write: if isGymAdmin(gymId);
       }
 
       // Devices

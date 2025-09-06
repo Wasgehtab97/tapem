@@ -152,6 +152,16 @@ Die zugehörigen Definitionen stehen in `project/roadmap/issues_pilot.json`.
 
 ---
 
+## Avatars V2 Flags
+
+Für lokale Tests mit dem Firebase Emulator können die Remote-Config-Flags so gesetzt werden:
+
+```bash
+firebase remoteconfig:set avatars_v2_enabled=true avatars_v2_migration_on=false avatars_v2_images_cdn=false
+```
+
+Standardmäßig sind alle Flags `false`.
+
 ## Changelog
 
 - `OverlayNumericKeypadHost.closeOnOutsideTap` wurde entfernt. Nutze stattdessen

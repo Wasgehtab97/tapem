@@ -94,6 +94,22 @@
       ]
     },
     {
+      "collectionGroup": "avatarCatalog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "tier", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "catalogAvatarsGlobal",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "tier", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionId": "users",
       "queryScope": "COLLECTION",
       "fields": [
