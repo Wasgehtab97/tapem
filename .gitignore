@@ -143,3 +143,4 @@ serviceAccount*.json
 functions/.runtimeconfig.json
 **/key.properties
 !ios/Runner/GoogleService-Info.plist
+assets/avatars/*.png
