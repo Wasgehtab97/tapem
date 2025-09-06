@@ -19,7 +19,7 @@ import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/utils/avatar_assets.dart';
+import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 class MockAuthProvider extends Mock implements AuthProvider {}
 
@@ -214,7 +214,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarAssets.path('default2'),
+      AvatarCatalog.instance.resolvePath('default2'),
     );
   });
 
@@ -227,7 +227,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarAssets.path('default'),
+      AvatarCatalog.instance.resolvePath('default'),
     );
   });
 
