@@ -121,6 +121,8 @@ describe('Security Rules v1', function () {
         .collection('users')
         .doc('adminB')
         .set({ role: 'admin' });
+      await db.collection('users').doc('userA').set({});
+      await db.collection('users').doc('userB').set({});
     });
   });
 
@@ -410,6 +412,64 @@ describe('Security Rules v1', function () {
       });
       await assertSucceeds(db2.collection('usernames').doc('bob').delete());
       await assertFails(db1.collection('usernames').doc('bob').delete());
+    });
+  });
+
+  describe('avatarInventory rules', () => {
+    it('user can read own inventory but cannot write', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('users')
+          .doc('userA')
+          .collection('avatarInventory')
+          .doc('global/default')
+          .set({ addedAt: new Date(), source: 'global' });
+      });
+      const db = userA().firestore();
+      await assertSucceeds(
+        db.collection('users').doc('userA').collection('avatarInventory').get()
+      );
+      await assertFails(
+        db
+          .collection('users')
+          .doc('userA')
+          .collection('avatarInventory')
+          .doc('global/default2')
+          .set({ addedAt: new Date(), source: 'global', addedBy: 'userA' })
+      );
+    });
+
+    it('admin can manage inventory of gym member', async () => {
+      const db = admin().firestore();
+      await assertSucceeds(
+        db
+          .collection('users')
+          .doc('userA')
+          .collection('avatarInventory')
+          .doc('gym_01/kurzhantel')
+          .set({
+            addedAt: new Date(),
+            source: 'gym:G1',
+            addedBy: 'adminA',
+          })
+      );
+    });
+
+    it('admin cannot manage non-member inventory', async () => {
+      const db = admin().firestore();
+      await assertFails(
+        db
+          .collection('users')
+          .doc('userB')
+          .collection('avatarInventory')
+          .doc('gym_01/kurzhantel')
+          .set({
+            addedAt: new Date(),
+            source: 'gym:G1',
+            addedBy: 'adminA',
+          })
+      );
     });
   });
 

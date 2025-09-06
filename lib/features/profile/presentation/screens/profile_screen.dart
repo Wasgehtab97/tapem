@@ -13,6 +13,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
+import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -442,68 +443,78 @@ class AvatarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final keys = AvatarCatalog.instance.listGlobal();
+    final auth = context.watch<AuthProvider>();
+    final inventory = context.watch<AvatarInventoryProvider>();
     final theme = Theme.of(context);
-    return SafeArea(
-      child: GridView.builder(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 120,
-          mainAxisSpacing: AppSpacing.md,
-          crossAxisSpacing: AppSpacing.md,
-        ),
-        itemCount: keys.length,
-        itemBuilder: (context, index) {
-          final key = keys[index];
-          final selected = key == currentKey;
-          final label = 'Avatar ${index + 1}';
-          final avatar = Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: selected
-                        ? theme.colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundImage: AssetImage(
-                    AvatarCatalog.instance.resolvePath(key),
-                  ),
-                ),
-              ),
-              if (selected)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Icon(
-                    Icons.check_circle,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-            ],
-          );
-          final child = avatar;
-          return Tooltip(
-            message: label,
-            child: Semantics(
-              label: label,
-              button: true,
-              selected: selected,
-              child: GestureDetector(
-                onTap: () => onSelect(key),
-                child: child,
-              ),
+    return StreamBuilder<List<String>>(
+      stream: inventory.inventoryKeys(auth.userId ?? ''),
+      builder: (context, snapshot) {
+        final inv = snapshot.data ?? const <String>[];
+        final keys = inv.isEmpty
+            ? AvatarCatalog.instance.listGlobal()
+            : inv;
+        return SafeArea(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 120,
+              mainAxisSpacing: AppSpacing.md,
+              crossAxisSpacing: AppSpacing.md,
             ),
-          );
-        },
-      ),
+            itemCount: keys.length,
+            itemBuilder: (context, index) {
+              final key = keys[index];
+              final selected = key == currentKey;
+              final label = 'Avatar ${index + 1}';
+              final avatar = Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? theme.colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 40,
+                      backgroundImage: AssetImage(
+                        AvatarCatalog.instance.resolvePath(key),
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: theme.colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
+                ],
+              );
+              final child = avatar;
+              return Tooltip(
+                message: label,
+                child: Semantics(
+                  label: label,
+                  button: true,
+                  selected: selected,
+                  child: GestureDetector(
+                    onTap: () => onSelect(key),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
