@@ -10,6 +10,7 @@ class RC {
       'avatars_v2_enabled': false,
       'avatars_v2_migration_on': false,
       'avatars_v2_images_cdn': false,
+      'avatars_v2_grants_enabled': false,
     });
     await _rc.fetchAndActivate();
   }
@@ -19,4 +20,6 @@ class RC {
       _rc.getBool('avatars_v2_migration_on');
   static bool get avatarsV2ImagesCdn =>
       _rc.getBool('avatars_v2_images_cdn');
+  static bool get avatarsV2GrantsEnabled =>
+      _rc.getBool('avatars_v2_grants_enabled');
 }

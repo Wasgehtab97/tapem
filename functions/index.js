@@ -2,6 +2,14 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+const avatars = require('./avatars');
+exports.adminGrantAvatar = avatars.adminGrantAvatar;
+exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
+exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
+exports.onXpUpdate = avatars.onXpUpdate;
+exports.onChallengeState = avatars.onChallengeState;
+exports.onEventParticipation = avatars.onEventParticipation;
+
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')
   .onRun(async () => {
