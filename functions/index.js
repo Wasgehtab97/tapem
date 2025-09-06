@@ -198,6 +198,46 @@ exports.checkChallengesOnLog = functions.firestore
     return null;
   });
 
+exports.mirrorEquippedAvatar = functions.firestore
+  .document('users/{uid}')
+  .onWrite(async (change, context) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    const prev = before.equippedAvatarRef;
+    const curr = after.equippedAvatarRef;
+    if (prev === curr) {
+      return null;
+    }
+    const uid = context.params.uid;
+    const db = admin.firestore();
+    let resolvedAvatarUrl = null;
+    if (curr) {
+      try {
+        const snap = await db.doc(curr).get();
+        const data = snap.data() || {};
+        if (data.assetUrl) {
+          resolvedAvatarUrl = data.assetUrl;
+        }
+      } catch (e) {
+        console.log('avatar lookup failed', e);
+      }
+    }
+    const profileRef = db.collection('publicProfiles').doc(uid);
+    const payload = {};
+    if (curr) {
+      payload.equippedAvatarRef = curr;
+    } else {
+      payload.equippedAvatarRef = admin.firestore.FieldValue.delete();
+    }
+    if (resolvedAvatarUrl) {
+      payload.resolvedAvatarUrl = resolvedAvatarUrl;
+    } else {
+      payload.resolvedAvatarUrl = admin.firestore.FieldValue.delete();
+    }
+    await profileRef.set(payload, { merge: true });
+    console.log('public_profile_mirror_write result=success');
+    return null;
+  });
 exports.mirrorPublicProfile = functions.firestore
   .document('users/{uid}')
   .onWrite(async (change, context) => {
