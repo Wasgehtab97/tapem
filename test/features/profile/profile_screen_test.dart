@@ -169,6 +169,10 @@ void main() {
 
     await pumpProfileScreen(tester, auth);
 
+    final appBar = tester.widget<AppBar>(find.byType(AppBar));
+    expect(appBar.flexibleSpace, isNull);
+    expect(appBar.title, isA<Stack>());
+
     expect(find.text('Admin'), findsNothing);
     expect(find.text('Trainingstage'), findsOneWidget);
     expect(find.byTooltip('Profilbild ändern'), findsOneWidget);
