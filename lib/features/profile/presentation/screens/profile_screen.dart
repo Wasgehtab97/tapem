@@ -12,7 +12,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/utils/avatar_assets.dart';
+import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -302,8 +302,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () => _showAvatarSheet(auth),
                         child: CircleAvatar(
                           radius: avatarSize / 2,
-                          backgroundImage:
-                              AssetImage(AvatarAssets.path(auth.avatarKey)),
+                          backgroundImage: AssetImage(
+                            AvatarCatalog.instance
+                                .resolvePath(auth.avatarKey),
+                          ),
                         ),
                       ),
                     ),
@@ -433,16 +435,14 @@ class AvatarPicker extends StatelessWidget {
     super.key,
     required this.currentKey,
     required this.onSelect,
-    this.showLabels = false,
   });
 
   final String currentKey;
   final ValueChanged<String> onSelect;
-  final bool showLabels;
 
   @override
   Widget build(BuildContext context) {
-    final keys = AvatarAssets.keys;
+    final keys = AvatarCatalog.instance.listGlobal();
     final theme = Theme.of(context);
     return SafeArea(
       child: GridView.builder(
@@ -472,7 +472,9 @@ class AvatarPicker extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 40,
-                  backgroundImage: AssetImage(AvatarAssets.path(key)),
+                  backgroundImage: AssetImage(
+                    AvatarCatalog.instance.resolvePath(key),
+                  ),
                 ),
               ),
               if (selected)
@@ -487,16 +489,7 @@ class AvatarPicker extends StatelessWidget {
                 ),
             ],
           );
-          final child = showLabels
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    avatar,
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(label),
-                  ],
-                )
-              : avatar;
+          final child = avatar;
           return Tooltip(
             message: label,
             child: Semantics(
