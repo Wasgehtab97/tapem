@@ -38,6 +38,7 @@ import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
+import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
@@ -286,6 +287,7 @@ Future<void> main() async {
         // App state
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
 
         // Friends feature

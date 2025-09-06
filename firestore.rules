@@ -188,8 +188,25 @@ service cloud.firestore {
       }
 
       match /avatarInventory/{key} {
-        allow read: if isOwner(uid);
-        allow write: if isOwner(uid);
+        allow read: if isOwner(uid) || (
+          request.auth != null &&
+          request.auth.token.role == 'admin' &&
+          request.auth.token.gymId != null &&
+          exists(/databases/$(database)/documents/gyms/$(request.auth.token.gymId)/users/$(uid))
+        );
+        allow create: if request.auth != null &&
+          request.auth.token.role == 'admin' &&
+          request.auth.token.gymId != null &&
+          exists(/databases/$(database)/documents/gyms/$(request.auth.token.gymId)/users/$(uid)) &&
+          request.resource.data.keys().hasOnly(['addedAt', 'addedBy', 'source']) &&
+          request.resource.data.addedAt is timestamp &&
+          request.resource.data.addedBy == request.auth.uid &&
+          request.resource.data.source == 'gym:' + request.auth.token.gymId;
+        allow delete: if request.auth != null &&
+          request.auth.token.role == 'admin' &&
+          request.auth.token.gymId != null &&
+          exists(/databases/$(database)/documents/gyms/$(request.auth.token.gymId)/users/$(uid));
+        allow update: if false;
       }
 
       // Privacy-aware public calendar (server writes)

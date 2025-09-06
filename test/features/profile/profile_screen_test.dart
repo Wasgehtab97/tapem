@@ -20,6 +20,7 @@ import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
+import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 
 class MockAuthProvider extends Mock implements AuthProvider {}
 
@@ -119,16 +120,34 @@ class FakeFriendPresenceProvider extends ChangeNotifier
 
 class FakeRoute extends Fake implements Route<dynamic> {}
 
+class FakeAvatarInventoryProvider extends AvatarInventoryProvider {
+  FakeAvatarInventoryProvider(this._keys) : super();
+
+  final List<String> _keys;
+
+  @override
+  Stream<List<String>> inventoryKeys(String uid) => Stream.value(_keys);
+
+  @override
+  Future<Set<String>> getOwnedAvatarIds() async => _keys.toSet();
+
+  @override
+  bool isOwned(String avatarId) => _keys.contains(avatarId);
+}
+
 Future<void> pumpProfileScreen(
   WidgetTester tester,
   AuthProvider auth, {
   NavigatorObserver? observer,
+  AvatarInventoryProvider? inventory,
 }) async {
   final userSearch = FakeUserSearchSource();
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: auth),
+        ChangeNotifierProvider<AvatarInventoryProvider>.value(
+            value: inventory ?? FakeAvatarInventoryProvider(const [])),
         ChangeNotifierProvider<ProfileProvider>(
             create: (_) => FakeProfileProvider()),
         ChangeNotifierProvider<FriendsProvider>(
