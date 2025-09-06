@@ -12,6 +12,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -134,33 +135,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       builder: (_) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundImage: AssetImage('assets/avatars/default.png'),
-                ),
-                title: const Text('Default'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  try {
-                    await auth.setAvatarKey('default');
-                    // ignore: use_build_context_synchronously
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Avatar aktualisiert')),
-                    );
-                  } catch (_) {
-                    // ignore: use_build_context_synchronously
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Fehler beim Speichern')),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+        return AvatarPicker(
+          currentKey: auth.avatarKey,
+          onSelect: (key) async {
+            Navigator.pop(context);
+            try {
+              await auth.setAvatarKey(key);
+            } catch (_) {
+              // ignore: use_build_context_synchronously
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Fehler beim Speichern')),
+              );
+            }
+          },
         );
       },
     );
@@ -315,9 +302,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () => _showAvatarSheet(auth),
                         child: CircleAvatar(
                           radius: avatarSize / 2,
-                          backgroundImage: AssetImage(
-                            'assets/avatars/${auth.avatarKey}.png',
-                          ),
+                          backgroundImage:
+                              AssetImage(AvatarAssets.path(auth.avatarKey)),
                         ),
                       ),
                     ),
@@ -437,6 +423,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class AvatarPicker extends StatelessWidget {
+  const AvatarPicker({
+    super.key,
+    required this.currentKey,
+    required this.onSelect,
+    this.showLabels = false,
+  });
+
+  final String currentKey;
+  final ValueChanged<String> onSelect;
+  final bool showLabels;
+
+  @override
+  Widget build(BuildContext context) {
+    final keys = AvatarAssets.keys;
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: GridView.builder(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 120,
+          mainAxisSpacing: AppSpacing.md,
+          crossAxisSpacing: AppSpacing.md,
+        ),
+        itemCount: keys.length,
+        itemBuilder: (context, index) {
+          final key = keys[index];
+          final selected = key == currentKey;
+          final label = 'Avatar ${index + 1}';
+          final avatar = Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundImage: AssetImage(AvatarAssets.path(key)),
+                ),
+              ),
+              if (selected)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Icon(
+                    Icons.check_circle,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+            ],
+          );
+          final child = showLabels
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    avatar,
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(label),
+                  ],
+                )
+              : avatar;
+          return Tooltip(
+            message: label,
+            child: Semantics(
+              label: label,
+              button: true,
+              selected: selected,
+              child: GestureDetector(
+                onTap: () => onSelect(key),
+                child: child,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

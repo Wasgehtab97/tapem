@@ -220,12 +220,14 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     final previous = _user!.avatarKey;
+    _user = _user!.copyWith(avatarKey: key);
+    notifyListeners();
     try {
       await _setAvatarKeyUC.execute(_user!.id, key);
-      _user = _user!.copyWith(avatarKey: key);
     } catch (e) {
       _error = e.toString();
       _user = _user!.copyWith(avatarKey: previous);
+      notifyListeners();
       rethrow;
     } finally {
       _setLoading(false);
