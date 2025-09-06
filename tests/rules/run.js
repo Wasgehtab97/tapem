@@ -1,4 +1,5 @@
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
+const { Timestamp } = require('firebase/firestore');
 const { test, before, beforeEach, after } = require('node:test');
 const assert = require('assert');
 
@@ -95,6 +96,80 @@ test('U2 cannot read U1 avatarsOwned', async () => {
 test('no client can write avatarsOwned', async () => {
   const db = authed('U1');
   await assertFails(db.doc('users/U1/avatarsOwned/a').set({}));
+});
+
+// Avatar inventory
+
+test('U1 can read own avatarInventory', async () => {
+  const admin = adminDb();
+  await admin.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1' });
+  const db = authed('U1');
+  await assertSucceeds(db.doc('users/U1/avatarInventory/gym_1/a').get());
+});
+
+test('U2 cannot read U1 avatarInventory', async () => {
+  const admin = adminDb();
+  await admin.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1' });
+  const db = authed('U2');
+  await assertFails(db.doc('users/U1/avatarInventory/gym_1/a').get());
+});
+
+test('A1 admin G1 can read U1 avatarInventory', async () => {
+  const admin = adminDb();
+  await admin.doc('gyms/G1/users/U1').set({ role: 'member' });
+  await admin.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertSucceeds(db.doc('users/U1/avatarInventory/gym_1/a').get());
+});
+
+test('A1 admin G1 cannot read U2 avatarInventory in G2', async () => {
+  const admin = adminDb();
+  await admin.doc('gyms/G2/users/U2').set({ role: 'member' });
+  await admin.doc('users/U2/avatarInventory/gym_2/a').set({ addedAt: Timestamp.now(), addedBy: 'A2', source: 'gym:G2' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertFails(db.doc('users/U2/avatarInventory/gym_2/a').get());
+});
+
+test('A1 admin G1 can create avatarInventory for member', async () => {
+  const admin = adminDb();
+  await admin.doc('gyms/G1/users/U1').set({ role: 'member' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertSucceeds(db.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1' }));
+});
+
+test('A1 admin G1 cannot create avatarInventory with extra fields', async () => {
+  const admin = adminDb();
+  await admin.doc('gyms/G1/users/U1').set({ role: 'member' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertFails(db.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1', extra: true }));
+});
+
+test('A1 admin G1 cannot create avatarInventory for user in G2', async () => {
+  const admin = adminDb();
+  await admin.doc('gyms/G2/users/U2').set({ role: 'member' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertFails(db.doc('users/U2/avatarInventory/gym_2/a').set({ addedAt: Timestamp.now(), addedBy: 'A1', source: 'gym:G1' }));
+});
+
+test('U1 cannot create own avatarInventory', async () => {
+  const db = authed('U1');
+  await assertFails(db.doc('users/U1/avatarInventory/gym_1/a').set({ addedAt: Timestamp.now(), addedBy: 'U1', source: 'gym:G1' }));
+});
+
+// Avatar key write
+
+test('U1 can write own avatarKey', async () => {
+  const admin = adminDb();
+  await admin.doc('users/U1').set({});
+  const db = authed('U1');
+  await assertSucceeds(db.doc('users/U1').update({ avatarKey: 'global/default' }));
+});
+
+test('U2 cannot write U1 avatarKey', async () => {
+  const admin = adminDb();
+  await admin.doc('users/U1').set({});
+  const db = authed('U2');
+  await assertFails(db.doc('users/U1').update({ avatarKey: 'global/default' }));
 });
 
 // Equip tests

@@ -709,4 +709,17 @@
   ,"@bodyweightPlus": {"description": "Körpergewicht plus Zusatzgewicht","placeholders": {"kg": {}}}
   ,"bodyweightToggleTooltip": "Körpergewicht umschalten"
   ,"@bodyweightToggleTooltip": {"description": "Tooltip für Bodyweight-Toggle"}
+  ,"admin_symbols_title": "Symbole"
+  ,"admin_symbols_search_hint": "Nutzer suchen"
+  ,"user_symbols_title": "Symbole von {username}"
+  ,"@user_symbols_title": {"placeholders": {"username": {}}}
+  ,"inventory_section_title": "Inventar"
+  ,"add_symbols_cta": "Hinzufügen"
+  ,"gym_library_title": "Gym-Bibliothek"
+  ,"empty_inventory_hint": "Noch keine Symbole im Inventar"
+  ,"empty_gym_library_hint": "Keine zusätzlichen Symbole verfügbar"
+  ,"no_members_found": "Keine Mitglieder gefunden"
+  ,"saved_snackbar": "Gespeichert"
+  ,"assign_failed_snackbar": "Zuweisung fehlgeschlagen"
+  ,"removed_snackbar": "Entfernt"
 }
