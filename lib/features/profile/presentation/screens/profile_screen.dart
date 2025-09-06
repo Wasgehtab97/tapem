@@ -287,46 +287,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
     final userId = auth.userId ?? '';
+    const avatarSize = 44.0;
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: Text(loc.profileTitle),
-        flexibleSpace: Builder(
-          builder: (context) {
-            const avatarSize = 44.0;
-            final top = MediaQuery.of(context).padding.top;
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  left: AppSpacing.md,
-                  top: top + (kToolbarHeight - avatarSize) / 2,
-                  child: SizedBox(
-                    width: avatarSize,
-                    height: avatarSize,
-                    child: Tooltip(
-                      message: 'Profilbild ändern',
-                      child: Semantics(
-                        button: true,
-                        label: 'Profilbild ändern',
-                        child: GestureDetector(
-                          onTap: () => _showAvatarSheet(auth),
-                          child: CircleAvatar(
-                            radius: avatarSize / 2,
-                            backgroundImage: AssetImage(
-                              'assets/avatars/${auth.avatarKey}.png',
-                            ),
+        title: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Center(child: Text(loc.profileTitle)),
+            Positioned(
+              left: AppSpacing.md,
+              top: 0,
+              bottom: 0,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: Tooltip(
+                    message: 'Profilbild ändern',
+                    child: Semantics(
+                      button: true,
+                      label: 'Profilbild ändern',
+                      child: GestureDetector(
+                        onTap: () => _showAvatarSheet(auth),
+                        child: CircleAvatar(
+                          radius: avatarSize / 2,
+                          backgroundImage: AssetImage(
+                            'assets/avatars/${auth.avatarKey}.png',
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
         actions: [
           if (enableFriends)
@@ -393,7 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Expanded(
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
