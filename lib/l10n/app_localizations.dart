@@ -1468,6 +1468,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toggle bodyweight'**
   String get bodyweightToggleTooltip;
+
+  /// No description provided for @admin_symbols_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols'**
+  String get admin_symbols_title;
+
+  /// No description provided for @admin_symbols_search_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users'**
+  String get admin_symbols_search_hint;
+
+  /// No description provided for @user_symbols_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols of {username}'**
+  String user_symbols_title(Object username);
+
+  /// No description provided for @inventory_section_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get inventory_section_title;
+
+  /// No description provided for @add_symbols_cta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add_symbols_cta;
+
+  /// No description provided for @gym_library_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Gym Library'**
+  String get gym_library_title;
+
+  /// No description provided for @empty_inventory_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'No symbols in inventory yet'**
+  String get empty_inventory_hint;
+
+  /// No description provided for @empty_gym_library_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'No additional symbols available'**
+  String get empty_gym_library_hint;
+
+  /// No description provided for @no_members_found.
+  ///
+  /// In en, this message translates to:
+  /// **'No members found'**
+  String get no_members_found;
+
+  /// No description provided for @saved_snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved_snackbar;
+
+  /// No description provided for @assign_failed_snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment failed'**
+  String get assign_failed_snackbar;
+
+  /// No description provided for @removed_snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get removed_snackbar;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

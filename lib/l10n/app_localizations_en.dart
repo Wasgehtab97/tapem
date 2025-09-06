@@ -722,4 +722,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bodyweightToggleTooltip => 'Toggle bodyweight';
+
+  String get admin_symbols_title => 'Symbols';
+
+  String get admin_symbols_search_hint => 'Search users';
+
+  String user_symbols_title(Object username) => 'Symbols of $username';
+
+  String get inventory_section_title => 'Inventory';
+
+  String get add_symbols_cta => 'Add';
+
+  String get gym_library_title => 'Gym Library';
+
+  String get empty_inventory_hint => 'No symbols in inventory yet';
+
+  String get empty_gym_library_hint => 'No additional symbols available';
+
+  String get no_members_found => 'No members found';
+
+  String get saved_snackbar => 'Saved';
+
+  String get assign_failed_snackbar => 'Assignment failed';
+
+  String get removed_snackbar => 'Removed';
 }

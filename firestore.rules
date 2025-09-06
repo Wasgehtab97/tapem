@@ -201,7 +201,8 @@ service cloud.firestore {
           request.resource.data.keys().hasOnly(['addedAt', 'addedBy', 'source']) &&
           request.resource.data.addedAt is timestamp &&
           request.resource.data.addedBy == request.auth.uid &&
-          request.resource.data.source == 'gym:' + request.auth.token.gymId;
+          (request.resource.data.source == 'global' ||
+           request.resource.data.source == 'gym:' + request.auth.token.gymId);
         allow delete: if request.auth != null &&
           request.auth.token.role == 'admin' &&
           request.auth.token.gymId != null &&

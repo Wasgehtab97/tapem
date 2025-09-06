@@ -707,4 +707,17 @@
   ,"@bodyweightPlus": {"description": "Bodyweight plus additional weight","placeholders": {"kg": {}}}
   ,"bodyweightToggleTooltip": "Toggle bodyweight"
   ,"@bodyweightToggleTooltip": {"description": "Tooltip for bodyweight toggle"}
+  ,"admin_symbols_title": "Symbols"
+  ,"admin_symbols_search_hint": "Search users"
+  ,"user_symbols_title": "Symbols of {username}"
+  ,"@user_symbols_title": {"placeholders": {"username": {}}}
+  ,"inventory_section_title": "Inventory"
+  ,"add_symbols_cta": "Add"
+  ,"gym_library_title": "Gym Library"
+  ,"empty_inventory_hint": "No symbols in inventory yet"
+  ,"empty_gym_library_hint": "No additional symbols available"
+  ,"no_members_found": "No members found"
+  ,"saved_snackbar": "Saved"
+  ,"assign_failed_snackbar": "Assignment failed"
+  ,"removed_snackbar": "Removed"
 }
