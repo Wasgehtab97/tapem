@@ -12,3 +12,8 @@ Planned emulator test cases:
 - **Lesen von `users/{uid}/avatarsOwned` nur durch Owner.**
 - **Write auf `users/{uid}/avatarsOwned` bleibt verboten.**
 - **Mirror-Trigger aktualisiert `publicProfiles/{uid}` korrekt.**
+- **Admin eines Gyms kann nur Gym-eigene Avatare an seine Mitglieder vergeben.**
+- **Fremd-Gym-Vergabe scheitert.**
+- **XP-Threshold überschritten → genau ein Grant.**
+- **Challenge/Event Grant nur bei erfülltem Zustand/Window.**
+- **Defaults werden beim User-OnCreate auto-grantet (idempotent).**

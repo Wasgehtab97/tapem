@@ -39,6 +39,7 @@
 | `avatars_v2_enabled` | false |
 | `avatars_v2_migration_on` | false |
 | `avatars_v2_images_cdn` | false |
+| `avatars_v2_grants_enabled` | false |
 
 ## Read Rights
 - Gym catalog readable only for members of the gym
@@ -87,3 +88,34 @@
 - Equip von nicht-owned Avatar → `not_owned`
 - Cross-Gym (Quelle ≠ Ziel-Gym) → `cross_gym_forbidden`
 - Ungültige Referenz → `invalid_ref`
+
+## Phase 3 Flows
+
+### Grant-Core
+- Eingabe: `{ uid, avatarPath, reason, context }`
+- `grantHash = sha256("${uid}|${avatarPath}|${reason}|${canonicalContext}")`
+- Idempotenz: vorhandener `grantHash` → `avatar_grant_noop`
+
+### Admin Grant
+- Callable `adminGrantAvatar`
+- Claim `role:gym_admin`, gebunden an `gymId`
+- Nur Mitglieder des Gyms, Gym-eigene oder globale Avatare
+
+### XP-Unlock
+- Trigger auf `users/{uid}.xp`
+- Bei Überschreiten `xpThreshold` → einmaliger Grant
+
+### Challenge-Unlock
+- Trigger auf `gyms/{gymId}/challenges/{challengeId}/participants/{uid}`
+- Zustand `completed` löst Grant aus
+
+### Event-Unlock
+- Trigger auf `gyms/{gymId}/events/{eventId}/participants/{uid}`
+- Grant nur innerhalb `unlock.params.window {start,end}`
+
+### Defaults
+- Variante A: Auto-Grant der zwei globalen Standard-PNGs bei `auth.user().onCreate`
+
+### Mandanten & Rollen
+- Gym-Admins nur für Mitglieder ihres Gyms
+- Globale Avatare getrennt von Gym-Avataren
