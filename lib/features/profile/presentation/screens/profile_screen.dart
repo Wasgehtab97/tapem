@@ -290,6 +290,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md),
+          child: GestureDetector(
+            onTap: () => _showAvatarSheet(auth),
+            child: Tooltip(
+              message: 'Profilbild ändern',
+              child: Semantics(
+                label: 'Profilbild ändern',
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundImage:
+                      AssetImage('assets/avatars/${auth.avatarKey}.png'),
+                ),
+              ),
+            ),
+          ),
+        ),
+        centerTitle: true,
         title: Text(loc.profileTitle),
         actions: [
           if (enableFriends)
@@ -349,25 +368,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showAvatarSheet(auth),
-                            child: CircleAvatar(
-                              radius: 28,
-                              backgroundImage: AssetImage('assets/avatars/${auth.avatarKey}.png'),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              auth.userName ?? '',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
                       const Text(
                         'Trainingstage',
                         style: TextStyle(
