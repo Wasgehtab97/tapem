@@ -290,7 +290,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        centerTitle: true,
         title: Text(loc.profileTitle),
+        flexibleSpace: Builder(
+          builder: (context) {
+            const avatarSize = 44.0;
+            final top = MediaQuery.of(context).padding.top;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: AppSpacing.md,
+                  top: top + (kToolbarHeight - avatarSize) / 2,
+                  child: SizedBox(
+                    width: avatarSize,
+                    height: avatarSize,
+                    child: Tooltip(
+                      message: 'Profilbild ändern',
+                      child: Semantics(
+                        button: true,
+                        label: 'Profilbild ändern',
+                        child: GestureDetector(
+                          onTap: () => _showAvatarSheet(auth),
+                          child: CircleAvatar(
+                            radius: avatarSize / 2,
+                            backgroundImage: AssetImage(
+                              'assets/avatars/${auth.avatarKey}.png',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
           if (enableFriends)
             Consumer<FriendsProvider>(
@@ -349,25 +386,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _showAvatarSheet(auth),
-                            child: CircleAvatar(
-                              radius: 28,
-                              backgroundImage: AssetImage('assets/avatars/${auth.avatarKey}.png'),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              auth.userName ?? '',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
                       const Text(
                         'Trainingstage',
                         style: TextStyle(
