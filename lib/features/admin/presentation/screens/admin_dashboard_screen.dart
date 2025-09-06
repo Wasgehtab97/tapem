@@ -17,6 +17,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -187,6 +188,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
     if (!auth.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Adminbereich')),
@@ -241,6 +243,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRouter.manageChallenges);
+                      },
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    BrandActionTile(
+                      leadingIcon: Icons.person,
+                      title: loc.admin_symbols_title,
+                      onTap: () {
+                        Navigator.of(context)
+                            .pushNamed(AppRouter.adminSymbols);
                       },
                       variant: BrandActionTileVariant.outlined,
                       showChevron: false,
