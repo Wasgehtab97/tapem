@@ -30,6 +30,8 @@ import 'package:tapem/features/friends/presentation/screens/friends_home_screen.
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
 import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -60,6 +62,8 @@ class AppRouter {
   static const deviceXp = '/device_xp';
   static const challenges = '/challenges';
   static const manageChallenges = '/manage_challenges';
+  static const adminSymbols = '/admin_symbols';
+  static const userSymbols = '/user_symbols';
   static const feedbackOverview = '/feedback_overview';
   static const surveyOverview = '/survey_overview';
   static const surveyVote = '/survey_vote';
@@ -151,6 +155,13 @@ class AppRouter {
 
       case manageChallenges:
         return MaterialPageRoute(builder: (_) => const ChallengeAdminScreen());
+
+      case adminSymbols:
+        return MaterialPageRoute(builder: (_) => const AdminSymbolsScreen());
+
+      case userSymbols:
+        final uid = settings.arguments as String? ?? '';
+        return MaterialPageRoute(builder: (_) => UserSymbolsScreen(uid: uid));
 
       case affiliate:
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
