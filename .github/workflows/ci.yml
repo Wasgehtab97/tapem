@@ -95,6 +95,28 @@ jobs:
           name: rules-test-log
           path: rules-test.log
 
+  avatars_emulator_tests:
+    name: Avatars Emulator Tests
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install functions dependencies
+        run: cd functions && npm ci
+      - name: Run rules tests
+        run: npm run test:rules
+      - name: Run functions tests
+        run: npm run test:functions
+
   build:
     name: Build Debug APK
     needs: rules_test

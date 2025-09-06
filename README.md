@@ -19,6 +19,16 @@ Tap’em ist eine Flutter-App für Fitnessstudios. Sie setzt auf ein modulares K
 - **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung
 - **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors
 
+## Tests lokal & CI
+
+Die Avatars-V2 Rules- und Functions-Tests laufen komplett im Firebase Emulator. Lokal können sie mit folgendem Befehl gestartet werden:
+
+```bash
+npm run test:all
+```
+
+CI führt denselben Ablauf aus, siehe Workflow `avatars_emulator_tests`.
+
 ---
 
 ## Projektstruktur

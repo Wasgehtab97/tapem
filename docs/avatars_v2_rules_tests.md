@@ -1,19 +1,35 @@
-# Avatars V2 Rules Tests
+# Avatars V2 Emulator Tests
 
-Planned emulator test cases:
+This suite exercises Firestore security rules and Cloud Functions for the Avatars V2 feature using the Firebase Emulator Suite.
 
-- **Nicht-Mitglied kann Gym-Katalog nicht lesen.**
-- **Mitglied kann Gym-Katalog lesen.**
-- **Client kann `users/{uid}/avatarsOwned` nicht schreiben.**
-- **Authed Nutzer kann globalen Katalog lesen.**
-- **Unangemeldeter Nutzer kann globale Kataloge nicht lesen.**
-- **Owner darf `users/{uid}.equippedAvatarRef` setzen/ändern/löschen.**
-- **Fremder User darf `equippedAvatarRef` nicht schreiben.**
-- **Lesen von `users/{uid}/avatarsOwned` nur durch Owner.**
-- **Write auf `users/{uid}/avatarsOwned` bleibt verboten.**
-- **Mirror-Trigger aktualisiert `publicProfiles/{uid}` korrekt.**
-- **Admin eines Gyms kann nur Gym-eigene Avatare an seine Mitglieder vergeben.**
-- **Fremd-Gym-Vergabe scheitert.**
-- **XP-Threshold überschritten → genau ein Grant.**
-- **Challenge/Event Grant nur bei erfülltem Zustand/Window.**
-- **Defaults werden beim User-OnCreate auto-grantet (idempotent).**
+## Test Matrix
+
+### Rules
+- Gym catalog read/write permissions
+- Global catalog readability
+- Inventory read / client write deny
+- Equip owner-write
+
+### Functions
+- Default avatar bootstrap on user create
+- Admin grant with tenant isolation and idempotence
+- XP, Challenge and Event based grants
+- Mirror of equipped avatar into public profile
+
+## Running Tests
+
+Start via npm scripts which launch the emulator automatically:
+
+```bash
+npm run test:rules   # Firestore rules tests
+npm run test:functions   # Functions tests with coverage
+npm run test:all     # Run both suites
+```
+
+## Flags
+
+Functions tests stub Remote Config flags so `avatars_v2_enabled` and `avatars_v2_grants_enabled` are ON.
+
+## Notes
+
+The emulator is reset between tests to guarantee determinism. Challenge/event scenarios use synthetic windows and IDs as described in the fixtures.
