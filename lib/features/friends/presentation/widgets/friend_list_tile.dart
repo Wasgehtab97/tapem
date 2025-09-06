@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/public_profile.dart';
 import '../../providers/friend_presence_provider.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 
 class FriendListTile extends StatelessWidget {
   const FriendListTile({
@@ -19,7 +20,9 @@ class FriendListTile extends StatelessWidget {
     final theme = Theme.of(context);
     final avatar = CircleAvatar(
       radius: 20,
-      backgroundImage: AssetImage('assets/avatars/${profile.avatarKey}.png'),
+      backgroundImage: AssetImage(
+        AvatarAssets.path(profile.avatarKey ?? AvatarAssets.defaultKey),
+      ),
     );
     final statusColor = presence == PresenceState.workedOutToday
         ? theme.colorScheme.secondary

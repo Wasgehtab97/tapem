@@ -19,6 +19,7 @@ import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 
 class MockAuthProvider extends Mock implements AuthProvider {}
 
@@ -188,7 +189,46 @@ void main() {
     await tester.tap(find.byTooltip('Profilbild ändern'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Default'), findsOneWidget);
+    expect(find.byTooltip('Avatar 1'), findsOneWidget);
+    expect(find.byTooltip('Avatar 2'), findsOneWidget);
+    expect(find.text('Default'), findsNothing);
+  });
+
+  testWidgets('selecting avatar updates header and persists', (tester) async {
+    var key = 'default';
+    final auth = MockAuthProvider();
+    when(() => auth.userId).thenReturn('u1');
+    when(() => auth.avatarKey).thenAnswer(() => key);
+    when(() => auth.setAvatarKey(any())).thenAnswer((invocation) async {
+      key = invocation.positionalArguments.first as String;
+    });
+
+    await pumpProfileScreen(tester, auth);
+
+    await tester.tap(find.byTooltip('Profilbild ändern'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Avatar 2'));
+    await tester.pumpAndSettle();
+
+    verify(() => auth.setAvatarKey('default2')).called(1);
+    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
+    expect(
+      (avatar.backgroundImage as AssetImage).assetName,
+      AvatarAssets.path('default2'),
+    );
+  });
+
+  testWidgets('unknown avatar key falls back to default', (tester) async {
+    final auth = MockAuthProvider();
+    when(() => auth.userId).thenReturn('u1');
+    when(() => auth.avatarKey).thenReturn('mystery');
+
+    await pumpProfileScreen(tester, auth);
+    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
+    expect(
+      (avatar.backgroundImage as AssetImage).assetName,
+      AvatarAssets.path('default'),
+    );
   });
 
   testWidgets('actions are tappable', (tester) async {
