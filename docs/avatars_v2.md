@@ -56,3 +56,34 @@
 3. **Phase 4** – Rules & Functions Tests
 4. **Phase 5** – Migration V1→V2
 5. **Phase 6** – Telemetry & Rollout
+
+## Phase 2 Flows
+
+### Inventory Read (Client)
+- Pfad: `users/{uid}/avatarsOwned/{avatarId}`
+- Provider lädt einmalig alle Doc-IDs → Menge der `avatarId`
+- Nur bei gesetztem Flag `avatars_v2_enabled`
+- Cache im Speicher, Invalidation bei Sign-Out / Gym-Wechsel
+
+### Equip (Owner-Write)
+- Feld: `users/{uid}.equippedAvatarRef`
+- Client validiert:
+  - Referenz zeigt auf existierenden Katalogeintrag
+  - `avatarId` in `avatarsOwned`
+  - Bei Gym-Avataren: Besitzer ist Mitglied des Gyms und Quelle passt
+- Schreibvorgang: optimistisches Update, bei Fehler Rollback
+- Fehlercodes: `not_owned`, `invalid_ref`, `cross_gym_forbidden`, `not_member`, `write_denied`, `unknown`
+
+### Public Mirror (Cloud Function)
+- Trigger: `onWrite` auf `users/{uid}.equippedAvatarRef`
+- Ziel: `publicProfiles/{uid}`
+  - `equippedAvatarRef`
+  - `resolvedAvatarUrl` (optional)
+- Auflösung `resolvedAvatarUrl`:
+  - falls `assetUrl` vorhanden → direkt
+  - falls nur `assetStoragePath` und kein CDN-Mechanismus → leer (Annahme)
+
+### Fehler-/Konfliktfälle
+- Equip von nicht-owned Avatar → `not_owned`
+- Cross-Gym (Quelle ≠ Ziel-Gym) → `cross_gym_forbidden`
+- Ungültige Referenz → `invalid_ref`
