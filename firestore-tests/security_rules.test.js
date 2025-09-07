@@ -123,6 +123,8 @@ describe('Security Rules v1', function () {
         .set({ role: 'admin' });
       await db.collection('users').doc('userA').set({});
       await db.collection('users').doc('userB').set({});
+      await db.collection('publicProfiles').doc('userA').set({ username: 'Alice' });
+      await db.collection('publicProfiles').doc('userB').set({ username: 'Bob' });
     });
   });
 
@@ -352,6 +354,30 @@ describe('Security Rules v1', function () {
           foo: 'bar',
         }),
       );
+    });
+
+    it('allows owner to update own usernameLower', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('publicProfiles').doc('userA');
+      await assertSucceeds(ref.set({ usernameLower: 'alice' }, { merge: true }));
+    });
+
+    it('allows gym admin to backfill usernameLower', async () => {
+      const db = admin().firestore();
+      const ref = db.collection('publicProfiles').doc('userA');
+      await assertSucceeds(ref.set({ usernameLower: 'alice' }, { merge: true }));
+    });
+
+    it('forbids admin to write usernameLower of non-member', async () => {
+      const db = admin().firestore();
+      const ref = db.collection('publicProfiles').doc('userB');
+      await assertFails(ref.set({ usernameLower: 'bob' }, { merge: true }));
+    });
+
+    it('forbids non-admin to write usernameLower of others', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('publicProfiles').doc('userB');
+      await assertFails(ref.set({ usernameLower: 'bob' }, { merge: true }));
     });
 
     it('enforces friend request rules', async () => {

@@ -137,6 +137,30 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Public profiles
+    // ─────────────────────────
+    match /publicProfiles/{uid} {
+      allow read: if isAuthed();
+      allow create: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['username','usernameLower','createdAt']) &&
+        request.resource.data.username is string &&
+        request.resource.data.createdAt is timestamp &&
+        (!('usernameLower' in request.resource.data) ||
+          request.resource.data.usernameLower is string);
+      allow update: if (
+          isOwner(uid) || (
+            request.auth != null &&
+            request.auth.token.role == 'admin' &&
+            request.auth.token.gymId != null &&
+            exists(/databases/$(database)/documents/gyms/$(request.auth.token.gymId)/users/$(uid))
+          )
+        ) &&
+        request.resource.data.keys().hasOnly(['usernameLower']) &&
+        request.resource.data.usernameLower is string;
+      allow delete: if false;
+    }
+
+    // ─────────────────────────
     // Usernames mapping
     // ─────────────────────────
       match /usernames/{name} {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Catalog of avatar assets discovered at runtime from the [AssetManifest].
@@ -79,9 +80,11 @@ class AvatarCatalog {
     if (!_loaded) {
       unawaited(load());
     }
-    final resolved = _allKeys.contains(normalized)
-        ? normalized
-        : 'global/default';
+    final exists = _allKeys.contains(normalized);
+    if (!exists && kDebugMode) {
+      debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
+    }
+    final resolved = exists ? normalized : 'global/default';
     return 'assets/avatars/' + resolved + '.png';
   }
 

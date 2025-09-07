@@ -2,10 +2,12 @@
 // ignore_for_file: avoid_print, use_super_parameters
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform, kIsWeb;
+    show defaultTargetPlatform, TargetPlatform, kDebugMode, kIsWeb;
+import 'package:flutter/services.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -224,6 +226,22 @@ Future<void> main() async {
 
   // Lokalisierung
   await initializeDateFormatting();
+
+  // Avatar asset health check (debug only)
+  if (kDebugMode) {
+    final manifestStr = await rootBundle.loadString('AssetManifest.json');
+    final Map<String, dynamic> manifest = json.decode(manifestStr);
+    const def1 = 'assets/avatars/global/default.png';
+    const def2 = 'assets/avatars/global/default2.png';
+    if (!manifest.containsKey(def1)) {
+      debugPrint(
+          '[AvatarCatalog] missing $def1 in AssetBundle – app restart required: flutter clean && flutter pub get && flutter run');
+    }
+    if (!manifest.containsKey(def2)) {
+      debugPrint(
+          '[AvatarCatalog] missing $def2 in AssetBundle – app restart required: flutter clean && flutter pub get && flutter run');
+    }
+  }
 
   // Reports vorbereiten
   final reportRepo = ReportRepositoryImpl();

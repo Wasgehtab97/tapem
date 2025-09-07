@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
@@ -44,7 +45,17 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
         .where('gymCodes', arrayContains: gymId)
         .snapshots();
     return Scaffold(
-      appBar: AppBar(title: Text(loc.admin_symbols_title)),
+      appBar: AppBar(
+        title: Text(loc.admin_symbols_title),
+        actions: [
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.build),
+              tooltip: 'backfill usernameLower',
+              onPressed: () => _backfill(fs, gymId),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -68,7 +79,8 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? [];
                 final filtered = docs.where((d) {
-                  final uname = (d['usernameLower'] as String?) ?? '';
+                  final uname = (d['usernameLower'] as String?) ??
+                      (d['username'] as String? ?? '').toLowerCase();
                   return uname.startsWith(_query);
                 }).toList();
                 if (filtered.isEmpty) {
@@ -79,10 +91,19 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                   itemBuilder: (context, index) {
                     final doc = filtered[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    final avatarKey = (data['avatarKey'] as String?) ?? 'global/default';
+                    final avatarKey =
+                        (data['avatarKey'] as String?) ?? 'global/default';
                     final path = AvatarCatalog.instance.resolvePath(avatarKey);
                     return ListTile(
-                      leading: CircleAvatar(backgroundImage: AssetImage(path)),
+                      leading: CircleAvatar(
+                        backgroundImage: AssetImage(path),
+                        onBackgroundImageError: (_, __) {
+                          if (kDebugMode) {
+                            debugPrint('[Avatar] failed to load $path');
+                          }
+                        },
+                        child: const Icon(Icons.person),
+                      ),
                       title: Text(data['username'] ?? doc.id),
                       onTap: () {
                         Navigator.of(context).pushNamed(
@@ -99,6 +120,19 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _backfill(FirebaseFirestore fs, String gymId) async {
+    final query = await fs
+        .collection('users')
+        .where('gymCodes', arrayContains: gymId)
+        .where('usernameLower', isNull: true)
+        .get();
+    for (final doc in query.docs) {
+      final name = doc['username'] as String? ?? '';
+      await doc.reference.update({'usernameLower': name.toLowerCase()});
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
   }
 }
 

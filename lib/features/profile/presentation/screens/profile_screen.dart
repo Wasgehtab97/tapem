@@ -1,5 +1,6 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
@@ -307,6 +308,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             AvatarCatalog.instance
                                 .resolvePath(auth.avatarKey),
                           ),
+                          onBackgroundImageError: (_, __) {
+                            if (kDebugMode) {
+                              debugPrint('[Avatar] failed to load ' +
+                                  AvatarCatalog.instance
+                                      .resolvePath(auth.avatarKey));
+                            }
+                          },
+                          child: const Icon(Icons.person),
                         ),
                       ),
                     ),
@@ -484,6 +493,13 @@ class AvatarPicker extends StatelessWidget {
                       backgroundImage: AssetImage(
                         AvatarCatalog.instance.resolvePath(key),
                       ),
+                      onBackgroundImageError: (_, __) {
+                        if (kDebugMode) {
+                          debugPrint('[Avatar] failed to load ' +
+                              AvatarCatalog.instance.resolvePath(key));
+                        }
+                      },
+                      child: const Icon(Icons.person),
                     ),
                   ),
                   if (selected)
