@@ -6,8 +6,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform, kDebugMode, kIsWeb;
-import 'package:flutter/services.dart';
+    show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'features/avatars/domain/services/avatar_catalog.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
