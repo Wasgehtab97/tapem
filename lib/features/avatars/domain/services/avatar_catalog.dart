@@ -19,6 +19,11 @@ class AvatarCatalog {
   final List<String> _global = <String>['global/default', 'global/default2'];
   final Map<String, List<String>> _byGym = <String, List<String>>{};
   final Set<String> _allKeys = <String>{'global/default', 'global/default2'};
+  final Map<String, String> _paths = <String, String>{
+    'global/default': 'global/default',
+    'global/default2': 'global/default2',
+  };
+  final Set<String> _warned = <String>{};
 
   Future<void> load() async {
     if (_loaded || _loading) return;
@@ -33,15 +38,21 @@ class AvatarCatalog {
       for (final path in data.keys) {
         if (path.startsWith(prefix) && path.endsWith(ext)) {
           final key = path.substring(prefix.length, path.length - ext.length);
-          if (_allKeys.contains(key)) continue;
-          _allKeys.add(key);
-          if (key.startsWith('global/')) {
-            _global.add(key);
+          final normalized = _normalize(key);
+          _allKeys.add(normalized);
+          _paths[normalized] = key;
+          if (normalized.startsWith('global/')) {
+            if (!_global.contains(normalized)) {
+              _global.add(normalized);
+            }
           } else {
-            final slash = key.indexOf('/');
+            final slash = normalized.indexOf('/');
             if (slash != -1) {
-              final gymId = key.substring(0, slash);
-              (_byGym[gymId] ??= <String>[]).add(key);
+              final gymId = normalized.substring(0, slash);
+              final list = _byGym[gymId] ??= <String>[];
+              if (!list.contains(normalized)) {
+                list.add(normalized);
+              }
             }
           }
         }
@@ -80,12 +91,15 @@ class AvatarCatalog {
     if (!_loaded) {
       unawaited(load());
     }
-    final exists = _allKeys.contains(normalized);
-    if (!exists && kDebugMode) {
-      debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
+    var path = _paths[normalized];
+    if (path == null) {
+      if (kDebugMode && !_warned.contains(normalized)) {
+        debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
+        _warned.add(normalized);
+      }
+      path = _paths['global/default'] ?? 'global/default';
     }
-    final resolved = exists ? normalized : 'global/default';
-    return 'assets/avatars/' + resolved + '.png';
+    return 'assets/avatars/' + path + '.png';
   }
 
   bool exists(String key) {
@@ -93,7 +107,7 @@ class AvatarCatalog {
     if (!_loaded) {
       unawaited(load());
     }
-    return _allKeys.contains(normalized);
+    return _paths.containsKey(normalized);
   }
 
   String _normalize(String key) {

@@ -8,6 +8,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/friends/domain/models/public_profile.dart';
 
 class AdminSymbolsScreen extends StatefulWidget {
   const AdminSymbolsScreen({super.key, this.firestore});
@@ -78,21 +79,19 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
               stream: stream,
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? [];
-                final filtered = docs.where((d) {
-                  final uname = (d['usernameLower'] as String?) ??
-                      (d['username'] as String? ?? '').toLowerCase();
-                  return uname.startsWith(_query);
-                }).toList();
-                if (filtered.isEmpty) {
+                final profiles = docs
+                    .map((d) =>
+                        PublicProfile.fromMap(d.id, d.data() as Map<String, dynamic>))
+                    .where((p) => p.safeLower.startsWith(_query))
+                    .toList();
+                if (profiles.isEmpty) {
                   return Center(child: Text(loc.no_members_found));
                 }
                 return ListView.builder(
-                  itemCount: filtered.length,
+                  itemCount: profiles.length,
                   itemBuilder: (context, index) {
-                    final doc = filtered[index];
-                    final data = doc.data() as Map<String, dynamic>;
-                    final avatarKey =
-                        (data['avatarKey'] as String?) ?? 'global/default';
+                    final profile = profiles[index];
+                    final avatarKey = profile.avatarKey ?? 'default';
                     final path = AvatarCatalog.instance.resolvePath(avatarKey);
                     return ListTile(
                       leading: CircleAvatar(
@@ -104,11 +103,13 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                         },
                         child: const Icon(Icons.person),
                       ),
-                      title: Text(data['username'] ?? doc.id),
+                      title: Text(profile.username.isNotEmpty
+                          ? profile.username
+                          : profile.uid),
                       onTap: () {
                         Navigator.of(context).pushNamed(
                           AppRouter.userSymbols,
-                          arguments: doc.id,
+                          arguments: profile.uid,
                         );
                       },
                     );
@@ -129,7 +130,8 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
         .where('usernameLower', isNull: true)
         .get();
     for (final doc in query.docs) {
-      final name = doc['username'] as String? ?? '';
+      final data = doc.data();
+      final name = data['username'] as String? ?? '';
       await doc.reference.update({'usernameLower': name.toLowerCase()});
       await Future.delayed(const Duration(milliseconds: 50));
     }
