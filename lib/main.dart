@@ -233,13 +233,23 @@ Future<void> main() async {
     final Map<String, dynamic> manifest = json.decode(manifestStr);
     const def1 = 'assets/avatars/global/default.png';
     const def2 = 'assets/avatars/global/default2.png';
+    const legacy1 = 'assets/avatars/default.png';
+    const legacy2 = 'assets/avatars/default2.png';
     if (!manifest.containsKey(def1)) {
-      debugPrint(
-          '[AvatarCatalog] missing $def1 in AssetBundle – app restart required: flutter clean && flutter pub get && flutter run');
+      if (manifest.containsKey(legacy1)) {
+        debugPrint('[AvatarCatalog] missing $def1, using legacy $legacy1');
+      } else {
+        debugPrint(
+            '[AvatarCatalog] missing $def1 and $legacy1 – app restart required: flutter clean && flutter pub get && flutter run');
+      }
     }
     if (!manifest.containsKey(def2)) {
-      debugPrint(
-          '[AvatarCatalog] missing $def2 in AssetBundle – app restart required: flutter clean && flutter pub get && flutter run');
+      if (manifest.containsKey(legacy2)) {
+        debugPrint('[AvatarCatalog] missing $def2, using legacy $legacy2');
+      } else {
+        debugPrint(
+            '[AvatarCatalog] missing $def2 and $legacy2 – app restart required: flutter clean && flutter pub get && flutter run');
+      }
     }
   }
 

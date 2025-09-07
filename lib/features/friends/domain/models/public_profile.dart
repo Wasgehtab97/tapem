@@ -15,7 +15,7 @@ class PublicProfile {
   final String? primaryGymCode;
   final String? avatarKey;
 
-  String get computedUsernameLower =>
+  String get safeLower =>
       usernameLower ?? username.toLowerCase();
 
   factory PublicProfile.fromMap(String id, Map<String, dynamic> data) {
