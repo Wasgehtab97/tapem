@@ -155,73 +155,73 @@ abstract class AppLocalizations {
   /// **'Late workouts count toward previous day (rollover {hour}:00)'**
   String lateWorkoutsCountPrevDay(Object hour);
 
-  /// Title for creatine screen
+  /// No description provided for @creatineTitle.
   ///
   /// In en, this message translates to:
   /// **'Creatine'**
   String get creatineTitle;
 
-  /// Button label when creatine taken today
+  /// No description provided for @creatineTakenToday.
   ///
   /// In en, this message translates to:
   /// **'Taken today'**
   String get creatineTakenToday;
 
-  /// Button label to confirm intake for a date
+  /// No description provided for @creatineConfirmForDate.
   ///
   /// In en, this message translates to:
   /// **'Confirm for {date}'**
   String creatineConfirmForDate(Object date);
 
-  /// Button label to remove intake marking
+  /// No description provided for @creatineRemoveMarking.
   ///
   /// In en, this message translates to:
   /// **'Remove mark'**
   String get creatineRemoveMarking;
 
-  /// Snackbar when intake saved
+  /// No description provided for @creatineSaved.
   ///
   /// In en, this message translates to:
   /// **'Creatine for {date} saved'**
   String creatineSaved(Object date);
 
-  /// Snackbar when intake removed
+  /// No description provided for @creatineRemoved.
   ///
   /// In en, this message translates to:
   /// **'Creatine for {date} removed'**
   String creatineRemoved(Object date);
 
-  /// Label when intake confirmed for yesterday
+  /// No description provided for @creatineTakenYesterday.
   ///
   /// In en, this message translates to:
   /// **'Taken yesterday'**
   String get creatineTakenYesterday;
 
-  /// Error when selected date is not today or yesterday
+  /// No description provided for @creatineOnlyTodayOrYesterday.
   ///
   /// In en, this message translates to:
   /// **'Only today or yesterday allowed.'**
   String get creatineOnlyTodayOrYesterday;
 
-  /// Label for external creatine link
+  /// No description provided for @creatineNoCreatine.
   ///
   /// In en, this message translates to:
   /// **'No creatine?'**
   String get creatineNoCreatine;
 
-  /// Error when link could not be opened
+  /// No description provided for @creatineOpenLinkError.
   ///
   /// In en, this message translates to:
   /// **'Could not open link.'**
   String get creatineOpenLinkError;
 
-  /// Error when authentication is required
+  /// No description provided for @signInRequiredError.
   ///
   /// In en, this message translates to:
   /// **'Sign-in required.'**
   String get signInRequiredError;
 
-  /// Error when date is invalid
+  /// No description provided for @invalidDateError.
   ///
   /// In en, this message translates to:
   /// **'Invalid date.'**
@@ -244,6 +244,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User'**
   String get genericUser;
+
+  /// Title card for daily experience on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get rankExperience;
+
+  /// Title card for device stats on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Device level'**
+  String get rankDeviceLevel;
+
+  /// Title card for muscle group stats on rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle level'**
+  String get rankMuscleLevel;
 
   /// Label for the gym code input
   ///
@@ -1253,24 +1271,6 @@ abstract class AppLocalizations {
   /// **'Lower body'**
   String get muscleCatLower;
 
-  /// Title card for daily experience on rank tab
-  ///
-  /// In en, this message translates to:
-  /// **'Experience'**
-  String get rankExperience;
-
-  /// Title card for device stats on rank tab
-  ///
-  /// In en, this message translates to:
-  /// **'Device level'**
-  String get rankDeviceLevel;
-
-  /// Title card for muscle group stats on rank tab
-  ///
-  /// In en, this message translates to:
-  /// **'Muscle level'**
-  String get rankMuscleLevel;
-
   /// No description provided for @friends_title.
   ///
   /// In en, this message translates to:
@@ -1451,19 +1451,19 @@ abstract class AppLocalizations {
   /// **'Enter at least 2 characters'**
   String get friends_search_min_chars;
 
-  /// No description provided for @bodyweight.
+  /// Label for bodyweight
   ///
   /// In en, this message translates to:
   /// **'Bodyweight'**
   String get bodyweight;
 
-  /// No description provided for @bodyweightPlus.
+  /// Bodyweight plus additional weight
   ///
   /// In en, this message translates to:
   /// **'Bodyweight + {kg} kg'**
   String bodyweightPlus(Object kg);
 
-  /// No description provided for @bodyweightToggleTooltip.
+  /// Tooltip for bodyweight toggle
   ///
   /// In en, this message translates to:
   /// **'Toggle bodyweight'**
@@ -1523,12 +1523,6 @@ abstract class AppLocalizations {
   /// **'No members found'**
   String get no_members_found;
 
-  /// No description provided for @no_permission_symbols.
-  ///
-  /// In en, this message translates to:
-  /// **'No permission to view symbols'**
-  String get no_permission_symbols;
-
   /// No description provided for @saved_snackbar.
   ///
   /// In en, this message translates to:
@@ -1546,6 +1540,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Removed'**
   String get removed_snackbar;
+
+  /// No description provided for @no_permission_symbols.
+  ///
+  /// In en, this message translates to:
+  /// **'No permission to view symbols'**
+  String get no_permission_symbols;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

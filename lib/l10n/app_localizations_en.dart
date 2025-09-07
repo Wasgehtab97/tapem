@@ -53,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String creatineConfirmForDate(Object date) {
     return 'Confirm for $date';
-    }
+  }
 
   @override
   String get creatineRemoveMarking => 'Remove mark';
@@ -94,6 +94,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get genericUser => 'User';
+
+  @override
+  String get rankExperience => 'Experience';
+
+  @override
+  String get rankDeviceLevel => 'Device level';
+
+  @override
+  String get rankMuscleLevel => 'Muscle level';
 
   @override
   String get gymCodeFieldLabel => 'Gym Code';
@@ -612,15 +621,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get muscleCatLower => 'Lower body';
 
   @override
-  String get rankExperience => 'Experience';
-
-  @override
-  String get rankDeviceLevel => 'Device level';
-
-  @override
-  String get rankMuscleLevel => 'Muscle level';
-
-  @override
   String get friends_title => 'Friends';
 
   @override
@@ -723,29 +723,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bodyweightToggleTooltip => 'Toggle bodyweight';
 
+  @override
   String get admin_symbols_title => 'Symbols';
 
+  @override
   String get admin_symbols_search_hint => 'Search users';
 
-  String user_symbols_title(Object username) => 'Symbols of $username';
+  @override
+  String user_symbols_title(Object username) {
+    return 'Symbols of $username';
+  }
 
+  @override
   String get inventory_section_title => 'Inventory';
 
+  @override
   String get add_symbols_cta => 'Add';
 
+  @override
   String get gym_library_title => 'Gym Library';
 
+  @override
   String get empty_inventory_hint => 'No symbols in inventory yet';
 
+  @override
   String get empty_gym_library_hint => 'No additional symbols available';
 
+  @override
   String get no_members_found => 'No members found';
 
-  String get no_permission_symbols => 'No permission to view symbols';
-
+  @override
   String get saved_snackbar => 'Saved';
 
+  @override
   String get assign_failed_snackbar => 'Assignment failed';
 
+  @override
   String get removed_snackbar => 'Removed';
+
+  @override
+  String get no_permission_symbols => 'No permission to view symbols';
 }

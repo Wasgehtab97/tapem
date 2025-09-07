@@ -96,6 +96,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get genericUser => 'Nutzer';
 
   @override
+  String get rankExperience => 'Erfahrung';
+
+  @override
+  String get rankDeviceLevel => 'Geräte level';
+
+  @override
+  String get rankMuscleLevel => 'Mucki level';
+
+  @override
   String get gymCodeFieldLabel => 'Gym-Code';
 
   @override
@@ -612,15 +621,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get muscleCatLower => 'Unterkörper';
 
   @override
-  String get rankExperience => 'Erfahrung';
-
-  @override
-  String get rankDeviceLevel => 'Geräte level';
-
-  @override
-  String get rankMuscleLevel => 'Mucki level';
-
-  @override
   String get friends_title => 'Freunde';
 
   @override
@@ -723,30 +723,44 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get bodyweightToggleTooltip => 'Körpergewicht umschalten';
 
+  @override
   String get admin_symbols_title => 'Symbole';
 
+  @override
   String get admin_symbols_search_hint => 'Nutzer suchen';
 
-  String user_symbols_title(Object username) => 'Symbole von $username';
+  @override
+  String user_symbols_title(Object username) {
+    return 'Symbole von $username';
+  }
 
+  @override
   String get inventory_section_title => 'Inventar';
 
+  @override
   String get add_symbols_cta => 'Hinzufügen';
 
+  @override
   String get gym_library_title => 'Gym-Bibliothek';
 
+  @override
   String get empty_inventory_hint => 'Noch keine Symbole im Inventar';
 
+  @override
   String get empty_gym_library_hint => 'Keine zusätzlichen Symbole verfügbar';
 
+  @override
   String get no_members_found => 'Keine Mitglieder gefunden';
 
-  String get no_permission_symbols =>
-      'Keine Berechtigung zum Anzeigen der Symbole';
-
+  @override
   String get saved_snackbar => 'Gespeichert';
 
+  @override
   String get assign_failed_snackbar => 'Zuweisung fehlgeschlagen';
 
+  @override
   String get removed_snackbar => 'Entfernt';
+
+  @override
+  String get no_permission_symbols => 'Keine Berechtigung zum Anzeigen der Symbole';
 }
