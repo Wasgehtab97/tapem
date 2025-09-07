@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/avatar_repository.dart';
 import '../../domain/models/avatar_catalog_item.dart';
 import '../../domain/models/visible_avatar.dart';
-import '../../../core/config/remote_config.dart';
+import 'package:tapem/core/config/remote_config.dart';
 
 class AvatarCatalogProvider extends ChangeNotifier {
   AvatarCatalogProvider({FirebaseFirestore? firestore})

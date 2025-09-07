@@ -8,6 +8,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:url_launcher_platform_interface/link.dart';
 
 class FakeRepo implements CreatineRepository {
   Set<String> dates;

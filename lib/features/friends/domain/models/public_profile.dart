@@ -1,5 +1,5 @@
 class PublicProfile {
-  PublicProfile({
+  const PublicProfile({
     required this.uid,
     required this.username,
     this.usernameLower,
