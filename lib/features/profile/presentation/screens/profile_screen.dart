@@ -464,8 +464,11 @@ class AvatarPicker extends StatelessWidget {
       stream: inventory.inventoryKeys(auth.userId ?? ''),
       builder: (context, snapshot) {
         final inv = snapshot.data ?? const <String>[];
-        final keys = inv.isEmpty
-            ? AvatarCatalog.instance.listGlobal()
+        final List<String> keys = inv.isEmpty
+            ? AvatarCatalog.instance
+                .listGlobal()
+                .map((e) => e.key)
+                .toList()
             : inv;
         return SafeArea(
           child: GridView.builder(
