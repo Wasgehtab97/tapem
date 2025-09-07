@@ -16,6 +16,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
