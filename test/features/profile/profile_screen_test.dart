@@ -217,7 +217,7 @@ void main() {
     var key = 'default';
     final auth = MockAuthProvider();
     when(() => auth.userId).thenReturn('u1');
-    when(() => auth.avatarKey).thenAnswer(() => key);
+    when(() => auth.avatarKey).thenAnswer((_) => key);
     when(() => auth.setAvatarKey(any())).thenAnswer((invocation) async {
       key = invocation.positionalArguments.first as String;
     });
