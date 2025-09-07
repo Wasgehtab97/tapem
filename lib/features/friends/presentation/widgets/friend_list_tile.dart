@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../domain/models/public_profile.dart';
 import '../../providers/friend_presence_provider.dart';
@@ -23,6 +24,12 @@ class FriendListTile extends StatelessWidget {
     final avatar = CircleAvatar(
       radius: 20,
       backgroundImage: AssetImage(avatarPath),
+      onBackgroundImageError: (_, __) {
+        if (kDebugMode) {
+          debugPrint('[Avatar] failed to load $avatarPath');
+        }
+      },
+      child: const Icon(Icons.person),
     );
     final statusColor = presence == PresenceState.workedOutToday
         ? theme.colorScheme.secondary

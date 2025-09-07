@@ -32,6 +32,11 @@ void main() {
       'avatarKey': 'global/default',
       'gymCodes': ['g1'],
     });
+    await fs.collection('users').doc('u3').set({
+      'username': 'Alina',
+      'avatarKey': 'global/default',
+      'gymCodes': ['g1'],
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider<AuthProvider>(
@@ -47,10 +52,12 @@ void main() {
     await tester.pump();
     expect(find.text('Alice'), findsOneWidget);
     expect(find.text('Bob'), findsOneWidget);
+    expect(find.text('Alina'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'bo');
+    await tester.enterText(find.byType(TextField), 'al');
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Alice'), findsNothing);
-    expect(find.text('Bob'), findsOneWidget);
+    expect(find.text('Alice'), findsOneWidget);
+    expect(find.text('Alina'), findsOneWidget);
+    expect(find.text('Bob'), findsNothing);
   });
 }
