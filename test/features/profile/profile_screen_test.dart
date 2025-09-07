@@ -233,7 +233,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.resolvePath('default2'),
+      AvatarCatalog.instance.pathForKey('default2'),
     );
   });
 
@@ -246,7 +246,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.resolvePath('default'),
+      AvatarCatalog.instance.pathForKey('default'),
     );
   });
 

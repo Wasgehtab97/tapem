@@ -32,7 +32,7 @@ class FriendListTile extends StatelessWidget {
     }
     final currentGym = gymId ?? auth?.gymCode;
     final path = AvatarCatalog.instance
-        .resolvePath(avatarKey, currentGymId: currentGym);
+        .pathForKey(avatarKey, gymId: currentGym);
     final image = Image.asset(path, errorBuilder: (_, __, ___) {
       if (kDebugMode) {
         debugPrint('[Avatar] failed to load $path');

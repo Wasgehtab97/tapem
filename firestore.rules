@@ -147,18 +147,18 @@ service cloud.firestore {
     // ─────────────────────────
     // Public profiles
     // ─────────────────────────
-    match /publicProfiles/{uid} {
+    match /public_profiles/{uid} {
       allow read: if isAuthed();
       allow create: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly(['username','usernameLower','createdAt']) &&
-        request.resource.data.username is string &&
+        request.resource.data.keys().hasOnly(['avatarKey', 'usernameLower', 'createdAt']) &&
+        request.resource.data.avatarKey is string &&
         request.resource.data.createdAt is timestamp &&
-        (!('usernameLower' in request.resource.data) ||
-          request.resource.data.usernameLower is string);
+        (!('usernameLower' in request.resource.data) || request.resource.data.usernameLower is string);
       allow update: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly(['avatarKey']) &&
-        request.resource.data.avatarKey is string;
-      allow update: if (isOwner(uid) || isGymAdminFor(uid, request.auth.token.gymId)) &&
+        request.resource.data.keys().hasOnly(['avatarKey', 'usernameLower']) &&
+        request.resource.data.avatarKey is string &&
+        (!('usernameLower' in request.resource.data) || request.resource.data.usernameLower is string);
+      allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['usernameLower']) &&
         request.resource.data.usernameLower is string;
       allow delete: if false;
@@ -215,15 +215,15 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      match /avatarInventory/{key} {
+      match /avatarInventory/{docId} {
         allow read: if isOwner(uid) || isGymAdminFor(uid, request.auth.token.gymId);
         allow create: if isGymAdminFor(uid, request.auth.token.gymId) &&
           request.resource.data.keys().hasOnly(['key', 'source', 'createdAt', 'createdBy', 'gymId']) &&
           request.resource.data.createdAt is timestamp &&
           request.resource.data.createdBy == request.auth.uid &&
-          request.resource.data.key == key &&
-          (request.resource.data.source == 'global' || request.resource.data.source == 'gym') &&
-          (!('gymId' in request.resource.data) || request.resource.data.gymId == request.auth.token.gymId);
+          request.resource.data.key.matches('^[^/]+/[^/]+$') &&
+          ((request.resource.data.source == 'global' && !('gymId' in request.resource.data)) ||
+           (request.resource.data.source == 'gym' && request.resource.data.gymId == request.auth.token.gymId));
         allow delete: if isGymAdminFor(uid, request.auth.token.gymId);
         allow update: if false;
       }

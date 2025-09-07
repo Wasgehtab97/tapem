@@ -228,7 +228,7 @@ Future<void> main() async {
   await initializeDateFormatting();
 
   // Warm up avatar catalog
-  await AvatarCatalog.instance.warmUp();
+  await AvatarCatalog.instance.warmUp(bundle: rootBundle);
 
   // Reports vorbereiten
   final reportRepo = ReportRepositoryImpl();

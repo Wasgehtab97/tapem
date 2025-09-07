@@ -15,7 +15,7 @@ class AvatarItem {
 /// Catalog of avatar assets discovered at runtime from the [AssetManifest].
 ///
 /// Keys use the form `<namespace>/<name>` where `namespace` is either `global`
-/// or the gym document id. Paths returned from [resolvePath] are full asset
+/// or the gym document id. Paths returned from [pathForKey] are full asset
 /// paths such as `assets/avatars/global/default.png`.
 class AvatarCatalog {
   AvatarCatalog._();
@@ -43,15 +43,16 @@ class AvatarCatalog {
   final Map<String, List<AvatarItem>> _gym = <String, List<AvatarItem>>{};
   final Set<String> _warned = <String>{};
 
-  Future<void> warmUp() async {
+  Future<void> warmUp({AssetBundle? bundle}) async {
     if (_loaded || _loading) return;
     _loading = true;
+    final AssetBundle b = bundle ?? rootBundle;
     try {
       String manifestStr;
       try {
-        manifestStr = await rootBundle.loadString('AssetManifest.json');
+        manifestStr = await b.loadString('AssetManifest.json');
       } catch (_) {
-        manifestStr = await rootBundle.loadString('AssetManifest.bin.json');
+        manifestStr = await b.loadString('AssetManifest.bin.json');
       }
       final Map<String, dynamic> manifest =
           json.decode(manifestStr) as Map<String, dynamic>;
@@ -95,7 +96,7 @@ class AvatarCatalog {
     }
   }
 
-  String resolvePath(String key, {String? currentGymId}) {
+  String pathForKey(String key, {String? gymId}) {
     if (!_loaded) unawaited(warmUp());
     String lookup = key;
     AvatarItem? item = _items[lookup];
@@ -108,14 +109,19 @@ class AvatarCatalog {
         lookup = 'global/default2';
         item = _items[lookup];
       } else if (!lookup.contains('/')) {
-        if (currentGymId != null) {
-          final gymKey = '$currentGymId/$lookup';
+        if (gymId != null) {
+          final gymKey = '$gymId/$lookup';
           item = _items[gymKey];
           if (item != null) lookup = gymKey;
         }
         item ??= _items['global/$lookup'];
         if (item != null) lookup = item.key;
       }
+    }
+    // gym fallback to global
+    if (item == null && gymId != null && lookup.startsWith('$gymId/')) {
+      final name = lookup.split('/').last;
+      item = _items['global/$name'];
     }
     item ??= _items['global/default'];
     if (kDebugMode && !_warned.contains(key) && !_items.containsKey(key)) {
@@ -124,6 +130,11 @@ class AvatarCatalog {
     }
     return item?.path ?? 'assets/avatars/global/default.png';
   }
+
+  bool has(String key) => _items.containsKey(key);
+
+  bool hasPath(String path) =>
+      _items.values.any((element) => element.path == path);
 
   List<AvatarItem> listGlobal() {
     if (!_loaded) unawaited(warmUp());

@@ -305,9 +305,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Builder(builder: (context) {
                           final gymId =
                               context.read<AuthProvider>().gymCode;
-                          final path = AvatarCatalog.instance.resolvePath(
+                          final path = AvatarCatalog.instance.pathForKey(
                             auth.avatarKey,
-                            currentGymId: gymId,
+                            gymId: gymId,
                           );
                           final image = Image.asset(path, errorBuilder:
                               (_, __, ___) {
@@ -498,9 +498,9 @@ class AvatarPicker extends StatelessWidget {
                     ),
                     child: Builder(builder: (context) {
                       final gymId = context.read<AuthProvider>().gymCode;
-                      final path = AvatarCatalog.instance.resolvePath(
+                      final path = AvatarCatalog.instance.pathForKey(
                         key,
-                        currentGymId: gymId,
+                        gymId: gymId,
                       );
                       final image = Image.asset(path, errorBuilder:
                           (_, __, ___) {
