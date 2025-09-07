@@ -302,21 +302,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Profilbild ändern',
                       child: GestureDetector(
                         onTap: () => _showAvatarSheet(auth),
-                        child: CircleAvatar(
-                          radius: avatarSize / 2,
-                          backgroundImage: AssetImage(
-                            AvatarCatalog.instance
-                                .resolvePath(auth.avatarKey),
-                          ),
-                          onBackgroundImageError: (_, __) {
+                        child: Builder(builder: (context) {
+                          final gymId =
+                              context.read<AuthProvider>().gymCode;
+                          final path = AvatarCatalog.instance.resolvePath(
+                            auth.avatarKey,
+                            currentGymId: gymId,
+                          );
+                          final image = Image.asset(path, errorBuilder:
+                              (_, __, ___) {
                             if (kDebugMode) {
-                              debugPrint('[Avatar] failed to load ' +
-                                  AvatarCatalog.instance
-                                      .resolvePath(auth.avatarKey));
+                              debugPrint('[Avatar] failed to load $path');
                             }
-                          },
-                          child: const Icon(Icons.person),
-                        ),
+                            return const Icon(Icons.person);
+                          });
+                          return CircleAvatar(
+                            radius: avatarSize / 2,
+                            backgroundImage: image.image,
+                            child: const Icon(Icons.person),
+                          );
+                        }),
                       ),
                     ),
                   ),
@@ -488,19 +493,25 @@ class AvatarPicker extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundImage: AssetImage(
-                        AvatarCatalog.instance.resolvePath(key),
-                      ),
-                      onBackgroundImageError: (_, __) {
+                    child: Builder(builder: (context) {
+                      final gymId = context.read<AuthProvider>().gymCode;
+                      final path = AvatarCatalog.instance.resolvePath(
+                        key,
+                        currentGymId: gymId,
+                      );
+                      final image = Image.asset(path, errorBuilder:
+                          (_, __, ___) {
                         if (kDebugMode) {
-                          debugPrint('[Avatar] failed to load ' +
-                              AvatarCatalog.instance.resolvePath(key));
+                          debugPrint('[Avatar] failed to load $path');
                         }
-                      },
-                      child: const Icon(Icons.person),
-                    ),
+                        return const Icon(Icons.person);
+                      });
+                      return CircleAvatar(
+                        radius: 40,
+                        backgroundImage: image.image,
+                        child: const Icon(Icons.person),
+                      );
+                    }),
                   ),
                   if (selected)
                     Positioned(

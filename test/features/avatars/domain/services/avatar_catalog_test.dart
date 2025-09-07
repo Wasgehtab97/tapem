@@ -1,24 +1,48 @@
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
-  test('logs and falls back for unknown key', () {
-    final catalog = AvatarCatalog.instance;
-    final logs = <String?>[];
-    final old = debugPrint;
-    debugPrint = (String? message, {int? wrapWidth}) => logs.add(message);
-    expect(catalog.resolvePath('mystery'),
-        'assets/avatars/global/default.png');
-    expect(logs.last, contains('mystery'));
-    debugPrint = old;
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    AvatarCatalog.instance.resetForTests();
+    const manifest = {
+      'assets/avatars/global/default.png': [],
+      'assets/avatars/gym_01/kurzhantel.png': [],
+    };
+    ServicesBinding.instance.defaultBinaryMessenger.setMockMessageHandler(
+      'flutter/assets',
+      (message) async {
+        final key = utf8.decode(message!.buffer.asUint8List());
+        if (key == 'AssetManifest.json') {
+          final data = utf8.encode(json.encode(manifest));
+          return ByteData.view(Uint8List.fromList(data).buffer);
+        }
+        return null;
+      },
+    );
+    await AvatarCatalog.instance.warmUp();
   });
 
-  test('legacy key normalization', () {
+  tearDown(() {
+    ServicesBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler('flutter/assets', null);
+    AvatarCatalog.instance.resetForTests();
+  });
+
+  test('catalog mapping and resolver', () {
     final catalog = AvatarCatalog.instance;
-    expect(catalog.resolvePath('default'),
+    final gymList = catalog.listGym('gym_01');
+    expect(gymList.map((e) => e.key), contains('gym_01/kurzhantel'));
+    expect(catalog.resolvePath('gym_01/kurzhantel'),
+        'assets/avatars/gym_01/kurzhantel.png');
+    expect(catalog.resolvePath('kurzhantel', currentGymId: 'gym_01'),
+        'assets/avatars/gym_01/kurzhantel.png');
+    expect(catalog.resolvePath('unknown'),
         'assets/avatars/global/default.png');
-    expect(catalog.resolvePath('default2'),
-        'assets/avatars/global/default2.png');
   });
 }

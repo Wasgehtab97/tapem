@@ -7,180 +7,174 @@ import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class UserSymbolsScreen extends StatelessWidget {
+class UserSymbolsScreen extends StatefulWidget {
   const UserSymbolsScreen({super.key, required this.uid, this.firestore});
 
   final String uid;
   final FirebaseFirestore? firestore;
 
   @override
+  State<UserSymbolsScreen> createState() => _UserSymbolsScreenState();
+}
+
+class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
+  late final AvatarInventoryProvider _inventory;
+  late final FirebaseFirestore _fs;
+  late final String _gymId;
+  bool _permitted = false;
+  bool _loading = true;
+  Set<String> _keys = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _inventory = context.read<AvatarInventoryProvider>();
+    final auth = context.read<AuthProvider>();
+    _gymId = auth.gymCode ?? '';
+    _fs = widget.firestore ?? FirebaseFirestore.instance;
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final doc = await _fs.collection('users').doc(widget.uid).get();
+      final gyms = (doc.data()?['gymCodes'] as List?) ?? const [];
+      _permitted = context.read<AuthProvider>().isAdmin && gyms.contains(_gymId);
+      if (_permitted) {
+        final inv = await _inventory.inventoryKeys(widget.uid).first;
+        _keys = inv.toSet();
+      }
+    } catch (_) {
+      _permitted = false;
+    }
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _toggle(String key, String source) async {
+    final has = _keys.contains(key);
+    setState(() {
+      if (has) {
+        _keys.remove(key);
+      } else {
+        _keys.add(key);
+      }
+    });
+    try {
+      if (has) {
+        await _inventory.removeKey(widget.uid, key);
+      } else {
+        await _inventory.addKeys(widget.uid, [key],
+            source: source,
+            createdBy: context.read<AuthProvider>().userId ?? '',
+            gymId: _gymId);
+      }
+    } on FirebaseException catch (e) {
+      setState(() {
+        if (has) {
+          _keys.add(key);
+        } else {
+          _keys.remove(key);
+        }
+      });
+      if (e.code == 'permission-denied') {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.no_permission_symbols)),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
-    if (!auth.isAdmin) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(loc.user_symbols_title(''))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_permitted) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.user_symbols_title(''))),
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
-    final invProv = context.read<AvatarInventoryProvider>();
-    final gymId = auth.gymCode ?? '';
-    final fs = firestore ?? FirebaseFirestore.instance;
-    return Scaffold(
-      appBar: AppBar(
-        title: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: fs.collection('users').doc(uid).snapshots(),
-          builder: (context, snap) {
-            final name = snap.data?.data()?['username'] as String? ?? uid;
-            return Text(loc.user_symbols_title(name));
-          },
-        ),
-      ),
-      body: StreamBuilder<List<String>>(
-        stream: invProv.inventoryKeys(uid),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            final err = snapshot.error;
-            if (err is FirebaseException && err.code == 'permission-denied') {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(loc.no_permission_symbols)),
-                );
-              });
-            }
-            return Center(child: Text(loc.empty_inventory_hint));
-          }
-          final inv = snapshot.data ?? const <String>[];
-          if (inv.isEmpty) {
-            return Center(child: Text(loc.empty_inventory_hint));
-          }
-          return GridView.builder(
+    final catalog = AvatarCatalog.instance.allForContext(_gymId);
+
+    Widget buildSection(String title, List<AvatarItem> items, String source) {
+      if (items.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
             padding: const EdgeInsets.all(16),
+            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 100,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
             ),
-            itemCount: inv.length,
+            itemCount: items.length,
             itemBuilder: (context, index) {
-              final key = inv[index];
-              final path = AvatarCatalog.instance.resolvePath(key);
-              return CircleAvatar(
-                backgroundImage: AssetImage(path),
-                onBackgroundImageError: (_, __) {
-                  if (kDebugMode) {
-                    debugPrint('[Avatar] failed to load $path');
-                  }
-                },
-                radius: 40,
-                child: const Icon(Icons.person),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          List<String> currentInv;
-          try {
-            currentInv = await invProv.inventoryKeys(uid).first;
-          } on FirebaseException catch (e) {
-            if (e.code == 'permission-denied') {
-              // ignore: use_build_context_synchronously
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(loc.no_permission_symbols)),
-              );
-              return;
-            }
-            rethrow;
-          }
-          final allGymKeys = AvatarCatalog.instance.listForGym(gymId);
-          final available = allGymKeys.where((k) => !currentInv.contains(k)).toList();
-          if (available.isEmpty) {
-            // ignore: use_build_context_synchronously
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.empty_gym_library_hint)),
-            );
-            return;
-          }
-          final selected = await showModalBottomSheet<List<String>>(
-            context: context,
-            builder: (ctx) {
-              final sel = <String>{};
-              return StatefulBuilder(
-                builder: (ctx2, setSt) {
-                  return SafeArea(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: GridView.builder(
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 100,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                            ),
-                            itemCount: available.length,
-                            itemBuilder: (context, index) {
-                              final key = available[index];
-                              final selectedKey = sel.contains(key);
-                              final path = AvatarCatalog.instance.resolvePath(key);
-                              return GestureDetector(
-                                onTap: () => setSt(() {
-                                  if (selectedKey) {
-                                    sel.remove(key);
-                                  } else {
-                                    sel.add(key);
-                                  }
-                                }),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundImage: AssetImage(path),
-                                      onBackgroundImageError: (_, __) {
-                                        if (kDebugMode) {
-                                          debugPrint('[Avatar] failed to load $path');
-                                        }
-                                      },
-                                      radius: 40,
-                                      child: const Icon(Icons.person),
-                                    ),
-                                    if (selectedKey)
-                                      const Positioned(
-                                        right: 4,
-                                        bottom: 4,
-                                        child: Icon(Icons.check_circle, color: Colors.green),
-                                      ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx2, sel.toList()),
-                          child: Text(loc.add_symbols_cta + (sel.isEmpty ? '' : ' (${sel.length})')),
-                        ),
-                      ],
+              final item = items[index];
+              final selected = _keys.contains(item.key);
+              final image = Image.asset(item.path, errorBuilder: (_, __, ___) {
+                if (kDebugMode) {
+                  debugPrint('[Avatar] failed to load ${item.path}');
+                }
+                return const Icon(Icons.person);
+              });
+              return GestureDetector(
+                onTap: () => _toggle(item.key, source),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: image.image,
+                      radius: 40,
+                      child: const Icon(Icons.person),
                     ),
-                  );
-                },
+                    if (selected)
+                      const Positioned(
+                        right: 4,
+                        bottom: 4,
+                        child: Icon(Icons.check_circle, color: Colors.green),
+                      ),
+                  ],
+                ),
               );
             },
-          );
-          if (selected != null && selected.isNotEmpty) {
-            await invProv.addKeys(uid, selected,
-                source: 'gym:$gymId', addedBy: auth.userId ?? '');
-            // ignore: use_build_context_synchronously
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.saved_snackbar)),
-            );
-          }
-        },
-        child: const Icon(Icons.add),
+          ),
+        ],
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: _fs.collection('users').doc(widget.uid).snapshots(),
+          builder: (context, snap) {
+            final name = snap.data?.data()?['username'] as String? ?? widget.uid;
+            return Text(loc.user_symbols_title(name));
+          },
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            buildSection('Global', catalog.global, 'global'),
+            buildSection(_gymId, catalog.gym, 'gym'),
+          ],
+        ),
       ),
     );
   }
 }
-

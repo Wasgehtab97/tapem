@@ -4,64 +4,90 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// Representation of an avatar asset.
+class AvatarItem {
+  const AvatarItem(this.key, this.path);
+
+  final String key;
+  final String path;
+}
+
 /// Catalog of avatar assets discovered at runtime from the [AssetManifest].
 ///
-/// Keys are relative paths without the `assets/avatars/` prefix and without the
-/// `.png` extension, e.g. `global/default` or `gym_01/kurzhantel`.
+/// Keys use the form `<namespace>/<name>` where `namespace` is either `global`
+/// or the gym document id. Paths returned from [resolvePath] are full asset
+/// paths such as `assets/avatars/global/default.png`.
 class AvatarCatalog {
-  AvatarCatalog._internal();
+  AvatarCatalog._();
 
-  static final AvatarCatalog instance = AvatarCatalog._internal();
+  static final AvatarCatalog instance = AvatarCatalog._();
 
   bool _loaded = false;
   bool _loading = false;
+  bool _diagDone = false;
 
-  final List<String> _global = <String>['global/default', 'global/default2'];
-  final Map<String, List<String>> _byGym = <String, List<String>>{};
-  final Set<String> _allKeys = <String>{'global/default', 'global/default2'};
-  final Map<String, String> _paths = <String, String>{
-    'global/default': 'global/default',
-    'global/default2': 'global/default2',
+  bool get isReady => _loaded;
+
+  final Map<String, AvatarItem> _items = <String, AvatarItem>{
+    'global/default':
+        const AvatarItem('global/default', 'assets/avatars/global/default.png'),
+    'global/default2':
+        const AvatarItem('global/default2', 'assets/avatars/global/default2.png'),
   };
+
+  final List<AvatarItem> _global = <AvatarItem>[
+    const AvatarItem('global/default', 'assets/avatars/global/default.png'),
+    const AvatarItem('global/default2', 'assets/avatars/global/default2.png'),
+  ];
+
+  final Map<String, List<AvatarItem>> _gym = <String, List<AvatarItem>>{};
   final Set<String> _warned = <String>{};
 
-  Future<void> load() async {
+  Future<void> warmUp() async {
     if (_loaded || _loading) return;
     _loading = true;
     try {
-      final manifest =
-          await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> data =
-          json.decode(manifest) as Map<String, dynamic>;
+      String manifestStr;
+      try {
+        manifestStr = await rootBundle.loadString('AssetManifest.json');
+      } catch (_) {
+        manifestStr = await rootBundle.loadString('AssetManifest.bin.json');
+      }
+      final Map<String, dynamic> manifest =
+          json.decode(manifestStr) as Map<String, dynamic>;
       const prefix = 'assets/avatars/';
       const ext = '.png';
-      for (final path in data.keys) {
-        if (path.startsWith(prefix) && path.endsWith(ext)) {
-          final key = path.substring(prefix.length, path.length - ext.length);
-          final normalized = _normalize(key);
-          _allKeys.add(normalized);
-          _paths[normalized] = key;
-          _paths[key] = key;
-          if (normalized.startsWith('global/')) {
-            if (!_global.contains(normalized)) {
-              _global.add(normalized);
-            }
-          } else {
-            final slash = normalized.indexOf('/');
-            if (slash != -1) {
-              final gymId = normalized.substring(0, slash);
-              final list = _byGym[gymId] ??= <String>[];
-              if (!list.contains(normalized)) {
-                list.add(normalized);
-              }
-            }
-          }
+      for (final path in manifest.keys) {
+        if (!path.startsWith(prefix) || !path.endsWith(ext)) continue;
+        final rel = path.substring(prefix.length, path.length - ext.length);
+        final slash = rel.indexOf('/');
+        if (slash == -1) continue;
+        final namespace = rel.substring(0, slash);
+        final name = rel.substring(slash + 1);
+        final key = '$namespace/$name';
+        final item = AvatarItem(key, path);
+        _items[key] = item;
+        if (namespace == 'global') {
+          _global.add(item);
+        } else {
+          final list = _gym.putIfAbsent(namespace, () => <AvatarItem>[]);
+          list.add(item);
         }
       }
-      // sort for stable order
-      _global.sort();
-      for (final list in _byGym.values) {
-        list.sort();
+      _global.sort((a, b) => a.key.compareTo(b.key));
+      for (final list in _gym.values) {
+        list.sort((a, b) => a.key.compareTo(b.key));
+      }
+      if (kDebugMode && !_diagDone) {
+        if (!_items.containsKey('global/default')) {
+          debugPrint(
+              '[AvatarCatalog] missing assets/avatars/global/default.png – app restart required: flutter clean && flutter pub get && flutter run');
+        }
+        if (!_items.containsKey('global/default2')) {
+          debugPrint(
+              '[AvatarCatalog] missing assets/avatars/global/default2.png – app restart required: flutter clean && flutter pub get && flutter run');
+        }
+        _diagDone = true;
       }
     } finally {
       _loaded = true;
@@ -69,62 +95,69 @@ class AvatarCatalog {
     }
   }
 
-  /// Returns all global avatar keys.
-  List<String> listGlobal() {
-    if (!_loaded) {
-      // fire and forget load
-      unawaited(load());
-    }
-    return List<String>.from(_global);
-  }
-
-  /// Returns all avatar keys for a given gym.
-  List<String> listForGym(String gymId) {
-    if (!_loaded) {
-      unawaited(load());
-    }
-    return List<String>.from(_byGym[gymId] ?? const <String>[]);
-  }
-
-  /// Resolves [key] to the asset path. Unknown keys fall back to global/default.
-  String resolvePath(String key) {
-    final normalized = _normalize(key);
-    if (!_loaded) {
-      unawaited(load());
-    }
-    var path = _paths[normalized];
-    if (path == null && normalized.startsWith('global/')) {
-      final legacy = normalized.substring(7);
-      path = _paths[legacy];
-    }
-    if (path == null) {
-      if (kDebugMode && !_warned.contains(normalized)) {
-        debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
-        _warned.add(normalized);
+  String resolvePath(String key, {String? currentGymId}) {
+    if (!_loaded) unawaited(warmUp());
+    String lookup = key;
+    AvatarItem? item = _items[lookup];
+    if (item == null) {
+      // legacy mapping
+      if (lookup == 'default') {
+        lookup = 'global/default';
+        item = _items[lookup];
+      } else if (lookup == 'default2') {
+        lookup = 'global/default2';
+        item = _items[lookup];
+      } else if (!lookup.contains('/')) {
+        if (currentGymId != null) {
+          final gymKey = '$currentGymId/$lookup';
+          item = _items[gymKey];
+          if (item != null) lookup = gymKey;
+        }
+        item ??= _items['global/$lookup'];
+        if (item != null) lookup = item.key;
       }
-      path = _paths['global/default'] ?? 'global/default';
     }
-    return 'assets/avatars/' + path + '.png';
+    item ??= _items['global/default'];
+    if (kDebugMode && !_warned.contains(key) && !_items.containsKey(key)) {
+      debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
+      _warned.add(key);
+    }
+    return item?.path ?? 'assets/avatars/global/default.png';
   }
 
-  bool exists(String key) {
-    final normalized = _normalize(key);
-    if (!_loaded) {
-      unawaited(load());
-    }
-    if (_paths.containsKey(normalized)) return true;
-    if (normalized.startsWith('global/')) {
-      return _paths.containsKey(normalized.substring(7));
-    }
-    return false;
+  List<AvatarItem> listGlobal() {
+    if (!_loaded) unawaited(warmUp());
+    return List<AvatarItem>.unmodifiable(_global);
   }
 
-  String _normalize(String key) {
-    // migration: bare "default" -> "global/default"
-    if (!key.contains('/')) {
-      return 'global/' + key;
-    }
-    return key;
+  List<AvatarItem> listGym(String gymDocId) {
+    if (!_loaded) unawaited(warmUp());
+    return List<AvatarItem>.unmodifiable(_gym[gymDocId] ?? const []);
+  }
+
+  ({List<AvatarItem> global, List<AvatarItem> gym}) allForContext(String gymDocId) {
+    return (global: listGlobal(), gym: listGym(gymDocId));
+  }
+
+  void resetForTests() {
+    _loaded = false;
+    _loading = false;
+    _diagDone = false;
+    _items
+      ..clear()
+      ..addAll({
+        'global/default': const AvatarItem(
+            'global/default', 'assets/avatars/global/default.png'),
+        'global/default2': const AvatarItem(
+            'global/default2', 'assets/avatars/global/default2.png'),
+      });
+    _global
+      ..clear()
+      ..addAll([
+        const AvatarItem('global/default', 'assets/avatars/global/default.png'),
+        const AvatarItem('global/default2', 'assets/avatars/global/default2.png'),
+      ]);
+    _gym.clear();
+    _warned.clear();
   }
 }
-
