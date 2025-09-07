@@ -41,6 +41,7 @@ class AvatarCatalog {
           final normalized = _normalize(key);
           _allKeys.add(normalized);
           _paths[normalized] = key;
+          _paths[key] = key;
           if (normalized.startsWith('global/')) {
             if (!_global.contains(normalized)) {
               _global.add(normalized);
@@ -92,6 +93,10 @@ class AvatarCatalog {
       unawaited(load());
     }
     var path = _paths[normalized];
+    if (path == null && normalized.startsWith('global/')) {
+      final legacy = normalized.substring(7);
+      path = _paths[legacy];
+    }
     if (path == null) {
       if (kDebugMode && !_warned.contains(normalized)) {
         debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
@@ -107,7 +112,11 @@ class AvatarCatalog {
     if (!_loaded) {
       unawaited(load());
     }
-    return _paths.containsKey(normalized);
+    if (_paths.containsKey(normalized)) return true;
+    if (normalized.startsWith('global/')) {
+      return _paths.containsKey(normalized.substring(7));
+    }
+    return false;
   }
 
   String _normalize(String key) {

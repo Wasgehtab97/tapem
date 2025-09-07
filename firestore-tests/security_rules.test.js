@@ -539,4 +539,106 @@ describe('Security Rules v1', function () {
       await assertFails(bad.save(Buffer.from('hi'), { contentType: 'text/plain' }));
     });
   });
+
+  describe('avatar inventory', () => {
+    before(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db
+          .collection('users')
+          .doc('userA')
+          .collection('avatarInventory')
+          .doc('a1')
+          .set({});
+      });
+    });
+
+    it('owner can list own inventory', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('users').doc('userA').collection('avatarInventory');
+      await assertSucceeds(ref.get());
+    });
+
+    it('gym admin can read member inventory', async () => {
+      const db = admin().firestore();
+      const ref = db.collection('users').doc('userA').collection('avatarInventory');
+      await assertSucceeds(ref.get());
+    });
+
+    it('gym admin can write with allowed fields and source', async () => {
+      const db = admin().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('avatarInventory')
+        .doc('a2');
+      await assertSucceeds(
+        ref.set({
+          addedAt: new Date(),
+          addedBy: 'adminA',
+          source: 'gym:G1',
+        })
+      );
+    });
+
+    it('gym admin write fails with extra field', async () => {
+      const db = admin().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('avatarInventory')
+        .doc('a3');
+      await assertFails(
+        ref.set({
+          addedAt: new Date(),
+          addedBy: 'adminA',
+          source: 'gym:G1',
+          bad: true,
+        })
+      );
+    });
+
+    it('gym admin write fails with wrong source', async () => {
+      const db = admin().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('avatarInventory')
+        .doc('a4');
+      await assertFails(
+        ref.set({
+          addedAt: new Date(),
+          addedBy: 'adminA',
+          source: 'gym:G2',
+        })
+      );
+    });
+
+    it('non-admin cannot read others inventory', async () => {
+      const db = userB().firestore();
+      const ref = db.collection('users').doc('userA').collection('avatarInventory');
+      await assertFails(ref.get());
+    });
+  });
+
+  describe('public profiles updates', () => {
+    it('owner can update avatarKey', async () => {
+      const db = userA().firestore();
+      const ref = db.collection('publicProfiles').doc('userA');
+      await assertSucceeds(ref.update({ avatarKey: 'k1' }));
+    });
+
+    it('owner or admin can update usernameLower', async () => {
+      const refOwner = userA().firestore().collection('publicProfiles').doc('userA');
+      await assertSucceeds(refOwner.update({ usernameLower: 'alice' }));
+      const refAdmin = admin().firestore().collection('publicProfiles').doc('userA');
+      await assertSucceeds(refAdmin.update({ usernameLower: 'alice' }));
+    });
+
+    it('non-owner cannot update other fields', async () => {
+      const db = userB().firestore();
+      const ref = db.collection('publicProfiles').doc('userA');
+      await assertFails(ref.update({ username: 'bad' }));
+    });
+  });
 });

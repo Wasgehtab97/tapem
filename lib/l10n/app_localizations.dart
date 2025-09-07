@@ -1523,6 +1523,12 @@ abstract class AppLocalizations {
   /// **'No members found'**
   String get no_members_found;
 
+  /// No description provided for @no_permission_symbols.
+  ///
+  /// In en, this message translates to:
+  /// **'No permission to view symbols'**
+  String get no_permission_symbols;
+
   /// No description provided for @saved_snackbar.
   ///
   /// In en, this message translates to:

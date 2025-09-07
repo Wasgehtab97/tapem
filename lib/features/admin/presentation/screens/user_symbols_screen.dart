@@ -39,6 +39,17 @@ class UserSymbolsScreen extends StatelessWidget {
       body: StreamBuilder<List<String>>(
         stream: invProv.inventoryKeys(uid),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            final err = snapshot.error;
+            if (err is FirebaseException && err.code == 'permission-denied') {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(loc.no_permission_symbols)),
+                );
+              });
+            }
+            return Center(child: Text(loc.empty_inventory_hint));
+          }
           final inv = snapshot.data ?? const <String>[];
           if (inv.isEmpty) {
             return Center(child: Text(loc.empty_inventory_hint));
@@ -70,7 +81,19 @@ class UserSymbolsScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final currentInv = await invProv.inventoryKeys(uid).first;
+          List<String> currentInv;
+          try {
+            currentInv = await invProv.inventoryKeys(uid).first;
+          } on FirebaseException catch (e) {
+            if (e.code == 'permission-denied') {
+              // ignore: use_build_context_synchronously
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(loc.no_permission_symbols)),
+              );
+              return;
+            }
+            rethrow;
+          }
           final allGymKeys = AvatarCatalog.instance.listForGym(gymId);
           final available = allGymKeys.where((k) => !currentInv.contains(k)).toList();
           if (available.isEmpty) {

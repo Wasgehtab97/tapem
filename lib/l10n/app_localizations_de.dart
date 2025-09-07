@@ -741,6 +741,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   String get no_members_found => 'Keine Mitglieder gefunden';
 
+  String get no_permission_symbols =>
+      'Keine Berechtigung zum Anzeigen der Symbole';
+
   String get saved_snackbar => 'Gespeichert';
 
   String get assign_failed_snackbar => 'Zuweisung fehlgeschlagen';

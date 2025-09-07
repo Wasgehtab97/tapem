@@ -741,6 +741,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   String get no_members_found => 'No members found';
 
+  String get no_permission_symbols => 'No permission to view symbols';
+
   String get saved_snackbar => 'Saved';
 
   String get assign_failed_snackbar => 'Assignment failed';

@@ -720,4 +720,5 @@
   ,"saved_snackbar": "Saved"
   ,"assign_failed_snackbar": "Assignment failed"
   ,"removed_snackbar": "Removed"
+  ,"no_permission_symbols": "No permission to view symbols"
 }
