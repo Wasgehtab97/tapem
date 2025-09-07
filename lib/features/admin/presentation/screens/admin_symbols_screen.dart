@@ -92,15 +92,18 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                   itemBuilder: (context, index) {
                     final profile = profiles[index];
                     final avatarKey = profile.avatarKey ?? 'default';
-                    final path = AvatarCatalog.instance.resolvePath(avatarKey);
+                    final path = AvatarCatalog.instance
+                        .resolvePath(avatarKey, currentGymId: gymId);
+                    final image = Image.asset(path, errorBuilder:
+                        (_, __, ___) {
+                      if (kDebugMode) {
+                        debugPrint('[Avatar] failed to load $path');
+                      }
+                      return const Icon(Icons.person);
+                    });
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundImage: AssetImage(path),
-                        onBackgroundImageError: (_, __) {
-                          if (kDebugMode) {
-                            debugPrint('[Avatar] failed to load $path');
-                          }
-                        },
+                        backgroundImage: image.image,
                         child: const Icon(Icons.person),
                       ),
                       title: Text(profile.username.isNotEmpty

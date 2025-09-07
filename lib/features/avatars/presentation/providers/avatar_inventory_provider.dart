@@ -29,7 +29,8 @@ class AvatarInventoryProvider extends ChangeNotifier {
     String uid,
     List<String> keys, {
     required String source,
-    required String addedBy,
+    required String createdBy,
+    String? gymId,
   }) async {
     final batch = _firestore.batch();
     final now = FieldValue.serverTimestamp();
@@ -40,9 +41,11 @@ class AvatarInventoryProvider extends ChangeNotifier {
           .collection('avatarInventory')
           .doc(key);
       batch.set(ref, {
-        'addedAt': now,
+        'key': key,
         'source': source,
-        'addedBy': addedBy,
+        'createdAt': now,
+        'createdBy': createdBy,
+        if (gymId != null) 'gymId': gymId,
       });
     }
     await batch.commit();

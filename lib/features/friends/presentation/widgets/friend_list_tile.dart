@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../domain/models/public_profile.dart';
 import '../../providers/friend_presence_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 class FriendListTile extends StatelessWidget {
@@ -10,25 +12,36 @@ class FriendListTile extends StatelessWidget {
     required this.profile,
     required this.presence,
     required this.onTap,
+    this.gymId,
   });
 
   final PublicProfile profile;
   final PresenceState presence;
   final VoidCallback onTap;
+  final String? gymId;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final avatarKey = profile.avatarKey ?? 'default';
-    final avatarPath = AvatarCatalog.instance.resolvePath(avatarKey);
+    AuthProvider? auth;
+    try {
+      auth = Provider.of<AuthProvider>(context, listen: false);
+    } catch (_) {
+      auth = null;
+    }
+    final currentGym = gymId ?? auth?.gymCode;
+    final path = AvatarCatalog.instance
+        .resolvePath(avatarKey, currentGymId: currentGym);
+    final image = Image.asset(path, errorBuilder: (_, __, ___) {
+      if (kDebugMode) {
+        debugPrint('[Avatar] failed to load $path');
+      }
+      return const Icon(Icons.person);
+    });
     final avatar = CircleAvatar(
       radius: 20,
-      backgroundImage: AssetImage(avatarPath),
-      onBackgroundImageError: (_, __) {
-        if (kDebugMode) {
-          debugPrint('[Avatar] failed to load $avatarPath');
-        }
-      },
+      backgroundImage: image.image,
       child: const Icon(Icons.person),
     );
     final statusColor = presence == PresenceState.workedOutToday

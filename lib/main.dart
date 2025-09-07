@@ -8,6 +8,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/services.dart';
+import 'features/avatars/domain/services/avatar_catalog.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -227,31 +228,8 @@ Future<void> main() async {
   // Lokalisierung
   await initializeDateFormatting();
 
-  // Avatar asset health check (debug only)
-  if (kDebugMode) {
-    final manifestStr = await rootBundle.loadString('AssetManifest.json');
-    final Map<String, dynamic> manifest = json.decode(manifestStr);
-    const def1 = 'assets/avatars/global/default.png';
-    const def2 = 'assets/avatars/global/default2.png';
-    const legacy1 = 'assets/avatars/default.png';
-    const legacy2 = 'assets/avatars/default2.png';
-    if (!manifest.containsKey(def1)) {
-      if (manifest.containsKey(legacy1)) {
-        debugPrint('[AvatarCatalog] missing $def1, using legacy $legacy1');
-      } else {
-        debugPrint(
-            '[AvatarCatalog] missing $def1 and $legacy1 – app restart required: flutter clean && flutter pub get && flutter run');
-      }
-    }
-    if (!manifest.containsKey(def2)) {
-      if (manifest.containsKey(legacy2)) {
-        debugPrint('[AvatarCatalog] missing $def2, using legacy $legacy2');
-      } else {
-        debugPrint(
-            '[AvatarCatalog] missing $def2 and $legacy2 – app restart required: flutter clean && flutter pub get && flutter run');
-      }
-    }
-  }
+  // Warm up avatar catalog
+  await AvatarCatalog.instance.warmUp();
 
   // Reports vorbereiten
   final reportRepo = ReportRepositoryImpl();
