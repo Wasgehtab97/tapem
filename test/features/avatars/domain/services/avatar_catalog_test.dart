@@ -36,11 +36,11 @@ void main() {
     final catalog = AvatarCatalog.instance;
     final gymList = catalog.listGym('gym_01');
     expect(gymList.map((e) => e.key), contains('gym_01/kurzhantel'));
-    expect(catalog.resolvePath('gym_01/kurzhantel'),
+    expect(catalog.pathForKey('gym_01/kurzhantel'),
         'assets/avatars/gym_01/kurzhantel.png');
-    expect(catalog.resolvePath('kurzhantel', currentGymId: 'gym_01'),
+    expect(catalog.pathForKey('kurzhantel', gymId: 'gym_01'),
         'assets/avatars/gym_01/kurzhantel.png');
-    expect(catalog.resolvePath('unknown'),
+    expect(catalog.pathForKey('unknown'),
         'assets/avatars/global/default.png');
   });
 }

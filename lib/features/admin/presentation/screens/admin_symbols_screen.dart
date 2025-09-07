@@ -93,7 +93,7 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                     final profile = profiles[index];
                     final avatarKey = profile.avatarKey ?? 'default';
                     final path = AvatarCatalog.instance
-                        .resolvePath(avatarKey, currentGymId: gymId);
+                        .pathForKey(avatarKey, gymId: gymId);
                     final image = Image.asset(path, errorBuilder:
                         (_, __, ___) {
                       if (kDebugMode) {
