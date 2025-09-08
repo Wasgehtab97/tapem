@@ -60,11 +60,12 @@ class AvatarInventoryProvider extends ChangeNotifier {
     final batch = _firestore.batch();
     final now = FieldValue.serverTimestamp();
     for (final key in keys) {
+      final docId = key.split('/').last;
       final ref = _firestore
           .collection('users')
           .doc(uid)
           .collection('avatarInventory')
-          .doc(key);
+          .doc(docId);
       batch.set(ref, {
         'key': key,
         'source': source,
@@ -78,11 +79,12 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   /// Removes [key] from the inventory of [uid].
   Future<void> removeKey(String uid, String key) {
+    final docId = key.split('/').last;
     return _firestore
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
-        .doc(key)
+        .doc(docId)
         .delete();
   }
 

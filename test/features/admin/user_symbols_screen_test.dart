@@ -38,8 +38,13 @@ void main() {
         .collection('users')
         .doc('u1')
         .collection('avatarInventory')
-        .doc('global/default')
-        .set({'addedAt': Timestamp.now(), 'source': 'global', 'addedBy': 'A1'});
+        .doc('default')
+        .set({
+          'key': 'global/default',
+          'addedAt': Timestamp.now(),
+          'source': 'global',
+          'addedBy': 'A1'
+        });
 
     await tester.pumpWidget(
       MultiProvider(
