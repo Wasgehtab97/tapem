@@ -495,9 +495,13 @@ class AvatarPicker extends StatelessWidget {
         final entries = map.values.toList()
           ..sort((a, b) {
             if (a.source == 'global_default' &&
-                b.source != 'global_default') return -1;
+                b.source != 'global_default') {
+              return -1;
+            }
             if (a.source != 'global_default' &&
-                b.source == 'global_default') return 1;
+                b.source == 'global_default') {
+              return 1;
+            }
             final aTime = a.createdAt?.toDate() ?? DateTime(1970);
             final bTime = b.createdAt?.toDate() ?? DateTime(1970);
             return bTime.compareTo(aTime);

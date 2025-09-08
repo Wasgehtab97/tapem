@@ -105,6 +105,9 @@ class AvatarCatalog {
       item = _items['global/$name'];
     }
     item ??= _items[AvatarKeys.globalDefault];
+    if (item == null) {
+      throw StateError('AvatarCatalog missing default avatar asset');
+    }
     if (kDebugMode && !_warned.contains(key) && !_items.containsKey(key)) {
       debugPrint('[AvatarCatalog] unknown key "$key" – using ${item.key}');
       _warned.add(key);
