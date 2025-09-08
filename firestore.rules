@@ -200,6 +200,9 @@ service cloud.firestore {
           'avatarUpdatedAt',
           'equippedAvatarRef'
         ]);
+      allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
+        request.resource.data.keys().hasOnly(['avatarKey']) &&
+        request.resource.data.avatarKey is string;
 
       // Friends list (symmetrische Kante)
       match /friends/{fid} {

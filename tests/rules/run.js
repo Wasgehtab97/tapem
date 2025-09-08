@@ -172,6 +172,14 @@ test('U2 cannot write U1 avatarKey', async () => {
   await assertFails(db.doc('users/U1').update({ avatarKey: 'global/default' }));
 });
 
+test('A1 admin G1 can write U1 avatarKey', async () => {
+  const admin = adminDb();
+  await admin.doc('users/U1').set({});
+  await admin.doc('gyms/G1/users/U1').set({ role: 'member' });
+  const db = authed('A1', { role: 'admin', gymId: 'G1' });
+  await assertSucceeds(db.doc('users/U1').update({ avatarKey: 'global/default' }));
+});
+
 // Equip tests
 
 test('U1 can write own equippedAvatarRef', async () => {
