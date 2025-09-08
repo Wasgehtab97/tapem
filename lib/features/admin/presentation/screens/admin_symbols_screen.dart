@@ -113,6 +113,7 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                           ? profile.username
                           : profile.uid),
                       onTap: () {
+                        debugPrint('[AdminSymbols] open uid=${profile.uid} gymId=$gymId');
                         Navigator.of(context).pushNamed(
                           AppRouter.userSymbols,
                           arguments: profile.uid,

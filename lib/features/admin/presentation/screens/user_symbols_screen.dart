@@ -37,6 +37,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   }
 
   Future<void> _init() async {
+    debugPrint('[UserSymbols] init uid=${widget.uid} gymId=$_gymId');
     try {
       final membership = await _fs
           .collection('gyms')
@@ -44,14 +45,21 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           .collection('users')
           .doc(widget.uid)
           .get();
-      _permitted = context.read<AuthProvider>().isAdmin && membership.exists;
-      if (_permitted) {
+      debugPrint('[UserSymbols] membership exists=${membership.exists}');
+    } catch (e) {
+      debugPrint('[UserSymbols] membership fetch error: $e');
+    }
+    _permitted = context.read<AuthProvider>().isAdmin;
+    if (_permitted) {
+      try {
         final inv = await _inventory.inventoryKeys(widget.uid).first;
-        _keys =
-            inv.map((k) => AvatarAssets.normalizeAvatarKey(k, currentGymId: _gymId)).toSet();
+        _keys = inv
+            .map((k) =>
+                AvatarAssets.normalizeAvatarKey(k, currentGymId: _gymId))
+            .toSet();
+      } catch (e) {
+        debugPrint('[UserSymbols] inventory error: $e');
       }
-    } catch (_) {
-      _permitted = false;
     }
     if (mounted) {
       setState(() => _loading = false);

@@ -19,6 +19,17 @@ class _FakeAuth extends ChangeNotifier implements AuthProvider {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _NonAdminAuth extends ChangeNotifier implements AuthProvider {
+  @override
+  bool get isAdmin => false;
+  @override
+  String? get gymCode => 'g1';
+  @override
+  String? get userId => 'U2';
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   testWidgets('shows inventory items', (tester) async {
     final fs = FakeFirebaseFirestore();
@@ -48,5 +59,27 @@ void main() {
 
     await tester.pump();
     expect(find.byType(CircleAvatar), findsWidgets);
+  });
+
+  testWidgets('denies access for non-admin', (tester) async {
+    final fs = FakeFirebaseFirestore();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => _NonAdminAuth()),
+          ChangeNotifierProvider(
+            create: (_) => AvatarInventoryProvider(firestore: fs),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: UserSymbolsScreen(uid: 'u1', firestore: fs),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.text('Kein Zugriff'), findsOneWidget);
   });
 }
