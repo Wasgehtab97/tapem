@@ -37,9 +37,13 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
 
   Future<void> _init() async {
     try {
-      final doc = await _fs.collection('users').doc(widget.uid).get();
-      final gyms = (doc.data()?['gymCodes'] as List?) ?? const [];
-      _permitted = context.read<AuthProvider>().isAdmin && gyms.contains(_gymId);
+      final membership = await _fs
+          .collection('gyms')
+          .doc(_gymId)
+          .collection('users')
+          .doc(widget.uid)
+          .get();
+      _permitted = context.read<AuthProvider>().isAdmin && membership.exists;
       if (_permitted) {
         final inv = await _inventory.inventoryKeys(widget.uid).first;
         _keys = inv.toSet();
