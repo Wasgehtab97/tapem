@@ -449,8 +449,13 @@ describe('Security Rules v1', function () {
           .collection('users')
           .doc('userA')
           .collection('avatarInventory')
-          .doc('global/default')
-          .set({ addedAt: new Date(), source: 'global' });
+          .doc('default')
+          .set({
+            key: 'global/default',
+            createdAt: new Date(),
+            source: 'global',
+            createdBy: 'seed',
+          });
       });
       const db = userA().firestore();
       await assertSucceeds(
@@ -461,7 +466,7 @@ describe('Security Rules v1', function () {
           .collection('users')
           .doc('userA')
           .collection('avatarInventory')
-          .doc('global/default2')
+          .doc('default2')
           .set({ addedAt: new Date(), source: 'global', addedBy: 'userA' })
       );
     });
@@ -473,11 +478,13 @@ describe('Security Rules v1', function () {
           .collection('users')
           .doc('userA')
           .collection('avatarInventory')
-          .doc('gym_01/kurzhantel')
+          .doc('kurzhantel')
           .set({
-            addedAt: new Date(),
-            source: 'gym:G1',
-            addedBy: 'adminA',
+            key: 'G1/kurzhantel',
+            source: 'gym',
+            createdAt: new Date(),
+            createdBy: 'adminA',
+            gymId: 'G1',
           })
       );
     });
@@ -489,11 +496,13 @@ describe('Security Rules v1', function () {
           .collection('users')
           .doc('userB')
           .collection('avatarInventory')
-          .doc('gym_01/kurzhantel')
+          .doc('kurzhantel')
           .set({
-            addedAt: new Date(),
-            source: 'gym:G1',
-            addedBy: 'adminA',
+            key: 'G1/kurzhantel',
+            source: 'gym',
+            createdAt: new Date(),
+            createdBy: 'adminA',
+            gymId: 'G1',
           })
       );
     });
