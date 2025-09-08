@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 
 /// Representation of an avatar asset.
 class AvatarItem {
@@ -96,42 +97,22 @@ class AvatarCatalog {
     }
   }
 
-  String pathForKey(String key, {String? gymId}) {
+  String pathForKey(String key) {
     if (!_loaded) unawaited(warmUp());
-    String lookup = key;
-    AvatarItem? item = _items[lookup];
+    AvatarItem? item = _items[key];
     if (item == null) {
-      // legacy mapping
-      if (lookup == 'default') {
-        lookup = 'global/default';
-        item = _items[lookup];
-      } else if (lookup == 'default2') {
-        lookup = 'global/default2';
-        item = _items[lookup];
-      } else if (!lookup.contains('/')) {
-        if (gymId != null) {
-          final gymKey = '$gymId/$lookup';
-          item = _items[gymKey];
-          if (item != null) lookup = gymKey;
-        }
-        item ??= _items['global/$lookup'];
-        if (item != null) lookup = item.key;
-      }
-    }
-    // gym fallback to global
-    if (item == null && gymId != null && lookup.startsWith('$gymId/')) {
-      final name = lookup.split('/').last;
+      final name = key.split('/').last;
       item = _items['global/$name'];
     }
-    item ??= _items['global/default'];
+    item ??= _items[AvatarKeys.globalDefault];
     if (kDebugMode && !_warned.contains(key) && !_items.containsKey(key)) {
-      debugPrint('[AvatarCatalog] unknown key "$key" – using global/default');
+      debugPrint('[AvatarCatalog] unknown key "$key" – using ${item.key}');
       _warned.add(key);
     }
-    return item?.path ?? 'assets/avatars/global/default.png';
+    return item.path;
   }
 
-  bool has(String key) => _items.containsKey(key);
+  bool hasKey(String key) => _items.containsKey(key);
 
   bool hasPath(String path) =>
       _items.values.any((element) => element.path == path);

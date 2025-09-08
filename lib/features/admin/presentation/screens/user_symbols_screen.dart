@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -46,7 +47,8 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       _permitted = context.read<AuthProvider>().isAdmin && membership.exists;
       if (_permitted) {
         final inv = await _inventory.inventoryKeys(widget.uid).first;
-        _keys = inv.toSet();
+        _keys =
+            inv.map((k) => AvatarAssets.normalizeAvatarKey(k, currentGymId: _gymId)).toSet();
       }
     } catch (_) {
       _permitted = false;

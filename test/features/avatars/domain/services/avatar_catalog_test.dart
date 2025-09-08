@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
@@ -38,9 +39,12 @@ void main() {
     expect(gymList.map((e) => e.key), contains('gym_01/kurzhantel'));
     expect(catalog.pathForKey('gym_01/kurzhantel'),
         'assets/avatars/gym_01/kurzhantel.png');
-    expect(catalog.pathForKey('kurzhantel', gymId: 'gym_01'),
+    expect(
+        catalog.pathForKey(AvatarAssets.normalizeAvatarKey('kurzhantel',
+            currentGymId: 'gym_01')),
         'assets/avatars/gym_01/kurzhantel.png');
-    expect(catalog.pathForKey('unknown'),
+    expect(
+        catalog.pathForKey(AvatarAssets.normalizeAvatarKey('unknown')),
         'assets/avatars/global/default.png');
   });
 }

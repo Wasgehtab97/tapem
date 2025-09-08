@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
 import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
     );
     expect(find.byKey(const ValueKey('status-dot')), findsOneWidget);
   });
@@ -53,7 +54,7 @@ void main() {
     var avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
     );
 
     await tester.pumpWidget(
@@ -68,7 +69,7 @@ void main() {
     avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default2'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault2),
     );
   });
 
@@ -90,7 +91,7 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
     );
   });
 }

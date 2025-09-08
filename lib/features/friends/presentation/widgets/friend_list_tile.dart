@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../domain/models/public_profile.dart';
 import '../../providers/friend_presence_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 class FriendListTile extends StatelessWidget {
@@ -23,7 +24,7 @@ class FriendListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final avatarKey = profile.avatarKey ?? 'default';
+    final rawKey = profile.avatarKey ?? 'default';
     AuthProvider? auth;
     try {
       auth = Provider.of<AuthProvider>(context, listen: false);
@@ -31,8 +32,9 @@ class FriendListTile extends StatelessWidget {
       auth = null;
     }
     final currentGym = gymId ?? auth?.gymCode;
-    final path = AvatarCatalog.instance
-        .pathForKey(avatarKey, gymId: currentGym);
+    final avatarKey = AvatarAssets.normalizeAvatarKey(rawKey,
+        currentGymId: currentGym);
+    final path = AvatarCatalog.instance.pathForKey(avatarKey);
     final image = Image.asset(path, errorBuilder: (_, __, ___) {
       if (kDebugMode) {
         debugPrint('[Avatar] failed to load $path');

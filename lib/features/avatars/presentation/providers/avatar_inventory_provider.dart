@@ -2,6 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+/// Single inventory record.
+class AvatarInventoryEntry {
+  AvatarInventoryEntry({
+    required this.key,
+    required this.source,
+    this.createdAt,
+  });
+
+  final String key;
+  final String source;
+  final Timestamp? createdAt;
+}
+
 /// Provider for managing avatar inventory per user.
 class AvatarInventoryProvider extends ChangeNotifier {
   AvatarInventoryProvider({FirebaseFirestore? firestore, FirebaseAuth? auth})
@@ -13,15 +26,27 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   Set<String>? _cache;
 
-  /// Stream of avatar keys in the inventory of [uid].
-  Stream<List<String>> inventoryKeys(String uid) {
-    if (uid.isEmpty) return const Stream<List<String>>.empty();
+  /// Stream of inventory entries for [uid]. Keys are not yet normalised.
+  Stream<List<AvatarInventoryEntry>> inventory(String uid) {
+    if (uid.isEmpty) return const Stream<List<AvatarInventoryEntry>>.empty();
     return _firestore
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
         .snapshots()
-        .map((snap) => snap.docs.map((d) => d.id).toList());
+        .map((snap) => snap.docs.map((d) {
+              final data = d.data();
+              return AvatarInventoryEntry(
+                key: data['key'] as String? ?? d.id,
+                source: data['source'] as String? ?? '',
+                createdAt: data['createdAt'] as Timestamp?,
+              );
+            }).toList());
+  }
+
+  /// Backwards compatible: stream only the keys.
+  Stream<List<String>> inventoryKeys(String uid) {
+    return inventory(uid).map((items) => items.map((e) => e.key).toList());
   }
 
   /// Adds multiple avatar [keys] to the inventory of [uid].
