@@ -13,6 +13,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import '../widgets/calendar.dart';
@@ -137,8 +138,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       builder: (_) {
+        final normalized = AvatarAssets.normalizeAvatarKey(
+          auth.avatarKey,
+          currentGymId: auth.gymCode,
+        );
         return AvatarPicker(
-          currentKey: auth.avatarKey,
+          currentKey: normalized,
           onSelect: (key) async {
             Navigator.pop(context);
             try {
@@ -305,10 +310,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Builder(builder: (context) {
                           final gymId =
                               context.read<AuthProvider>().gymCode;
-                          final path = AvatarCatalog.instance.pathForKey(
+                          final normalized = AvatarAssets.normalizeAvatarKey(
                             auth.avatarKey,
-                            gymId: gymId,
+                            currentGymId: gymId,
                           );
+                          final path =
+                              AvatarCatalog.instance.pathForKey(normalized);
                           final image = Image.asset(path, errorBuilder:
                               (_, __, ___) {
                             if (kDebugMode) {
@@ -460,16 +467,42 @@ class AvatarPicker extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final inventory = context.watch<AvatarInventoryProvider>();
     final theme = Theme.of(context);
-    return StreamBuilder<List<String>>(
-      stream: inventory.inventoryKeys(auth.userId ?? ''),
+    return StreamBuilder<List<AvatarInventoryEntry>>(
+      stream: inventory.inventory(auth.userId ?? ''),
       builder: (context, snapshot) {
-        final inv = snapshot.data ?? const <String>[];
-        final List<String> keys = inv.isEmpty
-            ? AvatarCatalog.instance
-                .listGlobal()
-                .map((e) => e.key)
-                .toList()
-            : inv;
+        final items = snapshot.data ?? const <AvatarInventoryEntry>[];
+        final currentGym = auth.gymCode;
+        final Map<String, AvatarInventoryEntry> map = {};
+        for (final item in items) {
+          final norm = AvatarAssets.normalizeAvatarKey(
+            item.key,
+            currentGymId: currentGym,
+          );
+          map[norm] = AvatarInventoryEntry(
+            key: norm,
+            source: item.source,
+            createdAt: item.createdAt,
+          );
+        }
+        for (final d in [
+          AvatarInventoryEntry(
+              key: AvatarKeys.globalDefault, source: 'global_default'),
+          AvatarInventoryEntry(
+              key: AvatarKeys.globalDefault2, source: 'global_default'),
+        ]) {
+          map.putIfAbsent(d.key, () => d);
+        }
+        final entries = map.values.toList()
+          ..sort((a, b) {
+            if (a.source == 'global_default' &&
+                b.source != 'global_default') return -1;
+            if (a.source != 'global_default' &&
+                b.source == 'global_default') return 1;
+            final aTime = a.createdAt?.toDate() ?? DateTime(1970);
+            final bTime = b.createdAt?.toDate() ?? DateTime(1970);
+            return bTime.compareTo(aTime);
+          });
+        final keys = entries.map((e) => e.key).toList();
         return SafeArea(
           child: GridView.builder(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -498,10 +531,12 @@ class AvatarPicker extends StatelessWidget {
                     ),
                     child: Builder(builder: (context) {
                       final gymId = context.read<AuthProvider>().gymCode;
-                      final path = AvatarCatalog.instance.pathForKey(
+                      final normalized = AvatarAssets.normalizeAvatarKey(
                         key,
-                        gymId: gymId,
+                        currentGymId: gymId,
                       );
+                      final path =
+                          AvatarCatalog.instance.pathForKey(normalized);
                       final image = Image.asset(path, errorBuilder:
                           (_, __, ___) {
                         if (kDebugMode) {

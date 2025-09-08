@@ -19,6 +19,7 @@ import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 
@@ -184,7 +185,7 @@ void main() {
   testWidgets('no username row and avatar in app bar', (tester) async {
     final auth = MockAuthProvider();
     when(() => auth.userId).thenReturn('u1');
-    when(() => auth.avatarKey).thenReturn('default');
+    when(() => auth.avatarKey).thenReturn(AvatarKeys.globalDefault);
     when(() => auth.userName).thenReturn('Admin');
 
     await pumpProfileScreen(tester, auth);
@@ -214,7 +215,7 @@ void main() {
   });
 
   testWidgets('selecting avatar updates header and persists', (tester) async {
-    var key = 'default';
+    var key = AvatarKeys.globalDefault;
     final auth = MockAuthProvider();
     when(() => auth.userId).thenReturn('u1');
     when(() => auth.avatarKey).thenAnswer((_) => key);
@@ -229,11 +230,11 @@ void main() {
     await tester.tap(find.byTooltip('Avatar 2'));
     await tester.pumpAndSettle();
 
-    verify(() => auth.setAvatarKey('default2')).called(1);
+    verify(() => auth.setAvatarKey(AvatarKeys.globalDefault2)).called(1);
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default2'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault2),
     );
   });
 
@@ -246,14 +247,14 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey('default'),
+      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
     );
   });
 
   testWidgets('actions are tappable', (tester) async {
     final auth = MockAuthProvider();
     when(() => auth.userId).thenReturn('u1');
-    when(() => auth.avatarKey).thenReturn('default');
+    when(() => auth.avatarKey).thenReturn(AvatarKeys.globalDefault);
     when(() => auth.logout()).thenAnswer((_) async {});
 
     final observer = MockNavigatorObserver();
