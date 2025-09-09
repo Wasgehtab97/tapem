@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 
 /// Single inventory record.
 class AvatarInventoryEntry {
@@ -26,8 +27,9 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   Set<String>? _cache;
 
-  /// Stream of inventory entries for [uid]. Keys are not yet normalised.
-  Stream<List<AvatarInventoryEntry>> inventory(String uid) {
+  /// Stream of normalised inventory entries for [uid].
+  Stream<List<AvatarInventoryEntry>> inventory(String uid,
+      {String? currentGymId}) {
     if (uid.isEmpty) return const Stream<List<AvatarInventoryEntry>>.empty();
     return _firestore
         .collection('users')
@@ -36,17 +38,45 @@ class AvatarInventoryProvider extends ChangeNotifier {
         .snapshots()
         .map((snap) => snap.docs.map((d) {
               final data = d.data();
+              final rawKey = data['key'] as String? ?? d.id;
+              final normalised = AvatarAssets.normalizeAvatarKey(rawKey,
+                  currentGymId: currentGymId);
               return AvatarInventoryEntry(
-                key: data['key'] as String? ?? d.id,
+                key: normalised,
                 source: data['source'] as String? ?? '',
                 createdAt: data['createdAt'] as Timestamp?,
               );
             }).toList());
   }
 
-  /// Backwards compatible: stream only the keys.
-  Stream<List<String>> inventoryKeys(String uid) {
-    return inventory(uid).map((items) => items.map((e) => e.key).toList());
+  /// Stream only the keys, merged with default avatars and deduplicated.
+  Stream<List<String>> inventoryKeys(String uid, {String? currentGymId}) {
+    return inventory(uid, currentGymId: currentGymId).map((items) {
+      final map = <String, AvatarInventoryEntry>{};
+      for (final item in items) {
+        final existing = map[item.key];
+        if (existing == null ||
+            (existing.createdAt?.compareTo(item.createdAt ?? Timestamp(0, 0)) ??
+                    -1) <
+                0) {
+          map[item.key] = item;
+        }
+      }
+      final result = <AvatarInventoryEntry>[
+        AvatarInventoryEntry(key: AvatarKeys.globalDefault, source: 'global'),
+        AvatarInventoryEntry(key: AvatarKeys.globalDefault2, source: 'global'),
+      ];
+      map.remove(AvatarKeys.globalDefault);
+      map.remove(AvatarKeys.globalDefault2);
+      final rest = map.values.toList()
+        ..sort((a, b) {
+          final aTime = a.createdAt ?? Timestamp(0, 0);
+          final bTime = b.createdAt ?? Timestamp(0, 0);
+          return bTime.compareTo(aTime);
+        });
+      result.addAll(rest);
+      return result.map((e) => e.key).toList();
+    });
   }
 
   /// Adds multiple avatar [keys] to the inventory of [uid].
@@ -60,31 +90,34 @@ class AvatarInventoryProvider extends ChangeNotifier {
     final batch = _firestore.batch();
     final now = FieldValue.serverTimestamp();
     for (final key in keys) {
-      final docId = key.split('/').last;
+      final normalised =
+          AvatarAssets.normalizeAvatarKey(key, currentGymId: gymId);
       final ref = _firestore
           .collection('users')
           .doc(uid)
           .collection('avatarInventory')
-          .doc(docId);
-      batch.set(ref, {
-        'key': key,
-        'source': source,
-        'createdAt': now,
-        'createdBy': createdBy,
-        if (gymId != null) 'gymId': gymId,
-      });
+          .doc(normalised);
+      batch.set(
+          ref,
+          {
+            'key': normalised,
+            'source': source,
+            'createdAt': now,
+            'createdBy': createdBy,
+            if (gymId != null) 'gymId': gymId,
+          },
+          SetOptions(merge: true));
     }
     await batch.commit();
   }
 
   /// Removes [key] from the inventory of [uid].
   Future<void> removeKey(String uid, String key) {
-    final docId = key.split('/').last;
     return _firestore
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
-        .doc(docId)
+        .doc(key)
         .delete();
   }
 
