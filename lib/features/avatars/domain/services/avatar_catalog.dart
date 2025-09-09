@@ -70,10 +70,20 @@ class AvatarCatalog {
         final item = AvatarItem(key, path);
         _items[key] = item;
         if (namespace == 'global') {
-          _global.add(item);
+          final idx = _global.indexWhere((e) => e.key == key);
+          if (idx == -1) {
+            _global.add(item);
+          } else {
+            _global[idx] = item;
+          }
         } else {
           final list = _gym.putIfAbsent(namespace, () => <AvatarItem>[]);
-          list.add(item);
+          final idx = list.indexWhere((e) => e.key == key);
+          if (idx == -1) {
+            list.add(item);
+          } else {
+            list[idx] = item;
+          }
         }
       }
       _global.sort((a, b) => a.key.compareTo(b.key));

@@ -41,9 +41,10 @@ void main() {
         .doc('default')
         .set({
           'key': 'global/default',
-          'addedAt': Timestamp.now(),
-          'source': 'global',
-          'addedBy': 'A1'
+          'createdAt': Timestamp.now(),
+          'source': 'admin/manual',
+          'createdBy': 'A1',
+          'gymId': 'g1'
         });
 
     await tester.pumpWidget(
