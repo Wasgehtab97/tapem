@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
@@ -11,7 +13,9 @@ void main() {
     AvatarCatalog.instance.resetForTests();
     const manifest = {
       'assets/avatars/global/default.png': [],
+      'assets/avatars/global/default2.png': [],
       'assets/avatars/gym_01/kurzhantel.png': [],
+      'assets/avatars/Club Aktiv/ignored.png': [],
     };
     ServicesBinding.instance.defaultBinaryMessenger.setMockMessageHandler(
       'flutter/assets',
@@ -37,6 +41,9 @@ void main() {
     final catalog = AvatarCatalog.instance;
     final gymList = catalog.listGym('gym_01');
     expect(gymList.map((e) => e.key), contains('gym_01/kurzhantel'));
+    expect(catalog.listGlobal().map((e) => e.key),
+        containsAll(['global/default', 'global/default2']));
+    expect(catalog.hasKey('Club Aktiv/ignored'), isFalse);
     expect(catalog.pathForKey('gym_01/kurzhantel'),
         'assets/avatars/gym_01/kurzhantel.png');
     expect(

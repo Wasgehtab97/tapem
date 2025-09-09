@@ -104,14 +104,12 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   }
 
   Future<void> _openAddDialog() async {
-    debugPrint('[UserSymbols] add_open gymId=$_gymId uid=${widget.uid}');
     final catalog = AvatarCatalog.instance.allForContext(_gymId);
-    final global = _inventory.filterNotOwnedItems(
-        catalog.global, _keys,
-        currentGymId: _gymId);
-    final gym = _inventory.filterNotOwnedItems(
-        catalog.gym, _keys,
-        currentGymId: _gymId);
+    final avail = _inventory.availableKeys(_keys, _gymId);
+    final global = avail.global;
+    final gym = avail.gym;
+    debugPrint(
+        '[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: available_global=${global.length}, available_gym=${gym.length}');
 
     final selected = await showModalBottomSheet<List<String>>(
       context: context,
@@ -119,13 +117,8 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       builder: (context) {
         final picks = <String>{};
         return StatefulBuilder(builder: (context, setState) {
-          Widget buildSection(String title, List<AvatarItem> items) {
-            if (items.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Keine Symbole verfügbar'),
-              );
-            }
+          Widget buildSection(
+              String title, List<AvatarItem> items, int catalogCount) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -134,73 +127,87 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                   child: Text('$title (${items.length})',
                       style: Theme.of(context).textTheme.titleMedium),
                 ),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 100,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final selected = picks.contains(item.key);
-                    final image = Image.asset(item.path, errorBuilder: (_, __, ___) {
-                      if (kDebugMode) {
-                        debugPrint('[Avatar] failed to load ${item.path}');
-                      }
-                      return const Icon(Icons.person);
-                    });
-                    final ns = item.key.split('/').first;
-                    return GestureDetector(
-                      onTap: () {
-                        debugPrint(
-                            '[UserSymbols] add_select key=${item.key} source=$ns');
-                        setState(() {
-                          if (selected) {
-                            picks.remove(item.key);
-                          } else {
-                            picks.add(item.key);
-                          }
-                        });
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: image.image,
-                            radius: 40,
-                            child: const Icon(Icons.person),
-                          ),
-                          Positioned(
-                            left: 4,
-                            top: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(4),
+                if (items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(catalogCount == 0
+                        ? (title == 'Global'
+                            ? 'Manifest enthält keine globalen Assets'
+                            : 'Manifest enthält keine $title-Assets')
+                        : (title == 'Global'
+                            ? 'Alle globalen Symbole bereits zugewiesen.'
+                            : 'Alle $title-Symbole bereits zugewiesen.')),
+                  )
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 100,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final selected = picks.contains(item.key);
+                      final image =
+                          Image.asset(item.path, errorBuilder: (_, __, ___) {
+                        if (kDebugMode) {
+                          debugPrint('[Avatar] failed to load ${item.path}');
+                        }
+                        return const Icon(Icons.person);
+                      });
+                      final ns = item.key.split('/').first;
+                      return GestureDetector(
+                        onTap: () {
+                          debugPrint(
+                              '[UserSymbols] add_select key=${item.key} source=$ns');
+                          setState(() {
+                            if (selected) {
+                              picks.remove(item.key);
+                            } else {
+                              picks.add(item.key);
+                            }
+                          });
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              backgroundImage: image.image,
+                              radius: 40,
+                              child: const Icon(Icons.person),
+                            ),
+                            Positioned(
+                              left: 4,
+                              top: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(ns,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 10)),
                               ),
-                              child: Text(ns,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 10)),
                             ),
-                          ),
-                          if (selected)
-                            const Positioned(
-                              right: 4,
-                              bottom: 4,
-                              child: Icon(Icons.check_circle, color: Colors.green),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                            if (selected)
+                              const Positioned(
+                                right: 4,
+                                bottom: 4,
+                                child:
+                                    Icon(Icons.check_circle, color: Colors.green),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
               ],
             );
           }
@@ -213,8 +220,8 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        buildSection('Global', global),
-                        buildSection(_gymId, gym),
+                        buildSection('Global', global, catalog.global.length),
+                        buildSection(_gymId, gym, catalog.gym.length),
                       ],
                     ),
                   ),
