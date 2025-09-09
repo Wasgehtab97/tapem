@@ -224,7 +224,7 @@ service cloud.firestore {
           request.resource.data.keys().hasOnly(['key', 'source', 'createdAt', 'createdBy', 'gymId']) &&
           request.resource.data.createdAt is timestamp &&
           request.resource.data.createdBy == request.auth.uid &&
-          request.resource.data.key.matches('^[^/]+/[^/]+$') &&
+          request.resource.data.key.matches('^(global|[A-Za-z0-9_-]+)/[A-Za-z0-9_-]+$') &&
           ((request.resource.data.source == 'global' && !('gymId' in request.resource.data)) ||
            (request.resource.data.source == 'gym' && request.resource.data.gymId == request.auth.token.gymId));
         allow delete: if isGymAdminFor(uid, request.auth.token.gymId);
