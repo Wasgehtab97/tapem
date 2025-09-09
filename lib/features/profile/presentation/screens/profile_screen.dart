@@ -323,7 +323,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return CircleAvatar(
                             radius: avatarSize / 2,
                             backgroundImage: image.image,
-                            child: const Icon(Icons.person),
                           );
                         }),
                       ),
@@ -546,7 +545,6 @@ class AvatarPicker extends StatelessWidget {
                       return CircleAvatar(
                         radius: 40,
                         backgroundImage: image.image,
-                        child: const Icon(Icons.person),
                       );
                     }),
                   ),

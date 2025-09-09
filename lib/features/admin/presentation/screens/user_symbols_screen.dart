@@ -188,7 +188,6 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                             CircleAvatar(
                               backgroundImage: image.image,
                               radius: 40,
-                              child: const Icon(Icons.person),
                             ),
                             Positioned(
                               left: 4,
@@ -367,7 +366,6 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                     CircleAvatar(
                       backgroundImage: image.image,
                       radius: 40,
-                      child: const Icon(Icons.person),
                     ),
                     Positioned(
                       left: 4,

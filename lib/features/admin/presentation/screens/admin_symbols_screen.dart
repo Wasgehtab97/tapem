@@ -106,7 +106,6 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundImage: image.image,
-                        child: const Icon(Icons.person),
                       ),
                       title: Text(profile.username.isNotEmpty
                           ? profile.username
