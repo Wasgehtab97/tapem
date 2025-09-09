@@ -25,7 +25,7 @@ class ThemeLoader extends ChangeNotifier {
 
   /// Wendet Branding-Daten auf das aktuelle Theme an.
   void applyBranding(String? gymId, Branding? branding) {
-    if (gymId == 'gym_01') {
+    if (gymId == 'lifthouse_koblenz') {
       if (branding == null) {
         _applyMagentaDefaults();
         notifyListeners();

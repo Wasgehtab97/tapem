@@ -8,16 +8,16 @@ import 'package:tapem/core/theme/brand_on_colors.dart';
 
 void main() {
   group('ThemeLoader', () {
-    test('gym_01 without branding uses magenta theme', () {
+    test('lifthouse_koblenz without branding uses magenta theme', () {
       final loader = ThemeLoader()..loadDefault();
-      loader.applyBranding('gym_01', null);
+      loader.applyBranding('lifthouse_koblenz', null);
       expect(loader.theme.colorScheme.primary, MagentaColors.primary600);
     });
 
-    test('gym_01 with branding applies custom colors', () {
+    test('lifthouse_koblenz with branding applies custom colors', () {
       final loader = ThemeLoader()..loadDefault();
       loader.applyBranding(
-        'gym_01',
+        'lifthouse_koblenz',
         Branding(primaryColor: '#123456', secondaryColor: '#654321'),
       );
       expect(loader.theme.colorScheme.primary,
@@ -65,9 +65,9 @@ void main() {
       expect(on.onCta, Colors.black);
     });
 
-    test('gym_01 surfaces are normalised to reference luminance', () {
+    test('lifthouse_koblenz surfaces are normalised to reference luminance', () {
       final loader = ThemeLoader()..loadDefault();
-      loader.applyBranding('gym_01', null);
+      loader.applyBranding('lifthouse_koblenz', null);
 
       final anchor = MagentaTones.brightnessAnchor;
       final grad = AppGradients.brandGradient;

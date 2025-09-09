@@ -64,7 +64,7 @@ class Tone {
   }
 }
 
-/// Dynamic tone tokens used for brightness normalisation in `gym_01`.
+/// Dynamic tone tokens used for brightness normalisation in `lifthouse_koblenz`.
 class MagentaTones {
   /// Reference luminance derived from the "Letzte Session" card.
   static double brightnessAnchor =
