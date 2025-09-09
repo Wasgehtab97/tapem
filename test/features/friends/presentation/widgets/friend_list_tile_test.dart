@@ -34,7 +34,8 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
+      AvatarCatalog.instance
+          .resolvePathOrFallback(AvatarKeys.globalDefault),
     );
     expect(find.byKey(const ValueKey('status-dot')), findsOneWidget);
   });
@@ -63,7 +64,8 @@ void main() {
     var avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
+      AvatarCatalog.instance
+          .resolvePathOrFallback(AvatarKeys.globalDefault),
     );
 
     await tester.pumpWidget(
@@ -78,7 +80,8 @@ void main() {
     avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault2),
+      AvatarCatalog.instance
+          .resolvePathOrFallback(AvatarKeys.globalDefault2),
     );
   });
 
@@ -100,7 +103,8 @@ void main() {
     final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
     expect(
       (avatar.backgroundImage as AssetImage).assetName,
-      AvatarCatalog.instance.pathForKey(AvatarKeys.globalDefault),
+      AvatarCatalog.instance
+          .resolvePathOrFallback(AvatarKeys.globalDefault),
     );
   });
 }

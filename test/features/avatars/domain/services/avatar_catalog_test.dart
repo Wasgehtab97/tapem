@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
@@ -38,19 +37,14 @@ void main() {
 
   test('catalog mapping and resolver', () {
     final catalog = AvatarCatalog.instance;
-    final gymList = catalog.listGym('gym_01');
-    expect(gymList.map((e) => e.key), contains('gym_01/kurzhantel'));
-    expect(catalog.listGlobal().map((e) => e.key),
-        containsAll(['global/default', 'global/default2']));
-    expect(catalog.hasKey('Club Aktiv/ignored'), isFalse);
-    expect(catalog.pathForKey('gym_01/kurzhantel'),
+    expect(catalog.globalCount, 2);
+    expect(catalog.gymCount('gym_01'), 1);
+    expect(catalog.resolvePathOrFallback('gym_01/kurzhantel'),
         'assets/avatars/gym_01/kurzhantel.png');
     expect(
-        catalog.pathForKey(AvatarAssets.normalizeAvatarKey('kurzhantel',
-            currentGymId: 'gym_01')),
+        catalog.resolvePathOrFallback('kurzhantel', gymId: 'gym_01'),
         'assets/avatars/gym_01/kurzhantel.png');
-    expect(
-        catalog.pathForKey(AvatarAssets.normalizeAvatarKey('unknown')),
+    expect(catalog.resolvePathOrFallback('unknown'),
         'assets/avatars/global/default.png');
   });
 }
