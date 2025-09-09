@@ -54,19 +54,19 @@ class AvatarCatalog {
       } catch (_) {
         manifestStr = await b.loadString('AssetManifest.bin.json');
       }
-      final Map<String, dynamic> manifest =
-          json.decode(manifestStr) as Map<String, dynamic>;
-      const prefix = 'assets/avatars/';
-      const ext = '.png';
-      final ignored = <String>{};
-      final items = <String, AvatarItem>{};
-      final global = <AvatarItem>[];
-      final gym = <String, List<AvatarItem>>{};
-      for (final path in manifest.keys) {
-        if (!path.startsWith(prefix) || !path.endsWith(ext)) continue;
-        final rel = path.substring(prefix.length, path.length - ext.length);
-        final slash = rel.indexOf('/');
-        if (slash == -1) continue;
+        final Map<String, dynamic> manifest =
+            json.decode(manifestStr) as Map<String, dynamic>;
+        const prefix = 'assets/avatars/';
+        const ext = '.png';
+        final ignored = <String>{};
+        final items = <String, AvatarItem>{};
+        final global = <AvatarItem>[];
+        final gym = <String, List<AvatarItem>>{};
+        for (final path in manifest.keys) {
+          if (!path.startsWith(prefix) || !path.endsWith(ext)) continue;
+          final rel = path.substring(prefix.length, path.length - ext.length);
+          final slash = rel.indexOf('/');
+          if (slash == -1) continue;
         final namespace = rel.substring(0, slash);
         final name = rel.substring(slash + 1);
         if (namespace != 'global' && !_isValidGymNamespace(namespace)) {
@@ -97,6 +97,10 @@ class AvatarCatalog {
         ..clear()
         ..addAll(gym);
       if (kDebugMode && !_diagDone) {
+        if (items.isEmpty) {
+          debugPrint(
+              '[AvatarCatalog] manifest_missing_prefix assets/avatars/ – check pubspec.yaml and physical paths.');
+        }
         if (!items.containsKey('global/default')) {
           debugPrint('[AvatarCatalog] manifest_missing: assets/avatars/global/default.png');
         }
@@ -108,6 +112,15 @@ class AvatarCatalog {
             .join(', ');
         debugPrint(
             '[AvatarCatalog] warmup: global=${global.length}${gymParts.isNotEmpty ? ', ' + gymParts : ''}, ignored_non_gym_dirs=${ignored.toList()}');
+        if (global.isNotEmpty) {
+          final samples = global.take(3).map((e) => e.path).toList();
+          debugPrint('[AvatarCatalog] sample_global_paths=$samples');
+        }
+        final gymSamples = gym['gym_01'];
+        if (gymSamples != null && gymSamples.isNotEmpty) {
+          final samples = gymSamples.take(3).map((e) => e.path).toList();
+          debugPrint('[AvatarCatalog] sample_gym(gym_01)_paths=$samples');
+        }
         _diagDone = true;
       }
     } finally {
@@ -116,6 +129,8 @@ class AvatarCatalog {
     }
   }
 
+  static final Set<String> _warnedMissing = <String>{};
+
   String pathForKey(String key) {
     if (!_loaded) unawaited(warmUp());
     AvatarItem? item = _items[key];
@@ -123,8 +138,22 @@ class AvatarCatalog {
       final name = key.split('/').last;
       item = _items['global/$name'];
     }
-    item ??= _items[AvatarKeys.globalDefault];
-    item ??= _placeholder;
+    if (item == null) {
+      if (kDebugMode && _warnedMissing.add(key)) {
+        debugPrint('[AvatarCatalog] missing key $key');
+      }
+      if (_items.containsKey(AvatarKeys.globalDefault)) {
+        if (kDebugMode && _warnedMissing.add(AvatarKeys.globalDefault)) {
+          debugPrint('[AvatarCatalog] fallback to ${AvatarKeys.globalDefault}');
+        }
+        item = _items[AvatarKeys.globalDefault];
+      } else {
+        if (kDebugMode && _warnedMissing.add('placeholder')) {
+          debugPrint('[AvatarCatalog] fallback to placeholder');
+        }
+        item = _placeholder;
+      }
+    }
     return item.path;
   }
 

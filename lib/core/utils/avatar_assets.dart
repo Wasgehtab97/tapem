@@ -46,9 +46,13 @@ class AvatarAssets {
     if (kDebugMode && _warned.add(warnKey)) {
       debugPrint('[Avatar] unknown key "$input" gymId=${currentGymId ?? '-'}');
     }
-    return catalog.hasKey(AvatarKeys.globalDefault)
-        ? AvatarKeys.globalDefault
-        : 'global/$input';
+    if (catalog.hasKey(AvatarKeys.globalDefault)) {
+      return AvatarKeys.globalDefault;
+    }
+    if (kDebugMode && _warned.add('no_default')) {
+      debugPrint('[Avatar] manifest_missing ${AvatarKeys.globalDefault}');
+    }
+    return 'global/$input';
   }
 }
 
