@@ -42,9 +42,7 @@ void main() {
         .set({
           'key': 'global/default',
           'createdAt': Timestamp.now(),
-          'source': 'admin/manual',
-          'createdBy': 'A1',
-          'gymId': 'gym_01'
+          'source': 'admin/manual'
         });
     await fs
         .collection('users')
@@ -54,9 +52,7 @@ void main() {
         .set({
           'key': 'global/default2',
           'createdAt': Timestamp.now(),
-          'source': 'admin/manual',
-          'createdBy': 'A1',
-          'gymId': 'gym_01'
+          'source': 'admin/manual'
         });
     await fs.collection('gyms').doc('gym_01').collection('users').doc('u1').set({});
 
