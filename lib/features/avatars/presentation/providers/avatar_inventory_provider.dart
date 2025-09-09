@@ -121,6 +121,11 @@ class AvatarInventoryProvider extends ChangeNotifier {
           .doc(uid)
           .collection('avatarInventory')
           .doc(_docId(normalised));
+      debugPrint('[AvatarInventory] add path=' + ref.path +
+          ' uid=' + uid +
+          ' key=' + normalised +
+          ' source=' + source +
+          ' gymId=' + (gymId ?? '')); 
       batch.set(
           ref,
           {
@@ -137,12 +142,14 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   /// Removes [key] from the inventory of [uid].
   Future<void> removeKey(String uid, String key) {
-    return _firestore
+    final ref = _firestore
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
-        .doc(_docId(key))
-        .delete();
+        .doc(_docId(key));
+    debugPrint('[AvatarInventory] remove path=' + ref.path +
+        ' uid=' + uid + ' key=' + key);
+    return ref.delete();
   }
 
   // ---------------------------------------------------------------------------
