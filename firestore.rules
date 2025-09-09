@@ -229,7 +229,7 @@ service cloud.firestore {
             'createdBy',
             'gymId'
           ]) &&
-          request.resource.data.createdAt is timestamp &&
+          request.resource.data.createdAt == request.time &&
           request.resource.data.createdBy == request.auth.uid &&
           request.resource.data.key.matches('^(global|[A-Za-z0-9_-]+)/[A-Za-z0-9_-]+$') &&
           request.resource.data.source in ['admin/manual', 'system/default', 'xp', 'challenge'] &&

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
+import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 /// Single inventory record.
 class AvatarInventoryEntry {
@@ -28,6 +29,25 @@ class AvatarInventoryProvider extends ChangeNotifier {
   Set<String>? _cache;
 
   String _docId(String key) => key.replaceAll('/', '__');
+
+  /// Filters [items] to only those whose normalised key is not present in
+  /// [ownedKeys]. Also deduplicates keys.
+  List<AvatarItem> filterNotOwnedItems(
+    Iterable<AvatarItem> items,
+    Iterable<String> ownedKeys, {
+    String? currentGymId,
+  }) {
+    final owned = ownedKeys
+        .map((k) => AvatarAssets.normalizeAvatarKey(k, currentGymId: currentGymId))
+        .toSet();
+    final seen = <String>{};
+    return items.where((item) {
+      final key =
+          AvatarAssets.normalizeAvatarKey(item.key, currentGymId: currentGymId);
+      if (owned.contains(key) || !seen.add(key)) return false;
+      return true;
+    }).toList();
+  }
 
   /// Stream of normalised inventory entries for [uid].
   Stream<List<AvatarInventoryEntry>> inventory(String uid,
