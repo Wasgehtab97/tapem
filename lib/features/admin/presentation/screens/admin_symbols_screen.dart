@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -93,10 +92,10 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                   itemBuilder: (context, index) {
                     final profile = profiles[index];
                     final avatarKey = profile.avatarKey ?? 'default';
-                    final path = AvatarCatalog.instance
-                        .pathForKey(
-                            AvatarAssets.normalizeAvatarKey(avatarKey,
-                                currentGymId: gymId));
+                    final path = AvatarCatalog.instance.resolvePathOrFallback(
+                      avatarKey,
+                      gymId: gymId,
+                    );
                     final image = Image.asset(path, errorBuilder:
                         (_, __, ___) {
                       if (kDebugMode) {
