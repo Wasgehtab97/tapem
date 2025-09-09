@@ -78,6 +78,9 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       }
     });
     try {
+      final adminFlag = context.read<AuthProvider>().isAdmin;
+      debugPrint('[UserSymbols] toggle path=users/${widget.uid}/avatarInventory '
+          'gymId=$_gymId uid=${widget.uid} key=$key has=$has isAdmin=$adminFlag');
       if (has) {
         await _inventory.removeKey(widget.uid, key);
       } else {
@@ -86,6 +89,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             createdBy: context.read<AuthProvider>().userId ?? '',
             gymId: _gymId);
       }
+      await _inventory.refresh();
     } on FirebaseException catch (e) {
       setState(() {
         if (has) {
@@ -94,10 +98,15 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           _keys.remove(key);
         }
       });
+      // ignore: use_build_context_synchronously
+      final messenger = ScaffoldMessenger.of(context);
       if (e.code == 'permission-denied') {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.no_permission_symbols)),
+        );
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Keine Verbindung – später erneut versuchen.')),
         );
       }
     }
@@ -125,9 +134,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                        kDebugMode
-                            ? '$title (${keys.length}/$catalogCount)'
-                            : '$title (${keys.length})',
+                        '$title (${keys.length}/$catalogCount)',
                         style: Theme.of(context).textTheme.titleMedium),
                   ),
                 if (keys.isEmpty)
@@ -263,28 +270,36 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             source: 'admin/manual',
             createdBy: context.read<AuthProvider>().userId ?? '',
             gymId: _gymId);
+        await _inventory.refresh();
         if (RC.avatarsV2Enabled && RC.avatarsV2GrantsEnabled) {
           final fn = FirebaseFunctions.instance.httpsCallable('adminGrantAvatar');
           for (final k in selected) {
             unawaited(fn.call({'uid': widget.uid, 'key': k, 'gymId': _gymId}));
           }
         }
-        debugPrint(
-            '[UserSymbols] add_commit count=${selected.length} success=true');
+        final adminFlag = context.read<AuthProvider>().isAdmin;
+        debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
+            'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
+            'isAdmin=$adminFlag success=true');
         // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${selected.length} Symbol(e) hinzugefügt')),
         );
       } on FirebaseException catch (e) {
         setState(() => _keys.removeAll(selected));
-        debugPrint(
-            '[UserSymbols] add_commit count=${selected.length} success=false e=$e');
+        final adminFlag = context.read<AuthProvider>().isAdmin;
+        debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
+            'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
+            'isAdmin=$adminFlag success=false e=$e');
+        // ignore: use_build_context_synchronously
+        final messenger = ScaffoldMessenger.of(context);
         if (e.code == 'permission-denied') {
-          // ignore: use_build_context_synchronously
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(AppLocalizations.of(context)!
-                    .no_permission_symbols)),
+          messenger.showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.no_permission_symbols)),
+          );
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Keine Verbindung – später erneut versuchen.')),
           );
         }
       }
