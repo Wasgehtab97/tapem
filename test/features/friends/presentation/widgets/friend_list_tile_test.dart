@@ -7,6 +7,15 @@ import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
+  setUp(() async {
+    AvatarCatalog.instance.resetForTests();
+    await AvatarCatalog.instance.warmUp();
+  });
+
+  tearDown(() {
+    AvatarCatalog.instance.resetForTests();
+  });
+
   testWidgets('renders avatar and status dot', (tester) async {
     const profile = PublicProfile(
       uid: '1',
