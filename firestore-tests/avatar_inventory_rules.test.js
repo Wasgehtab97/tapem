@@ -35,63 +35,98 @@ describe('avatarInventory rules', function () {
     await testEnv.cleanup();
   });
 
-  const adminA = () => testEnv.authenticatedContext('adminA', { gymId: 'g1', role: 'admin' });
-  const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'g2', role: 'admin' });
-  const member = () => testEnv.authenticatedContext('userA', { gymId: 'g1', role: 'member' });
+  const adminA = () =>
+    testEnv.authenticatedContext('adminA', { gymId: 'g1', role: 'admin' });
+  const adminB = () =>
+    testEnv.authenticatedContext('adminB', { gymId: 'g2', role: 'admin' });
+  const member = () =>
+    testEnv.authenticatedContext('userA', { gymId: 'g1', role: 'member' });
 
-  it('allows gym admin to create', async () => {
+  it('allows gym admin to create and read', async () => {
     const db = adminA().firestore();
-    const ref = db.collection('users').doc('userA').collection('avatarInventory').doc('global__x');
+    const ref = db
+      .collection('users')
+      .doc('userA')
+      .collection('avatarInventory')
+      .doc('g1__kurzhantel');
     await assertSucceeds(
       ref.set({
-        key: 'global/x',
+        key: 'g1/kurzhantel',
         source: 'admin/manual',
         createdAt: FieldValue.serverTimestamp(),
-        createdBy: 'adminA',
         gymId: 'g1',
       }),
     );
+    await assertSucceeds(ref.get());
   });
 
-  it('denies other gym admin', async () => {
-    const db = adminB().firestore();
-    const ref = db.collection('users').doc('userA').collection('avatarInventory').doc('global__y');
+  it('blocks admin from other gym', async () => {
+    const db = adminA().firestore();
+    const ref = db
+      .collection('users')
+      .doc('userA')
+      .collection('avatarInventory')
+      .doc('g2__kurzhantel');
     await assertFails(
       ref.set({
-        key: 'global/y',
+        key: 'g2/kurzhantel',
         source: 'admin/manual',
         createdAt: FieldValue.serverTimestamp(),
-        createdBy: 'adminB',
         gymId: 'g2',
       }),
     );
   });
 
-  it('denies non-admin', async () => {
+  it('allows user self-service', async () => {
     const db = member().firestore();
-    const ref = db.collection('users').doc('userA').collection('avatarInventory').doc('global__z');
-    await assertFails(
+    const ref = db
+      .collection('users')
+      .doc('userA')
+      .collection('avatarInventory')
+      .doc('global__x');
+    await assertSucceeds(
       ref.set({
-        key: 'global/z',
-        source: 'admin/manual',
+        key: 'global/x',
+        source: 'user/self',
         createdAt: FieldValue.serverTimestamp(),
-        createdBy: 'userA',
-        gymId: 'g1',
       }),
     );
   });
 
-  it('denies invalid document', async () => {
+  it('denies invalid fields', async () => {
     const db = adminA().firestore();
-    const ref = db.collection('users').doc('userA').collection('avatarInventory').doc('bad');
+    const ref = db
+      .collection('users')
+      .doc('userA')
+      .collection('avatarInventory')
+      .doc('bad');
     await assertFails(
       ref.set({
         key: 'bad key',
         source: 'admin/manual',
         createdAt: FieldValue.serverTimestamp(),
-        createdBy: 'adminA',
         gymId: 'g1',
+        extra: true,
       }),
     );
+  });
+
+  it('allows admin delete', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .collection('users')
+        .doc('userA')
+        .collection('avatarInventory')
+        .doc('g1__y')
+        .set({ key: 'g1/y', source: 'admin/manual', gymId: 'g1' });
+    });
+    const db = adminA().firestore();
+    const ref = db
+      .collection('users')
+      .doc('userA')
+      .collection('avatarInventory')
+      .doc('g1__y');
+    await assertSucceeds(ref.delete());
   });
 });

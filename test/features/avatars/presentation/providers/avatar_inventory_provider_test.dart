@@ -14,7 +14,7 @@ void main() {
       final provider = AvatarInventoryProvider(firestore: fs);
 
       await provider.addKeys('u1', ['global/kurzhantel'],
-          source: 'admin/manual', createdBy: 'admin', gymId: 'g1');
+          source: 'admin/manual');
 
       final doc = await fs
           .collection('users')

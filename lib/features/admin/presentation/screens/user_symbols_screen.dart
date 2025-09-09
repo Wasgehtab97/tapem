@@ -85,9 +85,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         await _inventory.removeKey(widget.uid, key);
       } else {
         await _inventory.addKeys(widget.uid, [key],
-            source: source,
-            createdBy: context.read<AuthProvider>().userId ?? '',
-            gymId: _gymId);
+            source: source, gymId: _gymId);
       }
       await _inventory.refresh();
     } on FirebaseException catch (e) {
@@ -267,9 +265,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       setState(() => _keys.addAll(selected));
       try {
         await _inventory.addKeys(widget.uid, selected,
-            source: 'admin/manual',
-            createdBy: context.read<AuthProvider>().userId ?? '',
-            gymId: _gymId);
+            source: 'admin/manual', gymId: _gymId);
         await _inventory.refresh();
         if (RC.avatarsV2Enabled && RC.avatarsV2GrantsEnabled) {
           final fn = FirebaseFunctions.instance.httpsCallable('adminGrantAvatar');

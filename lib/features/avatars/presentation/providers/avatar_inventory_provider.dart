@@ -108,7 +108,6 @@ class AvatarInventoryProvider extends ChangeNotifier {
     String uid,
     List<String> keys, {
     required String source,
-    required String createdBy,
     String? gymId,
   }) async {
     final batch = _firestore.batch();
@@ -126,16 +125,17 @@ class AvatarInventoryProvider extends ChangeNotifier {
           ' key=' + normalised +
           ' source=' + source +
           ' gymId=' + (gymId ?? '')); 
+      final includeGymId = gymId != null && !normalised.startsWith('global/');
       batch.set(
-          ref,
-          {
-            'key': normalised,
-            'source': source,
-            'createdAt': now,
-            'createdBy': createdBy,
-            if (gymId != null) 'gymId': gymId,
-          },
-          SetOptions(merge: true));
+        ref,
+        {
+          'key': normalised,
+          'source': source,
+          'createdAt': now,
+          if (includeGymId) 'gymId': gymId,
+        },
+        SetOptions(merge: true),
+      );
     }
     await batch.commit();
   }

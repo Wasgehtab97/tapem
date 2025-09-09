@@ -5,6 +5,7 @@ const {
   assertFails,
   assertSucceeds,
 } = require('@firebase/rules-unit-testing');
+const { FieldValue } = require('firebase/firestore');
 
 const firestoreRules = fs.readFileSync(
   path.resolve(__dirname, '../firestore.rules'),
@@ -442,7 +443,7 @@ describe('Security Rules v1', function () {
   });
 
   describe('avatarInventory rules', () => {
-    it('user can read own inventory but cannot write', async () => {
+    it('user can read own inventory and write', async () => {
       await testEnv.withSecurityRulesDisabled(async (ctx) => {
         await ctx
           .firestore()
@@ -454,15 +455,13 @@ describe('Security Rules v1', function () {
             key: 'global/default',
             createdAt: new Date(),
             source: 'admin/manual',
-            createdBy: 'seed',
-            gymId: 'G1',
           });
       });
       const db = userA().firestore();
       await assertSucceeds(
         db.collection('users').doc('userA').collection('avatarInventory').get()
       );
-      await assertFails(
+      await assertSucceeds(
         db
           .collection('users')
           .doc('userA')
@@ -470,10 +469,8 @@ describe('Security Rules v1', function () {
           .doc('default2')
           .set({
             key: 'global/default2',
-            createdAt: new Date(),
-            source: 'admin/manual',
-            createdBy: 'userA',
-            gymId: 'G1',
+            createdAt: FieldValue.serverTimestamp(),
+            source: 'user/self',
           })
       );
     });
@@ -489,8 +486,7 @@ describe('Security Rules v1', function () {
           .set({
             key: 'G1/kurzhantel',
             source: 'admin/manual',
-            createdAt: new Date(),
-            createdBy: 'adminA',
+            createdAt: FieldValue.serverTimestamp(),
             gymId: 'G1',
           })
       );
@@ -507,8 +503,7 @@ describe('Security Rules v1', function () {
           .set({
             key: 'G1/kurzhantel',
             source: 'admin/manual',
-            createdAt: new Date(),
-            createdBy: 'adminA',
+            createdAt: FieldValue.serverTimestamp(),
             gymId: 'G1',
           })
       );
