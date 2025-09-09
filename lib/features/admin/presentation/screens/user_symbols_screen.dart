@@ -103,13 +103,13 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     }
   }
 
-  Future<void> _openAddDialog() async {
-    final catalog = AvatarCatalog.instance.allForContext(_gymId);
-    final avail = _inventory.availableKeys(_keys, _gymId);
-    final global = avail.global;
-    final gym = avail.gym;
-    debugPrint(
-        '[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: available_global=${global.length}, available_gym=${gym.length}');
+    Future<void> _openAddDialog() async {
+      final catalog = AvatarCatalog.instance.allForContext(_gymId);
+      final avail = _inventory.availableKeys(_keys, _gymId);
+      final global = avail.global;
+      final gym = avail.gym;
+      debugPrint(
+          '[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global=${catalog.global.length}, catalog_gym=${catalog.gym.length}, available_global=${global.length}, available_gym=${gym.length}');
 
     final selected = await showModalBottomSheet<List<String>>(
       context: context,
@@ -117,16 +117,19 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       builder: (context) {
         final picks = <String>{};
         return StatefulBuilder(builder: (context, setState) {
-          Widget buildSection(
-              String title, List<AvatarItem> items, int catalogCount) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('$title (${items.length})',
-                      style: Theme.of(context).textTheme.titleMedium),
-                ),
+            Widget buildSection(
+                String title, List<AvatarItem> items, int catalogCount) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                        kDebugMode
+                            ? '$title (${items.length}/$catalogCount)'
+                            : '$title (${items.length})',
+                        style: Theme.of(context).textTheme.titleMedium),
+                  ),
                 if (items.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
