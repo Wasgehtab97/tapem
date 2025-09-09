@@ -44,6 +44,11 @@ class AvatarCatalog {
   final Map<String, List<AvatarItem>> _gym = <String, List<AvatarItem>>{};
   final Set<String> _warned = <String>{};
 
+  bool _isValidGymNamespace(String name) {
+    final gymPattern = RegExp(r'^[A-Za-z0-9_-]+$');
+    return gymPattern.hasMatch(name);
+  }
+
   Future<void> warmUp({AssetBundle? bundle}) async {
     if (_loaded || _loading) return;
     _loading = true;
@@ -59,6 +64,7 @@ class AvatarCatalog {
           json.decode(manifestStr) as Map<String, dynamic>;
       const prefix = 'assets/avatars/';
       const ext = '.png';
+      final ignored = <String>{};
       for (final path in manifest.keys) {
         if (!path.startsWith(prefix) || !path.endsWith(ext)) continue;
         final rel = path.substring(prefix.length, path.length - ext.length);
@@ -66,6 +72,10 @@ class AvatarCatalog {
         if (slash == -1) continue;
         final namespace = rel.substring(0, slash);
         final name = rel.substring(slash + 1);
+        if (namespace != 'global' && !_isValidGymNamespace(namespace)) {
+          ignored.add(namespace);
+          continue;
+        }
         final key = '$namespace/$name';
         final item = AvatarItem(key, path);
         _items[key] = item;
@@ -92,13 +102,16 @@ class AvatarCatalog {
       }
       if (kDebugMode && !_diagDone) {
         if (!_items.containsKey('global/default')) {
-          debugPrint(
-              '[AvatarCatalog] missing assets/avatars/global/default.png – app restart required: flutter clean && flutter pub get && flutter run');
+          debugPrint('[AvatarCatalog] manifest_missing: assets/avatars/global/default.png');
         }
         if (!_items.containsKey('global/default2')) {
-          debugPrint(
-              '[AvatarCatalog] missing assets/avatars/global/default2.png – app restart required: flutter clean && flutter pub get && flutter run');
+          debugPrint('[AvatarCatalog] manifest_missing: assets/avatars/global/default2.png');
         }
+        final gymParts = _gym.entries
+            .map((e) => 'gym(${e.key})=${e.value.length}')
+            .join(', ');
+        debugPrint(
+            '[AvatarCatalog] warmup: global=${_global.length}${gymParts.isNotEmpty ? ', ' + gymParts : ''}, ignored_non_gym_dirs=${ignored.toList()}');
         _diagDone = true;
       }
     } finally {

@@ -46,6 +46,18 @@ void main() {
           'createdBy': 'A1',
           'gymId': 'gym_01'
         });
+    await fs
+        .collection('users')
+        .doc('u1')
+        .collection('avatarInventory')
+        .doc('default2')
+        .set({
+          'key': 'global/default2',
+          'createdAt': Timestamp.now(),
+          'source': 'admin/manual',
+          'createdBy': 'A1',
+          'gymId': 'gym_01'
+        });
     await fs.collection('gyms').doc('gym_01').collection('users').doc('u1').set({});
 
     await tester.pumpWidget(
@@ -70,6 +82,9 @@ void main() {
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
+    expect(find.text('Global (0)'), findsOneWidget);
+    expect(find.text('Alle globalen Symbole bereits zugewiesen.'),
+        findsOneWidget);
     expect(find.text('gym_01 (1)'), findsOneWidget);
     await tester.tap(find.byType(CircleAvatar).last);
     await tester.pump();

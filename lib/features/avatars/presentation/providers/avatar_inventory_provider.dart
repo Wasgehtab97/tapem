@@ -49,6 +49,18 @@ class AvatarInventoryProvider extends ChangeNotifier {
     }).toList();
   }
 
+  /// Computes available catalog items for [gymId] excluding [ownedKeys].
+  ({List<AvatarItem> global, List<AvatarItem> gym}) availableKeys(
+    Iterable<String> ownedKeys,
+    String gymId,
+  ) {
+    final catalog = AvatarCatalog.instance.allForContext(gymId);
+    return (
+      global: filterNotOwnedItems(catalog.global, ownedKeys, currentGymId: gymId),
+      gym: filterNotOwnedItems(catalog.gym, ownedKeys, currentGymId: gymId),
+    );
+  }
+
   /// Stream of normalised inventory entries for [uid].
   Stream<List<AvatarInventoryEntry>> inventory(String uid,
       {String? currentGymId}) {

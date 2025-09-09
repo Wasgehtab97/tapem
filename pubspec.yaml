@@ -118,6 +118,7 @@ flutter:
     - assets/muscle_heatmap.svg
     - assets/body_front.svg
     - assets/body_back.svg
+    # Bundle all avatar assets recursively
     - assets/avatars/
 
 l10n:
