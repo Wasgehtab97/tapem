@@ -65,12 +65,23 @@ class AvatarInventoryProvider extends ChangeNotifier {
           map[item.key] = item;
         }
       }
-      final result = <AvatarInventoryEntry>[
-        AvatarInventoryEntry(key: AvatarKeys.globalDefault, source: 'global'),
-        AvatarInventoryEntry(key: AvatarKeys.globalDefault2, source: 'global'),
-      ];
-      map.remove(AvatarKeys.globalDefault);
-      map.remove(AvatarKeys.globalDefault2);
+      final result = <AvatarInventoryEntry>[];
+
+      final def = map.remove(AvatarKeys.globalDefault);
+      if (def != null) {
+        result.add(def);
+      } else {
+        result.add(
+            AvatarInventoryEntry(key: AvatarKeys.globalDefault, source: 'global'));
+      }
+
+      final def2 = map.remove(AvatarKeys.globalDefault2);
+      if (def2 != null) {
+        result.add(def2);
+      } else {
+        result.add(AvatarInventoryEntry(
+            key: AvatarKeys.globalDefault2, source: 'global'));
+      }
       final rest = map.values.toList()
         ..sort((a, b) {
           final aTime = a.createdAt ?? Timestamp(0, 0);

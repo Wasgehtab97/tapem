@@ -453,8 +453,9 @@ describe('Security Rules v1', function () {
           .set({
             key: 'global/default',
             createdAt: new Date(),
-            source: 'global',
+            source: 'admin/manual',
             createdBy: 'seed',
+            gymId: 'G1',
           });
       });
       const db = userA().firestore();
@@ -467,7 +468,13 @@ describe('Security Rules v1', function () {
           .doc('userA')
           .collection('avatarInventory')
           .doc('default2')
-          .set({ addedAt: new Date(), source: 'global', addedBy: 'userA' })
+          .set({
+            key: 'global/default2',
+            createdAt: new Date(),
+            source: 'admin/manual',
+            createdBy: 'userA',
+            gymId: 'G1',
+          })
       );
     });
 
@@ -481,7 +488,7 @@ describe('Security Rules v1', function () {
           .doc('kurzhantel')
           .set({
             key: 'G1/kurzhantel',
-            source: 'gym',
+            source: 'admin/manual',
             createdAt: new Date(),
             createdBy: 'adminA',
             gymId: 'G1',
@@ -499,7 +506,7 @@ describe('Security Rules v1', function () {
           .doc('kurzhantel')
           .set({
             key: 'G1/kurzhantel',
-            source: 'gym',
+            source: 'admin/manual',
             createdAt: new Date(),
             createdBy: 'adminA',
             gymId: 'G1',
@@ -558,7 +565,13 @@ describe('Security Rules v1', function () {
           .doc('userA')
           .collection('avatarInventory')
           .doc('a1')
-          .set({});
+          .set({
+            key: 'global/default',
+            createdAt: new Date(),
+            source: 'admin/manual',
+            createdBy: 'seed',
+            gymId: 'G1',
+          });
       });
     });
 
@@ -583,9 +596,11 @@ describe('Security Rules v1', function () {
         .doc('a2');
       await assertSucceeds(
         ref.set({
-          addedAt: new Date(),
-          addedBy: 'adminA',
-          source: 'gym:G1',
+          key: 'G1/new',
+          createdAt: new Date(),
+          createdBy: 'adminA',
+          source: 'admin/manual',
+          gymId: 'G1',
         })
       );
     });
@@ -599,9 +614,11 @@ describe('Security Rules v1', function () {
         .doc('a3');
       await assertFails(
         ref.set({
-          addedAt: new Date(),
-          addedBy: 'adminA',
-          source: 'gym:G1',
+          key: 'G1/new2',
+          createdAt: new Date(),
+          createdBy: 'adminA',
+          source: 'admin/manual',
+          gymId: 'G1',
           bad: true,
         })
       );
@@ -616,9 +633,11 @@ describe('Security Rules v1', function () {
         .doc('a4');
       await assertFails(
         ref.set({
-          addedAt: new Date(),
-          addedBy: 'adminA',
-          source: 'gym:G2',
+          key: 'G2/new',
+          createdAt: new Date(),
+          createdBy: 'adminA',
+          source: 'admin/manual',
+          gymId: 'G2',
         })
       );
     });

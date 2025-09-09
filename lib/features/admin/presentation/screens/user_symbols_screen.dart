@@ -115,15 +115,27 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       );
     }
     final catalog = AvatarCatalog.instance.allForContext(_gymId);
+    final inventoryItems = _keys
+        .map((k) => AvatarItem(k, AvatarCatalog.instance.pathForKey(k)))
+        .toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final globalItems = catalog.global
+        .where((item) => !_keys.contains(item.key))
+        .toList();
+    final gymItems = catalog.gym
+        .where((item) => !_keys.contains(item.key))
+        .toList();
 
-    Widget buildSection(String title, List<AvatarItem> items, String source) {
+    Widget buildSection(String title, List<AvatarItem> items,
+        {bool allowRemove = false}) {
       if (items.isEmpty) return const SizedBox.shrink();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+            child: Text('$title (${items.length})',
+                style: Theme.of(context).textTheme.titleMedium),
           ),
           GridView.builder(
             shrinkWrap: true,
@@ -144,8 +156,14 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                 }
                 return const Icon(Icons.person);
               });
+              final ns = item.key.split('/').first;
               return GestureDetector(
-                onTap: () => _toggle(item.key, source),
+                onTap: allowRemove
+                    ? null
+                    : () => _toggle(item.key, 'admin/manual'),
+                onLongPress: allowRemove
+                    ? () => _toggle(item.key, 'admin/manual')
+                    : null,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -153,6 +171,21 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                       backgroundImage: image.image,
                       radius: 40,
                       child: const Icon(Icons.person),
+                    ),
+                    Positioned(
+                      left: 4,
+                      top: 4,
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(ns,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 10)),
+                      ),
                     ),
                     if (selected)
                       const Positioned(
@@ -169,24 +202,24 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: _fs.collection('users').doc(widget.uid).snapshots(),
-          builder: (context, snap) {
-            final name = snap.data?.data()?['username'] as String? ?? widget.uid;
-            return Text(loc.user_symbols_title(name));
-          },
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            buildSection('Global', catalog.global, 'global'),
-            buildSection(_gymId, catalog.gym, 'gym'),
-          ],
-        ),
-      ),
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _fs.collection('users').doc(widget.uid).snapshots(),
+      builder: (context, snap) {
+        final name = snap.data?.data()?['username'] as String? ?? widget.uid;
+        return Scaffold(
+          appBar: AppBar(title: Text(loc.user_symbols_title(name))),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                buildSection('Inventar von $name', inventoryItems,
+                    allowRemove: true),
+                buildSection('Global', globalItems),
+                buildSection(_gymId, gymItems),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
