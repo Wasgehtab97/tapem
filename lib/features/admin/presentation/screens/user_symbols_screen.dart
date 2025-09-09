@@ -104,12 +104,12 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   }
 
     Future<void> _openAddDialog() async {
-      final catalog = AvatarCatalog.instance.allForContext(_gymId);
-      final avail = _inventory.availableKeys(_keys, _gymId);
+      final catalog = AvatarCatalog.instance;
+      final avail = catalog.availableKeys(owned: _keys, gymId: _gymId);
       final global = avail.global;
       final gym = avail.gym;
-      debugPrint(
-          '[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global=${catalog.global.length}, catalog_gym=${catalog.gym.length}, available_global=${global.length}, available_gym=${gym.length}');
+      debugPrint('[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global='
+          '${catalog.globalCount}, catalog_gym=${catalog.gymCount(_gymId)}, available_global=${global.length}, available_gym=${gym.length}');
 
     final selected = await showModalBottomSheet<List<String>>(
       context: context,
@@ -118,7 +118,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         final picks = <String>{};
         return StatefulBuilder(builder: (context, setState) {
             Widget buildSection(
-                String title, List<AvatarItem> items, int catalogCount) {
+                String title, List<String> keys, int catalogCount) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -126,11 +126,11 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Text(
                         kDebugMode
-                            ? '$title (${items.length}/$catalogCount)'
-                            : '$title (${items.length})',
+                            ? '$title (${keys.length}/$catalogCount)'
+                            : '$title (${keys.length})',
                         style: Theme.of(context).textTheme.titleMedium),
                   ),
-                if (items.isEmpty)
+                if (keys.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(catalogCount == 0
@@ -152,27 +152,28 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
                     ),
-                    itemCount: items.length,
+                    itemCount: keys.length,
                     itemBuilder: (context, index) {
-                      final item = items[index];
-                      final selected = picks.contains(item.key);
-                      final image =
-                          Image.asset(item.path, errorBuilder: (_, __, ___) {
+                      final key = keys[index];
+                      final selected = picks.contains(key);
+                      final path =
+                          catalog.resolvePathOrFallback(key);
+                      final image = Image.asset(path, errorBuilder: (_, __, ___) {
                         if (kDebugMode) {
-                          debugPrint('[Avatar] failed to load ${item.path}');
+                          debugPrint('[Avatar] failed to load $path');
                         }
                         return const Icon(Icons.person);
                       });
-                      final ns = item.key.split('/').first;
+                      final ns = key.split('/').first;
                       return GestureDetector(
                         onTap: () {
                           debugPrint(
-                              '[UserSymbols] add_select key=${item.key} source=$ns');
+                              '[UserSymbols] add_select key=$key source=$ns');
                           setState(() {
                             if (selected) {
-                              picks.remove(item.key);
+                              picks.remove(key);
                             } else {
-                              picks.add(item.key);
+                              picks.add(key);
                             }
                           });
                         },
@@ -223,8 +224,8 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        buildSection('Global', global, catalog.global.length),
-                        buildSection(_gymId, gym, catalog.gym.length),
+                        buildSection('Global', global, catalog.globalCount),
+                        buildSection(_gymId, gym, catalog.gymCount(_gymId)),
                       ],
                     ),
                   ),
@@ -305,12 +306,13 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
+    final catalog = AvatarCatalog.instance;
     final inventoryItems = _keys
-        .map((k) => AvatarItem(k, AvatarCatalog.instance.pathForKey(k)))
+        .map((k) => (key: k, path: catalog.resolvePathOrFallback(k)))
         .toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    Widget buildSection(String title, List<AvatarItem> items,
+    Widget buildSection(String title, List<({String key, String path})> items,
         {bool allowRemove = false}) {
       if (items.isEmpty) return const SizedBox.shrink();
       return Column(

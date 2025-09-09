@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
@@ -30,35 +29,13 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   String _docId(String key) => key.replaceAll('/', '__');
 
-  /// Filters [items] to only those whose normalised key is not present in
-  /// [ownedKeys]. Also deduplicates keys.
-  List<AvatarItem> filterNotOwnedItems(
-    Iterable<AvatarItem> items,
-    Iterable<String> ownedKeys, {
-    String? currentGymId,
-  }) {
-    final owned = ownedKeys
-        .map((k) => AvatarAssets.normalizeAvatarKey(k, currentGymId: currentGymId))
-        .toSet();
-    final seen = <String>{};
-    return items.where((item) {
-      final key =
-          AvatarAssets.normalizeAvatarKey(item.key, currentGymId: currentGymId);
-      if (owned.contains(key) || !seen.add(key)) return false;
-      return true;
-    }).toList();
-  }
-
-  /// Computes available catalog items for [gymId] excluding [ownedKeys].
-  ({List<AvatarItem> global, List<AvatarItem> gym}) availableKeys(
+  /// Computes available catalog keys for [gymId] excluding [ownedKeys].
+  ({List<String> global, List<String> gym}) availableKeys(
     Iterable<String> ownedKeys,
     String gymId,
   ) {
-    final catalog = AvatarCatalog.instance.allForContext(gymId);
-    return (
-      global: filterNotOwnedItems(catalog.global, ownedKeys, currentGymId: gymId),
-      gym: filterNotOwnedItems(catalog.gym, ownedKeys, currentGymId: gymId),
-    );
+    final owned = ownedKeys.toSet();
+    return AvatarCatalog.instance.availableKeys(owned: owned, gymId: gymId);
   }
 
   /// Stream of normalised inventory entries for [uid].

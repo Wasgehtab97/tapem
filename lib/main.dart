@@ -230,6 +230,14 @@ Future<void> main() async {
 
   // Warm up avatar catalog
   await AvatarCatalog.instance.warmUp(bundle: rootBundle);
+  assert(() {
+    if (!AvatarCatalog.instance.warmed ||
+        !AvatarCatalog.instance.manifestHasPrefix) {
+      debugPrint(
+          '[AvatarCatalog] manifest_missing_prefix assets/avatars/ – check pubspec.yaml and assets/avatars/');
+    }
+    return true;
+  }());
 
   // Reports vorbereiten
   final reportRepo = ReportRepositoryImpl();
