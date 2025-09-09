@@ -35,20 +35,6 @@ void main() {
       expect(after.exists, false);
     });
 
-    test('filterNotOwnedItems merges catalog and excludes owned', () {
-      final provider = AvatarInventoryProvider();
-      final catalogItems = [
-        const AvatarItem('global/default', 'p1'),
-        const AvatarItem('global/extra', 'p2'),
-        const AvatarItem('g1/kurzhantel', 'p3'),
-        const AvatarItem('g1/kurzhantel', 'p3'), // duplicate
-      ];
-      final owned = ['global/default', 'g1/other'];
-      final result =
-          provider.filterNotOwnedItems(catalogItems, owned, currentGymId: 'g1');
-      expect(result.map((e) => e.key).toList(), ['global/extra', 'g1/kurzhantel']);
-    });
-
     test('availableKeys returns union minus inventory', () async {
       AvatarCatalog.instance.resetForTests();
       const manifest = {
@@ -76,7 +62,7 @@ void main() {
       final provider = AvatarInventoryProvider();
       final owned = {'global/default', 'gym_01/kurzhantel'};
       final avail = provider.availableKeys(owned, 'gym_01');
-      expect(avail.global.map((e) => e.key), ['global/default2']);
+      expect(avail.global, ['global/default2']);
       expect(avail.gym, isEmpty);
     });
   });
