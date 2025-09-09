@@ -154,7 +154,7 @@ class AvatarCatalog {
         item = _placeholder;
       }
     }
-    return item.path;
+    return item?.path ?? _placeholder.path;
   }
 
   bool hasKey(String key) => _items.containsKey(key);
