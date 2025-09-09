@@ -42,7 +42,6 @@ class FriendListTile extends StatelessWidget {
     final avatar = CircleAvatar(
       radius: 20,
       backgroundImage: image.image,
-      child: const Icon(Icons.person),
     );
     final statusColor = presence == PresenceState.workedOutToday
         ? theme.colorScheme.secondary
