@@ -193,7 +193,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     );
   }
 
-  /// Magenta/violet CTA preset used for `gym_01`.
+  /// Magenta/violet CTA preset used for `lifthouse_koblenz`.
   static AppBrandTheme magenta() {
     final gradient = AppGradients.brandGradient;
     final lums = gradient.colors.map((c) => c.computeLuminance());
