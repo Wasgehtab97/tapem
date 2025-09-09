@@ -18,10 +18,11 @@ class AvatarAssets {
   /// Normalises [input] to the `<namespace>/<name>` format.
   ///
   /// Legacy inputs such as `default` or `default2` are mapped to
-  /// `global/default` and `global/default2` respectively. Unqualified names
-  /// will prefer the [currentGymId] namespace when available in the
-  /// [AvatarCatalog]; otherwise the global namespace is used. Unknown names
-  /// fall back to [AvatarKeys.globalDefault] with a single debug warning.
+    /// `global/default` and `global/default2` respectively. Unqualified names
+    /// will prefer the [currentGymId] namespace when available in the
+    /// [AvatarCatalog]; otherwise the global namespace is used. Unknown names
+    /// log once and fall back to [AvatarKeys.globalDefault] when present in the
+    /// manifest; otherwise a placeholder is used.
   static String normalizeAvatarKey(
     String input, {
     String? currentGymId,
@@ -41,12 +42,13 @@ class AvatarAssets {
     final globalKey = 'global/$input';
     if (catalog.hasKey(globalKey)) return globalKey;
 
-    if (kDebugMode && !_warned.contains(input)) {
-      debugPrint(
-          '[Avatar] unknown key "$input" gymId=${currentGymId ?? '-'} – using global/default');
-      _warned.add(input);
+    final warnKey = '${currentGymId ?? '-'}:$input';
+    if (kDebugMode && _warned.add(warnKey)) {
+      debugPrint('[Avatar] unknown key "$input" gymId=${currentGymId ?? '-'}');
     }
-    return AvatarKeys.globalDefault;
+    return catalog.hasKey(AvatarKeys.globalDefault)
+        ? AvatarKeys.globalDefault
+        : 'global/$input';
   }
 }
 

@@ -183,6 +183,15 @@ void main() {
     registerFallbackValue(FakeRoute());
   });
 
+  setUp(() async {
+    AvatarCatalog.instance.resetForTests();
+    await AvatarCatalog.instance.warmUp();
+  });
+
+  tearDown(() {
+    AvatarCatalog.instance.resetForTests();
+  });
+
   testWidgets('no username row and avatar in app bar', (tester) async {
     final auth = MockAuthProvider();
     when(() => auth.userId).thenReturn('u1');
