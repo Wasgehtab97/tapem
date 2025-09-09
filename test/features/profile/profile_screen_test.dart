@@ -127,7 +127,8 @@ class FakeAvatarInventoryProvider extends AvatarInventoryProvider {
   final List<String> _keys;
 
   @override
-  Stream<List<String>> inventoryKeys(String uid) => Stream.value(_keys);
+  Stream<List<String>> inventoryKeys(String uid, {String? currentGymId}) =>
+      Stream.value(_keys);
 
   @override
   Future<Set<String>> getOwnedAvatarIds() async => _keys.toSet();
