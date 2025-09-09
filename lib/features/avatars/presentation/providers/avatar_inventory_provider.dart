@@ -27,6 +27,8 @@ class AvatarInventoryProvider extends ChangeNotifier {
 
   Set<String>? _cache;
 
+  String _docId(String key) => key.replaceAll('/', '__');
+
   /// Stream of normalised inventory entries for [uid].
   Stream<List<AvatarInventoryEntry>> inventory(String uid,
       {String? currentGymId}) {
@@ -38,7 +40,8 @@ class AvatarInventoryProvider extends ChangeNotifier {
         .snapshots()
         .map((snap) => snap.docs.map((d) {
               final data = d.data();
-              final rawKey = data['key'] as String? ?? d.id;
+              final rawKey =
+                  data['key'] as String? ?? d.id.replaceAll('__', '/');
               final normalised = AvatarAssets.normalizeAvatarKey(rawKey,
                   currentGymId: currentGymId);
               return AvatarInventoryEntry(
@@ -96,7 +99,7 @@ class AvatarInventoryProvider extends ChangeNotifier {
           .collection('users')
           .doc(uid)
           .collection('avatarInventory')
-          .doc(normalised);
+          .doc(_docId(normalised));
       batch.set(
           ref,
           {
@@ -117,7 +120,7 @@ class AvatarInventoryProvider extends ChangeNotifier {
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
-        .doc(key)
+        .doc(_docId(key))
         .delete();
   }
 
