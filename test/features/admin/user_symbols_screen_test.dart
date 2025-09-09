@@ -12,7 +12,7 @@ class _FakeAuth extends ChangeNotifier implements AuthProvider {
   @override
   bool get isAdmin => true;
   @override
-  String? get gymCode => 'g1';
+  String? get gymCode => 'gym_01';
   @override
   String? get userId => 'A1';
   @override
@@ -23,7 +23,7 @@ class _NonAdminAuth extends ChangeNotifier implements AuthProvider {
   @override
   bool get isAdmin => false;
   @override
-  String? get gymCode => 'g1';
+  String? get gymCode => 'gym_01';
   @override
   String? get userId => 'U2';
   @override
@@ -31,7 +31,7 @@ class _NonAdminAuth extends ChangeNotifier implements AuthProvider {
 }
 
 void main() {
-  testWidgets('shows inventory items', (tester) async {
+  testWidgets('shows inventory and add flow', (tester) async {
     final fs = FakeFirebaseFirestore();
     await fs.collection('users').doc('u1').set({'username': 'Alice'});
     await fs
@@ -44,8 +44,9 @@ void main() {
           'createdAt': Timestamp.now(),
           'source': 'admin/manual',
           'createdBy': 'A1',
-          'gymId': 'g1'
+          'gymId': 'gym_01'
         });
+    await fs.collection('gyms').doc('gym_01').collection('users').doc('u1').set({});
 
     await tester.pumpWidget(
       MultiProvider(
@@ -64,7 +65,17 @@ void main() {
     );
 
     await tester.pump();
-    expect(find.byType(CircleAvatar), findsWidgets);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byType(CircleAvatar), findsNWidgets(2));
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.text('gym_01 (1)'), findsOneWidget);
+    await tester.tap(find.byType(CircleAvatar).last);
+    await tester.pump();
+    await tester.tap(find.textContaining('Hinzufügen')); // button
+    await tester.pumpAndSettle();
+    expect(find.byType(CircleAvatar), findsNWidgets(3));
   });
 
   testWidgets('denies access for non-admin', (tester) async {
@@ -87,5 +98,6 @@ void main() {
 
     await tester.pump();
     expect(find.text('Kein Zugriff'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
   });
 }
