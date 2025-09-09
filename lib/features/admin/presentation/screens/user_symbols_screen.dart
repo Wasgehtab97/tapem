@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -52,11 +51,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     _permitted = context.read<AuthProvider>().isAdmin;
     if (_permitted) {
       try {
-        final inv = await _inventory.inventoryKeys(widget.uid).first;
-        _keys = inv
-            .map((k) =>
-                AvatarAssets.normalizeAvatarKey(k, currentGymId: _gymId))
-            .toSet();
+        final inv = await _inventory
+            .inventoryKeys(widget.uid, currentGymId: _gymId)
+            .first;
+        _keys = inv.toSet();
       } catch (e) {
         debugPrint('[UserSymbols] inventory error: $e');
       }
