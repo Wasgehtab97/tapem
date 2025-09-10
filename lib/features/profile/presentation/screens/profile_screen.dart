@@ -286,52 +286,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Center(child: Text(loc.profileTitle)),
-            Positioned(
-              left: AppSpacing.md,
-              top: 0,
-              bottom: 0,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SizedBox(
-                  width: avatarSize,
-                  height: avatarSize,
-                  child: Tooltip(
-                    message: 'Profilbild ändern',
-                    child: Semantics(
-                      button: true,
-                      label: 'Profilbild ändern',
-                      child: GestureDetector(
-                        onTap: () => _showAvatarSheet(auth),
-                        child: Builder(builder: (context) {
-                          final gymId =
-                              context.read<AuthProvider>().gymCode;
-                          final path = AvatarCatalog.instance
-                              .resolvePathOrFallback(auth.avatarKey,
-                                  gymId: gymId);
-                          final image = Image.asset(path, errorBuilder:
-                              (_, __, ___) {
-                            if (kDebugMode) {
-                              debugPrint('[Avatar] failed to load $path');
-                            }
-                            return const Icon(Icons.person);
-                          });
-                          return CircleAvatar(
-                            radius: avatarSize / 2,
-                            backgroundImage: image.image,
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
+        leadingWidth: avatarSize + AppSpacing.md * 2,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md),
+          child: SizedBox(
+            width: avatarSize,
+            height: avatarSize,
+            child: Tooltip(
+              message: 'Profilbild ändern',
+              child: Semantics(
+                button: true,
+                label: 'Profilbild ändern',
+                child: GestureDetector(
+                  onTap: () => _showAvatarSheet(auth),
+                  child: Builder(builder: (context) {
+                    final gymId = context.read<AuthProvider>().gymCode;
+                    final path = AvatarCatalog.instance
+                        .resolvePathOrFallback(auth.avatarKey,
+                            gymId: gymId);
+                    final image =
+                        Image.asset(path, errorBuilder: (_, __, ___) {
+                      if (kDebugMode) {
+                        debugPrint('[Avatar] failed to load $path');
+                      }
+                      return const Icon(Icons.person);
+                    });
+                    return CircleAvatar(
+                      radius: avatarSize / 2,
+                      backgroundImage: image.image,
+                    );
+                  }),
                 ),
               ),
             ),
-          ],
+          ),
         ),
         actions: [
           if (enableFriends)
