@@ -388,8 +388,12 @@ class OverlayNumericKeypad extends StatelessWidget {
     final idx = prov.completeNextFilledSet();
     if (idx != null) {
       elogUi('AUTO_CHECK_NEXT_OK', {'completedIndex': idx});
+      if (prov.nextFilledNotDoneIndex() == null) {
+        controller.close();
+      }
     } else {
       elogUi('AUTO_CHECK_NEXT_SKIP', {'reason': 'none'});
+      controller.close();
     }
     _haptic(context);
   }
