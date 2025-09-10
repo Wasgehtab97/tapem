@@ -43,6 +43,7 @@ class FakeDeviceRepository implements DeviceRepository {
     required String deviceId,
     required String userId,
     required int limit,
+    String? exerciseId,
     DocumentSnapshot? startAfter,
   }) async => <DeviceSessionSnapshot>[];
 
@@ -60,6 +61,34 @@ class FakeDeviceRepository implements DeviceRepository {
 class FakeMembershipService implements MembershipService {
   @override
   Future<void> ensureMembership(String gymId, String uid) async {}
+}
+
+class _ExerciseSnapRepo implements DeviceRepository {
+  final List<Device> devices;
+  final Map<String, List<DeviceSessionSnapshot>> snaps;
+  _ExerciseSnapRepo(this.devices, this.snaps);
+
+  @override
+  Future<List<Device>> getDevicesForGym(String gymId) async => devices;
+
+  @override
+  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required int limit,
+    String? exerciseId,
+    DocumentSnapshot? startAfter,
+  }) async => snaps[exerciseId] ?? [];
+
+  @override
+  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
+
+  @override
+  DocumentSnapshot? get lastSnapshotCursor => null;
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
   class FakeXpRepository implements XpRepository {
@@ -303,6 +332,68 @@ void main() {
       provider.updateSet(0, reps: '5');
       provider.toggleSetDone(0);
       expect(provider.completedCount, 1);
+    });
+
+    test('loadDevice filters snapshots by exercise for multi device', () async {
+      final repo = _ExerciseSnapRepo(
+        [
+          Device(
+            uid: 'd1',
+            id: 1,
+            name: 'D',
+            isMulti: true,
+            primaryMuscleGroups: const ['m1'],
+          ),
+        ],
+        {
+          'ex1': [
+            DeviceSessionSnapshot(
+              sessionId: 's1',
+              deviceId: 'd1',
+              exerciseId: 'ex1',
+              createdAt: DateTime(2024, 1, 1),
+              userId: 'u1',
+              sets: const [SetEntry(kg: 10, reps: 5)],
+            ),
+          ],
+          'ex2': [
+            DeviceSessionSnapshot(
+              sessionId: 's2',
+              deviceId: 'd1',
+              exerciseId: 'ex2',
+              createdAt: DateTime(2024, 1, 2),
+              userId: 'u1',
+              sets: const [SetEntry(kg: 20, reps: 5)],
+            ),
+          ],
+        },
+      );
+
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(repo),
+        deviceRepository: repo,
+        firestore: FakeFirebaseFirestore(),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'd1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      expect(provider.sessionSnapshots.length, 1);
+      expect(provider.sessionSnapshots.first.exerciseId, 'ex1');
+
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'd1',
+        exerciseId: 'ex2',
+        userId: 'u1',
+      );
+      expect(provider.sessionSnapshots.length, 1);
+      expect(provider.sessionSnapshots.first.exerciseId, 'ex2');
     });
 
     testWidgets('second save in same day is blocked', (tester) async {

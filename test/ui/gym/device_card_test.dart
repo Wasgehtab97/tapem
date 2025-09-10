@@ -71,6 +71,7 @@ class _DummyDeviceRepo implements DeviceRepository {
     required String deviceId,
     required String userId,
     required int limit,
+    String? exerciseId,
     DocumentSnapshot? startAfter,
   }) async => <DeviceSessionSnapshot>[];
 
