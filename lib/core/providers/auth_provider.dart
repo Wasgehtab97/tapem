@@ -76,8 +76,17 @@ class AuthProvider extends ChangeNotifier {
     try {
       final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
       if (fbUser != null) {
-        await fbUser.reload();
-        final claims = (await fbUser.getIdTokenResult(true)).claims ?? {};
+        Map<String, dynamic> claims = {};
+        try {
+          claims = (await fbUser.getIdTokenResult()).claims ?? {};
+        } on fb_auth.FirebaseAuthException catch (e) {
+          _error = e.message;
+          _user = null;
+          return;
+        } catch (e) {
+          _error = e.toString();
+          return;
+        }
         final fetchedUser = await _currentUC.execute();
         if (fetchedUser != null) {
           var currentUser = fetchedUser;
@@ -106,10 +115,14 @@ class AuthProvider extends ChangeNotifier {
             await prefs.setString('selectedGymCode', _selectedGymCode!);
           }
         }
+      } else {
+        _user = null;
       }
+    } on fb_auth.FirebaseAuthException catch (e) {
+      _error = e.message;
+      _user = null;
     } catch (e) {
       _error = e.toString();
-      _user = null;
     } finally {
       _setLoading(false);
     }
