@@ -52,8 +52,8 @@ class AvatarInventoryProvider extends ChangeNotifier {
               final data = d.data();
               final rawKey =
                   data['key'] as String? ?? d.id.replaceAll('__', '/');
-              final normalised = AvatarAssets.normalizeAvatarKey(rawKey,
-                  currentGymId: currentGymId);
+              final normalised =
+                  AvatarAssets.normalizeKey(rawKey, currentGymId: currentGymId);
               return AvatarInventoryEntry(
                 key: normalised,
                 source: data['source'] as String? ?? '',
@@ -114,7 +114,7 @@ class AvatarInventoryProvider extends ChangeNotifier {
     final now = FieldValue.serverTimestamp();
     for (final key in keys) {
       final normalised =
-          AvatarAssets.normalizeAvatarKey(key, currentGymId: gymId);
+          AvatarAssets.normalizeKey(key, currentGymId: gymId);
       final ref = _firestore
           .collection('users')
           .doc(uid)
