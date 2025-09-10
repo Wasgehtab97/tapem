@@ -138,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       builder: (_) {
-        final normalized = AvatarAssets.normalizeAvatarKey(
+        final normalized = AvatarAssets.normalizeKey(
           auth.avatarKey,
           currentGymId: auth.gymCode,
         );
@@ -459,7 +459,7 @@ class AvatarPicker extends StatelessWidget {
         final currentGym = auth.gymCode;
         final Map<String, AvatarInventoryEntry> map = {};
         for (final item in items) {
-          final norm = AvatarAssets.normalizeAvatarKey(
+          final norm = AvatarAssets.normalizeKey(
             item.key,
             currentGymId: currentGym,
           );
