@@ -105,6 +105,7 @@ class FirestoreDeviceSource {
     required String gymId,
     required String deviceId,
     required String? userId,
+    String? exerciseId,
     int limit = 10,
     DocumentSnapshot? startAfter,
   }) {
@@ -117,6 +118,10 @@ class FirestoreDeviceSource {
 
     if (userId != null) {
       q = q.where('userId', isEqualTo: userId);
+    }
+
+    if (exerciseId != null) {
+      q = q.where('exerciseId', isEqualTo: exerciseId);
     }
 
     q = q.orderBy('createdAt', descending: true).limit(limit);

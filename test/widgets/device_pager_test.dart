@@ -18,6 +18,7 @@ class _FakeDeviceRepository implements DeviceRepository {
     required String deviceId,
     required String userId,
     required int limit,
+    String? exerciseId,
     DocumentSnapshot? startAfter,
   }) async => snaps;
 

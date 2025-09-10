@@ -179,6 +179,7 @@ class DeviceProvider extends ChangeNotifier {
         deviceId: deviceId,
         userId: userId,
         limit: pageSize,
+        exerciseId: (_device?.isMulti ?? false) ? _currentExerciseId : null,
         startAfter: _lastSnapshotCursor,
       );
     } on FirebaseException catch (e) {
@@ -195,6 +196,7 @@ class DeviceProvider extends ChangeNotifier {
           deviceId: deviceId,
           userId: userId,
           limit: pageSize,
+          exerciseId: (_device?.isMulti ?? false) ? _currentExerciseId : null,
           startAfter: _lastSnapshotCursor,
         );
       } else {

@@ -85,12 +85,14 @@ class DeviceRepositoryImpl implements DeviceRepository {
     required String deviceId,
     required String userId,
     required int limit,
+    String? exerciseId,
     DocumentSnapshot? startAfter,
   }) async {
     final snap = await _source.fetchSessionSnapshotsPage(
       gymId: gymId,
       deviceId: deviceId,
       userId: userId,
+      exerciseId: exerciseId,
       limit: limit,
       startAfter: startAfter,
     );
@@ -100,6 +102,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
         gymId: gymId,
         deviceId: deviceId,
         userId: null,
+        exerciseId: exerciseId,
         limit: limit,
         startAfter: startAfter,
       );

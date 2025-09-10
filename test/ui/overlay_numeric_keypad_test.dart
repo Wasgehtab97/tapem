@@ -26,7 +26,7 @@ class _FakeDeviceRepository implements DeviceRepository {
   @override
   Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
   @override
-  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({required String gymId, required String deviceId, required String userId, required int limit, DocumentSnapshot? startAfter,}) async => <DeviceSessionSnapshot>[];
+  Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({required String gymId, required String deviceId, required String userId, required int limit, String? exerciseId, DocumentSnapshot? startAfter,}) async => <DeviceSessionSnapshot>[];
   @override
   Future<DeviceSessionSnapshot?> getSnapshotBySessionId({required String gymId, required String deviceId, required String sessionId,}) async => null;
   @override
