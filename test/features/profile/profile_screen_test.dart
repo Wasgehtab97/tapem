@@ -202,7 +202,7 @@ void main() {
 
     final appBar = tester.widget<AppBar>(find.byType(AppBar));
     expect(appBar.flexibleSpace, isNull);
-    expect(appBar.title, isA<Stack>());
+    expect(appBar.title, isNull);
 
     expect(find.text('Admin'), findsNothing);
     expect(find.text('Trainingstage'), findsOneWidget);
