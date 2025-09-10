@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/features/friends/domain/models/public_profile.dart';
+import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
 import '../widgets/xp_time_series_chart.dart';
 
-/// A simple model representing a single leaderboard entry. This can be
-/// expanded later to include avatar URLs, rank icons and badges.
+/// A simple model representing a single leaderboard entry. This now includes
+/// the user's public profile so that avatar and name can be displayed
+/// consistently with the friends page.
 class LeaderboardEntry {
-  final String userId;
-  final String username;
+  final PublicProfile profile;
   final int xp;
 
   LeaderboardEntry({
-    required this.userId,
-    required this.username,
+    required this.profile,
     required this.xp,
   });
 }
@@ -115,58 +116,39 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     : _entries == null
                     ? const SizedBox.shrink()
                     : ListView.builder(
-                      itemCount: _entries!.length,
-                      itemBuilder: (context, index) {
-                        final entry = _entries![index];
-                        final maxXp = _entries!.first.xp;
-                        final fraction = maxXp > 0 ? entry.xp / maxXp : 0.0;
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 8.0,
-                          ),
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey.shade700,
-                            child: Text(
-                              '${index + 1}',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          title: Text(
-                            entry.username.isNotEmpty
-                                ? entry.username
-                                : entry.userId,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: LinearProgressIndicator(
-                              value: fraction.clamp(0.0, 1.0),
-                              minHeight: 6,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color.lerp(
-                                  const Color(0xFF00E676),
-                                  const Color(0xFFFFC107),
-                                  fraction,
-                                )!,
+                        itemCount: _entries!.length,
+                        itemBuilder: (context, index) {
+                          final entry = _entries![index];
+                          final maxXp = _entries!.first.xp;
+                          final fraction = maxXp > 0 ? entry.xp / maxXp : 0.0;
+                          return Column(
+                            children: [
+                              FriendListTile(
+                                profile: entry.profile,
+                                subtitle: '#${index + 1}',
+                                trailing: Text('${entry.xp} XP'),
                               ),
-                              backgroundColor: Colors.grey.shade800,
-                            ),
-                          ),
-                          trailing: Text(
-                            '${entry.xp} XP',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: LinearProgressIndicator(
+                                  value: fraction.clamp(0.0, 1.0),
+                                  minHeight: 6,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color.lerp(
+                                      const Color(0xFF00E676),
+                                      const Color(0xFFFFC107),
+                                      fraction,
+                                    )!,
+                                  ),
+                                  backgroundColor: Colors.grey.shade800,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
           ),
         ],
       ),

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
+import 'package:tapem/features/friends/domain/models/public_profile.dart';
+import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
 import '../widgets/xp_time_series_chart.dart';
 import 'leaderboard_screen.dart';
 
@@ -17,7 +19,7 @@ class DayXpScreen extends StatefulWidget {
 
 class _DayXpScreenState extends State<DayXpScreen> {
   StreamSubscription? _lbSub;
-  List<Map<String, dynamic>> _lbEntries = [];
+  List<LeaderboardEntry> _lbEntries = [];
 
   void _openLeaderboard() {
     final auth = context.read<AuthProvider>();
@@ -37,7 +39,8 @@ class _DayXpScreenState extends State<DayXpScreen> {
         if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) {
           continue;
         }
-        final username = userDoc.data()?['username'] as String? ?? uid;
+        final profile =
+            PublicProfile.fromMap(uid, userDoc.data() ?? <String, dynamic>{});
         final statsDoc =
             await fs
                 .collection('gyms')
@@ -48,7 +51,7 @@ class _DayXpScreenState extends State<DayXpScreen> {
                 .doc('stats')
                 .get();
         final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
-        data.add(LeaderboardEntry(userId: uid, username: username, xp: xp));
+        data.add(LeaderboardEntry(profile: profile, xp: xp));
       }
       return data;
     }
@@ -90,14 +93,15 @@ class _DayXpScreenState extends State<DayXpScreen> {
         .snapshots()
         .listen((snap) async {
           debugPrint('📥 leaderboard snapshot users=${snap.docs.length}');
-          final List<Map<String, dynamic>> data = [];
+          final List<LeaderboardEntry> data = [];
           for (final doc in snap.docs) {
             final uid = doc.id;
             final userDoc = await fs.collection('users').doc(uid).get();
             if (!(userDoc.data()?['showInLeaderboard'] as bool? ?? true)) {
               continue;
             }
-            final username = userDoc.data()?['username'] as String?;
+            final profile =
+                PublicProfile.fromMap(uid, userDoc.data() ?? <String, dynamic>{});
             final statsDoc =
                 await fs
                     .collection('gyms')
@@ -108,9 +112,9 @@ class _DayXpScreenState extends State<DayXpScreen> {
                     .doc('stats')
                     .get();
             final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
-            data.add({'userId': uid, 'username': username, 'xp': xp});
+            data.add(LeaderboardEntry(profile: profile, xp: xp));
           }
-          data.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
+          data.sort((a, b) => b.xp.compareTo(a.xp));
           debugPrint('🏆 leaderboard entries=${data.length}');
           setState(() => _lbEntries = data);
         });
@@ -141,20 +145,21 @@ class _DayXpScreenState extends State<DayXpScreen> {
       ),
       body: ListView(
         children: [
-          ListTile(
-            title: Text(auth.userName ?? ''),
+          FriendListTile(
+            profile: PublicProfile(
+              uid: auth.userId ?? '',
+              username: auth.userName ?? '',
+              avatarKey: auth.avatarKey,
+              primaryGymCode: auth.gymCode,
+            ),
             trailing: Text('$totalXp'),
           ),
           const Divider(),
-          ..._lbEntries
-              .asMap()
-              .entries
-              .take(10)
-              .map(
-                (e) => ListTile(
-                  leading: Text('#${e.key + 1}'),
-                  title: Text(e.value['username'] ?? e.value['userId']),
-                  trailing: Text('${e.value['xp']} XP'),
+          ..._lbEntries.asMap().entries.take(10).map(
+                (e) => FriendListTile(
+                  profile: e.value.profile,
+                  subtitle: '#${e.key + 1}',
+                  trailing: Text('${e.value.xp} XP'),
                 ),
               ),
         ],
