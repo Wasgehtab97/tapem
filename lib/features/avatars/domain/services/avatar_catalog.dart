@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:tapem/core/utils/avatar_assets.dart';
 
 /// Catalog of avatar assets discovered at runtime from the [AssetManifest].
@@ -47,22 +48,25 @@ class AvatarCatalog {
     manifestHasGlobalDefault = false;
 
     for (final path in manifest.keys) {
-      if (!path.startsWith(prefix) || !path.endsWith('.png')) continue;
+      if (!path.startsWith(prefix) ||
+          !path.toLowerCase().endsWith('.png')) {
+        continue;
+      }
       manifestHasPrefix = true;
       _manifestPaths.add(path);
-      final rel = path.substring(prefix.length, path.length - 4);
+      final rel = path.substring(prefix.length);
       final slash = rel.indexOf('/');
       if (slash == -1) continue;
       final namespace = rel.substring(0, slash);
-      final name = rel.substring(slash + 1);
-      if (namespace != 'global' && !namespace.startsWith('gym_')) {
-        continue;
-      }
-      final key = '$namespace/$name';
-      _paths[key] = path;
-      if (namespace == 'global') {
+      final file = rel.substring(slash + 1);
+      final name = p.basenameWithoutExtension(file);
+      if (AvatarAssets.isGlobalNamespace(namespace)) {
+        final key = '$namespace/$name';
+        _paths[key] = path;
         _global.add(key);
-      } else {
+      } else if (AvatarAssets.isGymNamespace(namespace)) {
+        final key = '$namespace/$name';
+        _paths[key] = path;
         (_gym[namespace] ??= <String>{}).add(key);
       }
     }
@@ -85,21 +89,36 @@ class AvatarCatalog {
   }
 
   final Set<String> _warnedMissing = <String>{};
+  bool _warnedMissingGlobalDefault = false;
 
   /// Resolves [key] to a manifest path or falls back to default/placeholder.
   String resolvePathOrFallback(String key, {String? gymId}) {
     if (!_warmed) unawaited(warmUp());
-    final normalized =
-        AvatarAssets.normalizeAvatarKey(key, currentGymId: gymId);
+    final normalized = AvatarAssets.normalizeKey(key, currentGymId: gymId);
     final path = _paths[normalized];
     if (path != null) return path;
     if (kDebugMode && _warnedMissing.add(normalized)) {
       debugPrint('[AvatarCatalog] missing key $normalized');
     }
-    if (manifestHasGlobalDefault) {
+    final ns = normalized.split('/').first;
+    if (!AvatarAssets.isGlobalNamespace(ns) && manifestHasGlobalDefault) {
       return _paths[AvatarKeys.globalDefault]!;
     }
+    if (!manifestHasGlobalDefault && kDebugMode && !_warnedMissingGlobalDefault) {
+      debugPrint('[AvatarCatalog] missing global default');
+      _warnedMissingGlobalDefault = true;
+    }
     return AvatarAssets.placeholderPath;
+  }
+
+  Set<String> availableGlobalKeys() {
+    if (!_warmed) unawaited(warmUp());
+    return _global.toSet();
+  }
+
+  Set<String> availableGymKeys(String gymId) {
+    if (!_warmed) unawaited(warmUp());
+    return (_gym[gymId] ?? const <String>{}).toSet();
   }
 
   /// Returns available keys excluding [owned] for the given [gymId].
@@ -107,12 +126,10 @@ class AvatarCatalog {
     required Set<String> owned,
     required String gymId,
   }) {
-    if (!_warmed) unawaited(warmUp());
-    final g = _global.where((k) => !owned.contains(k)).toList()..sort();
-    final gg = (_gym[gymId] ?? const <String>{})
-        .where((k) => !owned.contains(k))
-        .toList()
-      ..sort();
+    final g =
+        availableGlobalKeys().where((k) => !owned.contains(k)).toList()..sort();
+    final gg =
+        availableGymKeys(gymId).where((k) => !owned.contains(k)).toList()..sort();
     return (global: g, gym: gg);
   }
 

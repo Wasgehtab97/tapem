@@ -112,9 +112,16 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
 
     Future<void> _openAddDialog() async {
       final catalog = AvatarCatalog.instance;
-      final avail = catalog.availableKeys(owned: _keys, gymId: _gymId);
-      final global = avail.global;
-      final gym = avail.gym;
+      final global = catalog
+          .availableGlobalKeys()
+          .where((k) => !_keys.contains(k))
+          .toList()
+        ..sort();
+      final gym = catalog
+          .availableGymKeys(_gymId)
+          .where((k) => !_keys.contains(k))
+          .toList()
+        ..sort();
       debugPrint('[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global='
           '${catalog.globalCount}, catalog_gym=${catalog.gymCount(_gymId)}, available_global=${global.length}, available_gym=${gym.length}');
 
