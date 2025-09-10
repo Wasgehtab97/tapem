@@ -37,15 +37,8 @@ class SettingsProvider extends ChangeNotifier {
       if (data != null && data['creatineEnabled'] != null) {
         _creatineEnabled = data['creatineEnabled'] as bool;
       } else {
-        final hasIntakes = await _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('creatine_intakes')
-            .limit(1)
-            .get();
-        final def = hasIntakes.docs.isNotEmpty;
-        _creatineEnabled = def;
-        await ref.set({'creatineEnabled': def}, SetOptions(merge: true));
+        _creatineEnabled = false;
+        await ref.set({'creatineEnabled': false}, SetOptions(merge: true));
       }
     } catch (e) {
       _error = e.toString();
