@@ -10,15 +10,19 @@ class FriendListTile extends StatelessWidget {
   const FriendListTile({
     super.key,
     required this.profile,
-    required this.presence,
-    required this.onTap,
+    this.presence,
+    this.onTap,
     this.gymId,
+    this.subtitle,
+    this.trailing,
   });
 
   final PublicProfile profile;
-  final PresenceState presence;
-  final VoidCallback onTap;
+  final PresenceState? presence;
+  final VoidCallback? onTap;
   final String? gymId;
+  final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +47,12 @@ class FriendListTile extends StatelessWidget {
       radius: 20,
       backgroundImage: image.image,
     );
-    final statusColor = presence == PresenceState.workedOutToday
-        ? theme.colorScheme.secondary
-        : theme.colorScheme.onSurfaceVariant;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Stack(
+    Widget leading = avatar;
+    if (presence != null) {
+      final statusColor = presence == PresenceState.workedOutToday
+          ? theme.colorScheme.secondary
+          : theme.colorScheme.onSurfaceVariant;
+      leading = Stack(
         children: [
           avatar,
           Positioned(
@@ -69,7 +73,11 @@ class FriendListTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      );
+    }
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: leading,
       title: Text(
         profile.username,
         style: theme.textTheme.titleMedium?.copyWith(
@@ -78,6 +86,8 @@ class FriendListTile extends StatelessWidget {
           color: theme.colorScheme.onSurface,
         ),
       ),
+      subtitle: subtitle != null ? Text(subtitle!) : null,
+      trailing: trailing,
       onTap: onTap,
       minVerticalPadding: 8,
     );
