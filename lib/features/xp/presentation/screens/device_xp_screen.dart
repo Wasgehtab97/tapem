@@ -5,6 +5,9 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/gym_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/logging/elog.dart';
+import 'package:tapem/features/friends/domain/models/public_profile.dart';
+import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
+import 'leaderboard_screen.dart';
 
 class DeviceXpScreen extends StatefulWidget {
   const DeviceXpScreen({Key? key}) : super(key: key);
@@ -60,9 +63,10 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
                 final entries = await Future.wait(
                   snap.docs.map((doc) async {
                     final user = await fs.collection('users').doc(doc.id).get();
-                    final name = user.data()?['username'] as String? ?? doc.id;
+                    final profile = PublicProfile.fromMap(
+                        doc.id, user.data() ?? <String, dynamic>{});
                     final xp = doc.data()['xp'] as int? ?? 0;
-                    return {'username': name, 'xp': xp};
+                    return LeaderboardEntry(profile: profile, xp: xp);
                   }),
                 );
               showDialog(
@@ -73,10 +77,11 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          for (final e in entries)
-                            ListTile(
-                              title: Text(e['username'] as String),
-                              trailing: Text('${e['xp']} XP'),
+                          for (final e in entries.asMap().entries)
+                            FriendListTile(
+                              profile: e.value.profile,
+                              subtitle: '#${e.key + 1}',
+                              trailing: Text('${e.value.xp} XP'),
                             ),
                         ],
                       ),
