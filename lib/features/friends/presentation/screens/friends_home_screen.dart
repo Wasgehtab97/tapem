@@ -112,38 +112,41 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   itemCount: prov.incomingPending.length,
                   itemBuilder: (_, i) {
                     final r = prov.incomingPending[i];
-                    return ListTile(
-                      title: FutureBuilder<PublicProfile?>(
-                        future: _fetchProfile(r.fromUserId),
-                        builder: (context, snapshot) {
-                          final name = snapshot.data?.username ?? r.fromUserId;
-                          return Text(name);
-                        },
-                      ),
-                      subtitle: Text(r.message ?? ''),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check),
-                            onPressed: () async {
-                              await prov.accept(r.fromUserId);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(loc.friends_snackbar_accepted)),
-                              );
-                            },
+                    return FutureBuilder<PublicProfile?>(
+                      future: _fetchProfile(r.fromUserId),
+                      builder: (context, snapshot) {
+                        final profile = snapshot.data;
+                        if (profile == null) {
+                          return const ListTile(title: Text('...'));
+                        }
+                        return FriendListTile(
+                          profile: profile,
+                          subtitle: r.message,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.check),
+                                onPressed: () async {
+                                  await prov.accept(r.fromUserId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(loc.friends_snackbar_accepted)),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () async {
+                                  await prov.decline(r.fromUserId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(loc.friends_snackbar_declined)),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () async {
-                              await prov.decline(r.fromUserId);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(loc.friends_snackbar_declined)),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -156,24 +159,27 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   itemCount: prov.outgoingPending.length,
                   itemBuilder: (_, i) {
                     final r = prov.outgoingPending[i];
-                    return ListTile(
-                      title: FutureBuilder<PublicProfile?>(
-                        future: _fetchProfile(r.toUserId),
-                        builder: (context, snapshot) {
-                          final name = snapshot.data?.username ?? r.toUserId;
-                          return Text(name);
-                        },
-                      ),
-                      subtitle: Text(r.message ?? ''),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.cancel),
-                        onPressed: () async {
-                          await prov.cancel(r.toUserId);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(loc.friends_snackbar_canceled)),
-                          );
-                        },
-                      ),
+                    return FutureBuilder<PublicProfile?>(
+                      future: _fetchProfile(r.toUserId),
+                      builder: (context, snapshot) {
+                        final profile = snapshot.data;
+                        if (profile == null) {
+                          return const ListTile(title: Text('...'));
+                        }
+                        return FriendListTile(
+                          profile: profile,
+                          subtitle: r.message,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.cancel),
+                            onPressed: () async {
+                              await prov.cancel(r.toUserId);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(loc.friends_snackbar_canceled)),
+                              );
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -385,16 +391,10 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                       );
                       break;
                   }
-                  return ListTile(
-                    leading: p.avatarUrl != null
-                        ? CircleAvatar(
-                            backgroundImage: NetworkImage(p.avatarUrl!),
-                          )
-                        : const CircleAvatar(child: Icon(Icons.person)),
-                    title: Text(p.username),
-                    subtitle: p.primaryGymCode != null
-                        ? Text(p.primaryGymCode!)
-                        : null,
+                  return FriendListTile(
+                    profile: p,
+                    gymId: p.primaryGymCode,
+                    subtitle: p.primaryGymCode,
                     trailing: trailing,
                   );
                 },
