@@ -77,6 +77,7 @@ class FirestoreRankSource {
             if (!userSnap.exists) {
               tx.set(lbUser, {
                 ...info.toMap(),
+                'userId': userId,
                 'showInLeaderboard': showInLeaderboard,
                 'updatedAt': FieldValue.serverTimestamp(),
               });
@@ -85,6 +86,7 @@ class FirestoreRankSource {
                 'xp': info.xp,
                 'level': info.level,
                 'updatedAt': FieldValue.serverTimestamp(),
+                'userId': userId,
                 if (!(userSnap.data()?.containsKey('showInLeaderboard') ?? false))
                   'showInLeaderboard': showInLeaderboard,
               });
