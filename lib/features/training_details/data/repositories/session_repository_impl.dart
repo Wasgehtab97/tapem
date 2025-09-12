@@ -99,7 +99,7 @@ class SessionRepositoryImpl implements SessionRepository {
       DateTime? endTime;
       int? durationMs;
       try {
-        final meta = await _meta.getMeta(
+        final meta = await _meta.getMetaBySessionId(
           gymId: gymId,
           uid: first.userId,
           sessionId: first.sessionId,
