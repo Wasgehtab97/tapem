@@ -664,4 +664,56 @@ describe('Security Rules v1', function () {
       await assertFails(ref.update({ username: 'bad' }));
     });
   });
+
+  describe('leaderboard rules', () => {
+    it('member can create and update own leaderboard entry', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('leaderboard')
+        .doc('userA');
+      await assertSucceeds(
+        ref.set({ userId: 'userA', xp: 0, level: 1, showInLeaderboard: true })
+      );
+      await assertSucceeds(ref.update({ xp: 10 }));
+    });
+
+    it('fails without userId field', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('leaderboard')
+        .doc('userA');
+      await assertFails(ref.set({ xp: 0 }));
+    });
+
+    it('update denied when existing doc missing userId', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db
+          .collection('gyms')
+          .doc('G1')
+          .collection('devices')
+          .doc('D1')
+          .collection('leaderboard')
+          .doc('userA')
+          .set({ xp: 0 });
+      });
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('leaderboard')
+        .doc('userA');
+      await assertFails(ref.update({ xp: 5 }));
+    });
+  });
 });
