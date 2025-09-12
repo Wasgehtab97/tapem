@@ -42,9 +42,14 @@ class WorkoutTimerButton extends StatelessWidget {
           ),
           onPressed: () async {
             if (service.isRunning) {
-              final res = await service.stopAndPrompt(context);
+              final res = await service.confirmStop(context);
               if (res == StopResult.save) {
                 await service.save();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Dauer gespeichert')),
+                  );
+                }
               } else if (res == StopResult.discard) {
                 await service.discard();
               }

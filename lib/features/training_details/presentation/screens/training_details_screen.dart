@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import 'package:tapem/core/providers/training_details_provider.dart';
+import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
@@ -18,10 +19,11 @@ class TrainingDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gymId = context.read<BrandingProvider>().gymId!;
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
         final prov = TrainingDetailsProvider();
-        prov.loadSessions(userId: userId, date: date);
+        prov.loadSessions(userId: userId, date: date, gymId: gymId);
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(
@@ -42,8 +44,7 @@ class TrainingDetailsScreen extends StatelessWidget {
           }
           // Data state
           final sessions = prov.sessions;
-          final duration =
-              sessions.isNotEmpty ? sessions.first.durationMs : null;
+          final duration = prov.dayDurationMs;
           return Scaffold(
             appBar: _AppBar(titleDate: date, durationMs: duration),
             body: sessions.isEmpty
