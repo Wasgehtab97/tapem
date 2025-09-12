@@ -19,6 +19,7 @@ import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
@@ -315,9 +316,7 @@ class DeviceProvider extends ChangeNotifier {
         await _loadLastSession(gymId, deviceId, exerciseId, userId);
       }
       await _loadUserNote(gymId, deviceId, userId);
-      if (!_device!.isMulti) {
-        await _loadUserXp(gymId, deviceId, userId);
-      }
+      await _loadUserXp(gymId, deviceId, userId);
       await _restoreDraft();
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
@@ -769,7 +768,8 @@ class DeviceProvider extends ChangeNotifier {
           'showInLeaderboard': showInLeaderboard,
         });
         try {
-          await Provider.of<XpProvider>(context, listen: false).addSessionXp(
+          final xpResult = await Provider.of<XpProvider>(context, listen: false)
+              .addSessionXp(
             gymId: gymId,
             userId: userId,
             deviceId: resolvedDeviceId,
@@ -777,6 +777,13 @@ class DeviceProvider extends ChangeNotifier {
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
           );
+          if (xpResult == DeviceXpResult.okAdded) {
+            final info = LevelService()
+                .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
+            _level = info.level;
+            _xp = info.xp;
+            notifyListeners();
+          }
           await Provider.of<ChallengeProvider>(
             context,
             listen: false,

@@ -461,11 +461,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
           ),
           centerTitle: true,
           actions: [
-            if (!prov.device!.isMulti)
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: XpInfoButton(xp: prov.xp, level: prov.level),
-              ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: XpInfoButton(xp: prov.xp, level: prov.level),
+            ),
             FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
             IconButton(
               icon: Icon(
