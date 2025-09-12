@@ -17,18 +17,38 @@ class DeviceXpScreen extends StatefulWidget {
 }
 
 class _DeviceXpScreenState extends State<DeviceXpScreen> {
+  late final GymProvider _gymProv;
+  late final XpProvider _xpProv;
+  late final AuthProvider _auth;
+
   @override
   void initState() {
     super.initState();
-    final auth = context.read<AuthProvider>();
-      final gymProv = context.read<GymProvider>();
-      final xpProv = context.read<XpProvider>();
-      final uid = auth.userId;
-      final gymId = gymProv.currentGymId;
-      if (uid != null && gymId.isNotEmpty) {
-        final deviceIds = gymProv.devices.map((d) => d.uid).toList();
-        xpProv.watchDeviceXp(gymId, uid, deviceIds);
-      }
+    _gymProv = context.read<GymProvider>();
+    _xpProv = context.read<XpProvider>();
+    _auth = context.read<AuthProvider>();
+    _gymProv.addListener(_syncWatchers);
+    _syncWatchers();
+  }
+
+  void _syncWatchers() {
+    final uid = _auth.userId;
+    final gymId = _gymProv.currentGymId;
+    if (uid != null && gymId.isNotEmpty) {
+      final deviceIds = _gymProv.devices.map((d) => d.uid).toList();
+      _xpProv.watchDeviceXp(gymId, uid, deviceIds);
+    }
+  }
+
+  @override
+  void dispose() {
+    _gymProv.removeListener(_syncWatchers);
+    final uid = _auth.userId;
+    final gymId = _gymProv.currentGymId;
+    if (uid != null && gymId.isNotEmpty) {
+      _xpProv.watchDeviceXp(gymId, uid, []);
+    }
+    super.dispose();
   }
 
   @override
