@@ -8,8 +8,8 @@ import 'package:tapem/core/time/logic_day.dart';
 
 /// Notifier für den TrainingDetailsScreen.
 class TrainingDetailsProvider extends ChangeNotifier {
-  final GetSessionsForDate _getSessions;
-  final SessionMetaSource _meta;
+  late final GetSessionsForDate _getSessions;
+  final SessionMetaSource _meta = SessionMetaSource();
 
   bool _isLoading = false;
   String? _error;
@@ -21,14 +21,14 @@ class TrainingDetailsProvider extends ChangeNotifier {
   List<Session> get sessions => List.unmodifiable(_sessions);
   int? get dayDurationMs => _dayDurationMs;
 
-  TrainingDetailsProvider()
-      : _meta = SessionMetaSource(),
-        _getSessions = GetSessionsForDate(
-          SessionRepositoryImpl(
-            FirestoreSessionSource(),
-            _meta,
-          ),
-        );
+  TrainingDetailsProvider() {
+    _getSessions = GetSessionsForDate(
+      SessionRepositoryImpl(
+        FirestoreSessionSource(),
+        _meta,
+      ),
+    );
+  }
 
   /// Lädt alle Sessions für [userId] am [date].
   Future<void> loadSessions({
