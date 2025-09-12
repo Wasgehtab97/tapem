@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
@@ -32,72 +33,101 @@ class XpProvider extends ChangeNotifier {
   int get statsDailyXp => _statsDailyXp;
 
     Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-    }) async {
-      assert(LevelService.xpPerSession == 50);
-      if (deviceId.isEmpty) {
-        elogDeviceXp('SKIP_NO_DEVICE', {
-          'uid': userId,
-          'gymId': gymId,
-          'sessionId': sessionId,
-          'deviceId': deviceId,
-          'isMulti': isMulti,
-        });
-        return DeviceXpResult.skipNoDevice;
-      }
-      if (!showInLeaderboard) {
-        elogDeviceXp('LEADERBOARD_FLAG_INFO', {
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-        });
-      }
-      final dayKey = logicDayKey(DateTime.now().toUtc());
-      elogDeviceXp('XP_ADD_REQUEST', {
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+  }) async {
+    assert(LevelService.xpPerSession == 50);
+    final traceId = buildXpTraceId(
+      uid: userId,
+      deviceId: deviceId.isEmpty ? 'null' : deviceId,
+      sessionId: sessionId,
+    );
+    xpLog('PROVIDER_IN', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'isMulti': isMulti,
+      'showInLeaderboard': showInLeaderboard,
+      'traceId': traceId,
+    });
+    if (deviceId.isEmpty) {
+      xpLog('PROVIDER_OUT', {
+        'result': DeviceXpResult.skipNoDevice.name,
+        'deltaXp': 0,
+        'updatedLocalCache': false,
+        'traceId': traceId,
+      });
+      return DeviceXpResult.skipNoDevice;
+    }
+    if (!showInLeaderboard) {
+      elogDeviceXp('LEADERBOARD_FLAG_INFO', {
         'uid': userId,
         'gymId': gymId,
         'deviceId': deviceId,
         'sessionId': sessionId,
-        'isMulti': isMulti,
-        'dayKey': dayKey,
-        'showInLeaderboard': showInLeaderboard,
       });
-      try {
-        final result = await _repo.addSessionXp(
-          gymId: gymId,
-          userId: userId,
-          deviceId: deviceId,
-          sessionId: sessionId,
-          showInLeaderboard: showInLeaderboard,
-          isMulti: isMulti,
-        );
-        elogDeviceXp('XP_ADD_RESPONSE', {
-          'result': result.name,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-        });
-        if (result == DeviceXpResult.okAdded) {
-          _deviceXp[deviceId] =
-              (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
-          notifyListeners();
-        }
-        return result;
-      } catch (e, st) {
-        elogError('XP_ADD_UNEXPECTED', e, st, {
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-        });
-        return DeviceXpResult.error;
-      }
     }
+    final dayKey = logicDayKey(DateTime.now().toUtc());
+    elogDeviceXp('XP_ADD_REQUEST', {
+      'uid': userId,
+      'gymId': gymId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'isMulti': isMulti,
+      'dayKey': dayKey,
+      'showInLeaderboard': showInLeaderboard,
+    });
+    try {
+      final result = await _repo.addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: sessionId,
+        showInLeaderboard: showInLeaderboard,
+        isMulti: isMulti,
+      );
+      elogDeviceXp('XP_ADD_RESPONSE', {
+        'result': result.name,
+        'deviceId': deviceId,
+        'sessionId': sessionId,
+      });
+      xpLog('PROVIDER_OUT', {
+        'result': result.name,
+        'deltaXp': result == DeviceXpResult.okAdded ? LevelService.xpPerSession : 0,
+        'updatedLocalCache': result == DeviceXpResult.okAdded,
+        'traceId': traceId,
+      });
+      if (result == DeviceXpResult.okAdded) {
+        _deviceXp[deviceId] = (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
+        xpLog('CACHE_BUMP', {
+          'newXp': _deviceXp[deviceId],
+          'traceId': traceId,
+        });
+        notifyListeners();
+      }
+      return result;
+    } catch (e, st) {
+      elogError('XP_ADD_UNEXPECTED', e, st, {
+        'uid': userId,
+        'gymId': gymId,
+        'deviceId': deviceId,
+        'sessionId': sessionId,
+      });
+      xpLog('PROVIDER_OUT', {
+        'result': 'error',
+        'deltaXp': 0,
+        'updatedLocalCache': false,
+        'error': e.toString(),
+        'traceId': traceId,
+      });
+      return DeviceXpResult.error;
+    }
+  }
 
   void watchDayXp(String userId, DateTime date) {
     debugPrint('👀 provider watchDayXp userId=$userId date=$date');
