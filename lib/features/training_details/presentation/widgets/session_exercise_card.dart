@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/core/widgets/brand_gradient_card.dart';
-import 'package:tapem/core/theme/brand_on_colors.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 import '../../domain/models/session.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -21,9 +20,7 @@ class SessionExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onBrand =
-        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
-    return BrandGradientCard(
+    return BrandOutline(
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,8 +36,7 @@ class SessionExerciseCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: TextStyle(
-                color: onBrand,
+              style: const TextStyle(
                 fontSize: 14,
               ),
             ),
@@ -69,8 +65,7 @@ class SessionExerciseCard extends StatelessWidget {
                             : '${set.weight.toStringAsFixed(1)} kg';
                         return Text(
                           wt,
-                          style: TextStyle(
-                            color: onBrand,
+                          style: const TextStyle(
                             fontSize: 14,
                           ),
                         );
@@ -83,8 +78,7 @@ class SessionExerciseCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${set.reps} Wdh',
-                        style: TextStyle(
-                          color: onBrand,
+                        style: const TextStyle(
                           fontSize: 14,
                         ),
                       ),
@@ -95,8 +89,7 @@ class SessionExerciseCard extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 20, top: 2),
                       child: Text(
                         '↘︎ ${set.dropWeightKg!.toStringAsFixed(1)} kg × ${set.dropReps}',
-                        style: TextStyle(
-                          color: onBrand,
+                        style: const TextStyle(
                           fontSize: 12,
                         ),
                       ),

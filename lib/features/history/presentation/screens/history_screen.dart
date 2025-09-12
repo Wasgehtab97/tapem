@@ -10,6 +10,7 @@ import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -432,43 +433,46 @@ class _HistoryExpansionTileState extends State<_HistoryExpansionTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final surface = theme.extension<AppBrandTheme>();
-    final baseRadius = surface?.radius as BorderRadius? ?? BorderRadius.circular(AppRadius.card);
-    final bottomRadius = BorderRadius.only(
-      bottomLeft: baseRadius.bottomLeft,
-      bottomRight: baseRadius.bottomRight,
-    );
+    final brand = Theme.of(context).extension<AppBrandTheme>()!;
+    final innerRadius =
+        (brand.outlineRadius as BorderRadius) - BorderRadius.circular(brand.outlineWidth);
 
-    return Column(
-      children: [
-        BrandGradientHeader(
-          expanded: _expanded,
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              Icon(
-                _expanded ? Icons.expand_less : Icons.expand_more,
-              ),
-            ],
-          ),
-        ),
-        if (_expanded)
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: bottomRadius,
+    return BrandOutline(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.only(
+              topLeft: innerRadius.topLeft,
+              topRight: innerRadius.topRight,
             ),
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: widget.child,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+                horizontal: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+                ],
+              ),
+            ),
           ),
-      ],
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: widget.child,
+            ),
+        ],
+      ),
     );
   }
 }

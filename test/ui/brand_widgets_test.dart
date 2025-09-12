@@ -102,16 +102,8 @@ void main() {
     expect(opacity.opacity, brand.outlineDisabledOpacity);
   });
 
-  testWidgets('SessionExerciseCard uses black foreground', (tester) async {
-    final theme = ThemeData(extensions: [
-      AppBrandTheme.defaultTheme(),
-      const BrandOnColors(
-        onPrimary: Colors.black,
-        onSecondary: Colors.black,
-        onGradient: Colors.black,
-        onCta: Colors.black,
-      ),
-    ]);
+  testWidgets('SessionExerciseCard uses surface foreground', (tester) async {
+    final theme = ThemeData(extensions: [AppBrandTheme.defaultTheme()]);
 
     await tester.pumpWidget(MaterialApp(
       theme: theme,
@@ -123,9 +115,9 @@ void main() {
     ));
 
     final rich = tester.widget<RichText>(find.text('Bench'));
-    expect(rich.text.style?.color, Colors.black);
+    expect(rich.text.style?.color, theme.colorScheme.onSurface);
     final iconColor =
         IconTheme.of(tester.element(find.byIcon(Icons.fitness_center))).color;
-    expect(iconColor, Colors.black);
+    expect(iconColor, theme.iconTheme.color);
   });
 }
