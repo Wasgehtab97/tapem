@@ -129,7 +129,7 @@ class SessionRepositoryImpl implements SessionRepository {
       );
     }
 
-    sessions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    sessions.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return sessions;
   }
 }
