@@ -18,3 +18,13 @@ String formatDuration(Duration duration, {Locale? locale}) {
   final s = duration.inSeconds;
   return l == 'de' ? '$s s' : '$s s';
 }
+
+/// Formats [duration] as `HH:mm`, always showing hours and minutes.
+/// Hours and minutes are zero-padded to two digits.
+String formatDurationHm(Duration duration) {
+  final h = duration.inHours;
+  final m = duration.inMinutes % 60;
+  final hStr = h.toString().padLeft(2, '0');
+  final mStr = m.toString().padLeft(2, '0');
+  return '$hStr:$mStr';
+}

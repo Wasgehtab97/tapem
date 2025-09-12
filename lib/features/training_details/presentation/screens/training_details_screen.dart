@@ -83,16 +83,21 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
     );
     if (durationMs != null) {
       final dur = Duration(milliseconds: durationMs!);
-      final formatted =
-          formatDuration(dur, locale: Localizations.localeOf(context));
+      final formatted = formatDurationHm(dur);
       titleWidget = Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+          Expanded(
+            child: Text(
+              title,
+              style:
+                  TextStyle(color: Theme.of(context).colorScheme.secondary),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          Text('⏱ $formatted'),
+          Text(
+            '⏱ $formatted',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       );
     }

@@ -19,4 +19,11 @@ void main() {
     final d = Duration(seconds: 45);
     expect(formatDuration(d, locale: const Locale('en')), '45 s');
   });
+
+  test('formats HH:mm correctly', () {
+    final d1 = Duration(hours: 1, minutes: 5);
+    expect(formatDurationHm(d1), '01:05');
+    final d2 = Duration(minutes: 7);
+    expect(formatDurationHm(d2), '00:07');
+  });
 }
