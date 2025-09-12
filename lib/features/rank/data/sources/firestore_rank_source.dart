@@ -86,7 +86,8 @@ class FirestoreRankSource {
                 'xp': info.xp,
                 'level': info.level,
                 'updatedAt': FieldValue.serverTimestamp(),
-                'userId': userId,
+                if (!(userSnap.data()?.containsKey('userId') ?? false))
+                  'userId': userId,
                 if (!(userSnap.data()?.containsKey('showInLeaderboard') ?? false))
                   'showInLeaderboard': showInLeaderboard,
               });
