@@ -27,6 +27,7 @@ import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 
@@ -627,6 +628,23 @@ class DeviceProvider extends ChangeNotifier {
     required bool showInLeaderboard,
   }) async {
     if (_device == null) return false;
+    final sessionId = _uuid.v4();
+    final traceId = buildXpTraceId(
+      uid: userId,
+      deviceId: _device!.uid,
+      sessionId: sessionId,
+    );
+    xpLog('SAVE_START', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': _device!.uid,
+      'resolvedDeviceId': _device!.uid,
+      'isMulti': _device!.isMulti,
+      'exerciseId': _currentExerciseId,
+      'showInLeaderboard': showInLeaderboard,
+      'restricted': FF.limitTabsForMembers,
+      'traceId': traceId,
+    });
 
     _error = null;
     _isSaving = true;
@@ -638,6 +656,7 @@ class DeviceProvider extends ChangeNotifier {
           .where((s) => (s['done'] == true || s['done'] == 'true'))
           .toList();
       if (savedSets.isEmpty) {
+        xpLog('SKIP', {'reason': 'noCompletedSets', 'traceId': traceId});
         _error = 'Keine abgeschlossenen Sätze.';
         _log('⚠️ [Provider] save aborted: no completed sets');
         return false;
@@ -674,12 +693,13 @@ class DeviceProvider extends ChangeNotifier {
           .get();
 
       if (existingToday.docs.isNotEmpty) {
+        xpLog('SKIP', {'reason': 'alreadySavedToday', 'traceId': traceId});
         _error = 'Heute bereits gespeichert.';
         _log('⚠️ [Provider] save aborted: already saved today');
         return false;
       }
 
-      final sessionId = _uuid.v4();
+      
       final ts = Timestamp.now();
       String tz;
       try {
@@ -734,6 +754,7 @@ class DeviceProvider extends ChangeNotifier {
       );
 
       await batch.commit();
+      xpLog('LOGS_STORED', {'sessionId': sessionId, 'sets': savedSets.length, 'traceId': traceId});
       _log('📚 [Provider] logs stored session=$sessionId');
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
@@ -751,25 +772,13 @@ class DeviceProvider extends ChangeNotifier {
 
       final resolvedDeviceId = resolveDeviceId(snapshot);
       if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
-        elogDeviceXp('SKIP_NO_DEVICE', {
-          'sessionId': sessionId,
-          'exerciseId': _currentExerciseId,
-          'isMulti': _device!.isMulti,
-          'gymId': gymId,
-          'uid': userId,
-        });
+        xpLog('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
+      } else if (!showInLeaderboard) {
+        xpLog('SKIP', {'reason': 'showInLeaderboard=false', 'traceId': traceId});
       } else {
-        elogDeviceXp('PROVIDER_SAVE_OK_FORWARD_XP', {
-          'uid': userId,
-          'gymId': gymId,
-          'sessionId': sessionId,
-          'deviceId': resolvedDeviceId,
-          'isMulti': _device!.isMulti,
-          'showInLeaderboard': showInLeaderboard,
-        });
+        xpLog('CALL_ADD_SESSION_XP', {'intent': true, 'traceId': traceId});
         try {
-          final xpResult = await Provider.of<XpProvider>(context, listen: false)
-              .addSessionXp(
+          final xpResult = await Provider.of<XpProvider>(context, listen: false).addSessionXp(
             gymId: gymId,
             userId: userId,
             deviceId: resolvedDeviceId,
@@ -777,6 +786,11 @@ class DeviceProvider extends ChangeNotifier {
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
           );
+          xpLog('CALL_RESULT', {
+            'result': xpResult.name,
+            'deltaXp': xpResult == DeviceXpResult.okAdded ? LevelService.xpPerSession : 0,
+            'traceId': traceId,
+          });
           if (xpResult == DeviceXpResult.okAdded) {
             final info = LevelService()
                 .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
@@ -784,11 +798,10 @@ class DeviceProvider extends ChangeNotifier {
             _xp = info.xp;
             notifyListeners();
           }
-          await Provider.of<ChallengeProvider>(
-            context,
-            listen: false,
-          ).checkChallenges(gymId, userId, resolvedDeviceId);
+          await Provider.of<ChallengeProvider>(context, listen: false)
+              .checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
+          xpLog('CALL_RESULT', {'result': 'error', 'error': e.toString(), 'traceId': traceId});
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
         }
       }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
@@ -24,6 +25,8 @@ class FirestoreXpSource {
         required bool isMulti,
       }) async {
         final dayKey = logicDayKey(DateTime.now().toUtc());
+        final traceId = buildXpTraceId(uid: userId, deviceId: deviceId, sessionId: sessionId);
+        xpLog('FS_IN', {'gymId': gymId, 'uid': userId, 'deviceId': deviceId, 'sessionId': sessionId, 'isMulti': isMulti, 'dayKey': dayKey, 'showInLeaderboard': showInLeaderboard, 'traceId': traceId});
         final dateStr = dayKey;
         final userRef = _firestore.collection('users').doc(userId);
         final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
@@ -77,6 +80,7 @@ class FirestoreXpSource {
           sessionId: sessionId,
           showInLeaderboard: showInLeaderboard,
         );
+        xpLog('FS_OUT', {'result': result.name, 'errCode': null, 'errMsg': null, 'traceId': traceId});
         return result;
       }
 
