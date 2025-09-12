@@ -9,14 +9,17 @@ import 'package:uuid/uuid.dart';
 
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
+import 'workout_timer_telemetry.dart';
 
 enum StopResult { save, discard, cancel }
 
 class WorkoutSessionDurationService extends ChangeNotifier {
   static const _prefsKeyPrefix = 'workoutTimer:';
+  static const _queueKey = 'workoutTimerQueue';
 
   final FirebaseFirestore _firestore;
   final Uuid _uuid = const Uuid();
+  final WorkoutTimerTelemetry? _telemetry;
   SharedPreferences? _prefs;
 
   bool _isRunning = false;
@@ -26,8 +29,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   Timer? _ticker;
   final StreamController<Duration> _tickCtrl = StreamController.broadcast();
 
-  WorkoutSessionDurationService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance {
+  WorkoutSessionDurationService({FirebaseFirestore? firestore, WorkoutTimerTelemetry? telemetry})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _telemetry = telemetry {
     _init();
   }
 
@@ -55,6 +59,8 @@ class WorkoutSessionDurationService extends ChangeNotifier {
         notifyListeners();
       }
     }
+
+    await _flushQueue();
   }
 
   Future<void> start({required String uid, required String gymId}) async {
@@ -73,9 +79,15 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _isRunning = true;
     _startTicker();
     notifyListeners();
+    _telemetry?.timerStart();
   }
 
-  Future<StopResult> stopAndPrompt(BuildContext context) async {
+  /// Prompts the user whether to save or discard the current session.
+  ///
+  /// Returns [StopResult.save] if the user chooses to persist the duration,
+  /// [StopResult.discard] if it should be thrown away, or [StopResult.cancel]
+  /// if the dialog was dismissed.
+  Future<StopResult> confirmStop(BuildContext context) async {
     if (!_isRunning) return StopResult.cancel;
     final elapsedDur = elapsed;
     final locale = Localizations.localeOf(context);
@@ -115,10 +127,11 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final end = DateTime.now();
     final durationMs = end.millisecondsSinceEpoch - _startEpochMs!;
     final tz = await FlutterTimezone.getLocalTimezone();
-    final dayKey = logicDayKey(start.toUtc());
+    final dayKey = logicDayKey(start);
 
     // query logs for existing sessionId
     String? sessionId;
+    var hasSets = false;
     try {
       final startDay = DateTime(start.year, start.month, start.day);
       final endDay = startDay.add(const Duration(days: 1));
@@ -131,6 +144,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
           .get();
       if (snap.docs.isNotEmpty) {
         sessionId = snap.docs.first.data()['sessionId'] as String?;
+        hasSets = true;
         final ref = snap.docs.first.reference.parent.parent; // device doc
         if (ref != null) {
           final gymDoc = ref.parent.parent;
@@ -153,7 +167,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
         .collection('session_meta')
         .doc(sessionId);
 
-    await metaRef.set({
+    final payload = {
       'sessionId': sessionId,
       'uid': uid,
       'gymId': gymId,
@@ -162,16 +176,29 @@ class WorkoutSessionDurationService extends ChangeNotifier {
       'durationMs': durationMs,
       'dayKey': dayKey,
       'tz': tz,
-      'status': 'saved',
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+
+    try {
+      await metaRef.set(payload, SetOptions(merge: true));
+    } on FirebaseException {
+      await _enqueuePersist(payload);
+    }
+
+    _telemetry?.timerStopSave(
+        durationMs: durationMs, dayKey: dayKey, hasSets: hasSets);
 
     await _clearLocal();
   }
 
   Future<void> discard() async {
-    if (!_isRunning) return;
+    if (!_isRunning || _startEpochMs == null) return;
+    final start = DateTime.fromMillisecondsSinceEpoch(_startEpochMs!);
+    final durationMs = DateTime.now().millisecondsSinceEpoch - _startEpochMs!;
+    final dayKey = logicDayKey(start);
+    _telemetry?.timerStopDiscard(
+        durationMs: durationMs, dayKey: dayKey, hasSets: false);
     await _clearLocal();
   }
 
@@ -197,6 +224,40 @@ class WorkoutSessionDurationService extends ChangeNotifier {
         _tickCtrl.add(elapsed);
       }
     });
+  }
+
+  Future<void> _enqueuePersist(Map<String, dynamic> payload) async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_queueKey) ?? [];
+    list.add(jsonEncode(payload));
+    await prefs.setStringList(_queueKey, list);
+  }
+
+  Future<void> _flushQueue() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_queueKey) ?? [];
+    if (list.isEmpty) return;
+
+    final remaining = <String>[];
+    for (final item in list) {
+      try {
+        final data = jsonDecode(item) as Map<String, dynamic>;
+        final gymId = data['gymId'] as String;
+        final uid = data['uid'] as String;
+        final sessionId = data['sessionId'] as String;
+        final ref = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(uid)
+            .collection('session_meta')
+            .doc(sessionId);
+        await ref.set(data, SetOptions(merge: true));
+      } catch (_) {
+        remaining.add(item);
+      }
+    }
+    await prefs.setStringList(_queueKey, remaining);
   }
 }
 
