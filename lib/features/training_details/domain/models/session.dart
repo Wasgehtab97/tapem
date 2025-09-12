@@ -7,8 +7,14 @@ class Session {
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
+
+  /// Timestamp of when the session started, if known.
   final DateTime? startTime;
+
+  /// Timestamp of when the session ended, if known.
   final DateTime? endTime;
+
+  /// Total duration of the session in milliseconds.
   final int? durationMs;
 
   Session({
