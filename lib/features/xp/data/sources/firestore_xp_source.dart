@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
@@ -22,6 +23,8 @@ class FirestoreXpSource {
         required String sessionId,
         required bool showInLeaderboard,
         required bool isMulti,
+        String? exerciseId,
+        required String traceId,
       }) async {
         final dayKey = logicDayKey(DateTime.now().toUtc());
         final dateStr = dayKey;
@@ -35,48 +38,82 @@ class FirestoreXpSource {
             .collection('rank')
             .doc('stats');
 
-        await _firestore.runTransaction((tx) async {
-          final daySnap = await tx.get(dayRef);
-          final statsSnap = await tx.get(statsRef);
-          final statsData = statsSnap.data() ?? {};
-          final updates = <String, dynamic>{};
-
-          final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
-          final newDayXp = currentDayXp + LevelService.xpPerSession;
-          final dayData = {'xp': newDayXp};
-          if (daySnap.exists) {
-            tx.update(dayRef, dayData);
-          } else {
-            tx.set(dayRef, dayData);
-          }
-          if (currentDayXp == 0) {
-            updates['dailyXP'] =
-                (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
-          }
-
-          if (updates.isNotEmpty) {
-            if (statsSnap.exists) {
-              tx.update(statsRef, updates);
-            } else {
-              tx.set(statsRef, updates);
-            }
-          }
-        });
-
-        elogDeviceXp('RANK_FORWARD', {
-          'uid': userId,
+        XpTrace.log('FS_IN', {
           'gymId': gymId,
+          'uid': userId,
           'deviceId': deviceId,
           'sessionId': sessionId,
+          'isMulti': isMulti,
+          'exerciseId': exerciseId ?? '',
           'dayKey': dayKey,
+          'showInLeaderboard': showInLeaderboard,
+          'traceId': traceId,
         });
+        XpTrace.log('FS_PATHS', {
+          'userDayPath': dayRef.path,
+          'deviceLbPath':
+              _firestore
+                  .collection('gyms')
+                  .doc(gymId)
+                  .collection('devices')
+                  .doc(deviceId)
+                  .collection('leaderboard')
+                  .doc(userId)
+                  .path,
+          'traceId': traceId,
+        });
+
+        try {
+          await _firestore.runTransaction((tx) async {
+            final daySnap = await tx.get(dayRef);
+            final statsSnap = await tx.get(statsRef);
+            final statsData = statsSnap.data() ?? {};
+            final updates = <String, dynamic>{};
+
+            final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
+            final newDayXp = currentDayXp + LevelService.xpPerSession;
+            final dayData = {'xp': newDayXp};
+            if (daySnap.exists) {
+              tx.update(dayRef, dayData);
+            } else {
+              tx.set(dayRef, dayData);
+            }
+            if (currentDayXp == 0) {
+              updates['dailyXP'] =
+                  (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+            }
+
+            if (updates.isNotEmpty) {
+              if (statsSnap.exists) {
+                tx.update(statsRef, updates);
+              } else {
+                tx.set(statsRef, updates);
+              }
+            }
+          });
+        } catch (e) {
+          XpTrace.log('FS_OUT', {
+            'result': 'error',
+            'errMsg': e.toString(),
+            'traceId': traceId,
+          });
+          rethrow;
+        }
+
         final result = await _rankSource.addXp(
           gymId: gymId,
           userId: userId,
           deviceId: deviceId,
           sessionId: sessionId,
           showInLeaderboard: showInLeaderboard,
+          isMulti: isMulti,
+          exerciseId: exerciseId,
+          traceId: traceId,
         );
+        XpTrace.log('FS_OUT', {
+          'result': result.name,
+          'traceId': traceId,
+        });
         return result;
       }
 

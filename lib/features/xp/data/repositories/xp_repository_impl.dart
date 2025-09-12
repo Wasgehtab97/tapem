@@ -15,6 +15,8 @@ class XpRepositoryImpl implements XpRepository {
       required String sessionId,
       required bool showInLeaderboard,
       required bool isMulti,
+      String? exerciseId,
+      required String traceId,
     }) {
       return _source
           .addSessionXp(
@@ -24,6 +26,8 @@ class XpRepositoryImpl implements XpRepository {
         sessionId: sessionId,
         showInLeaderboard: showInLeaderboard,
         isMulti: isMulti,
+        exerciseId: exerciseId,
+        traceId: traceId,
       )
           .then((result) {
         elogDeviceXp('REPO_RETURN', {
@@ -32,6 +36,7 @@ class XpRepositoryImpl implements XpRepository {
           'gymId': gymId,
           'deviceId': deviceId,
           'sessionId': sessionId,
+          'traceId': traceId,
         });
         return result;
       });

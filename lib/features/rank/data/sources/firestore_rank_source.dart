@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
@@ -20,6 +21,9 @@ class FirestoreRankSource {
         required String deviceId,
         required String sessionId,
         required bool showInLeaderboard,
+        required bool isMulti,
+        String? exerciseId,
+        required String traceId,
       }) async {
         assert(LevelService.xpPerSession == 50);
         assert(deviceId.isNotEmpty);
@@ -33,34 +37,47 @@ class FirestoreRankSource {
             .doc(userId);
         final lbSess = lbUser.collection('sessions').doc(sessionId);
         final lbDay = lbUser.collection('days').doc(dayKey);
+        final lbEx = isMulti && exerciseId != null
+            ? lbUser.collection('exercises').doc('$exerciseId-$dayKey')
+            : null;
 
         try {
           final result = await _firestore.runTransaction<DeviceXpResult>((tx) async {
             final userSnap = await tx.get(lbUser);
             final daySnap = await tx.get(lbDay);
             final sessSnap = await tx.get(lbSess);
-            elogRank('TXN_READ', {
-              'existsUser': userSnap.exists,
-              'existsDay': daySnap.exists,
-              'existsSess': sessSnap.exists,
-              'dayKey': dayKey,
-              'userPath': lbUser.path,
-              'dayPath': lbDay.path,
-              'sessPath': lbSess.path,
+            final exSnap = lbEx != null ? await tx.get(lbEx) : null;
+            XpTrace.log('TXN_READ', {
+              'existsSessionDoc': sessSnap.exists,
+              'existsDayDoc': daySnap.exists,
+              'existsExerciseDoc': exSnap?.exists ?? false,
+              'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
+              'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
+              'traceId': traceId,
             });
 
             if (sessSnap.exists) {
-              elogRank('DECISION_IDEMPOTENT', {
-                'sessionId': sessionId,
+              XpTrace.log('TXN_DECISION', {
+                'result': 'alreadySession',
+                'showInLeaderboard': showInLeaderboard,
+                'isMulti': isMulti,
+                'exerciseId': exerciseId ?? '',
+                'traceId': traceId,
               });
               return DeviceXpResult.idempotentHit;
             }
 
-            if (daySnap.exists) {
-              elogRank('DECISION_ALREADY_TODAY', {
-                'sessionId': sessionId,
+            if (daySnap.exists || (exSnap?.exists ?? false)) {
+              XpTrace.log('TXN_DECISION', {
+                'result': daySnap.exists ? 'alreadyToday' : 'alreadyExercise',
+                'showInLeaderboard': showInLeaderboard,
+                'isMulti': isMulti,
+                'exerciseId': exerciseId ?? '',
+                'traceId': traceId,
               });
-              return DeviceXpResult.alreadyToday;
+              return daySnap.exists
+                  ? DeviceXpResult.alreadyToday
+                  : DeviceXpResult.idempotentHit;
             }
 
             const xpDelta = LevelService.xpPerSession;
@@ -68,11 +85,6 @@ class FirestoreRankSource {
             var info = LevelInfo.fromMap(userSnap.data());
             info = LevelService().addXp(info, xpDelta);
             final xpAfter = info.xp;
-            elogRank('DECISION_ADD', {
-              'xpDelta': xpDelta,
-              'xpBefore': xpBefore,
-              'xpAfter': xpAfter,
-            });
 
             if (!userSnap.exists) {
               tx.set(lbUser, {
@@ -98,17 +110,36 @@ class FirestoreRankSource {
               'sessionId': sessionId,
               'creditedAt': FieldValue.serverTimestamp(),
             });
+            bool wroteExercise = false;
+            if (lbEx != null) {
+              tx.set(lbEx, {'creditedAt': FieldValue.serverTimestamp()});
+              wroteExercise = true;
+            }
+
+            XpTrace.log('TXN_WRITE', {
+              'deltaXp': xpDelta,
+              'newXp': xpAfter,
+              'newLevel': info.level,
+              'wroteSessionMarker': true,
+              'wroteDayMarker': true,
+              'wroteExerciseMarker': wroteExercise,
+              'traceId': traceId,
+            });
 
             return DeviceXpResult.okAdded;
           });
 
-          elogRank('TXN_COMMIT_OK', {
-            'userPath': lbUser.path,
-            'dayPath': lbDay.path,
-            'sessPath': lbSess.path,
+          XpTrace.log('TXN_COMMIT', {
+            'result': result.name,
+            'traceId': traceId,
           });
           return result;
         } on FirebaseException catch (e, st) {
+          XpTrace.log('TXN_ERROR', {
+            'code': e.code,
+            'path': lbUser.path,
+            'traceId': traceId,
+          });
           elogError('TXN_FIREBASE_ERROR', e, st, {
             'userPath': lbUser.path,
             'dayKey': dayKey,

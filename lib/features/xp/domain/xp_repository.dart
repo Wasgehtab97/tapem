@@ -8,6 +8,8 @@ abstract class XpRepository {
     required String sessionId,
     required bool showInLeaderboard,
     required bool isMulti,
+    String? exerciseId,
+    required String traceId,
   });
 
   Stream<int> watchDayXp({required String userId, required DateTime date});
