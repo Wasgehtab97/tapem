@@ -101,6 +101,8 @@ class _ExerciseSnapRepo implements DeviceRepository {
       required String sessionId,
       required bool showInLeaderboard,
       required bool isMulti,
+      String? exerciseId,
+      required String traceId,
     }) async {
       calls++;
       return DeviceXpResult.okAdded;

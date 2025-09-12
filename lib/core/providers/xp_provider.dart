@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
@@ -38,36 +38,27 @@ class XpProvider extends ChangeNotifier {
       required String sessionId,
       required bool showInLeaderboard,
       required bool isMulti,
+      String? exerciseId,
+      required String traceId,
     }) async {
       assert(LevelService.xpPerSession == 50);
-      if (deviceId.isEmpty) {
-        elogDeviceXp('SKIP_NO_DEVICE', {
-          'uid': userId,
-          'gymId': gymId,
-          'sessionId': sessionId,
-          'deviceId': deviceId,
-          'isMulti': isMulti,
-        });
-        return DeviceXpResult.skipNoDevice;
-      }
-      if (!showInLeaderboard) {
-        elogDeviceXp('LEADERBOARD_FLAG_INFO', {
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-        });
-      }
-      final dayKey = logicDayKey(DateTime.now().toUtc());
-      elogDeviceXp('XP_ADD_REQUEST', {
-        'uid': userId,
+      XpTrace.log('PROVIDER_IN', {
         'gymId': gymId,
+        'uid': userId,
         'deviceId': deviceId,
         'sessionId': sessionId,
         'isMulti': isMulti,
-        'dayKey': dayKey,
+        'exerciseId': exerciseId ?? '',
         'showInLeaderboard': showInLeaderboard,
+        'traceId': traceId,
       });
+      if (deviceId.isEmpty) {
+        XpTrace.log('SKIP', {
+          'reason': 'noDevice',
+          'traceId': traceId,
+        });
+        return DeviceXpResult.skipNoDevice;
+      }
       try {
         final result = await _repo.addSessionXp(
           gymId: gymId,
@@ -76,19 +67,32 @@ class XpProvider extends ChangeNotifier {
           sessionId: sessionId,
           showInLeaderboard: showInLeaderboard,
           isMulti: isMulti,
+          exerciseId: exerciseId,
+          traceId: traceId,
         );
-        elogDeviceXp('XP_ADD_RESPONSE', {
+        XpTrace.log('PROVIDER_OUT', {
           'result': result.name,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
+          'deltaXp': result == DeviceXpResult.okAdded ? 50 : 0,
+          'updatedLocalCache': result == DeviceXpResult.okAdded,
+          'traceId': traceId,
         });
         if (result == DeviceXpResult.okAdded) {
           _deviceXp[deviceId] =
               (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
+          XpTrace.log('CACHE_BUMP', {
+            'deviceId': deviceId,
+            'newXp': _deviceXp[deviceId],
+            'traceId': traceId,
+          });
           notifyListeners();
         }
         return result;
       } catch (e, st) {
+        XpTrace.log('PROVIDER_OUT', {
+          'result': 'error',
+          'err': e.toString(),
+          'traceId': traceId,
+        });
         elogError('XP_ADD_UNEXPECTED', e, st, {
           'uid': userId,
           'gymId': gymId,
@@ -132,23 +136,42 @@ class XpProvider extends ChangeNotifier {
   }
 
   void watchDeviceXp(String gymId, String userId, List<String> deviceIds) {
-    debugPrint('👀 provider watchDeviceXp userId=$userId devices=$deviceIds');
+    XpTrace.log('WATCH_INIT', {
+      'deviceCountBeforeAttach': _deviceSubs.length,
+      'gymId': gymId,
+      'uid': userId,
+    });
+    final detached = <String>[];
     for (final id in _deviceSubs.keys.toList()) {
       if (!deviceIds.contains(id)) {
         _deviceSubs[id]?.cancel();
         _deviceSubs.remove(id);
         _deviceXp.remove(id);
+        detached.add(id);
       }
     }
+    final attached = <String>[];
     for (final id in deviceIds) {
       if (_deviceSubs.containsKey(id)) continue;
+      attached.add(id);
       _deviceSubs[id] = _repo
           .watchDeviceXp(gymId: gymId, deviceId: id, userId: userId)
           .listen((xp) {
             _deviceXp[id] = xp;
-            debugPrint('🔄 provider device $id xp=$xp');
+            final level = xp ~/ LevelService.xpPerLevel + 1;
+            XpTrace.log('WATCH_UPDATE', {
+              'deviceId': id,
+              'xp': xp,
+              'level': level,
+            });
             notifyListeners();
           });
+    }
+    if (attached.isNotEmpty || detached.isNotEmpty) {
+      XpTrace.log('WATCH_ATTACH', {
+        'attached': attached,
+        'detached': detached,
+      });
     }
   }
 

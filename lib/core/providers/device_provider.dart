@@ -27,6 +27,7 @@ import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 
@@ -626,11 +627,41 @@ class DeviceProvider extends ChangeNotifier {
     required String userId,
     required bool showInLeaderboard,
   }) async {
-    if (_device == null) return false;
+    final dayKey = logicDayKey(DateTime.now().toUtc());
+    if (_device == null) {
+      final traceId = XpTrace.buildTraceId(
+        dayKey: dayKey,
+        uid: userId,
+        deviceId: '',
+        sessionId: '',
+      );
+      XpTrace.log('SKIP', {'reason': 'noDevice', 'traceId': traceId});
+      return false;
+    }
+
+    final sessionId = _uuid.v4();
+    final resolvedDeviceId = _device!.uid;
+    final traceId = XpTrace.buildTraceId(
+      dayKey: dayKey,
+      uid: userId,
+      deviceId: resolvedDeviceId,
+      sessionId: sessionId,
+    );
 
     _error = null;
     _isSaving = true;
     _log('💾 [Provider] saveWorkoutSession start sets=${_setsBrief(_sets)}');
+    XpTrace.log('SAVE_START', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': _device!.uid,
+      'resolvedDeviceId': resolvedDeviceId,
+      'isMulti': _device!.isMulti,
+      'exerciseId': _currentExerciseId,
+      'showInLeaderboard': showInLeaderboard,
+      'restricted': false,
+      'traceId': traceId,
+    });
     notifyListeners();
 
     try {
@@ -640,6 +671,7 @@ class DeviceProvider extends ChangeNotifier {
       if (savedSets.isEmpty) {
         _error = 'Keine abgeschlossenen Sätze.';
         _log('⚠️ [Provider] save aborted: no completed sets');
+        XpTrace.log('SKIP', {'reason': 'noCompletedSets', 'traceId': traceId});
         return false;
       }
 
@@ -676,10 +708,9 @@ class DeviceProvider extends ChangeNotifier {
       if (existingToday.docs.isNotEmpty) {
         _error = 'Heute bereits gespeichert.';
         _log('⚠️ [Provider] save aborted: already saved today');
+        XpTrace.log('SKIP', {'reason': 'alreadyToday', 'traceId': traceId});
         return false;
       }
-
-      final sessionId = _uuid.v4();
       final ts = Timestamp.now();
       String tz;
       try {
@@ -735,6 +766,11 @@ class DeviceProvider extends ChangeNotifier {
 
       await batch.commit();
       _log('📚 [Provider] logs stored session=$sessionId');
+      XpTrace.log('LOGS_STORED', {
+        'sessionId': sessionId,
+        'sets': savedSets.length,
+        'traceId': traceId,
+      });
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
@@ -751,6 +787,7 @@ class DeviceProvider extends ChangeNotifier {
 
       final resolvedDeviceId = resolveDeviceId(snapshot);
       if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
+        XpTrace.log('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
         elogDeviceXp('SKIP_NO_DEVICE', {
           'sessionId': sessionId,
           'exerciseId': _currentExerciseId,
@@ -767,6 +804,7 @@ class DeviceProvider extends ChangeNotifier {
           'isMulti': _device!.isMulti,
           'showInLeaderboard': showInLeaderboard,
         });
+        XpTrace.log('CALL_ADD_SESSION_XP', {'intent': 'credit', 'traceId': traceId});
         try {
           final xpResult = await Provider.of<XpProvider>(context, listen: false)
               .addSessionXp(
@@ -776,7 +814,14 @@ class DeviceProvider extends ChangeNotifier {
             sessionId: sessionId,
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
+            exerciseId: _currentExerciseId,
+            traceId: traceId,
           );
+          XpTrace.log('CALL_RESULT', {
+            'result': xpResult.name,
+            'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
+            'traceId': traceId,
+          });
           if (xpResult == DeviceXpResult.okAdded) {
             final info = LevelService()
                 .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
@@ -789,6 +834,7 @@ class DeviceProvider extends ChangeNotifier {
             listen: false,
           ).checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
+          XpTrace.log('CALL_RESULT', {'result': 'error', 'traceId': traceId, 'error': e.toString()});
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
         }
       }

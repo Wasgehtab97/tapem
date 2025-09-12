@@ -19,6 +19,8 @@ class FakeXpRepository implements XpRepository {
       required String sessionId,
       required bool showInLeaderboard,
       required bool isMulti,
+      String? exerciseId,
+      required String traceId,
     }) async {
       addCalls++;
       return DeviceXpResult.okAdded;
@@ -79,6 +81,7 @@ void main() {
           sessionId: 's1',
           showInLeaderboard: false,
           isMulti: false,
+          traceId: 't',
         );
       expect(repo.addCalls, 1);
       repo.dispose();
