@@ -39,6 +39,7 @@ import 'package:tapem/core/providers/all_exercises_provider.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
@@ -419,6 +420,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => RankProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutSessionDurationService()),
       ],
       child: const MyApp(),
     ),

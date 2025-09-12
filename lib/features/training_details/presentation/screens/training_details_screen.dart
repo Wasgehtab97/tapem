@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
+import 'package:tapem/core/utils/duration_format.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
@@ -41,8 +42,10 @@ class TrainingDetailsScreen extends StatelessWidget {
           }
           // Data state
           final sessions = prov.sessions;
+          final duration =
+              sessions.isNotEmpty ? sessions.first.durationMs : null;
           return Scaffold(
-            appBar: _AppBar(titleDate: date),
+            appBar: _AppBar(titleDate: date, durationMs: duration),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
                 : Scrollbar(
@@ -61,7 +64,8 @@ class TrainingDetailsScreen extends StatelessWidget {
 /// Custom AppBar that shows the selected date in the accent colour.
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
-  const _AppBar({this.titleDate});
+  final int? durationMs;
+  const _AppBar({this.titleDate, this.durationMs});
 
   @override
   Widget build(BuildContext context) {
@@ -72,12 +76,26 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
             ).format(titleDate!)
             : 'Training Details';
 
-    return AppBar(
-      title: Text(
-        title,
-        style: TextStyle(color: Theme.of(context).colorScheme.secondary),
-      ),
+    Widget titleWidget = Text(
+      title,
+      style: TextStyle(color: Theme.of(context).colorScheme.secondary),
     );
+    if (durationMs != null) {
+      final dur = Duration(milliseconds: durationMs!);
+      final formatted =
+          formatDuration(dur, locale: Localizations.localeOf(context));
+      titleWidget = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+          ),
+          Text('⏱ $formatted'),
+        ],
+      );
+    }
+    return AppBar(title: titleWidget);
   }
 
   @override

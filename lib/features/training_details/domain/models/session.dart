@@ -7,6 +7,9 @@ class Session {
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
+  final DateTime? startTime;
+  final DateTime? endTime;
+  final int? durationMs;
 
   Session({
     required this.sessionId,
@@ -16,6 +19,9 @@ class Session {
     required this.timestamp,
     required this.note,
     required this.sets,
+    this.startTime,
+    this.endTime,
+    this.durationMs,
   });
 }
 

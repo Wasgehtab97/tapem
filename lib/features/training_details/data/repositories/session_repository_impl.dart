@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/features/training_details/data/dtos/session_dto.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
+import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final FirestoreSessionSource _source;
-  SessionRepositoryImpl(this._source);
+  final SessionMetaSource _meta;
+  SessionRepositoryImpl(this._source, this._meta);
 
   @override
   Future<List<Session>> getSessionsForDate({
@@ -92,6 +94,25 @@ class SessionRepositoryImpl implements SessionRepository {
               ))
           .toList();
 
+      final gymId = deviceRef.parent.parent!.id;
+      DateTime? startTime;
+      DateTime? endTime;
+      int? durationMs;
+      try {
+        final meta = await _meta.getMeta(
+          gymId: gymId,
+          uid: first.userId,
+          sessionId: first.sessionId,
+        );
+        if (meta != null) {
+          final startTs = meta['startTime'];
+          final endTs = meta['endTime'];
+          if (startTs is Timestamp) startTime = startTs.toDate();
+          if (endTs is Timestamp) endTime = endTs.toDate();
+          durationMs = (meta['durationMs'] as num?)?.toInt();
+        }
+      } catch (_) {}
+
       sessions.add(
         Session(
           sessionId: first.sessionId,
@@ -101,6 +122,9 @@ class SessionRepositoryImpl implements SessionRepository {
           timestamp: first.timestamp,
           note: first.note,
           sets: sets,
+          startTime: startTime,
+          endTime: endTime,
+          durationMs: durationMs,
         ),
       );
     }
