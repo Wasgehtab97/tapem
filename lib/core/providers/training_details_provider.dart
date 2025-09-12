@@ -22,13 +22,13 @@ class TrainingDetailsProvider extends ChangeNotifier {
   int? get dayDurationMs => _dayDurationMs;
 
   TrainingDetailsProvider()
-    : _meta = SessionMetaSource(),
-      _getSessions = GetSessionsForDate(
-        SessionRepositoryImpl(
-          FirestoreSessionSource(),
-          SessionMetaSource(),
-        ),
-      );
+      : _meta = SessionMetaSource(),
+        _getSessions = GetSessionsForDate(
+          SessionRepositoryImpl(
+            FirestoreSessionSource(),
+            _meta,
+          ),
+        );
 
   /// Lädt alle Sessions für [userId] am [date].
   Future<void> loadSessions({
