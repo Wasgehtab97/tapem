@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
+import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 
@@ -18,7 +19,10 @@ class TrainingDetailsProvider extends ChangeNotifier {
 
   TrainingDetailsProvider()
     : _getSessions = GetSessionsForDate(
-        SessionRepositoryImpl(FirestoreSessionSource()),
+        SessionRepositoryImpl(
+          FirestoreSessionSource(),
+          SessionMetaSource(),
+        ),
       );
 
   /// Lädt alle Sessions für [userId] am [date].
