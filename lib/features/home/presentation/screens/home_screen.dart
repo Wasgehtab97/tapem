@@ -17,6 +17,7 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_overview_
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/core/widgets/workout_timer_button.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -122,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(userDisplay),
         actions: const [
+          WorkoutTimerButton(),
           NfcScanButton(),
         ],
       ),
