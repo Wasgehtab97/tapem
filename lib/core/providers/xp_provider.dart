@@ -23,6 +23,8 @@ class XpProvider extends ChangeNotifier {
   StreamSubscription<Map<String, int>>? _dayListSub;
   final Map<String, StreamSubscription<int>> _deviceSubs = {};
   int _statsDailyXp = 0;
+  int _dailyLevel = 1;
+  int _dailyLevelXp = 0;
   StreamSubscription<int>? _statsDailySub;
 
   Map<String, int> get muscleXp => _muscleXp;
@@ -30,6 +32,12 @@ class XpProvider extends ChangeNotifier {
   Map<String, int> get dayListXp => _dayListXp;
   Map<String, int> get deviceXp => _deviceXp;
   int get statsDailyXp => _statsDailyXp;
+  int get dailyLevel => _dailyLevel;
+  int get dailyLevelXp => _dailyLevelXp;
+  double get dailyProgress =>
+      _dailyLevel >= LevelService.maxLevel
+          ? 1
+          : _dailyLevelXp / LevelService.xpPerLevel;
 
     Future<DeviceXpResult> addSessionXp({
       required String gymId,
@@ -182,7 +190,14 @@ class XpProvider extends ChangeNotifier {
         .watchStatsDailyXp(gymId: gymId, userId: userId)
         .listen((xp) {
           _statsDailyXp = xp;
-          debugPrint('🔄 provider statsDailyXp=$xp');
+          var level = (xp ~/ LevelService.xpPerLevel) + 1;
+          if (level > LevelService.maxLevel) level = LevelService.maxLevel;
+          final xpInLevel =
+              level >= LevelService.maxLevel ? 0 : xp % LevelService.xpPerLevel;
+          _dailyLevel = level;
+          _dailyLevelXp = xpInLevel;
+          debugPrint(
+              '🔄 provider statsDailyXp=$xp level=$_dailyLevel xpInLevel=$_dailyLevelXp');
           notifyListeners();
         });
   }
