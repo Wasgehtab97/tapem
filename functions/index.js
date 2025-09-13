@@ -3,12 +3,14 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const avatars = require('./avatars');
+const xp = require('./xp');
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
 exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
 exports.onXpUpdate = avatars.onXpUpdate;
 exports.onChallengeState = avatars.onChallengeState;
 exports.onEventParticipation = avatars.onEventParticipation;
+exports.grantXpForSession = xp.grantXpForSession;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')
