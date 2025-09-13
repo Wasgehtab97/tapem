@@ -9,6 +9,7 @@ class FakeXpRepository implements XpRepository {
   final dayCtrl = StreamController<int>.broadcast();
   final muscleCtrl = StreamController<Map<String, int>>.broadcast();
   final deviceCtrls = <String, StreamController<int>>{};
+  final statsDailyCtrl = StreamController<int>.broadcast();
   int addCalls = 0;
 
     @override
@@ -56,11 +57,12 @@ class FakeXpRepository implements XpRepository {
     required String gymId,
     required String userId,
   }) =>
-      const Stream.empty();
+      statsDailyCtrl.stream;
 
   void dispose() {
     dayCtrl.close();
     muscleCtrl.close();
+    statsDailyCtrl.close();
     for (final c in deviceCtrls.values) {
       c.close();
     }
@@ -117,6 +119,18 @@ void main() {
       repo.deviceCtrls['d2']!.add(3);
       await Future.delayed(const Duration(milliseconds: 10));
       expect(provider.deviceXp, {'d1': 7, 'd2': 3});
+      provider.dispose();
+      repo.dispose();
+    });
+
+    test('watchStatsDailyXp computes level', () async {
+      final repo = FakeXpRepository();
+      final provider = XpProvider(repo: repo);
+      provider.watchStatsDailyXp('g1', 'u1');
+      repo.statsDailyCtrl.add(1950); // level 2, xp 950
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(provider.dailyLevel, 2);
+      expect(provider.dailyLevelXp, 950);
       provider.dispose();
       repo.dispose();
     });

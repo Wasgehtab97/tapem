@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
+import 'avatar_ring_theme.dart';
 
 /// Provides the dark themes for the Tap’em app based on the new design tokens.
 ///
@@ -40,6 +41,9 @@ class AppTheme {
       canvasColor: s2,
       cardColor: surface,
       hintColor: textSecondary,
+      extensions: const <ThemeExtension<dynamic>>[
+        AvatarRingTheme.fallback,
+      ],
       appBarTheme: const AppBarTheme(
         elevation: 0,
         backgroundColor: Colors.transparent,

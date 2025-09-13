@@ -16,6 +16,8 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
+import 'package:tapem/core/providers/xp_provider.dart';
+import '../widgets/daily_xp_avatar.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
@@ -42,6 +44,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (uid != null) {
         context.read<FriendsProvider>().listen(uid);
         context.read<SettingsProvider>().load(uid);
+        final gymId = context.read<AuthProvider>().gymCode ?? '';
+        context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
       }
     });
   }
@@ -280,6 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final prov = context.watch<ProfileProvider>();
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
+    final xp = context.watch<XpProvider>();
     final userId = auth.userId ?? '';
     const avatarSize = 44.0;
 
@@ -311,9 +316,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                       return const Icon(Icons.person);
                     });
-                    return CircleAvatar(
-                      radius: avatarSize / 2,
-                      backgroundImage: image.image,
+                    return DailyXpAvatar(
+                      image: image.image,
+                      size: avatarSize,
+                      xp: xp.dailyLevelXp,
+                      level: xp.dailyLevel,
                     );
                   }),
                 ),
