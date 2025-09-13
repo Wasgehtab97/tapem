@@ -81,7 +81,6 @@ class FirestoreRankSource {
             }
 
             const xpDelta = LevelService.xpPerSession;
-            final xpBefore = (userSnap.data()?['xp'] as int?) ?? 0;
             var info = LevelInfo.fromMap(userSnap.data());
             info = LevelService().addXp(info, xpDelta);
             final xpAfter = info.xp;
