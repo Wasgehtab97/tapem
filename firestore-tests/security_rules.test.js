@@ -715,5 +715,61 @@ describe('Security Rules v1', function () {
         .doc('userA');
       await assertFails(ref.update({ xp: 5 }));
     });
+
+    it('member can create leaderboard doc with day and session markers in one tx', async () => {
+      const db = userA().firestore();
+      await assertSucceeds(
+        db.runTransaction(async (tx) => {
+          const lbUser = db
+            .collection('gyms')
+            .doc('G1')
+            .collection('devices')
+            .doc('D1')
+            .collection('leaderboard')
+            .doc('userA');
+          tx.set(lbUser, {
+            userId: 'userA',
+            xp: 0,
+            level: 1,
+            showInLeaderboard: true,
+          });
+          tx.set(lbUser.collection('days').doc('2024-01-01'), {
+            creditedAt: FieldValue.serverTimestamp(),
+          });
+          tx.set(lbUser.collection('sessions').doc('s1'), {
+            sessionId: 's1',
+            creditedAt: FieldValue.serverTimestamp(),
+          });
+        })
+      );
+    });
+
+    it('member cannot write other users leaderboard entry', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('leaderboard')
+        .doc('userB');
+      await assertFails(
+        ref.set({ userId: 'userB', xp: 0, level: 1, showInLeaderboard: true })
+      );
+    });
+
+    it('non-member cannot write leaderboard entry', async () => {
+      const db = userB().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('leaderboard')
+        .doc('userB');
+      await assertFails(
+        ref.set({ userId: 'userB', xp: 0, level: 1, showInLeaderboard: true })
+      );
+    });
   });
 });

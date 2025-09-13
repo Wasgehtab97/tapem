@@ -140,6 +140,15 @@ class FirestoreRankSource {
             'path': lbUser.path,
             'traceId': traceId,
           });
+          if (e.code == 'permission-denied') {
+            elogRank('SECURITY_DENIED', {
+              'action': 'leaderboard write',
+              'gymId': gymId,
+              'deviceId': deviceId,
+              'uid': userId,
+              'reason': 'rules-path',
+            });
+          }
           elogError('TXN_FIREBASE_ERROR', e, st, {
             'userPath': lbUser.path,
             'dayKey': dayKey,

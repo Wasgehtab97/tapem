@@ -329,10 +329,29 @@ service cloud.firestore {
           allow read, write: if ownerOrAdmin(gymId, userId);
         }
 
-        // Leaderboard entries (owner/admin; enforce userId match)
-        match /leaderboard/{userId}/{doc=**} {
-          allow read, write: if ownerOrAdmin(gymId, userId) &&
-                             request.resource.data.userId == userId;
+        // Leaderboard entries (owner/admin; allow markers)
+        match /leaderboard/{userId} {
+          allow read: if ownerOrAdmin(gymId, userId);
+          allow create, update: if ownerOrAdmin(gymId, userId) &&
+                                request.resource.data.userId == userId;
+
+          // Daily markers
+          match /days/{dayKey} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+          }
+
+          // Session markers
+          match /sessions/{sessionId} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+          }
+
+          // Exercise markers for multi-exercise tracking
+          match /exercises/{exerciseId} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+          }
         }
 
         // Custom exercises (public, owner or friends; admin override)
