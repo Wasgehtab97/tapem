@@ -20,6 +20,7 @@ class CreateDeviceUseCase {
     required String gymId,
     required Device device,
     required bool isMulti,
+    bool isCardio = false,
     List<String>? muscleGroupIds,
   }) async {
     final existing = await _repo.getDevicesForGym(gymId);
@@ -34,6 +35,7 @@ class CreateDeviceUseCase {
       id: nextId,
       nfcCode: code,
       isMulti: isMulti,
+      isCardio: isCardio,
       muscleGroupIds: muscleGroupIds,
     );
     await _repo.createDevice(gymId, toSave);

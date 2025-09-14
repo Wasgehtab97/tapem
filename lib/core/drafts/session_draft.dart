@@ -18,6 +18,8 @@ class SetDraft {
   final int index;
   final String weight;
   final String reps;
+  final String speed;
+  final String duration;
   final String? tempo;
   final String? dropWeight;
   final String? dropReps;
@@ -28,6 +30,8 @@ class SetDraft {
     required this.index,
     this.weight = '',
     this.reps = '',
+    this.speed = '',
+    this.duration = '',
     this.tempo,
     this.dropWeight,
     this.dropReps,
@@ -39,6 +43,8 @@ class SetDraft {
         index: json['index'] as int,
         weight: json['weight'] as String? ?? '',
         reps: json['reps'] as String? ?? '',
+        speed: json['speed'] as String? ?? '',
+        duration: json['duration'] as String? ?? '',
         tempo: json['tempo'] as String?,
         dropWeight: json['dropWeight'] as String?,
         dropReps: json['dropReps'] as String?,
@@ -50,6 +56,8 @@ class SetDraft {
         'index': index,
         'weight': weight,
         'reps': reps,
+        'speed': speed,
+        'duration': duration,
         if (tempo != null) 'tempo': tempo,
         if (dropWeight != null) 'dropWeight': dropWeight,
         if (dropReps != null) 'dropReps': dropReps,

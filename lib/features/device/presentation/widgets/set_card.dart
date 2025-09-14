@@ -103,6 +103,10 @@ class SetCardState extends State<SetCard> {
   late final FocusNode _repsFocus;
   late final FocusNode _dropWeightFocus;
   late final FocusNode _dropRepsFocus;
+  late final TextEditingController _speedCtrl;
+  late final TextEditingController _durationCtrl;
+  late final FocusNode _speedFocus;
+  late final FocusNode _durationFocus;
 
   bool _showExtras = false;
 
@@ -140,54 +144,90 @@ class SetCardState extends State<SetCard> {
         TextEditingController(text: widget.set['dropWeight'] as String?);
     _dropRepsCtrl =
         TextEditingController(text: widget.set['dropReps'] as String?);
+    _speedCtrl = TextEditingController(text: widget.set['speed'] as String?);
+    _durationCtrl =
+        TextEditingController(text: widget.set['duration'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
     _dropWeightFocus = FocusNode();
     _dropRepsFocus = FocusNode();
+    _speedFocus = FocusNode();
+    _durationFocus = FocusNode();
 
     if (!widget.readOnly) {
-      _weightCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'weight → "${_weightCtrl.text}"');
-        final prov = context.read<DeviceProvider>();
-        prov.updateSet(
-          widget.index,
-          weight: _weightCtrl.text,
-          isBodyweight: prov.isBodyweightMode,
-        );
-      });
-      _repsCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'reps → "${_repsCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          reps: _repsCtrl.text,
-        );
-      });
-      _dropWeightCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          dropWeight: _dropWeightCtrl.text,
-          dropReps: _dropRepsCtrl.text,
-        );
-      });
-      _dropRepsCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          dropWeight: _dropWeightCtrl.text,
-          dropReps: _dropRepsCtrl.text,
-        );
-      });
+      final prov = context.read<DeviceProvider>();
+      final cardio = prov.device?.isCardio == true;
+      if (cardio) {
+        _speedCtrl.addListener(() {
+          if (_muteCtrls) return;
+          prov.updateSet(
+            widget.index,
+            speed: _speedCtrl.text,
+          );
+        });
+        _durationCtrl.addListener(() {
+          if (_muteCtrls) return;
+          prov.updateSet(
+            widget.index,
+            duration: _durationCtrl.text,
+          );
+        });
+      } else {
+        _weightCtrl.addListener(() {
+          if (_muteCtrls) return;
+          _slog(widget.index, 'weight → "${_weightCtrl.text}"');
+          prov.updateSet(
+            widget.index,
+            weight: _weightCtrl.text,
+            isBodyweight: prov.isBodyweightMode,
+          );
+        });
+        _repsCtrl.addListener(() {
+          if (_muteCtrls) return;
+          _slog(widget.index, 'reps → "${_repsCtrl.text}"');
+          prov.updateSet(
+            widget.index,
+            reps: _repsCtrl.text,
+          );
+        });
+        _dropWeightCtrl.addListener(() {
+          if (_muteCtrls) return;
+          _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
+          prov.updateSet(
+            widget.index,
+            dropWeight: _dropWeightCtrl.text,
+            dropReps: _dropRepsCtrl.text,
+          );
+        });
+        _dropRepsCtrl.addListener(() {
+          if (_muteCtrls) return;
+          _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
+          prov.updateSet(
+            widget.index,
+            dropWeight: _dropWeightCtrl.text,
+            dropReps: _dropRepsCtrl.text,
+          );
+        });
+      }
     }
   }
 
   @override
   void didUpdateWidget(covariant SetCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final prov = context.read<DeviceProvider>();
+    final cardio = prov.device?.isCardio == true;
+    if (cardio) {
+      final sp = widget.set['speed'] as String? ?? '';
+      final du = widget.set['duration'] as String? ?? '';
+      if (oldWidget.set['speed'] != sp) {
+        _setTextSilently(_speedCtrl, sp, 'speed');
+      }
+      if (oldWidget.set['duration'] != du) {
+        _setTextSilently(_durationCtrl, du, 'duration');
+      }
+      return;
+    }
     final w = widget.set['weight'] as String? ?? '';
     final r = widget.set['reps'] as String? ?? '';
     final dw = widget.set['dropWeight'] as String? ?? '';
@@ -217,10 +257,14 @@ class SetCardState extends State<SetCard> {
     _repsCtrl.dispose();
     _dropWeightCtrl.dispose();
     _dropRepsCtrl.dispose();
+    _speedCtrl.dispose();
+    _durationCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
     _dropWeightFocus.dispose();
     _dropRepsFocus.dispose();
+    _speedFocus.dispose();
+    _durationFocus.dispose();
     super.dispose();
   }
 
@@ -282,6 +326,98 @@ class SetCardState extends State<SetCard> {
     }
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
+    final isCardio = prov.device?.isCardio == true;
+    if (isCardio) {
+      final speed = (widget.set['speed'] ?? '').toString().trim();
+      final dur = (widget.set['duration'] ?? '').toString().trim();
+      final filled = speed.isNotEmpty &&
+          double.tryParse(speed.replaceAll(',', '.')) != null &&
+          dur.isNotEmpty &&
+          int.tryParse(dur) != null;
+      return Semantics(
+        label: 'Set ${widget.index + 1}',
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius:
+                surface?.radius as BorderRadius? ??
+                BorderRadius.circular(AppRadius.button),
+            boxShadow: surface?.shadow,
+          ),
+          padding: tokens.padding,
+          child: Row(
+            children: [
+              _IndexBadge(
+                tokens: tokens,
+                index: widget.index + 1,
+                dense: dense,
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: _InputPill(
+                  controller: _speedCtrl,
+                  focusNode: _speedFocus,
+                  label: 'km/h',
+                  readOnly: done || widget.readOnly,
+                  tokens: tokens,
+                  dense: dense,
+                  onTap: widget.readOnly
+                      ? null
+                      : () => _openKeypad(_speedCtrl, allowDecimal: true),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                      return loc.numberInvalid;
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: _InputPill(
+                  controller: _durationCtrl,
+                  focusNode: _durationFocus,
+                  label: 'sec',
+                  readOnly: done || widget.readOnly,
+                  tokens: tokens,
+                  dense: dense,
+                  onTap: widget.readOnly
+                      ? null
+                      : () => _openKeypad(_durationCtrl, allowDecimal: false),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    if (int.tryParse(v) == null) return loc.intRequired;
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              _RoundButton(
+                tokens: tokens,
+                icon: Icons.check,
+                filled: done,
+                semantics:
+                    done ? loc.setReopenTooltip : loc.setCompleteTooltip,
+                dense: dense,
+                onTap: widget.readOnly || !filled
+                    ? null
+                    : () {
+                        final prov = context.read<DeviceProvider>();
+                        final ok = prov.toggleSetDone(widget.index);
+                        if (ok) {
+                          context
+                              .read<OverlayNumericKeypadController>()
+                              .close();
+                        }
+                      },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final dropActive =
         (widget.set['dropWeight'] ?? '').toString().isNotEmpty &&
             (widget.set['dropReps'] ?? '').toString().isNotEmpty;

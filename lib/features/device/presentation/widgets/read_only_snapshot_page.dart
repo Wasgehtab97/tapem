@@ -34,6 +34,20 @@ class ReadOnlySnapshotPage extends StatelessWidget {
             itemCount: snapshot.sets.length,
             itemBuilder: (context, i) {
               final s = snapshot.sets[i];
+              final isCardio = s.speedKmH != null || s.durationSec != null;
+              if (isCardio) {
+                return SetCard(
+                  index: i,
+                  set: {
+                    'number': '${i + 1}',
+                    'speed': s.speedKmH?.toString() ?? '',
+                    'duration': s.durationSec?.toString() ?? '',
+                    'done': s.done,
+                  },
+                  readOnly: true,
+                  size: SetCardSize.dense,
+                );
+              }
               final drops = s.drops.isNotEmpty ? s.drops : _legacyDrops(snapshot, i);
               final loc = AppLocalizations.of(context)!;
               final weightText = s.isBodyweight
