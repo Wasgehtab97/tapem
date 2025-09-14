@@ -9,6 +9,7 @@ import 'package:tapem/features/device/domain/models/device_session_snapshot.dart
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/presentation/widgets/cardio_runner.dart';
 import 'package:tapem/features/device/presentation/widgets/device_pager.dart';
+import 'package:tapem/features/device/presentation/widgets/read_only_snapshot_page.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
@@ -39,6 +40,8 @@ class FakeDeviceRepository implements DeviceRepository {
   Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
   @override
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({required String gymId, required String deviceId, required String userId, required int limit, String? exerciseId, DocumentSnapshot? startAfter}) async => [];
+  @override
+  Future<void> deleteDevice(String gymId, String deviceId) async {}
   @override
   Future<bool> hasSessionForDate({required String gymId, required String deviceId, required String userId, required DateTime date}) async => false;
 }

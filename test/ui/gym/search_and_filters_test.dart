@@ -83,6 +83,13 @@ class _DummyDeviceRepo implements DeviceRepository {
 
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;
+  @override
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  }) async => false;
 }
 
 class _TestMuscleGroupProvider extends MuscleGroupProvider {

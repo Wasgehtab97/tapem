@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +27,15 @@ class FakeDeviceRepository implements DeviceRepository {
   Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) async {}
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;
+  @override
+  Future<void> deleteDevice(String gymId, String deviceId) async {}
+  @override
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  }) async => false;
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -66,7 +75,8 @@ class FakeChallengeRepository implements ChallengeRepository {
   @override
   Stream<List<Challenge>> watchActiveChallenges(String gymId) => const Stream.empty();
   @override
-  Stream<List<Badge>> watchBadges(String userId) => const Stream.empty();
+  Stream<List<Badge>> watchBadges(String userId) =>
+      const Stream<List<Badge>>.empty();
   @override
   Stream<List<CompletedChallenge>> watchCompletedChallenges(String gymId, String userId) => const Stream.empty();
 }
