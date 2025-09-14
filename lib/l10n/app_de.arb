@@ -306,6 +306,21 @@
     "description": "Validierung, wenn eine Ganzzahl erwartet wird"
   },
 
+  "durationInvalid": "Bitte Zeit im Format hh:mm:ss eingeben",
+  "@durationInvalid": {
+    "description": "Validierung, wenn Zeit nicht hh:mm:ss ist"
+  },
+
+  "speedOutOfRange": "Geschwindigkeit > 0 und ≤ {max} km/h",
+  "@speedOutOfRange": {
+    "description": "Validierung, wenn Geschwindigkeit außerhalb des Bereichs liegt",
+    "placeholders": {
+      "max": {
+        "type": "num"
+      }
+    }
+  },
+
   "dropFillBoth": "Beide Drop-Felder ausfüllen oder leeren.",
   "@dropFillBoth": {
     "description": "Validierung, wenn nur ein Drop-Feld ausgefüllt ist"

@@ -3,7 +3,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 class RC {
   RC._();
 
-  static final FirebaseRemoteConfig _rc = FirebaseRemoteConfig.instance;
+  static FirebaseRemoteConfig get _rc => FirebaseRemoteConfig.instance;
 
   static Future<void> init() async {
     await _rc.setDefaults(<String, dynamic>{
@@ -11,6 +11,8 @@ class RC {
       'avatars_v2_migration_on': false,
       'avatars_v2_images_cdn': false,
       'avatars_v2_grants_enabled': false,
+      'cardio_max_speed_kmh': 40.0,
+      'cardio_max_duration_sec': 10800,
     });
     await _rc.fetchAndActivate();
   }
@@ -22,4 +24,20 @@ class RC {
       _rc.getBool('avatars_v2_images_cdn');
   static bool get avatarsV2GrantsEnabled =>
       _rc.getBool('avatars_v2_grants_enabled');
+
+  static double get cardioMaxSpeedKmH {
+    try {
+      return _rc.getDouble('cardio_max_speed_kmh');
+    } catch (_) {
+      return 40.0;
+    }
+  }
+
+  static int get cardioMaxDurationSec {
+    try {
+      return _rc.getInt('cardio_max_duration_sec');
+    } catch (_) {
+      return 10800;
+    }
+  }
 }

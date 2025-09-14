@@ -478,6 +478,34 @@ void main() {
       expect(provider.devices.first.secondaryMuscleGroups, ['s']);
       expect(calls, 1);
     });
+
+    test('cardio set validation', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        firestore: firestore,
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '10', duration: '00:10:00');
+      expect(provider.toggleSetDone(0), true);
+      provider.updateSet(0, speed: '0', duration: '00:00:00');
+      expect(provider.toggleSetDone(0), false);
+    });
+
   });
 }
 

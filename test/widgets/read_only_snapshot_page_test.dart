@@ -19,4 +19,19 @@ void main() {
     expect(find.text('11 kg'), findsOneWidget);
     expect(find.text('1 ×'), findsOneWidget);
   });
+
+  testWidgets('renders cardio set with formatted duration', (tester) async {
+    final snapshot = DeviceSessionSnapshot(
+      sessionId: 's1',
+      deviceId: 'd1',
+      createdAt: DateTime(2024),
+      userId: 'u1',
+      sets: const [SetEntry(speedKmH: 10, durationSec: 90)],
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: ReadOnlySnapshotPage(snapshot: snapshot)),
+    );
+    expect(find.text('10'), findsOneWidget);
+    expect(find.text('00:01:30'), findsOneWidget);
+  });
 }

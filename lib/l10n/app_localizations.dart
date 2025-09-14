@@ -521,6 +521,18 @@ abstract class AppLocalizations {
   /// **'Integer'**
   String get intRequired;
 
+  /// Validation when time is not in hh:mm:ss
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter time as hh:mm:ss'**
+  String get durationInvalid;
+
+  /// Validation when speed is out of range
+  ///
+  /// In en, this message translates to:
+  /// **'Speed > 0 and ≤ {max} km/h'**
+  String speedOutOfRange(Object max);
+
   /// Validation when only one drop field is filled
   ///
   /// In en, this message translates to:

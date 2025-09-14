@@ -311,7 +311,24 @@ service cloud.firestore {
 
         // Device logs (immutable; owner append-only)
         match /logs/{logId} {
-          allow create: if requestOwnerInGym(gymId);
+          allow create: if requestOwnerInGym(gymId) &&
+            request.resource.data.keys().hasOnly([
+              'deviceId',
+              'userId',
+              'exerciseId',
+              'sessionId',
+              'timestamp',
+              'setNumber',
+              'note',
+              'tz',
+              'speedKmH',
+              'durationSec',
+              'weight',
+              'reps',
+              'isBodyweight',
+              'dropWeightKg',
+              'dropReps'
+            ]);
           allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }

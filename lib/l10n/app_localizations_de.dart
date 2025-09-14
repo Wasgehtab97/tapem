@@ -240,6 +240,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get intRequired => 'Ganzzahl';
 
   @override
+  String get durationInvalid => 'Bitte Zeit im Format hh:mm:ss eingeben';
+
+  @override
+  String speedOutOfRange(Object max) {
+    return 'Geschwindigkeit > 0 und ≤ $max km/h';
+  }
+
+  @override
   String get dropFillBoth => 'Beide Drop-Felder ausfüllen oder leeren.';
 
   @override

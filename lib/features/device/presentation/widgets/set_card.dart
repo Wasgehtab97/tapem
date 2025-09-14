@@ -12,6 +12,8 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/util/duration_utils.dart';
+import 'package:tapem/core/config/remote_config.dart';
 
 void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
 
@@ -135,6 +137,14 @@ class SetCardState extends State<SetCard> {
     );
   }
 
+  String _maskDurationInput(String raw) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return '';
+    final trimmed = digits.length > 6 ? digits.substring(digits.length - 6) : digits;
+    final padded = trimmed.padLeft(6, '0');
+    return '${padded.substring(0, 2)}:${padded.substring(2, 4)}:${padded.substring(4, 6)}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -167,9 +177,13 @@ class SetCardState extends State<SetCard> {
         });
         _durationCtrl.addListener(() {
           if (_muteCtrls) return;
+          final formatted = _maskDurationInput(_durationCtrl.text);
+          if (formatted != _durationCtrl.text) {
+            _setTextSilently(_durationCtrl, formatted, 'duration');
+          }
           prov.updateSet(
             widget.index,
-            duration: _durationCtrl.text,
+            duration: formatted,
           );
         });
       } else {
@@ -330,10 +344,13 @@ class SetCardState extends State<SetCard> {
     if (isCardio) {
       final speed = (widget.set['speed'] ?? '').toString().trim();
       final dur = (widget.set['duration'] ?? '').toString().trim();
-      final filled = speed.isNotEmpty &&
-          double.tryParse(speed.replaceAll(',', '.')) != null &&
-          dur.isNotEmpty &&
-          int.tryParse(dur) != null;
+      final speedVal = double.tryParse(speed.replaceAll(',', '.'));
+      final durSec = parseHms(dur);
+      final filled = speedVal != null &&
+          speedVal > 0 &&
+          speedVal <= RC.cardioMaxSpeedKmH &&
+          durSec > 0 &&
+          durSec <= RC.cardioMaxDurationSec;
       return Semantics(
         label: 'Set ${widget.index + 1}',
         child: AnimatedContainer(
@@ -367,8 +384,10 @@ class SetCardState extends State<SetCard> {
                       : () => _openKeypad(_speedCtrl, allowDecimal: true),
                   validator: (v) {
                     if (v == null || v.isEmpty) return null;
-                    if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                      return loc.numberInvalid;
+                    final numVal = double.tryParse(v.replaceAll(',', '.'));
+                    if (numVal == null) return loc.numberInvalid;
+                    if (numVal <= 0 || numVal > RC.cardioMaxSpeedKmH) {
+                      return loc.speedOutOfRange(RC.cardioMaxSpeedKmH);
                     }
                     return null;
                   },
@@ -379,7 +398,7 @@ class SetCardState extends State<SetCard> {
                 child: _InputPill(
                   controller: _durationCtrl,
                   focusNode: _durationFocus,
-                  label: 'sec',
+                  label: 'hh:mm:ss',
                   readOnly: done || widget.readOnly,
                   tokens: tokens,
                   dense: dense,
@@ -388,7 +407,10 @@ class SetCardState extends State<SetCard> {
                       : () => _openKeypad(_durationCtrl, allowDecimal: false),
                   validator: (v) {
                     if (v == null || v.isEmpty) return null;
-                    if (int.tryParse(v) == null) return loc.intRequired;
+                    final sec = parseHms(v);
+                    if (sec <= 0 || sec > RC.cardioMaxDurationSec) {
+                      return loc.durationInvalid;
+                    }
                     return null;
                   },
                 ),
