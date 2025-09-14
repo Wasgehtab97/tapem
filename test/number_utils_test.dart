@@ -12,6 +12,10 @@ void main() {
       expect(parseLenientDouble('005'), 5);
     });
 
+    test('trims whitespace and separators', () {
+      expect(parseLenientDouble(' 10 , 5 '), 10.5);
+    });
+
     test('returns null on invalid input', () {
       expect(parseLenientDouble('abc'), isNull);
       expect(parseLenientDouble(''), isNull);
