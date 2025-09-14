@@ -108,7 +108,6 @@ class SetCardState extends State<SetCard> {
   late final FocusNode _dropWeightFocus;
   late final FocusNode _dropRepsFocus;
   late final TextEditingController _speedCtrl;
-  late final FocusNode _speedFocus;
 
   Stopwatch? _sw;
   Timer? _ticker;
@@ -156,7 +155,6 @@ class SetCardState extends State<SetCard> {
     _repsFocus = FocusNode();
     _dropWeightFocus = FocusNode();
     _dropRepsFocus = FocusNode();
-    _speedFocus = FocusNode();
     _elapsed = parseHms(widget.set['duration'] as String? ?? '');
 
     if (!widget.readOnly) {
@@ -265,7 +263,6 @@ class SetCardState extends State<SetCard> {
     _repsFocus.dispose();
     _dropWeightFocus.dispose();
     _dropRepsFocus.dispose();
-    _speedFocus.dispose();
     super.dispose();
   }
 
@@ -306,7 +303,7 @@ class SetCardState extends State<SetCard> {
     elogUi('cardio_timer_started', {'set': widget.index + 1});
   }
 
-  void _stopTimer() {
+  Future<void> _stopTimer() async {
     if (!_running) return;
     _sw?.stop();
     _ticker?.cancel();
@@ -324,6 +321,36 @@ class SetCardState extends State<SetCard> {
       'set': widget.index + 1,
       'durationSec': _elapsed,
     });
+    await _showCardioDialog();
+  }
+
+  Future<void> _showCardioDialog() async {
+    final loc = AppLocalizations.of(context)!;
+    final ctrl = TextEditingController(text: _speedCtrl.text);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.speedInKmH),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(labelText: loc.speedInKmH),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(loc.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(loc.saveButton),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      _speedCtrl.text = ctrl.text.trim();
+    }
   }
 
   void _clearTimer() {
@@ -336,9 +363,9 @@ class SetCardState extends State<SetCard> {
     context.read<DeviceProvider>().updateSet(widget.index, duration: '');
   }
 
-  void stopTimerIfRunning() {
+  Future<void> stopTimerIfRunning() async {
     if (_running) {
-      _stopTimer();
+      await _stopTimer();
     }
   }
 
@@ -381,14 +408,6 @@ class SetCardState extends State<SetCard> {
     final done = doneVal == true || doneVal == 'true';
     final isCardio = prov.device?.isCardio == true;
     if (isCardio) {
-      final speed = (widget.set['speed'] ?? '').toString().trim();
-      final speedVal = parseLenientDouble(speed);
-      final durSec = _elapsed;
-      final speedValid = speedVal != null &&
-          speedVal > 0 &&
-          speedVal <= RC.cardioMaxSpeedKmH;
-      final durValid = durSec == 0 || (durSec > 0 && durSec <= RC.cardioMaxDurationSec);
-      final filled = speedValid && durValid;
       return Semantics(
         label: 'Set ${widget.index + 1}',
         child: AnimatedContainer(
@@ -410,32 +429,6 @@ class SetCardState extends State<SetCard> {
               ),
               SizedBox(width: dense ? 8 : 12),
               Expanded(
-                child: Semantics(
-                  label: loc.speedInKmH,
-                  child: _InputPill(
-                    controller: _speedCtrl,
-                    focusNode: _speedFocus,
-                    label: 'km/h',
-                    readOnly: done || widget.readOnly,
-                    tokens: tokens,
-                    dense: dense,
-                    onTap: widget.readOnly
-                        ? null
-                        : () => _openKeypad(_speedCtrl, allowDecimal: true),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final numVal = parseLenientDouble(v);
-                      if (numVal == null) return loc.numberInvalid;
-                      if (numVal <= 0 || numVal > RC.cardioMaxSpeedKmH) {
-                        return loc.speedOutOfRange(RC.cardioMaxSpeedKmH);
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(width: dense ? 8 : 12),
-              Expanded(
                 child: _TimerControl(
                   elapsed: _elapsed,
                   running: _running,
@@ -444,29 +437,9 @@ class SetCardState extends State<SetCard> {
                   dense: dense,
                   loc: loc,
                   onStart: _startTimer,
-                  onStop: _stopTimer,
+                  onStop: () => _stopTimer(),
                   onClear: _clearTimer,
                 ),
-              ),
-              SizedBox(width: dense ? 8 : 12),
-              _RoundButton(
-                tokens: tokens,
-                icon: Icons.check,
-                filled: done,
-                semantics:
-                    done ? loc.setReopenTooltip : loc.setCompleteTooltip,
-                dense: dense,
-                onTap: widget.readOnly || !filled
-                    ? null
-                    : () {
-                        final prov = context.read<DeviceProvider>();
-                        final ok = prov.toggleSetDone(widget.index);
-                        if (ok) {
-                          context
-                              .read<OverlayNumericKeypadController>()
-                              .close();
-                        }
-                      },
               ),
             ],
           ),
