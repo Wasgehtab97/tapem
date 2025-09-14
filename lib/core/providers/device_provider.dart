@@ -447,6 +447,7 @@ class DeviceProvider extends ChangeNotifier {
       final speedValid = speedVal != null &&
           speedVal > 0 &&
           speedVal <= RC.cardioMaxSpeedKmH;
+      if (dur.isEmpty) return speedValid;
       final durValid = durSec > 0 && durSec <= RC.cardioMaxDurationSec;
       return speedValid && durValid;
     }
@@ -735,13 +736,16 @@ class DeviceProvider extends ChangeNotifier {
 
       double avgSpeedKmH = 0;
       int totalDurationSec = 0;
+      final speeds = <double>[];
+      final durations = <int>[];
       if (_device!.isCardio) {
-        final speeds = <double>[];
         for (final s in savedSets) {
-          speeds.add(
-            double.tryParse(s['speed']?.replaceAll(',', '.') ?? '0') ?? 0,
-          );
-          totalDurationSec += parseHms(s['duration'] ?? '');
+          final sp =
+              double.tryParse(s['speed']?.replaceAll(',', '.') ?? '0') ?? 0;
+          final du = parseHms(s['duration'] ?? '');
+          speeds.add(sp);
+          durations.add(du);
+          totalDurationSec += du;
         }
         if (speeds.isNotEmpty) {
           avgSpeedKmH = speeds.reduce((a, b) => a + b) / speeds.length;
@@ -760,20 +764,18 @@ class DeviceProvider extends ChangeNotifier {
         'isCardio': _device!.isCardio,
         if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
         if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
+        if (_device!.isCardio) 'speedKmH': speeds,
+        if (_device!.isCardio) 'durationSec': durations,
         'traceId': traceId,
       });
 
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder':
             savedSets.map((s) => int.parse(s['number'])).toList(),
-        if (_device!.isCardio)
-          'speedKmH': savedSets
-              .map((s) => double.tryParse(
-                    s['speed']?.replaceAll(',', '.') ?? '0',
-                  ) ??
-                  0)
-              .toList()
-        else ...{
+        if (_device!.isCardio) ...{
+          'speedKmH': speeds,
+          'durationSec': durations,
+        } else ...{
           'reps':
               savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
           'weights': savedSets
@@ -839,7 +841,7 @@ class DeviceProvider extends ChangeNotifier {
           final speed = double.tryParse(speedStr) ?? 0;
           final duration = parseHms(set['duration'] ?? '');
           data['speedKmH'] = speed;
-          data['durationSec'] = duration;
+          if (duration > 0) data['durationSec'] = duration;
         } else {
           final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
           final weight = double.tryParse(weightStr) ?? 0;
@@ -882,6 +884,8 @@ class DeviceProvider extends ChangeNotifier {
         'isCardio': _device!.isCardio,
         if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
         if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
+        if (_device!.isCardio) 'speedKmH': speeds,
+        if (_device!.isCardio) 'durationSec': durations,
         'traceId': traceId,
       });
 
@@ -899,6 +903,8 @@ class DeviceProvider extends ChangeNotifier {
         'isCardio': _device!.isCardio,
         if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
         if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
+        if (_device!.isCardio) 'speedKmH': speeds,
+        if (_device!.isCardio) 'durationSec': durations,
       });
 
       resolvedDeviceId = resolveDeviceId(snapshot);
@@ -1044,7 +1050,10 @@ class DeviceProvider extends ChangeNotifier {
                 speedKmH: num.tryParse(
                   s['speed']?.toString().replaceAll(',', '.') ?? '0',
                 ),
-                durationSec: parseHms(s['duration']?.toString() ?? ''),
+                durationSec: () {
+                  final d = parseHms(s['duration']?.toString() ?? '');
+                  return d > 0 ? d : null;
+                }(),
                 done: s['done'] == true || s['done'] == 'true',
               );
             }

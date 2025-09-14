@@ -14,8 +14,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/services/membership_service.dart';
 
 class _FakeRepo implements DeviceRepository {
+  final List<Device> devices;
+  _FakeRepo([this.devices = const []]);
   @override
-  Future<List<Device>> getDevicesForGym(String gymId) async => [];
+  Future<List<Device>> getDevicesForGym(String gymId) async => devices;
   @override
   Future<void> createDevice(String gymId, Device device) => throw UnimplementedError();
   @override
@@ -119,5 +121,67 @@ void main() {
       true,
     );
     // Card keeps gradient background, no explicit color check here.
+  });
+
+  testWidgets('Cardio timer start/stop updates duration', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final device = Device(
+      uid: 'c1',
+      id: 1,
+      name: 'Cardio',
+      isCardio: true,
+      primaryMuscleGroups: const ['m1'],
+    );
+    final provider = DeviceProvider(
+      firestore: firestore,
+      getDevicesForGym: GetDevicesForGym(_FakeRepo([device])),
+      log: (_, [__]) {},
+      membership: FakeMembershipService(),
+    );
+    await provider.loadDevice(
+      gymId: 'g1',
+      deviceId: 'c1',
+      exerciseId: 'ex1',
+      userId: 'u1',
+    );
+    provider.updateSet(0, speed: '10');
+
+    final keypadController = OverlayNumericKeypadController();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          Provider<OverlayNumericKeypadController>.value(
+            value: keypadController,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => OverlayNumericKeypadHost(
+            controller: keypadController,
+            outsideTapMode: OutsideTapMode.closeAfterTap,
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Form(
+              child: SetCard(
+                index: 0,
+                set: provider.sets[0],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.play_circle));
+    await tester.pump(const Duration(seconds: 1));
+
+    final state = tester.state<SetCardState>(find.byType(SetCard));
+    state.stopTimerIfRunning();
+    await tester.pumpAndSettle();
+
+    expect(provider.sets[0]['duration'], isNotEmpty);
   });
 }
