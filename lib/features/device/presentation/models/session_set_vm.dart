@@ -21,8 +21,8 @@ List<SessionSetVM> mapSnapshotToVM(DeviceSessionSnapshot snap) {
   for (final s in snap.sets) {
     vm.add(SessionSetVM(
       ordinal: ordinal++,
-      kg: s.kg,
-      reps: s.reps,
+      kg: s.kg ?? 0,
+      reps: s.reps ?? 0,
       drops: s.drops,
       isBodyweight: s.isBodyweight,
     ));

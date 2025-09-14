@@ -51,10 +51,10 @@ class ReadOnlySnapshotPage extends StatelessWidget {
               final drops = s.drops.isNotEmpty ? s.drops : _legacyDrops(snapshot, i);
               final loc = AppLocalizations.of(context)!;
               final weightText = s.isBodyweight
-                  ? (s.kg == 0
+                  ? ((s.kg ?? 0) == 0
                       ? loc.bodyweight
-                      : loc.bodyweightPlus(s.kg))
-                  : s.kg.toString();
+                      : loc.bodyweightPlus(s.kg ?? 0))
+                  : (s.kg?.toString() ?? '0');
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -63,7 +63,7 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                     set: {
                       'number': '${i + 1}',
                       'weight': weightText,
-                      'reps': s.reps.toString(),
+                      'reps': s.reps?.toString() ?? '0',
                       'dropWeight': '',
                       'dropReps': '',
                       'done': s.done,
