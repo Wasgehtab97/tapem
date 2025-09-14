@@ -363,6 +363,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             );
                             return;
                           }
+                          for (final k in _setKeys) {
+                            k.currentState?.stopTimerIfRunning();
+                          }
                           elogUi('SAVE_STARTED', base);
                           final ok = await prov.saveWorkoutSession(
                             context: context,

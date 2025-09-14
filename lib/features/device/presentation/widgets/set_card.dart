@@ -1,6 +1,7 @@
 // lib/features/device/presentation/widgets/set_card.dart
 // SetCard with silent controller updates to prevent re-entrant rebuilds.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -106,9 +107,12 @@ class SetCardState extends State<SetCard> {
   late final FocusNode _dropWeightFocus;
   late final FocusNode _dropRepsFocus;
   late final TextEditingController _speedCtrl;
-  late final TextEditingController _durationCtrl;
   late final FocusNode _speedFocus;
-  late final FocusNode _durationFocus;
+
+  Stopwatch? _sw;
+  Timer? _ticker;
+  int _elapsed = 0;
+  bool _running = false;
 
   bool _showExtras = false;
 
@@ -137,14 +141,6 @@ class SetCardState extends State<SetCard> {
     );
   }
 
-  String _maskDurationInput(String raw) {
-    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return '';
-    final trimmed = digits.length > 6 ? digits.substring(digits.length - 6) : digits;
-    final padded = trimmed.padLeft(6, '0');
-    return '${padded.substring(0, 2)}:${padded.substring(2, 4)}:${padded.substring(4, 6)}';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -155,14 +151,12 @@ class SetCardState extends State<SetCard> {
     _dropRepsCtrl =
         TextEditingController(text: widget.set['dropReps'] as String?);
     _speedCtrl = TextEditingController(text: widget.set['speed'] as String?);
-    _durationCtrl =
-        TextEditingController(text: widget.set['duration'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
     _dropWeightFocus = FocusNode();
     _dropRepsFocus = FocusNode();
     _speedFocus = FocusNode();
-    _durationFocus = FocusNode();
+    _elapsed = parseHms(widget.set['duration'] as String? ?? '');
 
     if (!widget.readOnly) {
       final prov = context.read<DeviceProvider>();
@@ -173,17 +167,6 @@ class SetCardState extends State<SetCard> {
           prov.updateSet(
             widget.index,
             speed: _speedCtrl.text,
-          );
-        });
-        _durationCtrl.addListener(() {
-          if (_muteCtrls) return;
-          final formatted = _maskDurationInput(_durationCtrl.text);
-          if (formatted != _durationCtrl.text) {
-            _setTextSilently(_durationCtrl, formatted, 'duration');
-          }
-          prov.updateSet(
-            widget.index,
-            duration: formatted,
           );
         });
       } else {
@@ -237,8 +220,11 @@ class SetCardState extends State<SetCard> {
       if (oldWidget.set['speed'] != sp) {
         _setTextSilently(_speedCtrl, sp, 'speed');
       }
-      if (oldWidget.set['duration'] != du) {
-        _setTextSilently(_durationCtrl, du, 'duration');
+      if (!_running) {
+        final sec = parseHms(du);
+        if (sec != _elapsed) {
+          _elapsed = sec;
+        }
       }
       return;
     }
@@ -272,13 +258,13 @@ class SetCardState extends State<SetCard> {
     _dropWeightCtrl.dispose();
     _dropRepsCtrl.dispose();
     _speedCtrl.dispose();
-    _durationCtrl.dispose();
+    _ticker?.cancel();
+    _sw?.stop();
     _weightFocus.dispose();
     _repsFocus.dispose();
     _dropWeightFocus.dispose();
     _dropRepsFocus.dispose();
     _speedFocus.dispose();
-    _durationFocus.dispose();
     super.dispose();
   }
 
@@ -301,6 +287,58 @@ class SetCardState extends State<SetCard> {
 
   void focusWeight() {
     _openKeypad(_weightCtrl, allowDecimal: true);
+  }
+
+  void _startTimer() {
+    if (_running) return;
+    HapticFeedback.mediumImpact();
+    _sw = Stopwatch()..start();
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _elapsed = _sw!.elapsed.inSeconds;
+      });
+    });
+    setState(() {
+      _running = true;
+    });
+    elogUi('cardio_timer_started', {'set': widget.index + 1});
+  }
+
+  void _stopTimer() {
+    if (!_running) return;
+    _sw?.stop();
+    _ticker?.cancel();
+    final sec = _sw?.elapsed.inSeconds ?? _elapsed;
+    setState(() {
+      _elapsed = sec;
+      _running = false;
+    });
+    final formatted = formatHms(_elapsed);
+    context.read<DeviceProvider>().updateSet(
+          widget.index,
+          duration: formatted,
+        );
+    elogUi('cardio_timer_stopped', {
+      'set': widget.index + 1,
+      'durationSec': _elapsed,
+    });
+  }
+
+  void _clearTimer() {
+    if (_running) {
+      _stopTimer();
+    }
+    setState(() {
+      _elapsed = 0;
+    });
+    context.read<DeviceProvider>().updateSet(widget.index, duration: '');
+  }
+
+  void stopTimerIfRunning() {
+    if (_running) {
+      _stopTimer();
+    }
   }
 
   String? _validateDrop(String? _) {
@@ -343,14 +381,13 @@ class SetCardState extends State<SetCard> {
     final isCardio = prov.device?.isCardio == true;
     if (isCardio) {
       final speed = (widget.set['speed'] ?? '').toString().trim();
-      final dur = (widget.set['duration'] ?? '').toString().trim();
       final speedVal = double.tryParse(speed.replaceAll(',', '.'));
-      final durSec = parseHms(dur);
-      final filled = speedVal != null &&
+      final durSec = _elapsed;
+      final speedValid = speedVal != null &&
           speedVal > 0 &&
-          speedVal <= RC.cardioMaxSpeedKmH &&
-          durSec > 0 &&
-          durSec <= RC.cardioMaxDurationSec;
+          speedVal <= RC.cardioMaxSpeedKmH;
+      final durValid = durSec == 0 || (durSec > 0 && durSec <= RC.cardioMaxDurationSec);
+      final filled = speedValid && durValid;
       return Semantics(
         label: 'Set ${widget.index + 1}',
         child: AnimatedContainer(
@@ -395,24 +432,16 @@ class SetCardState extends State<SetCard> {
               ),
               SizedBox(width: dense ? 8 : 12),
               Expanded(
-                child: _InputPill(
-                  controller: _durationCtrl,
-                  focusNode: _durationFocus,
-                  label: 'hh:mm:ss',
+                child: _TimerControl(
+                  elapsed: _elapsed,
+                  running: _running,
                   readOnly: done || widget.readOnly,
                   tokens: tokens,
                   dense: dense,
-                  onTap: widget.readOnly
-                      ? null
-                      : () => _openKeypad(_durationCtrl, allowDecimal: false),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    final sec = parseHms(v);
-                    if (sec <= 0 || sec > RC.cardioMaxDurationSec) {
-                      return loc.durationInvalid;
-                    }
-                    return null;
-                  },
+                  loc: loc,
+                  onStart: _startTimer,
+                  onStop: _stopTimer,
+                  onClear: _clearTimer,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -757,6 +786,102 @@ class _InputPill extends StatelessWidget {
           ),
           style: dense ? const TextStyle(fontSize: 14) : null,
           validator: validator,
+        ),
+      ),
+    );
+  }
+}
+
+class _TimerControl extends StatelessWidget {
+  final int elapsed;
+  final bool running;
+  final bool readOnly;
+  final SetCardTheme tokens;
+  final bool dense;
+  final AppLocalizations loc;
+  final VoidCallback onStart;
+  final VoidCallback onStop;
+  final VoidCallback onClear;
+
+  const _TimerControl({
+    required this.elapsed,
+    required this.running,
+    required this.readOnly,
+    required this.tokens,
+    required this.dense,
+    required this.loc,
+    required this.onStart,
+    required this.onStop,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final text = formatHms(elapsed);
+    final display = readOnly && elapsed == 0 ? '—' : text;
+    final canClear = !running && elapsed > 0 && !readOnly;
+    return Semantics(
+      button: !readOnly,
+      label: readOnly
+          ? display
+          : running
+              ? loc.timerStop
+              : loc.timerStart,
+      child: GestureDetector(
+        onTap: readOnly
+            ? null
+            : running
+                ? onStop
+                : onStart,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x1FFFFFFF), Color(0x14FFFFFF)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: tokens.chipFg.withOpacity(0.3),
+              width: 1.3,
+            ),
+          ),
+          padding:
+              EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!readOnly)
+                Icon(
+                  running ? Icons.stop_circle : Icons.play_circle,
+                  size: dense ? 20 : 24,
+                  color: tokens.chipFg,
+                ),
+              if (!readOnly) const SizedBox(width: 4),
+              Text(
+                display,
+                style: TextStyle(
+                  color: tokens.chipFg,
+                  fontSize: dense ? 14 : 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (canClear) ...[
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onClear,
+                  child: Icon(
+                    Icons.close,
+                    size: dense ? 16 : 18,
+                    color: tokens.chipFg.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

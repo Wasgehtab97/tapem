@@ -771,5 +771,54 @@ describe('Security Rules v1', function () {
         ref.set({ userId: 'userB', xp: 0, level: 1, showInLeaderboard: true })
       );
     });
+
+    it('allows cardio log without durationSec', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('logs')
+        .doc('l1');
+      await assertSucceeds(
+        ref.set({
+          deviceId: 'D1',
+          userId: 'userA',
+          exerciseId: 'ex1',
+          sessionId: 's1',
+          timestamp: FieldValue.serverTimestamp(),
+          setNumber: 1,
+          note: '',
+          tz: 'UTC',
+          speedKmH: 10,
+        })
+      );
+    });
+
+    it('allows cardio log with durationSec', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('logs')
+        .doc('l2');
+      await assertSucceeds(
+        ref.set({
+          deviceId: 'D1',
+          userId: 'userA',
+          exerciseId: 'ex1',
+          sessionId: 's1',
+          timestamp: FieldValue.serverTimestamp(),
+          setNumber: 1,
+          note: '',
+          tz: 'UTC',
+          speedKmH: 10,
+          durationSec: 5,
+        })
+      );
+    });
   });
 });

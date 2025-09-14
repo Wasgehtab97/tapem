@@ -333,8 +333,88 @@ void main() {
       expect(provider.completedCount, 0);
       provider.updateSet(0, reps: '5');
       provider.toggleSetDone(0);
-      expect(provider.completedCount, 1);
+    expect(provider.completedCount, 1);
+  });
+
+  group('cardio validation', () {
+    test('set complete with speed only', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '10');
+      final ok = provider.toggleSetDone(0);
+      expect(ok, true);
     });
+
+    test('invalid speed blocks completion', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '0');
+      final ok = provider.toggleSetDone(0);
+      expect(ok, false);
+    });
+
+    test('invalid duration blocks completion', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '10', duration: '03:00:01');
+      final ok = provider.toggleSetDone(0);
+      expect(ok, false);
+    });
+  });
 
     test('loadDevice filters snapshots by exercise for multi device', () async {
       final repo = _ExerciseSnapRepo(
@@ -506,6 +586,111 @@ void main() {
       expect(provider.toggleSetDone(0), false);
     });
 
+  });
+
+  testWidgets('cardio save omits empty duration', (tester) async {
+    final firestore = FakeFirebaseFirestore();
+    final device = Device(
+      uid: 'c1',
+      id: 1,
+      name: 'Cardio',
+      isCardio: true,
+      primaryMuscleGroups: const ['m1'],
+    );
+    final xpRepo = FakeXpRepository();
+    final chRepo = FakeChallengeRepository();
+    final provider = DeviceProvider(
+      firestore: firestore,
+      getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+      log: (_, [__]) {},
+      membership: FakeMembershipService(),
+    );
+    await provider.loadDevice(
+      gymId: 'g1',
+      deviceId: 'c1',
+      exerciseId: 'ex1',
+      userId: 'u1',
+    );
+    provider.updateSet(0, speed: '10');
+    provider.toggleSetDone(0);
+
+    final xpProvider = XpProvider(repo: xpRepo);
+    final challengeProvider = ChallengeProvider(repo: chRepo);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
+          ChangeNotifierProvider<ChallengeProvider>.value(
+              value: challengeProvider),
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SizedBox())),
+      ),
+    );
+    final ctx = tester.element(find.byType(SizedBox));
+    var ok = await provider.saveWorkoutSession(
+      context: ctx,
+      gymId: 'g1',
+      userId: 'u1',
+      showInLeaderboard: false,
+    );
+    expect(ok, true);
+
+    final logs = await firestore
+        .collection('gyms')
+        .doc('g1')
+        .collection('devices')
+        .doc('c1')
+        .collection('logs')
+        .orderBy('setNumber')
+        .get();
+    expect(logs.docs.first.data().containsKey('durationSec'), false);
+
+    final provider2 = DeviceProvider(
+      firestore: firestore,
+      getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+      log: (_, [__]) {},
+      membership: FakeMembershipService(),
+    );
+    await provider2.loadDevice(
+      gymId: 'g1',
+      deviceId: 'c1',
+      exerciseId: 'ex1',
+      userId: 'u1',
+    );
+    provider2.updateSet(0, speed: '10', duration: '00:00:05');
+    provider2.toggleSetDone(0);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
+          ChangeNotifierProvider<ChallengeProvider>.value(
+              value: challengeProvider),
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider2),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SizedBox())),
+      ),
+    );
+    final ctx2 = tester.element(find.byType(SizedBox));
+    ok = await provider2.saveWorkoutSession(
+      context: ctx2,
+      gymId: 'g1',
+      userId: 'u1',
+      showInLeaderboard: false,
+    );
+    expect(ok, true);
+
+    final logs2 = await firestore
+        .collection('gyms')
+        .doc('g1')
+        .collection('devices')
+        .doc('c1')
+        .collection('logs')
+        .orderBy('setNumber')
+        .get();
+    expect(logs2.docs[1].data()['durationSec'], 5);
   });
 }
 
