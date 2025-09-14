@@ -248,6 +248,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get speedInKmH => 'Speed in km/h';
+
+  @override
   String get dropFillBoth => 'Fill both drop fields or clear them.';
 
   @override

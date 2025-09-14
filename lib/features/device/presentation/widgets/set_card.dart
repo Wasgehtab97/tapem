@@ -15,6 +15,7 @@ import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/util/duration_utils.dart';
 import 'package:tapem/core/config/remote_config.dart';
+import 'package:tapem/core/util/number_utils.dart';
 
 void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
 
@@ -381,7 +382,7 @@ class SetCardState extends State<SetCard> {
     final isCardio = prov.device?.isCardio == true;
     if (isCardio) {
       final speed = (widget.set['speed'] ?? '').toString().trim();
-      final speedVal = double.tryParse(speed.replaceAll(',', '.'));
+      final speedVal = parseLenientDouble(speed);
       final durSec = _elapsed;
       final speedValid = speedVal != null &&
           speedVal > 0 &&
@@ -409,25 +410,28 @@ class SetCardState extends State<SetCard> {
               ),
               SizedBox(width: dense ? 8 : 12),
               Expanded(
-                child: _InputPill(
-                  controller: _speedCtrl,
-                  focusNode: _speedFocus,
-                  label: 'km/h',
-                  readOnly: done || widget.readOnly,
-                  tokens: tokens,
-                  dense: dense,
-                  onTap: widget.readOnly
-                      ? null
-                      : () => _openKeypad(_speedCtrl, allowDecimal: true),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    final numVal = double.tryParse(v.replaceAll(',', '.'));
-                    if (numVal == null) return loc.numberInvalid;
-                    if (numVal <= 0 || numVal > RC.cardioMaxSpeedKmH) {
-                      return loc.speedOutOfRange(RC.cardioMaxSpeedKmH);
-                    }
-                    return null;
-                  },
+                child: Semantics(
+                  label: loc.speedInKmH,
+                  child: _InputPill(
+                    controller: _speedCtrl,
+                    focusNode: _speedFocus,
+                    label: 'km/h',
+                    readOnly: done || widget.readOnly,
+                    tokens: tokens,
+                    dense: dense,
+                    onTap: widget.readOnly
+                        ? null
+                        : () => _openKeypad(_speedCtrl, allowDecimal: true),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      final numVal = parseLenientDouble(v);
+                      if (numVal == null) return loc.numberInvalid;
+                      if (numVal <= 0 || numVal > RC.cardioMaxSpeedKmH) {
+                        return loc.speedOutOfRange(RC.cardioMaxSpeedKmH);
+                      }
+                      return null;
+                    },
+                  ),
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),

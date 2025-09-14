@@ -320,6 +320,10 @@
       }
     }
   },
+  "speedInKmH": "Geschwindigkeit in km/h",
+  "@speedInKmH": {
+    "description": "Screenreader-Label für Geschwindigkeitsfeld"
+  },
 
   "dropFillBoth": "Beide Drop-Felder ausfüllen oder leeren.",
   "@dropFillBoth": {
