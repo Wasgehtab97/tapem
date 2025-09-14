@@ -487,10 +487,11 @@ void main() {
         exerciseId: 'ex1',
         userId: 'u1',
       );
-      provider.updateSet(0, speed: '10,5');
-      expect(provider.toggleSetDone(0), true);
-      provider.updateSet(0, done: false, speed: '005');
-      expect(provider.toggleSetDone(0), true);
+        provider.updateSet(0, speed: '10,5');
+        expect(provider.toggleSetDone(0), true);
+        provider.toggleSetDone(0);
+        provider.updateSet(0, speed: '005');
+        expect(provider.toggleSetDone(0), true);
     });
 
     test('speed over max invalid', () async {
