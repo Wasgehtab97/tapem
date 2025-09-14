@@ -283,6 +283,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get todayAlreadySaved => 'Already saved today.';
 
+  String get cardioCapHint =>
+      'You have already saved a session on this device today.';
+
   @override
   String get setRemoved => 'Set removed';
 

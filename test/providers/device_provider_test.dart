@@ -821,5 +821,73 @@ void main() {
         .get();
     expect(logs2.docs[1].data()['durationSec'], 5);
   });
+
+  test('checkCardioCap detects existing cardio session', () async {
+    final firestore = FakeFirebaseFirestore();
+    final cardio = Device(
+      uid: 'c1',
+      id: 1,
+      name: 'Cardio',
+      isCardio: true,
+      primaryMuscleGroups: const ['m1'],
+    );
+    final strength = Device(
+      uid: 's1',
+      id: 2,
+      name: 'Strength',
+      primaryMuscleGroups: const ['m2'],
+    );
+    await firestore
+        .collection('gyms')
+        .doc('g1')
+        .collection('devices')
+        .doc('c1')
+        .collection('sessions')
+        .doc('sess1')
+        .set({
+      'sessionId': 'sess1',
+      'deviceId': 'c1',
+      'userId': 'u1',
+      'createdAt': Timestamp.fromDate(DateTime.now()),
+    });
+    await firestore
+        .collection('gyms')
+        .doc('g1')
+        .collection('devices')
+        .doc('s1')
+        .collection('sessions')
+        .doc('sess2')
+        .set({
+      'sessionId': 'sess2',
+      'deviceId': 's1',
+      'userId': 'u1',
+      'createdAt': Timestamp.fromDate(DateTime.now()),
+    });
+    final provider = DeviceProvider(
+      firestore: firestore,
+      getDevicesForGym:
+          GetDevicesForGym(FakeDeviceRepository([cardio, strength])),
+      log: (_, [__]) {},
+      membership: FakeMembershipService(),
+    );
+    await provider.loadDevice(
+      gymId: 'g1',
+      deviceId: 'c1',
+      exerciseId: 'ex1',
+      userId: 'u1',
+    );
+    await provider.checkCardioCap(
+      gymId: 'g1',
+      deviceId: 'c1',
+      userId: 'u1',
+    );
+    expect(provider.cardioCapReached, isTrue);
+    await provider.checkCardioCap(
+      gymId: 'g1',
+      deviceId: 'c1',
+      userId: 'u2',
+    );
+    expect(provider.cardioCapReached, isFalse);
+  });
 }
 

@@ -10,11 +10,15 @@ import 'package:tapem/core/providers/device_provider.dart';
 class CardioRunner extends StatelessWidget {
   final VoidCallback onCancel;
   final ValueChanged<int> onSave;
+  final bool capReached;
+  final String? capMessage;
 
   const CardioRunner({
     super.key,
     required this.onCancel,
     required this.onSave,
+    this.capReached = false,
+    this.capMessage,
   });
 
   @override
@@ -34,6 +38,17 @@ class CardioRunner extends StatelessWidget {
                 style: theme.textTheme.displaySmall,
               ),
             ),
+            if (capReached && capMessage != null) ...[
+              const SizedBox(height: 16),
+              Semantics(
+                focusable: true,
+                child: Text(
+                  capMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+            ],
             const Spacer(),
             Semantics(
               label: timer.isRunning
@@ -76,7 +91,9 @@ class CardioRunner extends StatelessWidget {
                     child: Text(loc.cancelButton),
                   ),
                   ElevatedButton(
-                    onPressed: timer.isStopped && timer.elapsedSec > 0
+                    onPressed: timer.isStopped &&
+                            timer.elapsedSec > 0 &&
+                            !capReached
                         ? () => onSave(timer.elapsedSec)
                         : null,
                     child: Text(loc.saveButton),

@@ -33,6 +33,7 @@ import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/util/duration_utils.dart';
 import 'package:tapem/core/config/remote_config.dart';
+import 'package:intl/intl.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -97,6 +98,7 @@ class DeviceProvider extends ChangeNotifier {
   bool _snapshotsHasMore = true;
   bool _snapshotsLoading = false;
   Timer? _prefetchTimer;
+  bool _cardioCapReached = false;
 
   DeviceProvider({
     required FirebaseFirestore firestore,
@@ -152,6 +154,7 @@ class DeviceProvider extends ChangeNotifier {
 
   List<DeviceSessionSnapshot> get sessionSnapshots =>
       List.unmodifiable(_sessionSnapshots);
+  bool get cardioCapReached => _cardioCapReached;
   bool get hasMoreSnapshots => _snapshotsHasMore;
   bool get isLoadingSnapshots => _snapshotsLoading;
 
@@ -326,6 +329,11 @@ class DeviceProvider extends ChangeNotifier {
       notifyListeners();
 
       await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
+      await checkCardioCap(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
 
       if (FF.showLastSessionOnDevicePage ||
           FF.runtimeShowLastSessionOnDevicePage) {
@@ -1086,7 +1094,32 @@ class DeviceProvider extends ChangeNotifier {
       'durationSec': durationSec,
       'intervalCount': 0,
     });
+    _cardioCapReached = true;
+    notifyListeners();
     return true;
+  }
+
+  Future<void> checkCardioCap({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) async {
+    if (_device?.isCardio != true) return;
+    final today = DateTime.now();
+    final has = await deviceRepository.hasSessionForDate(
+      gymId: gymId,
+      deviceId: deviceId,
+      userId: userId,
+      date: today,
+    );
+    _cardioCapReached = has;
+    if (has) {
+      elogUi('cardio_cap_blocked', {
+        'deviceId': deviceId,
+        'date': DateFormat('yyyy-MM-dd').format(today),
+      });
+    }
+    notifyListeners();
   }
 
   DeviceSessionSnapshot _buildSnapshot({
