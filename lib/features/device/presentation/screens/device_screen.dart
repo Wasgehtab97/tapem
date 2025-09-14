@@ -56,6 +56,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
   final _pagerKey = GlobalKey<DevicePagerState>();
+  late OverlayNumericKeypadController _keypad;
 
   @override
   void initState() {
@@ -83,6 +84,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
       _dlog('loadDevice() → done');
       setState(() {});
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _keypad = context.read<OverlayNumericKeypadController>();
   }
 
   void _addSet() {
@@ -116,7 +123,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   void _closeKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
-    context.read<OverlayNumericKeypadController>().close();
+    _keypad.close();
   }
 
   Widget _buildEditablePage(

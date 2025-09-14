@@ -323,12 +323,18 @@ service cloud.firestore {
               'tz',
               'speedKmH',
               'durationSec',
+              'mode',
+              'intervals',
               'weight',
               'reps',
               'isBodyweight',
               'dropWeightKg',
               'dropReps'
-            ]);
+            ]) &&
+            (request.resource.data.speedKmH == null || request.resource.data.speedKmH is number) &&
+            (request.resource.data.durationSec == null || request.resource.data.durationSec is int) &&
+            (request.resource.data.mode == null || request.resource.data.mode is string) &&
+            (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number)));
           allow read: if resourceOwnerOrAdmin(gymId);
           allow update, delete: if false;
         }
@@ -348,11 +354,15 @@ service cloud.firestore {
               'uiHints',
               'isCardio',
               'mode',
-              'durationSec'
+              'durationSec',
+              'speedKmH',
+              'intervals'
             ]) &&
             (request.resource.data.isCardio == null || request.resource.data.isCardio is bool) &&
             (request.resource.data.mode == null || request.resource.data.mode is string) &&
-            (request.resource.data.durationSec == null || request.resource.data.durationSec is int);
+            (request.resource.data.durationSec == null || request.resource.data.durationSec is int) &&
+            (request.resource.data.speedKmH == null || request.resource.data.speedKmH is number) &&
+            (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number)));
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
           allow update, delete: if false;
