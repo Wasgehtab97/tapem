@@ -938,7 +938,7 @@ class DeviceProvider extends ChangeNotifier {
               .addSessionXp(
             gymId: gymId,
             userId: userId,
-            deviceId: resolvedDeviceId!,
+            deviceId: resolvedDeviceId,
             sessionId: sessionId,
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
@@ -961,7 +961,7 @@ class DeviceProvider extends ChangeNotifier {
           await Provider.of<ChallengeProvider>(
             context,
             listen: false,
-          ).checkChallenges(gymId, userId, resolvedDeviceId!);
+          ).checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
           XpTrace.log('CALL_RESULT', {
             'result': 'error',

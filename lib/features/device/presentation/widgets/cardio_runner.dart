@@ -19,7 +19,7 @@ class CardioRunner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context)!;
     return Consumer<CardioTimerProvider>(
       builder: (context, timer, _) {
         final time = formatHms(timer.elapsedSec);
