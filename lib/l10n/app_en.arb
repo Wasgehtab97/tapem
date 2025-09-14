@@ -306,6 +306,21 @@
     "description": "Validation when an integer is expected"
   },
 
+  "durationInvalid": "Please enter time as hh:mm:ss",
+  "@durationInvalid": {
+    "description": "Validation when time is not hh:mm:ss"
+  },
+
+  "speedOutOfRange": "Speed > 0 and ≤ {max} km/h",
+  "@speedOutOfRange": {
+    "description": "Validation when speed is out of range",
+    "placeholders": {
+      "max": {
+        "type": "num"
+      }
+    }
+  },
+
   "dropFillBoth": "Fill both drop fields or clear them.",
   "@dropFillBoth": {
     "description": "Validation when only one drop field is filled"

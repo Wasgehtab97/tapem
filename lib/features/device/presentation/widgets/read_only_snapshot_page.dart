@@ -4,6 +4,7 @@ import 'package:tapem/features/device/domain/models/device_session_snapshot.dart
 import 'set_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/util/duration_utils.dart';
 
 class ReadOnlySnapshotPage extends StatelessWidget {
   final DeviceSessionSnapshot snapshot;
@@ -41,7 +42,9 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                   set: {
                     'number': '${i + 1}',
                     'speed': s.speedKmH?.toString() ?? '',
-                    'duration': s.durationSec?.toString() ?? '',
+                    'duration': s.durationSec == null
+                        ? ''
+                        : formatHms(s.durationSec!),
                     'done': s.done,
                   },
                   readOnly: true,

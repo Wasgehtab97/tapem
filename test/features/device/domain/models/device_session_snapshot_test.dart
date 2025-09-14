@@ -19,6 +19,7 @@ void main() {
           drops: [DropEntry(kg: 10, reps: 5)],
         ),
         SetEntry(kg: 0, reps: 5, isBodyweight: true),
+        SetEntry(speedKmH: 10, durationSec: 90, done: true),
       ],
     );
 
@@ -33,5 +34,7 @@ void main() {
     expect(decoded.sets.first.drops.first.kg, 10);
     expect(decoded.sets[1].isBodyweight, true);
     expect(decoded.sets[1].kg, 0);
+    expect(decoded.sets[2].speedKmH, 10);
+    expect(decoded.sets[2].durationSec, 90);
   });
 }

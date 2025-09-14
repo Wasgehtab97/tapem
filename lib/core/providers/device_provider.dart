@@ -31,6 +31,7 @@ import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/util/duration_utils.dart';
+import 'package:tapem/core/config/remote_config.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -441,9 +442,12 @@ class DeviceProvider extends ChangeNotifier {
     if (_device?.isCardio == true) {
       final sp = (s['speed'] ?? '').toString().trim();
       final dur = (s['duration'] ?? '').toString().trim();
-      final speedValid =
-          sp.isNotEmpty && double.tryParse(sp.replaceAll(',', '.')) != null;
-      final durValid = dur.isNotEmpty && int.tryParse(dur) != null;
+      final speedVal = double.tryParse(sp.replaceAll(',', '.'));
+      final durSec = parseHms(dur);
+      final speedValid = speedVal != null &&
+          speedVal > 0 &&
+          speedVal <= RC.cardioMaxSpeedKmH;
+      final durValid = durSec > 0 && durSec <= RC.cardioMaxDurationSec;
       return speedValid && durValid;
     }
     final w = (s['weight'] ?? '').toString().trim();
@@ -716,17 +720,6 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     _isSaving = true;
     _log('💾 [Provider] saveWorkoutSession start sets=${_setsBrief(_sets)}');
-    XpTrace.log('SAVE_START', {
-      'gymId': gymId,
-      'uid': userId,
-      'deviceId': _device!.uid,
-      'resolvedDeviceId': resolvedDeviceId,
-      'isMulti': _device!.isMulti,
-      'exerciseId': _currentExerciseId,
-      'showInLeaderboard': showInLeaderboard,
-      'restricted': false,
-      'traceId': traceId,
-    });
     notifyListeners();
 
     try {
@@ -739,6 +732,36 @@ class DeviceProvider extends ChangeNotifier {
         XpTrace.log('SKIP', {'reason': 'noCompletedSets', 'traceId': traceId});
         return false;
       }
+
+      double avgSpeedKmH = 0;
+      int totalDurationSec = 0;
+      if (_device!.isCardio) {
+        final speeds = <double>[];
+        for (final s in savedSets) {
+          speeds.add(
+            double.tryParse(s['speed']?.replaceAll(',', '.') ?? '0') ?? 0,
+          );
+          totalDurationSec += parseHms(s['duration'] ?? '');
+        }
+        if (speeds.isNotEmpty) {
+          avgSpeedKmH = speeds.reduce((a, b) => a + b) / speeds.length;
+        }
+      }
+
+      XpTrace.log('SAVE_START', {
+        'gymId': gymId,
+        'uid': userId,
+        'deviceId': _device!.uid,
+        'resolvedDeviceId': resolvedDeviceId,
+        'isMulti': _device!.isMulti,
+        'exerciseId': _currentExerciseId,
+        'showInLeaderboard': showInLeaderboard,
+        'restricted': false,
+        'isCardio': _device!.isCardio,
+        if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
+        if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
+        'traceId': traceId,
+      });
 
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder':
@@ -856,6 +879,9 @@ class DeviceProvider extends ChangeNotifier {
       XpTrace.log('LOGS_STORED', {
         'sessionId': sessionId,
         'sets': savedSets.length,
+        'isCardio': _device!.isCardio,
+        if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
+        if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
         'traceId': traceId,
       });
 
@@ -870,6 +896,9 @@ class DeviceProvider extends ChangeNotifier {
         'isMulti': _device!.isMulti,
         'dayKey': dayKey,
         'screen': 'DeviceScreen',
+        'isCardio': _device!.isCardio,
+        if (_device!.isCardio) 'avgSpeedKmH': avgSpeedKmH,
+        if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
       });
 
       final resolvedDeviceId = resolveDeviceId(snapshot);
@@ -891,7 +920,11 @@ class DeviceProvider extends ChangeNotifier {
           'isMulti': _device!.isMulti,
           'showInLeaderboard': showInLeaderboard,
         });
-        XpTrace.log('CALL_ADD_SESSION_XP', {'intent': 'credit', 'traceId': traceId});
+        XpTrace.log('CALL_ADD_SESSION_XP', {
+          'intent': 'credit',
+          'traceId': traceId,
+          'isCardio': _device!.isCardio,
+        });
         try {
           final xpResult = await Provider.of<XpProvider>(context, listen: false)
               .addSessionXp(
@@ -908,6 +941,7 @@ class DeviceProvider extends ChangeNotifier {
             'result': xpResult.name,
             'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
             'traceId': traceId,
+            'isCardio': _device!.isCardio,
           });
           if (xpResult == DeviceXpResult.okAdded) {
             final info = LevelService()
@@ -921,7 +955,12 @@ class DeviceProvider extends ChangeNotifier {
             listen: false,
           ).checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
-          XpTrace.log('CALL_RESULT', {'result': 'error', 'traceId': traceId, 'error': e.toString()});
+          XpTrace.log('CALL_RESULT', {
+            'result': 'error',
+            'traceId': traceId,
+            'error': e.toString(),
+            'isCardio': _device!.isCardio,
+          });
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
         }
       }
@@ -1076,7 +1115,11 @@ class DeviceProvider extends ChangeNotifier {
             ? {
                 'number': '${entry.key + 1}',
                 'speed': '${entry.value.data()['speedKmH'] ?? ''}',
-                'duration': '${entry.value.data()['durationSec'] ?? ''}',
+                'duration': () {
+                  final dur =
+                      (entry.value.data()['durationSec'] as num?)?.toInt() ?? 0;
+                  return dur > 0 ? formatHms(dur) : '';
+                }(),
               }
             : {
                 'number': '${entry.key + 1}',

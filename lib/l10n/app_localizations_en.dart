@@ -240,6 +240,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get intRequired => 'Integer';
 
   @override
+  String get durationInvalid => 'Please enter time as hh:mm:ss';
+
+  @override
+  String speedOutOfRange(Object max) {
+    return 'Speed > 0 and ≤ $max km/h';
+  }
+
+  @override
   String get dropFillBoth => 'Fill both drop fields or clear them.';
 
   @override
