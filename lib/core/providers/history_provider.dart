@@ -102,14 +102,15 @@ class HistoryProvider extends ChangeNotifier {
         logsSorted.map((e) => e.weight).where((w) => w != null).cast<double>();
     _heaviest = weights.isNotEmpty
         ? weights.reduce((a, b) => a > b ? a : b)
-        : 0;
+        : 0.0;
 
     _e1rmChart = sessionEntries.map((e) {
       final date = e.value.first.timestamp;
       final vals = e.value
           .where((l) => l.weight != null && l.reps != null)
           .map((l) => l.weight! * (1 + l.reps! / 30));
-      final e1rm = vals.isNotEmpty ? vals.reduce((a, b) => a > b ? a : b) : 0;
+      final e1rm =
+          vals.isNotEmpty ? vals.reduce((a, b) => a > b ? a : b) : 0.0;
       return ChartPoint(date, e1rm);
     }).toList();
 
