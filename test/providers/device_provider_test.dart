@@ -271,6 +271,57 @@ void main() {
       expect(chRepo.calls, 1);
     });
 
+    testWidgets('saveWorkoutSession cardio persists speed only', (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        firestore: firestore,
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '10');
+      provider.toggleSetDone(0);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<DeviceProvider>.value(
+          value: provider,
+          child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        ),
+      );
+
+      final ctx = tester.element(find.byType(SizedBox));
+      final ok = await provider.saveWorkoutSession(
+        context: ctx,
+        gymId: 'g1',
+        userId: 'u1',
+        showInLeaderboard: false,
+      );
+      expect(ok, isTrue);
+
+      final logs = await firestore
+          .collection('gyms')
+          .doc('g1')
+          .collection('devices')
+          .doc('c1')
+          .collection('logs')
+          .get();
+      expect(logs.docs.first.data()['speedKmH'], 10);
+      expect(logs.docs.first.data().containsKey('durationSec'), false);
+    });
+
     testWidgets('saveWorkoutSession without completed sets aborts', (tester) async {
       final firestore = FakeFirebaseFirestore();
       final device = Device(
@@ -413,6 +464,83 @@ void main() {
       provider.updateSet(0, speed: '10', duration: '03:00:01');
       final ok = provider.toggleSetDone(0);
       expect(ok, false);
+    });
+
+    test('accepts decimal and comma speeds', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '10,5');
+      expect(provider.toggleSetDone(0), true);
+      provider.updateSet(0, done: false, speed: '005');
+      expect(provider.toggleSetDone(0), true);
+    });
+
+    test('speed over max invalid', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: '50');
+      expect(provider.toggleSetDone(0), false);
+    });
+
+    test('non numeric speed invalid', () async {
+      final firestore = FakeFirebaseFirestore();
+      final device = Device(
+        uid: 'c1',
+        id: 1,
+        name: 'Cardio',
+        isCardio: true,
+        primaryMuscleGroups: const ['m1'],
+      );
+      final provider = DeviceProvider(
+        firestore: firestore,
+        getDevicesForGym: GetDevicesForGym(FakeDeviceRepository([device])),
+        log: (_, [__]) {},
+        membership: FakeMembershipService(),
+      );
+      await provider.loadDevice(
+        gymId: 'g1',
+        deviceId: 'c1',
+        exerciseId: 'ex1',
+        userId: 'u1',
+      );
+      provider.updateSet(0, speed: 'abc');
+      expect(provider.toggleSetDone(0), false);
     });
   });
 

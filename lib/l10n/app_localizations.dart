@@ -533,6 +533,12 @@ abstract class AppLocalizations {
   /// **'Speed > 0 and ≤ {max} km/h'**
   String speedOutOfRange(Object max);
 
+  /// Screenreader label for speed field
+  ///
+  /// In en, this message translates to:
+  /// **'Speed in km/h'**
+  String get speedInKmH;
+
   /// Validation when only one drop field is filled
   ///
   /// In en, this message translates to:

@@ -1,4 +1,5 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:flutter/foundation.dart';
 
 class RC {
   RC._();
@@ -25,9 +26,13 @@ class RC {
   static bool get avatarsV2GrantsEnabled =>
       _rc.getBool('avatars_v2_grants_enabled');
 
+  @visibleForTesting
+  static double cardioMaxSpeedFrom(double rcVal) => rcVal > 0 ? rcVal : 40.0;
+
   static double get cardioMaxSpeedKmH {
     try {
-      return _rc.getDouble('cardio_max_speed_kmh');
+      final v = _rc.getDouble('cardio_max_speed_kmh');
+      return cardioMaxSpeedFrom(v);
     } catch (_) {
       return 40.0;
     }

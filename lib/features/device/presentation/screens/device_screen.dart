@@ -320,6 +320,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             );
                             return;
                           }
+                          FocusScope.of(context).unfocus();
                           final counts = prov.getSetCounts();
                           final totalFilled =
                               counts.done + counts.filledNotDone;

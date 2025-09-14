@@ -320,6 +320,10 @@
       }
     }
   },
+  "speedInKmH": "Speed in km/h",
+  "@speedInKmH": {
+    "description": "Screenreader label for speed field"
+  },
 
   "dropFillBoth": "Fill both drop fields or clear them.",
   "@dropFillBoth": {

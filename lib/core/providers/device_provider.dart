@@ -18,6 +18,7 @@ import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/core/util/number_utils.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -442,11 +443,14 @@ class DeviceProvider extends ChangeNotifier {
     if (_device?.isCardio == true) {
       final sp = (s['speed'] ?? '').toString().trim();
       final dur = (s['duration'] ?? '').toString().trim();
-      final speedVal = double.tryParse(sp.replaceAll(',', '.'));
+      final speedVal = parseLenientDouble(sp);
       final durSec = parseHms(dur);
       final speedValid = speedVal != null &&
           speedVal > 0 &&
           speedVal <= RC.cardioMaxSpeedKmH;
+      if (sp.isNotEmpty && !speedValid) {
+        elogUi('cardio_speed_invalid', {'input': sp});
+      }
       if (dur.isEmpty) return speedValid;
       final durValid = durSec > 0 && durSec <= RC.cardioMaxDurationSec;
       return speedValid && durValid;
@@ -740,8 +744,7 @@ class DeviceProvider extends ChangeNotifier {
       final durations = <int>[];
       if (_device!.isCardio) {
         for (final s in savedSets) {
-          final sp =
-              double.tryParse(s['speed']?.replaceAll(',', '.') ?? '0') ?? 0;
+          final sp = parseLenientDouble(s['speed']?.toString() ?? '') ?? 0;
           final du = parseHms(s['duration'] ?? '');
           speeds.add(sp);
           durations.add(du);
@@ -837,8 +840,7 @@ class DeviceProvider extends ChangeNotifier {
           'tz': tz,
         };
         if (_device!.isCardio) {
-          final speedStr = (set['speed'] ?? '').toString().replaceAll(',', '.');
-          final speed = double.tryParse(speedStr) ?? 0;
+          final speed = parseLenientDouble(set['speed']?.toString() ?? '') ?? 0;
           final duration = parseHms(set['duration'] ?? '');
           data['speedKmH'] = speed;
           if (duration > 0) data['durationSec'] = duration;
@@ -1047,8 +1049,8 @@ class DeviceProvider extends ChangeNotifier {
           .map((s) {
             if (device.isCardio) {
               return SetEntry(
-                speedKmH: num.tryParse(
-                  s['speed']?.toString().replaceAll(',', '.') ?? '0',
+                speedKmH: parseLenientDouble(
+                  s['speed']?.toString() ?? '',
                 ),
                 durationSec: () {
                   final d = parseHms(s['duration']?.toString() ?? '');
