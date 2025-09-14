@@ -750,6 +750,7 @@ class DeviceProvider extends ChangeNotifier {
       int totalDurationSec = 0;
       final speeds = <double>[];
       final durations = <int>[];
+      String? cardioMode;
       if (_device!.isCardio) {
         for (final s in savedSets) {
           final sp = parseLenientDouble(s['speed']?.toString() ?? '') ?? 0;
@@ -761,6 +762,8 @@ class DeviceProvider extends ChangeNotifier {
         if (speeds.isNotEmpty) {
           avgSpeedKmH = speeds.reduce((a, b) => a + b) / speeds.length;
         }
+        cardioMode =
+            (speeds.length > 1 || durations.length > 1) ? 'intervals' : 'steady';
       }
 
       XpTrace.log('SAVE_START', {
@@ -884,6 +887,9 @@ class DeviceProvider extends ChangeNotifier {
         device: _device!,
         exerciseId: _currentExerciseId,
         userId: userId,
+        speedKmH: _device!.isCardio ? avgSpeedKmH : null,
+        durationSec: _device!.isCardio ? totalDurationSec : null,
+        mode: _device!.isCardio ? cardioMode : null,
       );
 
       await batch.commit();
@@ -1046,10 +1052,18 @@ class DeviceProvider extends ChangeNotifier {
     required String gymId,
     required String userId,
     required int durationSec,
+    required bool showInLeaderboard,
   }) async {
     if (_device == null) return false;
 
+    final dayKey = logicDayKey(DateTime.now().toUtc());
     final sessionId = _uuid.v4();
+    final traceId = XpTrace.buildTraceId(
+      dayKey: dayKey,
+      uid: userId,
+      deviceId: _device!.uid,
+      sessionId: sessionId,
+    );
     final ts = Timestamp.now();
     String tz;
     try {
@@ -1094,6 +1108,56 @@ class DeviceProvider extends ChangeNotifier {
       'durationSec': durationSec,
       'intervalCount': 0,
     });
+
+    final resolvedDeviceId = resolveDeviceId(snap);
+    if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
+      XpTrace.log('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
+    } else {
+      XpTrace.log('CALL_ADD_SESSION_XP', {
+        'intent': 'credit',
+        'traceId': traceId,
+        'isCardio': true,
+      });
+      try {
+        final xpResult = await Provider.of<XpProvider>(context, listen: false)
+            .addSessionXp(
+          gymId: gymId,
+          userId: userId,
+          deviceId: resolvedDeviceId,
+          sessionId: sessionId,
+          showInLeaderboard: showInLeaderboard,
+          isMulti: false,
+          exerciseId: _currentExerciseId,
+          traceId: traceId,
+        );
+        XpTrace.log('CALL_RESULT', {
+          'result': xpResult.name,
+          'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
+          'traceId': traceId,
+          'isCardio': true,
+        });
+        if (xpResult == DeviceXpResult.okAdded) {
+          final info = LevelService()
+              .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
+          _level = info.level;
+          _xp = info.xp;
+          elogUi('cardio_xp_awarded', {
+            'deviceId': resolvedDeviceId,
+            'sessionId': sessionId,
+          });
+        }
+        await Provider.of<ChallengeProvider>(context, listen: false)
+            .checkChallenges(gymId, userId, resolvedDeviceId);
+      } catch (e, st) {
+        XpTrace.log('CALL_RESULT', {
+          'result': 'error',
+          'traceId': traceId,
+          'error': e.toString(),
+          'isCardio': true,
+        });
+        _log('⚠️ [Provider] XP/Challenges error: $e', st);
+      }
+    }
     _cardioCapReached = true;
     notifyListeners();
     return true;
@@ -1127,6 +1191,9 @@ class DeviceProvider extends ChangeNotifier {
     required Device device,
     String? exerciseId,
     required String userId,
+    double? speedKmH,
+    int? durationSec,
+    String? mode,
   }) {
     return DeviceSessionSnapshot(
       sessionId: sessionId,
@@ -1175,6 +1242,9 @@ class DeviceProvider extends ChangeNotifier {
       renderVersion: 1,
       uiHints: {'plannedTableCollapsed': false},
       isCardio: device.isCardio,
+      mode: mode,
+      durationSec: durationSec,
+      speedKmH: speedKmH,
     );
   }
 

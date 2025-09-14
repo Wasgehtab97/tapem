@@ -14,33 +14,112 @@ class ReadOnlySnapshotPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateStr = DateFormat('dd.MM.yyyy HH:mm').format(snapshot.createdAt);
     final loc = AppLocalizations.of(context)!;
-    if (snapshot.isCardio && snapshot.mode == 'timed') {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(dateStr,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                '${loc.cardioTotalTimeLabel}: ${formatHms(snapshot.durationSec ?? 0)}',
-                style: const TextStyle(fontSize: 24),
-              ),
-            ),
-          ),
-          if (snapshot.note != null && snapshot.note!.isNotEmpty)
+    if (snapshot.isCardio) {
+      final mode = snapshot.mode;
+      if (mode == 'timed' || (mode == null && snapshot.sets.isEmpty)) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: BrandGradientCard(
-                padding: const EdgeInsets.all(12),
-                child: Text(snapshot.note!),
+              child: Text(dateStr,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '${loc.cardioTotalTimeLabel}: ${formatHms(snapshot.durationSec ?? 0)}',
+                  style: const TextStyle(fontSize: 24),
+                ),
               ),
             ),
-        ],
-      );
+            if (snapshot.note != null && snapshot.note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: BrandGradientCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(snapshot.note!),
+                ),
+              ),
+          ],
+        );
+      } else if (mode == 'steady' || snapshot.sets.length == 1) {
+        final speed = snapshot.speedKmH ?? snapshot.sets.first.speedKmH;
+        final dur = formatHms(
+            snapshot.durationSec ?? snapshot.sets.first.durationSec ?? 0);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(dateStr,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '${speed?.toStringAsFixed(1) ?? ''} km/h • $dur',
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ),
+            if (snapshot.note != null && snapshot.note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: BrandGradientCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(snapshot.note!),
+                ),
+              ),
+          ],
+        );
+      } else if (mode == 'intervals' || snapshot.sets.isNotEmpty) {
+        final total = snapshot.durationSec ??
+            snapshot.sets.fold<int>(0,
+                (p, s) => p + (s.durationSec ?? 0));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(dateStr,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                '${loc.cardioTotalTimeLabel}: ${formatHms(total)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                itemCount: snapshot.sets.length,
+                itemBuilder: (context, i) {
+                  final s = snapshot.sets[i];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    child: Text(
+                      '${_ms(s.durationSec)} @ ${(s.speedKmH ?? 0).toStringAsFixed(1)} km/h',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (snapshot.note != null && snapshot.note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: BrandGradientCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(snapshot.note!),
+                ),
+              ),
+          ],
+        );
+      }
     }
 
     return Column(
@@ -145,6 +224,13 @@ class ReadOnlySnapshotPage extends StatelessWidget {
     }
     return const [];
   }
+}
+
+String _ms(int? sec) {
+  final s = sec ?? 0;
+  final m = s ~/ 60;
+  final r = s % 60;
+  return '${m.toString().padLeft(2, '0')}:${r.toString().padLeft(2, '0')}';
 }
 
 class _MiniSetCardDrop extends StatelessWidget {

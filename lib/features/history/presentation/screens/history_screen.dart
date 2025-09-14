@@ -8,6 +8,7 @@ import 'package:tapem/core/utils/nice_scale.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
+import 'package:tapem/features/training_details/presentation/widgets/cardio_session_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
@@ -350,10 +351,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 final titleDate = DateFormat.yMMMMd(localeString)
                     .format(logs.first.timestamp);
 
+                final first = logs.first;
+                final isCardio =
+                    first.isCardio ||
+                    first.mode != null ||
+                    first.weight == null ||
+                    first.reps == null;
+                if (isCardio) {
+                  final session = Session(
+                    sessionId: first.sessionId,
+                    deviceId: widget.deviceId,
+                    deviceName: title,
+                    deviceDescription: subtitle,
+                    timestamp: first.timestamp,
+                    note: '',
+                    sets: const [],
+                    isCardio: true,
+                    mode: first.mode,
+                    durationSec: first.durationSec,
+                    speedKmH: first.speedKmH,
+                    intervals: first.intervals
+                        ?.map((e) => CardioInterval(
+                              durationSec: e['durationSec'] as int?,
+                              speedKmH: (e['speedKmH'] as num?)?.toDouble(),
+                            ))
+                        .toList(),
+                  );
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: _HistoryExpansionTile(
+                      title: titleDate,
+                      child: CardioSessionCard(session: session),
+                    ),
+                  );
+                }
+
                 final sets = logs
                     .map((e) => SessionSet(
-                          weight: e.weight,
-                          reps: e.reps,
+                          weight: e.weight ?? 0,
+                          reps: e.reps ?? 0,
                           setNumber: e.setNumber,
                           dropWeightKg: e.dropWeightKg,
                           dropReps: e.dropReps,

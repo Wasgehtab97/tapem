@@ -16,6 +16,7 @@ class DeviceSessionSnapshot {
   final bool isCardio;
   final String? mode;
   final int? durationSec;
+  final double? speedKmH;
 
   const DeviceSessionSnapshot({
     required this.sessionId,
@@ -30,6 +31,7 @@ class DeviceSessionSnapshot {
     this.isCardio = false,
     this.mode,
     this.durationSec,
+    this.speedKmH,
   });
 
   factory DeviceSessionSnapshot.fromJson(Map<String, dynamic> j) {
@@ -48,6 +50,7 @@ class DeviceSessionSnapshot {
       isCardio: j['isCardio'] as bool? ?? false,
       mode: j['mode'] as String?,
       durationSec: (j['durationSec'] as num?)?.toInt(),
+      speedKmH: (j['speedKmH'] as num?)?.toDouble(),
     );
   }
 
@@ -64,6 +67,7 @@ class DeviceSessionSnapshot {
         'isCardio': isCardio,
         if (mode != null) 'mode': mode,
         if (durationSec != null) 'durationSec': durationSec,
+        if (speedKmH != null) 'speedKmH': speedKmH,
       };
 }
 
