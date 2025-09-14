@@ -30,6 +30,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
+import 'package:tapem/core/util/duration_utils.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -42,7 +43,12 @@ void _defaultLog(String message, [StackTrace? stack]) {
 }
 
 String _setsBrief(List<Map<String, dynamic>> sets) {
-  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}').join(', ')}]';
+  return '[${sets.map((s) {
+        if (s.containsKey('speed')) {
+          return '{#${s['number']}:sp=${s['speed']},du=${s['duration']},d=${s['done']}}';
+        }
+        return '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}';
+      }).join(', ')}]';
 }
 
 String? resolveDeviceId(DeviceSessionSnapshot snap) {
@@ -287,15 +293,22 @@ class DeviceProvider extends ChangeNotifier {
       _level = 1;
 
       _sets = [
-        {
-          'number': '1',
-          'weight': '',
-          'reps': '',
-          'dropWeight': '',
-          'dropReps': '',
-          'done': false, // bool statt String
-          'isBodyweight': false,
-        },
+        _device!.isCardio
+            ? {
+                'number': '1',
+                'speed': '',
+                'duration': '',
+                'done': false,
+              }
+            : {
+                'number': '1',
+                'weight': '',
+                'reps': '',
+                'dropWeight': '',
+                'dropReps': '',
+                'done': false, // bool statt String
+                'isBodyweight': false,
+              },
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
@@ -331,15 +344,24 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void addSet() {
-    _sets.add({
-      'number': '${_sets.length + 1}',
-      'weight': '',
-      'reps': '',
-      'dropWeight': '',
-      'dropReps': '',
-      'done': false,
-      'isBodyweight': _isBodyweightMode,
-    });
+    _sets.add(
+      _device?.isCardio == true
+          ? {
+              'number': '${_sets.length + 1}',
+              'speed': '',
+              'duration': '',
+              'done': false,
+            }
+          : {
+              'number': '${_sets.length + 1}',
+              'weight': '',
+              'reps': '',
+              'dropWeight': '',
+              'dropReps': '',
+              'done': false,
+              'isBodyweight': _isBodyweightMode,
+            },
+    );
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
     _scheduleDraftSave();
@@ -347,7 +369,9 @@ class DeviceProvider extends ChangeNotifier {
 
   void insertSetAt(int index, Map<String, dynamic> set) {
     final s = Map<String, dynamic>.from(set);
-    s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
+    if (_device?.isCardio != true) {
+      s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
+    }
     _sets.insert(index, s);
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
@@ -366,6 +390,8 @@ class DeviceProvider extends ChangeNotifier {
     String? dropWeight,
     String? dropReps,
     bool? isBodyweight,
+    String? speed,
+    String? duration,
   }) {
     final before = Map<String, dynamic>.from(_sets[index]);
     final after = Map<String, dynamic>.from(before);
@@ -375,6 +401,8 @@ class DeviceProvider extends ChangeNotifier {
     if (dropWeight != null) after['dropWeight'] = dropWeight;
     if (dropReps != null) after['dropReps'] = dropReps;
     if (isBodyweight != null) after['isBodyweight'] = isBodyweight;
+    if (speed != null) after['speed'] = speed;
+    if (duration != null) after['duration'] = duration;
 
     final dw = (after['dropWeight'] ?? '').toString().trim();
     final dr = (after['dropReps'] ?? '').toString().trim();
@@ -410,6 +438,14 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   bool _isFilled(Map<String, dynamic> s) {
+    if (_device?.isCardio == true) {
+      final sp = (s['speed'] ?? '').toString().trim();
+      final dur = (s['duration'] ?? '').toString().trim();
+      final speedValid =
+          sp.isNotEmpty && double.tryParse(sp.replaceAll(',', '.')) != null;
+      final durValid = dur.isNotEmpty && int.tryParse(dur) != null;
+      return speedValid && durValid;
+    }
     final w = (s['weight'] ?? '').toString().trim();
     final r = (s['reps'] ?? '').toString().trim();
     final isBw = s['isBodyweight'] == true;
@@ -518,17 +554,24 @@ class DeviceProvider extends ChangeNotifier {
   bool _isDraftEmpty() {
     if (_note.trim().isNotEmpty) return false;
     for (final s in _sets) {
-      final w = (s['weight'] ?? '').toString().trim();
-      final r = (s['reps'] ?? '').toString().trim();
-      final dw = (s['dropWeight'] ?? '').toString().trim();
-      final dr = (s['dropReps'] ?? '').toString().trim();
-      final d = s['done'] == true || s['done'] == 'true';
-      if (w.isNotEmpty ||
-          r.isNotEmpty ||
-          dw.isNotEmpty ||
-          dr.isNotEmpty ||
-          d) {
-        return false;
+      if (_device?.isCardio == true) {
+        final sp = (s['speed'] ?? '').toString().trim();
+        final dur = (s['duration'] ?? '').toString().trim();
+        final d = s['done'] == true || s['done'] == 'true';
+        if (sp.isNotEmpty || dur.isNotEmpty || d) return false;
+      } else {
+        final w = (s['weight'] ?? '').toString().trim();
+        final r = (s['reps'] ?? '').toString().trim();
+        final dw = (s['dropWeight'] ?? '').toString().trim();
+        final dr = (s['dropReps'] ?? '').toString().trim();
+        final d = s['done'] == true || s['done'] == 'true';
+        if (w.isNotEmpty ||
+            r.isNotEmpty ||
+            dw.isNotEmpty ||
+            dr.isNotEmpty ||
+            d) {
+          return false;
+        }
       }
     }
     return true;
@@ -562,16 +605,31 @@ class DeviceProvider extends ChangeNotifier {
         for (var i = 0; i < _sets.length; i++)
           SetDraft(
             index: i + 1,
-            weight: (_sets[i]['weight'] ?? '').toString(),
-            reps: (_sets[i]['reps'] ?? '').toString(),
-            dropWeight: (_sets[i]['dropWeight'] ?? '').toString().isEmpty
+            weight: _device?.isCardio == true
+                ? ''
+                : (_sets[i]['weight'] ?? '').toString(),
+            reps: _device?.isCardio == true
+                ? ''
+                : (_sets[i]['reps'] ?? '').toString(),
+            speed: _device?.isCardio == true
+                ? (_sets[i]['speed'] ?? '').toString()
+                : '',
+            duration: _device?.isCardio == true
+                ? (_sets[i]['duration'] ?? '').toString()
+                : '',
+            dropWeight: _device?.isCardio == true
                 ? null
-                : (_sets[i]['dropWeight']).toString(),
-            dropReps: (_sets[i]['dropReps'] ?? '').toString().isEmpty
+                : (_sets[i]['dropWeight'] ?? '').toString().isEmpty
+                    ? null
+                    : (_sets[i]['dropWeight']).toString(),
+            dropReps: _device?.isCardio == true
                 ? null
-                : (_sets[i]['dropReps']).toString(),
+                : (_sets[i]['dropReps'] ?? '').toString().isEmpty
+                    ? null
+                    : (_sets[i]['dropReps']).toString(),
             done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
-            isBodyweight: _sets[i]['isBodyweight'] == true,
+            isBodyweight:
+                _device?.isCardio == true ? false : _sets[i]['isBodyweight'] == true,
           ),
       ],
     );
@@ -593,15 +651,22 @@ class DeviceProvider extends ChangeNotifier {
     _note = draft.note;
     _sets = [
       for (var i = 0; i < draft.sets.length; i++)
-        {
-          'number': '${i + 1}',
-          'weight': draft.sets[i].weight,
-          'reps': draft.sets[i].reps,
-          'dropWeight': draft.sets[i].dropWeight ?? '',
-          'dropReps': draft.sets[i].dropReps ?? '',
-          'done': draft.sets[i].done,
-          'isBodyweight': draft.sets[i].isBodyweight,
-        },
+        _device?.isCardio == true
+            ? {
+                'number': '${i + 1}',
+                'speed': draft.sets[i].speed,
+                'duration': draft.sets[i].duration,
+                'done': draft.sets[i].done,
+              }
+            : {
+                'number': '${i + 1}',
+                'weight': draft.sets[i].weight,
+                'reps': draft.sets[i].reps,
+                'dropWeight': draft.sets[i].dropWeight ?? '',
+                'dropReps': draft.sets[i].dropReps ?? '',
+                'done': draft.sets[i].done,
+                'isBodyweight': draft.sets[i].isBodyweight,
+              },
     ];
     notifyListeners();
   }
@@ -676,11 +741,25 @@ class DeviceProvider extends ChangeNotifier {
       }
 
       elogUi('SESSION_SAVE_SET_ORDER', {
-        'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
-        'reps': savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
-        'weights': savedSets
-            .map((s) => double.tryParse(s['weight']?.replaceAll(',', '.') ?? '0') ?? 0)
-            .toList(),
+        'setsInputOrder':
+            savedSets.map((s) => int.parse(s['number'])).toList(),
+        if (_device!.isCardio)
+          'speedKmH': savedSets
+              .map((s) => double.tryParse(
+                    s['speed']?.replaceAll(',', '.') ?? '0',
+                  ) ??
+                  0)
+              .toList()
+        else ...{
+          'reps':
+              savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
+          'weights': savedSets
+              .map((s) => double.tryParse(
+                    s['weight']?.replaceAll(',', '.') ?? '0',
+                  ) ??
+                  0)
+              .toList(),
+        }
       });
 
       final now = DateTime.now();
@@ -722,28 +801,36 @@ class DeviceProvider extends ChangeNotifier {
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
-        final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
-        final weight = double.tryParse(weightStr) ?? 0;
-        final isBw = set['isBodyweight'] == true;
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
           'userId': userId,
           'exerciseId': _currentExerciseId,
           'sessionId': sessionId,
           'timestamp': ts,
-          'weight': weight,
-          'reps': int.parse(set['reps']!),
           'setNumber': int.parse(set['number']),
           'note': _note,
           'tz': tz,
-          if (isBw) 'isBodyweight': true,
         };
-        if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
-            (set['dropReps'] ?? '').toString().isNotEmpty) {
-          data['dropWeightKg'] = double.parse(
-            set['dropWeight']!.replaceAll(',', '.'),
-          );
-          data['dropReps'] = int.parse(set['dropReps']!);
+        if (_device!.isCardio) {
+          final speedStr = (set['speed'] ?? '').toString().replaceAll(',', '.');
+          final speed = double.tryParse(speedStr) ?? 0;
+          final duration = parseHms(set['duration'] ?? '');
+          data['speedKmH'] = speed;
+          data['durationSec'] = duration;
+        } else {
+          final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
+          final weight = double.tryParse(weightStr) ?? 0;
+          final isBw = set['isBodyweight'] == true;
+          data['weight'] = weight;
+          data['reps'] = int.parse(set['reps']!);
+          if (isBw) data['isBodyweight'] = true;
+          if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
+              (set['dropReps'] ?? '').toString().isNotEmpty) {
+            data['dropWeightKg'] = double.parse(
+              set['dropWeight']!.replaceAll(',', '.'),
+            );
+            data['dropReps'] = int.parse(set['dropReps']!);
+          }
         }
         batch.set(ref, data);
       }
@@ -841,14 +928,20 @@ class DeviceProvider extends ChangeNotifier {
 
       _lastSessionSets = [
         for (final s in savedSets)
-          {
-            'number': s['number'].toString(),
-            'weight': s['weight'].toString(),
-            'reps': s['reps'].toString(),
-            'dropWeight': (s['dropWeight'] ?? '').toString(),
-            'dropReps': (s['dropReps'] ?? '').toString(),
-            'isBodyweight': s['isBodyweight'] == true,
-          },
+          _device!.isCardio
+              ? {
+                  'number': s['number'].toString(),
+                  'speed': s['speed'].toString(),
+                  'duration': s['duration'].toString(),
+                }
+              : {
+                  'number': s['number'].toString(),
+                  'weight': s['weight'].toString(),
+                  'reps': s['reps'].toString(),
+                  'dropWeight': (s['dropWeight'] ?? '').toString(),
+                  'dropReps': (s['dropReps'] ?? '').toString(),
+                  'isBodyweight': s['isBodyweight'] == true,
+                },
       ];
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
@@ -906,22 +999,28 @@ class DeviceProvider extends ChangeNotifier {
       userId: userId,
       note: _note,
       sets: _sets
-          .map(
-            (s) => SetEntry(
-              kg:
-                  num.tryParse(
+          .map((s) {
+            if (device.isCardio) {
+              return SetEntry(
+                speedKmH: num.tryParse(
+                  s['speed']?.toString().replaceAll(',', '.') ?? '0',
+                ),
+                durationSec: parseHms(s['duration']?.toString() ?? ''),
+                done: s['done'] == true || s['done'] == 'true',
+              );
+            }
+            return SetEntry(
+              kg: num.tryParse(
                     s['weight']?.toString().replaceAll(',', '.') ?? '0',
                   ) ??
                   0,
               reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
               done: s['done'] == true || s['done'] == 'true',
-              drops:
-                  (s['dropWeight']?.toString().isNotEmpty == true &&
+              drops: (s['dropWeight']?.toString().isNotEmpty == true &&
                       s['dropReps']?.toString().isNotEmpty == true)
                   ? [
                       DropEntry(
-                        kg:
-                            num.tryParse(
+                        kg: num.tryParse(
                               s['dropWeight']!.toString().replaceAll(',', '.'),
                             ) ??
                             0,
@@ -930,8 +1029,8 @@ class DeviceProvider extends ChangeNotifier {
                     ]
                   : const [],
               isBodyweight: s['isBodyweight'] == true,
-            ),
-          )
+            );
+          })
           .toList(),
       renderVersion: 1,
       uiHints: {'plannedTableCollapsed': false},
@@ -973,14 +1072,20 @@ class DeviceProvider extends ChangeNotifier {
 
     _lastSessionSets = [
       for (var entry in sessionDocs.docs.asMap().entries)
-        {
-          'number': '${entry.key + 1}',
-          'weight': '${entry.value.data()['weight']}',
-          'reps': '${entry.value.data()['reps']}',
-          'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
-          'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
-          'isBodyweight': entry.value.data()['isBodyweight'] ?? false,
-        },
+        _device?.isCardio == true
+            ? {
+                'number': '${entry.key + 1}',
+                'speed': '${entry.value.data()['speedKmH'] ?? ''}',
+                'duration': '${entry.value.data()['durationSec'] ?? ''}',
+              }
+            : {
+                'number': '${entry.key + 1}',
+                'weight': '${entry.value.data()['weight']}',
+                'reps': '${entry.value.data()['reps']}',
+                'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
+                'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
+                'isBodyweight': entry.value.data()['isBodyweight'] ?? false,
+              },
     ];
     _lastSessionDate = ts;
     _lastSessionNote = note;

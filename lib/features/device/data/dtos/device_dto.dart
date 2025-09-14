@@ -11,6 +11,7 @@ class DeviceDto {
   final String description;
   final String? nfcCode;
   final bool isMulti;
+  final bool isCardio;
   final List<String> muscleGroups;
   final List<String> primaryMuscleGroups;
   final List<String> secondaryMuscleGroups;
@@ -23,6 +24,7 @@ class DeviceDto {
     required this.description,
     this.nfcCode,
     required this.isMulti,
+    this.isCardio = false,
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
@@ -41,6 +43,7 @@ class DeviceDto {
       nfcCode: data['nfcCode'] as String?,
       // if the field is missing or null, default to false
       isMulti: (data['isMulti'] as bool?) ?? false,
+      isCardio: (data['isCardio'] as bool?) ?? false,
       muscleGroupIds:
           (data['muscleGroupIds'] as List<dynamic>? ?? [])
               .map((e) => e.toString())
@@ -72,5 +75,6 @@ class DeviceDto {
     description: description,
     nfcCode: nfcCode,
     isMulti: isMulti,
+    isCardio: isCardio,
   );
 }

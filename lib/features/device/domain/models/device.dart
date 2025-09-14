@@ -8,6 +8,7 @@ class Device {
   final String description;
   final String? nfcCode;
   final bool isMulti;
+  final bool isCardio;
   final List<String> muscleGroups;
   final List<String> primaryMuscleGroups;
   final List<String> secondaryMuscleGroups;
@@ -20,6 +21,7 @@ class Device {
     this.description = '',
     this.nfcCode,
     this.isMulti = false,
+    this.isCardio = false,
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
@@ -38,6 +40,7 @@ class Device {
     String? description,
     String? nfcCode,
     bool? isMulti,
+    bool? isCardio,
     List<String>? muscleGroupIds,
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
@@ -49,6 +52,7 @@ class Device {
     description: description ?? this.description,
     nfcCode: nfcCode ?? this.nfcCode,
     isMulti: isMulti ?? this.isMulti,
+    isCardio: isCardio ?? this.isCardio,
     muscleGroupIds: muscleGroupIds ?? this.muscleGroupIds,
     muscleGroups:
         muscleGroups ??
@@ -67,6 +71,7 @@ class Device {
     description: json['description'] as String? ?? '',
     nfcCode: json['nfcCode'] as String?,
     isMulti: json['isMulti'] as bool? ?? false,
+    isCardio: json['isCardio'] as bool? ?? false,
     muscleGroupIds:
         (json['muscleGroupIds'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
@@ -91,6 +96,7 @@ class Device {
     'description': description,
     'nfcCode': nfcCode,
     'isMulti': isMulti,
+    'isCardio': isCardio,
     'muscleGroupIds': muscleGroupIds,
     'muscleGroups': muscleGroups,
     'primaryMuscleGroups': primaryMuscleGroups,

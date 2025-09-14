@@ -63,6 +63,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final newId =
         _devices.isEmpty ? 1 : _devices.map((d) => d.id).reduce(max) + 1;
     bool isMulti = false;
+    bool isCardio = false;
     final muscleProv = context.read<MuscleGroupProvider>();
     muscleProv.loadGroups(context);
     final selectedGroups = <String>{};
@@ -129,6 +130,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ],
                   ),
+                  Row(
+                    children: [
+                      const Text('Cardio?'),
+                      Switch(
+                        value: isCardio,
+                        onChanged: (v) => setSt(() => isCardio = v),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Device ID: $newId',
@@ -161,11 +171,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     name: nameCtrl.text.trim(),
                     description: descCtrl.text.trim(),
                     isMulti: isMulti,
+                    isCardio: isCardio,
                   );
                   await _createUC.execute(
                     gymId: gymId,
                     device: device,
                     isMulti: isMulti,
+                    isCardio: isCardio,
                     muscleGroupIds: selectedGroups.toList(),
                   );
                   await muscleProv.assignDevice(

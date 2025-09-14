@@ -56,36 +56,44 @@ class DeviceSessionSnapshot {
 }
 
 class SetEntry {
-  final num kg;
-  final int reps;
+  final num? kg;
+  final int? reps;
   final bool done;
   final List<DropEntry> drops;
   final bool isBodyweight;
+  final num? speedKmH;
+  final int? durationSec;
 
   const SetEntry({
-    required this.kg,
-    required this.reps,
+    this.kg,
+    this.reps,
     this.done = false,
     this.drops = const [],
     this.isBodyweight = false,
+    this.speedKmH,
+    this.durationSec,
   });
 
   factory SetEntry.fromJson(Map<String, dynamic> j) => SetEntry(
-        kg: j['kg'] as num,
-        reps: j['reps'] as int,
+        kg: j['kg'] as num?,
+        reps: j['reps'] as int?,
         done: j['done'] as bool? ?? false,
         drops: (j['drops'] as List<dynamic>? ?? [])
             .map((e) => DropEntry.fromJson(Map<String, dynamic>.from(e)))
             .toList(),
         isBodyweight: j['isBodyweight'] as bool? ?? false,
+        speedKmH: j['speedKmH'] as num?,
+        durationSec: j['durationSec'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
-        'kg': kg,
-        'reps': reps,
+        if (kg != null) 'kg': kg,
+        if (reps != null) 'reps': reps,
         'done': done,
         'drops': drops.map((d) => d.toJson()).toList(),
         'isBodyweight': isBodyweight,
+        if (speedKmH != null) 'speedKmH': speedKmH,
+        if (durationSec != null) 'durationSec': durationSec,
       };
 }
 
