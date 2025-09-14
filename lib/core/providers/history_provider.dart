@@ -98,13 +98,18 @@ class HistoryProvider extends ChangeNotifier {
     _setsPerSessionAvg = double.parse(
         (_logs.length / (_workoutCount == 0 ? 1 : _workoutCount))
             .toStringAsFixed(1));
-    _heaviest = logsSorted.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
+    final weights =
+        logsSorted.map((e) => e.weight).where((w) => w != null).cast<double>();
+    _heaviest = weights.isNotEmpty
+        ? weights.reduce((a, b) => a > b ? a : b)
+        : 0;
 
     _e1rmChart = sessionEntries.map((e) {
       final date = e.value.first.timestamp;
-      final e1rm = e.value
-          .map((l) => l.weight * (1 + l.reps / 30))
-          .reduce((a, b) => a > b ? a : b);
+      final vals = e.value
+          .where((l) => l.weight != null && l.reps != null)
+          .map((l) => l.weight! * (1 + l.reps! / 30));
+      final e1rm = vals.isNotEmpty ? vals.reduce((a, b) => a > b ? a : b) : 0;
       return ChartPoint(date, e1rm);
     }).toList();
 

@@ -21,7 +21,7 @@ class _FakeRepo implements DeviceRepository {
   @override
   Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode) => throw UnimplementedError();
   @override
-  Future<void> deleteDevice(String gymId, String deviceId) => throw UnimplementedError();
+  Future<void> deleteDevice(String gymId, String deviceId) async {}
   @override
   Future<void> updateMuscleGroups(String gymId, String deviceId, List<String> primaryGroups, List<String> secondaryGroups) => throw UnimplementedError();
   @override
@@ -49,6 +49,13 @@ class _FakeRepo implements DeviceRepository {
 
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;
+  @override
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  }) async => false;
 }
 
 class FakeMembershipService implements MembershipService {
