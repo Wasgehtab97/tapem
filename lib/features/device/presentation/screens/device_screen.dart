@@ -30,6 +30,8 @@ import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dar
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/device/presentation/widgets/cardio_runner.dart';
+import 'package:tapem/features/device/presentation/providers/cardio_timer_provider.dart';
 
 void _dlog(String m) {}
 
@@ -453,6 +455,28 @@ class _DeviceScreenState extends State<DeviceScreen> {
       scaffold = Scaffold(
         appBar: AppBar(title: const Text('Gerät nicht gefunden')),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
+      );
+    } else if (prov.device!.isCardio) {
+      scaffold = ChangeNotifierProvider(
+        create: (_) => CardioTimerProvider(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(prov.device!.name),
+            centerTitle: true,
+          ),
+          body: CardioRunner(
+            onCancel: () => Navigator.of(context).pop(),
+            onSave: (sec) async {
+              await prov.saveCardioTimedSession(
+                context: context,
+                gymId: widget.gymId,
+                userId: auth.userId!,
+                durationSec: sec,
+              );
+              if (context.mounted) Navigator.of(context).pop();
+            },
+          ),
+        ),
       );
     } else {
       scaffold = Scaffold(

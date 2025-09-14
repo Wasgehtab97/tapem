@@ -13,6 +13,9 @@ class DeviceSessionSnapshot {
   final List<SetEntry> sets;
   final int renderVersion;
   final Map<String, dynamic>? uiHints;
+  final bool isCardio;
+  final String? mode;
+  final int? durationSec;
 
   const DeviceSessionSnapshot({
     required this.sessionId,
@@ -24,6 +27,9 @@ class DeviceSessionSnapshot {
     required this.sets,
     this.renderVersion = 1,
     this.uiHints,
+    this.isCardio = false,
+    this.mode,
+    this.durationSec,
   });
 
   factory DeviceSessionSnapshot.fromJson(Map<String, dynamic> j) {
@@ -39,6 +45,9 @@ class DeviceSessionSnapshot {
           .toList(),
       renderVersion: j['renderVersion'] as int? ?? 1,
       uiHints: j['uiHints'] as Map<String, dynamic>?,
+      isCardio: j['isCardio'] as bool? ?? false,
+      mode: j['mode'] as String?,
+      durationSec: (j['durationSec'] as num?)?.toInt(),
     );
   }
 
@@ -52,6 +61,9 @@ class DeviceSessionSnapshot {
         'sets': sets.map((s) => s.toJson()).toList(),
         'renderVersion': renderVersion,
         'uiHints': uiHints,
+        'isCardio': isCardio,
+        if (mode != null) 'mode': mode,
+        if (durationSec != null) 'durationSec': durationSec,
       };
 }
 

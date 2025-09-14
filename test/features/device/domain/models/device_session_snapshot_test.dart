@@ -21,6 +21,9 @@ void main() {
         SetEntry(kg: 0, reps: 5, isBodyweight: true),
         SetEntry(speedKmH: 10, durationSec: 90, done: true),
       ],
+      isCardio: true,
+      mode: 'timed',
+      durationSec: 90,
     );
 
     final json = snapshot.toJson();
@@ -36,5 +39,8 @@ void main() {
     expect(decoded.sets[1].kg, 0);
     expect(decoded.sets[2].speedKmH, 10);
     expect(decoded.sets[2].durationSec, 90);
+    expect(decoded.isCardio, true);
+    expect(decoded.mode, 'timed');
+    expect(decoded.durationSec, 90);
   });
 }

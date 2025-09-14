@@ -1032,6 +1032,62 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
+  /// Saves a simple cardio session with only total duration.
+  Future<bool> saveCardioTimedSession({
+    required BuildContext context,
+    required String gymId,
+    required String userId,
+    required int durationSec,
+  }) async {
+    if (_device == null) return false;
+
+    final sessionId = _uuid.v4();
+    final ts = Timestamp.now();
+    String tz;
+    try {
+      tz = await FlutterTimezone.getLocalTimezone();
+    } catch (_) {
+      tz = DateTime.now().timeZoneName;
+    }
+
+    final logsCol = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(_device!.uid)
+        .collection('logs');
+    await logsCol.add({
+      'deviceId': _device!.uid,
+      'userId': userId,
+      'exerciseId': _currentExerciseId,
+      'sessionId': sessionId,
+      'timestamp': ts,
+      'setNumber': 1,
+      'note': _note,
+      'tz': tz,
+      'durationSec': durationSec,
+    });
+
+    final snap = DeviceSessionSnapshot(
+      sessionId: sessionId,
+      deviceId: _device!.uid,
+      exerciseId: _currentExerciseId,
+      createdAt: ts.toDate(),
+      userId: userId,
+      note: _note,
+      sets: const [],
+      isCardio: true,
+      mode: 'timed',
+      durationSec: durationSec,
+    );
+    await deviceRepository.writeSessionSnapshot(gymId, snap);
+    elogUi('cardio_session_saved', {
+      'mode': 'timed',
+      'durationSec': durationSec,
+    });
+    return true;
+  }
+
   DeviceSessionSnapshot _buildSnapshot({
     required String sessionId,
     required Device device,
@@ -1084,6 +1140,7 @@ class DeviceProvider extends ChangeNotifier {
           .toList(),
       renderVersion: 1,
       uiHints: {'plannedTableCollapsed': false},
+      isCardio: device.isCardio,
     );
   }
 
