@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/session.dart';
 import 'session_exercise_card.dart';
+import 'cardio_session_card.dart';
 import 'package:tapem/core/logging/elog.dart';
 
 class DaySessionsOverview extends StatelessWidget {
@@ -29,11 +30,13 @@ class DaySessionsOverview extends StatelessWidget {
                   });
                   return SizedBox(
                     width: cardWidth,
-                    child: SessionExerciseCard(
-                      title: session.deviceName,
-                      subtitle: session.deviceDescription,
-                      sets: session.sets,
-                    ),
+                    child: session.isCardio
+                        ? CardioSessionCard(session: session)
+                        : SessionExerciseCard(
+                            title: session.deviceName,
+                            subtitle: session.deviceDescription,
+                            sets: session.sets,
+                          ),
                   );
                 },
               )

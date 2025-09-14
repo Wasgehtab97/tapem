@@ -83,16 +83,20 @@ class SessionRepositoryImpl implements SessionRepository {
         }
       }
 
-      final sets = list
-          .map((dto) => SessionSet(
-                weight: dto.weight,
-                reps: dto.reps,
-                setNumber: dto.setNumber,
-                dropWeightKg: dto.dropWeightKg,
-                dropReps: dto.dropReps,
-                isBodyweight: dto.isBodyweight,
-              ))
-          .toList();
+      final isCardio =
+          first.isCardio || first.mode != null || first.weight == null || first.reps == null;
+      final sets = isCardio
+          ? <SessionSet>[]
+          : list
+              .map((dto) => SessionSet(
+                    weight: dto.weight ?? 0,
+                    reps: dto.reps ?? 0,
+                    setNumber: dto.setNumber,
+                    dropWeightKg: dto.dropWeightKg,
+                    dropReps: dto.dropReps,
+                    isBodyweight: dto.isBodyweight,
+                  ))
+              .toList();
 
       final gymId = deviceRef.parent.parent!.id;
       DateTime? startTime;
@@ -125,6 +129,16 @@ class SessionRepositoryImpl implements SessionRepository {
           startTime: startTime,
           endTime: endTime,
           durationMs: durationMs,
+          isCardio: isCardio,
+          mode: first.mode,
+          durationSec: first.durationSec,
+          speedKmH: first.speedKmH,
+          intervals: first.intervals
+              ?.map((e) => CardioInterval(
+                    durationSec: e['durationSec'] as int?,
+                    speedKmH: e['speedKmH'] as double?,
+                  ))
+              .toList(),
         ),
       );
     }

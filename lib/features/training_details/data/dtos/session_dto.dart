@@ -9,14 +9,19 @@ class SessionDto {
   final String exerciseId;
   final String userId;
   final DateTime timestamp;
-  final double weight;
-  final int reps;
+  final double? weight;
+  final int? reps;
   final int setNumber;
   final double? dropWeightKg;
   final int? dropReps;
   final String note;
   final DocumentReference<Map<String, dynamic>> reference;
   final bool isBodyweight;
+  final bool isCardio;
+  final String? mode;
+  final int? durationSec;
+  final double? speedKmH;
+  final List<Map<String, dynamic>>? intervals;
 
   SessionDto({
     required this.sessionId,
@@ -24,14 +29,19 @@ class SessionDto {
     required this.exerciseId,
     required this.userId,
     required this.timestamp,
-    required this.weight,
-    required this.reps,
+    this.weight,
+    this.reps,
     required this.setNumber,
     this.dropWeightKg,
     this.dropReps,
     required this.note,
     required this.reference,
     this.isBodyweight = false,
+    this.isCardio = false,
+    this.mode,
+    this.durationSec,
+    this.speedKmH,
+    this.intervals,
   });
 
   factory SessionDto.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -52,20 +62,35 @@ class SessionDto {
       setNumber = 0;
     }
 
+    final isCardio = data['isCardio'] as bool? ?? false;
+    final intervalsRaw = data['intervals'] as List?;
+    final intervals = intervalsRaw
+        ?.whereType<Map<String, dynamic>>()
+        .map((e) => {
+              'durationSec': (e['durationSec'] as num?)?.toInt(),
+              'speedKmH': (e['speedKmH'] as num?)?.toDouble(),
+            })
+        .toList();
+
     return SessionDto(
       sessionId: data['sessionId'] as String,
       deviceId: deviceId, // nicht mehr data['deviceId']
       exerciseId: exerciseId,
       userId: userId,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
-      weight: (data['weight'] as num).toDouble(),
-      reps: (data['reps'] as num).toInt(),
+      weight: (data['weight'] as num?)?.toDouble(),
+      reps: (data['reps'] as num?)?.toInt(),
       setNumber: setNumber,
       dropWeightKg: (data['dropWeightKg'] as num?)?.toDouble(),
       dropReps: (data['dropReps'] as num?)?.toInt(),
       note: data['note'] as String? ?? '',
       reference: doc.reference,
       isBodyweight: data['isBodyweight'] as bool? ?? false,
+      isCardio: isCardio,
+      mode: data['mode'] as String?,
+      durationSec: (data['durationSec'] as num?)?.toInt(),
+      speedKmH: (data['speedKmH'] as num?)?.toDouble(),
+      intervals: intervals,
     );
   }
 }

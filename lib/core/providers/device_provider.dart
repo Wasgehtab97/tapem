@@ -1084,6 +1084,7 @@ class DeviceProvider extends ChangeNotifier {
     elogUi('cardio_session_saved', {
       'mode': 'timed',
       'durationSec': durationSec,
+      'intervalCount': 0,
     });
     return true;
   }

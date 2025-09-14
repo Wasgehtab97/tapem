@@ -8,6 +8,21 @@ class Session {
   final String note;
   final List<SessionSet> sets;
 
+  /// True if this session represents a cardio workout.
+  final bool isCardio;
+
+  /// Cardio mode: "timed", "steady", or "intervals".
+  final String? mode;
+
+  /// Total duration in seconds for cardio sessions.
+  final int? durationSec;
+
+  /// Steady speed in km/h for steady cardio sessions.
+  final double? speedKmH;
+
+  /// Interval details for interval cardio sessions.
+  final List<CardioInterval>? intervals;
+
   /// Timestamp of when the session started, if known.
   final DateTime? startTime;
 
@@ -28,6 +43,11 @@ class Session {
     this.startTime,
     this.endTime,
     this.durationMs,
+    this.isCardio = false,
+    this.mode,
+    this.durationSec,
+    this.speedKmH,
+    this.intervals,
   });
 }
 
@@ -46,4 +66,10 @@ class SessionSet {
     this.dropReps,
     this.isBodyweight = false,
   });
+}
+
+class CardioInterval {
+  final int? durationSec;
+  final double? speedKmH;
+  CardioInterval({this.durationSec, this.speedKmH});
 }
