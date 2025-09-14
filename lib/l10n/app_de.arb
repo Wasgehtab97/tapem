@@ -371,6 +371,9 @@
     "description": "Fehler wenn bereits eine Session gespeichert wurde"
   },
 
+  "cardioCapHint": "Du hast heute bereits eine Session an diesem Gerät gespeichert.",
+  "@cardioCapHint": {"description": "Hinweis bei Cardio-Save-Cap"},
+
   "setRemoved": "Satz entfernt",
   "@setRemoved": {
     "description": "Snackbar nach Entfernen eines Satzes"

@@ -137,4 +137,19 @@ class DeviceRepositoryImpl implements DeviceRepository {
       sessionId: sessionId,
     );
   }
+
+  @override
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  }) {
+    return _source.hasSessionForDate(
+      gymId: gymId,
+      deviceId: deviceId,
+      userId: userId,
+      date: date,
+    );
+  }
 }

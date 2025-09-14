@@ -147,4 +147,26 @@ class FirestoreDeviceSource {
     if (!snap.exists) return null;
     return DeviceSessionSnapshot.fromJson(snap.data()!);
   }
+
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  }) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    final q = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('sessions')
+        .where('userId', isEqualTo: userId)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('createdAt', isLessThan: Timestamp.fromDate(end))
+        .limit(1)
+        .get();
+    return q.docs.isNotEmpty;
+  }
 }

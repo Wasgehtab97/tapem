@@ -605,6 +605,8 @@ abstract class AppLocalizations {
   /// **'Already saved today.'**
   String get todayAlreadySaved;
 
+  String get cardioCapHint;
+
   /// Snackbar after removing a set
   ///
   /// In en, this message translates to:

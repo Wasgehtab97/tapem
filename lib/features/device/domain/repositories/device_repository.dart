@@ -43,5 +43,12 @@ abstract class DeviceRepository {
     required String sessionId,
   });
 
+  Future<bool> hasSessionForDate({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    required DateTime date,
+  });
+
   DocumentSnapshot? get lastSnapshotCursor;
 }

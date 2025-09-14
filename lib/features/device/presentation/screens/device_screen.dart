@@ -51,7 +51,7 @@ class DeviceScreen extends StatefulWidget {
   State<DeviceScreen> createState() => _DeviceScreenState();
 }
 
-class _DeviceScreenState extends State<DeviceScreen> {
+class _DeviceScreenState extends State<DeviceScreen> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
@@ -64,6 +64,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     _dlog(
       'initState()\ndeviceId=${widget.deviceId}\nexerciseId=${widget.exerciseId}',
     );
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       _dlog('loadDevice() → start');
@@ -71,6 +72,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
         gymId: widget.gymId,
         deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
+        userId: auth.userId!,
+      );
+      await context.read<DeviceProvider>().checkCardioCap(
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
         userId: auth.userId!,
       );
       final planProv = context.read<TrainingPlanProvider>();
@@ -434,7 +440,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void dispose() {
     _closeKeyboard();
     _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final auth = context.read<AuthProvider>();
+      context.read<DeviceProvider>().checkCardioCap(
+            gymId: widget.gymId,
+            deviceId: widget.deviceId,
+            userId: auth.userId!,
+          );
+    }
   }
 
   @override
@@ -470,18 +489,66 @@ class _DeviceScreenState extends State<DeviceScreen> {
           appBar: AppBar(
             title: Text(prov.device!.name),
             centerTitle: true,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: XpInfoButton(xp: prov.xp, level: prov.level),
+              ),
+              FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
+              IconButton(
+                icon: const Icon(Icons.history),
+                tooltip: loc.deviceHistoryTooltip,
+                onPressed: () {
+                  _closeKeyboard();
+                  final deviceProv = context.read<DeviceProvider>();
+                  String? exerciseName;
+                  if (deviceProv.device?.isMulti ?? false) {
+                    final exProv = context.read<ExerciseProvider>();
+                    exerciseName = exProv.exercises
+                        .firstWhere(
+                          (e) => e.id == widget.exerciseId,
+                          orElse: () =>
+                              Exercise(id: '', name: 'Unknown', userId: ''),
+                        )
+                        .name;
+                  }
+                  Navigator.of(context).pushNamed(
+                    AppRouter.history,
+                    arguments: {
+                      'deviceId': widget.deviceId,
+                      'deviceName': deviceProv.device?.name ?? widget.deviceId,
+                      'deviceDescription': deviceProv.device?.description,
+                      'isMulti': deviceProv.device?.isMulti ?? false,
+                      if (deviceProv.device?.isMulti ?? false)
+                        'exerciseId': widget.exerciseId,
+                      if (deviceProv.device?.isMulti ?? false)
+                        'exerciseName': exerciseName,
+                    },
+                  );
+                },
+              ),
+            ],
           ),
-          body: CardioRunner(
-            onCancel: () => Navigator.of(context).pop(),
-            onSave: (sec) async {
-              await prov.saveCardioTimedSession(
-                context: context,
-                gymId: widget.gymId,
-                userId: auth.userId!,
-                durationSec: sec,
-              );
-              if (context.mounted) Navigator.of(context).pop();
-            },
+          body: DevicePager(
+            key: _pagerKey,
+            gymId: widget.gymId,
+            deviceId: prov.device!.uid,
+            userId: auth.userId!,
+            provider: prov,
+            editablePage: CardioRunner(
+              onCancel: () => Navigator.of(context).pop(),
+              onSave: (sec) async {
+                await prov.saveCardioTimedSession(
+                  context: context,
+                  gymId: widget.gymId,
+                  userId: auth.userId!,
+                  durationSec: sec,
+                );
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              capReached: prov.cardioCapReached,
+              capMessage: loc.cardioCapHint,
+            ),
           ),
         ),
       );

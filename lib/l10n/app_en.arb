@@ -371,6 +371,9 @@
     "description": "Error when a session has already been saved today"
   },
 
+  "cardioCapHint": "You have already saved a session on this device today.",
+  "@cardioCapHint": {"description": "Hint when cardio save cap reached"},
+
   "setRemoved": "Set removed",
   "@setRemoved": {"description": "Snackbar after removing a set"},
 
