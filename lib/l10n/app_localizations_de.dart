@@ -310,6 +310,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get saveButton => 'Speichern';
 
+  String get cardioPlayButtonLabel => 'Trainingstimer starten';
+
+  String get cardioPauseButtonLabel => 'Trainingstimer pausieren';
+
+  String get cardioTotalTimeLabel => 'Gesamtzeit';
+
   @override
   String get settingsIconTooltip => 'Einstellungen';
 

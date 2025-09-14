@@ -413,6 +413,16 @@
   "@saveButton": {
     "description": "Beschriftung für Speichern-Button"
   },
+  "cardioPlayButtonLabel": "Trainingstimer starten",
+  "@cardioPlayButtonLabel": {
+    "description": "A11y-Label zum Starten des Cardio-Timers"
+  },
+  "cardioPauseButtonLabel": "Trainingstimer pausieren",
+  "@cardioPauseButtonLabel": {
+    "description": "A11y-Label zum Pausieren des Cardio-Timers"
+  },
+  "cardioTotalTimeLabel": "Gesamtzeit",
+  "@cardioTotalTimeLabel": {"description": "Label für die verstrichene Zeit"},
 
   "settingsIconTooltip": "Einstellungen",
   "@settingsIconTooltip": {

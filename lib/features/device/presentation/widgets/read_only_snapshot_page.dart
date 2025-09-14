@@ -13,6 +13,36 @@ class ReadOnlySnapshotPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat('dd.MM.yyyy HH:mm').format(snapshot.createdAt);
+    final loc = AppLocalizations.of(context)!;
+    if (snapshot.isCardio && snapshot.mode == 'timed') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(dateStr,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                '${loc.cardioTotalTimeLabel}: ${formatHms(snapshot.durationSec ?? 0)}',
+                style: const TextStyle(fontSize: 24),
+              ),
+            ),
+          ),
+          if (snapshot.note != null && snapshot.note!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: BrandGradientCard(
+                padding: const EdgeInsets.all(12),
+                child: Text(snapshot.note!),
+              ),
+            ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -52,7 +82,6 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                 );
               }
               final drops = s.drops.isNotEmpty ? s.drops : _legacyDrops(snapshot, i);
-              final loc = AppLocalizations.of(context)!;
               final weightText = s.isBodyweight
                   ? ((s.kg ?? 0) == 0
                       ? loc.bodyweight

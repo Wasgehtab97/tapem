@@ -659,6 +659,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveButton;
 
+  String get cardioPlayButtonLabel;
+
+  String get cardioPauseButtonLabel;
+
+  String get cardioTotalTimeLabel;
+
   /// Tooltip for the settings icon
   ///
   /// In en, this message translates to:

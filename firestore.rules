@@ -335,7 +335,24 @@ service cloud.firestore {
 
         // Session snapshots per user (read owner/admin; write owner-only)
         match /sessions/{sessionId} {
-          allow create: if requestOwnerInGym(gymId);
+          allow create: if requestOwnerInGym(gymId) &&
+            request.resource.data.keys().hasOnly([
+              'sessionId',
+              'deviceId',
+              'exerciseId',
+              'createdAt',
+              'userId',
+              'note',
+              'sets',
+              'renderVersion',
+              'uiHints',
+              'isCardio',
+              'mode',
+              'durationSec'
+            ]) &&
+            (request.resource.data.isCardio == null || request.resource.data.isCardio is bool) &&
+            (request.resource.data.mode == null || request.resource.data.mode is string) &&
+            (request.resource.data.durationSec == null || request.resource.data.durationSec is int);
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
           allow update, delete: if false;

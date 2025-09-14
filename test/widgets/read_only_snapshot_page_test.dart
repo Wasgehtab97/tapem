@@ -34,4 +34,21 @@ void main() {
     expect(find.text('10'), findsOneWidget);
     expect(find.text('00:01:30'), findsOneWidget);
   });
+
+  testWidgets('renders timed cardio session summary', (tester) async {
+    final snapshot = DeviceSessionSnapshot(
+      sessionId: 's2',
+      deviceId: 'd1',
+      createdAt: DateTime(2024),
+      userId: 'u1',
+      sets: const [],
+      isCardio: true,
+      mode: 'timed',
+      durationSec: 65,
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: ReadOnlySnapshotPage(snapshot: snapshot)),
+    );
+    expect(find.textContaining('00:01:05'), findsOneWidget);
+  });
 }
