@@ -709,7 +709,7 @@ class DeviceProvider extends ChangeNotifier {
     }
 
     final sessionId = _uuid.v4();
-    final resolvedDeviceId = _device!.uid;
+    String? resolvedDeviceId = _device!.uid;
     final traceId = XpTrace.buildTraceId(
       dayKey: dayKey,
       uid: userId,
@@ -901,7 +901,7 @@ class DeviceProvider extends ChangeNotifier {
         if (_device!.isCardio) 'totalDurationSec': totalDurationSec,
       });
 
-      final resolvedDeviceId = resolveDeviceId(snapshot);
+      resolvedDeviceId = resolveDeviceId(snapshot);
       if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
         XpTrace.log('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
         elogDeviceXp('SKIP_NO_DEVICE', {
@@ -930,7 +930,7 @@ class DeviceProvider extends ChangeNotifier {
               .addSessionXp(
             gymId: gymId,
             userId: userId,
-            deviceId: resolvedDeviceId,
+            deviceId: resolvedDeviceId!,
             sessionId: sessionId,
             showInLeaderboard: showInLeaderboard,
             isMulti: _device!.isMulti,
@@ -953,7 +953,7 @@ class DeviceProvider extends ChangeNotifier {
           await Provider.of<ChallengeProvider>(
             context,
             listen: false,
-          ).checkChallenges(gymId, userId, resolvedDeviceId);
+          ).checkChallenges(gymId, userId, resolvedDeviceId!);
         } catch (e, st) {
           XpTrace.log('CALL_RESULT', {
             'result': 'error',
