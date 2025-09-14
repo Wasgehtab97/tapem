@@ -232,20 +232,21 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           child: Divider(thickness: 1, height: 1),
                         ),
                       ),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: _addSet,
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                      if (!(prov.device?.isCardio == true))
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _addSet,
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                            icon: const Icon(Icons.add),
+                            label: Text(loc.addSetButton),
                           ),
-                          icon: const Icon(Icons.add),
-                          label: Text(loc.addSetButton),
                         ),
-                      ),
                     ],
                     if ((FF.showLastSessionOnDevicePage ||
                             FF.runtimeShowLastSessionOnDevicePage) &&
