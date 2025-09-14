@@ -7,12 +7,19 @@ class WorkoutLog {
   final String sessionId;
   final String? exerciseId;
   final DateTime timestamp;
-  final double weight;
-  final int reps;
+  final double? weight;
+  final int? reps;
   final double? dropWeightKg;
   final int? dropReps;
   final int setNumber;
   final bool isBodyweight;
+
+  // Cardio fields
+  final bool isCardio;
+  final String? mode;
+  final int? durationSec;
+  final double? speedKmH;
+  final List<Map<String, dynamic>>? intervals;
 
   WorkoutLog({
     required this.id,
@@ -20,11 +27,16 @@ class WorkoutLog {
     required this.sessionId,
     this.exerciseId,
     required this.timestamp,
-    required this.weight,
-    required this.reps,
+    this.weight,
+    this.reps,
     this.dropWeightKg,
     this.dropReps,
     required this.setNumber,
     this.isBodyweight = false,
+    this.isCardio = false,
+    this.mode,
+    this.durationSec,
+    this.speedKmH,
+    this.intervals,
   });
 }

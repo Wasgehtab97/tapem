@@ -20,25 +20,38 @@ class WorkoutLogDto {
   @JsonKey(fromJson: _timestampToDate, toJson: _dateToTimestamp)
   final DateTime timestamp;
 
-  final double weight;
-  final int reps;
+  final double? weight;
+  final int? reps;
   final double? dropWeightKg;
   final int? dropReps;
   @JsonKey(fromJson: _setNumberFromJson)
   final int setNumber;
   final bool isBodyweight;
 
+  // Cardio fields
+  final bool isCardio;
+  final String? mode;
+  final int? durationSec;
+  final double? speedKmH;
+  @JsonKey(fromJson: _intervalsFromJson, toJson: _intervalsToJson)
+  final List<Map<String, dynamic>>? intervals;
+
   WorkoutLogDto({
     required this.userId,
     required this.sessionId,
     this.exerciseId,
     required this.timestamp,
-    required this.weight,
-    required this.reps,
+    this.weight,
+    this.reps,
     this.dropWeightKg,
     this.dropReps,
     required this.setNumber,
     this.isBodyweight = false,
+    this.isCardio = false,
+    this.mode,
+    this.durationSec,
+    this.speedKmH,
+    this.intervals,
   });
 
   factory WorkoutLogDto.fromJson(Map<String, dynamic> json) =>
@@ -70,6 +83,11 @@ class WorkoutLogDto {
     dropReps: dropReps,
     setNumber: setNumber,
     isBodyweight: isBodyweight,
+    isCardio: isCardio,
+    mode: mode,
+    durationSec: durationSec,
+    speedKmH: speedKmH,
+    intervals: intervals,
   );
 
   static DateTime _timestampToDate(Timestamp ts) => ts.toDate();
@@ -79,4 +97,11 @@ class WorkoutLogDto {
     if (v is String) return int.tryParse(v) ?? 0;
     return 0;
   }
+
+  static List<Map<String, dynamic>>? _intervalsFromJson(List<dynamic>? list) =>
+      list?.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+  static List<Map<String, dynamic>>? _intervalsToJson(
+          List<Map<String, dynamic>>? list) =>
+      list;
 }

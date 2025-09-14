@@ -538,13 +538,21 @@ class _DeviceScreenState extends State<DeviceScreen> with WidgetsBindingObserver
             editablePage: CardioRunner(
               onCancel: () => Navigator.of(context).pop(),
               onSave: (sec) async {
-                await prov.saveCardioTimedSession(
+                final ok = await prov.saveCardioTimedSession(
                   context: context,
                   gymId: widget.gymId,
                   userId: auth.userId!,
                   durationSec: sec,
+                  showInLeaderboard: auth.showInLeaderboard ?? true,
                 );
-                if (context.mounted) Navigator.of(context).pop();
+                if (context.mounted) {
+                  if (ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.sessionSaved)),
+                    );
+                  }
+                  Navigator.of(context).pop();
+                }
               },
               capReached: prov.cardioCapReached,
               capMessage: loc.cardioCapHint,
