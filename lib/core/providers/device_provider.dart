@@ -1087,6 +1087,8 @@ class DeviceProvider extends ChangeNotifier {
       'setNumber': 1,
       'note': _note,
       'tz': tz,
+      'mode': 'timed',
+      'speedKmH': 0,
       'durationSec': durationSec,
     });
 
