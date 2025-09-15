@@ -1546,6 +1546,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No permission to view symbols'**
   String get no_permission_symbols;
+
+  /// Title for the dialog that confirms deleting a training session.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete session'**
+  String get trainingDetailsDeleteSessionTitle;
+
+  /// Body text explaining that deleting a session removes all associated data.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete this session? All related data will be removed.'**
+  String get trainingDetailsDeleteSessionMessage;
+
+  /// Confirmation button label for deleting a training session.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete session'**
+  String get trainingDetailsDeleteSessionConfirm;
+
+  /// Snackbar text shown after a session was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Session deleted.'**
+  String get trainingDetailsDeleteSessionSuccess;
+
+  /// Snackbar text shown when deleting a session failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the session.'**
+  String get trainingDetailsDeleteSessionError;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

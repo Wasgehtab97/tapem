@@ -61,4 +61,38 @@ class FirestoreSessionSource {
     }
     await batch.commit();
   }
+
+  Future<List<SessionDto>> getSessionEntries({
+    required String gymId,
+    required String deviceId,
+    required String sessionId,
+    required String userId,
+  }) async {
+    final collection = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('logs');
+    final snap = await collection
+        .where('sessionId', isEqualTo: sessionId)
+        .where('userId', isEqualTo: userId)
+        .get();
+    return snap.docs.map(SessionDto.fromFirestore).toList();
+  }
+
+  Future<void> deleteSessionEntries(List<SessionDto> entries) async {
+    if (entries.isEmpty) return;
+    const chunkSize = 450;
+    var index = 0;
+    while (index < entries.length) {
+      final batch = _firestore.batch();
+      final slice = entries.skip(index).take(chunkSize);
+      for (final entry in slice) {
+        batch.delete(entry.reference);
+      }
+      await batch.commit();
+      index += chunkSize;
+    }
+  }
 }

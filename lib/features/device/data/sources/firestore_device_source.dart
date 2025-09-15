@@ -147,4 +147,19 @@ class FirestoreDeviceSource {
     if (!snap.exists) return null;
     return DeviceSessionSnapshot.fromJson(snap.data()!);
   }
+
+  Future<void> deleteSessionSnapshot({
+    required String gymId,
+    required String deviceId,
+    required String sessionId,
+  }) async {
+    final ref = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('sessions')
+        .doc(sessionId);
+    await ref.delete();
+  }
 }

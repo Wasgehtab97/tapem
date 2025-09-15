@@ -763,4 +763,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no_permission_symbols => 'No permission to view symbols';
+
+  @override
+  String get trainingDetailsDeleteSessionTitle => 'Delete session';
+
+  @override
+  String get trainingDetailsDeleteSessionMessage =>
+      'Do you really want to delete this session? All related data will be removed.';
+
+  @override
+  String get trainingDetailsDeleteSessionConfirm => 'Delete session';
+
+  @override
+  String get trainingDetailsDeleteSessionSuccess => 'Session deleted.';
+
+  @override
+  String get trainingDetailsDeleteSessionError =>
+      'Could not delete the session.';
 }
