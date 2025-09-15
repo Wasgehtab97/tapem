@@ -1055,6 +1055,7 @@ class DeviceProvider extends ChangeNotifier {
     required bool showInLeaderboard,
   }) async {
     if (_device == null) return false;
+    await _membership.ensureMembership(gymId, userId);
 
     final dayKey = logicDayKey(DateTime.now().toUtc());
     final sessionId = _uuid.v4();
@@ -1064,105 +1065,120 @@ class DeviceProvider extends ChangeNotifier {
       deviceId: _device!.uid,
       sessionId: sessionId,
     );
-    final ts = Timestamp.now();
-    String tz;
-    try {
-      tz = await FlutterTimezone.getLocalTimezone();
-    } catch (_) {
-      tz = DateTime.now().timeZoneName;
-    }
-
-    final logsCol = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(_device!.uid)
-        .collection('logs');
-    await logsCol.add({
-      'deviceId': _device!.uid,
-      'userId': userId,
-      'exerciseId': _currentExerciseId,
-      'sessionId': sessionId,
-      'timestamp': ts,
-      'setNumber': 1,
-      'note': _note,
-      'tz': tz,
-      'mode': 'timed',
-      'speedKmH': 0,
-      'durationSec': durationSec,
-    });
-
-    final snap = DeviceSessionSnapshot(
-      sessionId: sessionId,
-      deviceId: _device!.uid,
-      exerciseId: _currentExerciseId,
-      createdAt: ts.toDate(),
-      userId: userId,
-      note: _note,
-      sets: const [],
-      isCardio: true,
-      mode: 'timed',
-      durationSec: durationSec,
-    );
-    await deviceRepository.writeSessionSnapshot(gymId, snap);
-    elogUi('cardio_session_saved', {
-      'mode': 'timed',
-      'durationSec': durationSec,
-      'intervalCount': 0,
-    });
-
-    final resolvedDeviceId = resolveDeviceId(snap);
-    if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
-      XpTrace.log('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
-    } else {
-      XpTrace.log('CALL_ADD_SESSION_XP', {
-        'intent': 'credit',
-        'traceId': traceId,
-        'isCardio': true,
-      });
-      try {
-        final xpResult = await Provider.of<XpProvider>(context, listen: false)
-            .addSessionXp(
-          gymId: gymId,
-          userId: userId,
-          deviceId: resolvedDeviceId,
-          sessionId: sessionId,
-          showInLeaderboard: showInLeaderboard,
-          isMulti: false,
-          exerciseId: _currentExerciseId,
-          traceId: traceId,
-        );
-        XpTrace.log('CALL_RESULT', {
-          'result': xpResult.name,
-          'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
-          'traceId': traceId,
-          'isCardio': true,
-        });
-        if (xpResult == DeviceXpResult.okAdded) {
-          final info = LevelService()
-              .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
-          _level = info.level;
-          _xp = info.xp;
-          elogUi('cardio_xp_awarded', {
-            'deviceId': resolvedDeviceId,
-            'sessionId': sessionId,
-          });
-        }
-        await Provider.of<ChallengeProvider>(context, listen: false)
-            .checkChallenges(gymId, userId, resolvedDeviceId);
-      } catch (e, st) {
-        XpTrace.log('CALL_RESULT', {
-          'result': 'error',
-          'traceId': traceId,
-          'error': e.toString(),
-          'isCardio': true,
-        });
-        _log('⚠️ [Provider] XP/Challenges error: $e', st);
-      }
-    }
-    _cardioCapReached = true;
+    _error = null;
+    _isSaving = true;
     notifyListeners();
-    return true;
+
+    try {
+      final ts = Timestamp.now();
+      String tz;
+      try {
+        tz = await FlutterTimezone.getLocalTimezone();
+      } catch (_) {
+        tz = DateTime.now().timeZoneName;
+      }
+
+      final logsCol = _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('devices')
+          .doc(_device!.uid)
+          .collection('logs');
+      await logsCol.add({
+        'deviceId': _device!.uid,
+        'userId': userId,
+        'exerciseId': _currentExerciseId,
+        'sessionId': sessionId,
+        'timestamp': ts,
+        'setNumber': 1,
+        'note': _note,
+        'tz': tz,
+        'mode': 'timed',
+        'speedKmH': 0,
+        'durationSec': durationSec,
+      });
+
+      final snap = DeviceSessionSnapshot(
+        sessionId: sessionId,
+        deviceId: _device!.uid,
+        exerciseId: _currentExerciseId,
+        createdAt: ts.toDate(),
+        userId: userId,
+        note: _note,
+        sets: const [],
+        isCardio: true,
+        mode: 'timed',
+        durationSec: durationSec,
+      );
+      await deviceRepository.writeSessionSnapshot(gymId, snap);
+      elogUi('cardio_session_saved', {
+        'mode': 'timed',
+        'durationSec': durationSec,
+        'intervalCount': 0,
+      });
+
+      final resolvedDeviceId = resolveDeviceId(snap);
+      if (resolvedDeviceId == null || resolvedDeviceId.isEmpty) {
+        XpTrace.log('SKIP', {'reason': 'missingDeviceId', 'traceId': traceId});
+      } else {
+        XpTrace.log('CALL_ADD_SESSION_XP', {
+          'intent': 'credit',
+          'traceId': traceId,
+          'isCardio': true,
+        });
+        try {
+          final xpResult = await Provider.of<XpProvider>(context, listen: false)
+              .addSessionXp(
+            gymId: gymId,
+            userId: userId,
+            deviceId: resolvedDeviceId,
+            sessionId: sessionId,
+            showInLeaderboard: showInLeaderboard,
+            isMulti: false,
+            exerciseId: _currentExerciseId,
+            traceId: traceId,
+          );
+          XpTrace.log('CALL_RESULT', {
+            'result': xpResult.name,
+            'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
+            'traceId': traceId,
+            'isCardio': true,
+          });
+          if (xpResult == DeviceXpResult.okAdded) {
+            final info = LevelService().addXp(
+              LevelInfo(level: _level, xp: _xp),
+              LevelService.xpPerSession,
+            );
+            _level = info.level;
+            _xp = info.xp;
+            elogUi('cardio_xp_awarded', {
+              'deviceId': resolvedDeviceId,
+              'sessionId': sessionId,
+            });
+          }
+          await Provider.of<ChallengeProvider>(context, listen: false)
+              .checkChallenges(gymId, userId, resolvedDeviceId);
+        } catch (e, st) {
+          XpTrace.log('CALL_RESULT', {
+            'result': 'error',
+            'traceId': traceId,
+            'error': e.toString(),
+            'isCardio': true,
+          });
+          _log('⚠️ [Provider] XP/Challenges error: $e', st);
+        }
+      }
+      _cardioCapReached = true;
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = e.toString();
+      _log('❌ [Provider] saveCardioTimedSession error: $e', st);
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
   }
 
   Future<void> checkCardioCap({
