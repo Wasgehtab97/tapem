@@ -36,16 +36,24 @@ class SetCardTheme {
   });
 
   factory SetCardTheme.of(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    Color tint(Color base, {double lightAlpha = 0.12, double darkAlpha = 0.2}) {
+      final alpha = isDark ? darkAlpha : lightAlpha;
+      return Color.alphaBlend(scheme.primary.withOpacity(alpha), base);
+    }
+
     return SetCardTheme(
       padding: const EdgeInsets.all(16),
-      chipBg: scheme.surfaceVariant.withOpacity(0.7),
+      chipBg: tint(scheme.surface, lightAlpha: 0.14, darkAlpha: 0.28),
       chipFg: scheme.onSurface,
       chipBorder: scheme.primary,
-      doneOn: Colors.green,
+      doneOn: scheme.primary,
       doneOff: scheme.onSurface.withOpacity(0.5),
-      menuBg: scheme.surfaceVariant.withOpacity(0.5),
-      menuFg: scheme.onSurface.withOpacity(0.8),
+      menuBg: tint(scheme.surfaceVariant, lightAlpha: 0.12, darkAlpha: 0.24),
+      menuFg: scheme.primary,
     );
   }
 
@@ -468,7 +476,10 @@ class _IndexBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: tokens.chipBg,
           borderRadius: BorderRadius.circular(dense ? 14 : 16),
-          border: Border.all(color: tokens.chipFg.withOpacity(0.2)),
+          border: Border.all(
+            color: tokens.chipBorder.withOpacity(0.65),
+            width: 1.2,
+          ),
         ),
         child: Text(
           '$index',
@@ -500,7 +511,10 @@ class _DropBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.chipBg,
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
-        border: Border.all(color: tokens.chipFg.withOpacity(0.2)),
+        border: Border.all(
+          color: tokens.chipBorder.withOpacity(0.65),
+          width: 1.2,
+        ),
       ),
       child: Text(
         '↘︎',
@@ -542,28 +556,23 @@ class _InputPill extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0x1FFFFFFF), Color(0x14FFFFFF)],
-          ),
+          color: tokens.chipBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                focusNode.hasFocus
-                    ? tokens.chipBorder
-                    : tokens.chipFg.withOpacity(0.3),
+            color: focusNode.hasFocus
+                ? tokens.chipBorder
+                : tokens.chipBorder.withOpacity(0.6),
             width: 1.3,
           ),
-          boxShadow:
-              focusNode.hasFocus
-                  ? [
-                    BoxShadow(
-                      color: tokens.chipBorder.withOpacity(0.4),
-                      blurRadius: 8,
-                    ),
-                  ]
-                  : null,
+          boxShadow: focusNode.hasFocus
+              ? [
+                  BoxShadow(
+                    color: tokens.chipBorder.withOpacity(0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
         alignment: Alignment.center,
@@ -635,27 +644,36 @@ class _RoundButtonState extends State<_RoundButton> {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0x1FFFFFFF), Color(0x14FFFFFF)],
-              ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color:
-                    widget.filled
-                        ? widget.tokens.doneOn
-                        : widget.tokens.chipFg.withOpacity(0.3),
+                color: widget.filled
+                    ? widget.tokens.doneOn
+                    : widget.tokens.chipBorder
+                        .withOpacity(widget.onTap == null ? 0.35 : 0.7),
                 width: 1.3,
               ),
               color:
                   widget.filled ? widget.tokens.doneOn : widget.tokens.menuBg,
+              boxShadow: widget.onTap == null
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: (widget.filled
+                                ? widget.tokens.doneOn
+                                : widget.tokens.chipBorder)
+                            .withOpacity(0.24),
+                        blurRadius: widget.filled ? 12 : 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
             ),
             child: Icon(
               widget.icon,
-              color:
-                  widget.filled
-                      ? Theme.of(context).extension<BrandOnColors>()?.onCta ?? Theme.of(context).colorScheme.onPrimary
+              color: widget.filled
+                  ? Theme.of(context).extension<BrandOnColors>()?.onCta ??
+                      Theme.of(context).colorScheme.onPrimary
+                  : widget.onTap == null
+                      ? widget.tokens.menuFg.withOpacity(0.6)
                       : widget.tokens.menuFg,
             ),
           ),
