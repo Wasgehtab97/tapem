@@ -313,7 +313,8 @@ service cloud.firestore {
         match /logs/{logId} {
           allow create: if requestOwnerInGym(gymId);
           allow read: if resourceOwnerOrAdmin(gymId);
-          allow update, delete: if false;
+          allow delete: if resourceOwnerOrAdmin(gymId);
+          allow update: if false;
         }
 
         // Session snapshots per user (read owner/admin; write owner-only)
@@ -321,7 +322,8 @@ service cloud.firestore {
           allow create: if requestOwnerInGym(gymId);
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
-          allow update, delete: if false;
+          allow delete: if resourceOwnerOrAdmin(gymId);
+          allow update: if false;
         }
 
         // Per-user notes for device
@@ -334,23 +336,27 @@ service cloud.firestore {
           allow read: if ownerOrAdmin(gymId, userId);
           allow create, update: if ownerOrAdmin(gymId, userId) &&
                                 request.resource.data.userId == userId;
+          allow delete: if ownerOrAdmin(gymId, userId);
 
           // Daily markers
           match /days/{dayKey} {
             allow read: if ownerOrAdmin(gymId, userId);
             allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
           }
 
           // Session markers
           match /sessions/{sessionId} {
             allow read: if ownerOrAdmin(gymId, userId);
             allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
           }
 
           // Exercise markers for multi-exercise tracking
           match /exercises/{exerciseId} {
             allow read: if ownerOrAdmin(gymId, userId);
             allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
           }
         }
 
