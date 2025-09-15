@@ -1,22 +1,25 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/features/device/domain/models/device.dart';
-import 'package:tapem/ui/devices/device_card.dart';
-import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
+import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
+import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
+import 'package:tapem/features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
+import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
+import 'package:tapem/features/history/domain/models/workout_log.dart';
+import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/features/muscle_group/domain/repositories/muscle_group_repository.dart';
+import 'package:tapem/features/muscle_group/domain/usecases/delete_muscle_group.dart';
 import 'package:tapem/features/muscle_group/domain/usecases/get_muscle_groups_for_gym.dart';
 import 'package:tapem/features/muscle_group/domain/usecases/save_muscle_group.dart';
-import 'package:tapem/features/muscle_group/domain/usecases/delete_muscle_group.dart';
-import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
-import 'package:tapem/features/history/domain/models/workout_log.dart';
-import 'package:tapem/features/device/domain/repositories/device_repository.dart';
-import 'package:tapem/features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
-import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
-import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/devices/device_card.dart';
 
 class _DummyMuscleGroupRepo implements MuscleGroupRepository {
   @override
@@ -98,12 +101,33 @@ MuscleGroupProvider _makeProvider() {
   );
 }
 
+ThemeData _buildTheme() {
+  return ThemeData(extensions: [
+    AppBrandTheme.defaultTheme(),
+    const BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+  ]);
+}
+
+Widget _wrapWithMaterialApp(Widget child) {
+  return MaterialApp(
+    theme: _buildTheme(),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: child,
+  );
+}
+
 void main() {
   testWidgets('renders name, brand and id', (tester) async {
     final device = Device(uid: '1', id: 1, name: 'Bench', description: 'Eleiko');
     await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider(
+      _wrapWithMaterialApp(
+        ChangeNotifierProvider(
           create: (_) => _makeProvider(),
           child: DeviceCard(device: device),
         ),
@@ -124,8 +148,8 @@ void main() {
       secondaryMuscleGroups: const ['back'],
     );
     await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider(
+      _wrapWithMaterialApp(
+        ChangeNotifierProvider(
           create: (_) => _makeProvider(),
           child: DeviceCard(device: device),
         ),
@@ -144,8 +168,8 @@ void main() {
       primaryMuscleGroups: const ['chest'],
     );
     await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider(
+      _wrapWithMaterialApp(
+        ChangeNotifierProvider(
           create: (_) => _makeProvider(),
           child: DeviceCard(device: device),
         ),
@@ -164,8 +188,8 @@ void main() {
       secondaryMuscleGroups: const ['back'],
     );
     await tester.pumpWidget(
-      MaterialApp(
-        home: ChangeNotifierProvider(
+      _wrapWithMaterialApp(
+        ChangeNotifierProvider(
           create: (_) => _makeProvider(),
           child: DeviceCard(device: device),
         ),
