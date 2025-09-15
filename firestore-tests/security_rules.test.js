@@ -266,7 +266,33 @@ describe('Security Rules v1', function () {
           sets: [],
           renderVersion: 1,
           uiHints: { plannedTableCollapsed: false },
-          isCardio: false,
+        }),
+      );
+    });
+
+    it('allows member to write cardio session snapshot', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('sessions')
+        .doc('cardio1');
+      await assertSucceeds(
+        ref.set({
+          sessionId: 'cardio1',
+          deviceId: 'D1',
+          createdAt: FieldValue.serverTimestamp(),
+          userId: 'userA',
+          note: null,
+          sets: [],
+          renderVersion: 1,
+          uiHints: { plannedTableCollapsed: false },
+          isCardio: true,
+          durationSec: 100,
+          speedKmH: 10,
+          mode: 'steady',
         }),
       );
     });
