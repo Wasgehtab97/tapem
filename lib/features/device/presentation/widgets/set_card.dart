@@ -1,16 +1,21 @@
 // lib/features/device/presentation/widgets/set_card.dart
 // SetCard with silent controller updates to prevent re-entrant rebuilds.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 
 void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
 
@@ -376,6 +381,22 @@ class SetCardState extends State<SetCard> {
                           });
                           HapticFeedback.lightImpact();
                           if (ok) {
+                            final sets = prov.sets;
+                            final isDone = sets[widget.index]['done'] == true ||
+                                sets[widget.index]['done'] == 'true';
+                            if (isDone) {
+                              final service =
+                                  context.read<WorkoutSessionDurationService>();
+                              if (!service.isRunning) {
+                                final auth = context.read<AuthProvider>();
+                                final branding = context.read<BrandingProvider>();
+                                final uid = auth.userId;
+                                final gymId = branding.gymId;
+                                if (uid != null && gymId != null) {
+                                  unawaited(service.start(uid: uid, gymId: gymId));
+                                }
+                              }
+                            }
                             context
                                 .read<OverlayNumericKeypadController>()
                                 .close();
