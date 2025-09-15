@@ -364,7 +364,21 @@ service cloud.firestore {
             (request.resource.data.mode == null || request.resource.data.mode is string) &&
             (request.resource.data.durationSec == null || request.resource.data.durationSec is number) &&
             (request.resource.data.speedKmH == null || request.resource.data.speedKmH is number) &&
-            (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number)));
+            (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number))) &&
+            (request.resource.data.sets is list && request.resource.data.sets.all(s,
+              s.keys().hasOnly(['kg','reps','done','drops','isBodyweight','speedKmH','durationSec']) &&
+              (s.kg == null || s.kg is number) &&
+              (s.reps == null || s.reps is int) &&
+              (s.done == null || s.done is bool) &&
+              (s.isBodyweight == null || s.isBodyweight is bool) &&
+              (s.speedKmH == null || s.speedKmH is number) &&
+              (s.durationSec == null || s.durationSec is int) &&
+              (s.drops is list && s.drops.all(d,
+                d.keys().hasOnly(['kg','reps']) &&
+                d.kg is number &&
+                d.reps is int
+              ))
+            )));
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
           allow delete: if false;

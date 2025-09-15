@@ -297,6 +297,39 @@ describe('Security Rules v1', function () {
       );
     });
 
+    it('allows member to write strength session snapshot with drops', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('sessions')
+        .doc('strength1');
+      await assertSucceeds(
+        ref.set({
+          sessionId: 'strength1',
+          deviceId: 'D1',
+          createdAt: FieldValue.serverTimestamp(),
+          userId: 'userA',
+          note: null,
+          sets: [
+            {
+              kg: 20,
+              reps: 5,
+              done: true,
+              isBodyweight: false,
+              drops: [
+                { kg: 10, reps: 3 },
+              ],
+            },
+          ],
+          renderVersion: 1,
+          uiHints: { plannedTableCollapsed: false },
+        }),
+      );
+    });
+
     it('denies friend from writing session snapshot', async () => {
       const db = friend().firestore();
       const ref = db
