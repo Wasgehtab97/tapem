@@ -903,5 +903,39 @@ describe('Security Rules v1', function () {
         })
       );
     });
+
+    it('allows member to write strength session snapshot', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('sessions')
+        .doc('sStrength');
+      await assertSucceeds(
+        ref.set({
+          sessionId: 'sStrength',
+          deviceId: 'D1',
+          exerciseId: 'ex1',
+          createdAt: FieldValue.serverTimestamp(),
+          userId: 'userA',
+          note: '',
+          sets: [
+            {
+              kg: 20,
+              reps: 10,
+              done: true,
+              drops: [],
+              isBodyweight: false,
+            },
+          ],
+          renderVersion: 1,
+          uiHints: { plannedTableCollapsed: false },
+          showInLeaderboard: true,
+          restricted: false,
+        })
+      );
+    });
   });
 });
