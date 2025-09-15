@@ -247,6 +247,30 @@ describe('Security Rules v1', function () {
       await assertSucceeds(ref.get());
     });
 
+    it('allows member to write own session snapshot', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G1')
+        .collection('devices')
+        .doc('D1')
+        .collection('sessions')
+        .doc('newSession');
+      await assertSucceeds(
+        ref.set({
+          sessionId: 'newSession',
+          deviceId: 'D1',
+          createdAt: FieldValue.serverTimestamp(),
+          userId: 'userA',
+          note: null,
+          sets: [],
+          renderVersion: 1,
+          uiHints: { plannedTableCollapsed: false },
+          isCardio: false,
+        }),
+      );
+    });
+
     it('denies friend from writing session snapshot', async () => {
       const db = friend().firestore();
       const ref = db
