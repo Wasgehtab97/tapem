@@ -393,15 +393,20 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             if (sessionId != null) 'sessionId': sessionId,
                             'result': 'ok',
                           });
+                          if (!mounted) {
+                            return;
+                          }
+                          final message = prov.device!.isMulti
+                              ? loc.multiDeviceSessionSaved
+                              : loc.sessionSaved;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                prov.device!.isMulti
-                                    ? loc.multiDeviceSessionSaved
-                                    : loc.sessionSaved,
-                              ),
-                            ),
+                            SnackBar(content: Text(message)),
                           );
+                          _closeKeyboard();
+                          Navigator.of(context).popUntil((route) {
+                            final name = route.settings.name;
+                            return name == AppRouter.home || route.isFirst;
+                          });
                         },
                   child: prov.isSaving
                       ? const SizedBox(
