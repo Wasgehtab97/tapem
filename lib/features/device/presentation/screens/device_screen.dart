@@ -423,6 +423,7 @@ class _DeviceScreenState extends State<DeviceScreen> with WidgetsBindingObserver
                               ),
                             ),
                           );
+                          Navigator.of(context).pop();
                         },
                   child: prov.isSaving
                       ? const CircularProgressIndicator()

@@ -890,6 +890,8 @@ class DeviceProvider extends ChangeNotifier {
         speedKmH: _device!.isCardio ? avgSpeedKmH : null,
         durationSec: _device!.isCardio ? totalDurationSec : null,
         mode: _device!.isCardio ? cardioMode : null,
+        showInLeaderboard: showInLeaderboard,
+        restricted: false,
       );
 
       await batch.commit();
@@ -1109,6 +1111,8 @@ class DeviceProvider extends ChangeNotifier {
         isCardio: true,
         mode: 'timed',
         durationSec: durationSec,
+        restricted: false,
+        showInLeaderboard: showInLeaderboard,
       );
       await deviceRepository.writeSessionSnapshot(gymId, snap);
       elogUi('cardio_session_saved', {
@@ -1212,6 +1216,8 @@ class DeviceProvider extends ChangeNotifier {
     double? speedKmH,
     int? durationSec,
     String? mode,
+    bool showInLeaderboard = true,
+    bool restricted = false,
   }) {
     return DeviceSessionSnapshot(
       sessionId: sessionId,
@@ -1263,6 +1269,8 @@ class DeviceProvider extends ChangeNotifier {
       mode: mode,
       durationSec: durationSec,
       speedKmH: speedKmH,
+      restricted: restricted,
+      showInLeaderboard: showInLeaderboard,
     );
   }
 
