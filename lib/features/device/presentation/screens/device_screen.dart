@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -298,7 +297,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: BrandPrimaryButton(
+                child: OutlinedButton(
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
                       : () async {
@@ -405,7 +404,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           );
                         },
                   child: prov.isSaving
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Text(loc.saveButton),
                 ),
               ),
