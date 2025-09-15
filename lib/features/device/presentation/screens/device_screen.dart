@@ -477,7 +477,7 @@ class _DeviceScreenState extends State<DeviceScreen> with WidgetsBindingObserver
       scaffold = const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
-    } else if (prov.error != null || prov.device == null) {
+    } else if (prov.device == null) {
       scaffold = Scaffold(
         appBar: AppBar(title: const Text('Gerät nicht gefunden')),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
