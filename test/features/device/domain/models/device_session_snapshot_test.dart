@@ -43,4 +43,16 @@ void main() {
     expect(decoded.mode, 'timed');
     expect(decoded.durationSec, 90);
   });
+
+  test('toJson omits isCardio when false', () {
+    final snapshot = DeviceSessionSnapshot(
+      sessionId: 's2',
+      deviceId: 'd1',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      userId: 'u1',
+      sets: const [],
+    );
+    final json = snapshot.toJson();
+    expect(json.containsKey('isCardio'), false);
+  });
 }
