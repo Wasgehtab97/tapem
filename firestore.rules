@@ -343,7 +343,7 @@ service cloud.firestore {
 
         // Session snapshots per user (read owner/admin; write owner-only)
         match /sessions/{sessionId} {
-          allow create: if requestOwnerInGym(gymId) &&
+          allow write: if requestOwnerInGym(gymId) &&
             request.resource.data.keys().hasOnly([
               'sessionId',
               'deviceId',
@@ -367,7 +367,7 @@ service cloud.firestore {
             (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number)));
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
-          allow update, delete: if false;
+          allow delete: if false;
         }
 
         // Per-user notes for device
