@@ -17,6 +17,8 @@ import 'package:tapem/features/challenges/domain/models/badge.dart';
 import 'package:tapem/features/challenges/domain/models/completed_challenge.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeDeviceRepository implements DeviceRepository {
   FakeDeviceRepository(this.devices);
@@ -138,6 +140,9 @@ class FakeChallengeRepository implements ChallengeRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   group('DeviceProvider', () {
     test('loadDevice sets device and last session', () async {
@@ -236,6 +241,11 @@ void main() {
 
       final xpProvider = XpProvider(repo: xpRepo);
       final challengeProvider = ChallengeProvider(repo: chRepo);
+      final durationService = WorkoutSessionDurationService(
+        firestore: firestore,
+        autoStopDelay: const Duration(hours: 1),
+      );
+      addTearDown(durationService.dispose);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -243,6 +253,9 @@ void main() {
             ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
             ChangeNotifierProvider<ChallengeProvider>.value(value: challengeProvider),
             ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+            ChangeNotifierProvider<WorkoutSessionDurationService>.value(
+              value: durationService,
+            ),
           ],
           child: const MaterialApp(home: Scaffold(body: SizedBox())),
         ),
@@ -293,9 +306,20 @@ void main() {
       );
       provider.updateSet(0, weight: '70', reps: '6');
 
+      final durationService = WorkoutSessionDurationService(
+        firestore: firestore,
+        autoStopDelay: const Duration(hours: 1),
+      );
+      addTearDown(durationService.dispose);
+
       await tester.pumpWidget(
-        ChangeNotifierProvider<DeviceProvider>.value(
-          value: provider,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+            ChangeNotifierProvider<WorkoutSessionDurationService>.value(
+              value: durationService,
+            ),
+          ],
           child: const MaterialApp(home: Scaffold(body: SizedBox())),
         ),
       );
@@ -425,6 +449,11 @@ void main() {
 
       final xpProvider = XpProvider(repo: xpRepo);
       final challengeProvider = ChallengeProvider(repo: chRepo);
+      final durationService = WorkoutSessionDurationService(
+        firestore: firestore,
+        autoStopDelay: const Duration(hours: 1),
+      );
+      addTearDown(durationService.dispose);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -432,6 +461,9 @@ void main() {
             ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
             ChangeNotifierProvider<ChallengeProvider>.value(value: challengeProvider),
             ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+            ChangeNotifierProvider<WorkoutSessionDurationService>.value(
+              value: durationService,
+            ),
           ],
           child: const MaterialApp(home: Scaffold(body: SizedBox())),
         ),

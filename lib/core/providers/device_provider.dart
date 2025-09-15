@@ -30,6 +30,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -771,6 +772,14 @@ class DeviceProvider extends ChangeNotifier {
         'sets': savedSets.length,
         'traceId': traceId,
       });
+
+      await Provider.of<WorkoutSessionDurationService>(
+        context,
+        listen: false,
+      ).registerSession(
+        sessionId: sessionId,
+        completedAt: ts.toDate(),
+      );
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
