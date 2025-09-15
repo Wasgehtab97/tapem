@@ -723,4 +723,14 @@
   ,"assign_failed_snackbar": "Zuweisung fehlgeschlagen"
   ,"removed_snackbar": "Entfernt"
   ,"no_permission_symbols": "Keine Berechtigung zum Anzeigen der Symbole"
+  ,"trainingDetailsDeleteSessionTitle": "Session löschen"
+  ,"@trainingDetailsDeleteSessionTitle": {"description": "Titel des Dialogs zum Löschen einer Training-Session."}
+  ,"trainingDetailsDeleteSessionMessage": "Möchtest du diese Session wirklich löschen? Alle zugehörigen Daten werden entfernt."
+  ,"@trainingDetailsDeleteSessionMessage": {"description": "Beschreibungstext, dass beim Löschen einer Session alle Daten entfernt werden."}
+  ,"trainingDetailsDeleteSessionConfirm": "Session löschen"
+  ,"@trainingDetailsDeleteSessionConfirm": {"description": "Beschriftung der Bestätigungsschaltfläche zum Löschen einer Session."}
+  ,"trainingDetailsDeleteSessionSuccess": "Session gelöscht."
+  ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar-Text nach erfolgreichem Löschen einer Session."}
+  ,"trainingDetailsDeleteSessionError": "Session konnte nicht gelöscht werden."
+  ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar-Text, wenn das Löschen einer Session fehlgeschlagen ist."}
 }

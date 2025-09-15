@@ -5,8 +5,13 @@ import 'package:tapem/core/logging/elog.dart';
 
 class DaySessionsOverview extends StatelessWidget {
   final List<Session> sessions;
-  const DaySessionsOverview({Key? key, required this.sessions})
-    : super(key: key);
+  final void Function(Session session)? onSessionLongPress;
+
+  const DaySessionsOverview({
+    Key? key,
+    required this.sessions,
+    this.onSessionLongPress,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +34,16 @@ class DaySessionsOverview extends StatelessWidget {
                   });
                   return SizedBox(
                     width: cardWidth,
-                    child: SessionExerciseCard(
-                      title: session.deviceName,
-                      subtitle: session.deviceDescription,
-                      sets: session.sets,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onLongPress: onSessionLongPress != null
+                          ? () => onSessionLongPress!(session)
+                          : null,
+                      child: SessionExerciseCard(
+                        title: session.deviceName,
+                        subtitle: session.deviceDescription,
+                        sets: session.sets,
+                      ),
                     ),
                   );
                 },

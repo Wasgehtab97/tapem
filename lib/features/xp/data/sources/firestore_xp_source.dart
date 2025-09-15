@@ -5,6 +5,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
+import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
@@ -116,6 +117,112 @@ class FirestoreXpSource {
         });
         return result;
       }
+
+  Future<void> removeSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required String dayKey,
+    Iterable<String> exerciseIds = const [],
+  }) async {
+    final uniqueExercises = exerciseIds.where((e) => e.isNotEmpty).toSet();
+    final userRef = _firestore.collection('users').doc(userId);
+    final dayRef = userRef.collection('trainingDayXP').doc(dayKey);
+    final statsRef = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
+    final lbUser = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('leaderboard')
+        .doc(userId);
+    final lbSess = lbUser.collection('sessions').doc(sessionId);
+    final lbDay = lbUser.collection('days').doc(dayKey);
+    final exerciseRefs = [
+      for (final ex in uniqueExercises)
+        lbUser.collection('exercises').doc('$ex-$dayKey'),
+    ];
+
+    XpTrace.log('FS_REMOVE_IN', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'dayKey': dayKey,
+      'exerciseCount': uniqueExercises.length,
+    });
+
+    await _firestore.runTransaction((tx) async {
+      final daySnap = await tx.get(dayRef);
+      final statsSnap = await tx.get(statsRef);
+      final lbUserSnap = await tx.get(lbUser);
+      final lbSessSnap = await tx.get(lbSess);
+      final lbDaySnap = await tx.get(lbDay);
+      final exerciseSnaps = <DocumentSnapshot<Map<String, dynamic>>>[];
+      for (final ref in exerciseRefs) {
+        exerciseSnaps.add(await tx.get(ref));
+      }
+
+      const xpDelta = LevelService.xpPerSession;
+      var adjustStats = false;
+
+      if (daySnap.exists) {
+        final currentDayXp = (daySnap.data()?['xp'] as num?)?.toInt() ?? 0;
+        final newDayXp = currentDayXp - xpDelta;
+        if (newDayXp > 0) {
+          tx.update(dayRef, {'xp': newDayXp});
+        } else {
+          tx.delete(dayRef);
+        }
+        adjustStats = currentDayXp > 0 && newDayXp <= 0;
+      }
+
+      if (adjustStats && statsSnap.exists) {
+        final currentStatsXp = (statsSnap.data()?['dailyXP'] as num?)?.toInt() ?? 0;
+        final newStatsXp = currentStatsXp - xpDelta;
+        tx.update(statsRef, {'dailyXP': newStatsXp > 0 ? newStatsXp : 0});
+      }
+
+      if (lbUserSnap.exists) {
+        final info = LevelInfo.fromMap(lbUserSnap.data());
+        final updated = LevelService().removeXp(info, xpDelta);
+        if (updated.level != info.level || updated.xp != info.xp) {
+          tx.update(lbUser, {
+            'xp': updated.xp,
+            'level': updated.level,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      if (lbSessSnap.exists) {
+        tx.delete(lbSess);
+      }
+      if (lbDaySnap.exists) {
+        tx.delete(lbDay);
+      }
+      for (final snap in exerciseSnaps) {
+        if (snap.exists) {
+          tx.delete(snap.reference);
+        }
+      }
+    });
+
+    XpTrace.log('FS_REMOVE_OUT', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'dayKey': dayKey,
+    });
+  }
 
     Stream<int> watchDayXp({required String userId, required DateTime date}) {
       final dateStr = logicDayKey(date.toUtc());

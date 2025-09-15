@@ -37,6 +37,21 @@ class SessionMetaSource {
     return doc.data();
   }
 
+  Future<void> deleteMeta({
+    required String gymId,
+    required String uid,
+    required String sessionId,
+  }) async {
+    await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(uid)
+        .collection('session_meta')
+        .doc(sessionId)
+        .delete();
+  }
+
   Future<Map<String, dynamic>?> getMetaByDayKey({
     required String gymId,
     required String uid,

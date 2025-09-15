@@ -721,4 +721,14 @@
   ,"assign_failed_snackbar": "Assignment failed"
   ,"removed_snackbar": "Removed"
   ,"no_permission_symbols": "No permission to view symbols"
+  ,"trainingDetailsDeleteSessionTitle": "Delete session"
+  ,"@trainingDetailsDeleteSessionTitle": {"description": "Title for the dialog that confirms deleting a training session."}
+  ,"trainingDetailsDeleteSessionMessage": "Do you really want to delete this session? All related data will be removed."
+  ,"@trainingDetailsDeleteSessionMessage": {"description": "Body text explaining that deleting a session removes all associated data."}
+  ,"trainingDetailsDeleteSessionConfirm": "Delete session"
+  ,"@trainingDetailsDeleteSessionConfirm": {"description": "Confirmation button label for deleting a training session."}
+  ,"trainingDetailsDeleteSessionSuccess": "Session deleted."
+  ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar text shown after a session was deleted."}
+  ,"trainingDetailsDeleteSessionError": "Could not delete the session."
+  ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar text shown when deleting a session failed."}
 }

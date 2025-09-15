@@ -1,14 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/training_details/data/dtos/session_dto.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
+import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final FirestoreSessionSource _source;
   final SessionMetaSource _meta;
-  SessionRepositoryImpl(this._source, this._meta);
+  final FirestoreXpSource _xpSource;
+  final FirestoreDeviceSource _deviceSource;
+
+  SessionRepositoryImpl(
+    this._source,
+    this._meta, {
+    FirestoreXpSource? xpSource,
+    FirestoreDeviceSource? deviceSource,
+  })  : _xpSource = xpSource ?? FirestoreXpSource(),
+        _deviceSource = deviceSource ?? FirestoreDeviceSource();
 
   @override
   Future<List<Session>> getSessionsForDate({
@@ -131,5 +143,71 @@ class SessionRepositoryImpl implements SessionRepository {
 
     sessions.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return sessions;
+  }
+
+  @override
+  Future<void> deleteSession({
+    required String gymId,
+    required String userId,
+    required Session session,
+  }) async {
+    final entries = await _source.getSessionEntries(
+      gymId: gymId,
+      deviceId: session.deviceId,
+      sessionId: session.sessionId,
+      userId: userId,
+    );
+
+    DateTime? earliest;
+    final exerciseIds = <String>{};
+    for (final entry in entries) {
+      earliest = earliest == null
+          ? entry.timestamp
+          : (entry.timestamp.isBefore(earliest!) ? entry.timestamp : earliest);
+      if (entry.exerciseId.isNotEmpty) {
+        exerciseIds.add(entry.exerciseId);
+      }
+    }
+
+    final snapshot = await _deviceSource.getSnapshotBySessionId(
+      gymId: gymId,
+      deviceId: session.deviceId,
+      sessionId: session.sessionId,
+    );
+    final exerciseIdFromSnapshot = snapshot?.exerciseId;
+    if (exerciseIdFromSnapshot != null && exerciseIdFromSnapshot.isNotEmpty) {
+      exerciseIds.add(exerciseIdFromSnapshot);
+    }
+
+    final meta = await _meta.getMetaBySessionId(
+      gymId: gymId,
+      uid: userId,
+      sessionId: session.sessionId,
+    );
+    final metaDayKey = meta?['dayKey'] as String?;
+    final derivedDayKey = metaDayKey ??
+        logicDayKey(
+          (earliest ?? session.startTime ?? session.timestamp).toUtc(),
+        );
+
+    await _source.deleteSessionEntries(entries);
+    await _deviceSource.deleteSessionSnapshot(
+      gymId: gymId,
+      deviceId: session.deviceId,
+      sessionId: session.sessionId,
+    );
+    await _meta.deleteMeta(
+      gymId: gymId,
+      uid: userId,
+      sessionId: session.sessionId,
+    );
+    await _xpSource.removeSessionXp(
+      gymId: gymId,
+      userId: userId,
+      deviceId: session.deviceId,
+      sessionId: session.sessionId,
+      dayKey: derivedDayKey,
+      exerciseIds: exerciseIds,
+    );
   }
 }
