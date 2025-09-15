@@ -6,9 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
-import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -271,15 +270,6 @@ class SetCardState extends State<SetCard> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       );
     }
-    final surface = Theme.of(context).extension<AppBrandTheme>();
-
-    var gradient = surface?.gradient ?? AppGradients.brandGradient;
-    if (surface != null) {
-      final lums = gradient.colors.map((c) => c.computeLuminance());
-      final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
-      final delta = surface.luminanceRef - lum;
-      gradient = Tone.gradient(gradient, delta);
-    }
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
     final dropActive =
@@ -298,15 +288,7 @@ class SetCardState extends State<SetCard> {
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius:
-              surface?.radius as BorderRadius? ??
-              BorderRadius.circular(AppRadius.button),
-          boxShadow: surface?.shadow,
-        ),
+      child: BrandOutline(
         padding: tokens.padding,
         child: Column(
           children: [
