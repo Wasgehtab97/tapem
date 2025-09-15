@@ -378,7 +378,7 @@ service cloud.firestore {
                 d.kg is number &&
                 d.reps is int
               ))
-            )));
+            ));
           allow read: if resourceOwnerOrAdmin(gymId) ||
                        isFriend(resource.data.userId, request.auth.uid);
           allow delete: if false;
