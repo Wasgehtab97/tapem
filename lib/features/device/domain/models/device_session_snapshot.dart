@@ -70,7 +70,7 @@ class DeviceSessionSnapshot {
         'sets': sets.map((s) => s.toJson()).toList(),
         'renderVersion': renderVersion,
         'uiHints': uiHints,
-        if (isCardio) 'isCardio': true,
+        'isCardio': isCardio,
         if (mode != null) 'mode': mode,
         if (durationSec != null) 'durationSec': durationSec,
         if (speedKmH != null) 'speedKmH': speedKmH,

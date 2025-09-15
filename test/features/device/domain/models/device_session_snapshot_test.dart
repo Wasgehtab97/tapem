@@ -44,7 +44,7 @@ void main() {
     expect(decoded.durationSec, 90);
   });
 
-  test('toJson omits isCardio when false', () {
+  test('toJson includes isCardio when false', () {
     final snapshot = DeviceSessionSnapshot(
       sessionId: 's2',
       deviceId: 'd1',
@@ -53,6 +53,6 @@ void main() {
       sets: const [],
     );
     final json = snapshot.toJson();
-    expect(json.containsKey('isCardio'), false);
+    expect(json['isCardio'], isFalse);
   });
 }
