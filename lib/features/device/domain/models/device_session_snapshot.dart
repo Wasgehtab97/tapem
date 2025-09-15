@@ -17,6 +17,8 @@ class DeviceSessionSnapshot {
   final String? mode;
   final int? durationSec;
   final double? speedKmH;
+  final bool restricted;
+  final bool showInLeaderboard;
 
   const DeviceSessionSnapshot({
     required this.sessionId,
@@ -32,6 +34,8 @@ class DeviceSessionSnapshot {
     this.mode,
     this.durationSec,
     this.speedKmH,
+    this.restricted = false,
+    this.showInLeaderboard = true,
   });
 
   factory DeviceSessionSnapshot.fromJson(Map<String, dynamic> j) {
@@ -51,6 +55,8 @@ class DeviceSessionSnapshot {
       mode: j['mode'] as String?,
       durationSec: (j['durationSec'] as num?)?.toInt(),
       speedKmH: (j['speedKmH'] as num?)?.toDouble(),
+      restricted: j['restricted'] as bool? ?? false,
+      showInLeaderboard: j['showInLeaderboard'] as bool? ?? true,
     );
   }
 
@@ -68,6 +74,8 @@ class DeviceSessionSnapshot {
         if (mode != null) 'mode': mode,
         if (durationSec != null) 'durationSec': durationSec,
         if (speedKmH != null) 'speedKmH': speedKmH,
+        'restricted': restricted,
+        'showInLeaderboard': showInLeaderboard,
       };
 }
 
