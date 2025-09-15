@@ -358,12 +358,16 @@ service cloud.firestore {
               'mode',
               'durationSec',
               'speedKmH',
-              'intervals'
+              'intervals',
+              'restricted',
+              'showInLeaderboard'
             ]) &&
             (request.resource.data.isCardio == null || request.resource.data.isCardio is bool) &&
             (request.resource.data.mode == null || request.resource.data.mode is string) &&
             (request.resource.data.durationSec == null || request.resource.data.durationSec is number) &&
             (request.resource.data.speedKmH == null || request.resource.data.speedKmH is number) &&
+            (request.resource.data.restricted == null || request.resource.data.restricted is bool) &&
+            (request.resource.data.showInLeaderboard == null || request.resource.data.showInLeaderboard is bool) &&
             (request.resource.data.intervals == null || (request.resource.data.intervals is list && request.resource.data.intervals.all(i, i.durationSec is int && i.speedKmH is number))) &&
             (request.resource.data.sets is list && request.resource.data.sets.all(s,
               s.keys().hasOnly(['kg','reps','done','drops','isBodyweight','speedKmH','durationSec']) &&
