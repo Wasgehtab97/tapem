@@ -86,7 +86,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _keypadController ??= context.read<OverlayNumericKeypadController>();
+    final keypad = context.read<OverlayNumericKeypadController>();
+    _keypadController ??= keypad;
+    keypad.setOutsideTapMode(OutsideTapMode.none);
   }
 
   void _addSet() {
@@ -437,6 +439,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   @override
   void dispose() {
+    _keypadController?.setOutsideTapMode(OutsideTapMode.closeAfterTap);
     _closeKeyboard(instant: true);
     _scrollController.dispose();
     super.dispose();
@@ -507,6 +510,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
               tooltip: 'Verlauf',
               onPressed: () {
                 _closeKeyboard(instant: true);
+                _keypadController
+                    ?.setOutsideTapMode(OutsideTapMode.closeAfterTap);
                 final deviceProv = context.read<DeviceProvider>();
                 String? exerciseName;
                 if (deviceProv.device?.isMulti ?? false) {
@@ -519,19 +524,25 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       )
                       .name;
                 }
-                Navigator.of(context).pushNamed(
-                  AppRouter.history,
-                  arguments: {
-                    'deviceId': widget.deviceId,
-                    'deviceName': deviceProv.device?.name ?? widget.deviceId,
-                    'deviceDescription': deviceProv.device?.description,
-                    'isMulti': deviceProv.device?.isMulti ?? false,
-                    if (deviceProv.device?.isMulti ?? false)
-                      'exerciseId': widget.exerciseId,
-                    if (deviceProv.device?.isMulti ?? false)
-                      'exerciseName': exerciseName,
-                  },
-                );
+                Navigator.of(context)
+                    .pushNamed(
+                      AppRouter.history,
+                      arguments: {
+                        'deviceId': widget.deviceId,
+                        'deviceName':
+                            deviceProv.device?.name ?? widget.deviceId,
+                        'deviceDescription': deviceProv.device?.description,
+                        'isMulti': deviceProv.device?.isMulti ?? false,
+                        if (deviceProv.device?.isMulti ?? false)
+                          'exerciseId': widget.exerciseId,
+                        if (deviceProv.device?.isMulti ?? false)
+                          'exerciseName': exerciseName,
+                      },
+                    )
+                    .then((_) {
+                  if (!mounted) return;
+                  _keypadController?.setOutsideTapMode(OutsideTapMode.none);
+                });
               },
             ),
           ],
@@ -685,6 +696,7 @@ class _PlannedTableState extends State<_PlannedTable> {
                           isDense: true,
                         ),
                         readOnly: true,
+                        enableInteractiveSelection: false,
                         keyboardType: TextInputType.none,
                         autofocus: false,
                         onTap: () {
@@ -709,6 +721,7 @@ class _PlannedTableState extends State<_PlannedTable> {
                           isDense: true,
                         ),
                         readOnly: true,
+                        enableInteractiveSelection: false,
                         keyboardType: TextInputType.none,
                         autofocus: false,
                         onTap: () {

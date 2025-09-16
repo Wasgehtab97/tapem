@@ -141,6 +141,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               controller: _setCtrl,
               keyboardType: TextInputType.none,
               readOnly: true,
+              enableInteractiveSelection: false,
               autofocus: false,
               onTap: () => context
                   .read<OverlayNumericKeypadController>()
@@ -152,6 +153,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               controller: _xpCtrl,
               keyboardType: TextInputType.none,
               readOnly: true,
+              enableInteractiveSelection: false,
               autofocus: false,
               onTap: () => context
                   .read<OverlayNumericKeypadController>()

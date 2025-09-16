@@ -463,6 +463,7 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       isDense: true,
                     ),
                     readOnly: true,
+                    enableInteractiveSelection: false,
                     keyboardType: TextInputType.none,
                     onTap: () => context
                         .read<OverlayNumericKeypadController>()
@@ -479,6 +480,7 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       isDense: true,
                     ),
                     readOnly: true,
+                    enableInteractiveSelection: false,
                     keyboardType: TextInputType.none,
                     onTap: () => context
                         .read<OverlayNumericKeypadController>()
@@ -495,6 +497,7 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                       isDense: true,
                     ),
                     readOnly: true,
+                    enableInteractiveSelection: false,
                     keyboardType: TextInputType.none,
                     onTap: () => context
                         .read<OverlayNumericKeypadController>()

@@ -462,7 +462,6 @@ class MyApp extends StatelessWidget {
         app = DynamicLinkListener(child: app);
         return OverlayNumericKeypadHost(
           controller: keypad,
-          outsideTapMode: OutsideTapMode.closeAfterTap,
           child: app,
         );
       },

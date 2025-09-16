@@ -187,6 +187,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                           ),
                           keyboardType: TextInputType.none,
                           readOnly: true,
+                          enableInteractiveSelection: false,
                           autofocus: false,
                           onTap: () => context
                               .read<OverlayNumericKeypadController>()

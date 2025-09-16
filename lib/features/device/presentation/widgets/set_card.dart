@@ -397,9 +397,15 @@ class SetCardState extends State<SetCard> {
                                 }
                               }
                             }
-                            context
-                                .read<OverlayNumericKeypadController>()
-                                .close();
+                            final allChecked = sets.every((set) {
+                              final doneVal = set['done'];
+                              return doneVal == true || doneVal == 'true';
+                            });
+                            if (allChecked) {
+                              context
+                                  .read<OverlayNumericKeypadController>()
+                                  .close();
+                            }
                           }
                         },
                 ),
@@ -437,6 +443,7 @@ class SetCardState extends State<SetCard> {
                       ),
                       enabled: !widget.readOnly,
                       readOnly: true,
+                      enableInteractiveSelection: false,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
                       onTap: done || widget.readOnly
@@ -456,6 +463,7 @@ class SetCardState extends State<SetCard> {
                       ),
                       enabled: !widget.readOnly,
                       readOnly: true,
+                      enableInteractiveSelection: false,
                       keyboardType: TextInputType.none,
                       validator: _validateDrop,
                       onTap: done || widget.readOnly
@@ -602,6 +610,7 @@ class _InputPill extends StatelessWidget {
           focusNode: focusNode,
           enabled: !readOnly,
           readOnly: true,
+          enableInteractiveSelection: false,
           onTap: readOnly ? null : onTap,
           keyboardType: TextInputType.none,
           decoration: InputDecoration(

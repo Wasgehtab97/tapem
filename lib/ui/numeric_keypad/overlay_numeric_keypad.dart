@@ -53,10 +53,12 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   bool _pendingHeightNotify = false;
   bool _instantCloseRequested = false;
   bool _deferredNotifyScheduled = false;
+  OutsideTapMode _outsideTapMode = OutsideTapMode.closeAfterTap;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
   double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
+  OutsideTapMode get outsideTapMode => _outsideTapMode;
 
   bool consumeInstantClose() {
     final shouldCloseInstantly = _instantCloseRequested;
@@ -134,6 +136,12 @@ class OverlayNumericKeypadController extends ChangeNotifier {
       }
     });
   }
+
+  void setOutsideTapMode(OutsideTapMode mode) {
+    if (_outsideTapMode == mode) return;
+    _outsideTapMode = mode;
+    notifyListeners();
+  }
 }
 
 enum OutsideTapMode { none, closeAfterTap }
@@ -143,7 +151,6 @@ class OverlayNumericKeypadHost extends StatefulWidget {
   final Widget child;
   final NumericKeypadTheme theme;
   final bool interceptAndroidBack;
-  final OutsideTapMode outsideTapMode;
 
   const OverlayNumericKeypadHost({
     super.key,
@@ -151,7 +158,6 @@ class OverlayNumericKeypadHost extends StatefulWidget {
     required this.child,
     this.theme = const NumericKeypadTheme(),
     this.interceptAndroidBack = true,
-    this.outsideTapMode = OutsideTapMode.none,
   });
 
   @override
@@ -177,7 +183,8 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
       'outsideTap ${event.runtimeType} at ${event.position} insideKeypad=$inside',
     );
 
-    if (widget.outsideTapMode == OutsideTapMode.closeAfterTap && !inside) {
+    if (widget.controller.outsideTapMode == OutsideTapMode.closeAfterTap &&
+        !inside) {
       widget.controller.close(immediate: true);
     }
   }
@@ -208,6 +215,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
+        final outsideTapMode = widget.controller.outsideTapMode;
         final keypad = widget.controller.isOpen
             ? OverlayNumericKeypad(
                 key: const ValueKey('overlay_numeric_keypad'),
@@ -221,7 +229,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
           children: [
             child,
             if (widget.controller.isOpen &&
-                widget.outsideTapMode != OutsideTapMode.none)
+                outsideTapMode != OutsideTapMode.none)
               Positioned.fill(
                 child: Listener(
                   behavior: HitTestBehavior.translucent,
