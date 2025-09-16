@@ -195,6 +195,54 @@ describe('Training details rules', () => {
     await assertFails(ref.delete());
   });
 
+  it('allows owner to delete fallback log entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db
+        .collection('legacyDevices')
+        .doc('dev1')
+        .collection('logs')
+        .doc('log1')
+        .set({
+          userId: 'owner',
+          sessionId: 'legacySession',
+          timestamp: new Date(),
+        });
+    });
+
+    const db = ownerCtx().firestore();
+    const ref = db
+      .collection('legacyDevices')
+      .doc('dev1')
+      .collection('logs')
+      .doc('log1');
+    await assertSucceeds(ref.delete());
+  });
+
+  it('denies friend from deleting fallback log entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db
+        .collection('legacyDevices')
+        .doc('dev1')
+        .collection('logs')
+        .doc('log1')
+        .set({
+          userId: 'owner',
+          sessionId: 'legacySession',
+          timestamp: new Date(),
+        });
+    });
+
+    const db = friendCtx().firestore();
+    const ref = db
+      .collection('legacyDevices')
+      .doc('dev1')
+      .collection('logs')
+      .doc('log1');
+    await assertFails(ref.delete());
+  });
+
   it('allows owner to delete own session snapshot', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();

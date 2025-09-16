@@ -105,6 +105,8 @@ service cloud.firestore {
       allow read: if isAuthed() &&
         (resource.data.userId == request.auth.uid ||
          isFriend(resource.data.userId, request.auth.uid));
+      allow delete: if isAuthed() &&
+        resource.data.userId == request.auth.uid;
     }
 
     // ─────────────────────────
