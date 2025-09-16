@@ -539,7 +539,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     }
 
-    return scaffold;
+    return WillPopScope(
+      onWillPop: () async {
+        _closeKeyboard();
+        return true;
+      },
+      child: scaffold,
+    );
   }
 }
 
