@@ -118,12 +118,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
     });
   }
 
-  void _closeKeyboard({bool silently = false}) {
+  void _closeKeyboard({bool silently = false, bool instant = false}) {
     FocusManager.instance.primaryFocus?.unfocus();
     if (silently) {
-      _keypadController?.close(notify: false);
+      _keypadController?.close(notify: false, immediate: instant);
     } else {
-      _keypadController?.close();
+      _keypadController?.close(immediate: instant);
     }
   }
 
@@ -300,7 +300,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    _closeKeyboard();
+                    _closeKeyboard(instant: true);
                     Navigator.pop(context);
                   },
                   child: Text(loc.cancelButton),
@@ -413,7 +413,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(message)),
                           );
-                          _closeKeyboard();
+                          _closeKeyboard(instant: true);
                           Navigator.of(context).popUntil((route) {
                             final name = route.settings.name;
                             return name == AppRouter.home || route.isFirst;
@@ -437,7 +437,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   @override
   void dispose() {
-    _closeKeyboard();
+    _closeKeyboard(instant: true);
     _scrollController.dispose();
     super.dispose();
   }
@@ -506,7 +506,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               icon: const Icon(Icons.history),
               tooltip: 'Verlauf',
               onPressed: () {
-                _closeKeyboard();
+                _closeKeyboard(instant: true);
                 final deviceProv = context.read<DeviceProvider>();
                 String? exerciseName;
                 if (deviceProv.device?.isMulti ?? false) {
