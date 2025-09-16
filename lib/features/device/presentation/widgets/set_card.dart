@@ -360,11 +360,35 @@ class SetCardState extends State<SetCard> {
                 SizedBox(width: dense ? 8 : 12),
                 _RoundButton(
                   tokens: tokens,
+                  icon: _showExtras ? Icons.expand_less : Icons.expand_more,
+                  filled: false,
+                  semantics: 'Mehr Optionen',
+                  dense: dense,
+                  iconColor: Colors.black,
+                  disabledIconColor: Colors.black,
+                  filledIconColor: Colors.black,
+                  onTap: widget.readOnly
+                      ? null
+                      : () {
+                          _slog(
+                            widget.index,
+                            'tap: more options → ${!_showExtras}',
+                          );
+                          HapticFeedback.lightImpact();
+                          setState(() => _showExtras = !_showExtras);
+                        },
+                ),
+                SizedBox(width: dense ? 6 : 8),
+                _RoundButton(
+                  tokens: tokens,
                   icon: Icons.check,
                   filled: done,
                   semantics:
                       done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                   dense: dense,
+                  iconColor: Colors.black,
+                  disabledIconColor: Colors.black,
+                  filledIconColor: Colors.black,
                   onTap: widget.readOnly || !filled
                       ? null
                       : () {
@@ -401,24 +425,6 @@ class SetCardState extends State<SetCard> {
                                 .read<OverlayNumericKeypadController>()
                                 .close();
                           }
-                        },
-                ),
-                SizedBox(width: dense ? 6 : 8),
-                _RoundButton(
-                  tokens: tokens,
-                  icon: _showExtras ? Icons.expand_less : Icons.more_horiz,
-                  filled: false,
-                  semantics: 'Mehr Optionen',
-                  dense: dense,
-                  onTap: widget.readOnly
-                      ? null
-                      : () {
-                          _slog(
-                            widget.index,
-                            'tap: more options → ${!_showExtras}',
-                          );
-                          HapticFeedback.lightImpact();
-                          setState(() => _showExtras = !_showExtras);
                         },
                 ),
               ],
@@ -624,6 +630,9 @@ class _RoundButton extends StatefulWidget {
   final String semantics;
   final VoidCallback? onTap;
   final bool dense;
+  final Color? iconColor;
+  final Color? disabledIconColor;
+  final Color? filledIconColor;
   const _RoundButton({
     required this.tokens,
     required this.icon,
@@ -631,6 +640,9 @@ class _RoundButton extends StatefulWidget {
     required this.semantics,
     this.onTap,
     this.dense = false,
+    this.iconColor,
+    this.disabledIconColor,
+    this.filledIconColor,
   });
 
   @override
@@ -690,12 +702,20 @@ class _RoundButtonState extends State<_RoundButton> {
             ),
             child: Icon(
               widget.icon,
-              color: widget.filled
-                  ? Theme.of(context).extension<BrandOnColors>()?.onCta ??
-                      Theme.of(context).colorScheme.onPrimary
-                  : widget.onTap == null
-                      ? widget.tokens.menuFg.withOpacity(0.6)
-                      : widget.tokens.menuFg,
+              color: () {
+                final theme = Theme.of(context);
+                final brandOn = theme.extension<BrandOnColors>();
+                if (widget.filled) {
+                  return widget.filledIconColor ??
+                      brandOn?.onCta ??
+                      theme.colorScheme.onPrimary;
+                }
+                if (widget.onTap == null) {
+                  return widget.disabledIconColor ??
+                      widget.tokens.menuFg.withOpacity(0.6);
+                }
+                return widget.iconColor ?? widget.tokens.menuFg;
+              }(),
             ),
           ),
         ),
