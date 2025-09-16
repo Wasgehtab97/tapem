@@ -82,12 +82,12 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     }
   }
 
-  void close() {
+  void close({bool notify = true}) {
     if (!_isOpen) return;
     _isOpen = false;
     _contentHeight = 0.0;
     _klog('close()');
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   void _updateContentHeight(double height) {
