@@ -156,15 +156,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                   children: [
-                    if (prov.device!.description.isNotEmpty) ...[
-                      Text(
-                        prov.device!.description,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
                     else ...[
