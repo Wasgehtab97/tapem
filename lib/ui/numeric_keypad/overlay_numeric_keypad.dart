@@ -50,10 +50,17 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   double integerStep = 1.0;
   double _contentHeight = 0.0;
   bool _pendingHeightNotify = false;
+  bool _instantCloseRequested = false;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
   double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
+
+  bool consumeInstantClose() {
+    final shouldCloseInstantly = _instantCloseRequested;
+    _instantCloseRequested = false;
+    return shouldCloseInstantly;
+  }
 
   void openFor(
     TextEditingController controller, {
@@ -69,6 +76,8 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     FocusManager.instance.primaryFocus?.unfocus();
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
+    _instantCloseRequested = false;
+
     if (!_isOpen) {
       _isOpen = true;
       _klog(
@@ -82,11 +91,12 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     }
   }
 
-  void close({bool notify = true}) {
+  void close({bool notify = true, bool immediate = false}) {
     if (!_isOpen) return;
     _isOpen = false;
     _contentHeight = 0.0;
-    _klog('close()');
+    _instantCloseRequested = immediate;
+    _klog('close(${immediate ? 'immediate' : 'animated'})');
     if (notify) notifyListeners();
   }
 
@@ -215,7 +225,9 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
+            duration: widget.controller.consumeInstantClose()
+                ? Duration.zero
+                : const Duration(milliseconds: 160),
             switchInCurve: Curves.easeOut,
             switchOutCurve: Curves.easeIn,
             child: keypad,
@@ -236,7 +248,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
       result = WillPopScope(
         onWillPop: () async {
           if (widget.controller.isOpen) {
-            widget.controller.close();
+            widget.controller.close(immediate: true);
             return false;
           }
           return true;

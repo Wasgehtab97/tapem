@@ -74,6 +74,30 @@ void main() {
     expect(controller.isOpen, false);
   });
 
+  testWidgets('close with immediate flag removes overlay without delay',
+      (tester) async {
+    final controller = OverlayNumericKeypadController();
+    final textCtrl = TextEditingController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OverlayNumericKeypadHost(
+          controller: controller,
+          child: TextField(controller: textCtrl),
+        ),
+      ),
+    );
+
+    controller.openFor(textCtrl);
+    await tester.pumpAndSettle();
+    expect(find.byType(OverlayNumericKeypad), findsOneWidget);
+
+    controller.close(immediate: true);
+    await tester.pump();
+
+    expect(find.byType(OverlayNumericKeypad), findsNothing);
+  });
+
   testWidgets('allowDecimal parameter sets controller flag', (tester) async {
     final controller = OverlayNumericKeypadController();
     final textCtrl = TextEditingController();
