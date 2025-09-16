@@ -1,9 +1,9 @@
 // lib/ui/numeric_keypad/overlay_numeric_keypad.dart
 // Geometry-driven numeric keypad with de-duped height notifications + logging.
 
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
@@ -51,6 +51,7 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   double _contentHeight = 0.0;
   bool _pendingHeightNotify = false;
   bool _instantCloseRequested = false;
+  bool _deferredNotifyScheduled = false;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
@@ -97,7 +98,25 @@ class OverlayNumericKeypadController extends ChangeNotifier {
     _contentHeight = 0.0;
     _instantCloseRequested = immediate;
     _klog('close(${immediate ? 'immediate' : 'animated'})');
-    if (notify) notifyListeners();
+    if (notify) {
+      if (_canNotifyNow()) {
+        notifyListeners();
+      } else if (!_deferredNotifyScheduled) {
+        _deferredNotifyScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _deferredNotifyScheduled = false;
+          if (!_isOpen) {
+            notifyListeners();
+          }
+        });
+      }
+    }
+  }
+
+  bool _canNotifyNow() {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    return phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks;
   }
 
   void _updateContentHeight(double height) {
@@ -147,22 +166,11 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_rebuild);
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
-  void didUpdateWidget(covariant OverlayNumericKeypadHost oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_rebuild);
-      widget.controller.addListener(_rebuild);
-    }
-  }
-
-  @override
   void dispose() {
-    widget.controller.removeListener(_rebuild);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -174,90 +182,91 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     }
   }
 
-  void _rebuild() {
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() {});
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final keypad = widget.controller.isOpen
-        ? OverlayNumericKeypad(
-            key: _keypadKey,
-            controller: widget.controller,
-            theme: widget.theme,
-          )
-        : const SizedBox.shrink();
+    final child = KeyedSubtree(key: _childKey, child: widget.child);
 
-    Widget result = Stack(
-      children: [
-        KeyedSubtree(key: _childKey, child: widget.child),
-        if (widget.controller.isOpen &&
-            widget.outsideTapMode != OutsideTapMode.none)
-          Positioned.fill(
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerUp: (event) {
-                final keypadBox =
-                    _keypadKey.currentContext?.findRenderObject() as RenderBox?;
-                final keypadRect = keypadBox == null
-                    ? Rect.zero
-                    : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                final inside = keypadRect.contains(event.position);
-                _klog(
-                  'outsideTap up at ${event.position} insideKeypad=$inside',
-                );
-                if (widget.outsideTapMode == OutsideTapMode.closeAfterTap &&
-                    !inside) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) widget.controller.close();
-                  });
-                }
-              },
-              child: const IgnorePointer(
-                ignoring: true,
-                child: SizedBox.expand(),
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) {
+        final keypad = widget.controller.isOpen
+            ? OverlayNumericKeypad(
+                key: _keypadKey,
+                controller: widget.controller,
+                theme: widget.theme,
+              )
+            : const SizedBox.shrink();
+
+        Widget result = Stack(
+          children: [
+            child,
+            if (widget.controller.isOpen &&
+                widget.outsideTapMode != OutsideTapMode.none)
+              Positioned.fill(
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerUp: (event) {
+                    final keypadBox = _keypadKey.currentContext
+                        ?.findRenderObject() as RenderBox?;
+                    final keypadRect = keypadBox == null
+                        ? Rect.zero
+                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+                    final inside = keypadRect.contains(event.position);
+                    _klog(
+                      'outsideTap up at ${event.position} insideKeypad=$inside',
+                    );
+                    if (widget.outsideTapMode ==
+                            OutsideTapMode.closeAfterTap &&
+                        !inside) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) widget.controller.close();
+                      });
+                    }
+                  },
+                  child: const IgnorePointer(
+                    ignoring: true,
+                    child: SizedBox.expand(),
+                  ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedSwitcher(
+                duration: widget.controller.consumeInstantClose()
+                    ? Duration.zero
+                    : const Duration(milliseconds: 160),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                child: keypad,
               ),
             ),
-          ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: AnimatedSwitcher(
-            duration: widget.controller.consumeInstantClose()
-                ? Duration.zero
-                : const Duration(milliseconds: 160),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: keypad,
-          ),
-        ),
-      ],
+          ],
+        );
+
+        if (widget.controller.isOpen) {
+          final mq = MediaQuery.of(context);
+          result = MediaQuery(
+            data: mq.copyWith(viewInsets: mq.viewInsets.copyWith(bottom: 0)),
+            child: result,
+          );
+        }
+
+        if (widget.interceptAndroidBack) {
+          result = WillPopScope(
+            onWillPop: () async {
+              if (widget.controller.isOpen) {
+                widget.controller.close(immediate: true);
+                return false;
+              }
+              return true;
+            },
+            child: result,
+          );
+        }
+
+        return result;
+      },
     );
-
-    if (widget.controller.isOpen) {
-      final mq = MediaQuery.of(context);
-      result = MediaQuery(
-        data: mq.copyWith(viewInsets: mq.viewInsets.copyWith(bottom: 0)),
-        child: result,
-      );
-    }
-
-    if (widget.interceptAndroidBack) {
-      result = WillPopScope(
-        onWillPop: () async {
-          if (widget.controller.isOpen) {
-            widget.controller.close(immediate: true);
-            return false;
-          }
-          return true;
-        },
-        child: result,
-      );
-    }
-
-    return result;
   }
 }
 
