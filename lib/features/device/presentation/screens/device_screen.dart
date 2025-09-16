@@ -437,7 +437,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   @override
   void dispose() {
-    _closeKeyboard(silently: true);
+    _closeKeyboard();
     _scrollController.dispose();
     super.dispose();
   }
