@@ -161,14 +161,14 @@ class OverlayNumericKeypadHost extends StatefulWidget {
 
 class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     with WidgetsBindingObserver {
-  final _keypadKey = GlobalKey();
+  final _keypadContentKey = GlobalKey();
   final _childKey = GlobalKey();
 
   void _handleOutsidePointer(PointerEvent event) {
     if (!widget.controller.isOpen) return;
 
     final keypadBox =
-        _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+        _keypadContentKey.currentContext?.findRenderObject() as RenderBox?;
     final keypadRect = keypadBox == null
         ? Rect.zero
         : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
@@ -210,7 +210,8 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
       builder: (context, _) {
         final keypad = widget.controller.isOpen
             ? OverlayNumericKeypad(
-                key: _keypadKey,
+                key: const ValueKey('overlay_numeric_keypad'),
+                contentKey: _keypadContentKey,
                 controller: widget.controller,
                 theme: widget.theme,
               )
@@ -276,11 +277,13 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
 class OverlayNumericKeypad extends StatelessWidget {
   final OverlayNumericKeypadController controller;
   final NumericKeypadTheme theme;
+  final GlobalKey? contentKey;
 
   const OverlayNumericKeypad({
     super.key,
     required this.controller,
     required this.theme,
+    this.contentKey,
   });
 
   @override
@@ -327,6 +330,7 @@ class OverlayNumericKeypad extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: Container(
+            key: contentKey,
             decoration: BoxDecoration(
               color: theme.sheetBg,
               borderRadius: BorderRadius.vertical(
