@@ -1,6 +1,7 @@
 // lib/ui/numeric_keypad/overlay_numeric_keypad.dart
 // Geometry-driven numeric keypad with de-duped height notifications + logging.
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
