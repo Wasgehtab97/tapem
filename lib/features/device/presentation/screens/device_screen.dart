@@ -118,9 +118,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
     });
   }
 
-  void _closeKeyboard() {
+  void _closeKeyboard({bool silently = false}) {
     FocusManager.instance.primaryFocus?.unfocus();
-    _keypadController?.close();
+    if (silently) {
+      _keypadController?.close(notify: false);
+    } else {
+      _keypadController?.close();
+    }
   }
 
   Widget _buildEditablePage(
@@ -433,7 +437,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   @override
   void dispose() {
-    _closeKeyboard();
+    _closeKeyboard(silently: true);
     _scrollController.dispose();
     super.dispose();
   }
