@@ -117,7 +117,8 @@ void main() {
     expect(controller.allowDecimal, false);
   });
 
-  testWidgets('outside tap triggers button and closes keypad', (tester) async {
+  testWidgets('outside tap triggers button and closes keypad immediately',
+      (tester) async {
     final controller = OverlayNumericKeypadController();
     bool pressed = false;
     final textCtrl = TextEditingController();
@@ -148,7 +149,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.isOpen, true);
 
-    await tester.tap(find.text('Add'));
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.text('Add')));
+    await tester.pump();
+    expect(controller.isOpen, false);
+
+    await gesture.up();
     await tester.pumpAndSettle();
 
     expect(pressed, true);

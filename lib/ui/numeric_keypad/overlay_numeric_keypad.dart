@@ -164,6 +164,24 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
   final _keypadKey = GlobalKey();
   final _childKey = GlobalKey();
 
+  void _handleOutsidePointer(PointerEvent event) {
+    if (!widget.controller.isOpen) return;
+
+    final keypadBox =
+        _keypadKey.currentContext?.findRenderObject() as RenderBox?;
+    final keypadRect = keypadBox == null
+        ? Rect.zero
+        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
+    final inside = keypadRect.contains(event.position);
+    _klog(
+      'outsideTap ${event.runtimeType} at ${event.position} insideKeypad=$inside',
+    );
+
+    if (widget.outsideTapMode == OutsideTapMode.closeAfterTap && !inside) {
+      widget.controller.close(immediate: true);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -206,24 +224,8 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
               Positioned.fill(
                 child: Listener(
                   behavior: HitTestBehavior.translucent,
-                  onPointerUp: (event) {
-                    final keypadBox = _keypadKey.currentContext
-                        ?.findRenderObject() as RenderBox?;
-                    final keypadRect = keypadBox == null
-                        ? Rect.zero
-                        : keypadBox.localToGlobal(Offset.zero) & keypadBox.size;
-                    final inside = keypadRect.contains(event.position);
-                    _klog(
-                      'outsideTap up at ${event.position} insideKeypad=$inside',
-                    );
-                    if (widget.outsideTapMode ==
-                            OutsideTapMode.closeAfterTap &&
-                        !inside) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) widget.controller.close();
-                      });
-                    }
-                  },
+                  onPointerDown: _handleOutsidePointer,
+                  onPointerUp: _handleOutsidePointer,
                   child: const IgnorePointer(
                     ignoring: true,
                     child: SizedBox.expand(),
