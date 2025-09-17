@@ -191,3 +191,37 @@ Standardmäßig sind alle Flags `false`.
 ## Lizenz
 
 Siehe [LICENSE](LICENSE).
+
+---
+
+## Web lokal starten
+
+```bash
+cd website
+npm install
+npm run dev
+# http://localhost:3000
+```
+
+## Assets hinzufügen
+
+Die Landing-Page im Ordner `website/` arbeitet mit Platzhaltern, solange keine echten Screenshots vorhanden sind. Um Bilder lokal
+hinzuzufügen (ohne sie zu committen), gehe wie folgt vor:
+
+1. Lege deine Dateien manuell unter `website/public/images/` ab. Das Repository enthält dort nur eine `.gitkeep`, damit keine
+   Binärdateien eingecheckt werden.
+2. Verwende sprechende Dateinamen und diese Richtwerte für Maße:
+
+   | Datei            | Empfohlene Maße          | Beschreibung                     |
+   | ---------------- | ------------------------ | -------------------------------- |
+   | `logo.png`       | 512 × 512 oder SVG       | Primäres App-Logo               |
+   | `hero.png`       | ca. 1600 × 900           | Mockup für den Hero-Bereich     |
+   | `screenshot-1.png` | 1200 × 800             | Trainingshistorie/Analytics     |
+   | `screenshot-2.png` | 1200 × 800             | Ranglisten & Challenges         |
+   | `screenshot-3.png` | 1200 × 800             | Studio-Konfiguration/Branding   |
+
+3. Nach dem Speichern genügt ein Neustart von `npm run dev`, damit die Galerie automatisch von Platzhaltern auf die echten Bilder
+   umschaltet. Das geschieht über eine Dateiprüfung in `src/app/page.tsx`.
+4. Committe Binärdateien nur, wenn ausdrücklich erlaubt (z. B. via Git LFS). Standardmäßig bleiben Bilddateien außerhalb des
+   Repositories.
+
