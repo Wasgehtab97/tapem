@@ -768,8 +768,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trainingDetailsDeleteSessionTitle => 'Delete session';
 
   @override
-  String get trainingDetailsDeleteSessionMessage =>
-      'Do you really want to delete this session? All related data will be removed.';
+  String get trainingDetailsDeleteSessionMessage => 'Do you really want to delete this session? All related data will be removed.';
 
   @override
   String get trainingDetailsDeleteSessionConfirm => 'Delete session';
@@ -778,6 +777,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trainingDetailsDeleteSessionSuccess => 'Session deleted.';
 
   @override
-  String get trainingDetailsDeleteSessionError =>
-      'Could not delete the session.';
+  String get trainingDetailsDeleteSessionError => 'Could not delete the session.';
 }

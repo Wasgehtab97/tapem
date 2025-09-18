@@ -93,3 +93,9 @@ apk-release:
 	flutter pub get
 	flutter gen-l10n
 	flutter build apk --release
+
+# localhost
+localhost:
+	cd website
+	npm install
+	npm run dev

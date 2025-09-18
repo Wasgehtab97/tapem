@@ -768,8 +768,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trainingDetailsDeleteSessionTitle => 'Session löschen';
 
   @override
-  String get trainingDetailsDeleteSessionMessage =>
-      'Möchtest du diese Session wirklich löschen? Alle zugehörigen Daten werden entfernt.';
+  String get trainingDetailsDeleteSessionMessage => 'Möchtest du diese Session wirklich löschen? Alle zugehörigen Daten werden entfernt.';
 
   @override
   String get trainingDetailsDeleteSessionConfirm => 'Session löschen';
@@ -778,6 +777,5 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trainingDetailsDeleteSessionSuccess => 'Session gelöscht.';
 
   @override
-  String get trainingDetailsDeleteSessionError =>
-      'Session konnte nicht gelöscht werden.';
+  String get trainingDetailsDeleteSessionError => 'Session konnte nicht gelöscht werden.';
 }
