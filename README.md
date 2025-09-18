@@ -163,6 +163,26 @@ npm run dev
 
 Die Dev-Config liegt in `website/next.config.js` und ist für lokale Platzhalter-Bilder auf `images.unoptimized = true` gesetzt.
 
+## Recht & SEO
+
+- Unter `/imprint` und `/privacy` findest du rechtliche Pflichtseiten mit deutschsprachigen Platzhaltertexten. Bitte vor dem Livegang
+  rechtlich prüfen und anpassen.
+- Die Footer-Navigation der Landing-Page verlinkt diese Routen dauerhaft sichtbar.
+- Das Standard-Metadaten-Setup liefert ein dynamisches OpenGraph-Bild sowie Twitter Cards.
+
+### OG-Bild testen
+
+1. `npm run dev` im Ordner `website/` starten.
+2. `http://localhost:3000/opengraph-image` im Browser öffnen – dort wird das generierte 1200×630 Bild angezeigt.
+3. Für öffentliche Deployments kannst du den Meta-Debugger von Facebook oder Twitter Card Validator nutzen, um das Live-Bild zu
+   prüfen.
+
+### Assets & Screens
+
+- Bilder werden ausschließlich lokal in `website/public/images/` verwaltet (Repo enthält nur eine `.gitkeep`).
+- Neue Assets dort ablegen und den Dev-Server kurz neu laden, damit Next.js die Dateien erkennt.
+- Bitte weiterhin keine Binärdateien per Git einchecken.
+
 ---
 
 ## Backlog erzeugen

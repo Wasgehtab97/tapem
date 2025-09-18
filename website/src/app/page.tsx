@@ -388,10 +388,16 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
           <p>&copy; {new Date().getFullYear()} Tap&apos;em. Alle Rechte vorbehalten.</p>
           <div className="flex gap-6">
-            <Link href="#" aria-label="Impressum (Platzhalter)">
+            <Link
+              href="/imprint"
+              className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
+            >
               Impressum
             </Link>
-            <Link href="#" aria-label="Datenschutzerklärung (Platzhalter)">
+            <Link
+              href="/privacy"
+              className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
+            >
               Datenschutz
             </Link>
           </div>

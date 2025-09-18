@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>Tap'em Icon</title>
+  <defs>
+    <linearGradient id="tapemGradient" x1="0" x2="1" y1="1" y2="0">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tapemGradient)" />
+  <path
+    fill="#38bdf8"
+    d="M20 18h24a4 4 0 0 1 0 8H34v20a4 4 0 0 1-8 0V26h-6a4 4 0 0 1 0-8Z"
+  />
+  <path
+    fill="#f8fafc"
+    d="M36 32h8a4 4 0 1 1 0 8h-8v4a4 4 0 1 1-8 0V36a4 4 0 0 1 4-4Z"
+    opacity="0.9"
+  />
+</svg>
