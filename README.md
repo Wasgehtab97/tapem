@@ -150,6 +150,21 @@ Vor dem Start müssen die passenden `.env`-Dateien vorhanden sein.
 
 ---
 
+## Web lokal starten
+
+Die Next.js-Seite lebt im Ordner `website/`.
+
+```bash
+cd website
+npm install
+npm run dev
+# http://localhost:3000
+```
+
+Die Dev-Config liegt in `website/next.config.js` und ist für lokale Platzhalter-Bilder auf `images.unoptimized = true` gesetzt.
+
+---
+
 ## Backlog erzeugen
 
 Pilot-Issues und Labels können automatisiert erstellt werden:
