@@ -52,3 +52,32 @@ Prettier-Einstellungen findest du in `.prettierrc`.
 
 Trage die öffentliche Basis-URL in `.env.local` ein (siehe `.env.example`). Sie wird für OpenGraph,
 Sitemap und `robots.txt` verwendet.
+
+## Vercel Deploy
+
+### A) Web-UI (empfohlen)
+
+1. In Vercel auf **New Project** klicken und das GitHub-Repository auswählen.
+2. Als *Root Directory* `website/` setzen (Monorepo-Aufbau beachten).
+3. Vercel erkennt Next.js automatisch – die Standard-Build-Einstellungen können übernommen werden.
+4. Deploy starten. Nach wenigen Minuten steht eine Preview-URL unter `*.vercel.app` bereit.
+5. Sobald alles geprüft ist, kann über **Deploy to Production** ein Live-Release ausgelöst werden.
+
+### B) CLI (Alternative)
+
+```bash
+cd website
+npm i -g vercel
+vercel login
+vercel link       # Projekt anlegen/zuordnen, Root = website/
+vercel            # Preview Deploy
+vercel --prod     # Production Deploy (wenn bereit)
+```
+
+### Hinweise
+
+- Keine Secrets committen. Sensible Variablen ausschließlich über das Vercel-Dashboard oder die CLI (`vercel env`) pflegen –
+  getrennt für Preview- und Production-Umgebungen.
+- Bei Monorepos immer `website/` als Projekt-Root auswählen, damit Next.js korrekt gebaut wird.
+- Jede Pull-Request-Preview verlinken: Ideal für schnelle Reviews, Thesis-Screenshots und manuelle Checks der Pflichtseiten
+  sowie des dynamischen OG-Bilds.
