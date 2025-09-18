@@ -96,6 +96,5 @@ apk-release:
 
 # localhost
 localhost:
-	cd website
 	npm install
 	npm run dev
