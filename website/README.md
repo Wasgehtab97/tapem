@@ -47,7 +47,66 @@ NEXT_PUBLIC_PORTAL_HOST=portal.localhost:3000
 NEXT_PUBLIC_ADMIN_HOST=admin.localhost:3000
 ```
 
-Zusätzliche Firebase-Platzhalter bleiben unverändert (Auth wird später angebunden).
+Weitere Firebase-Platzhalter und serverseitige Variablen sind in `.env.example` dokumentiert.
+
+## Firebase Web-Integration
+
+### Environment Variablen
+
+| Typ | Schlüssel | Beschreibung |
+| --- | -------- | ------------- |
+| Client | `NEXT_PUBLIC_FIREBASE_API_KEY` | API-Key des Web-Clients |
+| Client | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Auth-Domain aus der Firebase-Konsole |
+| Client | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Projekt-ID |
+| Client | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage-Bucket (für optionale Uploads) |
+| Client | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Messaging Sender ID |
+| Client | `NEXT_PUBLIC_FIREBASE_APP_ID` | App-ID |
+| Server | `FIREBASE_PROJECT_ID` | Projekt-ID für das Admin SDK |
+| Server | `FIREBASE_CLIENT_EMAIL` | Dienstkonto-E-Mail |
+| Server | `FIREBASE_PRIVATE_KEY` | Private Key mit `\n`-Escapes (z. B. `"-----BEGIN...\n...END-----"`) |
+
+Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht im Browser landen.
+
+### Autorisierte Domains
+
+- `tapem.vercel.app` (Marketing)
+- `portal-tapem.vercel.app` (Portal)
+- `admin-tapem.vercel.app` (Admin)
+- Lokal: `localhost`, `portal.localhost`, `admin.localhost`
+
+### Session-Handling & Endpunkte
+
+1. Admin-Login läuft clientseitig via Firebase Auth (E-Mail/Passwort).
+2. Das ID-Token wird an `POST /api/admin/session` gesendet; der Endpoint setzt ein `__Secure-tapem-admin-session` Cookie (HTTP-only, SameSite=Lax).
+3. `GET /admin/logout` oder `DELETE /api/admin/session` widerrufen die Session und leiten auf die Marketing-Startseite.
+4. In Preview/Development bleibt der Dev-Stub (`/api/dev/login`) aktiv; Production akzeptiert ausschließlich echte Sessions.
+
+### Guards & Middleware
+
+- `middleware.ts` unterscheidet Marketing/Portal/Admin-Hosts und prüft Session-Cookies.
+- `requireRole` validiert im Server-Kontext das Session-Cookie via Firebase Admin SDK.
+- Alle Admin-Routen sind `noindex` und liefern `robots: disallow`.
+
+### Security Rules (Firestore)
+
+- Grundlage ist `firestore.rules` im Repository (Multi-Tenant-Setup für Gyms).
+- Zugriff erfolgt nur mit `request.auth` und passender `gymId` oder Admin-Rolle.
+- Global-Admins (`role == 'admin'`) erhalten Lesezugriff auf aggregierte Daten, Portal-Nutzer:innen bleiben auf ihr Gym beschränkt.
+
+### Lokal & Produktion testen
+
+```bash
+cd website
+npm install
+npm run dev
+# Marketing: http://localhost:3000
+# Portal:   http://portal.localhost:3000
+# Admin:    http://admin.localhost:3000
+```
+
+- Admin-Login mit Firebase-Benutzer (Rolle `admin`) durchführen.
+- Logout via `/admin/logout` – Session-Cookie wird entfernt.
+- Produktion: `npm run build` und `vercel --prod`; Session muss auf `tapem.vercel.app` gesetzt werden.
 
 ## Navigation & Rollen
 

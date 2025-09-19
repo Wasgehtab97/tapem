@@ -1,14 +1,20 @@
+import 'server-only';
+
 import { cookies, headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
+import { getDeploymentStage } from '@/src/config/sites';
 import {
   DEFAULT_AFTER_LOGIN,
   buildLoginRedirectRoute,
   isAllowedAfterLoginRoute,
   type AllowedAfterLoginRoute,
 } from '@/src/lib/routes';
+import {
+  getAdminUserFromSession,
+} from '@/src/server/auth/session';
 
-import type { DevUser, Role } from './types';
+import type { AuthenticatedUser, DevUser, Role } from './types';
 
 const ROLE_COOKIE = 'tapem_role';
 const EMAIL_COOKIE = 'tapem_email';
@@ -69,14 +75,47 @@ export function getDevUserFromCookies(): DevUser | null {
   };
 }
 
+function mapDevUserToAuthenticated(user: DevUser): AuthenticatedUser {
+  return {
+    uid: user.uid,
+    email: user.email,
+    role: user.role,
+    displayName: null,
+    source: 'dev-stub',
+  };
+}
+
+async function resolveAuthenticatedUser(allowed: Role[]): Promise<AuthenticatedUser | null> {
+  const stage = getDeploymentStage();
+
+  const sessionUser = await getAdminUserFromSession();
+  if (sessionUser && allowed.includes(sessionUser.role)) {
+    return sessionUser;
+  }
+
+  const allowDevFallback =
+    stage !== 'production' || allowed.some((role) => role === 'owner' || role === 'operator');
+
+  if (!allowDevFallback) {
+    return null;
+  }
+
+  const devUser = getDevUserFromCookies();
+  if (!devUser || !allowed.includes(devUser.role)) {
+    return null;
+  }
+
+  return mapDevUserToAuthenticated(devUser);
+}
+
 type RequireRoleOptions = {
   failure?: 'redirect-to-login' | 'not-found';
 };
 
 export async function requireRole(allowed: Role[], options?: RequireRoleOptions) {
-  const user = getDevUserFromCookies();
+  const user = await resolveAuthenticatedUser(allowed);
 
-  if (user && allowed.includes(user.role)) {
+  if (user) {
     return { user } as const;
   }
 

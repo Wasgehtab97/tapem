@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { buildSiteUrl, findSiteByHost } from '@/src/config/sites';
+import { buildSiteUrl, findSiteByHost, getDeploymentStage } from '@/src/config/sites';
 import type { Role } from '@/src/lib/auth/types';
 import {
   ADMIN_ROUTES,
@@ -17,6 +17,8 @@ import {
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
 const ADMIN_REQUIRED_ROLE: Role = 'admin';
+const ADMIN_SESSION_COOKIE = '__Secure-tapem-admin-session';
+const DEV_ROLE_COOKIE = 'tapem_role';
 
 function isStaticAsset(pathname: string) {
   return (
@@ -28,7 +30,7 @@ function isStaticAsset(pathname: string) {
 }
 
 function allowApiRoute(pathname: string) {
-  return pathname.startsWith('/api/dev');
+  return pathname.startsWith('/api/dev') || pathname.startsWith('/api/admin/session');
 }
 
 function buildPortalLoginUrl(nextPathname: string | null) {
@@ -38,6 +40,15 @@ function buildPortalLoginUrl(nextPathname: string | null) {
     loginUrl.searchParams.set('next', safeTarget);
   } else {
     loginUrl.searchParams.set('next', DEFAULT_AFTER_LOGIN);
+  }
+  return loginUrl;
+}
+
+function buildAdminLoginUrl(nextPathname: string | null) {
+  const loginUrl = new URL(buildSiteUrl('admin', ADMIN_ROUTES.login));
+  if (nextPathname && nextPathname !== ADMIN_ROUTES.login) {
+    const safeTarget = resolveAllowedAfterLoginRoute(nextPathname);
+    loginUrl.searchParams.set('next', safeTarget);
   }
   return loginUrl;
 }
@@ -53,6 +64,7 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get('host');
   const site = findSiteByHost(host) ?? null;
   const pathname = request.nextUrl.pathname;
+  const stage = getDeploymentStage();
 
   if (!site) {
     return redirectTo404(request);
@@ -97,7 +109,7 @@ export function middleware(request: NextRequest) {
     }
 
     if (isPortalProtectedPath(pathname)) {
-      const role = request.cookies.get('tapem_role')?.value as Role | undefined;
+      const role = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
       if (!role || !PORTAL_ALLOWED_ROLES.includes(role)) {
         const loginUrl = buildPortalLoginUrl(pathname);
         return NextResponse.redirect(loginUrl);
@@ -112,16 +124,47 @@ export function middleware(request: NextRequest) {
     return redirectTo404(request);
   }
 
+  const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
+  const hasDevAdmin = stage !== 'production' && devRole === ADMIN_REQUIRED_ROLE;
+
   if (pathname === ADMIN_ROUTES.home) {
-    const target = request.nextUrl.clone();
-    target.pathname = ADMIN_ROUTES.dashboard;
-    target.search = '';
-    return NextResponse.redirect(target);
+    if (sessionCookie || hasDevAdmin) {
+      const target = request.nextUrl.clone();
+      target.pathname = ADMIN_ROUTES.dashboard;
+      target.search = '';
+      return NextResponse.redirect(target);
+    }
+
+    const loginUrl = buildAdminLoginUrl(ADMIN_ROUTES.dashboard);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (pathname === ADMIN_ROUTES.login) {
+    if (sessionCookie || hasDevAdmin) {
+      const target = request.nextUrl.clone();
+      target.pathname = ADMIN_ROUTES.dashboard;
+      target.search = '';
+      return NextResponse.redirect(target);
+    }
+
+    return NextResponse.next();
+  }
+
+  if (pathname === ADMIN_ROUTES.logout) {
+    return NextResponse.next();
   }
 
   if (isAdminProtectedPath(pathname)) {
-    const role = request.cookies.get('tapem_role')?.value as Role | undefined;
-    if (role !== ADMIN_REQUIRED_ROLE) {
+    if (stage === 'production') {
+      if (!sessionCookie) {
+        const loginUrl = buildAdminLoginUrl(pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+      return NextResponse.next();
+    }
+
+    if (!sessionCookie && !hasDevAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = '/403';
       url.search = '';
