@@ -1,27 +1,30 @@
 import type { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const protectedRoutes = ['/gym', '/gym/members', '/gym/challenges', '/gym/leaderboard', '/admin'];
+import { buildMetadataBase, findSiteByHost, getSiteConfig } from '@/src/config/sites';
+
+const MARKETING_DISALLOW = ['/login', '/gym', '/gym/members', '/gym/challenges', '/gym/leaderboard', '/admin'];
 
 export default function robots(): MetadataRoute.Robots {
-  const normalizedUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
-  const isProd = process.env.VERCEL_ENV === 'production';
+  const headerList = headers();
+  const host = headerList.get('host');
+  const site = findSiteByHost(host) ?? getSiteConfig('marketing');
+  const baseUrl = buildMetadataBase(host).toString().replace(/\/$/, '');
 
-  if (!isProd) {
+  if (site.key === 'marketing') {
     return {
-      rules: [{ userAgent: '*', disallow: '/' }],
-      sitemap: `${normalizedUrl}/sitemap.xml`,
+      rules: [
+        {
+          userAgent: '*',
+          allow: '/',
+          disallow: MARKETING_DISALLOW,
+        },
+      ],
+      sitemap: `${baseUrl}/sitemap.xml`,
     };
   }
 
   return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: protectedRoutes,
-      },
-    ],
-    sitemap: `${normalizedUrl}/sitemap.xml`,
+    rules: [{ userAgent: '*', disallow: '/' }],
   };
 }

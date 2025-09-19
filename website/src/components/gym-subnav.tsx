@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Route } from 'next';
-import { ROUTES } from '@/src/lib/routes';
+import { PORTAL_ROUTES } from '@/src/lib/routes';
 
 const items = [
-  { href: ROUTES.gym, label: 'Übersicht' },
-  { href: ROUTES.gymMembers, label: 'Mitglieder' },
-  { href: ROUTES.gymChallenges, label: 'Challenges' },
-  { href: ROUTES.gymLeaderboard, label: 'Rangliste' },
+  { href: PORTAL_ROUTES.gym, label: 'Übersicht' },
+  { href: PORTAL_ROUTES.gymMembers, label: 'Mitglieder' },
+  { href: PORTAL_ROUTES.gymChallenges, label: 'Challenges' },
+  { href: PORTAL_ROUTES.gymLeaderboard, label: 'Rangliste' },
 ] satisfies ReadonlyArray<{ href: Route; label: string }>;
 
 export default function GymSubnav() {

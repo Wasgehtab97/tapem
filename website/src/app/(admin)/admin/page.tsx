@@ -52,7 +52,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  const { user } = await requireRole(['admin']);
+  const { user } = await requireRole(['admin'], { failure: 'not-found' });
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-12 px-6 py-16">

@@ -2,11 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import Image from 'next/image';
-import Link from 'next/link';
-
-import { ROUTES } from '@/src/lib/routes';
-
-import { ThemeToggle } from '../components/theme-toggle';
 
 export const dynamic = 'force-static';
 
@@ -171,35 +166,8 @@ function imageExists(fileName: string) {
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-subtle surface-blur">
-        <div
-          className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4"
-          aria-label="Top navigation"
-        >
-          <a href="#hero" className="text-lg font-semibold text-page">
-            Tap'em
-          </a>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex" aria-label="Hauptnavigation">
-            <a className="transition hover:text-primary" href="#features">
-              Features
-            </a>
-            <a className="transition hover:text-primary" href="#how-it-works">
-              So funktioniert's
-            </a>
-            <a className="transition hover:text-primary" href="#faq">
-              FAQ
-            </a>
-            <a className="transition hover:text-primary" href="#contact">
-              Kontakt
-            </a>
-          </nav>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      <main className="flex flex-1 flex-col">
-        <section
+    <div className="flex flex-col">
+      <section
           id="hero"
           className="relative overflow-hidden py-20"
           style={{
@@ -370,7 +338,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="contact" className="py-20">
+      <section id="contact" className="py-20">
           <div className="mx-auto max-w-3xl rounded-3xl border border-subtle bg-card p-10 text-center shadow-lg shadow-secondary/20">
             <h2 className="text-3xl font-bold tracking-tight text-page">Demo anfragen</h2>
             <p className="mt-4 text-lg text-muted">
@@ -384,28 +352,7 @@ export default function HomePage() {
               Kontakt aufnehmen
             </a>
           </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-subtle bg-surface-muted py-10 text-sm text-muted">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
-          <p>&copy; {new Date().getFullYear()} Tap&apos;em. Alle Rechte vorbehalten.</p>
-          <div className="flex gap-6">
-            <Link
-              href={ROUTES.imprint}
-              className="font-medium text-page transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Impressum
-            </Link>
-            <Link
-              href={ROUTES.privacy}
-              className="font-medium text-page transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Datenschutz
-            </Link>
-          </div>
-        </div>
-      </footer>
+      </section>
     </div>
   );
 }

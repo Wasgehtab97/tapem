@@ -1,11 +1,33 @@
 import { NextResponse } from 'next/server';
 
+import { findSiteByHost, normalizeHost } from '@/src/config/sites';
 import type { Role } from '@/src/lib/auth/types';
 
 const ROLE_COOKIE = 'tapem_role';
 const EMAIL_COOKIE = 'tapem_email';
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 Tage
 const ROLES: Role[] = ['admin', 'owner', 'operator'];
+
+function resolveCookieDomain(request: Request): string | undefined {
+  const headerHost = request.headers.get('host');
+  const normalized = normalizeHost(headerHost);
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  const [hostname] = normalized.split(':');
+  if (!hostname || hostname.includes('localhost') || hostname.startsWith('127.')) {
+    return undefined;
+  }
+
+  const site = findSiteByHost(normalized) ?? findSiteByHost(hostname);
+  if (!site) {
+    return undefined;
+  }
+
+  return hostname;
+}
 
 function parseRole(value: unknown): Role | undefined {
   if (typeof value === 'string' && ROLES.includes(value as Role)) {
@@ -45,6 +67,7 @@ export async function POST(request: Request) {
 
   const response = new NextResponse(null, { status: 204 });
   const secure = process.env.NODE_ENV === 'production';
+  const domain = resolveCookieDomain(request);
 
   response.cookies.set({
     name: ROLE_COOKIE,
@@ -54,6 +77,7 @@ export async function POST(request: Request) {
     maxAge: MAX_AGE,
     path: '/',
     secure,
+    domain,
   });
 
   response.cookies.set({
@@ -64,6 +88,7 @@ export async function POST(request: Request) {
     maxAge: MAX_AGE,
     path: '/',
     secure,
+    domain,
   });
 
   return response;

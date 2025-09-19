@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import {
   DEFAULT_AFTER_LOGIN,
@@ -69,11 +69,19 @@ export function getDevUserFromCookies(): DevUser | null {
   };
 }
 
-export async function requireRole(allowed: Role[]) {
+type RequireRoleOptions = {
+  failure?: 'redirect-to-login' | 'not-found';
+};
+
+export async function requireRole(allowed: Role[], options?: RequireRoleOptions) {
   const user = getDevUserFromCookies();
 
   if (user && allowed.includes(user.role)) {
     return { user } as const;
+  }
+
+  if (options?.failure === 'not-found') {
+    notFound();
   }
 
   const next = getNextAfterLoginRoute();
