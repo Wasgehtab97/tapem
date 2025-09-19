@@ -1,4 +1,5 @@
-import type { Metadata } from 'next';
+// website/src/app/layout.tsx
+import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
@@ -9,7 +10,12 @@ import DevToolbar from '@/src/components/dev-toolbar';
 import '../styles/globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const navLinks = [
+const isProd = process.env.VERCEL_ENV === 'production';
+
+/**
+ * Navigation: mit typedRoutes typisiert, damit href exakt existierende interne Routen sind.
+ */
+const navLinks: Array<{ href: Route; label: string }> = [
   { href: '/', label: 'Home' },
   { href: '/gym', label: 'Gym' },
   { href: '/admin', label: 'Admin' },
@@ -37,13 +43,11 @@ export const metadata: Metadata = {
       },
     ],
   },
-  alternates: {
-    canonical: siteUrl,
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  alternates: { canonical: siteUrl },
+  // Previews/Dev: noindex; Production: index
+  robots: isProd
+    ? { index: true, follow: true }
+    : { index: false, follow: false, noimageindex: true, nocache: true },
   twitter: {
     card: 'summary_large_image',
     title: "Tap'em – NFC-basiertes Gym-Tracking",
@@ -58,12 +62,9 @@ export const metadata: Metadata = {
   },
 };
 
-function isProduction() {
-  return process.env.VERCEL_ENV === 'production';
-}
-
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const devUser = isProduction() ? null : getDevUserFromCookies();
+  // Dev-Toolbar nur außerhalb von Production
+  const devUser = isProd ? null : getDevUserFromCookies();
   const currentRole: Role | null = devUser?.role ?? null;
 
   return (
@@ -79,7 +80,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 >
                   Tap&apos;em
                 </Link>
-                <nav aria-label="Hauptnavigation" className="flex items-center gap-4 text-sm font-medium text-slate-700">
+
+                <nav
+                  aria-label="Hauptnavigation"
+                  className="flex items-center gap-4 text-sm font-medium text-slate-700"
+                >
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -91,17 +96,22 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   ))}
                 </nav>
               </div>
-              {!isProduction() ? (
+
+              {!isProd ? (
                 <DevToolbar currentRole={currentRole} />
               ) : (
                 <div className="hidden" aria-hidden />
               )}
             </div>
           </header>
-          <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
+
+          <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+            {children}
+          </main>
+
           <footer className="border-t border-slate-200 bg-slate-50">
             <div className="mx-auto w-full max-w-6xl px-6 py-4 text-sm text-slate-500">
-              © {new Date().getFullYear()} Tap&apos;em – Preview
+              © {new Date().getFullYear()} Tap&apos;em{!isProd ? ' – Preview' : ''}
             </div>
           </footer>
         </div>
