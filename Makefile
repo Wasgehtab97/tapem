@@ -98,3 +98,7 @@ apk-release:
 localhost:
 	npm install
 	npm run dev
+
+
+reset:
+	git reset --hard origin/a_gpt5 
