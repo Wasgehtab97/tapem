@@ -75,6 +75,20 @@ Sitemap und `robots.txt` verwendet.
 - Nach dem Dev-Login sind nur Werte aus `ALLOWED_AFTER_LOGIN` als Redirect-Ziel erlaubt (`/login?next=`-Parameter wird validiert).
 - Tests vor Deploy: `npm run build`, anschließend `/login`, `/login?next=/admin` und `/login?next=/falsch` in der Preview prüfen.
 
+## Build-Hinweise (Next.js 14 App Router)
+
+- **typedRoutes & Navigation:** Interne Links, Redirects und `router.push` verwenden ausschließlich Werte aus `src/lib/routes.ts`. Externe Ziele laufen weiterhin über `<a href="…">`. Redirect-Parameter (`next`) werden whitelisted, bevor sie genutzt werden.
+- **CSR-Bailout & Suspense:** `/login` erzwingt dynamisches Rendering (`dynamic = 'force-dynamic'`). Der Client-Teil (`LoginForm`) ist in einer Suspense-Boundary eingebettet, damit `useSearchParams()` während des Builds keinen Fehler wirft.
+- **Open-Graph-Bild:** Die Route `src/app/opengraph-image.tsx` nutzt nur vom OG-Renderer erlaubte CSS-Eigenschaften (z. B. `display: 'flex'` statt `inline-flex`).
+- **Robots & dev-Auth:** In Preview/Development liefert `robots.txt` ein globales `disallow`. Production erlaubt Crawling, sperrt aber `/gym/*` und `/admin`. Die Dev-Auth-APIs geben in Production weiterhin HTTP 403 zurück.
+
+### Kurzer Testplan
+
+- `npm run build`
+- Smoke-Test `/login`, `/login?next=/gym`, `/login?next=/admin`
+- Statische Seiten `/`, `/imprint`, `/privacy`
+- Geschützte SSR-Routen `/gym`, `/admin` mit Dev-Toolbar
+
 ## Mock-Datenquelle
 
 - Alle geschützten Routen verwenden statische Mock-Daten aus [`src/server/mocks/gym.ts`](src/server/mocks/gym.ts).

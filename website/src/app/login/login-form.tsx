@@ -1,16 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Route } from 'next';
 import { useState } from 'react';
-import { ALLOWED_AFTER_LOGIN } from '@/src/lib/routes';
-
-type AllowedRoute = (typeof ALLOWED_AFTER_LOGIN)[number];
-const DEFAULT_AFTER_LOGIN: AllowedRoute = ALLOWED_AFTER_LOGIN[0];
-
-function isAllowedRoute(v: string | null): v is AllowedRoute {
-  return !!v && (ALLOWED_AFTER_LOGIN as readonly string[]).includes(v);
-}
+import { resolveAllowedAfterLoginRoute, type AllowedAfterLoginRoute } from '@/src/lib/routes';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -35,7 +27,7 @@ export default function LoginForm() {
       if (!res.ok) throw new Error(`Login fehlgeschlagen (${res.status})`);
 
       const nextParam = searchParams.get('next');
-      const target: Route = (isAllowedRoute(nextParam) ? nextParam : DEFAULT_AFTER_LOGIN) as Route;
+      const target: AllowedAfterLoginRoute = resolveAllowedAfterLoginRoute(nextParam);
 
       router.push(target);
       router.refresh();

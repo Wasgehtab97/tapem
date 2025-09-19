@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+
 import LoginForm from './login-form';
 
 export const metadata: Metadata = {
   title: 'Login – Tap\'em (Dev-Stub)',
   robots: { index: false, follow: false },
 };
+
+export const dynamic = 'force-dynamic';
 
 export default function Page() {
   return (
@@ -14,7 +18,18 @@ export default function Page() {
         Diese Anmeldung setzt Vorschau-Cookies und dient dem Testen der geschützten Bereiche.
         In Production ist der Dev-Login deaktiviert.
       </p>
-      <LoginForm />
+      <Suspense
+        fallback={
+          <div
+            className="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500"
+            aria-live="polite"
+          >
+            Lade Login-Parameter…
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }

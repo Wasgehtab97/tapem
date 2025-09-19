@@ -1,6 +1,13 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import {
+  DEFAULT_AFTER_LOGIN,
+  buildLoginRedirectRoute,
+  isAllowedAfterLoginRoute,
+  type AllowedAfterLoginRoute,
+} from '@/src/lib/routes';
+
 import type { DevUser, Role } from './types';
 
 const ROLE_COOKIE = 'tapem_role';
@@ -8,7 +15,25 @@ const EMAIL_COOKIE = 'tapem_email';
 const DEFAULT_EMAIL = 'anonymous@tapem.dev';
 const ROLES: Role[] = ['admin', 'owner', 'operator'];
 
-function getCurrentPath(): string {
+function normalizeCandidate(candidate: string | null): string | null {
+  if (!candidate) {
+    return null;
+  }
+
+  if (candidate.startsWith('/')) {
+    const [pathname] = candidate.split('?');
+    return pathname && pathname.length > 0 ? pathname : '/';
+  }
+
+  try {
+    const url = new URL(candidate, 'http://localhost');
+    return url.pathname || '/';
+  } catch {
+    return null;
+  }
+}
+
+function getNextAfterLoginRoute(): AllowedAfterLoginRoute {
   const headerList = headers();
   const candidates = [
     headerList.get('x-next-url'),
@@ -17,23 +42,13 @@ function getCurrentPath(): string {
   ];
 
   for (const candidate of candidates) {
-    if (!candidate) {
-      continue;
-    }
-
-    try {
-      const url = new URL(candidate, 'http://localhost');
-      const pathname = url.pathname || '/';
-      const search = url.search ?? '';
-      return `${pathname}${search}`;
-    } catch {
-      if (candidate.startsWith('/')) {
-        return candidate;
-      }
+    const normalized = normalizeCandidate(candidate);
+    if (normalized && isAllowedAfterLoginRoute(normalized)) {
+      return normalized;
     }
   }
 
-  return '/';
+  return DEFAULT_AFTER_LOGIN;
 }
 
 export function getDevUserFromCookies(): DevUser | null {
@@ -61,6 +76,7 @@ export async function requireRole(allowed: Role[]) {
     return { user } as const;
   }
 
-  const next = getCurrentPath();
-  redirect(`/login?next=${encodeURIComponent(next)}`);
+  const next = getNextAfterLoginRoute();
+  const loginRoute = buildLoginRedirectRoute(next);
+  redirect(loginRoute);
 }
