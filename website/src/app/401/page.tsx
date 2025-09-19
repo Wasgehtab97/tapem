@@ -29,7 +29,7 @@ function resolveContent(site: SiteConfig): PageContent {
         message:
           'Deine Sitzung ist abgelaufen oder du hast noch keine Rolle gewählt. Der Dev-Login bleibt nur in Preview/Entwicklung aktiv.',
         actions: [
-          { label: 'Zum Login', href: PORTAL_ROUTES.login },
+          { label: 'Zum Login', href: PORTAL_ROUTES.login.href },
         ],
         accent: 'amber',
       };
@@ -38,7 +38,7 @@ function resolveContent(site: SiteConfig): PageContent {
         title: 'Dieser Admin-Bereich ist nur intern zugänglich.',
         message: 'Bitte verwende die interne Authentifizierung oder kontaktiere das Kernteam, falls du Zugang benötigst.',
         actions: [
-          { label: 'Zur Monitoring-Übersicht', href: ADMIN_ROUTES.dashboard },
+          { label: 'Zur Monitoring-Übersicht', href: ADMIN_ROUTES.dashboard.href },
         ],
         accent: 'amber',
       };
@@ -48,8 +48,8 @@ function resolveContent(site: SiteConfig): PageContent {
         message:
           'Marketing-Inhalte bleiben frei zugänglich. Betreiber:innen erreichen das Portal über die dedizierte Subdomain.',
         actions: [
-          { label: 'Zum Portal-Login', href: buildSiteUrl('portal', PORTAL_ROUTES.login), external: true },
-          { label: 'Zur Startseite', href: MARKETING_ROUTES.home },
+          { label: 'Zum Portal-Login', href: buildSiteUrl('portal', PORTAL_ROUTES.login.href), external: true },
+          { label: 'Zur Startseite', href: MARKETING_ROUTES.home.href },
         ],
         accent: 'amber',
       };

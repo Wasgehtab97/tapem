@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { Route } from 'next';
-import { PORTAL_ROUTES } from '@/src/lib/routes';
+
+import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/src/lib/routes';
 
 const items = [
-  { href: PORTAL_ROUTES.gym, label: 'Übersicht' },
-  { href: PORTAL_ROUTES.gymMembers, label: 'Mitglieder' },
-  { href: PORTAL_ROUTES.gymChallenges, label: 'Challenges' },
-  { href: PORTAL_ROUTES.gymLeaderboard, label: 'Rangliste' },
-] satisfies ReadonlyArray<{ href: Route; label: string }>;
+  { route: PORTAL_ROUTES.gym, label: 'Übersicht' },
+  { route: PORTAL_ROUTES.gymMembers, label: 'Mitglieder' },
+  { route: PORTAL_ROUTES.gymChallenges, label: 'Challenges' },
+  { route: PORTAL_ROUTES.gymLeaderboard, label: 'Rangliste' },
+] satisfies ReadonlyArray<{ route: PortalRouteDefinition; label: string }>;
 
 export default function GymSubnav() {
   const pathname = usePathname();
@@ -18,11 +18,11 @@ export default function GymSubnav() {
   return (
     <nav aria-label="Gym-Untermenü" className="flex flex-wrap gap-2">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.route.href;
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={item.route.href}
+            href={item.route.href}
             className={
               'rounded-full border px-4 py-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ' +
               (isActive

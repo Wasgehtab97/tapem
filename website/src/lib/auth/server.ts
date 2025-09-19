@@ -7,8 +7,9 @@ import { getDeploymentStage } from '@/src/config/sites';
 import {
   DEFAULT_AFTER_LOGIN,
   buildLoginRedirectRoute,
-  isAllowedAfterLoginRoute,
-  type AllowedAfterLoginRoute,
+  isAfterLoginRoute,
+  safeAfterLoginRoute,
+  type AfterLoginRoute,
 } from '@/src/lib/routes';
 import {
   getAdminUserFromSession,
@@ -21,25 +22,7 @@ const EMAIL_COOKIE = 'tapem_email';
 const DEFAULT_EMAIL = 'anonymous@tapem.dev';
 const ROLES: Role[] = ['admin', 'owner', 'operator'];
 
-function normalizeCandidate(candidate: string | null): string | null {
-  if (!candidate) {
-    return null;
-  }
-
-  if (candidate.startsWith('/')) {
-    const [pathname] = candidate.split('?');
-    return pathname && pathname.length > 0 ? pathname : '/';
-  }
-
-  try {
-    const url = new URL(candidate, 'http://localhost');
-    return url.pathname || '/';
-  } catch {
-    return null;
-  }
-}
-
-function getNextAfterLoginRoute(): AllowedAfterLoginRoute {
+function getNextAfterLoginRoute(): AfterLoginRoute {
   const headerList = headers();
   const candidates = [
     headerList.get('x-next-url'),
@@ -48,9 +31,8 @@ function getNextAfterLoginRoute(): AllowedAfterLoginRoute {
   ];
 
   for (const candidate of candidates) {
-    const normalized = normalizeCandidate(candidate);
-    if (normalized && isAllowedAfterLoginRoute(normalized)) {
-      return normalized;
+    if (isAfterLoginRoute(candidate)) {
+      return safeAfterLoginRoute(candidate);
     }
   }
 

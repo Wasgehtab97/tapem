@@ -134,10 +134,32 @@ npm run dev
 - Portal & Admin antworten mit `noindex/nofollow` (X-Robots + Robots-Route) und geben keine Sitemap zurück.
 - `metadataBase`, Canonicals und OG/Twitter-Daten werden dynamisch anhand des aktiven Hosts gesetzt.
 
-## typedRoutes & Login-Whitelist
+## Typed Routes – Richtlinien
 
-- Alle internen Links basieren auf `src/lib/routes.ts` (marketing-, portal- und admin-spezifische Konstanten).
-- `ALLOWED_AFTER_LOGIN` definiert zulässige Redirect-Ziele (`/login?next=`). Unbekannte Ziele fallen auf `/gym` zurück.
+### Kanonische Quelle
+
+- Alle Pfade werden zentral in `src/lib/routes.ts` gepflegt. Jede Route ist ein Objekt mit `href` (Pfad) und `site` (Marketing, Portal, Admin).
+- Verwende ausschließlich die exportierten Konstanten (`MARKETING_ROUTES`, `PORTAL_ROUTES`, `ADMIN_ROUTES`). Der Zugriff auf `href` stellt sicher, dass Next.js typedRoutes keine Fehler meldet.
+- Host-Awareness: `route.site` signalisiert, auf welchem Host der Pfad erreichbar ist. Für Cross-Host-Links (`buildSiteUrl`) immer die passende Route verwenden.
+
+### Navigation & Router
+
+- Beispiel `<Link>`: `href={PORTAL_ROUTES.gym.href}`. Für optionale Query-Parameter ein `UrlObject` nutzen (`{ pathname: PORTAL_ROUTES.gym.href, query: { ... } }`).
+- Beispiel `router.push`: `router.push(PORTAL_ROUTES.gymMembers.href)` oder `router.replace({ pathname: ADMIN_ROUTES.dashboard.href, query: { filter: 'active' } });`.
+- Menü-Definitionen sollten die komplette Route (`{ route: PORTAL_ROUTES.gym, label: 'Dashboard' }`) speichern, damit Site-Informationen verfügbar bleiben.
+
+### Safe Redirects
+
+- `safeNextPath` validiert externe Eingaben (`?next=`) strikt gegen eine Allowlist und liefert immer einen erlaubten Pfad zurück.
+- `safeAfterLoginRoute` kapselt die Standard-Allowlist für Portal/Admin nach der Anmeldung und fällt auf `DEFAULT_AFTER_LOGIN` (Portal `/gym`) zurück.
+- Für serverseitige Guards steht zusätzlich `isAfterLoginRoute` zur Verfügung, um Header/Query-Werte schnell zu prüfen.
+
+### Neue Routen hinzufügen
+
+1. In `src/lib/routes.ts` mit `defineRoute('portal', '/neuer-pfad')` (oder entsprechender Site) ergänzen.
+2. Falls die Route geschützt ist, in die passenden Sets aufnehmen (`PORTAL_PROTECTED_PATHS`, `AFTER_LOGIN_ROUTES` etc.).
+3. Navigationsdaten, Middleware und eventuell `safeNextPath`/`safeAfterLoginRoute` erweitern.
+4. Bei dynamischen Segmenten ein Helper in `routes.ts` hinzufügen, der ein typisiertes `UrlObject` zurückliefert (z. B. `portalMemberDetailsRoute(memberId)` mit `{ pathname, query }`).
 
 ## Assets
 

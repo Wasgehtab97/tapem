@@ -2,6 +2,17 @@
   "root": true,
   "extends": ["next/core-web-vitals"],
   "rules": {
-    "react/no-unescaped-entities": "off"
+    "react/no-unescaped-entities": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "JSXOpeningElement[name.name='Link'] JSXAttribute[name.name='href'] > Literal",
+        "message": "Verwende typisierte Routen oder UrlObjects aus src/lib/routes anstelle von String-Literalen in <Link href>."
+      },
+      {
+        "selector": "CallExpression[callee.type='MemberExpression'][callee.object.name='router'][callee.property.name=/^(push|replace|prefetch)$/][arguments.0.type='Literal']",
+        "message": "Verwende typisierte Routen oder UrlObjects für Navigationen mit router.push/router.replace."
+      }
+    ]
   }
 }

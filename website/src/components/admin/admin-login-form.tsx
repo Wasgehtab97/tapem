@@ -9,7 +9,7 @@ import {
   getFirebaseAuth,
   isFirebaseClientConfigured,
 } from '@/src/lib/firebase/client';
-import { ADMIN_ROUTES, DEFAULT_AFTER_LOGIN, resolveAllowedAfterLoginRoute } from '@/src/lib/routes';
+import { ADMIN_ROUTES, DEFAULT_AFTER_LOGIN, safeAfterLoginRoute } from '@/src/lib/routes';
 
 type FormState = {
   email: string;
@@ -65,7 +65,7 @@ export default function AdminLoginForm() {
   const configured = isFirebaseClientConfigured();
 
   const nextParam = searchParams?.get('next') ?? undefined;
-  const nextRoute = nextParam ? resolveAllowedAfterLoginRoute(nextParam) : DEFAULT_AFTER_LOGIN;
+  const nextRoute = safeAfterLoginRoute(nextParam);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,7 +90,9 @@ export default function AdminLoginForm() {
 
       setStatus({ state: 'success' });
       startTransition(() => {
-        router.replace(nextRoute === DEFAULT_AFTER_LOGIN ? ADMIN_ROUTES.dashboard : nextRoute);
+        router.replace(
+          nextRoute === DEFAULT_AFTER_LOGIN ? ADMIN_ROUTES.dashboard.href : nextRoute
+        );
         router.refresh();
       });
     } catch (error) {
