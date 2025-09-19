@@ -1,104 +1,107 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
+import { useState } from 'react';
 
-import type { Role } from '@/src/lib/auth/types';
+// Whitelist der erlaubten Zielrouten nach Login (bei Bedarf erweitern)
+const ALLOWED_AFTER_LOGIN = [
+  '/gym',
+  '/gym/members',
+  '/gym/challenges',
+  '/gym/leaderboard',
+  '/admin',
+] as const;
 
-const roles: Role[] = ['admin', 'owner', 'operator'];
+type AllowedRoute = (typeof ALLOWED_AFTER_LOGIN)[number];
+const DEFAULT_AFTER_LOGIN: AllowedRoute = '/gym';
 
-export default function LoginForm({ nextPath }: { nextPath: string }) {
+function isAllowedRoute(v: string | null): v is AllowedRoute {
+  return !!v && (ALLOWED_AFTER_LOGIN as readonly string[]).includes(v);
+}
+
+export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onSubmit(formData: FormData) {
     setError(null);
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email')?.toString().trim();
-    const role = formData.get('role')?.toString() as Role | undefined;
+    setSubmitting(true);
 
-    if (!role) {
-      setError('Bitte eine Rolle auswählen.');
-      return;
+    try {
+      const email = (formData.get('email') as string | null) ?? '';
+      const role = (formData.get('role') as string | null) ?? 'owner';
+
+      // Dev-Login-API (setzt Cookies). In Production sollte diese Route 403 liefern.
+      const res = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, role }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Login fehlgeschlagen (${res.status})`);
+      }
+
+      // Zielroute bestimmen (nur Whitelist zulassen)
+      const nextParam = searchParams.get('next');
+      const target: Route = (isAllowedRoute(nextParam) ? nextParam : DEFAULT_AFTER_LOGIN) as Route;
+
+      router.push(target);
+      router.refresh();
+    } catch (e: any) {
+      setError(e?.message ?? 'Unbekannter Fehler beim Login.');
+    } finally {
+      setSubmitting(false);
     }
-
-    setIsSubmitting(true);
-
-    const response = await fetch('/api/dev/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email && email.length > 0 ? email : undefined,
-        role,
-      }),
-    });
-
-    setIsSubmitting(false);
-
-    if (!response.ok) {
-      const message =
-        response.status === 403
-          ? 'Dev-Login ist in Production deaktiviert.'
-          : 'Login fehlgeschlagen. Bitte erneut versuchen.';
-      setError(message);
-      return;
-    }
-
-    router.push(nextPath || '/gym');
-    router.refresh();
   }
 
   return (
-    <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-      <input name="next" type="hidden" value={nextPath} />
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="email">
-          E-Mail-Adresse (optional)
+    <form action={onSubmit} className="max-w-md space-y-4">
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <strong>Dev-Login (Stub):</strong> Nur für Preview/Entwicklung. In Production deaktiviert.
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+          E-Mail (optional)
         </label>
         <input
           id="email"
           name="email"
           type="email"
-          placeholder="dev@example.com"
-          className="rounded-md border border-slate-300 px-3 py-2 text-base text-slate-900 shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-          autoComplete="email"
+          placeholder="you@example.com"
+          className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         />
       </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-700" htmlFor="role">
+
+      <div className="space-y-1">
+        <label htmlFor="role" className="block text-sm font-medium text-slate-700">
           Rolle
         </label>
         <select
           id="role"
           name="role"
-          className="rounded-md border border-slate-300 px-3 py-2 text-base text-slate-900 shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
           defaultValue="owner"
+          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
-          <option value="" disabled>
-            Rolle auswählen
-          </option>
-          {roles.map((roleOption) => (
-            <option key={roleOption} value={roleOption}>
-              {roleOption}
-            </option>
-          ))}
+          <option value="owner">owner</option>
+          <option value="operator">operator</option>
+          <option value="admin">admin</option>
         </select>
       </div>
-      {error ? (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
+
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
       <button
         type="submit"
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/40 disabled:cursor-not-allowed disabled:opacity-75"
-        disabled={isSubmitting}
+        disabled={submitting}
+        className="inline-flex items-center justify-center rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
       >
-        {isSubmitting ? 'Anmeldung…' : 'Einloggen'}
+        {submitting ? 'Anmelden…' : 'Anmelden'}
       </button>
     </form>
   );
