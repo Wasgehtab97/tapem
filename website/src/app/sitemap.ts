@@ -1,41 +1,32 @@
 import type { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+import { buildMetadataBase, findSiteByHost, getSiteConfig } from '@/src/config/sites';
+
+const MARKETING_SITEMAP_PATHS = [
+  { path: '/', priority: 1, changeFrequency: 'monthly' as const },
+  { path: '/#features', priority: 0.8, changeFrequency: 'monthly' as const },
+  { path: '/#how-it-works', priority: 0.7, changeFrequency: 'monthly' as const },
+  { path: '/#faq', priority: 0.6, changeFrequency: 'monthly' as const },
+  { path: '/#contact', priority: 0.6, changeFrequency: 'monthly' as const },
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const normalizedUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+  const headerList = headers();
+  const host = headerList.get('host');
+  const site = findSiteByHost(host) ?? getSiteConfig('marketing');
+
+  if (site.key !== 'marketing') {
+    return [];
+  }
+
+  const baseUrl = buildMetadataBase(host).toString().replace(/\/$/, '');
   const now = new Date();
 
-  return [
-    {
-      url: `${normalizedUrl}/`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 1,
-    },
-    {
-      url: `${normalizedUrl}/#features`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${normalizedUrl}/#how-it-works`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${normalizedUrl}/#faq`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    },
-    {
-      url: `${normalizedUrl}/#contact`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    },
-  ];
+  return MARKETING_SITEMAP_PATHS.map((entry) => ({
+    url: `${baseUrl}${entry.path}`,
+    lastModified: now,
+    changeFrequency: entry.changeFrequency,
+    priority: entry.priority,
+  }));
 }
