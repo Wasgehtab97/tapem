@@ -163,6 +163,26 @@ npm run dev
 
 Die Dev-Config liegt in `website/next.config.js` und ist für lokale Platzhalter-Bilder auf `images.unoptimized = true` gesetzt.
 
+## Geschützte Bereiche (Stub)
+
+Die geschützten Bereiche des Web-Dashboards (`/gym`, `/admin`) laufen aktuell mit einem einfachen Dev-Login. Die Firebase-Authentifizierung folgt in einem späteren Schritt.
+
+- **Verwendung nur in Entwicklung & Vercel-Previews:** In Production antworten die Routen `/api/dev/login` und `/api/dev/logout` mit `403` und dem Hinweis _dev login disabled in production_.
+- **Login testen:**
+  ```bash
+  cd website
+  npm run dev
+  # http://localhost:3000/login öffnen
+  ```
+  Rolle auswählen, optional E-Mail angeben und anmelden. Ohne `next`-Parameter leitet der Stub nach `/gym` weiter.
+- **Rollen wechseln:** In der Top-Navigation erscheint in Entwicklungs- und Preview-Umgebungen eine Dev-Toolbar. Über die Buttons kannst du zwischen `owner`, `operator` und `admin` wechseln oder dich abmelden.
+- **Seitenzugriff:**
+  - `/gym` ist für Rollen `owner`, `operator` und `admin` freigeschaltet.
+  - `/admin` ist nur für `admin` erreichbar.
+
+Die SSR-Routen liefern aktuell Mock-Daten aus `website/src/server/mocks/gym.ts`. Eine Firebase-Anbindung ersetzt die Stubs später.
+
+
 ## Recht & SEO
 
 - Unter `/imprint` und `/privacy` findest du rechtliche Pflichtseiten mit deutschsprachigen Platzhaltertexten. Bitte vor dem Livegang
