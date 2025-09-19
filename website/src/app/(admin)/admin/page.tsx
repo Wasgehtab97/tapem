@@ -213,7 +213,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm text-emerald-900">
-        Zugriffsschutz aktiv. Du kannst dich jederzeit über <a className="font-semibold underline" href={ADMIN_ROUTES.logout}>Abmelden</a>, um das Session-Cookie zu löschen.
+        Zugriffsschutz aktiv. Du kannst dich jederzeit über <a className="font-semibold underline" href={ADMIN_ROUTES.logout.href}>Abmelden</a>, um das Session-Cookie zu löschen.
       </section>
     </div>
   );

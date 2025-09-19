@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ReactNode } from 'react';
 
 import { buildSiteUrl, getDeploymentStage } from '@/src/config/sites';
-import { MARKETING_ROUTES } from '@/src/lib/routes';
+import { MARKETING_ROUTES, PORTAL_ROUTES } from '@/src/lib/routes';
 import { ThemeToggle } from '@/src/components/theme-toggle';
 
 const marketingNav = [
@@ -13,7 +13,7 @@ const marketingNav = [
 ] as const;
 
 export default function MarketingShell({ children }: { children: ReactNode }) {
-  const portalLoginUrl = buildSiteUrl('portal', '/login');
+  const portalLoginUrl = buildSiteUrl('portal', PORTAL_ROUTES.login.href);
   const stage = getDeploymentStage();
   const showPreviewLabel = stage !== 'production';
 
@@ -22,7 +22,7 @@ export default function MarketingShell({ children }: { children: ReactNode }) {
       <header className="border-b border-subtle surface-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
           <Link
-            href={MARKETING_ROUTES.home}
+            href={MARKETING_ROUTES.home.href}
             className="text-lg font-semibold text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Tap&apos;em
@@ -57,13 +57,13 @@ export default function MarketingShell({ children }: { children: ReactNode }) {
           </p>
           <nav aria-label="Footer-Navigation" className="flex items-center gap-4">
             <Link
-              href={MARKETING_ROUTES.imprint}
+              href={MARKETING_ROUTES.imprint.href}
               className="transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Impressum
             </Link>
             <Link
-              href={MARKETING_ROUTES.privacy}
+              href={MARKETING_ROUTES.privacy.href}
               className="transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Datenschutz

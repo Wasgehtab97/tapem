@@ -27,14 +27,14 @@ function resolveContent(site: SiteConfig): PageContent {
       return {
         title: 'Diese Portal-Seite existiert nicht.',
         message: 'Überprüfe die Adresse oder navigiere zurück zum Dashboard. In Preview kannst du Rollen via Dev-Toolbar wechseln.',
-        actions: [{ label: 'Zur Übersicht', href: PORTAL_ROUTES.gym, primary: true }],
+        actions: [{ label: 'Zur Übersicht', href: PORTAL_ROUTES.gym.href, primary: true }],
         accent: 'slate',
       };
     case 'admin':
       return {
         title: 'Dieser Admin-Endpunkt ist nicht verfügbar.',
         message: 'Nutze das Monitoring-Dashboard oder prüfe die verwendete Subdomain.',
-        actions: [{ label: 'Zum Monitoring', href: ADMIN_ROUTES.dashboard, primary: true }],
+        actions: [{ label: 'Zum Monitoring', href: ADMIN_ROUTES.dashboard.href, primary: true }],
         accent: 'slate',
       };
     default:
@@ -42,8 +42,8 @@ function resolveContent(site: SiteConfig): PageContent {
         title: 'Diese Seite gibt es (noch) nicht.',
         message: 'Prüfe die URL oder kehre zur Startseite zurück. Studios erreichen das Portal über den Login-Button.',
         actions: [
-          { label: 'Zur Startseite', href: MARKETING_ROUTES.home, primary: true },
-          { label: 'Zum Portal-Login', href: buildSiteUrl('portal', PORTAL_ROUTES.login), external: true },
+          { label: 'Zur Startseite', href: MARKETING_ROUTES.home.href, primary: true },
+          { label: 'Zum Portal-Login', href: buildSiteUrl('portal', PORTAL_ROUTES.login.href), external: true },
         ],
         accent: 'slate',
       };

@@ -5,14 +5,14 @@ import { getDeploymentStage } from '@/src/config/sites';
 import DevToolbar from '@/src/components/dev-toolbar';
 import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import type { Role } from '@/src/lib/auth/types';
-import { PORTAL_ROUTES } from '@/src/lib/routes';
+import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/src/lib/routes';
 
 const portalNav = [
-  { href: PORTAL_ROUTES.gym, label: 'Dashboard' },
-  { href: PORTAL_ROUTES.gymMembers, label: 'Mitglieder' },
-  { href: PORTAL_ROUTES.gymChallenges, label: 'Challenges' },
-  { href: PORTAL_ROUTES.gymLeaderboard, label: 'Rangliste' },
-] as const;
+  { route: PORTAL_ROUTES.gym, label: 'Dashboard' },
+  { route: PORTAL_ROUTES.gymMembers, label: 'Mitglieder' },
+  { route: PORTAL_ROUTES.gymChallenges, label: 'Challenges' },
+  { route: PORTAL_ROUTES.gymLeaderboard, label: 'Rangliste' },
+] satisfies ReadonlyArray<{ route: PortalRouteDefinition; label: string }>;
 
 export default function PortalShell({ children }: { children: ReactNode }) {
   const stage = getDeploymentStage();
@@ -25,7 +25,7 @@ export default function PortalShell({ children }: { children: ReactNode }) {
       <header className="border-b border-subtle bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link
-            href={PORTAL_ROUTES.gym}
+            href={PORTAL_ROUTES.gym.href}
             className="text-base font-semibold text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Tap&apos;em Portal
@@ -34,8 +34,8 @@ export default function PortalShell({ children }: { children: ReactNode }) {
           <nav className="flex items-center gap-4 text-sm font-medium text-muted" aria-label="Portal-Navigation">
             {portalNav.map((item) => (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.route.href}
+                href={item.route.href}
                 className="rounded px-2 py-1 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {item.label}

@@ -5,17 +5,17 @@ import DevToolbar from '@/src/components/dev-toolbar';
 import { getDeploymentStage } from '@/src/config/sites';
 import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
-import { ADMIN_ROUTES } from '@/src/lib/routes';
+import { ADMIN_ROUTES, type AdminRouteDefinition } from '@/src/lib/routes';
 import { getAdminUserFromSession } from '@/src/server/auth/session';
 
 type NavigationItem = {
   label: string;
-  href?: string;
+  route?: AdminRouteDefinition;
   disabled?: boolean;
 };
 
 const NAVIGATION: NavigationItem[] = [
-  { label: 'Dashboard', href: ADMIN_ROUTES.dashboard },
+  { label: 'Dashboard', route: ADMIN_ROUTES.dashboard },
   { label: 'KPIs & Analysen', disabled: true },
   { label: 'Geräteverwaltung', disabled: true },
   { label: 'Challenges', disabled: true },
@@ -26,7 +26,7 @@ function NavigationMenu({ items }: { items: NavigationItem[] }) {
   return (
     <nav aria-label="Admin Navigation" className="space-y-1">
       {items.map((item) => {
-        if (item.disabled || !item.href) {
+        if (item.disabled || !item.route) {
           return (
             <span
               key={item.label}
@@ -41,7 +41,7 @@ function NavigationMenu({ items }: { items: NavigationItem[] }) {
         return (
           <Link
             key={item.label}
-            href={item.href}
+            href={item.route.href}
             className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {item.label}
@@ -67,7 +67,7 @@ function AdminHeader({
     <header className="border-b border-subtle bg-surface">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <Link
-          href={ADMIN_ROUTES.dashboard}
+          href={ADMIN_ROUTES.dashboard.href}
           className="text-base font-semibold text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           Tap&apos;em Admin
@@ -86,7 +86,7 @@ function AdminHeader({
           ) : null}
           {user ? (
             <Link
-              href={ADMIN_ROUTES.logout}
+              href={ADMIN_ROUTES.logout.href}
               className="rounded-md border border-subtle px-3 py-1 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Abmelden

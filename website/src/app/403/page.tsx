@@ -27,21 +27,21 @@ function resolveContent(site: SiteConfig): PageContent {
       return {
         title: 'Für deine Rolle ist dieser Bereich gesperrt.',
         message: 'Kontaktiere die Studio-Administration, wenn du weitere Rechte benötigst.',
-        actions: [{ label: 'Zur Übersicht', href: PORTAL_ROUTES.gym, primary: true }],
+        actions: [{ label: 'Zur Übersicht', href: PORTAL_ROUTES.gym.href, primary: true }],
         accent: 'red',
       };
     case 'admin':
       return {
         title: 'Nur Super-Admins dürfen dieses Monitoring sehen.',
         message: 'Bitte wende dich an das Kernteam, um Admin-Rechte zu erhalten.',
-        actions: [{ label: 'Zum Monitoring', href: ADMIN_ROUTES.dashboard, primary: true }],
+        actions: [{ label: 'Zum Monitoring', href: ADMIN_ROUTES.dashboard.href, primary: true }],
         accent: 'red',
       };
     default:
       return {
         title: 'Dieser Bereich ist geschützt.',
         message: 'Marketing-Inhalte findest du weiterhin öffentlich auf der Startseite.',
-        actions: [{ label: 'Zur Startseite', href: MARKETING_ROUTES.home, primary: true }],
+        actions: [{ label: 'Zur Startseite', href: MARKETING_ROUTES.home.href, primary: true }],
         accent: 'red',
       };
   }

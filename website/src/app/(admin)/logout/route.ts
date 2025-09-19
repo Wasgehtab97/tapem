@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const cookieValue = currentCookie ? currentCookie.split('=').slice(1).join('=') : undefined;
   await revokeAdminSessionCookie(cookieValue);
 
-  const target = buildSiteUrl('marketing', MARKETING_ROUTES.home);
+  const target = buildSiteUrl('marketing', MARKETING_ROUTES.home.href);
   const response = NextResponse.redirect(target, { status: 302 });
   const domain = resolveCookieDomain(request);
   const secure = resolveCookieSecurity(request);

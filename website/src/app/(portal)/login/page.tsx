@@ -43,14 +43,14 @@ export default async function Page() {
   if (site === 'admin') {
     const sessionUser = await getAdminUserFromSession();
     if (sessionUser) {
-      redirect(ADMIN_ROUTES.dashboard);
+      redirect(ADMIN_ROUTES.dashboard.href);
     }
 
     const stage = getDeploymentStage();
     if (stage !== 'production') {
       const devUser = getDevUserFromCookies();
       if (devUser?.role === 'admin') {
-        redirect(ADMIN_ROUTES.dashboard);
+        redirect(ADMIN_ROUTES.dashboard.href);
       }
     }
 

@@ -12,7 +12,7 @@ import {
   isMarketingPath,
   isPortalPath,
   isPortalProtectedPath,
-  resolveAllowedAfterLoginRoute,
+  safeAfterLoginRoute,
 } from '@/src/lib/routes';
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
@@ -34,9 +34,9 @@ function allowApiRoute(pathname: string) {
 }
 
 function buildPortalLoginUrl(nextPathname: string | null) {
-  const loginUrl = new URL(buildSiteUrl('portal', PORTAL_ROUTES.login));
-  if (nextPathname && nextPathname !== PORTAL_ROUTES.home) {
-    const safeTarget = resolveAllowedAfterLoginRoute(nextPathname);
+  const loginUrl = new URL(buildSiteUrl('portal', PORTAL_ROUTES.login.href));
+  if (nextPathname && nextPathname !== PORTAL_ROUTES.home.href) {
+    const safeTarget = safeAfterLoginRoute(nextPathname);
     loginUrl.searchParams.set('next', safeTarget);
   } else {
     loginUrl.searchParams.set('next', DEFAULT_AFTER_LOGIN);
@@ -45,9 +45,9 @@ function buildPortalLoginUrl(nextPathname: string | null) {
 }
 
 function buildAdminLoginUrl(nextPathname: string | null) {
-  const loginUrl = new URL(buildSiteUrl('admin', ADMIN_ROUTES.login));
-  if (nextPathname && nextPathname !== ADMIN_ROUTES.login) {
-    const safeTarget = resolveAllowedAfterLoginRoute(nextPathname);
+  const loginUrl = new URL(buildSiteUrl('admin', ADMIN_ROUTES.login.href));
+  if (nextPathname && nextPathname !== ADMIN_ROUTES.login.href) {
+    const safeTarget = safeAfterLoginRoute(nextPathname);
     loginUrl.searchParams.set('next', safeTarget);
   }
   return loginUrl;
@@ -84,12 +84,16 @@ export function middleware(request: NextRequest) {
         const loginUrl = buildPortalLoginUrl(pathname);
         return NextResponse.redirect(loginUrl);
       }
-      const target = new URL(buildSiteUrl('portal', `${pathname}${request.nextUrl.search}`));
+      const target = new URL(
+        buildSiteUrl('portal', `${pathname}${request.nextUrl.search}`)
+      );
       return NextResponse.redirect(target);
     }
 
     if (isAdminPath(pathname)) {
-      const target = new URL(buildSiteUrl('admin', `${pathname}${request.nextUrl.search}`));
+      const target = new URL(
+        buildSiteUrl('admin', `${pathname}${request.nextUrl.search}`)
+      );
       return NextResponse.redirect(target);
     }
 
@@ -101,9 +105,9 @@ export function middleware(request: NextRequest) {
       return redirectTo404(request);
     }
 
-    if (pathname === PORTAL_ROUTES.home) {
+    if (pathname === PORTAL_ROUTES.home.href) {
       const target = request.nextUrl.clone();
-      target.pathname = PORTAL_ROUTES.gym;
+      target.pathname = PORTAL_ROUTES.gym.href;
       target.search = '';
       return NextResponse.redirect(target);
     }
@@ -128,22 +132,22 @@ export function middleware(request: NextRequest) {
   const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
   const hasDevAdmin = stage !== 'production' && devRole === ADMIN_REQUIRED_ROLE;
 
-  if (pathname === ADMIN_ROUTES.home) {
+  if (pathname === ADMIN_ROUTES.home.href) {
     if (sessionCookie || hasDevAdmin) {
       const target = request.nextUrl.clone();
-      target.pathname = ADMIN_ROUTES.dashboard;
+      target.pathname = ADMIN_ROUTES.dashboard.href;
       target.search = '';
       return NextResponse.redirect(target);
     }
 
-    const loginUrl = buildAdminLoginUrl(ADMIN_ROUTES.dashboard);
+    const loginUrl = buildAdminLoginUrl(ADMIN_ROUTES.dashboard.href);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname === ADMIN_ROUTES.login) {
+  if (pathname === ADMIN_ROUTES.login.href) {
     if (sessionCookie || hasDevAdmin) {
       const target = request.nextUrl.clone();
-      target.pathname = ADMIN_ROUTES.dashboard;
+      target.pathname = ADMIN_ROUTES.dashboard.href;
       target.search = '';
       return NextResponse.redirect(target);
     }
@@ -151,7 +155,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === ADMIN_ROUTES.logout) {
+  if (pathname === ADMIN_ROUTES.logout.href) {
     return NextResponse.next();
   }
 
