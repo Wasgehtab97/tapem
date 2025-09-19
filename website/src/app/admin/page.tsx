@@ -55,7 +55,7 @@ export default async function AdminPage() {
   const { user } = await requireRole(['admin']);
 
   return (
-    <div className="space-y-12">
+    <div className="mx-auto w-full max-w-6xl space-y-12 px-6 py-16">
       <section className="space-y-3">
         <header>
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Admin Monitoring</p>
@@ -70,7 +70,7 @@ export default async function AdminPage() {
           {adminKpis.map((kpi) => (
             <article
               key={kpi.label}
-              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+              className="rounded-lg border border-subtle bg-card p-5 shadow-sm"
             >
               <p className="text-sm font-medium text-slate-600">{kpi.label}</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{kpi.value}</p>
@@ -79,7 +79,7 @@ export default async function AdminPage() {
           ))}
         </div>
       </section>
-      <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="space-y-4 rounded-lg border border-subtle bg-card p-6 shadow-sm">
         <header className="space-y-1">
           <h2 className="text-xl font-semibold text-slate-900">Letzte Events</h2>
           <p className="text-sm text-slate-600">
@@ -89,7 +89,7 @@ export default async function AdminPage() {
         </header>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+            <thead className="bg-card-muted">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Zeitstempel
@@ -104,7 +104,7 @@ export default async function AdminPage() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {adminEventLog.map((event) => (
-                <tr key={event.id} className="hover:bg-slate-50">
+                <tr key={event.id} className="hover:bg-card-muted">
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">{event.timestamp}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-slate-900">{event.type}</td>
                   <td className="px-4 py-3 text-sm text-slate-700">{event.details}</td>

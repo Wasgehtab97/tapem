@@ -69,9 +69,9 @@ export default function DevToolbar({ currentRole }: DevToolbarProps) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1 text-xs text-slate-600">
+    <div className="flex flex-col items-end gap-1 text-xs text-muted">
       <div className="flex items-center gap-2">
-        <span className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 font-medium text-slate-700">
+        <span className="rounded-full border border-subtle bg-card-muted px-3 py-1 font-medium text-muted">
           Rolle: {currentRole ?? 'anonym'}
         </span>
         {quickRoles.map((role) => (
@@ -79,7 +79,7 @@ export default function DevToolbar({ currentRole }: DevToolbarProps) {
             key={role}
             type="button"
             onClick={() => handleSwitchRole(role)}
-            className="rounded border border-slate-300 bg-white px-3 py-1 font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded border border-subtle bg-card px-3 py-1 font-medium text-muted transition hover:bg-card-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
             disabled={pending !== null}
           >
             Als {role}
@@ -88,7 +88,7 @@ export default function DevToolbar({ currentRole }: DevToolbarProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded border border-slate-300 bg-white px-3 py-1 font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded border border-subtle bg-card px-3 py-1 font-medium text-muted transition hover:bg-card-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
           disabled={pending !== null}
         >
           Logout

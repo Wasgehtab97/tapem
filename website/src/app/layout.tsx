@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   title: "Tap'em – NFC-basiertes Gym-Tracking",
   description:
     "Tap'em verbindet NFC-Check-ins, Trainingsanalysen und Gamification für moderne Fitnessstudios.",
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f1f5f9' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
+  ],
   openGraph: {
     title: "Tap'em – NFC-basiertes Gym-Tracking",
     description:
@@ -69,28 +73,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const currentRole: Role | null = devUser?.role ?? null;
 
   return (
-    <html lang="de" suppressHydrationWarning>
-      <body className="bg-white text-slate-900">
-        <div className="flex min-h-screen flex-col">
-          <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
+    <html lang="de" suppressHydrationWarning className="h-full">
+      <body className="bg-page text-page">
+        <div className="relative flex min-h-screen flex-col">
+          <header className="border-b border-subtle surface-blur">
             <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
               <div className="flex flex-1 items-center gap-8">
                 <Link
                   href={ROUTES.home}
-                  className="text-base font-semibold text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+                  className="text-base font-semibold text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   Tap&apos;em
                 </Link>
 
-                <nav
-                  aria-label="Hauptnavigation"
-                  className="flex items-center gap-4 text-sm font-medium text-slate-700"
-                >
+                <nav aria-label="Hauptnavigation" className="flex items-center gap-4 text-sm font-medium text-muted">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="rounded px-2 py-1 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+                      className="rounded px-2 py-1 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       {link.label}
                     </Link>
@@ -106,12 +107,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
-            {children}
-          </main>
+          <main className="flex-1">{children}</main>
 
-          <footer className="border-t border-slate-200 bg-slate-50">
-            <div className="mx-auto w-full max-w-6xl px-6 py-4 text-sm text-slate-500">
+          <footer className="border-t border-subtle bg-surface-muted">
+            <div className="mx-auto w-full max-w-6xl px-6 py-6 text-center text-sm text-muted md:text-left">
               © {new Date().getFullYear()} Tap&apos;em{!isProd ? ' – Preview' : ''}
             </div>
           </footer>

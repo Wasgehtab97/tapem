@@ -40,6 +40,20 @@ Die Galerie in `src/app/page.tsx` prüft beim Rendern, ob eine entsprechende Dat
 Ist dies der Fall, wird automatisch `<Image src="/images/<datei>" />` geladen. Ohne Datei bleibt der
 Platzhalter sichtbar.
 
+## Layout & Hintergrundstrategie
+
+- Der Seitenhintergrund wird global über `html`/`body` in `src/styles/globals.css` gesetzt und nutzt ein dezentes,
+  themeabhängiges Spotlight-Gradient. Dadurch bleibt der Hintergrund über den kompletten Viewport hinweg sichtbar
+  (Header, Main, Footer, Seitenränder).
+- Inhaltsbereiche liegen in zentrierten Containern (`max-w-6xl`, `px-6`, bzw. `page-container`) und schweben auf
+  transparenten bzw. `bg-card`-Oberflächen. Diese Trennung hält das Erscheinungsbild full-bleed, während Textzeilen
+  weiterhin gut lesbar bleiben.
+- Header- und Footer-Komponenten greifen auf dieselben Oberflächen-Variablen (`surface-blur`, `bg-surface-muted`)
+  zurück, sodass keine hellen Balken entstehen, auch nicht bei aktiviertem Dark Mode.
+- Der Theme-Toggle synchronisiert `data-theme`, die `dark`-Klasse und das `<meta name="theme-color" />`, damit sich
+  mobile Browser-UIs an den aktiven Hintergrund anpassen. Neue Komponenten sollten die Hilfsklassen `bg-page`,
+  `bg-card`, `text-page`, `text-muted` und `border-subtle` nutzen, um konsistente Kontraste sicherzustellen.
+
 ## Linting & Formatierung
 
 ```bash
