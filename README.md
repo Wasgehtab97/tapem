@@ -183,6 +183,17 @@ Die geschützten Bereiche des Web-Dashboards (`/gym`, `/admin`) laufen aktuell m
 Die SSR-Routen liefern aktuell Mock-Daten aus `website/src/server/mocks/gym.ts`. Eine Firebase-Anbindung ersetzt die Stubs später.
 
 
+### typedRoutes Fix
+
+Next.js erzwingt mit `experimental.typedRoutes` streng typisierte Navigation. Daher müssen interne Links den Typ `Route` nutzen – plain Strings führen sonst bereits beim Build zu TypeScript-Fehlern. Nach erfolgreichem Dev-Login wird das Ziel über eine Whitelist freigegebener Pfade bestimmt, damit nur bekannte Dashboards aufgerufen werden.
+
+**QA-Schritte:**
+
+- `npm run build` (im Ordner `website/`)
+- `vercel --prod`
+- Manuell prüfen: Navbar-Links (`/`, `/gym`, `/admin`), Dev-Login ohne `next`, mit `next=/admin` und mit ungültigem `next` leitet nach `/gym`.
+
+
 ## Recht & SEO
 
 - Unter `/imprint` und `/privacy` findest du rechtliche Pflichtseiten mit deutschsprachigen Platzhaltertexten. Bitte vor dem Livegang
