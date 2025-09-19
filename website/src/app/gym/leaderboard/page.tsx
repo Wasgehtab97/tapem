@@ -13,9 +13,9 @@ export default async function GymLeaderboardPage() {
           Firestore-Scores gespeist.
         </p>
       </header>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-subtle bg-card shadow-sm">
         <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+          <thead className="bg-card-muted">
             <tr>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Rang
@@ -33,7 +33,7 @@ export default async function GymLeaderboardPage() {
           </thead>
           <tbody className="divide-y divide-slate-200">
             {gymLeaderboardMock.map((entry) => (
-              <tr key={entry.id} className="hover:bg-slate-50">
+              <tr key={entry.id} className="hover:bg-card-muted">
                 <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-slate-700">
                   #{entry.rank}
                 </td>

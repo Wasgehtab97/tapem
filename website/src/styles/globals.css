@@ -6,14 +6,104 @@
   color-scheme: light dark;
 }
 
-body {
-  @apply bg-white text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+@layer base {
+  :root,
+  [data-theme='light'] {
+    --page-background: #f1f5f9;
+    --page-foreground: #0f172a;
+    --page-muted: #475569;
+    --page-border: rgba(148, 163, 184, 0.35);
+    --page-surface: rgba(255, 255, 255, 0.82);
+    --page-surface-muted: rgba(248, 250, 252, 0.76);
+    --page-card: rgba(255, 255, 255, 0.92);
+    --page-card-muted: rgba(241, 245, 249, 0.85);
+    --page-spotlight: rgba(37, 99, 235, 0.12);
+    --page-spotlight-secondary: rgba(124, 58, 237, 0.08);
+  }
+
+  [data-theme='dark'] {
+    color-scheme: dark;
+    --page-background: #020617;
+    --page-foreground: #e2e8f0;
+    --page-muted: #94a3b8;
+    --page-border: rgba(148, 163, 184, 0.25);
+    --page-surface: rgba(2, 6, 23, 0.78);
+    --page-surface-muted: rgba(15, 23, 42, 0.78);
+    --page-card: rgba(15, 23, 42, 0.92);
+    --page-card-muted: rgba(30, 41, 59, 0.78);
+    --page-spotlight: rgba(37, 99, 235, 0.22);
+    --page-spotlight-secondary: rgba(124, 58, 237, 0.18);
+  }
+
+  html {
+    @apply h-full scroll-smooth;
+    background-color: var(--page-background);
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--page-background);
+    background-image:
+      radial-gradient(100% 70% at 0% 0%, var(--page-spotlight), transparent 65%),
+      radial-gradient(95% 65% at 100% 0%, var(--page-spotlight-secondary), transparent 70%);
+    background-repeat: no-repeat;
+    color: var(--page-foreground);
+    @apply antialiased transition-colors duration-300;
+  }
+
+  a {
+    @apply text-primary transition-colors duration-200 hover:text-primary/80;
+  }
+
+  button {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary dark:focus-visible:ring-offset-slate-900;
+  }
 }
 
-a {
-  @apply text-primary transition-colors duration-200 hover:text-primary/80;
+@layer utilities {
+  .bg-page {
+    background-color: var(--page-background);
+  }
+
+  .text-page {
+    color: var(--page-foreground);
+  }
+
+  .text-muted {
+    color: var(--page-muted);
+  }
+
+  .border-subtle {
+    border-color: var(--page-border);
+  }
+
+  .bg-surface {
+    background-color: var(--page-surface);
+  }
+
+  .bg-surface-muted {
+    background-color: var(--page-surface-muted);
+  }
+
+  .bg-card {
+    background-color: var(--page-card);
+  }
+
+  .bg-card-muted {
+    background-color: var(--page-card-muted);
+  }
+
+  .page-container {
+    width: min(100%, 72rem);
+    margin-inline: auto;
+    padding-inline: clamp(1.5rem, 5vw, 3rem);
+  }
 }
 
-button {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary dark:focus-visible:ring-offset-slate-900;
+@layer components {
+  .surface-blur {
+    background-color: var(--page-surface);
+    backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+  }
 }

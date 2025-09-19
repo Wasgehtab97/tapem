@@ -171,23 +171,26 @@ function imageExists(fileName: string) {
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4" aria-label="Top navigation">
-          <a href="#hero" className="text-lg font-semibold">
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-subtle surface-blur">
+        <div
+          className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4"
+          aria-label="Top navigation"
+        >
+          <a href="#hero" className="text-lg font-semibold text-page">
             Tap'em
           </a>
-          <nav className="hidden items-center gap-6 text-sm font-medium md:flex" aria-label="Hauptnavigation">
-            <a className="hover:text-primary" href="#features">
+          <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex" aria-label="Hauptnavigation">
+            <a className="transition hover:text-primary" href="#features">
               Features
             </a>
-            <a className="hover:text-primary" href="#how-it-works">
+            <a className="transition hover:text-primary" href="#how-it-works">
               So funktioniert's
             </a>
-            <a className="hover:text-primary" href="#faq">
+            <a className="transition hover:text-primary" href="#faq">
               FAQ
             </a>
-            <a className="hover:text-primary" href="#contact">
+            <a className="transition hover:text-primary" href="#contact">
               Kontakt
             </a>
           </nav>
@@ -195,17 +198,26 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main id="hero" className="flex-1">
-        <section className="bg-gradient-to-b from-primary/10 via-white to-white py-20 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
-          <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 md:flex-row md:items-center">
+      <main className="flex flex-1 flex-col">
+        <section
+          id="hero"
+          className="relative overflow-hidden py-20"
+          style={{
+            backgroundImage:
+              'radial-gradient(120% 100% at 0% 0%, var(--page-spotlight) 0%, transparent 65%), radial-gradient(100% 80% at 100% 0%, var(--page-spotlight-secondary) 0%, transparent 75%)',
+          }}
+        >
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 md:flex-row md:items-center">
             <div className="flex-1 space-y-6">
-              <p className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+              <p className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-sm font-medium text-primary">
                 NFC-basiertes Gym-Tracking &amp; -Management
               </p>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Revolutioniere den Studio-Alltag mit Tap'em</h1>
-              <p className="text-lg text-slate-600 dark:text-slate-300">
-                Tap'em verknüpft Check-in, Trainingsplanung und Gamification in einer Plattform – für
-                effizientere Abläufe und motivierte Mitglieder.
+              <h1 className="text-4xl font-bold tracking-tight text-page sm:text-5xl">
+                Revolutioniere den Studio-Alltag mit Tap'em
+              </h1>
+              <p className="text-lg text-muted">
+                Tap'em verknüpft Check-in, Trainingsplanung und Gamification in einer Plattform – für effizientere Abläufe und
+                motivierte Mitglieder.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <a
@@ -216,31 +228,33 @@ export default function HomePage() {
                 </a>
                 <a
                   href="#contact"
-                  className="rounded-full border border-slate-300 px-6 py-3 text-center text-sm font-semibold transition hover:border-primary hover:text-primary dark:border-slate-700"
+                  className="rounded-full border border-subtle px-6 py-3 text-center text-sm font-semibold text-page transition hover:border-primary hover:text-primary"
                 >
                   Für Studios: Demo anfragen
                 </a>
               </div>
-              <dl className="grid grid-cols-1 gap-6 text-slate-600 dark:text-slate-300 sm:grid-cols-3">
+              <dl className="grid grid-cols-1 gap-6 text-muted sm:grid-cols-3">
                 <div>
                   <dt className="text-sm">Check-ins pro Tag</dt>
-                  <dd className="text-2xl font-semibold">10k+</dd>
+                  <dd className="text-2xl font-semibold text-page">10k+</dd>
                 </div>
                 <div>
                   <dt className="text-sm">Studios aktiv</dt>
-                  <dd className="text-2xl font-semibold">120+</dd>
+                  <dd className="text-2xl font-semibold text-page">120+</dd>
                 </div>
                 <div>
                   <dt className="text-sm">Zeitersparnis</dt>
-                  <dd className="text-2xl font-semibold">bis zu 30%</dd>
+                  <dd className="text-2xl font-semibold text-page">bis zu 30%</dd>
                 </div>
               </dl>
             </div>
             <div className="flex-1">
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-dashed border-slate-300 bg-slate-100 p-6 text-center dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-dashed border-subtle bg-card-muted p-6 text-center">
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-muted">
                   <span className="text-sm font-semibold uppercase tracking-wide">Visual Mockup</span>
-                  <p className="text-sm">Lege hero.png unter <code className="rounded bg-slate-200 px-1 py-0.5 dark:bg-slate-800">/public/images/</code> ab.</p>
+                  <p className="text-sm">
+                    Lege hero.png unter <code className="rounded bg-card px-1 py-0.5">/public/images/</code> ab.
+                  </p>
                   <p className="text-xs">Der Platzhalter wird automatisch ersetzt, sobald die Datei vorhanden ist.</p>
                 </div>
               </div>
@@ -248,11 +262,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="bg-white py-20 dark:bg-slate-950">
+        <section id="features" className="py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Alles, was moderne Studios brauchen</h2>
-              <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
+              <h2 className="text-3xl font-bold tracking-tight text-page sm:text-4xl">Alles, was moderne Studios brauchen</h2>
+              <p className="mt-4 text-lg text-muted">
                 Von der Zugangskontrolle bis zur Community – Tap'em bildet die komplette Journey ab.
               </p>
             </div>
@@ -260,51 +274,43 @@ export default function HomePage() {
               {featureItems.map((feature) => (
                 <article
                   key={feature.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+                  className="rounded-3xl border border-subtle bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <h3 className="text-xl font-semibold">{feature.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                    {feature.description}
-                  </p>
+                  <h3 className="text-xl font-semibold text-page">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted">{feature.description}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="bg-slate-50 py-20 dark:bg-slate-900/60">
+        <section id="how-it-works" className="py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">So funktioniert Tap'em</h2>
-              <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-                Drei einfache Schritte vom Check-in bis zur nachhaltigen Motivation.
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-page sm:text-4xl">So funktioniert Tap'em</h2>
+              <p className="mt-4 text-lg text-muted">Drei einfache Schritte vom Check-in bis zur nachhaltigen Motivation.</p>
             </div>
             <div className="mt-12 grid gap-8 sm:grid-cols-3">
               {steps.map((step) => (
                 <article
                   key={step.title}
-                  className="flex flex-col items-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-950"
+                  className="flex flex-col items-center rounded-3xl border border-subtle bg-card p-8 text-center shadow-sm"
                 >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    {step.icon}
-                  </div>
-                  <h3 className="mt-4 text-xl font-semibold">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                    {step.description}
-                  </p>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15">{step.icon}</div>
+                  <h3 className="mt-4 text-xl font-semibold text-page">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted">{step.description}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="gallery" className="bg-white py-20 dark:bg-slate-950">
+        <section id="gallery" className="py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Screenshot-Galerie</h2>
-              <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-                Platziere finale Mockups später unter <code className="rounded bg-slate-200 px-1 py-0.5 dark:bg-slate-800">/public/images/</code>.
+              <h2 className="text-3xl font-bold tracking-tight text-page sm:text-4xl">Screenshot-Galerie</h2>
+              <p className="mt-4 text-lg text-muted">
+                Platziere finale Mockups später unter <code className="rounded bg-card px-1 py-0.5">/public/images/</code>.
               </p>
             </div>
             <div className="mt-12 grid gap-8 md:grid-cols-2">
@@ -313,7 +319,7 @@ export default function HomePage() {
                 return (
                   <figure
                     key={item.fileName}
-                    className="flex flex-col overflow-hidden rounded-3xl border border-dashed border-slate-300 bg-slate-100 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                    className="flex flex-col overflow-hidden rounded-3xl border border-dashed border-subtle bg-card-muted shadow-sm"
                   >
                     {exists ? (
                       <Image
@@ -325,15 +331,15 @@ export default function HomePage() {
                         priority
                       />
                     ) : (
-                      <div className="flex h-64 w-full flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
+                      <div className="flex h-64 w-full flex-col items-center justify-center gap-2 text-muted">
                         <span className="text-sm font-semibold uppercase tracking-wide">Platzhalter</span>
                         <p className="text-sm">Füge {item.fileName} unter /public/images/ hinzu.</p>
                         <p className="text-xs">Hinweis: Keine Bilder im Repo – lokal ergänzen.</p>
                       </div>
                     )}
                     <figcaption className="p-6">
-                      <h3 className="text-lg font-semibold">{item.title}</h3>
-                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{item.description}</p>
+                      <h3 className="text-lg font-semibold text-page">{item.title}</h3>
+                      <p className="mt-2 text-sm text-muted">{item.description}</p>
                     </figcaption>
                   </figure>
                 );
@@ -342,39 +348,34 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" className="bg-slate-50 py-20 dark:bg-slate-900/60">
+        <section id="faq" className="py-20">
           <div className="mx-auto max-w-4xl px-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Häufige Fragen</h2>
-              <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-                Transparente Antworten für Studioleitungen und Trainer:innen.
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-page sm:text-4xl">Häufige Fragen</h2>
+              <p className="mt-4 text-lg text-muted">Transparente Antworten für Studioleitungen und Trainer:innen.</p>
             </div>
             <div className="mt-12 space-y-6">
               {faqItems.map((item) => (
-                <details
-                  key={item.question}
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition dark:border-slate-800 dark:bg-slate-950"
-                >
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-left text-lg font-semibold">
+                <details key={item.question} className="group rounded-3xl border border-subtle bg-card p-6 shadow-sm transition">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-left text-lg font-semibold text-page">
                     <span>{item.question}</span>
                     <span className="ml-4 text-primary transition-transform group-open:rotate-45" aria-hidden="true">
                       +
                     </span>
                   </summary>
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.answer}</p>
+                  <p className="mt-4 text-sm leading-relaxed text-muted">{item.answer}</p>
                 </details>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="contact" className="bg-white py-20 dark:bg-slate-950">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-3xl font-bold tracking-tight">Demo anfragen</h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-              Teile uns Studio-Größe, bestehende Systeme und gewünschte Features mit. Wir melden uns mit
-              einem individuellen Onboarding-Plan.
+        <section id="contact" className="py-20">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-subtle bg-card p-10 text-center shadow-lg shadow-secondary/20">
+            <h2 className="text-3xl font-bold tracking-tight text-page">Demo anfragen</h2>
+            <p className="mt-4 text-lg text-muted">
+              Teile uns Studio-Größe, bestehende Systeme und gewünschte Features mit. Wir melden uns mit einem individuellen
+              Onboarding-Plan.
             </p>
             <a
               href="mailto:team@tapem.app"
@@ -386,19 +387,19 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-10 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+      <footer className="border-t border-subtle bg-surface-muted py-10 text-sm text-muted">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
           <p>&copy; {new Date().getFullYear()} Tap&apos;em. Alle Rechte vorbehalten.</p>
           <div className="flex gap-6">
             <Link
               href={ROUTES.imprint}
-              className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
+              className="font-medium text-page transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Impressum
             </Link>
             <Link
               href={ROUTES.privacy}
-              className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
+              className="font-medium text-page transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Datenschutz
             </Link>

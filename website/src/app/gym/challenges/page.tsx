@@ -15,7 +15,7 @@ export default async function GymChallengesPage() {
       </header>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {gymChallengesMock.map((challenge) => (
-          <article key={challenge.id} className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <article key={challenge.id} className="space-y-4 rounded-lg border border-subtle bg-card p-6 shadow-sm">
             <header className="space-y-1">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Challenge #{challenge.id}
@@ -28,7 +28,7 @@ export default async function GymChallengesPage() {
                 <span>{challenge.participants} Teilnehmende</span>
                 <span>Endet am {challenge.endsOn}</span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-card-muted">
                 <div
                   className="h-full rounded-full bg-slate-900"
                   style={{ width: `${challenge.progress}%` }}

@@ -8,8 +8,7 @@ export const metadata: Metadata = {
 
 export default function ImprintPage() {
   return (
-    <main className="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <article className="mx-auto flex min-h-screen max-w-3xl flex-col gap-10 px-6 py-16 lg:px-8">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-16 lg:px-8">
         <header className="space-y-4" aria-labelledby="imprint-heading">
           <p
             role="note"
@@ -96,7 +95,6 @@ export default function ImprintPage() {
             Ergänze hier individuelle Haftungs- und Urheberrechtshinweise entsprechend deiner finalen Fassung.
           </p>
         </section>
-      </article>
-    </main>
+    </article>
   );
 }

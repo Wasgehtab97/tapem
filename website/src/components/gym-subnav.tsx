@@ -24,10 +24,10 @@ export default function GymSubnav() {
             key={item.href}
             href={item.href}
             className={
-              'rounded-full border px-4 py-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 ' +
+              'rounded-full border px-4 py-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ' +
               (isActive
-                ? 'border-slate-900 bg-slate-900 text-white'
-                : 'border-slate-300 text-slate-700 hover:bg-slate-100')
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-subtle text-muted hover:bg-card')
             }
             aria-current={isActive ? 'page' : undefined}
           >

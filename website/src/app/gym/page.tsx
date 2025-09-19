@@ -21,7 +21,7 @@ export default async function GymOverviewPage() {
           {gymOverviewKpis.map((kpi) => (
             <article
               key={kpi.label}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              className="rounded-lg border border-subtle bg-card p-4 shadow-sm"
             >
               <p className="text-sm font-medium text-slate-600">{kpi.label}</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{kpi.value}</p>
@@ -31,7 +31,7 @@ export default async function GymOverviewPage() {
         </div>
       </section>
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-4 rounded-lg border border-subtle bg-card p-6 shadow-sm">
           <header>
             <h2 className="text-xl font-semibold text-slate-900">Aktive Challenges</h2>
             <p className="mt-1 text-sm text-slate-600">
@@ -56,7 +56,7 @@ export default async function GymOverviewPage() {
             Firestore geladen.
           </p>
         </div>
-        <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-4 rounded-lg border border-subtle bg-card p-6 shadow-sm">
           <header>
             <h2 className="text-xl font-semibold text-slate-900">Leaderboard (Top 3)</h2>
             <p className="mt-1 text-sm text-slate-600">

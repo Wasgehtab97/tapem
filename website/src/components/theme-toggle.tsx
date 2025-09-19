@@ -2,6 +2,21 @@
 
 import { useEffect, useState } from 'react';
 
+const THEME_COLORS: Record<'light' | 'dark', string> = {
+  light: '#f1f5f9',
+  dark: '#020617',
+};
+
+function applyTheme(nextTheme: 'light' | 'dark') {
+  document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+  document.documentElement.setAttribute('data-theme', nextTheme);
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute('content', THEME_COLORS[nextTheme]);
+  }
+}
+
 export function ThemeToggle() {
   const [isMounted, setIsMounted] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -12,16 +27,14 @@ export function ThemeToggle() {
     const initialTheme = stored ?? (prefersDark ? 'dark' : 'light');
 
     setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
-    document.documentElement.setAttribute('data-theme', initialTheme);
+    applyTheme(initialTheme);
     setIsMounted(true);
   }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
-    document.documentElement.setAttribute('data-theme', nextTheme);
+    applyTheme(nextTheme);
     window.localStorage.setItem('tapem-theme', nextTheme);
   };
 
@@ -30,7 +43,7 @@ export function ThemeToggle() {
       <button
         type="button"
         aria-label="Theme-Umschalter wird geladen"
-        className="h-10 w-10 rounded-full border border-slate-300 bg-white/60 dark:border-slate-700 dark:bg-slate-900/60"
+        className="h-10 w-10 rounded-full border border-subtle bg-card-muted"
         disabled
       />
     );
@@ -41,7 +54,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Hellmodus aktivieren' : 'Dunkelmodus aktivieren'}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/60 text-lg transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:border-primary dark:hover:text-primary"
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-card text-lg transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <span aria-hidden="true">{theme === 'dark' ? '🌙' : '☀️'}</span>
     </button>

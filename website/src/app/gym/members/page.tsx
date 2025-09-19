@@ -31,7 +31,7 @@ export default async function GymMembersPage() {
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+          <thead className="bg-card-muted">
             <tr>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Mitglied
@@ -50,9 +50,9 @@ export default async function GymMembersPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody className="divide-y divide-slate-200 bg-card">
             {gymMembersMock.map((member) => (
-              <tr key={member.id} className="hover:bg-slate-50">
+              <tr key={member.id} className="hover:bg-card-muted">
                 <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">
                   <div className="font-medium text-slate-900">{member.name}</div>
                   <div className="text-xs text-slate-500">{member.email}</div>

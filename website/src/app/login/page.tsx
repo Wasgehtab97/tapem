@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default function Page() {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-xl space-y-6 px-6 py-16">
       <h1 className="text-2xl font-semibold">Anmelden (Dev-Stub)</h1>
       <p className="text-sm text-slate-600">
         Diese Anmeldung setzt Vorschau-Cookies und dient dem Testen der geschützten Bereiche.
@@ -20,10 +20,7 @@ export default function Page() {
       </p>
       <Suspense
         fallback={
-          <div
-            className="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500"
-            aria-live="polite"
-          >
+          <div className="rounded border border-subtle bg-card p-4 text-sm text-slate-500" aria-live="polite">
             Lade Login-Parameter…
           </div>
         }
