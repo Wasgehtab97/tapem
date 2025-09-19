@@ -3,13 +3,9 @@ import { NextResponse } from 'next/server';
 const ROLE_COOKIE = 'tapem_role';
 const EMAIL_COOKIE = 'tapem_email';
 
-function isProduction() {
-  return process.env.VERCEL_ENV === 'production';
-}
-
 export async function POST() {
-  if (isProduction()) {
-    return new NextResponse('dev login disabled in production', { status: 403 });
+  if (process.env.VERCEL_ENV === 'production') {
+    return new Response('dev login disabled in production', { status: 403 });
   }
 
   const response = new NextResponse(null, { status: 204 });

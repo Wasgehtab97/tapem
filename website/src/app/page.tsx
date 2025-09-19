@@ -4,6 +4,8 @@ import path from 'node:path';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { ROUTES } from '@/src/lib/routes';
+
 import { ThemeToggle } from '../components/theme-toggle';
 
 export const dynamic = 'force-static';
@@ -172,22 +174,22 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4" aria-label="Top navigation">
-          <Link href="#hero" className="text-lg font-semibold">
+          <a href="#hero" className="text-lg font-semibold">
             Tap'em
-          </Link>
+          </a>
           <nav className="hidden items-center gap-6 text-sm font-medium md:flex" aria-label="Hauptnavigation">
-            <Link className="hover:text-primary" href="#features">
+            <a className="hover:text-primary" href="#features">
               Features
-            </Link>
-            <Link className="hover:text-primary" href="#how-it-works">
+            </a>
+            <a className="hover:text-primary" href="#how-it-works">
               So funktioniert's
-            </Link>
-            <Link className="hover:text-primary" href="#faq">
+            </a>
+            <a className="hover:text-primary" href="#faq">
               FAQ
-            </Link>
-            <Link className="hover:text-primary" href="#contact">
+            </a>
+            <a className="hover:text-primary" href="#contact">
               Kontakt
-            </Link>
+            </a>
           </nav>
           <ThemeToggle />
         </div>
@@ -206,18 +208,18 @@ export default function HomePage() {
                 effizientere Abläufe und motivierte Mitglieder.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Link
+                <a
                   href="#features"
                   className="rounded-full bg-primary px-6 py-3 text-center text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:bg-primary/90"
                 >
                   Mehr erfahren
-                </Link>
-                <Link
+                </a>
+                <a
                   href="#contact"
                   className="rounded-full border border-slate-300 px-6 py-3 text-center text-sm font-semibold transition hover:border-primary hover:text-primary dark:border-slate-700"
                 >
                   Für Studios: Demo anfragen
-                </Link>
+                </a>
               </div>
               <dl className="grid grid-cols-1 gap-6 text-slate-600 dark:text-slate-300 sm:grid-cols-3">
                 <div>
@@ -374,12 +376,12 @@ export default function HomePage() {
               Teile uns Studio-Größe, bestehende Systeme und gewünschte Features mit. Wir melden uns mit
               einem individuellen Onboarding-Plan.
             </p>
-            <Link
+            <a
               href="mailto:team@tapem.app"
               className="mt-6 inline-flex items-center justify-center rounded-full bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground shadow-lg shadow-secondary/30 transition hover:bg-secondary/90"
             >
               Kontakt aufnehmen
-            </Link>
+            </a>
           </div>
         </section>
       </main>
@@ -389,13 +391,13 @@ export default function HomePage() {
           <p>&copy; {new Date().getFullYear()} Tap&apos;em. Alle Rechte vorbehalten.</p>
           <div className="flex gap-6">
             <Link
-              href="/imprint"
+              href={ROUTES.imprint}
               className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
             >
               Impressum
             </Link>
             <Link
-              href="/privacy"
+              href={ROUTES.privacy}
               className="font-medium text-slate-700 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:text-slate-200"
             >
               Datenschutz

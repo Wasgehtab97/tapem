@@ -3,18 +3,10 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { useState } from 'react';
-
-// Whitelist der erlaubten Zielrouten nach Login (bei Bedarf erweitern)
-const ALLOWED_AFTER_LOGIN = [
-  '/gym',
-  '/gym/members',
-  '/gym/challenges',
-  '/gym/leaderboard',
-  '/admin',
-] as const;
+import { ALLOWED_AFTER_LOGIN } from '@/src/lib/routes';
 
 type AllowedRoute = (typeof ALLOWED_AFTER_LOGIN)[number];
-const DEFAULT_AFTER_LOGIN: AllowedRoute = '/gym';
+const DEFAULT_AFTER_LOGIN: AllowedRoute = ALLOWED_AFTER_LOGIN[0];
 
 function isAllowedRoute(v: string | null): v is AllowedRoute {
   return !!v && (ALLOWED_AFTER_LOGIN as readonly string[]).includes(v);
@@ -35,18 +27,13 @@ export default function LoginForm() {
       const email = (formData.get('email') as string | null) ?? '';
       const role = (formData.get('role') as string | null) ?? 'owner';
 
-      // Dev-Login-API (setzt Cookies). In Production sollte diese Route 403 liefern.
       const res = await fetch('/api/dev/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, role }),
       });
+      if (!res.ok) throw new Error(`Login fehlgeschlagen (${res.status})`);
 
-      if (!res.ok) {
-        throw new Error(`Login fehlgeschlagen (${res.status})`);
-      }
-
-      // Zielroute bestimmen (nur Whitelist zulassen)
       const nextParam = searchParams.get('next');
       const target: Route = (isAllowedRoute(nextParam) ? nextParam : DEFAULT_AFTER_LOGIN) as Route;
 
@@ -66,28 +53,15 @@ export default function LoginForm() {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-          E-Mail (optional)
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-        />
+        <label htmlFor="email" className="block text-sm font-medium text-slate-700">E-Mail (optional)</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com"
+          className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900" />
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="role" className="block text-sm font-medium text-slate-700">
-          Rolle
-        </label>
-        <select
-          id="role"
-          name="role"
-          defaultValue="owner"
-          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-        >
+        <label htmlFor="role" className="block text-sm font-medium text-slate-700">Rolle</label>
+        <select id="role" name="role" defaultValue="owner"
+          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
           <option value="owner">owner</option>
           <option value="operator">operator</option>
           <option value="admin">admin</option>
@@ -96,11 +70,8 @@ export default function LoginForm() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="inline-flex items-center justify-center rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
-      >
+      <button type="submit" disabled={submitting}
+        className="inline-flex items-center justify-center rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50">
         {submitting ? 'Anmelden…' : 'Anmelden'}
       </button>
     </form>

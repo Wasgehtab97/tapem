@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 
 import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import type { Role } from '@/src/lib/auth/types';
+import { ROUTES } from '@/src/lib/routes';
 import DevToolbar from '@/src/components/dev-toolbar';
 
 import '../styles/globals.css';
@@ -16,9 +17,9 @@ const isProd = process.env.VERCEL_ENV === 'production';
  * Navigation: mit typedRoutes typisiert, damit href exakt existierende interne Routen sind.
  */
 const navLinks: Array<{ href: Route; label: string }> = [
-  { href: '/', label: 'Home' },
-  { href: '/gym', label: 'Gym' },
-  { href: '/admin', label: 'Admin' },
+  { href: ROUTES.home, label: 'Home' },
+  { href: ROUTES.gym, label: 'Gym' },
+  { href: ROUTES.admin, label: 'Admin' },
 ];
 
 export const metadata: Metadata = {
@@ -75,7 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
               <div className="flex flex-1 items-center gap-8">
                 <Link
-                  href="/"
+                  href={ROUTES.home}
                   className="text-base font-semibold text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
                 >
                   Tap&apos;em
