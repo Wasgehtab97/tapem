@@ -20,6 +20,8 @@ export const PORTAL_ROUTES = {
 export const ADMIN_ROUTES = {
   home: '/' as Route,
   dashboard: '/admin' as Route,
+  login: '/login' as Route,
+  logout: '/logout' as Route,
 } as const satisfies Record<string, Route>;
 
 export type AllowedAfterLoginRoute =
@@ -90,7 +92,15 @@ const PORTAL_PROTECTED_PATHS = new Set<string>([
   PORTAL_ROUTES.gymLeaderboard,
 ]);
 
-const ADMIN_PUBLIC_PATHS = new Set<string>(['/401', '/403', '/404', '/robots.txt', '/sitemap.xml']);
+const ADMIN_PUBLIC_PATHS = new Set<string>([
+  '/401',
+  '/403',
+  '/404',
+  '/robots.txt',
+  '/sitemap.xml',
+  ADMIN_ROUTES.login,
+  ADMIN_ROUTES.logout,
+]);
 
 const ADMIN_PROTECTED_PATHS = new Set<string>([
   ADMIN_ROUTES.home,
