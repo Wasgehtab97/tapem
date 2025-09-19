@@ -53,6 +53,33 @@ Prettier-Einstellungen findest du in `.prettierrc`.
 Trage die öffentliche Basis-URL in `.env.local` ein (siehe `.env.example`). Sie wird für OpenGraph,
 Sitemap und `robots.txt` verwendet.
 
+## Navigation & Rollen
+
+| Route        | Beschreibung                                   | Zugelassene Rollen |
+| ------------ | ----------------------------------------------- | ------------------ |
+| `/`          | Marketing-Landingpage                           | öffentlich         |
+| `/login`     | Dev-Login (Stub)                                | öffentlich         |
+| `/gym`       | Betreiber-Dashboard mit KPIs & Unterseiten       | owner, operator, admin |
+| `/admin`     | Monitoring für globale Admins                    | admin              |
+| `/gym/*`     | Mitglieder, Challenges, Leaderboard              | owner, operator, admin |
+
+## Dev-Login & Toolbar
+
+- Die API-Routen `/api/dev/login` und `/api/dev/logout` setzen bzw. löschen Cookies `tapem_role` und `tapem_email`.
+- In Development & Preview blendet die Top-Navigation eine Dev-Toolbar ein. Damit können Rollen ohne Seitenwechsel gewechselt werden.
+- In Production verweigern die API-Routen den Aufruf mit `403` (_dev login disabled in production_).
+
+## Mock-Datenquelle
+
+- Alle geschützten Routen verwenden statische Mock-Daten aus [`src/server/mocks/gym.ts`](src/server/mocks/gym.ts).
+- Tabellen und Karten sind SSR gerendert, um das spätere Datenmodell zu skizzieren.
+
+## Ausblick Firebase-Anbindung
+
+- Firebase Auth ersetzt den Dev-Login; Rollen werden dann aus Custom Claims gelesen.
+- Firestore Collections (`gyms`, `members`, `challenges`, `events`) liefern Echtzeitdaten in die SSR-Pages.
+- Analytics/BigQuery füttert langfristig das Admin-Monitoring mit aggregierten Kennzahlen.
+
 ## Vercel Deploy
 
 ### A) Web-UI (empfohlen)
