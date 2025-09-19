@@ -7,10 +7,6 @@ const EMAIL_COOKIE = 'tapem_email';
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 Tage
 const ROLES: Role[] = ['admin', 'owner', 'operator'];
 
-function isProduction() {
-  return process.env.VERCEL_ENV === 'production';
-}
-
 function parseRole(value: unknown): Role | undefined {
   if (typeof value === 'string' && ROLES.includes(value as Role)) {
     return value as Role;
@@ -20,8 +16,8 @@ function parseRole(value: unknown): Role | undefined {
 }
 
 export async function POST(request: Request) {
-  if (isProduction()) {
-    return new NextResponse('dev login disabled in production', { status: 403 });
+  if (process.env.VERCEL_ENV === 'production') {
+    return new Response('dev login disabled in production', { status: 403 });
   }
 
   const contentType = request.headers.get('content-type') ?? '';

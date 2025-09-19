@@ -69,6 +69,12 @@ Sitemap und `robots.txt` verwendet.
 - In Development & Preview blendet die Top-Navigation eine Dev-Toolbar ein. Damit können Rollen ohne Seitenwechsel gewechselt werden.
 - In Production verweigern die API-Routen den Aufruf mit `403` (_dev login disabled in production_).
 
+## typedRoutes & Login-Whitelist
+
+- Zentrale Routen werden in [`src/lib/routes.ts`](src/lib/routes.ts) als `Route`-Typen gepflegt; Link-Komponenten verwenden ausschließlich diese Konstanten.
+- Nach dem Dev-Login sind nur Werte aus `ALLOWED_AFTER_LOGIN` als Redirect-Ziel erlaubt (`/login?next=`-Parameter wird validiert).
+- Tests vor Deploy: `npm run build`, anschließend `/login`, `/login?next=/admin` und `/login?next=/falsch` in der Preview prüfen.
+
 ## Mock-Datenquelle
 
 - Alle geschützten Routen verwenden statische Mock-Daten aus [`src/server/mocks/gym.ts`](src/server/mocks/gym.ts).
