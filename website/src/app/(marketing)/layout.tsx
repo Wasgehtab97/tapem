@@ -2,9 +2,8 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
+import MarketingShell from '@/src/components/layout/marketing-shell';
 import { buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
-
-import '../styles/globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headerList = headers();
@@ -12,10 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildSiteMetadata(getSiteConfig('marketing'), host);
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="de" suppressHydrationWarning className="h-full">
-      <body className="bg-page text-page">{children}</body>
-    </html>
-  );
+export default function MarketingLayout({ children }: { children: ReactNode }) {
+  return <MarketingShell>{children}</MarketingShell>;
 }

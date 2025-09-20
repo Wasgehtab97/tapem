@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-import { buildSiteUrl, getDeploymentStage } from '@/src/config/sites';
-import { MARKETING_ROUTES, PORTAL_ROUTES } from '@/src/lib/routes';
+import { getDeploymentStage } from '@/src/config/sites';
+import { ADMIN_ROUTES, MARKETING_ROUTES } from '@/src/lib/routes';
 import { ThemeToggle } from '@/src/components/theme-toggle';
 
 const marketingNav = [
@@ -13,7 +13,6 @@ const marketingNav = [
 ] as const;
 
 export default function MarketingShell({ children }: { children: ReactNode }) {
-  const portalLoginUrl = buildSiteUrl('portal', PORTAL_ROUTES.login.href);
   const stage = getDeploymentStage();
   const showPreviewLabel = stage !== 'production';
 
@@ -37,12 +36,12 @@ export default function MarketingShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <a
-              href={portalLoginUrl}
+            <Link
+              href={ADMIN_ROUTES.login.href}
               className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Für Studios: Login
-            </a>
+            </Link>
             <ThemeToggle />
           </div>
         </div>

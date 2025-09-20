@@ -51,10 +51,9 @@ const PORTAL_ROUTE_LIST = Object.values(
 ) as readonly PortalRouteDefinition[];
 
 export const ADMIN_ROUTES = {
-  home: defineRoute('admin', '/' as Route),
   dashboard: defineRoute('admin', '/admin' as Route),
-  login: defineRoute('admin', '/login' as Route),
-  logout: defineRoute('admin', '/logout' as Route),
+  login: defineRoute('admin', '/admin/login' as Route),
+  logout: defineRoute('admin', '/admin/logout' as Route),
 } as const;
 
 export type AdminRouteDefinition =
@@ -133,7 +132,6 @@ const ADMIN_PUBLIC_PATHS = buildPathSet([
 ]);
 
 const ADMIN_PROTECTED_PATHS = buildPathSet([
-  ADMIN_ROUTES.home.href,
   ADMIN_ROUTES.dashboard.href,
 ]);
 
@@ -230,8 +228,15 @@ export function safeAfterLoginRoute(
   });
 }
 
-export function buildLoginRedirectRoute(target: AfterLoginRoute): Route {
+export function buildPortalLoginRedirectRoute(target: AfterLoginRoute): Route {
   return `${PORTAL_ROUTES.login.href}?next=${target}` as Route;
+}
+
+type AdminAfterLoginRouteDefinition = typeof ADMIN_ROUTES.dashboard;
+export type AdminAfterLoginRoute = AdminAfterLoginRouteDefinition['href'];
+
+export function buildAdminLoginRedirectRoute(target: AdminAfterLoginRoute): Route {
+  return `${ADMIN_ROUTES.login.href}?next=${target}` as Route;
 }
 
 export function normalizePathname(pathname: string): string {

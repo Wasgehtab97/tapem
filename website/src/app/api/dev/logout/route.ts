@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { findSiteByHost, normalizeHost } from '@/src/config/sites';
+import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
 
-const ROLE_COOKIE = 'tapem_role';
+const ROLE_COOKIE = DEV_ROLE_COOKIE;
 const EMAIL_COOKIE = 'tapem_email';
 
 function resolveCookieDomain(request: Request): string | undefined {

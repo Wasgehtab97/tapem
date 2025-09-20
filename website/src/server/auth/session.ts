@@ -3,10 +3,9 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
+import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
 import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore } from '@/src/server/firebase/admin';
-
-export const ADMIN_SESSION_COOKIE = '__Secure-tapem-admin-session';
 export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5; // 5 Tage
 
 export class AdminRoleRequiredError extends Error {
@@ -18,8 +17,42 @@ export class AdminRoleRequiredError extends Error {
 
 type RoleResolution = {
   role: Role | null;
-  source: 'claim' | 'profile' | 'unknown';
+  source: 'claim' | 'profile' | 'allowlist' | 'unknown';
 };
+
+let cachedAdminAllowlist: string[] | null = null;
+
+function getAdminAllowlist(): string[] {
+  if (cachedAdminAllowlist) {
+    return cachedAdminAllowlist;
+  }
+
+  const raw = process.env.ADMIN_ALLOWLIST;
+  if (!raw) {
+    cachedAdminAllowlist = [];
+    return cachedAdminAllowlist;
+  }
+
+  cachedAdminAllowlist = raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
+
+  return cachedAdminAllowlist;
+}
+
+function isEmailAllowlisted(email: string | null | undefined): boolean {
+  if (!email) {
+    return false;
+  }
+
+  const allowlist = getAdminAllowlist();
+  if (allowlist.length === 0) {
+    return false;
+  }
+
+  return allowlist.includes(email.trim().toLowerCase());
+}
 
 function extractRoleFromToken(token: DecodedIdToken): Role | null {
   const claim = (token.role ?? (token as Record<string, unknown>).role) as string | undefined;
@@ -34,6 +67,10 @@ async function resolveRole(token: DecodedIdToken): Promise<RoleResolution> {
   const claimRole = extractRoleFromToken(token);
   if (claimRole) {
     return { role: claimRole, source: 'claim' };
+  }
+
+  if (isEmailAllowlisted(token.email)) {
+    return { role: 'admin', source: 'allowlist' };
   }
 
   const uid = token.uid;
@@ -51,7 +88,11 @@ async function resolveRole(token: DecodedIdToken): Promise<RoleResolution> {
   return { role: null, source: 'unknown' };
 }
 
-function buildAuthenticatedUser(token: DecodedIdToken, role: Role, source: 'claim' | 'profile'): AuthenticatedUser {
+function buildAuthenticatedUser(
+  token: DecodedIdToken,
+  role: Role,
+  source: 'claim' | 'profile' | 'allowlist'
+): AuthenticatedUser {
   return {
     uid: token.uid,
     email: token.email ?? token.uid,
@@ -61,6 +102,14 @@ function buildAuthenticatedUser(token: DecodedIdToken, role: Role, source: 'clai
     claims: token,
     roleSource: source,
   };
+}
+
+function normalizeRoleSource(source: RoleResolution['source']): 'claim' | 'profile' | 'allowlist' {
+  if (source === 'claim' || source === 'profile' || source === 'allowlist') {
+    return source;
+  }
+
+  return 'profile';
 }
 
 export async function createAdminSession(idToken: string): Promise<{
@@ -81,7 +130,7 @@ export async function createAdminSession(idToken: string): Promise<{
   return {
     cookieValue,
     expiresIn,
-    user: buildAuthenticatedUser(decoded, role, source === 'claim' ? 'claim' : 'profile'),
+    user: buildAuthenticatedUser(decoded, role, normalizeRoleSource(source)),
   };
 }
 
@@ -98,7 +147,7 @@ export async function verifyAdminSessionCookie(cookieValue: string): Promise<Aut
       return null;
     }
 
-    return buildAuthenticatedUser(decoded, role, source === 'claim' ? 'claim' : 'profile');
+    return buildAuthenticatedUser(decoded, role, normalizeRoleSource(source));
   } catch (error) {
     console.error('[auth] failed to verify admin session cookie', error);
     return null;

@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import { buildSiteUrl } from '@/src/config/sites';
+import { getDeploymentStage } from '@/src/config/sites';
+import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
 import { MARKETING_ROUTES } from '@/src/lib/routes';
-import {
-  ADMIN_SESSION_COOKIE,
-  revokeAdminSessionCookie,
-} from '@/src/server/auth/session';
+import { revokeAdminSessionCookie } from '@/src/server/auth/session';
 import { resolveCookieDomain, resolveCookieSecurity } from '@/src/server/auth/cookies';
 
 export async function GET(request: Request) {
@@ -18,10 +16,14 @@ export async function GET(request: Request) {
   const cookieValue = currentCookie ? currentCookie.split('=').slice(1).join('=') : undefined;
   await revokeAdminSessionCookie(cookieValue);
 
-  const target = buildSiteUrl('marketing', MARKETING_ROUTES.home.href);
-  const response = NextResponse.redirect(target, { status: 302 });
+  const stage = getDeploymentStage();
+  const isProduction = stage === 'production';
+  const url = new URL(request.url);
+  url.pathname = MARKETING_ROUTES.home.href;
+  url.search = '';
+  const response = NextResponse.redirect(url, { status: 302 });
   const domain = resolveCookieDomain(request);
-  const secure = resolveCookieSecurity(request);
+  const secure = resolveCookieSecurity(request) || isProduction;
 
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,

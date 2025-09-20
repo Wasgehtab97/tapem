@@ -23,7 +23,7 @@ type StatusState =
   | { state: 'error'; message: string };
 
 async function postAdminSession(idToken: string) {
-  const response = await fetch('/api/admin/session', {
+  const response = await fetch('/api/admin/auth/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),

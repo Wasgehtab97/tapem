@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import { findSiteByHost, normalizeHost } from '@/src/config/sites';
+import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
 import type { Role } from '@/src/lib/auth/types';
 
-const ROLE_COOKIE = 'tapem_role';
+const ROLE_COOKIE = DEV_ROLE_COOKIE;
 const EMAIL_COOKIE = 'tapem_email';
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 Tage
 const ROLES: Role[] = ['admin', 'owner', 'operator'];
