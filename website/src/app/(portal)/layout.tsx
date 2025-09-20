@@ -2,20 +2,15 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
+import PortalShell from '@/src/components/layout/portal-shell';
 import { buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
-
-import '../styles/globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headerList = headers();
   const host = headerList.get('host');
-  return buildSiteMetadata(getSiteConfig('marketing'), host);
+  return buildSiteMetadata(getSiteConfig('portal'), host);
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="de" suppressHydrationWarning className="h-full">
-      <body className="bg-page text-page">{children}</body>
-    </html>
-  );
+export default function PortalLayout({ children }: { children: ReactNode }) {
+  return <PortalShell>{children}</PortalShell>;
 }

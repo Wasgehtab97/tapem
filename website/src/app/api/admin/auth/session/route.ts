@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server';
 
 import { getDeploymentStage } from '@/src/config/sites';
+import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
 import {
-  ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_MAX_AGE_SECONDS,
   AdminRoleRequiredError,
   createAdminSession,
+  getAdminUserFromSession,
   revokeAdminSessionCookie,
 } from '@/src/server/auth/session';
 import { resolveCookieDomain, resolveCookieSecurity } from '@/src/server/auth/cookies';
 
 function buildMissingIdTokenResponse() {
   return NextResponse.json({ error: 'missing_id_token' }, { status: 400 });
+}
+
+export async function GET() {
+  const user = await getAdminUserFromSession();
+  if (!user) {
+    return NextResponse.json({ status: 'unauthorized' }, { status: 401 });
+  }
+
+  return NextResponse.json(
+    { status: 'ok', user: { uid: user.uid, email: user.email, role: user.role } },
+    { status: 200 }
+  );
 }
 
 export async function POST(request: Request) {
@@ -69,6 +82,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const stage = getDeploymentStage();
+  const isProduction = stage === 'production';
   const cookieHeader = request.headers.get('cookie') ?? '';
   const currentCookie = cookieHeader
     .split(';')
@@ -80,7 +95,7 @@ export async function DELETE(request: Request) {
 
   const response = new NextResponse(null, { status: 204 });
   const domain = resolveCookieDomain(request);
-  const secure = resolveCookieSecurity(request);
+  const secure = resolveCookieSecurity(request) || isProduction;
 
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,

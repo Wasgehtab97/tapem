@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { buildSiteUrl, findSiteByHost, getDeploymentStage } from '@/src/config/sites';
+import { getDeploymentStage } from '@/src/config/sites';
+import { ADMIN_SESSION_COOKIE, DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
 import type { Role } from '@/src/lib/auth/types';
 import {
   ADMIN_ROUTES,
@@ -16,11 +17,9 @@ import {
 } from '@/src/lib/routes';
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
-const ADMIN_REQUIRED_ROLE: Role = 'admin';
-const ADMIN_SESSION_COOKIE = '__Secure-tapem-admin-session';
-const DEV_ROLE_COOKIE = 'tapem_role';
+const ADMIN_SESSION_API_PATH = '/api/admin/auth/session';
 
-function isStaticAsset(pathname: string) {
+function isStaticAsset(pathname: string): boolean {
   return (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
@@ -29,93 +28,118 @@ function isStaticAsset(pathname: string) {
   );
 }
 
-function allowApiRoute(pathname: string) {
-  return pathname.startsWith('/api/dev') || pathname.startsWith('/api/admin/session');
+function allowApiRoute(pathname: string): boolean {
+  return pathname.startsWith('/api/dev') || pathname.startsWith(ADMIN_SESSION_API_PATH);
 }
 
-function buildPortalLoginUrl(nextPathname: string | null) {
-  const loginUrl = new URL(buildSiteUrl('portal', PORTAL_ROUTES.login.href));
-  if (nextPathname && nextPathname !== PORTAL_ROUTES.home.href) {
-    const safeTarget = safeAfterLoginRoute(nextPathname);
-    loginUrl.searchParams.set('next', safeTarget);
-  } else {
-    loginUrl.searchParams.set('next', DEFAULT_AFTER_LOGIN);
-  }
+function buildPortalLoginUrl(request: NextRequest, nextPathname: string) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = PORTAL_ROUTES.login.href;
+  loginUrl.hash = '';
+  loginUrl.search = '';
+  loginUrl.searchParams.set('next', safeAfterLoginRoute(nextPathname));
   return loginUrl;
 }
 
-function buildAdminLoginUrl(nextPathname: string | null) {
-  const loginUrl = new URL(buildSiteUrl('admin', ADMIN_ROUTES.login.href));
-  if (nextPathname && nextPathname !== ADMIN_ROUTES.login.href) {
-    const safeTarget = safeAfterLoginRoute(nextPathname);
-    loginUrl.searchParams.set('next', safeTarget);
-  }
+function buildAdminLoginUrl(request: NextRequest, nextPathname: string) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = ADMIN_ROUTES.login.href;
+  loginUrl.hash = '';
+  loginUrl.search = '';
+  const safeTarget = safeAfterLoginRoute(nextPathname);
+  const target = safeTarget === DEFAULT_AFTER_LOGIN ? ADMIN_ROUTES.dashboard.href : safeTarget;
+  loginUrl.searchParams.set('next', target);
   return loginUrl;
 }
 
-function redirectTo404(request: NextRequest) {
+async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
+  const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  if (!sessionCookie) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(new URL(ADMIN_SESSION_API_PATH, request.url), {
+      method: 'GET',
+      headers: {
+        cookie: request.headers.get('cookie') ?? '',
+      },
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('[middleware] admin session validation failed', error);
+    return false;
+  }
+}
+
+function redirectTo(pathname: string, request: NextRequest) {
   const url = request.nextUrl.clone();
-  url.pathname = '/404';
+  url.pathname = pathname;
   url.search = '';
-  return NextResponse.rewrite(url, { status: 404 });
+  url.hash = '';
+  return url;
 }
 
-export function middleware(request: NextRequest) {
-  const host = request.headers.get('host');
-  const site = findSiteByHost(host) ?? null;
-  const pathname = request.nextUrl.pathname;
-  const stage = getDeploymentStage();
-
-  if (!site) {
-    return redirectTo404(request);
-  }
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
   if (isStaticAsset(pathname) || allowApiRoute(pathname)) {
     return NextResponse.next();
   }
 
-  if (site.key === 'marketing') {
-    if (isMarketingPath(pathname)) {
+  if (isAdminPath(pathname)) {
+    const stage = getDeploymentStage();
+    const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
+    const hasDevAdmin = stage !== 'production' && devRole === 'admin';
+
+    if (pathname === ADMIN_ROUTES.login.href) {
+      if (hasDevAdmin || (await hasValidAdminSession(request))) {
+        const target = redirectTo(ADMIN_ROUTES.dashboard.href, request);
+        return NextResponse.redirect(target);
+      }
+
       return NextResponse.next();
     }
 
-    if (isPortalPath(pathname)) {
-      if (isPortalProtectedPath(pathname)) {
-        const loginUrl = buildPortalLoginUrl(pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-      const target = new URL(
-        buildSiteUrl('portal', `${pathname}${request.nextUrl.search}`)
-      );
-      return NextResponse.redirect(target);
+    if (pathname === ADMIN_ROUTES.logout.href) {
+      return NextResponse.next();
     }
 
-    if (isAdminPath(pathname)) {
-      const target = new URL(
-        buildSiteUrl('admin', `${pathname}${request.nextUrl.search}`)
-      );
-      return NextResponse.redirect(target);
+    if (!isAdminProtectedPath(pathname)) {
+      return NextResponse.next();
     }
 
-    return redirectTo404(request);
+    if (hasDevAdmin) {
+      return NextResponse.next();
+    }
+
+    const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    const sessionValid = await hasValidAdminSession(request);
+
+    if (sessionValid) {
+      return NextResponse.next();
+    }
+
+    if (sessionCookie) {
+      const forbiddenUrl = redirectTo('/403', request);
+      return NextResponse.rewrite(forbiddenUrl, { status: 403 });
+    }
+
+    const loginUrl = buildAdminLoginUrl(request, pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  if (site.key === 'portal') {
-    if (!isPortalPath(pathname)) {
-      return redirectTo404(request);
-    }
-
+  if (isPortalPath(pathname)) {
     if (pathname === PORTAL_ROUTES.home.href) {
-      const target = request.nextUrl.clone();
-      target.pathname = PORTAL_ROUTES.gym.href;
-      target.search = '';
+      const target = redirectTo(PORTAL_ROUTES.gym.href, request);
       return NextResponse.redirect(target);
     }
 
     if (isPortalProtectedPath(pathname)) {
       const role = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
       if (!role || !PORTAL_ALLOWED_ROLES.includes(role)) {
-        const loginUrl = buildPortalLoginUrl(pathname);
+        const loginUrl = buildPortalLoginUrl(request, pathname);
         return NextResponse.redirect(loginUrl);
       }
     }
@@ -123,57 +147,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // site.key === 'admin'
-  if (!isAdminPath(pathname)) {
-    return redirectTo404(request);
-  }
-
-  const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
-  const hasDevAdmin = stage !== 'production' && devRole === ADMIN_REQUIRED_ROLE;
-
-  if (pathname === ADMIN_ROUTES.home.href) {
-    if (sessionCookie || hasDevAdmin) {
-      const target = request.nextUrl.clone();
-      target.pathname = ADMIN_ROUTES.dashboard.href;
-      target.search = '';
-      return NextResponse.redirect(target);
-    }
-
-    const loginUrl = buildAdminLoginUrl(ADMIN_ROUTES.dashboard.href);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (pathname === ADMIN_ROUTES.login.href) {
-    if (sessionCookie || hasDevAdmin) {
-      const target = request.nextUrl.clone();
-      target.pathname = ADMIN_ROUTES.dashboard.href;
-      target.search = '';
-      return NextResponse.redirect(target);
-    }
-
+  if (isMarketingPath(pathname)) {
     return NextResponse.next();
-  }
-
-  if (pathname === ADMIN_ROUTES.logout.href) {
-    return NextResponse.next();
-  }
-
-  if (isAdminProtectedPath(pathname)) {
-    if (stage === 'production') {
-      if (!sessionCookie) {
-        const loginUrl = buildAdminLoginUrl(pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-      return NextResponse.next();
-    }
-
-    if (!sessionCookie && !hasDevAdmin) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/403';
-      url.search = '';
-      return NextResponse.rewrite(url, { status: 403 });
-    }
   }
 
   return NextResponse.next();

@@ -16,7 +16,7 @@ Die Segmentierung erfolgt hostbasiert und funktioniert in Preview sowie lokal oh
 | `portal-tapem.vercel.app`      | Studio-Portal              | `http://portal.localhost:3000`   | Login & Betreiberrollen |
 | `admin-tapem.vercel.app`       | Admin-Monitoring           | `http://admin.localhost:3000`    | nur Admin-Rolle |
 
-> **Hinweis:** `*.localhost` verweist automatisch auf `127.0.0.1`. Keine Hosts-Datei nötig.
+> **Hinweis:** `*.localhost` verweist automatisch auf `127.0.0.1`. Keine Hosts-Datei nötig. In Preview/Development stehen die Admin-Routen zusätzlich unter `https://tapem.vercel.app/admin/*` zur Verfügung.
 
 ## Entwicklung starten
 
@@ -61,9 +61,12 @@ Weitere Firebase-Platzhalter und serverseitige Variablen sind in `.env.example` 
 | Client | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage-Bucket (für optionale Uploads) |
 | Client | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Messaging Sender ID |
 | Client | `NEXT_PUBLIC_FIREBASE_APP_ID` | App-ID |
-| Server | `FIREBASE_PROJECT_ID` | Projekt-ID für das Admin SDK |
-| Server | `FIREBASE_CLIENT_EMAIL` | Dienstkonto-E-Mail |
-| Server | `FIREBASE_PRIVATE_KEY` | Private Key mit `\n`-Escapes (z. B. `"-----BEGIN...\n...END-----"`) |
+| Client | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optionales Measurement ID für Analytics |
+| Server | `FIREBASE_SERVICE_ACCOUNT` | Base64-kodiertes Service-Account JSON (bevorzugt) |
+| Server | `FIREBASE_PROJECT_ID` | Projekt-ID für lokale Entwicklung (Fallback) |
+| Server | `FIREBASE_CLIENT_EMAIL` | Dienstkonto-E-Mail (Fallback) |
+| Server | `FIREBASE_PRIVATE_KEY` | Private Key mit `\n`-Escapes (Fallback) |
+| Server | `ADMIN_ALLOWLIST` | Kommagetrennte Admin-E-Mails (optional) |
 
 Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht im Browser landen.
 
@@ -77,9 +80,38 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 ### Session-Handling & Endpunkte
 
 1. Admin-Login läuft clientseitig via Firebase Auth (E-Mail/Passwort).
-2. Das ID-Token wird an `POST /api/admin/session` gesendet; der Endpoint setzt ein `__Secure-tapem-admin-session` Cookie (HTTP-only, SameSite=Lax).
-3. `GET /admin/logout` oder `DELETE /api/admin/session` widerrufen die Session und leiten auf die Marketing-Startseite.
+2. Das ID-Token wird an `POST /api/admin/auth/session` gesendet; der Endpoint setzt ein `__Secure-tapem-admin-session` Cookie (HTTP-only, SameSite=Lax).
+3. `GET /admin/logout` oder `DELETE /api/admin/auth/session` widerrufen die Session und leiten auf die Marketing-Startseite.
 4. In Preview/Development bleibt der Dev-Stub (`/api/dev/login`) aktiv; Production akzeptiert ausschließlich echte Sessions.
+5. Optional erlaubt `ADMIN_ALLOWLIST` (kommagetrennte E-Mails) den Zugriff ohne gesetzten Custom Claim.
+
+## Admin Login (Firebase)
+
+### Ablauf
+
+1. Nutzer:in meldet sich in `/admin/login` über Firebase Authentication (E-Mail & Passwort) an.
+2. Nach erfolgreichem Sign-In wird das ID-Token an `POST /api/admin/auth/session` geschickt.
+3. Der Server erstellt ein signiertes, HTTP-only Session-Cookie (`__Secure-tapem-admin-session`).
+4. Geschützte Admin-Routen verifizieren dieses Cookie serverseitig (Firebase Admin SDK + Allowlist) und verweigern Zugriff ohne Admin-Rolle.
+5. `DELETE /api/admin/auth/session` oder der Aufruf von `/admin/logout` löscht die Session und widerruft Refresh-Tokens.
+
+### Akzeptanztests
+
+#### Lokal (`.env.local`)
+
+- `npm install && npm run dev`
+- `/admin` ohne Login → Redirect zu `/admin/login?next=/admin`
+- Anmeldung mit gültigem Firebase-Admin-Account → Cookie wird gesetzt → Redirect `/admin`
+- Reload `/admin` → Zugriff bleibt bestehen
+- Logout (Button oder `DELETE /api/admin/auth/session`) → Cookie entfernt → `/admin` führt wieder zur Login-Seite
+
+#### Vercel Preview/Production
+
+- Prüfen, dass in Vercel `FIREBASE_SERVICE_ACCOUNT` (Base64) sowie alle `NEXT_PUBLIC_FIREBASE_*` Variablen gesetzt sind
+- https://tapem.vercel.app aufrufen → CTA „Für Studios: Login“ → `/admin/login`
+- Login wie oben → `/admin` sichtbar; Seitenquelltext / Header zeigen `noindex`
+- Benutzer ohne Admin-Claim/Allowlist → 403-Seite
+- Dashboard lädt KPIs/Events/Chart ohne Crash (leere Zustände zulässig)
 
 ### Guards & Middleware
 
@@ -116,7 +148,7 @@ npm run dev
 | Portal      | `/login`, `/gym`, `/gym/*`                     | Rollen `owner`, `operator`, `admin` |
 | Admin       | `/admin`                                      | Rolle `admin` |
 
-- Marketing verlinkt ausschließlich interne Abschnitte + CTA „Für Studios: Login“ (absolute Portal-URL).
+- Marketing verlinkt ausschließlich interne Abschnitte + CTA „Für Studios: Login“ (führt auf `/admin/login`).
 - Portal zeigt eine eigene Navigation (Dashboard, Mitglieder, Challenges, Rangliste) – keine Admin-Links.
 - Admin bleibt unverlinkt und wird nur direkt aufgerufen.
 

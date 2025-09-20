@@ -3,7 +3,16 @@ import { headers } from 'next/headers';
 
 import { buildMetadataBase, findSiteByHost, getSiteConfig } from '@/src/config/sites';
 
-const MARKETING_DISALLOW = ['/login', '/gym', '/gym/members', '/gym/challenges', '/gym/leaderboard', '/admin'];
+const MARKETING_DISALLOW = [
+  '/login',
+  '/gym',
+  '/gym/members',
+  '/gym/challenges',
+  '/gym/leaderboard',
+  '/admin',
+  '/admin/login',
+  '/admin/logout',
+];
 
 export default function robots(): MetadataRoute.Robots {
   const headerList = headers();

@@ -15,5 +15,5 @@ export type AuthenticatedUser = {
   displayName?: string | null;
   source: AuthenticatedUserSource;
   claims?: Record<string, unknown>;
-  roleSource?: 'claim' | 'profile';
+  roleSource?: 'claim' | 'profile' | 'allowlist';
 };
