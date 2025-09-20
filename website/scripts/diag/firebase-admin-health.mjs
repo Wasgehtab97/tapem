@@ -58,6 +58,7 @@ async function main() {
           ok: true,
           projectId: summary.projectId,
           mode: summary.mode,
+          usesServiceAccount: summary.usesServiceAccount,
         })
       );
       return;
@@ -68,7 +69,8 @@ async function main() {
       JSON.stringify({
         ok: true,
         projectId: app.options.projectId ?? 'unknown',
-        mode: 'unknown',
+        mode: 'production',
+        usesServiceAccount: true,
       })
     );
   } catch (error) {

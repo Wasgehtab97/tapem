@@ -24,47 +24,51 @@ type StatusState =
 
 type HealthState =
   | { status: 'checking' }
-  | { status: 'ok'; projectId?: string; mode?: 'b64' | 'trio' | 'unknown' }
+  | { status: 'ok'; projectId?: string; mode: 'production' | 'emulator'; usesServiceAccount: boolean }
   | { status: 'error'; message: string };
 
 async function postAdminSession(idToken: string) {
-  const response = await fetch('/api/admin/auth/session', {
+  const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),
   });
 
-  if (!response.ok) {
-    let message = 'Anmeldung fehlgeschlagen.';
-    try {
-      const payload = (await response.json()) as { status?: string; message?: string };
-      const status = payload.status;
-      switch (status) {
-        case 'missing_admin_role':
-          message = 'Dein Konto besitzt keine Admin-Rolle.';
-          break;
-        case 'missing_id_token':
-          message = 'Es fehlt ein gültiges ID-Token.';
-          break;
-        case 'invalid_payload':
-          message = 'Die Anmeldeanfrage war ungültig.';
-          break;
-        case 'invalid-token':
-          message = 'Deine Sitzung ist abgelaufen oder das Token ist ungültig.';
-          break;
-        case 'misconfigured':
-          message = payload.message ?? 'Firebase Admin ist nicht korrekt konfiguriert.';
-          break;
-        default:
-          message = payload.message ?? 'Die Sitzung konnte nicht erstellt werden.';
-          break;
-      }
-    } catch {
-      message = 'Die Sitzung konnte nicht erstellt werden.';
-    }
-
-    throw new Error(message);
+  if (response.status === 204) {
+    return;
   }
+
+  let message = 'Anmeldung fehlgeschlagen.';
+  try {
+    const payload = (await response.json()) as { error?: string; message?: string };
+    switch (payload.error) {
+      case 'missing_admin_role':
+        message = 'Dein Konto besitzt keine Admin-Rolle.';
+        break;
+      case 'missing_id_token':
+        message = 'Es fehlt ein gültiges ID-Token.';
+        break;
+      case 'invalid_payload':
+        message = 'Die Anmeldeanfrage war ungültig.';
+        break;
+      case 'invalid_token':
+        message = 'Deine Sitzung ist abgelaufen oder das Token ist ungültig.';
+        break;
+      case 'misconfigured':
+        message = payload.message ?? 'Firebase Admin ist nicht korrekt konfiguriert.';
+        break;
+      case 'unauthorized':
+        message = 'Die Anmeldung ist fehlgeschlagen.';
+        break;
+      default:
+        message = payload.message ?? message;
+        break;
+    }
+  } catch {
+    message = 'Die Sitzung konnte nicht erstellt werden.';
+  }
+
+  throw new Error(message);
 }
 
 export default function AdminLoginForm() {
@@ -85,7 +89,7 @@ export default function AdminLoginForm() {
 
     async function checkHealth() {
       try {
-        const response = await fetch('/api/_health/firebase-admin', {
+        const response = await fetch('/api/health/firebase-admin', {
           cache: 'no-store',
         });
 
@@ -96,9 +100,15 @@ export default function AdminLoginForm() {
         if (response.ok) {
           const payload = (await response.json()) as {
             projectId?: string;
-            mode?: 'b64' | 'trio' | 'unknown';
+            mode?: 'production' | 'emulator';
+            usesServiceAccount?: boolean;
           };
-          setHealth({ status: 'ok', projectId: payload.projectId, mode: payload.mode });
+          setHealth({
+            status: 'ok',
+            projectId: payload.projectId,
+            mode: payload.mode ?? 'production',
+            usesServiceAccount: payload.usesServiceAccount ?? false,
+          });
           return;
         }
 
@@ -178,6 +188,12 @@ export default function AdminLoginForm() {
       {health.status === 'error' ? (
         <div role="status" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Firebase Admin ist nicht verfügbar: {health.message}
+        </div>
+      ) : health.status === 'ok' ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
+          Verbunden mit Projekt <span className="font-semibold">{health.projectId ?? 'unbekannt'}</span> · Modus{' '}
+          <span className="font-semibold">{health.mode === 'emulator' ? 'Emulator' : 'Production'}</span> · Service Account{' '}
+          {health.usesServiceAccount ? 'aktiv' : 'Application Default'}
         </div>
       ) : null}
       <div className="space-y-2">

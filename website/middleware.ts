@@ -15,10 +15,11 @@ import {
   isPortalProtectedPath,
   safeAfterLoginRoute,
 } from '@/src/lib/routes';
+import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
-const ADMIN_SESSION_API_PATH = '/api/admin/auth/session';
-const ADMIN_HEALTH_API_PATH = '/api/_health/firebase-admin';
+const ADMIN_SESSION_API_PATH = '/api/auth/me';
+const ADMIN_HEALTH_API_PATH = '/api/health/firebase-admin';
 
 function isStaticAsset(pathname: string): boolean {
   return (
@@ -32,6 +33,7 @@ function isStaticAsset(pathname: string): boolean {
 function allowApiRoute(pathname: string): boolean {
   return (
     pathname.startsWith('/api/dev') ||
+    pathname.startsWith('/api/auth') ||
     pathname.startsWith(ADMIN_SESSION_API_PATH) ||
     pathname.startsWith(ADMIN_HEALTH_API_PATH)
   );
@@ -95,8 +97,11 @@ export async function middleware(request: NextRequest) {
   // 2) ADMIN-Bereich
   if (isAdminPath(pathname)) {
     const stage = getDeploymentStage();
-    const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
-    const hasDevAdmin = stage !== 'production' && devRole === 'admin';
+    const previewRolesEnabled = isDevPreviewRoleSwitchesEnabled();
+    const devRole = previewRolesEnabled
+      ? (request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined)
+      : undefined;
+    const hasDevAdmin = previewRolesEnabled && stage !== 'production' && devRole === 'admin';
 
     // Admin-Login
     if (pathname === ADMIN_ROUTES.login.href) {

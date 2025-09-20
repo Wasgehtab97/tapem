@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
 import { getDeploymentStage } from '@/src/config/sites';
+import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
 import {
   ADMIN_ROUTES,
   DEFAULT_AFTER_LOGIN,
@@ -44,6 +45,10 @@ function getNextAfterLoginRoute(): AfterLoginRoute {
 }
 
 export function getDevUserFromCookies(): DevUser | null {
+  if (!isDevPreviewRoleSwitchesEnabled()) {
+    return null;
+  }
+
   const cookieStore = cookies();
   const role = cookieStore.get(ROLE_COOKIE)?.value as Role | undefined;
 
@@ -73,6 +78,7 @@ function mapDevUserToAuthenticated(user: DevUser): AuthenticatedUser {
 
 async function resolveAuthenticatedUser(allowed: Role[]): Promise<AuthenticatedUser | null> {
   const stage = getDeploymentStage();
+  const previewEnabled = isDevPreviewRoleSwitchesEnabled();
 
   const sessionUser = await getAdminUserFromSession();
   if (sessionUser && allowed.includes(sessionUser.role)) {
@@ -80,7 +86,8 @@ async function resolveAuthenticatedUser(allowed: Role[]): Promise<AuthenticatedU
   }
 
   const allowDevFallback =
-    stage !== 'production' || allowed.some((role) => role === 'owner' || role === 'operator');
+    previewEnabled &&
+    (stage !== 'production' || allowed.some((role) => role === 'owner' || role === 'operator'));
 
   if (!allowDevFallback) {
     return null;

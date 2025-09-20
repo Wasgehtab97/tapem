@@ -6,7 +6,7 @@ import type { DecodedIdToken } from 'firebase-admin/auth';
 import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
 import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore } from '@/src/server/firebase/admin';
-export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5; // 5 Tage
+import { ADMIN_SESSION_MAX_AGE_SECONDS } from '@/src/server/auth/cookies';
 
 export class AdminRoleRequiredError extends Error {
   constructor(message: string) {
@@ -22,12 +22,23 @@ type RoleResolution = {
 
 let cachedAdminAllowlist: string[] | null = null;
 
+function readAllowlistEnv(): string | undefined {
+  const keys = ['ADMIN_ALLOWED_EMAILS', 'ADMIN_ALLOWLIST'] as const;
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
 function getAdminAllowlist(): string[] {
   if (cachedAdminAllowlist) {
     return cachedAdminAllowlist;
   }
 
-  const raw = process.env.ADMIN_ALLOWLIST;
+  const raw = readAllowlistEnv();
   if (!raw) {
     cachedAdminAllowlist = [];
     return cachedAdminAllowlist;
@@ -56,11 +67,36 @@ function isEmailAllowlisted(email: string | null | undefined): boolean {
 
 function extractRoleFromToken(token: DecodedIdToken): Role | null {
   const claim = (token.role ?? (token as Record<string, unknown>).role) as string | undefined;
-  if (claim === 'admin') {
-    return 'admin';
+  if (claim === 'admin' || claim === 'owner') {
+    return claim as Role;
   }
 
   return null;
+}
+
+async function fetchRoleFromProfile(uid: string): Promise<Role | null> {
+  try {
+    const firestore = getFirebaseAdminFirestore();
+    const userSnap = await firestore.collection('users').doc(uid).get();
+    const userData = userSnap.data() as { role?: string } | undefined;
+    const role = typeof userData?.role === 'string' ? (userData.role as Role) : null;
+    if (role === 'admin' || role === 'owner') {
+      return role;
+    }
+  } catch (error) {
+    console.error('[auth] failed to resolve role from profile', error);
+  }
+
+  return null;
+}
+
+export async function isAdminUser(uid: string, email?: string | null): Promise<boolean> {
+  if (isEmailAllowlisted(email ?? undefined)) {
+    return true;
+  }
+
+  const role = await fetchRoleFromProfile(uid);
+  return role === 'admin' || role === 'owner';
 }
 
 async function resolveRole(token: DecodedIdToken): Promise<RoleResolution> {
@@ -73,16 +109,9 @@ async function resolveRole(token: DecodedIdToken): Promise<RoleResolution> {
     return { role: 'admin', source: 'allowlist' };
   }
 
-  const uid = token.uid;
-  try {
-    const firestore = getFirebaseAdminFirestore();
-    const userSnap = await firestore.collection('users').doc(uid).get();
-    const userData = userSnap.data() as { role?: string } | undefined;
-    if (userData?.role === 'admin') {
-      return { role: 'admin', source: 'profile' };
-    }
-  } catch (error) {
-    console.error('[auth] failed to resolve role from profile', error);
+  const profileRole = await fetchRoleFromProfile(token.uid);
+  if (profileRole) {
+    return { role: profileRole, source: 'profile' };
   }
 
   return { role: null, source: 'unknown' };
@@ -121,7 +150,7 @@ export async function createAdminSession(idToken: string): Promise<{
   const decoded = await auth.verifyIdToken(idToken, true);
   const { role, source } = await resolveRole(decoded);
 
-  if (role !== 'admin') {
+  if (role !== 'admin' && role !== 'owner') {
     throw new AdminRoleRequiredError('Der angemeldete Nutzer besitzt keine Admin-Rolle.');
   }
 
@@ -143,7 +172,7 @@ export async function verifyAdminSessionCookie(cookieValue: string): Promise<Aut
     const auth = getFirebaseAdminAuth();
     const decoded = await auth.verifySessionCookie(cookieValue, true);
     const { role, source } = await resolveRole(decoded);
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'owner') {
       return null;
     }
 
@@ -177,3 +206,4 @@ export async function revokeAdminSessionCookie(cookieValue: string | null | unde
     console.error('[auth] unable to revoke admin session', error);
   }
 }
+
