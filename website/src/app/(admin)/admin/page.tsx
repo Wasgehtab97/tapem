@@ -101,7 +101,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  const { user } = await requireRole(['admin'], { failure: 'not-found' });
+  const { user } = await requireRole(['admin', 'owner'], { failure: 'not-found', loginSite: 'admin' });
   const dashboard = await fetchAdminDashboardData();
 
   const metricHelpers: Record<string, string> = {
@@ -127,6 +127,28 @@ export default async function AdminPage() {
         {dashboard.metrics.error ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {dashboard.metrics.error}
+          </div>
+        ) : null}
+        {dashboard.metrics.warnings.length > 0 ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            <p className="font-semibold">Hinweis:</p>
+            <ul className="mt-1 space-y-1">
+              {dashboard.metrics.warnings.map((warning) => (
+                <li key={warning.metricId}>
+                  {warning.message}{' '}
+                  {warning.indexUrl ? (
+                    <a
+                      href={warning.indexUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Index öffnen
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

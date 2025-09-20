@@ -1,7 +1,3 @@
-const isProductionEnv = process.env.NODE_ENV === 'production';
-
-export const ADMIN_SESSION_COOKIE = isProductionEnv
-  ? '__Secure-tapem-admin-session'
-  : 'tapem-admin-session';
+export { ADMIN_SESSION_COOKIE_NAME as ADMIN_SESSION_COOKIE } from '@/src/server/auth/cookies';
 
 export const DEV_ROLE_COOKIE = 'tapem_role';

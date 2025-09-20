@@ -6,6 +6,7 @@ import { getDeploymentStage } from '@/src/config/sites';
 import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
 import { ADMIN_ROUTES, type AdminRouteDefinition } from '@/src/lib/routes';
+import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
 import { getAdminUserFromSession } from '@/src/server/auth/session';
 
 type NavigationItem = {
@@ -56,12 +57,14 @@ function AdminHeader({
   user,
   devRole,
   isProduction,
+  previewEnabled,
 }: {
   user: AuthenticatedUser | null;
   devRole: Role | null;
   isProduction: boolean;
+  previewEnabled: boolean;
 }) {
-  const showDevToolbar = !isProduction;
+  const showDevToolbar = !isProduction && previewEnabled;
 
   return (
     <header className="border-b border-subtle bg-surface">
@@ -102,12 +105,20 @@ function AdminHeader({
 export default async function AdminShell({ children }: { children: ReactNode }) {
   const stage = getDeploymentStage();
   const isProduction = stage === 'production';
+  const previewEnabled = isDevPreviewRoleSwitchesEnabled();
   const sessionUser = await getAdminUserFromSession();
-  const devUser = isProduction ? null : getDevUserFromCookies();
+  const devUser = !isProduction && previewEnabled ? getDevUserFromCookies() : null;
   const devRole: Role | null = devUser?.role ?? null;
   const hasAdminAccess = Boolean(sessionUser) || devRole === 'admin';
 
-  const header = <AdminHeader user={sessionUser} devRole={devRole} isProduction={isProduction} />;
+  const header = (
+    <AdminHeader
+      user={sessionUser}
+      devRole={devRole}
+      isProduction={isProduction}
+      previewEnabled={previewEnabled}
+    />
+  );
 
   if (!hasAdminAccess) {
     return (

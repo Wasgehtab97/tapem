@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:emulator": "USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:admin": "node scripts/diag/firebase-admin-health.mjs"
+    "check:admin": "node scripts/diag/firebase-admin-health.mjs",
+    "health:admin": "node scripts/diag/http-admin-health.mjs"
   },
   "dependencies": {
     "firebase": "11.7.1",

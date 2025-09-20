@@ -1,9 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
 import AdminShell from '@/src/components/layout/admin-shell';
-import { buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
+import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = headerList.get('host');
   return buildSiteMetadata(getSiteConfig('admin'), host);
 }
+
+export const viewport: Viewport = {
+  themeColor: SITE_THEME_COLORS,
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return <AdminShell>{children}</AdminShell>;

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { findSiteByHost, normalizeHost } from '@/src/config/sites';
 import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
+import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
 import type { Role } from '@/src/lib/auth/types';
 
 const ROLE_COOKIE = DEV_ROLE_COOKIE;
@@ -39,7 +40,7 @@ function parseRole(value: unknown): Role | undefined {
 }
 
 export async function POST(request: Request) {
-  if (process.env.VERCEL_ENV === 'production') {
+  if (process.env.VERCEL_ENV === 'production' || !isDevPreviewRoleSwitchesEnabled()) {
     return new Response('dev login disabled in production', { status: 403 });
   }
 

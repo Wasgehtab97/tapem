@@ -1,6 +1,20 @@
-import 'server-only';
-
 import { getDeploymentStage, getSiteConfig, normalizeHost } from '@/src/config/sites';
+
+export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 Tage
+
+export const ADMIN_SESSION_COOKIE_NAME =
+  process.env.NODE_ENV === 'production' ? '__Secure-tapem-admin-session' : 'tapem-admin-session';
+
+type CookieInit = {
+  name: string;
+  value: string;
+  httpOnly: boolean;
+  sameSite: 'lax' | 'strict' | 'none';
+  secure: boolean;
+  maxAge: number;
+  path: string;
+  domain?: string;
+};
 
 function isLocalHost(hostname: string): boolean {
   return hostname.includes('localhost') || hostname.startsWith('127.');
@@ -52,4 +66,23 @@ export function resolveCookieDomain(request: Request): string | undefined {
 
 export function resolveCookieSecurity(): boolean {
   return process.env.NODE_ENV === 'production';
+}
+
+export function buildAdminSessionCookie(
+  request: Request,
+  value: string,
+  maxAge: number = ADMIN_SESSION_MAX_AGE_SECONDS
+): CookieInit {
+  const secure = resolveCookieSecurity();
+  const domain = resolveCookieDomain(request);
+  return {
+    name: ADMIN_SESSION_COOKIE_NAME,
+    value,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure,
+    maxAge,
+    path: '/',
+    domain,
+  };
 }

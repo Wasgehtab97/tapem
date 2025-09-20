@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 
 import AdminLoginForm from '@/src/components/admin/admin-login-form';
-import { getDeploymentStage } from '@/src/config/sites';
+import { SITE_THEME_COLORS, getDeploymentStage } from '@/src/config/sites';
 import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import { ADMIN_ROUTES } from '@/src/lib/routes';
 import { getAdminUserFromSession } from '@/src/server/auth/session';
@@ -14,6 +14,10 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Tap'em Admin – Anmeldung",
   robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: SITE_THEME_COLORS,
 };
 
 export default async function AdminLoginPage() {

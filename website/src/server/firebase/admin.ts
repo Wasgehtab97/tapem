@@ -1,7 +1,7 @@
 // src/server/firebase/admin.ts
 import 'server-only';
 
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { applicationDefault, cert, getApps, initializeApp, type App, type Credential } from 'firebase-admin/app';
 import { getAuth as _getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore as _getFirestore, type Firestore } from 'firebase-admin/firestore';
 
@@ -15,18 +15,32 @@ export class FirebaseAdminConfigError extends Error {
   }
 }
 
-export type FirebaseAdminConfigSource = 'b64' | 'trio';
+export type FirebaseAdminMode = 'production' | 'emulator';
+
+export type FirebaseAdminConfigSummary = {
+  projectId: string;
+  mode: FirebaseAdminMode;
+  usesServiceAccount: boolean;
+};
+
+type EmulatorConfig = {
+  firestoreHost: string;
+  authHost: string;
+};
 
 type ServiceAccountConfig = {
   projectId: string;
   clientEmail: string;
   privateKey: string;
-  source: FirebaseAdminConfigSource;
 };
 
 type FirebaseAdminGlobalState = {
   app: App | null;
-  config: ServiceAccountConfig | null;
+  summary: FirebaseAdminConfigSummary | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
+  emulatorConfigured: boolean;
+  emulatorConfig: EmulatorConfig | null;
 };
 
 type GlobalWithFirebaseAdmin = typeof globalThis & {
@@ -34,23 +48,17 @@ type GlobalWithFirebaseAdmin = typeof globalThis & {
 };
 
 const globalWithFirebaseAdmin = globalThis as GlobalWithFirebaseAdmin;
-const globalState =
-  globalWithFirebaseAdmin[GLOBAL_STATE_KEY] ?? ({ app: null, config: null } satisfies FirebaseAdminGlobalState);
+const defaultState: FirebaseAdminGlobalState = {
+  app: null,
+  summary: null,
+  auth: null,
+  firestore: null,
+  emulatorConfigured: false,
+  emulatorConfig: null,
+};
 
-globalWithFirebaseAdmin[GLOBAL_STATE_KEY] = globalState;
-
-let cachedApp: App | null = globalState.app;
-let cachedConfig: ServiceAccountConfig | null = globalState.config;
-
-function setCachedApp(app: App) {
-  cachedApp = app;
-  globalState.app = app;
-}
-
-function setCachedConfig(config: ServiceAccountConfig) {
-  cachedConfig = config;
-  globalState.config = config;
-}
+const state = (globalWithFirebaseAdmin[GLOBAL_STATE_KEY] ?? defaultState) as FirebaseAdminGlobalState;
+globalWithFirebaseAdmin[GLOBAL_STATE_KEY] = state;
 
 function logDebug(...args: unknown[]) {
   if (process.env.TAPEM_DEBUG && process.env.TAPEM_DEBUG !== '0') {
@@ -60,7 +68,21 @@ function logDebug(...args: unknown[]) {
 }
 
 function normalizePrivateKey(value: string): string {
-  return value.replace(/\\n/g, '\n').replace(/\r?\n/g, '\n').trim();
+  const trimmed = value.trim();
+  const unquoted =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+  return unquoted.replace(/\\n/g, '\n');
+}
+
+function parseBoolean(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return ['1', 'true', 'yes', 'on'].includes(normalized);
 }
 
 function parseB64ServiceAccount(encoded: string): ServiceAccountConfig {
@@ -82,7 +104,7 @@ function parseB64ServiceAccount(encoded: string): ServiceAccountConfig {
       );
     }
 
-    return { projectId, clientEmail, privateKey, source: 'b64' };
+    return { projectId, clientEmail, privateKey };
   } catch (error) {
     if (error instanceof FirebaseAdminConfigError) {
       throw error;
@@ -93,15 +115,10 @@ function parseB64ServiceAccount(encoded: string): ServiceAccountConfig {
   }
 }
 
-function readServiceAccountConfig(): ServiceAccountConfig {
-  if (cachedConfig) {
-    return cachedConfig;
-  }
-
+function readServiceAccountConfig(): ServiceAccountConfig | null {
   const encoded = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
   if (encoded) {
     const config = parseB64ServiceAccount(encoded);
-    setCachedConfig(config);
     logDebug('Service Account via Base64 geladen (Projekt:', config.projectId, ')');
     return config;
   }
@@ -115,66 +132,175 @@ function readServiceAccountConfig(): ServiceAccountConfig {
       projectId,
       clientEmail,
       privateKey: normalizePrivateKey(privateKeyRaw),
-      source: 'trio',
     };
-    setCachedConfig(config);
     logDebug('Service Account via Trio geladen (Projekt:', config.projectId, ')');
     return config;
   }
 
-  throw new FirebaseAdminConfigError(
-    'Firebase Admin SDK nicht konfiguriert. Setze FIREBASE_SERVICE_ACCOUNT (Base64) ODER FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
-  );
+  return null;
+}
+
+function detectProjectIdCandidate(): string | null {
+  const candidates = [
+    process.env.FIREBASE_PROJECT_ID,
+    process.env.GCLOUD_PROJECT,
+    process.env.GOOGLE_CLOUD_PROJECT,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  const firebaseConfig = process.env.FIREBASE_CONFIG;
+  if (firebaseConfig) {
+    try {
+      const parsed = JSON.parse(firebaseConfig) as { projectId?: string };
+      if (parsed.projectId && parsed.projectId.trim().length > 0) {
+        return parsed.projectId.trim();
+      }
+    } catch {
+      // ignore malformed FIREBASE_CONFIG values
+    }
+  }
+
+  return null;
+}
+
+function resolveCredential(): { credential: Credential; projectId: string; usesServiceAccount: boolean } {
+  const serviceAccount = readServiceAccountConfig();
+  if (serviceAccount) {
+    const { projectId, clientEmail, privateKey } = serviceAccount;
+    return {
+      credential: cert({ projectId, clientEmail, privateKey }),
+      projectId,
+      usesServiceAccount: true,
+    };
+  }
+
+  const credential = applicationDefault();
+  const projectId = detectProjectIdCandidate();
+  if (!projectId) {
+    throw new FirebaseAdminConfigError(
+      'FIREBASE_PROJECT_ID oder eine gültige Google Application Default Credentials Konfiguration wird benötigt.'
+    );
+  }
+
+  logDebug('Application Default Credentials verwendet (Projekt:', projectId, ')');
+  return { credential, projectId, usesServiceAccount: false };
+}
+
+function resolveEmulatorConfig(): EmulatorConfig | null {
+  if (!parseBoolean(process.env.USE_FIREBASE_EMULATOR)) {
+    return null;
+  }
+
+  const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST?.trim();
+  const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST?.trim();
+
+  if (!firestoreHost || !authHost) {
+    throw new FirebaseAdminConfigError(
+      'USE_FIREBASE_EMULATOR=true erfordert FIRESTORE_EMULATOR_HOST und FIREBASE_AUTH_EMULATOR_HOST.'
+    );
+  }
+
+  return { firestoreHost, authHost };
 }
 
 function ensureAdminApp(): App {
-  if (cachedApp) {
-    return cachedApp;
+  if (state.app) {
+    return state.app;
   }
 
   const existing = getApps().find((app) => app.name === ADMIN_APP_NAME);
   if (existing) {
-    setCachedApp(existing);
-    if (!cachedConfig) {
-      try {
-        const config = readServiceAccountConfig();
-        setCachedConfig(config);
-      } catch (error) {
-        logDebug('Admin App wiederverwendet, aber Konfiguration konnte nicht erneut gelesen werden:', error);
-      }
+    state.app = existing;
+    if (!state.summary) {
+      const projectId = existing.options.projectId ?? detectProjectIdCandidate() ?? 'unknown';
+      const emulatorConfig = resolveEmulatorConfig();
+      state.emulatorConfig = emulatorConfig;
+      state.summary = {
+        projectId,
+        mode: emulatorConfig ? 'emulator' : 'production',
+        usesServiceAccount: Boolean(readServiceAccountConfig()),
+      };
     }
     return existing;
   }
 
-  const { projectId, clientEmail, privateKey } = readServiceAccountConfig();
+  const { credential, projectId, usesServiceAccount } = resolveCredential();
+  const emulatorConfig = resolveEmulatorConfig();
 
   const app = initializeApp(
     {
-      credential: cert({ projectId, clientEmail, privateKey }),
+      credential,
+      projectId,
     },
     ADMIN_APP_NAME
   );
 
-  setCachedApp(app);
+  state.app = app;
+  state.summary = {
+    projectId,
+    mode: emulatorConfig ? 'emulator' : 'production',
+    usesServiceAccount,
+  };
+  state.emulatorConfig = emulatorConfig;
+
   logDebug('Admin SDK initialisiert als', ADMIN_APP_NAME, '(Projekt:', projectId, ')');
   return app;
 }
 
+function ensureServices(): { app: App; auth: Auth; firestore: Firestore } {
+  const app = ensureAdminApp();
+
+  if (!state.auth) {
+    state.auth = _getAuth(app);
+  }
+
+  if (!state.firestore) {
+    state.firestore = _getFirestore(app);
+  }
+
+  const emulatorConfig = state.emulatorConfig;
+  if (emulatorConfig && !state.emulatorConfigured && state.auth && state.firestore) {
+    logDebug('Verbinde Firebase Admin SDK mit Emulatoren', emulatorConfig);
+    state.firestore.settings({ host: emulatorConfig.firestoreHost, ssl: false });
+    const authHost = emulatorConfig.authHost.startsWith('http')
+      ? emulatorConfig.authHost
+      : `http://${emulatorConfig.authHost}`;
+    state.auth.useEmulator(authHost);
+    state.emulatorConfigured = true;
+  }
+
+  if (!state.summary) {
+    const projectId = app.options.projectId ?? detectProjectIdCandidate() ?? 'unknown';
+    state.summary = {
+      projectId,
+      mode: emulatorConfig ? 'emulator' : 'production',
+      usesServiceAccount: Boolean(readServiceAccountConfig()),
+    };
+  }
+
+  return { app, auth: state.auth!, firestore: state.firestore! };
+}
+
 export function getFirebaseAdminApp(): App {
-  return ensureAdminApp();
+  return ensureServices().app;
 }
 
 export function getFirebaseAdminAuth(): Auth {
-  return _getAuth(ensureAdminApp());
+  return ensureServices().auth;
 }
 
 export function getFirebaseAdminFirestore(): Firestore {
-  return _getFirestore(ensureAdminApp());
+  return ensureServices().firestore;
 }
 
 export function assertFirebaseAdminReady(): void {
   try {
-    ensureAdminApp();
+    ensureServices();
   } catch (error) {
     throw error instanceof Error
       ? error
@@ -182,11 +308,9 @@ export function assertFirebaseAdminReady(): void {
   }
 }
 
-export function getFirebaseAdminConfigSummary():
-  | { projectId: string; mode: FirebaseAdminConfigSource }
-  | null {
-  if (cachedConfig) {
-    return { projectId: cachedConfig.projectId, mode: cachedConfig.source };
+export function getFirebaseAdminConfigSummary(): FirebaseAdminConfigSummary | null {
+  if (state.summary) {
+    return state.summary;
   }
   return null;
 }

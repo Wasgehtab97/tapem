@@ -25,11 +25,18 @@ export type AdminActivityPoint = {
   totalCheckIns: number;
 };
 
+export type AdminDashboardWarning = {
+  metricId: string;
+  message: string;
+  indexUrl?: string;
+};
+
 export type AdminDashboardData = {
   metrics: {
     items: AdminKpiMetric[];
     generatedAt: Date;
     error?: string;
+    warnings: AdminDashboardWarning[];
   };
   events: {
     items: AdminEventLogEntry[];
@@ -42,12 +49,84 @@ export type AdminDashboardData = {
   };
 };
 
-async function safeCount<T>(factory: () => Promise<T>): Promise<T | null> {
-  try {
-    return await factory();
-  } catch (error) {
-    console.error('[admin-dashboard] aggregate failed', error);
+function extractIndexUrl(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : (error as { message?: string })?.message;
+  if (!message) {
     return null;
+  }
+
+  const match = message.match(/https:\/\/console\.firebase\.google\.com\/[\w\-/.?=&%]+/);
+  return match ? match[0] : null;
+}
+
+function isFailedPrecondition(error: unknown): boolean {
+  const code = (error as { code?: unknown })?.code;
+  if (typeof code === 'number') {
+    return code === 9;
+  }
+
+  if (typeof code === 'string') {
+    return code.toLowerCase() === 'failed-precondition';
+  }
+
+  const details = (error as { details?: unknown })?.details;
+  if (typeof details === 'string' && details.toLowerCase().includes('failed_precondition')) {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message : null;
+  return Boolean(message && message.toUpperCase().includes('FAILED_PRECONDITION'));
+}
+
+type MetricComputation = {
+  id: string;
+  label: string;
+  run: () => Promise<number>;
+  fallback?: {
+    run: () => Promise<number>;
+    hint?: string;
+  };
+};
+
+type MetricComputationResult = {
+  value: number | null;
+  warning?: AdminDashboardWarning;
+};
+
+async function computeMetric({ id, label, run, fallback }: MetricComputation): Promise<MetricComputationResult> {
+  try {
+    const value = await run();
+    return { value };
+  } catch (error) {
+    const indexUrl = extractIndexUrl(error);
+    if (isFailedPrecondition(error) && fallback) {
+      console.warn(
+        `[admin-dashboard] Firestore Index für Kennzahl "${id}" erforderlich${indexUrl ? `: ${indexUrl}` : ''}`
+      );
+      try {
+        const fallbackValue = await fallback.run();
+        const messageParts = [`Firestore Index für "${label}" wird erstellt.`];
+        if (fallback.hint) {
+          messageParts.push(fallback.hint);
+        }
+        if (indexUrl) {
+          messageParts.push(`Index-Link: ${indexUrl}`);
+        }
+        return {
+          value: fallbackValue,
+          warning: {
+            metricId: id,
+            message: messageParts.join(' '),
+            indexUrl,
+          },
+        };
+      } catch (fallbackError) {
+        console.error('[admin-dashboard] fallback metric computation failed', fallbackError);
+      }
+    }
+
+    console.error(`[admin-dashboard] metric computation failed for ${id}`, error);
+    return { value: null };
   }
 }
 
@@ -63,6 +142,7 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const twoWeeksAgo = new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000);
 
+  const metricsWarnings: AdminDashboardWarning[] = [];
   const [
     totalGyms,
     totalUsers,
@@ -71,72 +151,137 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
     activeChallenges,
     dailyActiveUserCount,
   ] = await Promise.all([
-    safeCount(async () => {
-      const snapshot = await firestore.collection('gyms').count().get();
-      return snapshot.data().count ?? 0;
+    computeMetric({
+      id: 'gyms',
+      label: 'Studios im Verbund',
+      run: async () => {
+        const snapshot = await firestore.collection('gyms').count().get();
+        return snapshot.data().count ?? 0;
+      },
     }),
-    safeCount(async () => {
-      const snapshot = await firestore.collection('users').count().get();
-      return snapshot.data().count ?? 0;
+    computeMetric({
+      id: 'members',
+      label: 'Registrierte Mitglieder',
+      run: async () => {
+        const snapshot = await firestore.collection('users').count().get();
+        return snapshot.data().count ?? 0;
+      },
     }),
-    safeCount(async () => {
-      const snapshot = await firestore
-        .collectionGroup('logs')
-        .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
-        .count()
-        .get();
-      return snapshot.data().count ?? 0;
+    computeMetric({
+      id: 'checkins24h',
+      label: 'Check-ins (24h)',
+      run: async () => {
+        const snapshot = await firestore
+          .collectionGroup('logs')
+          .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
+          .count()
+          .get();
+        return snapshot.data().count ?? 0;
+      },
+      fallback: {
+        run: async () => {
+          const snapshot = await firestore
+            .collectionGroup('logs')
+            .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
+            .select('timestamp')
+            .limit(5000)
+            .get();
+          return snapshot.size;
+        },
+        hint: 'Temporäre Zählung (max. 5.000 Logs) aktiv.',
+      },
     }),
-    safeCount(async () => {
-      const snapshot = await firestore
-        .collectionGroup('logs')
-        .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
-        .count()
-        .get();
-      return snapshot.data().count ?? 0;
+    computeMetric({
+      id: 'checkins30d',
+      label: 'Check-ins (30 Tage)',
+      run: async () => {
+        const snapshot = await firestore
+          .collectionGroup('logs')
+          .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
+          .count()
+          .get();
+        return snapshot.data().count ?? 0;
+      },
+      fallback: {
+        run: async () => {
+          const snapshot = await firestore
+            .collectionGroup('logs')
+            .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
+            .select('timestamp')
+            .limit(10000)
+            .get();
+          return snapshot.size;
+        },
+        hint: 'Temporäre Zählung (max. 10.000 Logs) aktiv.',
+      },
     }),
-    safeCount(async () => {
-      const snapshot = await firestore
-        .collection('challenges')
-        .where('end', '>=', nowTimestamp)
-        .count()
-        .get();
-      return snapshot.data().count ?? 0;
+    computeMetric({
+      id: 'activeChallenges',
+      label: 'Aktive Challenges',
+      run: async () => {
+        const snapshot = await firestore
+          .collection('challenges')
+          .where('end', '>=', nowTimestamp)
+          .count()
+          .get();
+        return snapshot.data().count ?? 0;
+      },
+      fallback: {
+        run: async () => {
+          const snapshot = await firestore
+            .collection('challenges')
+            .where('end', '>=', nowTimestamp)
+            .limit(500)
+            .get();
+          return snapshot.size;
+        },
+        hint: 'Temporäre Zählung (max. 500 Dokumente) aktiv.',
+      },
     }),
-    safeCount(async () => {
-      const snapshot = await firestore
-        .collectionGroup('logs')
-        .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
-        .select('userId')
-        .limit(5000)
-        .get();
-      const users = new Set<string>();
-      snapshot.docs.forEach((doc) => {
-        const userId = doc.get('userId');
-        if (typeof userId === 'string' && userId.length > 0) {
-          users.add(userId);
-        }
-      });
-      return users.size;
+    computeMetric({
+      id: 'dau',
+      label: 'Tägliche aktive Nutzer:innen',
+      run: async () => {
+        const snapshot = await firestore
+          .collectionGroup('logs')
+          .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
+          .select('userId')
+          .limit(5000)
+          .get();
+        const users = new Set<string>();
+        snapshot.docs.forEach((doc) => {
+          const userId = doc.get('userId');
+          if (typeof userId === 'string' && userId.length > 0) {
+            users.add(userId);
+          }
+        });
+        return users.size;
+      },
     }),
   ]);
 
+  [totalGyms, totalUsers, checkIns24h, checkIns30d, activeChallenges, dailyActiveUserCount].forEach((result) => {
+    if (result.warning) {
+      metricsWarnings.push(result.warning);
+    }
+  });
+
   const metrics: AdminKpiMetric[] = [
-    { id: 'gyms', label: 'Studios im Verbund', value: totalGyms ?? 0 },
-    { id: 'members', label: 'Registrierte Mitglieder', value: totalUsers ?? 0 },
-    { id: 'checkins24h', label: 'Check-ins (24h)', value: checkIns24h ?? 0 },
-    { id: 'checkins30d', label: 'Check-ins (30 Tage)', value: checkIns30d ?? 0 },
-    { id: 'activeChallenges', label: 'Aktive Challenges', value: activeChallenges ?? 0 },
-    { id: 'dau', label: 'Tägliche aktive Nutzer:innen', value: dailyActiveUserCount ?? 0 },
+    { id: 'gyms', label: 'Studios im Verbund', value: totalGyms.value ?? 0 },
+    { id: 'members', label: 'Registrierte Mitglieder', value: totalUsers.value ?? 0 },
+    { id: 'checkins24h', label: 'Check-ins (24h)', value: checkIns24h.value ?? 0 },
+    { id: 'checkins30d', label: 'Check-ins (30 Tage)', value: checkIns30d.value ?? 0 },
+    { id: 'activeChallenges', label: 'Aktive Challenges', value: activeChallenges.value ?? 0 },
+    { id: 'dau', label: 'Tägliche aktive Nutzer:innen', value: dailyActiveUserCount.value ?? 0 },
   ];
 
   const metricError =
-    totalGyms === null ||
-    totalUsers === null ||
-    checkIns24h === null ||
-    checkIns30d === null ||
-    activeChallenges === null ||
-    dailyActiveUserCount === null
+    totalGyms.value === null ||
+    totalUsers.value === null ||
+    checkIns24h.value === null ||
+    checkIns30d.value === null ||
+    activeChallenges.value === null ||
+    dailyActiveUserCount.value === null
       ? 'Mindestens eine Kennzahl konnte nicht geladen werden.'
       : undefined;
 
@@ -230,6 +375,7 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       items: metrics,
       generatedAt: now,
       error: metricError,
+      warnings: metricsWarnings,
     },
     events: {
       items: eventEntries,

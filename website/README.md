@@ -30,6 +30,8 @@ npm run dev
 - Portal: `http://portal.localhost:3000`
 - Admin: `http://admin.localhost:3000`
 
+Für lokale Tests mit Firebase Emulatoren setzt `npm run dev:emulator` automatisch die benötigten Umgebungsvariablen und startet den Dev-Server.
+
 Für Produktions-Builds:
 
 ```bash
@@ -66,7 +68,10 @@ Weitere Firebase-Platzhalter und serverseitige Variablen sind in `.env.example` 
 | Server | `FIREBASE_PROJECT_ID` | Projekt-ID für lokale Entwicklung (Fallback) |
 | Server | `FIREBASE_CLIENT_EMAIL` | Dienstkonto-E-Mail (Fallback) |
 | Server | `FIREBASE_PRIVATE_KEY` | Private Key mit `\n`-Escapes (Fallback) |
-| Server | `ADMIN_ALLOWLIST` | Kommagetrennte Admin-E-Mails (optional) |
+| Server | `ADMIN_ALLOWED_EMAILS` | Kommagetrennte Admin-E-Mails (optional) |
+| Server | `DEV_PREVIEW_ROLE_SWITCHES` | Aktiviert Dev-Rollenschalter (`true`/`false`) |
+
+Setze `DEV_PREVIEW_ROLE_SWITCHES=true`, wenn die lokalen Dev-Rollenschalter genutzt werden sollen. In Produktion bleibt die Einstellung deaktiviert.
 
 `.env.local` liegt im Ordner `website/` (neben `package.json`). Next.js liest die Datei ausschließlich beim Start – nach Änderungen den Dev-Server neu starten.
 
@@ -102,21 +107,21 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 ### Session-Handling & Endpunkte
 
 1. Admin-Login läuft clientseitig via Firebase Auth (E-Mail/Passwort).
-2. Das ID-Token wird an `POST /api/admin/auth/session` gesendet; der Endpoint setzt ein HTTP-only Session-Cookie – lokal `tapem-admin-session` (secure:false), in Preview/Production `__Secure-tapem-admin-session` (secure:true). In beiden Fällen wird `SameSite='strict'` verwendet.
-3. `GET /admin/logout` oder `DELETE /api/admin/auth/session` widerrufen die Session und leiten auf die Marketing-Startseite.
+2. Das ID-Token wird an `POST /api/auth/login` gesendet; der Endpoint setzt ein HTTP-only Session-Cookie – lokal `tapem-admin-session` (secure:false), in Preview/Production `__Secure-tapem-admin-session` (secure:true). In beiden Fällen wird `SameSite='lax'` verwendet.
+3. `GET /admin/logout` oder `POST /api/auth/logout` widerrufen die Session und leiten auf die Marketing-Startseite.
 4. In Preview/Development bleibt der Dev-Stub (`/api/dev/login`) aktiv; Production akzeptiert ausschließlich echte Sessions.
-5. Optional erlaubt `ADMIN_ALLOWLIST` (kommagetrennte E-Mails) den Zugriff ohne gesetzten Custom Claim.
-6. Health-Check: `GET /api/_health/firebase-admin` liefert `{ ok: true, projectId, using }` bei gültiger Konfiguration.
+5. Optional erlaubt `ADMIN_ALLOWED_EMAILS` (kommagetrennte E-Mails) den Zugriff ohne gesetzten Custom Claim.
+6. Health-Check: `GET /api/health/firebase-admin` liefert `{ ok: true, projectId, mode, usesServiceAccount }` bei gültiger Konfiguration.
 
 ## Admin Login (Firebase)
 
 ### Ablauf
 
 1. Nutzer:in meldet sich in `/admin/login` über Firebase Authentication (E-Mail & Passwort) an.
-2. Nach erfolgreichem Sign-In wird das ID-Token an `POST /api/admin/auth/session` geschickt.
-3. Der Server erstellt ein signiertes, HTTP-only Session-Cookie (`tapem-admin-session` lokal bzw. `__Secure-tapem-admin-session` in Preview/Production) mit `SameSite=strict`.
+2. Nach erfolgreichem Sign-In wird das ID-Token an `POST /api/auth/login` geschickt.
+3. Der Server erstellt ein signiertes, HTTP-only Session-Cookie (`tapem-admin-session` lokal bzw. `__Secure-tapem-admin-session` in Preview/Production) mit `SameSite=lax`.
 4. Geschützte Admin-Routen verifizieren dieses Cookie serverseitig (Firebase Admin SDK + Allowlist) und verweigern Zugriff ohne Admin-Rolle.
-5. `DELETE /api/admin/auth/session` oder der Aufruf von `/admin/logout` löscht die Session und widerruft Refresh-Tokens.
+5. `POST /api/auth/logout` oder der Aufruf von `/admin/logout` löscht die Session und widerruft Refresh-Tokens.
 
 ### Akzeptanztests
 
@@ -126,7 +131,7 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 - `/admin` ohne Login → Redirect zu `/admin/login?next=/admin`
 - Anmeldung mit gültigem Firebase-Admin-Account → Cookie wird gesetzt → Redirect `/admin`
 - Reload `/admin` → Zugriff bleibt bestehen
-- Logout (Button oder `DELETE /api/admin/auth/session`) → Cookie entfernt → `/admin` führt wieder zur Login-Seite
+- Logout (Button oder `POST /api/auth/logout`) → Cookie entfernt → `/admin` führt wieder zur Login-Seite
 
 #### Vercel Preview/Production
 
@@ -139,7 +144,8 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 ### Diagnose & Health-Checks
 
 - `npm run check:admin` lädt `.env.local`, prüft die Admin-Initialisierung und gibt eine JSON-Zusammenfassung auf der Konsole aus.
-- Während `npm run dev` aktiv ist, liefert `curl http://localhost:3000/api/_health/firebase-admin` ein `{ "ok": true, ... }`, sobald das Admin SDK korrekt konfiguriert ist.
+- `npm run health:admin` ruft `http://localhost:3000/api/health/firebase-admin` auf und formatiert die Antwort.
+- Während `npm run dev` aktiv ist, liefert `curl http://localhost:3000/api/health/firebase-admin` ein `{ "ok": true, ... }`, sobald das Admin SDK korrekt konfiguriert ist.
 - Für detailliertere Logs `TAPEM_DEBUG=1` in `.env.local` setzen.
 
 ### Guards & Middleware
@@ -153,6 +159,17 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 - Grundlage ist `firestore.rules` im Repository (Multi-Tenant-Setup für Gyms).
 - Zugriff erfolgt nur mit `request.auth` und passender `gymId` oder Admin-Rolle.
 - Global-Admins (`role == 'admin'`) erhalten Lesezugriff auf aggregierte Daten, Portal-Nutzer:innen bleiben auf ihr Gym beschränkt.
+
+### Firestore-Indizes
+
+- Die für das Admin-Dashboard benötigten Indizes sind in `firestore.indexes.json` dokumentiert.
+- Änderungen lassen sich mit der Firebase CLI deployen:
+
+  ```bash
+  firebase deploy --only firestore:indexes
+  ```
+
+- Während ein Index erstellt wird, zeigt das Dashboard einen Hinweis und fällt auf eine einfache Zählung zurück.
 
 ### Lokal & Produktion testen
 

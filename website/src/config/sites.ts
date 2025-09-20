@@ -50,6 +50,11 @@ const SITE_CONFIGS: Record<SiteKey, SiteConfig> = {
   },
 };
 
+export const SITE_THEME_COLORS = [
+  { media: '(prefers-color-scheme: light)', color: '#f1f5f9' },
+  { media: '(prefers-color-scheme: dark)', color: '#020617' },
+] as const;
+
 const HOST_LOOKUP = new Map<string, SiteConfig>();
 
 function registerHost(host: string | undefined, site: SiteConfig) {
@@ -157,10 +162,6 @@ export function buildSiteMetadata(site: SiteConfig, host: string | null | undefi
   const shared: Metadata = {
     metadataBase,
     alternates: { canonical: baseUrl },
-    themeColor: [
-      { media: '(prefers-color-scheme: light)', color: '#f1f5f9' },
-      { media: '(prefers-color-scheme: dark)', color: '#020617' },
-    ],
     icons: {
       icon: '/icon.svg',
       shortcut: '/icon.svg',
