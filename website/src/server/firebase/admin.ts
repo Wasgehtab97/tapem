@@ -183,10 +183,10 @@ export function assertFirebaseAdminReady(): void {
 }
 
 export function getFirebaseAdminConfigSummary():
-  | { projectId: string; clientEmail: string; using: FirebaseAdminConfigSource }
+  | { projectId: string; mode: FirebaseAdminConfigSource }
   | null {
   if (cachedConfig) {
-    return { projectId: cachedConfig.projectId, clientEmail: cachedConfig.clientEmail, using: cachedConfig.source };
+    return { projectId: cachedConfig.projectId, mode: cachedConfig.source };
   }
   return null;
 }

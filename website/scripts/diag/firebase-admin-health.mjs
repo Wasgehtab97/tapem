@@ -4,9 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 import module from 'node:module';
-import { loadEnvConfig } from '@next/env';
-import { ModuleKind, ScriptTarget, transpileModule } from 'typescript';
+import nextEnv from '@next/env';
+import ts from 'typescript';
 
+const { loadEnvConfig } = nextEnv;
 const { Module } = module;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,19 +27,20 @@ process.env.NODE_ENV = process.env.NODE_ENV ?? 'development';
 function loadAdminModule() {
   const tsPath = path.resolve(projectDir, 'src/server/firebase/admin.ts');
   const source = fs.readFileSync(tsPath, 'utf8');
-  const { outputText } = transpileModule(source, {
+  const { outputText } = ts.transpileModule(source, {
     compilerOptions: {
-      module: ModuleKind.CommonJS,
-      target: ScriptTarget.ES2020,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
       esModuleInterop: true,
     },
     fileName: tsPath,
   });
 
+  const sanitized = outputText.replace(/require\(["']server-only["']\);\s*/g, '');
   const mod = new Module(tsPath);
   mod.filename = tsPath;
   mod.paths = Module._nodeModulePaths(path.dirname(tsPath));
-  mod._compile(outputText, tsPath);
+  mod._compile(sanitized, tsPath);
   return mod.exports;
 }
 
@@ -55,7 +57,7 @@ async function main() {
         JSON.stringify({
           ok: true,
           projectId: summary.projectId,
-          using: summary.using,
+          mode: summary.mode,
         })
       );
       return;
@@ -66,7 +68,7 @@ async function main() {
       JSON.stringify({
         ok: true,
         projectId: app.options.projectId ?? 'unknown',
-        using: 'unknown',
+        mode: 'unknown',
       })
     );
   } catch (error) {

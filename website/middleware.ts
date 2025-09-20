@@ -18,6 +18,7 @@ import {
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
 const ADMIN_SESSION_API_PATH = '/api/admin/auth/session';
+const ADMIN_HEALTH_API_PATH = '/api/_health/firebase-admin';
 
 function isStaticAsset(pathname: string): boolean {
   return (
@@ -29,7 +30,11 @@ function isStaticAsset(pathname: string): boolean {
 }
 
 function allowApiRoute(pathname: string): boolean {
-  return pathname.startsWith('/api/dev') || pathname.startsWith(ADMIN_SESSION_API_PATH);
+  return (
+    pathname.startsWith('/api/dev') ||
+    pathname.startsWith(ADMIN_SESSION_API_PATH) ||
+    pathname.startsWith(ADMIN_HEALTH_API_PATH)
+  );
 }
 
 function buildPortalLoginUrl(request: NextRequest, nextPathname: string) {

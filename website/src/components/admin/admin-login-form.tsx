@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
@@ -21,6 +21,11 @@ type StatusState =
   | { state: 'submitting' }
   | { state: 'success' }
   | { state: 'error'; message: string };
+
+type HealthState =
+  | { status: 'checking' }
+  | { status: 'ok'; projectId?: string; mode?: 'b64' | 'trio' | 'unknown' }
+  | { status: 'error'; message: string };
 
 async function postAdminSession(idToken: string) {
   const response = await fetch('/api/admin/auth/session', {
@@ -67,12 +72,60 @@ export default function AdminLoginForm() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>({ email: '', password: '' });
   const [status, setStatus] = useState<StatusState>({ state: 'idle' });
+  const [health, setHealth] = useState<HealthState>({ status: 'checking' });
   const [isPending, startTransition] = useTransition();
 
   const configured = isFirebaseClientConfigured();
 
   const nextParam = searchParams?.get('next') ?? undefined;
   const nextRoute = safeAfterLoginRoute(nextParam);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkHealth() {
+      try {
+        const response = await fetch('/api/_health/firebase-admin', {
+          cache: 'no-store',
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (response.ok) {
+          const payload = (await response.json()) as {
+            projectId?: string;
+            mode?: 'b64' | 'trio' | 'unknown';
+          };
+          setHealth({ status: 'ok', projectId: payload.projectId, mode: payload.mode });
+          return;
+        }
+
+        let message = 'Firebase Admin Health-Check fehlgeschlagen.';
+        try {
+          const payload = (await response.json()) as { error?: string; message?: string };
+          message = payload.error ?? payload.message ?? message;
+        } catch {
+          // ignore JSON parse errors – fallback message remains
+        }
+        setHealth({ status: 'error', message });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message =
+          error instanceof Error ? error.message : 'Unbekannter Fehler beim Health-Check.';
+        setHealth({ status: 'error', message });
+      }
+    }
+
+    checkHealth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,6 +175,11 @@ export default function AdminLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {health.status === 'error' ? (
+        <div role="status" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Firebase Admin ist nicht verfügbar: {health.message}
+        </div>
+      ) : null}
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium text-slate-700">
           E-Mail-Adresse
