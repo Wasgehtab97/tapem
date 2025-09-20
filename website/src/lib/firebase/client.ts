@@ -52,6 +52,7 @@ function readEnvValue(key: RequiredEnvKey): string | undefined {
 function resolveClientConfig(): FirebaseClientConfig {
   const missing: RequiredEnvKey[] = [];
   const config: Partial<FirebaseClientConfig> = {};
+  let storageBucketFromEnv: string | undefined;
 
   for (const key of REQUIRED_ENV_KEYS) {
     const value = readEnvValue(key);
@@ -72,6 +73,7 @@ function resolveClientConfig(): FirebaseClientConfig {
         break;
       case 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET':
         config.storageBucket = value;
+        storageBucketFromEnv = value;
         break;
       case 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID':
         config.messagingSenderId = value;
@@ -89,6 +91,18 @@ function resolveClientConfig(): FirebaseClientConfig {
       `Firebase client configuration is incomplete (missing: ${missing.join(', ')})`,
       missing,
     );
+  }
+
+  if (config.projectId) {
+    const expectedBucket = `${config.projectId}.appspot.com`;
+    if (config.storageBucket !== expectedBucket) {
+      if (storageBucketFromEnv && storageBucketFromEnv !== expectedBucket) {
+        console.warn(
+          `[firebase] überschreibe Storage-Bucket ${storageBucketFromEnv} → ${expectedBucket}, um Firebase Storage korrekt anzusprechen.`
+        );
+      }
+      config.storageBucket = expectedBucket;
+    }
   }
 
   return config as FirebaseClientConfig;

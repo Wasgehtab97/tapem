@@ -7,7 +7,9 @@ import { getDevUserFromCookies } from '@/src/lib/auth/server';
 import { ADMIN_ROUTES } from '@/src/lib/routes';
 import { getAdminUserFromSession } from '@/src/server/auth/session';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Tap'em Admin – Anmeldung",

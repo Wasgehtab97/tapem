@@ -5,6 +5,10 @@ import { ReactNode } from 'react';
 import AdminShell from '@/src/components/layout/admin-shell';
 import { buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
   const headerList = headers();
   const host = headerList.get('host');

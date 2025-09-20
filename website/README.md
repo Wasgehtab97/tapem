@@ -68,6 +68,28 @@ Weitere Firebase-Platzhalter und serverseitige Variablen sind in `.env.example` 
 | Server | `FIREBASE_PRIVATE_KEY` | Private Key mit `\n`-Escapes (Fallback) |
 | Server | `ADMIN_ALLOWLIST` | Kommagetrennte Admin-E-Mails (optional) |
 
+`.env.local` liegt im Ordner `website/` (neben `package.json`). Next.js liest die Datei ausschließlich beim Start – nach Änderungen den Dev-Server neu starten.
+
+**Service-Account (empfohlen):**
+
+1. In der Firebase Console einen Service-Account für das Web-Projekt erstellen (`firebase-adminsdk`).
+2. Die JSON-Datei herunterladen und anschließend Base64-kodieren:
+   - macOS/Linux:
+     ```bash
+     base64 < service-account.json | tr -d '\n'
+     ```
+   - Windows (PowerShell):
+     ```powershell
+     [Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account.json"))
+     ```
+3. Den Base64-String ohne Anführungszeichen in `FIREBASE_SERVICE_ACCOUNT` eintragen.
+
+**Fallback Trio:** Alternativ `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` und `FIREBASE_PRIVATE_KEY` setzen. Der Private Key muss `\n` enthalten (kein echtes Newline). Der Code normalisiert `\n` automatisch zu Zeilenumbrüchen.
+
+**Client-SDK:** Alle `NEXT_PUBLIC_FIREBASE_*` Variablen müssen gesetzt sein. `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` sollte dem Schema `<project-id>.appspot.com` entsprechen (z. B. `tap-em.appspot.com`). Abweichende Domains wie `firebasestorage.app` werden automatisch auf das korrekte Bucket (`*.appspot.com`) angepasst.
+
+Optionaler Debug-Modus: `TAPEM_DEBUG=1` aktiviert zusätzliche Logausgaben für das Admin-SDK.
+
 Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht im Browser landen.
 
 ### Autorisierte Domains
@@ -80,10 +102,11 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 ### Session-Handling & Endpunkte
 
 1. Admin-Login läuft clientseitig via Firebase Auth (E-Mail/Passwort).
-2. Das ID-Token wird an `POST /api/admin/auth/session` gesendet; der Endpoint setzt ein `__Secure-tapem-admin-session` Cookie (HTTP-only, SameSite=Lax).
+2. Das ID-Token wird an `POST /api/admin/auth/session` gesendet; der Endpoint setzt ein HTTP-only Session-Cookie – lokal `tapem-admin-session` (secure:false), in Preview/Production `__Secure-tapem-admin-session` (secure:true). In beiden Fällen wird `SameSite='strict'` verwendet.
 3. `GET /admin/logout` oder `DELETE /api/admin/auth/session` widerrufen die Session und leiten auf die Marketing-Startseite.
 4. In Preview/Development bleibt der Dev-Stub (`/api/dev/login`) aktiv; Production akzeptiert ausschließlich echte Sessions.
 5. Optional erlaubt `ADMIN_ALLOWLIST` (kommagetrennte E-Mails) den Zugriff ohne gesetzten Custom Claim.
+6. Health-Check: `GET /api/_health/firebase-admin` liefert `{ ok: true, projectId, using }` bei gültiger Konfiguration.
 
 ## Admin Login (Firebase)
 
@@ -91,7 +114,7 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 
 1. Nutzer:in meldet sich in `/admin/login` über Firebase Authentication (E-Mail & Passwort) an.
 2. Nach erfolgreichem Sign-In wird das ID-Token an `POST /api/admin/auth/session` geschickt.
-3. Der Server erstellt ein signiertes, HTTP-only Session-Cookie (`__Secure-tapem-admin-session`).
+3. Der Server erstellt ein signiertes, HTTP-only Session-Cookie (`tapem-admin-session` lokal bzw. `__Secure-tapem-admin-session` in Preview/Production) mit `SameSite=strict`.
 4. Geschützte Admin-Routen verifizieren dieses Cookie serverseitig (Firebase Admin SDK + Allowlist) und verweigern Zugriff ohne Admin-Rolle.
 5. `DELETE /api/admin/auth/session` oder der Aufruf von `/admin/logout` löscht die Session und widerruft Refresh-Tokens.
 
@@ -112,6 +135,12 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 - Login wie oben → `/admin` sichtbar; Seitenquelltext / Header zeigen `noindex`
 - Benutzer ohne Admin-Claim/Allowlist → 403-Seite
 - Dashboard lädt KPIs/Events/Chart ohne Crash (leere Zustände zulässig)
+
+### Diagnose & Health-Checks
+
+- `npm run check:admin` lädt `.env.local`, prüft die Admin-Initialisierung und gibt eine JSON-Zusammenfassung auf der Konsole aus.
+- Während `npm run dev` aktiv ist, liefert `curl http://localhost:3000/api/_health/firebase-admin` ein `{ "ok": true, ... }`, sobald das Admin SDK korrekt konfiguriert ist.
+- Für detailliertere Logs `TAPEM_DEBUG=1` in `.env.local` setzen.
 
 ### Guards & Middleware
 

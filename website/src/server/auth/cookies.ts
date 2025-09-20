@@ -1,9 +1,13 @@
 import 'server-only';
 
-import { findSiteByHost, normalizeHost } from '@/src/config/sites';
+import { getDeploymentStage, getSiteConfig, normalizeHost } from '@/src/config/sites';
 
 function isLocalHost(hostname: string): boolean {
   return hostname.includes('localhost') || hostname.startsWith('127.');
+}
+
+function stripPort(hostname: string): string {
+  return hostname.includes(':') ? hostname.split(':')[0] : hostname;
 }
 
 export function resolveCookieDomain(request: Request): string | undefined {
@@ -13,30 +17,39 @@ export function resolveCookieDomain(request: Request): string | undefined {
     return undefined;
   }
 
-  const [hostname] = normalized.split(':');
+  const hostname = stripPort(normalized);
   if (!hostname || isLocalHost(hostname)) {
     return undefined;
   }
 
-  const site = findSiteByHost(normalized) ?? findSiteByHost(hostname);
-  if (!site) {
+  const stage = getDeploymentStage();
+  if (stage === 'development') {
     return undefined;
   }
 
-  return hostname;
+  const marketing = getSiteConfig('marketing');
+  const candidate =
+    stage === 'production'
+      ? marketing.hosts.production
+      : marketing.hosts.preview[0] ?? marketing.hosts.production;
+
+  if (!candidate) {
+    return hostname;
+  }
+
+  const target = stripPort(candidate);
+  if (!target || isLocalHost(target)) {
+    return hostname;
+  }
+
+  const matchesHost = hostname === target || hostname.endsWith(`.${target}`);
+  if (!matchesHost) {
+    return hostname;
+  }
+
+  return target;
 }
 
-export function resolveCookieSecurity(request: Request): boolean {
-  const hostHeader = request.headers.get('host');
-  const normalized = normalizeHost(hostHeader);
-  if (!normalized) {
-    return true;
-  }
-
-  const [hostname] = normalized.split(':');
-  if (!hostname) {
-    return true;
-  }
-
-  return !isLocalHost(hostname);
+export function resolveCookieSecurity(): boolean {
+  return process.env.NODE_ENV === 'production';
 }

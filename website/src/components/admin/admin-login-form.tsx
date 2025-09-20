@@ -32,8 +32,9 @@ async function postAdminSession(idToken: string) {
   if (!response.ok) {
     let message = 'Anmeldung fehlgeschlagen.';
     try {
-      const payload = (await response.json()) as { error?: string };
-      switch (payload.error) {
+      const payload = (await response.json()) as { status?: string; message?: string };
+      const status = payload.status;
+      switch (status) {
         case 'missing_admin_role':
           message = 'Dein Konto besitzt keine Admin-Rolle.';
           break;
@@ -43,8 +44,14 @@ async function postAdminSession(idToken: string) {
         case 'invalid_payload':
           message = 'Die Anmeldeanfrage war ungültig.';
           break;
+        case 'invalid-token':
+          message = 'Deine Sitzung ist abgelaufen oder das Token ist ungültig.';
+          break;
+        case 'misconfigured':
+          message = payload.message ?? 'Firebase Admin ist nicht korrekt konfiguriert.';
+          break;
         default:
-          message = 'Die Sitzung konnte nicht erstellt werden.';
+          message = payload.message ?? 'Die Sitzung konnte nicht erstellt werden.';
           break;
       }
     } catch {

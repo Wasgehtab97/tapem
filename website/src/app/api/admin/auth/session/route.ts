@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { getDeploymentStage } from '@/src/config/sites';
 import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
 import {
   ADMIN_SESSION_MAX_AGE_SECONDS,
@@ -14,7 +13,10 @@ import {
   revokeAdminSessionCookie,
 } from '@/src/server/auth/session';
 import { resolveCookieDomain, resolveCookieSecurity } from '@/src/server/auth/cookies';
-import { assertFirebaseAdminReady } from '@/src/server/firebase/admin';
+import {
+  FirebaseAdminConfigError,
+  assertFirebaseAdminReady,
+} from '@/src/server/firebase/admin';
 
 function json(data: unknown, init?: number | ResponseInit) {
   const res = NextResponse.json(data, typeof init === 'number' ? { status: init } : init);
@@ -35,19 +37,14 @@ export async function GET() {
       { status: 'ok', user: { uid: user.uid, email: user.email, role: user.role } },
       200
     );
-  } catch (e: any) {
-    console.error('[session GET]', e?.message ?? e);
-    return json(
-      { status: 'misconfigured', message: e?.message ?? 'Admin SDK not ready' },
-      500
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Admin SDK not ready';
+    console.error('[session GET]', message);
+    return json({ status: 'misconfigured', message }, 500);
   }
 }
 
 export async function POST(request: Request) {
-  const stage = getDeploymentStage();
-  const isProduction = stage === 'production';
-
   let idToken: string | undefined;
 
   try {
@@ -62,10 +59,10 @@ export async function POST(request: Request) {
       idToken = typeof v === 'string' ? v : undefined;
     }
   } catch {
-    return json({ error: 'invalid_payload' }, 400);
+    return json({ status: 'invalid_payload' }, 400);
   }
 
-  if (!idToken) return json({ error: 'missing_id_token' }, 400);
+  if (!idToken) return json({ status: 'missing_id_token' }, 400);
 
   try {
     assertFirebaseAdminReady();
@@ -73,7 +70,7 @@ export async function POST(request: Request) {
     const { cookieValue, user } = await createAdminSession(idToken);
 
     const domain = resolveCookieDomain(request);
-    const secure = resolveCookieSecurity(request) || isProduction;
+    const secure = resolveCookieSecurity();
 
     const res = json(
       { status: 'ok', user: { uid: user.uid, email: user.email, role: user.role } },
@@ -93,29 +90,36 @@ export async function POST(request: Request) {
     });
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AdminRoleRequiredError) {
-      return json({ error: 'missing_admin_role' }, 403);
+      return json({ status: 'missing_admin_role' }, 403);
     }
-    console.error('[session POST]', error?.message ?? error);
-    // Konfig-Fehler klar ausweisen – hilft dir beim Debuggen des Login-Banners
-    return json(
-      {
-        error: 'session_creation_failed',
-        reason:
-          typeof error?.message === 'string'
-            ? error.message
-            : 'Admin SDK not ready or token invalid',
-      },
-      500
-    );
+
+    const codeFromError = (error as { code?: string })?.code;
+    const errorInfo = (error as { errorInfo?: { code?: string } })?.errorInfo;
+    const code = typeof codeFromError === 'string'
+      ? codeFromError
+      : typeof errorInfo?.code === 'string'
+      ? errorInfo.code
+      : undefined;
+
+    if (error instanceof FirebaseAdminConfigError) {
+      console.error('[session POST] config error', error.message);
+      return json({ status: 'misconfigured', message: error.message }, 500);
+    }
+
+    if (code && code.startsWith('auth/')) {
+      console.warn('[session POST] invalid id token', code);
+      return json({ status: 'invalid-token', message: 'ID-Token konnte nicht verifiziert werden.' }, 401);
+    }
+
+    const message = error instanceof Error ? error.message : 'Unbekannter Fehler beim Erstellen der Session.';
+    console.error('[session POST]', message);
+    return json({ status: 'error', message }, 500);
   }
 }
 
 export async function DELETE(request: Request) {
-  const stage = getDeploymentStage();
-  const isProduction = stage === 'production';
-
   try {
     assertFirebaseAdminReady();
   } catch {
@@ -138,7 +142,7 @@ export async function DELETE(request: Request) {
   }
 
   const domain = resolveCookieDomain(request);
-  const secure = resolveCookieSecurity(request) || isProduction;
+  const secure = resolveCookieSecurity();
 
   const res = new NextResponse(null, { status: 204 });
   res.headers.set('Cache-Control', 'no-store');

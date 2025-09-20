@@ -4,6 +4,10 @@ import { requireRole } from '@/src/lib/auth/server';
 import { ADMIN_ROUTES } from '@/src/lib/routes';
 import { fetchAdminDashboardData } from '@/src/server/admin/dashboard-data';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const numberFormatter = new Intl.NumberFormat('de-DE');
 const dateTimeFormatter = new Intl.DateTimeFormat('de-DE', {
   dateStyle: 'medium',
