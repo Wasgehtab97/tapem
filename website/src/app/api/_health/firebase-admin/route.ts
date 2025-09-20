@@ -37,7 +37,7 @@ export async function GET() {
       {
         ok: true,
         projectId,
-        using: summary.using,
+        mode: summary.mode,
       },
       200
     );
