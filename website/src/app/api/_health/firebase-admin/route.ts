@@ -1,48 +1,51 @@
-import { NextResponse } from 'next/server';
-
-import {
-  assertFirebaseAdminReady,
-  getFirebaseAdminApp,
-  getFirebaseAdminConfigSummary,
-} from '@/src/server/firebase/admin';
-
+// website/src/app/api/_health/firebase-admin/route.ts
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { NextResponse } from 'next/server';
+import { getFirebaseAdminApp } from '@/src/server/firebase/admin';
+
+function toJson(body: unknown, status = 200) {
+  const res = NextResponse.json(body, { status });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
 export async function GET() {
-  const toJson = (body: Record<string, unknown>, status: number) => {
-    const response = NextResponse.json(body, { status });
-    response.headers.set('Cache-Control', 'no-store');
-    return response;
-  };
-
   try {
-    assertFirebaseAdminReady();
-    const summary = getFirebaseAdminConfigSummary();
+    // erzwingt Admin-SDK-Init (wirft bei Misconfig)
+    getFirebaseAdminApp();
 
-    if (!summary) {
-      return toJson(
-        {
-          ok: false,
-          error: 'Firebase Admin Konfiguration konnte nicht ermittelt werden.',
-        },
-        500
-      );
+    const mode =
+      process.env.FIREBASE_SERVICE_ACCOUNT?.trim()
+        ? 'b64'
+        : process.env.FIREBASE_PRIVATE_KEY?.trim()
+        ? 'trio'
+        : 'unknown';
+
+    // bestmögliche Projekt-ID (ohne Secrets zu leaken)
+    let projectId: string | null =
+      process.env.FIREBASE_PROJECT_ID ??
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
+      null;
+
+    if (!projectId && process.env.FIREBASE_SERVICE_ACCOUNT) {
+      try {
+        const json = JSON.parse(
+          Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf8')
+        );
+        projectId = json?.project_id ?? null;
+      } catch {
+        // ignorieren – wir liefern trotzdem ok:true, aber ohne projectId
+      }
     }
 
-    const projectId = summary.projectId ?? getFirebaseAdminApp().options.projectId ?? 'unknown';
-
+    return toJson({ ok: true, projectId, mode });
+  } catch (e: any) {
     return toJson(
-      {
-        ok: true,
-        projectId,
-        mode: summary.mode,
-      },
-      200
+      { ok: false, error: e?.message ?? 'Admin SDK not ready' },
+      500
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unbekannter Fehler beim Firebase Admin Check.';
-    return toJson({ ok: false, error: message }, 500);
   }
 }

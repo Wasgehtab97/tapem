@@ -59,9 +59,7 @@ function buildAdminLoginUrl(request: NextRequest, nextPathname: string) {
 
 async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  if (!sessionCookie) {
-    return false;
-  }
+  if (!sessionCookie) return false;
 
   try {
     const response = await fetch(new URL(ADMIN_SESSION_API_PATH, request.url), {
@@ -69,8 +67,8 @@ async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
       headers: {
         cookie: request.headers.get('cookie') ?? '',
       },
+      cache: 'no-store',
     });
-
     return response.ok;
   } catch (error) {
     console.error('[middleware] admin session validation failed', error);
@@ -89,69 +87,73 @@ function redirectTo(pathname: string, request: NextRequest) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 1) Statische Assets & freigegebene API-Routen durchlassen
   if (isStaticAsset(pathname) || allowApiRoute(pathname)) {
     return NextResponse.next();
   }
 
+  // 2) ADMIN-Bereich
   if (isAdminPath(pathname)) {
     const stage = getDeploymentStage();
     const devRole = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
     const hasDevAdmin = stage !== 'production' && devRole === 'admin';
 
+    // Admin-Login
     if (pathname === ADMIN_ROUTES.login.href) {
       if (hasDevAdmin || (await hasValidAdminSession(request))) {
-        const target = redirectTo(ADMIN_ROUTES.dashboard.href, request);
-        return NextResponse.redirect(target);
+        return NextResponse.redirect(redirectTo(ADMIN_ROUTES.dashboard.href, request));
       }
-
       return NextResponse.next();
     }
 
+    // Admin-Logout immer erlauben
     if (pathname === ADMIN_ROUTES.logout.href) {
       return NextResponse.next();
     }
 
+    // Unprotected Admin-Seiten erlauben
     if (!isAdminProtectedPath(pathname)) {
       return NextResponse.next();
     }
 
+    // Dev-Admin-Bypass
     if (hasDevAdmin) {
       return NextResponse.next();
     }
 
-    const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    // Geschützte Admin-Seiten → Session prüfen
+    const hasCookie = Boolean(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
     const sessionValid = await hasValidAdminSession(request);
 
-    if (sessionValid) {
-      return NextResponse.next();
+    if (sessionValid) return NextResponse.next();
+
+    // Cookie vorhanden aber ungültig → 403-Seite
+    if (hasCookie) {
+      return NextResponse.rewrite(redirectTo('/403', request));
     }
 
-    if (sessionCookie) {
-      const forbiddenUrl = redirectTo('/403', request);
-      return NextResponse.rewrite(forbiddenUrl, { status: 403 });
-    }
-
-    const loginUrl = buildAdminLoginUrl(request, pathname);
-    return NextResponse.redirect(loginUrl);
+    // Keine Session → zum Admin-Login
+    return NextResponse.redirect(buildAdminLoginUrl(request, pathname));
   }
 
+  // 3) PORTAL-Bereich
   if (isPortalPath(pathname)) {
+    // /portal -> /portal/gym
     if (pathname === PORTAL_ROUTES.home.href) {
-      const target = redirectTo(PORTAL_ROUTES.gym.href, request);
-      return NextResponse.redirect(target);
+      return NextResponse.redirect(redirectTo(PORTAL_ROUTES.gym.href, request));
     }
 
     if (isPortalProtectedPath(pathname)) {
       const role = request.cookies.get(DEV_ROLE_COOKIE)?.value as Role | undefined;
       if (!role || !PORTAL_ALLOWED_ROLES.includes(role)) {
-        const loginUrl = buildPortalLoginUrl(request, pathname);
-        return NextResponse.redirect(loginUrl);
+        return NextResponse.redirect(buildPortalLoginUrl(request, pathname));
       }
     }
 
     return NextResponse.next();
   }
 
+  // 4) Marketing/sonstige Routen
   if (isMarketingPath(pathname)) {
     return NextResponse.next();
   }

@@ -96,8 +96,8 @@ apk-release:
 
 # localhost
 localhost:
-	npm install
-	npm run dev
+	cd website && TAPEM_DEBUG=1 npm run dev
+
 
 
 reset:
