@@ -1,8 +1,9 @@
+// src/server/firebase/admin.ts
 import 'server-only';
 
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
-import { getAuth as getAdminAuth, type Auth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore, type Firestore } from 'firebase-admin/firestore';
+import { cert, getApp, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { getAuth as _getAuth, type Auth } from 'firebase-admin/auth';
+import { getFirestore as _getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 const ADMIN_APP_NAME = 'tapem-admin-sdk';
 
@@ -13,19 +14,26 @@ export class FirebaseAdminConfigError extends Error {
   }
 }
 
-let cachedAdminApp: App | null = null;
-
 type ServiceAccountConfig = {
   projectId: string;
   clientEmail: string;
   privateKey: string;
 };
 
-function normalizePrivateKey(value: string): string {
-  return value.replace(/\r?\n/g, '\n');
+function logDebug(...args: any[]) {
+  // Setze TAPEM_DEBUG=1 in .env.local, wenn du die Logs sehen willst
+  if (process.env.TAPEM_DEBUG && process.env.TAPEM_DEBUG !== '0') {
+    // eslint-disable-next-line no-console
+    console.log('[firebase-admin]', ...args);
+  }
 }
 
-function parseServiceAccountJson(encoded: string): ServiceAccountConfig {
+function normalizePrivateKey(value: string): string {
+  // erlaubt sowohl echte Zeilenumbrüche als auch escaped "\n"
+  return value.replace(/\\n/g, '\n').replace(/\r?\n/g, '\n').trim();
+}
+
+function parseB64ServiceAccount(encoded: string): ServiceAccountConfig {
   try {
     const json = Buffer.from(encoded, 'base64').toString('utf8');
     const parsed = JSON.parse(json) as {
@@ -36,82 +44,94 @@ function parseServiceAccountJson(encoded: string): ServiceAccountConfig {
 
     const projectId = parsed.project_id?.trim();
     const clientEmail = parsed.client_email?.trim();
-    const privateKey = parsed.private_key;
+    const privateKey = parsed.private_key ? normalizePrivateKey(parsed.private_key) : undefined;
 
     if (!projectId || !clientEmail || !privateKey) {
       throw new FirebaseAdminConfigError(
-        'FIREBASE_SERVICE_ACCOUNT is missing required fields (project_id, client_email, private_key).'
+        'FIREBASE_SERVICE_ACCOUNT fehlt Pflichtfelder: project_id, client_email, private_key.'
       );
     }
 
-    return {
-      projectId,
-      clientEmail,
-      privateKey: normalizePrivateKey(privateKey),
-    };
-  } catch (error) {
-    if (error instanceof FirebaseAdminConfigError) {
-      throw error;
-    }
-
-    throw new FirebaseAdminConfigError('FIREBASE_SERVICE_ACCOUNT could not be parsed.');
+    return { projectId, clientEmail, privateKey };
+  } catch (e) {
+    if (e instanceof FirebaseAdminConfigError) throw e;
+    throw new FirebaseAdminConfigError(
+      'FIREBASE_SERVICE_ACCOUNT konnte nicht Base64-decodiert/geparst werden.'
+    );
   }
 }
 
 function readServiceAccountConfig(): ServiceAccountConfig {
-  const encoded = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (encoded && encoded.trim().length > 0) {
-    return parseServiceAccountJson(encoded.trim());
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  if (b64) {
+    const cfg = parseB64ServiceAccount(b64);
+    logDebug('SA (base64) ok; project:', cfg.projectId);
+    return cfg;
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
 
-  if (projectId && clientEmail && privateKey) {
-    return {
-      projectId,
-      clientEmail,
-      privateKey: normalizePrivateKey(privateKey),
-    };
+  if (projectId && clientEmail && privateKeyRaw) {
+    const privateKey = normalizePrivateKey(privateKeyRaw);
+    logDebug('SA (trio) ok; project:', projectId);
+    return { projectId, clientEmail, privateKey };
   }
 
   throw new FirebaseAdminConfigError(
-    'Firebase Admin SDK configuration is missing. Set FIREBASE_SERVICE_ACCOUNT (Base64) or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
+    'Firebase Admin SDK nicht konfiguriert. Setze FIREBASE_SERVICE_ACCOUNT (Base64) ODER FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
   );
 }
 
-function initializeAdminApp(): App {
-  if (cachedAdminApp) {
-    return cachedAdminApp;
-  }
+let cachedApp: App | null = null;
 
-  const existingApp = getApps().find((app) => app.name === ADMIN_APP_NAME);
-  if (existingApp) {
-    cachedAdminApp = existingApp;
-    return cachedAdminApp;
+function ensureAdminApp(): App {
+  if (cachedApp) return cachedApp;
+
+  // Falls bereits initialisiert (Hot Reload in dev), wiederverwenden
+  const existing = getApps().find((a) => a.name === ADMIN_APP_NAME);
+  if (existing) {
+    cachedApp = existing;
+    return cachedApp;
   }
 
   const { projectId, clientEmail, privateKey } = readServiceAccountConfig();
 
-  cachedAdminApp = initializeApp(
+  cachedApp = initializeApp(
     {
       credential: cert({ projectId, clientEmail, privateKey }),
     },
-    ADMIN_APP_NAME,
+    ADMIN_APP_NAME
   );
 
-  return cachedAdminApp;
+  logDebug('Admin SDK initialisiert als', ADMIN_APP_NAME);
+  return cachedApp;
 }
 
+/** Hole (oder initialisiere) die Admin-App. */
 export function getFirebaseAdminApp(): App {
-  return initializeAdminApp();
+  return ensureAdminApp();
 }
 
+/** Firebase Admin Auth – nur serverseitig verwenden. */
 export function getFirebaseAdminAuth(): Auth {
-  return getAdminAuth(initializeAdminApp());
+  return _getAuth(ensureAdminApp());
 }
 
+/** Firebase Admin Firestore – nur serverseitig verwenden. */
 export function getFirebaseAdminFirestore(): Firestore {
-  return getAdminFirestore(initializeAdminApp());
+  return _getFirestore(ensureAdminApp());
+}
+
+/** Optional: schneller „Gesundheitscheck“ für deine API-Routen/Guards. */
+export function assertFirebaseAdminReady(): void {
+  try {
+    ensureAdminApp();
+  } catch (e) {
+    // Fehler transparent weiterreichen – deine API kann die Message als 500 zurückgeben.
+    throw e instanceof Error
+      ? e
+      : new FirebaseAdminConfigError('Unbekannter Fehler beim Initialisieren des Admin SDK.');
+  }
 }
