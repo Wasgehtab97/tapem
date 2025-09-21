@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
-import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/config/sites';
+import { buildSiteMetadata, getSiteConfig } from '@/config/sites';
 
 import '../styles/globals.css';
 
@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: SITE_THEME_COLORS,
+  themeColor: '#0B0F1A',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

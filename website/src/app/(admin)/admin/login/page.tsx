@@ -1,55 +1,26 @@
-import type { Metadata, Viewport } from 'next';
-import { redirect } from 'next/navigation';
+import AdminLoginForm from '@/src/components/admin/admin-login-form';
+import Link from 'next/link';
+import { MARKETING_ROUTES } from '@/src/lib/routes';
 
-import AdminLoginForm from '@/components/admin/admin-login-form';
-import { SITE_THEME_COLORS, getDeploymentStage } from '@/config/sites';
-import { getDevUserFromCookies } from '@/lib/auth/server';
-import { ADMIN_ROUTES } from '@/lib/routes';
-import { getAdminUserFromSession } from '@/server/auth/session';
-
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // page selbst ist RSC, ok
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: "Tap'em Admin – Anmeldung",
-  robots: { index: false, follow: false },
-};
-
-export const viewport: Viewport = {
-  themeColor: SITE_THEME_COLORS,
-};
-
-export default async function AdminLoginPage() {
-  const sessionUser = await getAdminUserFromSession();
-  if (sessionUser) {
-    redirect(ADMIN_ROUTES.dashboard.href);
-  }
-
-  const stage = getDeploymentStage();
-  if (stage !== 'production') {
-    const devUser = getDevUserFromCookies();
-    if (devUser?.role === 'admin') {
-      redirect(ADMIN_ROUTES.dashboard.href);
-    }
-  }
+export default async function Page() {
+  // Optional: Health-Badge vom Server
+  const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/health/firebase-admin`, { cache: 'no-store' }).catch(()=>null);
+  const info = r?.ok ? await r.json() : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-16">
-      <header className="space-y-2 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Nur für Administrator:innen
-        </p>
-        <h1 className="text-3xl font-semibold text-slate-900">Anmeldung</h1>
-        <p className="text-sm text-slate-600">
-          Melde dich mit deiner Tap&apos;em Admin-E-Mail an. Nach erfolgreicher Authentifizierung wird ein sicheres
-          Session-Cookie gesetzt.
-        </p>
-      </header>
+    <div className="max-w-lg mx-auto py-10 grid gap-6">
+      {info && (
+        <div className="rounded-md bg-emerald-100/10 border border-emerald-400 p-3 text-emerald-200">
+          Verbunden mit Projekt <b>{info.projectId}</b> · Modus <b>{info.mode}</b> · Service Account {info.usesServiceAccount ? 'aktiv' : 'inaktiv'}
+        </div>
+      )}
+      <h1 className="text-2xl font-semibold">Anmeldung</h1>
       <AdminLoginForm />
-      <p className="text-xs text-slate-500">
-        Bei Problemen kontaktiere bitte das Core-Team. Die Anmeldung nutzt Firebase Authentication mit E-Mail und Passwort.
-      </p>
+      <p className="text-sm opacity-60">Bei Problemen: Core-Team kontaktieren.</p>
+      <p className="text-xs opacity-40"><Link href={MARKETING_ROUTES.home.href}>Zurück</Link></p>
     </div>
   );
 }
