@@ -1,5 +1,5 @@
-import { requireRole } from '@/src/lib/auth/server';
-import { gymChallengesMock } from '@/src/server/mocks/gym';
+import { requireRole } from '@/lib/auth/server';
+import { gymChallengesMock } from '@/server/mocks/gym';
 
 export default async function GymChallengesPage() {
   await requireRole(['owner', 'operator', 'admin']);

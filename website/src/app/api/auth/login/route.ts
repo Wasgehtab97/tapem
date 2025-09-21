@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 
-import { ADMIN_SESSION_MAX_AGE_SECONDS, buildAdminSessionCookie } from '@/src/server/auth/cookies';
+import { ADMIN_SESSION_MAX_AGE_SECONDS, buildAdminSessionCookie } from '@/server/auth/cookies';
 import {
   AdminRoleRequiredError,
   createAdminSession,
-} from '@/src/server/auth/session';
+} from '@/server/auth/session';
 import {
   FirebaseAdminConfigError,
   assertFirebaseAdminReady,
-} from '@/src/server/firebase/admin';
+} from '@/server/firebase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

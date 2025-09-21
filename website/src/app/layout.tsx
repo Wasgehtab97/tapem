@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
-import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
+import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/config/sites';
 
 import '../styles/globals.css';
 

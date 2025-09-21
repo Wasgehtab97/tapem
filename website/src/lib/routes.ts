@@ -1,6 +1,6 @@
 import type { Route } from 'next';
 
-import type { SiteKey } from '@/src/config/sites';
+import type { SiteKey } from '@/config/sites';
 
 type RouteDefinition<Site extends SiteKey, Path extends Route> = {
   readonly site: Site;

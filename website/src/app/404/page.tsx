@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 
-import { buildSiteUrl, findSiteByHost, getSiteConfig, type SiteConfig } from '@/src/config/sites';
-import { ADMIN_ROUTES, MARKETING_ROUTES, PORTAL_ROUTES } from '@/src/lib/routes';
+import { buildSiteUrl, findSiteByHost, getSiteConfig, type SiteConfig } from '@/config/sites';
+import { ADMIN_ROUTES, MARKETING_ROUTES, PORTAL_ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = {
   title: 'Nicht gefunden – Tap\'em',

@@ -267,10 +267,19 @@ function ensureServices(): { app: App; auth: Auth; firestore: Firestore } {
   if (emulatorConfig && !state.emulatorConfigured && state.auth && state.firestore) {
     logDebug('Verbinde Firebase Admin SDK mit Emulatoren', emulatorConfig);
     state.firestore.settings({ host: emulatorConfig.firestoreHost, ssl: false });
-    const authHost = emulatorConfig.authHost.startsWith('http')
+    const authHostUrl = emulatorConfig.authHost.startsWith('http')
       ? emulatorConfig.authHost
       : `http://${emulatorConfig.authHost}`;
-    state.auth.useEmulator(authHost);
+    const normalizedAuthHost = (() => {
+      try {
+        return new URL(authHostUrl).host;
+      } catch {
+        return emulatorConfig.authHost;
+      }
+    })();
+    if (process.env.FIREBASE_AUTH_EMULATOR_HOST !== normalizedAuthHost) {
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = normalizedAuthHost;
+    }
     state.emulatorConfigured = true;
   }
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import type { Role } from '@/src/lib/auth/types';
+import type { Role } from '@/lib/auth/types';
 
 const quickRoles: Role[] = ['owner', 'operator', 'admin'];
 

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { findSiteByHost, normalizeHost } from '@/src/config/sites';
-import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
-import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
+import { findSiteByHost, normalizeHost } from '@/config/sites';
+import { DEV_ROLE_COOKIE } from '@/lib/auth/constants';
+import { isDevPreviewRoleSwitchesEnabled } from '@/lib/env';
 
 const ROLE_COOKIE = DEV_ROLE_COOKIE;
 const EMAIL_COOKIE = 'tapem_email';

@@ -3,10 +3,10 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
-import { ADMIN_SESSION_COOKIE } from '@/src/lib/auth/constants';
-import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
-import { getFirebaseAdminAuth, getFirebaseAdminFirestore } from '@/src/server/firebase/admin';
-import { ADMIN_SESSION_MAX_AGE_SECONDS } from '@/src/server/auth/cookies';
+import { ADMIN_SESSION_COOKIE } from '@/lib/auth/constants';
+import type { AuthenticatedUser, Role } from '@/lib/auth/types';
+import { getFirebaseAdminAuth, getFirebaseAdminFirestore } from '@/server/firebase/admin';
+import { ADMIN_SESSION_MAX_AGE_SECONDS } from '@/server/auth/cookies';
 
 export class AdminRoleRequiredError extends Error {
   constructor(message: string) {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/src/lib/routes';
+import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/lib/routes';
 
 const items = [
   { route: PORTAL_ROUTES.gym, label: 'Übersicht' },

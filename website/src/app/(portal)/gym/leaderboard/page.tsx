@@ -1,5 +1,5 @@
-import { requireRole } from '@/src/lib/auth/server';
-import { gymLeaderboardMock } from '@/src/server/mocks/gym';
+import { requireRole } from '@/lib/auth/server';
+import { gymLeaderboardMock } from '@/server/mocks/gym';
 
 export default async function GymLeaderboardPage() {
   await requireRole(['owner', 'operator', 'admin']);

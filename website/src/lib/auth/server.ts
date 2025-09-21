@@ -3,9 +3,9 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
-import { DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
-import { getDeploymentStage } from '@/src/config/sites';
-import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
+import { DEV_ROLE_COOKIE } from '@/lib/auth/constants';
+import { getDeploymentStage } from '@/config/sites';
+import { isDevPreviewRoleSwitchesEnabled } from '@/lib/env';
 import {
   ADMIN_ROUTES,
   DEFAULT_AFTER_LOGIN,
@@ -15,10 +15,10 @@ import {
   safeAfterLoginRoute,
   type AfterLoginRoute,
   type AdminAfterLoginRoute,
-} from '@/src/lib/routes';
+} from '@/lib/routes';
 import {
   getAdminUserFromSession,
-} from '@/src/server/auth/session';
+} from '@/server/auth/session';
 
 import type { AuthenticatedUser, DevUser, Role } from './types';
 

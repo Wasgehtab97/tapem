@@ -1,4 +1,4 @@
-import { getDeploymentStage, getSiteConfig, normalizeHost } from '@/src/config/sites';
+import { getDeploymentStage, getSiteConfig, normalizeHost } from '@/config/sites';
 
 export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 Tage
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { requireRole } from '@/src/lib/auth/server';
-import { ADMIN_ROUTES } from '@/src/lib/routes';
-import { fetchAdminDashboardData } from '@/src/server/admin/dashboard-data';
+import { requireRole } from '@/lib/auth/server';
+import { ADMIN_ROUTES } from '@/lib/routes';
+import { fetchAdminDashboardData } from '@/server/admin/dashboard-data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
