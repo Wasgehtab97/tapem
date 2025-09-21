@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
 import AdminShell from '@/components/layout/admin-shell';
-import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/config/sites';
+import { buildSiteMetadata, getSiteConfig } from '@/config/sites';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: SITE_THEME_COLORS,
+  themeColor: '#0B0F1A',
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { Timestamp } from 'firebase-admin/firestore';
 
-import { getFirebaseAdminFirestore } from '@/server/firebase/admin';
+import { adminDb } from '@/src/server/firebase/admin';
 
 export type AdminKpiMetric = {
   id: string;
@@ -105,7 +105,7 @@ async function computeMetric({ id, label, run, fallback }: MetricComputation): P
       );
       try {
         const fallbackValue = await fallback.run();
-        const messageParts = [`Firestore Index für "${label}" wird erstellt.`];
+        const messageParts = [`Firestore Index für "${label}" wird erstellt bzw. benötigt.`];
         if (fallback.hint) {
           messageParts.push(fallback.hint);
         }
@@ -135,7 +135,7 @@ function formatDateKey(date: Date): string {
 }
 
 export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
-  const firestore = getFirebaseAdminFirestore();
+  const firestore = adminDb();
   const now = new Date();
   const nowTimestamp = Timestamp.fromDate(now);
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -184,11 +184,11 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
             .collectionGroup('logs')
             .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
             .select('timestamp')
-            .limit(5000)
+            .limit(1000)
             .get();
           return snapshot.size;
         },
-        hint: 'Temporäre Zählung (max. 5.000 Logs) aktiv.',
+        hint: 'Temporäre Zählung (max. 1.000 Logs) aktiv.',
       },
     }),
     computeMetric({
@@ -208,11 +208,11 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
             .collectionGroup('logs')
             .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
             .select('timestamp')
-            .limit(10000)
+            .limit(1000)
             .get();
           return snapshot.size;
         },
-        hint: 'Temporäre Zählung (max. 10.000 Logs) aktiv.',
+        hint: 'Temporäre Zählung (max. 1.000 Logs) aktiv.',
       },
     }),
     computeMetric({
@@ -231,11 +231,11 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
           const snapshot = await firestore
             .collection('challenges')
             .where('end', '>=', nowTimestamp)
-            .limit(500)
+            .limit(1000)
             .get();
           return snapshot.size;
         },
-        hint: 'Temporäre Zählung (max. 500 Dokumente) aktiv.',
+        hint: 'Temporäre Zählung (max. 1.000 Dokumente) aktiv.',
       },
     }),
     computeMetric({
@@ -328,8 +328,60 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       }
     });
   } catch (error) {
-    console.error('[admin-dashboard] event log query failed', error);
-    eventsError = 'Aktivitätsprotokoll konnte nicht geladen werden.';
+    if (isFailedPrecondition(error)) {
+      console.warn('[admin-dashboard] Event-Log Index erforderlich – Fallback aktiv.', error);
+      try {
+        const fallbackSnapshot = await firestore
+          .collectionGroup('logs')
+          .where('timestamp', '>=', Timestamp.fromDate(twoWeeksAgo))
+          .select('timestamp', 'type', 'eventType', 'description', 'message')
+          .limit(1000)
+          .get();
+
+        const fallbackEntries = fallbackSnapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            const timestampValue = data.timestamp;
+            const timestamp =
+              timestampValue instanceof Timestamp
+                ? timestampValue.toDate()
+                : typeof timestampValue?.toDate === 'function'
+                ? timestampValue.toDate()
+                : null;
+            if (!timestamp) return null;
+            const segments = doc.ref.path.split('/');
+            const gymId = segments.length >= 2 ? segments[1] : undefined;
+            const deviceId = segments.length >= 4 ? segments[3] : undefined;
+            const type = typeof data.type === 'string' ? data.type : typeof data.eventType === 'string' ? data.eventType : undefined;
+            const description =
+              typeof data.description === 'string'
+                ? data.description
+                : typeof data.message === 'string'
+                ? data.message
+                : undefined;
+            return {
+              id: doc.id,
+              timestamp,
+              gymId,
+              deviceId,
+              type,
+              description,
+            } as AdminEventLogEntry;
+          })
+          .filter((entry): entry is AdminEventLogEntry => Boolean(entry))
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+          .slice(0, 20);
+
+        eventEntries.push(...fallbackEntries);
+        eventsError = 'Index für Aktivitätsprotokoll wird erstellt – Fallback aktiv.';
+      } catch (fallbackError) {
+        console.error('[admin-dashboard] event log fallback failed', fallbackError);
+        eventsError = 'Aktivitätsprotokoll konnte nicht geladen werden.';
+      }
+    } else {
+      console.error('[admin-dashboard] event log query failed', error);
+      eventsError = 'Aktivitätsprotokoll konnte nicht geladen werden.';
+    }
   }
 
   let activityError: string | undefined;
@@ -366,8 +418,39 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
     }
     activityPoints.push(...days);
   } catch (error) {
-    console.error('[admin-dashboard] activity aggregation failed', error);
-    activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
+    if (isFailedPrecondition(error)) {
+      console.warn('[admin-dashboard] Activity Index erforderlich – Fallback aktiv.', error);
+      try {
+        const fallbackSnapshot = await firestore.collectionGroup('logs').limit(1000).get();
+        const totals = new Map<string, number>();
+        fallbackSnapshot.docs.forEach((doc) => {
+          const timestampValue = doc.get('timestamp');
+          const ts =
+            timestampValue instanceof Timestamp
+              ? timestampValue.toDate()
+              : typeof timestampValue?.toDate === 'function'
+              ? timestampValue.toDate()
+              : null;
+          if (!ts || ts < twoWeeksAgo) {
+            return;
+          }
+          const key = formatDateKey(ts);
+          totals.set(key, (totals.get(key) ?? 0) + 1);
+        });
+        for (let i = 0; i < 14; i += 1) {
+          const date = new Date(twoWeeksAgo.getTime() + i * 24 * 60 * 60 * 1000);
+          const key = formatDateKey(date);
+          activityPoints.push({ date: key, totalCheckIns: totals.get(key) ?? 0 });
+        }
+        activityError = 'Index für Check-in-Verlauf wird erstellt – Fallback aktiv.';
+      } catch (fallbackError) {
+        console.error('[admin-dashboard] activity fallback failed', fallbackError);
+        activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
+      }
+    } else {
+      console.error('[admin-dashboard] activity aggregation failed', error);
+      activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
+    }
   }
 
   return {
