@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, ThemeColorDescriptor } from 'next';
 
 export type SiteKey = 'marketing' | 'portal' | 'admin';
 
@@ -50,10 +50,10 @@ const SITE_CONFIGS: Record<SiteKey, SiteConfig> = {
   },
 };
 
-export const SITE_THEME_COLORS = [
+export const SITE_THEME_COLORS: ThemeColorDescriptor[] = [
   { media: '(prefers-color-scheme: light)', color: '#f1f5f9' },
   { media: '(prefers-color-scheme: dark)', color: '#020617' },
-] as const;
+];
 
 const HOST_LOOKUP = new Map<string, SiteConfig>();
 

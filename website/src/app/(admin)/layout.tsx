@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
-import AdminShell from '@/src/components/layout/admin-shell';
-import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
+import AdminShell from '@/components/layout/admin-shell';
+import { SITE_THEME_COLORS, buildSiteMetadata, getSiteConfig } from '@/config/sites';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 
-import AdminLoginForm from '@/src/components/admin/admin-login-form';
-import { SITE_THEME_COLORS, getDeploymentStage } from '@/src/config/sites';
-import { getDevUserFromCookies } from '@/src/lib/auth/server';
-import { ADMIN_ROUTES } from '@/src/lib/routes';
-import { getAdminUserFromSession } from '@/src/server/auth/session';
+import AdminLoginForm from '@/components/admin/admin-login-form';
+import { SITE_THEME_COLORS, getDeploymentStage } from '@/config/sites';
+import { getDevUserFromCookies } from '@/lib/auth/server';
+import { ADMIN_ROUTES } from '@/lib/routes';
+import { getAdminUserFromSession } from '@/server/auth/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

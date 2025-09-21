@@ -2,7 +2,7 @@ import 'server-only';
 
 import { Timestamp } from 'firebase-admin/firestore';
 
-import { getFirebaseAdminFirestore } from '@/src/server/firebase/admin';
+import { getFirebaseAdminFirestore } from '@/server/firebase/admin';
 
 export type AdminKpiMetric = {
   id: string;
@@ -117,7 +117,7 @@ async function computeMetric({ id, label, run, fallback }: MetricComputation): P
           warning: {
             metricId: id,
             message: messageParts.join(' '),
-            indexUrl,
+            indexUrl: indexUrl ?? undefined,
           },
         };
       } catch (fallbackError) {

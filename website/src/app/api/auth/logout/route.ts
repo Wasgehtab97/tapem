@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { ADMIN_SESSION_COOKIE_NAME, buildAdminSessionCookie } from '@/src/server/auth/cookies';
-import { revokeAdminSessionCookie } from '@/src/server/auth/session';
-import { assertFirebaseAdminReady } from '@/src/server/firebase/admin';
+import { ADMIN_SESSION_COOKIE_NAME, buildAdminSessionCookie } from '@/server/auth/cookies';
+import { revokeAdminSessionCookie } from '@/server/auth/session';
+import { assertFirebaseAdminReady } from '@/server/firebase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

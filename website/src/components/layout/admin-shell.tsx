@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-import DevToolbar from '@/src/components/dev-toolbar';
-import { getDeploymentStage } from '@/src/config/sites';
-import { getDevUserFromCookies } from '@/src/lib/auth/server';
-import type { AuthenticatedUser, Role } from '@/src/lib/auth/types';
-import { ADMIN_ROUTES, type AdminRouteDefinition } from '@/src/lib/routes';
-import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
-import { getAdminUserFromSession } from '@/src/server/auth/session';
+import DevToolbar from '@/components/dev-toolbar';
+import { getDeploymentStage } from '@/config/sites';
+import { getDevUserFromCookies } from '@/lib/auth/server';
+import type { AuthenticatedUser, Role } from '@/lib/auth/types';
+import { ADMIN_ROUTES, type AdminRouteDefinition } from '@/lib/routes';
+import { isDevPreviewRoleSwitchesEnabled } from '@/lib/env';
+import { getAdminUserFromSession } from '@/server/auth/session';
 
 type NavigationItem = {
   label: string;

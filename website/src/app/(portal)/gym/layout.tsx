@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 
-import GymSubnav from '@/src/components/gym-subnav';
+import GymSubnav from '@/components/gym-subnav';
 
 export const metadata: Metadata = {
   robots: {

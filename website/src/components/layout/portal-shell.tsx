@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-import { getDeploymentStage } from '@/src/config/sites';
-import DevToolbar from '@/src/components/dev-toolbar';
-import { getDevUserFromCookies } from '@/src/lib/auth/server';
-import type { Role } from '@/src/lib/auth/types';
-import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/src/lib/routes';
+import { getDeploymentStage } from '@/config/sites';
+import DevToolbar from '@/components/dev-toolbar';
+import { getDevUserFromCookies } from '@/lib/auth/server';
+import type { Role } from '@/lib/auth/types';
+import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/lib/routes';
 
 const portalNav = [
   { route: PORTAL_ROUTES.gym, label: 'Dashboard' },

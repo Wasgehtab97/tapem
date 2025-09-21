@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { getDeploymentStage } from '@/src/config/sites';
-import { ADMIN_SESSION_COOKIE, DEV_ROLE_COOKIE } from '@/src/lib/auth/constants';
-import type { Role } from '@/src/lib/auth/types';
+import { getDeploymentStage } from '@/config/sites';
+import { ADMIN_SESSION_COOKIE, DEV_ROLE_COOKIE } from '@/lib/auth/constants';
+import type { Role } from '@/lib/auth/types';
 import {
   ADMIN_ROUTES,
   DEFAULT_AFTER_LOGIN,
@@ -14,8 +14,8 @@ import {
   isPortalPath,
   isPortalProtectedPath,
   safeAfterLoginRoute,
-} from '@/src/lib/routes';
-import { isDevPreviewRoleSwitchesEnabled } from '@/src/lib/env';
+} from '@/lib/routes';
+import { isDevPreviewRoleSwitchesEnabled } from '@/lib/env';
 
 const PORTAL_ALLOWED_ROLES: Role[] = ['admin', 'owner', 'operator'];
 const ADMIN_SESSION_API_PATH = '/api/auth/me';

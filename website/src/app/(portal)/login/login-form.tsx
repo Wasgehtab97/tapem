@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { safeAfterLoginRoute, type AfterLoginRoute } from '@/src/lib/routes';
+import { safeAfterLoginRoute, type AfterLoginRoute } from '@/lib/routes';
 
 export default function LoginForm() {
   const router = useRouter();

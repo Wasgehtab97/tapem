@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { MARKETING_ROUTES } from '@/src/lib/routes';
-import { revokeAdminSessionCookie } from '@/src/server/auth/session';
-import { ADMIN_SESSION_COOKIE_NAME, buildAdminSessionCookie } from '@/src/server/auth/cookies';
+import { MARKETING_ROUTES } from '@/lib/routes';
+import { revokeAdminSessionCookie } from '@/server/auth/session';
+import { ADMIN_SESSION_COOKIE_NAME, buildAdminSessionCookie } from '@/server/auth/cookies';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

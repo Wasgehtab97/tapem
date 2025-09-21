@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { headers } from 'next/headers';
 
-import { buildMetadataBase, findSiteByHost, getSiteConfig } from '@/src/config/sites';
+import { buildMetadataBase, findSiteByHost, getSiteConfig } from '@/config/sites';
 
 const MARKETING_DISALLOW = [
   '/login',

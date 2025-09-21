@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getAdminUserFromSession } from '@/src/server/auth/session';
-import { assertFirebaseAdminReady } from '@/src/server/firebase/admin';
+import { getAdminUserFromSession } from '@/server/auth/session';
+import { assertFirebaseAdminReady } from '@/server/firebase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

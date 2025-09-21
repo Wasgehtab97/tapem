@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-import { getDeploymentStage } from '@/src/config/sites';
-import { ADMIN_ROUTES, MARKETING_ROUTES } from '@/src/lib/routes';
-import { ThemeToggle } from '@/src/components/theme-toggle';
+import { getDeploymentStage } from '@/config/sites';
+import { ADMIN_ROUTES, MARKETING_ROUTES } from '@/lib/routes';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const marketingNav = [
   { label: 'Features', href: '/#features' },

@@ -8,8 +8,8 @@ import {
   FirebaseClientConfigError,
   getFirebaseAuth,
   isFirebaseClientConfigured,
-} from '@/src/lib/firebase/client';
-import { ADMIN_ROUTES, DEFAULT_AFTER_LOGIN, safeAfterLoginRoute } from '@/src/lib/routes';
+} from '@/lib/firebase/client';
+import { ADMIN_ROUTES, DEFAULT_AFTER_LOGIN, safeAfterLoginRoute } from '@/lib/routes';
 
 type FormState = {
   email: string;

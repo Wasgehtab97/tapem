@@ -6,7 +6,7 @@ import {
   assertFirebaseAdminReady,
   getFirebaseAdminApp,
   getFirebaseAdminConfigSummary,
-} from '@/src/server/firebase/admin';
+} from '@/server/firebase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

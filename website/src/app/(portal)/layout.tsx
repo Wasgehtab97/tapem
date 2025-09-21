@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
-import PortalShell from '@/src/components/layout/portal-shell';
-import { buildSiteMetadata, getSiteConfig } from '@/src/config/sites';
+import PortalShell from '@/components/layout/portal-shell';
+import { buildSiteMetadata, getSiteConfig } from '@/config/sites';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headerList = headers();
