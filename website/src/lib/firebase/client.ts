@@ -1,177 +1,207 @@
 'use client';
 
+/**
+ * Firebase Web SDK bootstrap for client-side use in Next.js.
+ * - Reads NEXT_PUBLIC_* envs safely and validates required keys
+ * - Initializes exactly one Firebase App (HMR-safe)
+ * - Provides singleton Auth (with local persistence) and Firestore instances
+ * - Optional Emulator wiring via NEXT_PUBLIC_USE_FIREBASE_EMULATOR + host envs
+ * - Helpful debug logs when NEXT_PUBLIC_TAPEM_DEBUG=1
+ */
+
 import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import {
   browserLocalPersistence,
   getAuth,
   setPersistence,
+  connectAuthEmulator,
   type Auth,
 } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  connectFirestoreEmulator,
+  type Firestore,
+} from 'firebase/firestore';
+
+/* ---------------------------------- Env ---------------------------------- */
 
 const REQUIRED_ENV_KEYS = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID',
+  // Keep these as required since the project uses Storage/Messaging in places.
   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID',
 ] as const;
 
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[number];
 
-type FirebaseClientConfig = FirebaseOptions;
+function readEnv(key: string): string | undefined {
+  // In the browser, Next.js inlines NEXT_PUBLIC_* at build time.
+  const v = (process.env as Record<string, string | undefined>)[key];
+  return typeof v === 'string' && v.trim() ? v : undefined;
+}
+
+const DEBUG = readEnv('NEXT_PUBLIC_TAPEM_DEBUG') === '1';
+
+function dbg(...args: any[]) {
+  if (DEBUG) console.log('[firebase:client]', ...args);
+}
 
 export class FirebaseClientConfigError extends Error {
-  public readonly missingKeys: RequiredEnvKey[];
-
-  constructor(message: string, missingKeys: RequiredEnvKey[]) {
-    super(message);
+  constructor(public missingKeys: RequiredEnvKey[]) {
+    super(`Firebase client configuration is incomplete (missing: ${missingKeys.join(', ')})`);
     this.name = 'FirebaseClientConfigError';
-    this.missingKeys = missingKeys;
   }
 }
 
-let cachedApp: FirebaseApp | null = null;
-let cachedFirestore: Firestore | null = null;
-let authPromise: Promise<Auth> | null = null;
-
-function readEnvValue(key: RequiredEnvKey): string | undefined {
-  if (typeof process === 'undefined' || !process.env) {
-    return undefined;
-  }
-
-  const value = process.env[key];
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return undefined;
-  }
-
-  return value;
-}
-
-function resolveClientConfig(): FirebaseClientConfig {
+function resolveClientConfig(): FirebaseOptions {
   const missing: RequiredEnvKey[] = [];
-  const config: Partial<FirebaseClientConfig> = {};
-  let storageBucketFromEnv: string | undefined;
+  const get = (k: RequiredEnvKey) => {
+    const v = readEnv(k);
+    if (!v) missing.push(k);
+    return v;
+  };
 
-  for (const key of REQUIRED_ENV_KEYS) {
-    const value = readEnvValue(key);
-    if (!value) {
-      missing.push(key);
-      continue;
-    }
+  const projectId = get('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  // Prefer explicit bucket; otherwise derive from projectId.
+  const storageBucket =
+    readEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET') ??
+    (projectId ? `${projectId}.appspot.com` : undefined);
 
-    switch (key) {
-      case 'NEXT_PUBLIC_FIREBASE_API_KEY':
-        config.apiKey = value;
-        break;
-      case 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN':
-        config.authDomain = value;
-        break;
-      case 'NEXT_PUBLIC_FIREBASE_PROJECT_ID':
-        config.projectId = value;
-        break;
-      case 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET':
-        config.storageBucket = value;
-        storageBucketFromEnv = value;
-        break;
-      case 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID':
-        config.messagingSenderId = value;
-        break;
-      case 'NEXT_PUBLIC_FIREBASE_APP_ID':
-        config.appId = value;
-        break;
-      default:
-        break;
-    }
-  }
+  const cfg: FirebaseOptions = {
+    apiKey: get('NEXT_PUBLIC_FIREBASE_API_KEY'),
+    authDomain: get('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+    projectId: projectId,
+    appId: get('NEXT_PUBLIC_FIREBASE_APP_ID'),
+    storageBucket,
+    messagingSenderId: get('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+    measurementId: readEnv('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID'), // optional
+  };
 
-  if (missing.length > 0) {
-    throw new FirebaseClientConfigError(
-      `Firebase client configuration is incomplete (missing: ${missing.join(', ')})`,
-      missing,
-    );
-  }
-
-  if (config.projectId) {
-    const expectedBucket = `${config.projectId}.appspot.com`;
-    if (config.storageBucket !== expectedBucket) {
-      if (storageBucketFromEnv && storageBucketFromEnv !== expectedBucket) {
-        console.warn(
-          `[firebase] überschreibe Storage-Bucket ${storageBucketFromEnv} → ${expectedBucket}, um Firebase Storage korrekt anzusprechen.`
-        );
-      }
-      config.storageBucket = expectedBucket;
-    }
-  }
-
-  return config as FirebaseClientConfig;
+  if (missing.length) throw new FirebaseClientConfigError(missing);
+  return cfg;
 }
 
-function ensureIsBrowser() {
+/* ------------------------------ Emulator opts ----------------------------- */
+
+const USE_EMULATORS = readEnv('NEXT_PUBLIC_USE_FIREBASE_EMULATOR') === 'true';
+const AUTH_EMULATOR = readEnv('NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST') ?? 'localhost:9099';
+const FS_EMULATOR = readEnv('NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST') ?? 'localhost:8080';
+
+/* --------------------------- HMR-safe singletons -------------------------- */
+
+declare global {
+  interface Window {
+    __TAPEM_FB__?: {
+      app?: FirebaseApp;
+      auth?: Auth;
+      db?: Firestore;
+      emulatorsLinked?: boolean;
+    };
+  }
+}
+
+const globalCache = ((): NonNullable<Window['__TAPEM_FB__']> => {
+  if (typeof window === 'undefined') return {};
+  window.__TAPEM_FB__ ||= {};
+  return window.__TAPEM_FB__;
+})();
+
+function ensureBrowser() {
   if (typeof window === 'undefined') {
-    throw new FirebaseClientConfigError('Firebase client is only available in the browser.', []);
+    // This file is "use client", but guard anyway to avoid accidental SSR import usage.
+    throw new Error('Firebase client SDK may only be used in the browser.');
   }
 }
 
-function initializeClientApp(): FirebaseApp {
-  if (cachedApp) {
-    return cachedApp;
-  }
+/* ------------------------------- API exports ------------------------------ */
 
-  ensureIsBrowser();
-  const apps = getApps();
-  if (apps.length > 0) {
-    cachedApp = apps[0];
-    return cachedApp;
+export function getFirebaseApp(): FirebaseApp {
+  ensureBrowser();
+
+  if (globalCache.app) return globalCache.app;
+
+  const existing = getApps()[0];
+  if (existing) {
+    globalCache.app = existing;
+    dbg('reusing existing app');
+    return existing;
   }
 
   const config = resolveClientConfig();
-  cachedApp = initializeApp(config);
-  return cachedApp;
+  dbg('initializing app for project', config.projectId, { useEmulators: USE_EMULATORS });
+  const app = initializeApp(config);
+  globalCache.app = app;
+  return app;
 }
 
-export function getFirebaseApp(): FirebaseApp {
-  return initializeClientApp();
-}
+let authInitPromise: Promise<Auth> | null = null;
 
 export async function getFirebaseAuth(): Promise<Auth> {
-  ensureIsBrowser();
+  ensureBrowser();
+  if (globalCache.auth) return globalCache.auth;
+  if (!authInitPromise) {
+    authInitPromise = (async () => {
+      const app = getFirebaseApp();
+      const auth = getAuth(app);
 
-  if (!authPromise) {
-    const app = initializeClientApp();
-    const auth = getAuth(app);
-    authPromise = setPersistence(auth, browserLocalPersistence)
-      .catch((error) => {
-        console.error('[firebase] failed to set persistence', error);
-        return auth;
-      })
-      .then(() => auth);
+      // Persistence first, then optional emulator wiring.
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (err) {
+        console.warn('[firebase] failed to set local persistence; continuing with default', err);
+      }
+
+      if (USE_EMULATORS && !globalCache.emulatorsLinked) {
+        try {
+          const url = AUTH_EMULATOR.startsWith('http') ? AUTH_EMULATOR : `http://${AUTH_EMULATOR}`;
+          connectAuthEmulator(auth, url, { disableWarnings: true });
+          dbg('Auth emulator connected at', url);
+        } catch (e) {
+          console.warn('[firebase] failed to connect Auth emulator', e);
+        }
+      }
+
+      globalCache.auth = auth;
+      return auth;
+    })();
   }
-
-  return authPromise;
+  return authInitPromise;
 }
 
 export function getFirebaseFirestore(): Firestore {
-  ensureIsBrowser();
+  ensureBrowser();
+  if (globalCache.db) return globalCache.db;
 
-  if (!cachedFirestore) {
-    const app = initializeClientApp();
-    cachedFirestore = getFirestore(app);
+  const db = getFirestore(getFirebaseApp());
+
+  if (USE_EMULATORS && !globalCache.emulatorsLinked) {
+    try {
+      const [host, portStr] = FS_EMULATOR.split(':');
+      const port = Number(portStr || 8080);
+      connectFirestoreEmulator(db, host, port);
+      dbg('Firestore emulator connected at', `${host}:${port}`);
+    } catch (e) {
+      console.warn('[firebase] failed to connect Firestore emulator', e);
+    }
   }
 
-  return cachedFirestore;
+  globalCache.db = db;
+  globalCache.emulatorsLinked = true;
+  return db;
 }
 
 export function isFirebaseClientConfigured(): boolean {
   try {
     resolveClientConfig();
     return true;
-  } catch (error) {
-    if (error instanceof FirebaseClientConfigError) {
-      console.warn('[firebase] client configuration missing keys', error.missingKeys);
+  } catch (e) {
+    if (e instanceof FirebaseClientConfigError) {
+      console.warn('[firebase] client configuration missing keys', e.missingKeys);
       return false;
     }
-    throw error;
+    throw e;
   }
 }
