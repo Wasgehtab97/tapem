@@ -1,105 +1,271 @@
 'use client';
-import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
+
+import { getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import {
-  browserLocalPersistence, getAuth, setPersistence, connectAuthEmulator, type Auth,
+  browserLocalPersistence,
+  connectAuthEmulator,
+  getAuth,
+  setPersistence,
+  type Auth,
 } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, type Firestore } from 'firebase/firestore';
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
 
 const REQUIRED_ENV_KEYS = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
   'NEXT_PUBLIC_FIREBASE_APP_ID',
-  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
 ] as const;
+
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[number];
 
-function readEnv(k: string) {
-  const v = (process.env as Record<string, string | undefined>)[k];
-  return typeof v === 'string' && v.trim() ? v : undefined;
+function readEnv(key: string): string | undefined {
+  const value = (process.env as Record<string, string | undefined>)[key];
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
+
+function parseBoolean(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
 const DEBUG = readEnv('NEXT_PUBLIC_TAPEM_DEBUG') === '1';
-const log = (...a: any[]) => DEBUG && console.log('[firebase:client]', ...a);
+const log = (...args: unknown[]) => {
+  if (DEBUG) {
+    console.log('[firebase:client]', ...args);
+  }
+};
 
 export class FirebaseClientConfigError extends Error {
-  constructor(public missing: RequiredEnvKey[]) {
+  constructor(public readonly missing: RequiredEnvKey[]) {
     super(`Firebase client configuration is incomplete (missing: ${missing.join(', ')})`);
     this.name = 'FirebaseClientConfigError';
   }
 }
+
+let cachedConfig: FirebaseOptions | null = null;
+let cachedConfigError: FirebaseClientConfigError | null = null;
+let missingLogged = false;
+
 function resolveConfig(): FirebaseOptions {
-  const miss: RequiredEnvKey[] = [];
-  const req = (k: RequiredEnvKey) => { const v = readEnv(k); if (!v) miss.push(k); return v; };
-  const projectId = req('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
-  const storageBucket = readEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET') ?? (projectId ? `${projectId}.appspot.com` : undefined);
-  const cfg: FirebaseOptions = {
-    apiKey: req('NEXT_PUBLIC_FIREBASE_API_KEY'),
-    authDomain: req('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-    projectId,
-    appId: req('NEXT_PUBLIC_FIREBASE_APP_ID'),
-    storageBucket,
-    messagingSenderId: req('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-    measurementId: readEnv('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID'),
+  if (cachedConfig) {
+    return cachedConfig;
+  }
+  if (cachedConfigError) {
+    throw cachedConfigError;
+  }
+
+  const missing: RequiredEnvKey[] = [];
+  const requireEnv = (key: RequiredEnvKey) => {
+    const value = readEnv(key);
+    if (!value) {
+      missing.push(key);
+    }
+    return value;
   };
-  if (miss.length) throw new FirebaseClientConfigError(miss);
-  return cfg;
+
+  const apiKey = requireEnv('NEXT_PUBLIC_FIREBASE_API_KEY');
+  const authDomain = requireEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+  const projectId = requireEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  const appId = requireEnv('NEXT_PUBLIC_FIREBASE_APP_ID');
+
+  if (missing.length > 0 || !apiKey || !authDomain || !projectId || !appId) {
+    cachedConfigError = new FirebaseClientConfigError(missing);
+    throw cachedConfigError;
+  }
+
+  const options: FirebaseOptions = {
+    apiKey,
+    authDomain,
+    projectId,
+    appId,
+  };
+
+  const storageBucket = readEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET') ?? `${projectId}.appspot.com`;
+  if (storageBucket) {
+    options.storageBucket = storageBucket;
+  }
+
+  const messagingSenderId = readEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+  if (messagingSenderId) {
+    options.messagingSenderId = messagingSenderId;
+  }
+
+  const measurementId = readEnv('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID');
+  if (measurementId) {
+    options.measurementId = measurementId;
+  }
+
+  cachedConfig = options;
+  cachedConfigError = null;
+  return options;
 }
 
-const USE_EMU = readEnv('NEXT_PUBLIC_USE_FIREBASE_EMULATOR') === 'true';
-const AUTH_EMU = readEnv('NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST') ?? 'localhost:9099';
-const FS_EMU = readEnv('NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST') ?? 'localhost:8080';
+function formatEmulatorUrl(host: string): string {
+  if (!host) {
+    return 'http://localhost:9099';
+  }
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    return host;
+  }
+  return `http://${host}`;
+}
+
+function parseHostAndPort(target: string): { host: string; port: number } {
+  if (!target) {
+    return { host: 'localhost', port: 8080 };
+  }
+  const [hostPart, portPart] = target.split(':');
+  const host = hostPart?.trim() ?? 'localhost';
+  const port = Number(portPart) || 8080;
+  return { host, port };
+}
+
+const EMULATOR_ENABLED = parseBoolean(readEnv('NEXT_PUBLIC_USE_FIREBASE_EMULATOR'));
+const AUTH_EMULATOR_HOST = readEnv('NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST') ?? 'localhost:9099';
+const FIRESTORE_EMULATOR_HOST = readEnv('NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST') ?? 'localhost:8080';
+
+type FirebaseClientCache = {
+  app?: FirebaseApp;
+  auth?: Auth;
+  firestore?: Firestore;
+  emulators: {
+    auth?: boolean;
+    firestore?: boolean;
+  };
+};
 
 declare global {
-  interface Window { __TAPEM_FB__?: { app?: FirebaseApp; auth?: Auth; db?: Firestore; emu?: boolean } }
+  interface Window {
+    __TAPEM_FB__?: FirebaseClientCache;
+  }
 }
-const g = typeof window === 'undefined' ? {} as any : (window.__TAPEM_FB__ ||= {});
+
+let globalCache: FirebaseClientCache = { emulators: {} };
+
+if (typeof window !== 'undefined') {
+  globalCache = window.__TAPEM_FB__ ?? { emulators: {} };
+  window.__TAPEM_FB__ = globalCache;
+  globalCache.emulators = globalCache.emulators ?? {};
+}
 
 function ensureBrowser() {
-  if (typeof window === 'undefined') throw new Error('Firebase client SDK may only be used in the browser.');
+  if (typeof window === 'undefined') {
+    throw new Error('Firebase client SDK may only be used in the browser.');
+  }
 }
 
 export function getFirebaseApp(): FirebaseApp {
   ensureBrowser();
-  if (g.app) return g.app;
+
+  if (globalCache.app) {
+    return globalCache.app;
+  }
+
   const existing = getApps()[0];
-  if (existing) { g.app = existing; return existing; }
-  const cfg = resolveConfig();
-  log('init app', cfg.projectId, { emulator: USE_EMU });
-  const app = initializeApp(cfg);
-  g.app = app;
+  if (existing) {
+    globalCache.app = existing;
+    return existing;
+  }
+
+  const config = resolveConfig();
+  log('init app', config.projectId, { emulator: EMULATOR_ENABLED });
+  const app = initializeApp(config);
+  globalCache.app = app;
   return app;
 }
 
-let authInit: Promise<Auth> | null = null;
+let authInitPromise: Promise<Auth> | null = null;
+
 export async function getFirebaseAuth(): Promise<Auth> {
   ensureBrowser();
-  if (g.auth) return g.auth;
-  if (!authInit) {
-    authInit = (async () => {
+
+  if (globalCache.auth) {
+    return globalCache.auth;
+  }
+
+  if (!authInitPromise) {
+    authInitPromise = (async () => {
       const auth = getAuth(getFirebaseApp());
-      try { await setPersistence(auth, browserLocalPersistence); } catch (e) { console.warn('[firebase] persistence', e); }
-      if (USE_EMU && !g.emu) {
-        const url = AUTH_EMU.startsWith('http') ? AUTH_EMU : `http://${AUTH_EMU}`;
-        try { connectAuthEmulator(auth, url, { disableWarnings: true }); log('auth emulator', url); } catch (e) { console.warn('[firebase] auth emulator', e); }
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (error) {
+        console.warn('[firebase] failed to enable persistence', error);
       }
-      g.auth = auth; return auth;
+
+      if (EMULATOR_ENABLED && !globalCache.emulators.auth) {
+        const url = formatEmulatorUrl(AUTH_EMULATOR_HOST);
+        try {
+          connectAuthEmulator(auth, url, { disableWarnings: true });
+          globalCache.emulators.auth = true;
+          log('auth emulator connected', url);
+        } catch (error) {
+          console.warn('[firebase] auth emulator connection failed', error);
+        }
+      }
+
+      globalCache.auth = auth;
+      return auth;
     })();
   }
-  return authInit;
+
+  return authInitPromise;
 }
 
 export function getFirebaseFirestore(): Firestore {
   ensureBrowser();
-  if (g.db) return g.db;
-  const db = getFirestore(getFirebaseApp());
-  if (USE_EMU && !g.emu) {
-    try { const [h,p='8080'] = FS_EMU.split(':'); connectFirestoreEmulator(db, h, Number(p)); log('fs emulator', `${h}:${p}`); } catch (e) { console.warn('[firebase] fs emulator', e); }
+
+  if (globalCache.firestore) {
+    return globalCache.firestore;
   }
-  g.db = db; g.emu = true; return db;
+
+  const firestore = getFirestore(getFirebaseApp());
+
+  if (EMULATOR_ENABLED && !globalCache.emulators.firestore) {
+    const { host, port } = parseHostAndPort(FIRESTORE_EMULATOR_HOST);
+    try {
+      connectFirestoreEmulator(firestore, host, port);
+      globalCache.emulators.firestore = true;
+      log('firestore emulator connected', `${host}:${port}`);
+    } catch (error) {
+      console.warn('[firebase] firestore emulator connection failed', error);
+    }
+  }
+
+  globalCache.firestore = firestore;
+  return firestore;
 }
 
 export function isFirebaseClientConfigured(): boolean {
-  try { resolveConfig(); return true; }
-  catch (e) { if (e instanceof FirebaseClientConfigError) { console.warn('[firebase] missing', e.missing); return false; } throw e; }
+  if (cachedConfig) {
+    return true;
+  }
+  if (cachedConfigError) {
+    if (!missingLogged) {
+      console.warn('[firebase] missing client configuration keys:', cachedConfigError.missing);
+      missingLogged = true;
+    }
+    return false;
+  }
+
+  try {
+    resolveConfig();
+    return true;
+  } catch (error) {
+    if (error instanceof FirebaseClientConfigError) {
+      if (!missingLogged) {
+        console.warn('[firebase] missing client configuration keys:', error.missing);
+        missingLogged = true;
+      }
+      return false;
+    }
+    throw error;
+  }
 }

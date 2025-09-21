@@ -1,13 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "emailLower", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "leaderboard",
       "queryScope": "COLLECTION",
       "fields": [
@@ -115,13 +108,6 @@
       "fields": [
         { "fieldPath": "publicProfile", "order": "ASCENDING" },
         { "fieldPath": "usernameLower", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "logs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
     {

@@ -1,338 +1,360 @@
 # PR: Fix Firebase Admin Setup & Admin Login Flow
 
-## Ziel & Kontext
-- Health-Check und Firebase-Admin-Bootstrap lieferten Fehler (fehlende Service-Account-Infos, 404 auf `/api/health/firebase-admin`).
-- Der Admin-Login setzte keine Session-Cookies; Admin-Routen waren nur per dev-switch erreichbar.
-- Firestore-Abfragen im Dashboard scheiterten mit `FAILED_PRECONDITION` aufgrund fehlender Indizes und erzeugten Laufzeitfehler.
-- Zusätzlich gab es Theme-Color-Warnungen und unvollständige DX-Dokumentation für Env-Variablen und Emulator-Support.
+## Ziel & Kontext (Fehlermeldungen, Symptome)
+- Health-Check meldete zwar `ok:true`, jedoch war der Firebase-Web-Client im Login-Formular deaktiviert, weil Pflicht-ENV-Variablen falsch ausgewertet wurden.
+- Der Login-Flow setzte kein Session-Cookie; `/admin` war nur über Dev-Switches erreichbar und Middleware prüfte nicht allein per Cookie.
+- Admin-Dashboard-Abfragen konnten durch fehlende Firestore-Indizes `FAILED_PRECONDITION` auslösen, wodurch Teile des Dashboards ausfielen.
+- DX-Probleme: `metadata.themeColor` erzeugte Build-Warnungen, `.env.example` war veraltet und es fehlten klare Diagnose- und Health-Routen.
 
-## Verwendeter Prompt (vollständig)
+## Voller Prompt (dieser Text)
 ```
-Codex-Prompt — „Fix Firebase Admin + Loginflow (Next.js App Router)“
+Codex-Prompt: „Fix Firebase Loginflow & Admin-Anbindung (Next.js 14, App Router)“
 
 PR-Name: codex/fix-firebase-admin-setup-and-admin-login-flow
-Repo-Pfad: website/ (Next.js 14 / App Router)
+Scope: Ordner website/ in diesem Repo (Next.js 14, App Router)
 
-Ziele
+0) Ziele (präzise)
 
-Server: Firebase Admin SDK sicher initialisieren (Service-Account Base64 + Emulator-Support), Health-Check unter /api/health/firebase-admin.
+Firebase Admin (Server): Singleton-Bootstrap mit Service-Account (ENV), optionaler Emulator-Verkabelung, Health-Endpoint /api/health/firebase-admin (no-store).
 
-Client: Firebase Web SDK richtig konfigurieren, nur auf Client nutzen, saubere Prüfung statt „false positive“ Warnbanner.
+Firebase Web (Client): HMR-sicheres Client-Bootstrap (nur im Browser), valider Env-Check ohne „false positives“, optional Emulator-Support.
 
-Loginflow: E-Mail/Passwort → idToken → Session-Cookie via API → Redirect /admin.
+Auth-Flow: Client signInWithEmailAndPassword → idToken → /api/auth/login erstellt httpOnly Session-Cookie → Redirect nach /admin.
 
-Schutz: Middleware: /admin/** nur mit Session-Cookie; Server-Guards.
+Schutz: Middleware schützt /admin/** ausschließlich per Cookie (Edge-kompatibel, ohne Admin SDK).
 
-Dashboard: Firestore-Abfragen ausschließlich über Admin SDK; FAILED_PRECONDITION (Indizes) robust abfangen + Fallback.
+Rollenprüfung: Allowlist per ENV oder Custom Claim role in {'admin','owner'}.
 
-DX: viewport.themeColor statt metadata.themeColor, .env.example aktualisieren, Scripts für Diagnose.
+Admin-Dashboard: Nur Admin SDK verwenden; FAILED_PRECONDITION (fehlender Index) sauber abfangen + Fallbacks (kein Crash).
 
-Masterarbeit: .md unter thesis/gamification/ mit Prompt, Ziel/Kontext und Ergebnis anlegen.
+DX & Cleanup: viewport.themeColor statt metadata.themeColor, aktualisierte .env.example, Diagnoseskripte.
 
-Wichtig
+Thesis: Erstelle eine .md unter thesis/gamification/ mit Prompt, Ziel/Kontext und Ergebnis (siehe Abschnitt 7).
 
-Keine Secrets committen! Lies Server-Secrets nur aus Umgebungsvariablen.
+Keine Secrets committen. Edge-Routen nutzen kein Admin SDK. Servercode mit Admin SDK läuft ausdrücklich in runtime = 'nodejs'.
 
-Alle API-Routen und Server-Utils, die Admin SDK nutzen, Node-Runtime (nicht Edge).
+1) Symptome & Kontext (Bezug zu Ist-Zustand)
 
-Client-SDK nur in Dateien mit 'use client'.
+Health-Check ist grün (ok:true, projectId:'tap-em', mode:'production', usesServiceAccount:true).
 
-Dateien: Ersetzen/Erstellen (1:1 Inhalte)
+Login-Seite zeigt „Firebase ist noch nicht konfiguriert“ → das stammt vom Client-SDK-Check (nicht Admin).
 
-Falls Pfade minimal abweichen, analog anwenden. Alle Dateien im Ordner website/.
+Build-Warnung gesichtet: falscher Re-Export ADMIN_SESSION_COOKIE_NAME → fixen.
 
-1) src/lib/firebase/client.ts ✅ (Client SDK, HMR-safe, Emulator optional)
-'use client';
-import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
-import {
-  browserLocalPersistence, getAuth, setPersistence, connectAuthEmulator, type Auth,
-} from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, type Firestore } from 'firebase/firestore';
+Firestore-Deploy meldet 400 „this index is not necessary“ wegen 1-Feld-Composite-Index (separat beheben; Login unabhängig davon).
 
-const REQUIRED_ENV_KEYS = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID',
-  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-] as const;
-type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[number];
+2) Exakte Änderungen an Dateien (ersetzen/erstellen)
 
-function readEnv(k: string) {
-  const v = (process.env as Record<string, string | undefined>)[k];
-  return typeof v === 'string' && v.trim() ? v : undefined;
-}
-const DEBUG = readEnv('NEXT_PUBLIC_TAPEM_DEBUG') === '1';
-const log = (...a: any[]) => DEBUG && console.log('[firebase:client]', ...a);
+Alle Pfade relativ zu website/. Wenn eine Datei bereits existiert, ihren Inhalt ersetzen (sofern sinnvoll) oder gemäß Anweisungen anpassen. Keine Secrets in Dateien.
 
-export class FirebaseClientConfigError extends Error {
-  constructor(public missing: RequiredEnvKey[]) {
-    super(`Firebase client configuration is incomplete (missing: ${missing.join(', ')})`);
-    this.name = 'FirebaseClientConfigError';
-  }
-}
-function resolveConfig(): FirebaseOptions {
-  const miss: RequiredEnvKey[] = [];
-  const req = (k: RequiredEnvKey) => { const v = readEnv(k); if (!v) miss.push(k); return v; };
-  const projectId = req('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
-  const storageBucket = readEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET') ?? (projectId ? `${projectId}.appspot.com` : undefined);
-  const cfg: FirebaseOptions = {
-    apiKey: req('NEXT_PUBLIC_FIREBASE_API_KEY'),
-    authDomain: req('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-    projectId,
-    appId: req('NEXT_PUBLIC_FIREBASE_APP_ID'),
-    storageBucket,
-    messagingSenderId: req('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-    measurementId: readEnv('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID'),
-  };
-  if (miss.length) throw new FirebaseClientConfigError(miss);
-  return cfg;
-}
+A) Client SDK: src/lib/firebase/client.ts
 
-const USE_EMU = readEnv('NEXT_PUBLIC_USE_FIREBASE_EMULATOR') === 'true';
-const AUTH_EMU = readEnv('NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST') ?? 'localhost:9099';
-const FS_EMU = readEnv('NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST') ?? 'localhost:8080';
+Implementiere eine HMR-sichere Initialisierung (Singleton über window.__TAPEM_FB__), 'use client'.
 
-declare global {
-  interface Window { __TAPEM_FB__?: { app?: FirebaseApp; auth?: Auth; db?: Firestore; emu?: boolean } }
-}
-const g = typeof window === 'undefined' ? {} as any : (window.__TAPEM_FB__ ||= {});
+Required-Keys (minimal): NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_APP_ID.
 
-function ensureBrowser() {
-  if (typeof window === 'undefined') throw new Error('Firebase client SDK may only be used in the browser.');
-}
+STORAGE_BUCKET, MESSAGING_SENDER_ID, MEASUREMENT_ID optional; wenn STORAGE_BUCKET fehlt, aus projectId → ${projectId}.appspot.com ableiten.
 
-export function getFirebaseApp(): FirebaseApp {
-  ensureBrowser();
-  if (g.app) return g.app;
-  const existing = getApps()[0];
-  if (existing) { g.app = existing; return existing; }
-  const cfg = resolveConfig();
-  log('init app', cfg.projectId, { emulator: USE_EMU });
-  const app = initializeApp(cfg);
-  g.app = app;
-  return app;
-}
+Exportiere:
 
-let authInit: Promise<Auth> | null = null;
-export async function getFirebaseAuth(): Promise<Auth> {
-  ensureBrowser();
-  if (g.auth) return g.auth;
-  if (!authInit) {
-    authInit = (async () => {
-      const auth = getAuth(getFirebaseApp());
-      try { await setPersistence(auth, browserLocalPersistence); } catch (e) { console.warn('[firebase] persistence', e); }
-      if (USE_EMU && !g.emu) {
-        const url = AUTH_EMU.startsWith('http') ? AUTH_EMU : `http://${AUTH_EMU}`;
-        try { connectAuthEmulator(auth, url, { disableWarnings: true }); log('auth emulator', url); } catch (e) { console.warn('[firebase] auth emulator', e); }
-      }
-      g.auth = auth; return auth;
-    })();
-  }
-  return authInit;
-}
+getFirebaseApp(), getFirebaseAuth() (mit browserLocalPersistence), getFirebaseFirestore().
 
-export function getFirebaseFirestore(): Firestore {
-  ensureBrowser();
-  if (g.db) return g.db;
-  const db = getFirestore(getFirebaseApp());
-  if (USE_EMU && !g.emu) {
-    try { const [h,p='8080'] = FS_EMU.split(':'); connectFirestoreEmulator(db, h, Number(p)); log('fs emulator', `${h}:${p}`); } catch (e) { console.warn('[firebase] fs emulator', e); }
-  }
-  g.db = db; g.emu = true; return db;
-}
+isFirebaseClientConfigured() (gibt nur false, wenn einer der vier Minimal-Keys fehlt).
 
-export function isFirebaseClientConfigured(): boolean {
-  try { resolveConfig(); return true; }
-  catch (e) { if (e instanceof FirebaseClientConfigError) { console.warn('[firebase] missing', e.missing); return false; } throw e; }
-}
+Optionaler Emulator via NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true + Hosts.
 
-2) src/components/admin/admin-login-form.tsx ✅ (nur Client-SDK + Session-Cookie)
-'use client';
-import React, { useState } from 'react';
-import { getFirebaseAuth, isFirebaseClientConfigured } from '@/src/lib/firebase/client';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+(Du kannst meine bereits gelieferte optimierte client.ts verwenden, aber REQUIRED_ENV_KEYS auf die vier Minimal-Keys reduzieren.)
 
-export default function AdminLoginForm() {
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+B) Login UI
+src/components/admin/admin-login-form.tsx
 
-  const clientOk = isFirebaseClientConfigured();
+Nur folgende Imports verwenden:
+import { isFirebaseClientConfigured, getFirebaseAuth } from '@/src/lib/firebase/client';
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null); setBusy(true);
-    try {
-      if (!clientOk) throw new Error('client-not-configured');
-      const auth = await getFirebaseAuth();
-      const cred = await signInWithEmailAndPassword(auth, email.trim(), pw);
-      const idToken = await cred.user.getIdToken(/* forceRefresh */ true);
-      const resp = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      });
-      if (!resp.ok) throw new Error('login-endpoint-failed');
-      // Redirect to /admin
-      window.location.href = '/admin';
-    } catch (e: any) {
-      setErr(e?.message ?? 'unknown-error');
-    } finally { setBusy(false); }
-  }
+Ablauf:
 
-  return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      {!clientOk && (
-        <div className="rounded-md bg-red-100/10 border border-red-400 p-3 text-red-200">
-          Firebase ist noch nicht konfiguriert. Bitte die Umgebungsvariablen prüfen.
-        </div>
-      )}
+Wenn !isFirebaseClientConfigured() → Warnbanner rendern, Button disabled.
 
-      <label className="grid gap-2">
-        <span className="text-sm opacity-80">E-Mail-Adresse</span>
-        <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700" />
-      </label>
+signInWithEmailAndPassword (Email/PW) → idToken = user.getIdToken(true).
 
-      <label className="grid gap-2">
-        <span className="text-sm opacity-80">Passwort</span>
-        <input type="password" required value={pw} onChange={e=>setPw(e.target.value)} className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700" />
-      </label>
+POST /api/auth/login (JSON { idToken }) → bei 204 → window.location.href = '/admin'.
 
-      {err && <div className="text-sm text-red-300">{err}</div>}
+Fehler sauber anzeigen (kleines Text-Label).
 
-      <button disabled={busy || !clientOk} className="rounded-md px-4 py-2 bg-blue-600 disabled:opacity-50">
-        {busy ? 'Anmelden…' : 'Anmelden'}
-      </button>
-    </form>
-  );
-}
+src/app/(admin)/admin/login/page.tsx
 
-3) src/app/(admin)/admin/login/page.tsx ✅ (schlank)
-import AdminLoginForm from '@/src/components/admin/admin-login-form';
-import Link from 'next/link';
+Schlanke RSC-Page, rendert Form + (optional) Health-Badge (fetch auf /api/health/firebase-admin, cache: 'no-store').
 
-export const runtime = 'nodejs'; // page selbst ist RSC, ok
-export const dynamic = 'force-dynamic';
+Kein eigener Env-Check; das macht die Form.
 
-export default async function Page() {
-  // Optional: Health-Badge vom Server
-  const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/health/firebase-admin`, { cache: 'no-store' }).catch(()=>null);
-  const info = r?.ok ? await r.json() : null;
+C) Admin SDK (Server)
+src/server/firebase/admin.ts
 
-  return (
-    <div className="max-w-lg mx-auto py-10 grid gap-6">
-      {info && (
-        <div className="rounded-md bg-emerald-100/10 border border-emerald-400 p-3 text-emerald-200">
-          Verbunden mit Projekt <b>{info.projectId}</b> · Modus <b>{info.mode}</b> · Service Account {info.usesServiceAccount ? 'aktiv' : 'inaktiv'}
-        </div>
-      )}
-      <h1 className="text-2xl font-semibold">Anmeldung</h1>
-      <AdminLoginForm />
-      <p className="text-sm opacity-60">Bei Problemen: Core-Team kontaktieren.</p>
-      <p className="text-xs opacity-40"><Link href="/">Zurück</Link></p>
-    </div>
-  );
-}
+Singleton-Init mit firebase-admin. Service Account aus ENV einer der Varianten:
 
-4) src/server/firebase/admin.ts ✅ (Admin-SDK Singleton + Summary)
-import 'server-only';
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+Base64-ENV FIREBASE_SERVICE_ACCOUNT (bevorzugt) → JSON parsen; private_key \n → \n.
 
-type Mode = 'production' | 'emulator';
+Alternativ FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY (ebenfalls \n fixen).
 
-let app: App | null = null;
-let mode: Mode = 'production';
+Optionaler Emulator, wenn USE_FIREBASE_EMULATOR=true: setze FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST.
 
-function loadServiceAccountFromEnv():
-  | { projectId: string; clientEmail: string; privateKey: string }
-  | null {
-  // Option A: einzeiliges Base64 JSON (empfohlen)
-  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (b64) {
-    try {
-      const json = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-      return {
-        projectId: json.project_id,
-        clientEmail: json.client_email,
-        privateKey: json.private_key?.replace(/\\n/g, '\n'),
-      };
-    } catch (e) {
-      throw new Error('[firebase-admin] FIREBASE_SERVICE_ACCOUNT (base64) konnte nicht geparst werden.');
-    }
-  }
-  // Option B: Einzelwerte
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  if (privateKey && privateKey.includes('\\n')) privateKey = privateKey.replace(/\\n/g, '\n');
-  if (projectId && clientEmail && privateKey) return { projectId, clientEmail, privateKey };
-  return null;
-}
+Exporte:
 
-export function getFirebaseAdminApp(): App {
-  if (app) return app;
+getFirebaseAdminApp(), assertFirebaseAdminReady(), getFirebaseAdminConfigSummary() ( { projectId, mode: 'production'|'emulator', usesServiceAccount } )
 
-  const svc = loadServiceAccountFromEnv();
-  if (!svc) throw new Error('[firebase-admin] Service Account nicht gefunden – ENV prüfen.');
+Kurzhelfer adminAuth(), adminDb().
 
-  const existing = getApps()[0];
-  if (existing) {
-    app = existing;
-    return app;
-  }
+src/app/api/health/firebase-admin/route.ts
 
-  // Emulator?
-  if (process.env.USE_FIREBASE_EMULATOR === 'true') {
-    process.env.FIRESTORE_EMULATOR_HOST ||= 'localhost:8080';
-    process.env.FIREBASE_AUTH_EMULATOR_HOST ||= 'localhost:9099';
-    mode = 'emulator';
-  }
+runtime='nodejs', dynamic='force-dynamic', revalidate=0, Cache-Control: no-store.
 
-  app = initializeApp({
-    credential: cert({ projectId: svc.projectId, clientEmail: svc.clientEmail, privateKey: svc.privateKey }),
-    projectId: svc.projectId,
-  }, 'tapem-admin-sdk');
+Antwort { ok:true, ...summary } oder { ok:false, error }.
 
-  return app;
-}
+D) Session/Cookies/Rollen
+src/server/auth/cookies.ts
 
-export function assertFirebaseAdminReady() {
-  getFirebaseAdminApp(); // throws wenn nicht ok
-}
+Konstanten:
+SESSION_COOKIE_NAME = 'tapem_session'
+SESSION_MAX_AGE_SEC = 60*60*24*7
 
-export function getFirebaseAdminConfigSummary() {
-  const svc = loadServiceAccountFromEnv();
-  return {
-    projectId: svc?.projectId ?? null,
-    mode,
-    usesServiceAccount: Boolean(svc),
-  };
-}
+cookieOptions() → { httpOnly:true, sameSite:'lax', secure: NODE_ENV==='production', path:'/', maxAge }.
 
-export const adminAuth = () => getAuth(getFirebaseAdminApp());
-export const adminDb   = () => getFirestore(getFirebaseAdminApp());
+src/server/auth/session.ts
 
-...
+getSession() → Cookie lesen, adminAuth().verifySessionCookie(cookie, true) → decoded oder null.
+
+setSessionCookie(resp, sessionCookie) / clearSessionCookie(resp).
+
+src/server/auth/roles.ts (neu)
+
+isAdmin(uid, email?):
+
+ENV-Allowlist: ADMIN_ALLOWED_EMAILS/ADMIN_ALLOWLIST (Komma-getrennt, lowercased).
+
+Sonst adminAuth().getUser(uid) → Custom Claims, akzeptiere role in {'admin','owner'}.
+
+E) Auth-API
+src/app/api/auth/login/route.ts (POST)
+
+Erwartet { idToken }.
+
+verifyIdToken(idToken, true) → uid,email.
+
+Gate: isAdmin(uid,email) → wenn false → 403 { error:'not-admin' }.
+
+createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_SEC*1000 }) → 204 + Set-Cookie.
+
+src/app/api/auth/logout/route.ts (POST)
+
+clearSessionCookie → 204.
+
+src/app/api/auth/me/route.ts (GET, Debug)
+
+Wenn Session ok → { ok:true, uid, email, admin }, sonst 401.
+
+F) Middleware (Edge, ohne Admin SDK)
+middleware.ts
+
+export const config = { matcher: ['/admin/:path*'] }.
+
+Prüft nur das Vorhandensein von SESSION_COOKIE_NAME im Request-Cookie.
+
+Falls kein Cookie → return NextResponse.redirect('/admin/login'), sonst NextResponse.next().
+
+G) Layout/Meta
+
+In allen Layouts/Pages, die bisher metadata.themeColor exportieren, auf export const viewport = { themeColor: '#0B0F1A' } umstellen.
+
+API-Routen exportieren keine metadata.
+
+H) Admin-Dashboard Daten
+src/server/admin/dashboard-data.ts
+
+Alle Abfragen über adminDb() (kein direktes @google-cloud/firestore).
+
+Jede Aggregate/Query in try/catch:
+
+Bei Fehlercode 9 (FAILED_PRECONDITION → Index fehlt):
+
+Hinweis loggen (und optional in Rückgabe note: 'index-building').
+
+Fallback: normale Query (get()) und snapshot.size/Aggregation (ggf. limit(1000)), sodass das UI nicht crasht.
+
+Die Funktion selbst läuft serverseitig (Node) via RSC/Server-Action.
+
+I) Re-Export-Warnung fixen
+src/lib/auth/constants.ts
+
+Entweder löschen und alle Importe direkt auf
+import { SESSION_COOKIE_NAME } from '@/src/server/auth/cookies' umstellen,
+
+oder Datei belassen mit exakt:
+
+export { SESSION_COOKIE_NAME as ADMIN_SESSION_COOKIE } from '@/src/server/auth/cookies';
+
+J) .env.example aktualisieren (keine Secrets)
+
+Client (Web):
+
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+NEXT_PUBLIC_TAPEM_DEBUG=0
+NEXT_PUBLIC_USE_FIREBASE_EMULATOR=false
+NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST=localhost:8080
+
+
+Server (Admin):
+
+# bevorzugt:
+FIREBASE_SERVICE_ACCOUNT=
+# alternativ:
+# FIREBASE_PROJECT_ID=
+# FIREBASE_CLIENT_EMAIL=
+# FIREBASE_PRIVATE_KEY=
+ADMIN_ALLOWED_EMAILS=
+USE_FIREBASE_EMULATOR=false
+
+K) Firestore Indizes (separat, aber gleich mit aufräumen)
+
+Keinen 1-Feld-Composite-Index in "indexes" belassen.
+
+Bei vorhandenem 400-Fehler:
+
+Datei mit Cloud-Stand überschreiben:
+firebase firestore:indexes --project tap-em > firestore.indexes.json
+
+Oder ein-Feld-Composite Einträge manuell aus "indexes" entfernen.
+
+Deploy: firebase deploy --only firestore:indexes → Frage „delete?“ mit No beantworten.
+
+L) Diagnose-Skript (optional)
+
+scripts/diag/http-admin-health.mjs: GET auf /api/health/firebase-admin und JSON pretty-printen.
+
+3) Code-/Stil-Leitplanken
+
+Keine Secrets in Git.
+
+Edge Middleware: nur Cookies prüfen; kein Admin SDK importieren.
+
+Cookies: httpOnly, SameSite=Lax, in Prod secure:true, Dev secure:false.
+
+Server-Routen / Helpers: export const runtime = 'nodejs' falls in Routen nötig.
+
+Client-Seite: 'use client' nur dort, wo Firebase Web SDK verwendet wird.
+
+Keine Business-Logik ändern; nur Infrastruktur (Auth/Bootstraps/Guards/Indizes).
+
+4) Tests & Abnahme (muss erfüllt sein)
+
+Health
+GET /api/health/firebase-admin → { ok:true, projectId:'tap-em', mode:'production'|'emulator', usesServiceAccount:true }.
+
+Login
+
+/admin/login rendert ohne rotes Env-Banner, wenn die vier Minimal-Keys gesetzt sind.
+
+Formular sendet:
+
+signInWithPassword (200),
+
+POST /api/auth/login → 204 mit Set-Cookie (httpOnly, SameSite=Lax, Secure je nach NODE_ENV).
+
+Redirect zu /admin.
+
+Guard
+
+Direktaufruf /admin ohne Cookie → Redirect /admin/login.
+
+Mit Cookie → Seite lädt.
+
+/api/auth/me
+
+Mit Session: { ok:true, uid, email, admin:true }.
+
+Dashboard
+
+Lädt ohne Crash; bei fehlenden Indizes Infotext/Fallback statt FAILED_PRECONDITION.
+
+Next Warnings
+
+Keine Unsupported metadata themeColor Meldungen mehr.
+
+5) Dev-Kommandos (Dokumentation ergänzen)
+
+Start:
+
+npm i
+npm run dev
+
+
+Harte Neustarts bei .env.local-Änderung:
+
+rm -rf .next && npm run dev
+
+
+Indizes (optional):
+
+firebase firestore:indexes --project tap-em > firestore.indexes.json
+firebase deploy --only firestore:indexes   # „delete?“ -> No
+
+6) Rollenzuweisung (falls 403 „not-admin“)
+
+Allowlist: E-Mail in ADMIN_ALLOWED_EMAILS aufnehmen, oder
+
+Custom Claim: einmalig setzen role:'admin':
+
+admin.auth().setCustomUserClaims('<UID>', { role: 'admin' })
+
+
+Danach ab-/anmelden, damit der Claim im Token ist.
+
+7) Pflicht: Gamification-Protokoll für die Masterarbeit
+
+Erstelle in diesem PR die Datei:
+thesis/gamification/PR-fix-firebase-admin-setup-and-admin-login-flow.md
+
+Inhalt (Template ausfüllen):
+
+Ziel & Kontext (Fehlermeldungen, Symptome)
+
+Voller Prompt (dieser Text)
+
+Umsetzung (Liste geänderter Dateien, Kerndesigns)
+
+Ergebnis (Screens/Checks: Health, Login 204/Set-Cookie, /admin erreichbar)
+
+Lessons Learned (Env-Trennung, Index-Fallbacks, Edge vs Node, etc.)
+
+Bitte alle obigen Änderungen umsetzen und als PR codex/fix-firebase-admin-setup-and-admin-login-flow öffnen.
+Damit ist der Login mit deinem in Firebase Auth angelegten User funktionsfähig, /admin geschützt, und das Dashboard läuft robust – lokal auf localhost:3000.
 ```
 
-## Umsetzung (Kurzfassung)
-- Firebase Client- und Admin-SDKs als HMR-sichere Singletons neu implementiert, inklusive Emulator-Support & Config-Validierung.
-- Login-Flow über `/api/auth/login`, Session-Cookies und Middleware-Schutz komplett neu aufgesetzt; Debug-Endpoints (`/api/auth/me`, `/api/auth/logout`) bereitgestellt.
-- Admin-Dashboard nutzt jetzt ausschließlich `adminDb()` mit robustem Error-Handling und Fallbacks bei `FAILED_PRECONDITION` (Index-Hinweise, limitierte Queries).
-- Health-Check `/api/health/firebase-admin` und Admin-Login-Seite aktualisiert (Health-Badge, schlankes UI, nur Client-SDK im Browser).
-- DX-Verbesserungen: `.env.example` überarbeitet, viewport-themeColor korrigiert, Diagnose-Script bestätigt, Gamification-Log aktualisiert.
+## Umsetzung (Liste geänderter Dateien, Kerndesigns)
+- `website/src/lib/firebase/client.ts`: Minimale ENV-Prüfung, globaler Singleton-Cache auf `window.__TAPEM_FB__`, Emulator-Anbindung je Service, stabiler `isFirebaseClientConfigured` ohne False Positives.
+- `website/src/components/admin/admin-login-form.tsx`: Client-Formular mit sauberem Fehlerhandling, Token-Weitergabe an `/api/auth/login`, Zustände (`busy`, `err`) und Deaktivierung bei fehlender Konfiguration.
+- `website/src/app/(admin)/admin/login/page.tsx`: RSC-Page mit serverseitigem Health-Fetch (`cache: 'no-store'`), Anzeige eines Status-Badges und Integration des Formulars.
+- `website/src/app/(admin)/admin/logout/route.ts`: Logout-Redirect setzt `Cache-Control: no-store` und leert das Session-Cookie ausschließlich über Server-Helper.
+- `website/src/lib/auth/constants.ts`: Re-Export korrigiert (`SESSION_COOKIE_NAME` → `ADMIN_SESSION_COOKIE`) zur Eliminierung der Build-Warnung.
+- `website/.env.example`: Strukturierte ENV-Dokumentation für Client/Server inkl. Emulator-Hosts und Allowlist-Hinweisen.
+- `firestore.indexes.json`: Entfernt überflüssige 1-Feld-Composite-Indizes, um 400er-Deploy-Fehler zu vermeiden.
+- `thesis/gamification/PR-fix-firebase-admin-setup-and-admin-login-flow.md`: Dokumentation dieses Prompts, der Maßnahmen und Ergebnisse für die Masterarbeit.
 
-## Ergebnis (Screens/Checks)
-- `npm run lint` & `npm run typecheck` (lokal) ✔️
-- Manuelle Checks: Health-Endpoint gibt `{ ok: true }`, Login erzeugt `tapem_session`-Cookie und Redirect zu `/admin`, Logout entfernt das Cookie.
-- Dashboard lädt Kennzahlen; bei fehlenden Indizes erscheinen Warnhinweise statt Abstürze.
+## Ergebnis (Screens/Checks: Health, Login 204/Set-Cookie, /admin erreichbar)
+- Health-Endpoint `/api/health/firebase-admin` liefert `{ ok:true, projectId, mode, usesServiceAccount }` mit `Cache-Control: no-store`.
+- Login-Formular akzeptiert gültige Credentials, ruft `/api/auth/login` auf und setzt das HTTP-only `tapem_session`-Cookie (204) vor dem Redirect nach `/admin`.
+- Middleware prüft ausschließlich auf das Session-Cookie; der Guard leitet nicht authentifizierte Aufrufe zu `/admin/login` um.
+- Admin-Dashboard nutzt ausschließlich das Admin SDK und fängt `FAILED_PRECONDITION`-Fehler via Fallbacks ab, sodass UI-Komponenten weiter rendern.
 
-## Lessons Learned
-- Präzise Prompts mit detaillierten File-Replacements ermöglichen schnelles, deterministisches Arbeiten selbst bei umfangreichen Auth-/Firestore-Konfigurationen.
-- Fallback-Strategien mit limitierten Queries halten Admin-UIs lauffähig, obwohl Firestore-Indizes noch erstellt werden.
-- Einheitliche Env-Dokumentation reduziert Setup-Reibung erheblich.
+## Lessons Learned (Env-Trennung, Index-Fallbacks, Edge vs Node, etc.)
+- Minimal-invasive ENV-Checks vermeiden Dev-False-Positives und lassen optionale Felder flexibel – wichtig für unterschiedliche Firebase-Projekte.
+- Separater Edge-Guard (nur Cookies) plus Node-basierter Admin-SDK-Einsatz garantiert Kompatibilität und Sicherheit.
+- Firestore-Abfragen benötigen robuste Fallbacks; Indizes sollten regelmäßig mit der Cloud-Konfiguration abgeglichen werden.
+- Konsistente Diagnosepfade (Health-Route, Scripts) beschleunigen Fehlersuche in komplexen Firebase-Setups.
+- .env-Dokumentation und klare Role-Governance (Allowlist vs. Claims) reduzieren Onboarding-Reibung im Team.
