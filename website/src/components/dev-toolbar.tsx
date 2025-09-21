@@ -95,10 +95,10 @@ export default function DevToolbar({ currentRole }: DevToolbarProps) {
         </button>
       </div>
       {pending ? (
-        <p className="text-[11px] text-slate-500">{pending === 'logout' ? 'Abmelden…' : `Wechsel zu ${pending}…`}</p>
+        <p className="text-[11px] text-muted">{pending === 'logout' ? 'Abmelden…' : `Wechsel zu ${pending}…`}</p>
       ) : null}
       {error ? (
-        <p className="text-[11px] text-red-600" role="alert">
+        <p className="text-[11px] text-red-600 dark:text-red-300" role="alert">
           {error}
         </p>
       ) : null}

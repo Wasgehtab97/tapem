@@ -6,6 +6,7 @@ import DevToolbar from '@/components/dev-toolbar';
 import { getDevUserFromCookies } from '@/lib/auth/server';
 import type { Role } from '@/lib/auth/types';
 import { PORTAL_ROUTES, type PortalRouteDefinition } from '@/lib/routes';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const portalNav = [
   { route: PORTAL_ROUTES.gym, label: 'Dashboard' },
@@ -21,7 +22,7 @@ export default function PortalShell({ children }: { children: ReactNode }) {
   const currentRole: Role | null = devUser?.role ?? null;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-page text-page">
       <header className="border-b border-subtle bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link
@@ -36,14 +37,17 @@ export default function PortalShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.route.href}
                 href={item.route.href}
-                className="rounded px-2 py-1 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="rounded px-2 py-1 transition hover:bg-card-muted hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {isProduction ? <div className="hidden" aria-hidden /> : <DevToolbar currentRole={currentRole} />}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {isProduction ? <div className="hidden" aria-hidden /> : <DevToolbar currentRole={currentRole} />}
+          </div>
         </div>
       </header>
 

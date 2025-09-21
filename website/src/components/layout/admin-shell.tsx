@@ -8,6 +8,7 @@ import type { AuthenticatedUser, Role } from '@/lib/auth/types';
 import { ADMIN_ROUTES, type AdminRouteDefinition } from '@/lib/routes';
 import { isDevPreviewRoleSwitchesEnabled } from '@/lib/env';
 import { getAdminUserFromSession } from '@/server/auth/session';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type NavigationItem = {
   label: string;
@@ -31,7 +32,7 @@ function NavigationMenu({ items }: { items: NavigationItem[] }) {
           return (
             <span
               key={item.label}
-              className="block rounded-md px-3 py-2 text-sm text-slate-400"
+              className="block rounded-md px-3 py-2 text-sm text-muted"
               aria-disabled="true"
             >
               {item.label}
@@ -43,7 +44,7 @@ function NavigationMenu({ items }: { items: NavigationItem[] }) {
           <Link
             key={item.label}
             href={item.route.href}
-            className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="block rounded-md px-3 py-2 text-sm font-medium text-page transition hover:bg-card-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {item.label}
           </Link>
@@ -78,23 +79,24 @@ function AdminHeader({
         <div className="flex items-center gap-4">
           {user ? (
             <div className="text-right">
-              <p className="text-sm font-semibold text-slate-900">{user.email}</p>
-              <p className="text-xs text-slate-500">Rolle: {user.role}</p>
+              <p className="text-sm font-semibold text-page">{user.email}</p>
+              <p className="text-xs text-muted">Rolle: {user.role}</p>
             </div>
           ) : devRole ? (
             <div className="text-right">
-              <p className="text-sm font-semibold text-slate-900">Dev-Rolle: {devRole}</p>
-              <p className="text-xs text-slate-500">Nur Vorschau</p>
+              <p className="text-sm font-semibold text-page">Dev-Rolle: {devRole}</p>
+              <p className="text-xs text-muted">Nur Vorschau</p>
             </div>
           ) : null}
           {user ? (
             <Link
               href={ADMIN_ROUTES.logout.href}
-              className="rounded-md border border-subtle px-3 py-1 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-md border border-subtle bg-card px-3 py-1 text-sm font-semibold text-page transition hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Abmelden
             </Link>
           ) : null}
+          <ThemeToggle />
           {showDevToolbar ? <DevToolbar currentRole={devRole} /> : null}
         </div>
       </div>
@@ -122,7 +124,7 @@ export default async function AdminShell({ children }: { children: ReactNode }) 
 
   if (!hasAdminAccess) {
     return (
-      <div className="flex min-h-screen flex-col bg-page">
+      <div className="flex min-h-screen flex-col bg-page text-page">
         {header}
         <main className="flex-1 bg-page">{children}</main>
         <footer className="border-t border-subtle bg-surface-muted">
@@ -135,7 +137,7 @@ export default async function AdminShell({ children }: { children: ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen bg-page">
+    <div className="flex min-h-screen bg-page text-page">
       <aside className="hidden w-64 border-r border-subtle bg-surface px-4 py-6 lg:block">
         <NavigationMenu items={NAVIGATION} />
       </aside>

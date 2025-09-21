@@ -44,15 +44,15 @@ export default async function Page() {
   return (
     <div className="mx-auto grid max-w-lg gap-6 py-10">
       {info && (
-        <div className="rounded-md border border-emerald-400 bg-emerald-100/10 p-3 text-emerald-200">
+        <div className="rounded-md border border-emerald-400 bg-emerald-100/10 p-3 text-emerald-200 dark:border-emerald-500/60 dark:bg-emerald-500/10 dark:text-emerald-200">
           Verbunden mit Projekt <b>{info.projectId}</b> · Modus <b>{info.mode}</b> · Service Account{' '}
           {info.usesServiceAccount ? 'aktiv' : 'inaktiv'}
         </div>
       )}
       <h1 className="text-2xl font-semibold">Anmeldung</h1>
       <AdminLoginForm />
-      <p className="text-sm opacity-60">Bei Problemen: Core-Team kontaktieren.</p>
-      <p className="text-xs opacity-40">
+      <p className="text-sm text-muted">Bei Problemen: Core-Team kontaktieren.</p>
+      <p className="text-xs text-muted">
         <Link href={MARKETING_ROUTES.home.href}>Zurück</Link>
       </p>
     </div>
