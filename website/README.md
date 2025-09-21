@@ -39,6 +39,13 @@ npm run build
 npm start
 ```
 
+## Theme (Dark/Light/System)
+
+- Die Auswahl wird clientseitig unter `localStorage['tapem-theme']` gespeichert und kann `light`, `dark` oder `system` enthalten.
+- Ein Best-Effort-Hint für SSR liegt als Cookie `tapem-theme` vor und speichert den zuletzt gerenderten Modus (`light` oder `dark`).
+- `src/components/theme-script.tsx` setzt vor der Hydration die passende `data-theme`-Klasse auf `<html>` und synchronisiert das Cookie.
+- Gemeinsame Tokens wie `bg-page`, `bg-card`, `text-page`, `text-muted` etc. stammen aus `src/styles/globals.css` und werden in allen Segmenten verwendet.
+
 ## Umgebungskonfiguration
 
 `.env.example` enthält optionale Host-Overrides für lokale Tests:

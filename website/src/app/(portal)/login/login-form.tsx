@@ -40,30 +40,42 @@ export default function LoginForm() {
 
   return (
     <form action={onSubmit} className="max-w-md space-y-4">
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/60 dark:bg-amber-500/10 dark:text-amber-200">
         <strong>Dev-Login (Stub):</strong> Nur für Preview/Entwicklung. In Production deaktiviert.
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">E-Mail (optional)</label>
-        <input id="email" name="email" type="email" placeholder="you@example.com"
-          className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900" />
+        <label htmlFor="email" className="block text-sm font-medium text-page">E-Mail (optional)</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          className="w-full rounded border border-subtle bg-card px-3 py-2 text-sm text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        />
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="role" className="block text-sm font-medium text-slate-700">Rolle</label>
-        <select id="role" name="role" defaultValue="owner"
-          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+        <label htmlFor="role" className="block text-sm font-medium text-page">Rolle</label>
+        <select
+          id="role"
+          name="role"
+          defaultValue="owner"
+          className="w-full rounded border border-subtle bg-card px-3 py-2 text-sm text-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
           <option value="owner">owner</option>
           <option value="operator">operator</option>
           <option value="admin">admin</option>
         </select>
       </div>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
 
-      <button type="submit" disabled={submitting}
-        className="inline-flex items-center justify-center rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={submitting}
+        className="inline-flex items-center justify-center rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+      >
         {submitting ? 'Anmelden…' : 'Anmelden'}
       </button>
     </form>
