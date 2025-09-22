@@ -194,6 +194,36 @@ Next.js erzwingt mit `experimental.typedRoutes` streng typisierte Navigation. Da
 - Manuell prüfen: Navbar-Links (`/`, `/gym`, `/admin`), Dev-Login ohne `next`, mit `next=/admin` und mit ungültigem `next` leitet nach `/gym`.
 
 
+## Admin Monitoring
+
+Die Admin-Oberfläche bündelt unter `/admin/monitoring` eine MapLibre-Karte aller aktiven deutschen Studios. Die API arbeitet vollständig serverseitig mit dem Firebase Admin SDK, nutzt strukturierte Fehlerantworten und vermeidet personenbezogene Daten in der GeoJSON-Ausgabe.
+
+### Firestore-Daten
+
+- `gyms/{gymId}` (ID entspricht dem Slug) mit mindestens `active: true`, `countryCode: "DE"` und einem echten `location`-GeoPoint. Optionale Felder wie `name`, `slug` oder `code` werden übernommen, leere Werte fallen zurück auf Defaults.
+- `gyms/{gymId}/status/current` enthält den aktuellen Status (`key: "current"`, `updatedAt` als `Timestamp` sowie optionale Kennzahlen wie `checkins24h`, `devicesOnline`, `lastEventAt`).
+- Falls zusätzlich `gymStatus/{gymId}` existiert, werden die Daten mit dem Sub-Dokument zusammengeführt.
+
+Nur Gyms mit gültigen Koordinaten erscheinen als Feature. Ungültige oder fehlende Koordinaten zählen für die Aggregation `withoutCoords`, tauchen aber nicht in der Karte auf.
+
+### Relevante Umgebungsvariablen
+
+- `FIREBASE_SERVICE_ACCOUNT`: Base64-kodiertes Service-Account-JSON für das Admin-SDK.
+- `NEXT_PUBLIC_MAP_STYLE_URL`: MapLibre-Style-URL für das Standard-Theme (optional `NEXT_PUBLIC_MAP_STYLE_URL_DARK` für Dark Mode).
+- `TAPEM_DEBUG=1`: Aktiviert zusätzliche Server-Logs mit `requestId`, um Monitoring-Abfragen zu debuggen.
+
+### API & Caching
+
+- `GET /api/admin/gyms.geojson` ist ausschließlich für eingeloggte Admin- oder Owner-Rollen verfügbar und liefert `application/geo+json; charset=utf-8` zurück.
+- Die Antwort ist eine `FeatureCollection` mit `features` (Properties: `id`, `name`, `slug`, `code`, `countryCode`, `active`, `statusUpdatedAt`) und `aggregates` (`total`, `withCoords`, `withoutCoords`) für die Badges im UI.
+- Serverseitig wird `Cache-Control: public, max-age=60` gesetzt und ein deterministischer `ETag` vergeben. Requests mit passendem `If-None-Match` erhalten `304 Not Modified`.
+- Fehlerfälle antworten konsistent mit `{ error: "internal_error", requestId }` und loggen intern mit dem Präfix `[admin-monitoring]`.
+
+### Frontend
+
+- Die Karte lädt MapLibre ausschließlich clientseitig, berücksichtigt das aktuelle Theme und nutzt `credentials: 'include'` sowie `AbortController` mit Timeout für alle Fetches.
+- Marker-Klicks führen zur Detailansicht `/admin/monitoring/{gymId}`, welche Stammdaten, Status-Badges und ein Ereignisprotokoll anzeigt.
+
 ## Recht & SEO
 
 - Unter `/imprint` und `/privacy` findest du rechtliche Pflichtseiten mit deutschsprachigen Platzhaltertexten. Bitte vor dem Livegang

@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { buildAdminMonitoringDetailRoute } from '@/src/lib/routes';
+import type {
+  MonitoringGymFeatureProperties,
+  MonitoringGymsAggregates,
+  MonitoringGymsFeatureCollection,
+} from '@/src/types/monitoring';
 
 type MapLibreModule = any;
 type MapLibreMap = any;
@@ -64,48 +69,38 @@ async function loadMapLibre(): Promise<MapLibreModule> {
   return mapLibreLoader;
 }
 
-type GymFeatureProperties = {
-  id: string;
-  name: string;
-  slug: string;
-  city: string | null;
-  state: string | null;
-  status: 'online' | 'offline' | 'degraded' | null;
-  checkins24h: number | null;
-  devicesOnline: number | null;
-};
-
-type MapFeature = {
-  type: 'Feature';
-  geometry: { type: 'Point'; coordinates: [number, number] };
-  properties: GymFeatureProperties;
-};
-
-type MapResponse = {
-  type: 'FeatureCollection';
-  features: MapFeature[];
-  meta?: {
-    total?: number;
-    missingLocation?: number;
-  };
-};
+type MapResponse = MonitoringGymsFeatureCollection;
+type GymFeatureProperties = MonitoringGymFeatureProperties;
 
 type ThemeMode = 'light' | 'dark';
 
+const DEFAULT_STYLE_LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+const DEFAULT_STYLE_DARK = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const ENV_STYLE_LIGHT = (process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? '').trim();
+const ENV_STYLE_DARK = (process.env.NEXT_PUBLIC_MAP_STYLE_URL_DARK ?? '').trim();
+
 const STYLE_URLS: Record<ThemeMode, string> = {
-  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: ENV_STYLE_LIGHT || DEFAULT_STYLE_LIGHT,
+  dark: ENV_STYLE_DARK || ENV_STYLE_LIGHT || DEFAULT_STYLE_DARK,
 };
 
-const STATUS_COLORS: Record<'online' | 'offline' | 'degraded' | 'unknown', string> = {
-  online: '#16a34a',
-  degraded: '#f97316',
-  offline: '#dc2626',
-  unknown: '#64748b',
+const POINT_COLORS: Record<ThemeMode, string> = {
+  light: '#2563eb',
+  dark: '#38bdf8',
+};
+
+const POINT_STROKE_COLORS: Record<ThemeMode, string> = {
+  light: '#ffffff',
+  dark: '#0f172a',
 };
 
 const DEFAULT_CENTER: [number, number] = [10.451526, 51.165691];
 const DEFAULT_ZOOM = 4.8;
+
+const POPUP_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
 
 function useResolvedTheme(): ThemeMode {
   const [theme, setTheme] = useState<ThemeMode>('light');
@@ -128,13 +123,6 @@ function useResolvedTheme(): ThemeMode {
   return theme;
 }
 
-function formatStatusLabel(status: GymFeatureProperties['status']): string {
-  if (status === 'online') return 'Online';
-  if (status === 'degraded') return 'Eingeschränkt';
-  if (status === 'offline') return 'Offline';
-  return 'Unbekannt';
-}
-
 function buildPopupContent(feature: GymFeatureProperties): HTMLDivElement {
   const container = document.createElement('div');
   container.className = 'space-y-2 text-sm text-page';
@@ -144,32 +132,41 @@ function buildPopupContent(feature: GymFeatureProperties): HTMLDivElement {
   title.textContent = feature.name;
   container.appendChild(title);
 
-  if (feature.city || feature.state) {
-    const location = document.createElement('p');
-    location.className = 'text-xs text-muted';
-    location.textContent = [feature.city, feature.state].filter(Boolean).join(' · ');
-    container.appendChild(location);
+  const metaLine = document.createElement('p');
+  metaLine.className = 'text-xs text-muted';
+  const metaParts: string[] = [`Slug: ${feature.slug}`];
+  if (feature.code) {
+    metaParts.push(`Code: ${feature.code}`);
   }
+  metaLine.textContent = metaParts.join(' · ');
+  container.appendChild(metaLine);
 
-  const status = document.createElement('p');
-  status.className = 'text-xs text-muted';
-  const statusLabel = formatStatusLabel(feature.status);
-  const statusDetails: string[] = [statusLabel];
-  if (typeof feature.devicesOnline === 'number') {
-    statusDetails.push(`${feature.devicesOnline} Geräte aktiv`);
+  const countryLine = document.createElement('p');
+  countryLine.className = 'text-xs text-muted';
+  countryLine.textContent = `Land: ${feature.countryCode}`;
+  container.appendChild(countryLine);
+
+  const activeLine = document.createElement('p');
+  activeLine.className = 'text-xs text-muted';
+  activeLine.textContent = feature.active ? 'Status: aktiv' : 'Status: inaktiv';
+  container.appendChild(activeLine);
+
+  if (feature.statusUpdatedAt) {
+    const parsed = new Date(feature.statusUpdatedAt);
+    if (!Number.isNaN(parsed.valueOf())) {
+      const updatedLine = document.createElement('p');
+      updatedLine.className = 'text-xs text-muted';
+      updatedLine.textContent = `Letzte Aktualisierung: ${POPUP_DATE_FORMATTER.format(parsed)}`;
+      container.appendChild(updatedLine);
+    }
   }
-  if (typeof feature.checkins24h === 'number') {
-    statusDetails.push(`${feature.checkins24h} Check-ins (24h)`);
-  }
-  status.textContent = statusDetails.join(' · ');
-  container.appendChild(status);
 
   const button = document.createElement('button');
   button.type = 'button';
   button.className =
     'w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   button.textContent = 'Details ansehen';
-  button.setAttribute('data-gym-id', feature.id);
+  button.setAttribute('data-gym-id', String(feature.id));
   container.appendChild(button);
 
   return container;
@@ -189,43 +186,78 @@ export function MonitoringMap() {
     pointLeave?: (event: any) => void;
   }>({});
   const hasFitBoundsRef = useRef(false);
+  const fetchControllerRef = useRef<AbortController | null>(null);
 
   const [data, setData] = useState<MapResponse | null>(null);
-  const [meta, setMeta] = useState<{ total: number; missing: number }>({ total: 0, missing: 0 });
+  const [aggregates, setAggregates] = useState<MonitoringGymsAggregates>({
+    total: 0,
+    withCoords: 0,
+    withoutCoords: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const withLocation = data?.features.length ?? 0;
-  const withoutLocation = meta.missing;
-  const totalGyms = meta.total;
+  const withLocation = aggregates.withCoords;
+  const withoutLocation = aggregates.withoutCoords;
+  const totalGyms = aggregates.total;
+  const isInitialLoad = loading && !data;
 
   const loadData = useCallback(async () => {
+    fetchControllerRef.current?.abort();
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
+    const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+    let aborted = false;
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await fetch('/api/admin/gyms.geojson', {
         headers: { Accept: 'application/geo+json' },
+        credentials: 'include',
+        signal: controller.signal,
       });
+
+      if (response.status === 304) {
+        return;
+      }
+
       if (response.status === 401 || response.status === 403) {
         throw new Error('Zugriff verweigert. Bitte melde dich erneut als Admin an.');
       }
+
       if (!response.ok) {
         throw new Error('Standortdaten konnten nicht geladen werden.');
       }
+
       const json = (await response.json()) as MapResponse;
       setData(json);
       hasFitBoundsRef.current = false;
-      setMeta({
-        total: typeof json.meta?.total === 'number' ? json.meta.total : json.features.length,
-        missing: typeof json.meta?.missingLocation === 'number' ? json.meta.missingLocation : 0,
-      });
+      setAggregates(
+        json.aggregates ?? {
+          total: json.features.length,
+          withCoords: json.features.length,
+          withoutCoords: 0,
+        }
+      );
     } catch (err) {
+      if ((err as { name?: string }).name === 'AbortError') {
+        aborted = true;
+        return;
+      }
       console.error('[admin-monitoring] map data load failed', err);
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler beim Laden der Karte.');
       setData(null);
-      setMeta({ total: 0, missing: 0 });
+      setAggregates({ total: 0, withCoords: 0, withoutCoords: 0 });
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeoutId);
+      if (fetchControllerRef.current === controller) {
+        fetchControllerRef.current = null;
+      }
+      if (!aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -251,6 +283,7 @@ export function MonitoringMap() {
   useEffect(() => {
     return () => {
       resetPopup();
+      fetchControllerRef.current?.abort();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -259,7 +292,7 @@ export function MonitoringMap() {
   }, [resetPopup]);
 
   const attachInteractions = useCallback(
-    (map: MapLibreMap, module: MapLibreModule) => {
+    (map: MapLibreMap, maplibre: MapLibreModule) => {
       const mapCanvas = map.getCanvas();
       mapCanvas.setAttribute('role', 'application');
       mapCanvas.setAttribute('tabindex', '0');
@@ -305,13 +338,14 @@ export function MonitoringMap() {
         const popupContent = buildPopupContent(properties);
         const button = popupContent.querySelector('button[data-gym-id]');
         if (button) {
+          const gymId = String(properties.id);
           button.addEventListener('click', () => {
             resetPopup();
-            router.push(buildAdminMonitoringDetailRoute(properties.id));
+            router.push(buildAdminMonitoringDetailRoute(gymId));
           });
         }
         resetPopup();
-        const popup = new module.Popup({ closeButton: true, closeOnMove: false, offset: 12, focusAfterOpen: false })
+        const popup = new maplibre.Popup({ closeButton: true, closeOnMove: false, offset: 12, focusAfterOpen: false })
           .setDOMContent(popupContent)
           .setLngLat(coordinates)
           .addTo(map);
@@ -323,10 +357,11 @@ export function MonitoringMap() {
         const [feature] = event.features ?? [];
         if (feature) {
           const props = feature.properties as GymFeatureProperties;
-          map.getCanvas().setAttribute(
-            'aria-label',
-            `Marker: ${props.name}${props.city ? `, ${props.city}` : ''} (${formatStatusLabel(props.status)})`
-          );
+          const parts = [props.name];
+          if (props.code) {
+            parts.push(`Code ${props.code}`);
+          }
+          map.getCanvas().setAttribute('aria-label', `Marker: ${parts.join(' · ')}`);
         }
       };
 
@@ -346,7 +381,7 @@ export function MonitoringMap() {
   );
 
   const applyDataToMap = useCallback(
-    (map: MapLibreMap, module: MapLibreModule, collection: MapResponse) => {
+    (map: MapLibreMap, maplibre: MapLibreModule, collection: MapResponse) => {
       if (map.getLayer('gym-clusters')) {
         map.removeLayer('gym-clusters');
       }
@@ -401,24 +436,15 @@ export function MonitoringMap() {
         source: 'gyms',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': [
-            'match',
-            ['get', 'status'],
-            'online',
-            STATUS_COLORS.online,
-            'degraded',
-            STATUS_COLORS.degraded,
-            'offline',
-            STATUS_COLORS.offline,
-            STATUS_COLORS.unknown,
-          ],
+          'circle-color': POINT_COLORS[theme],
           'circle-radius': 9,
           'circle-stroke-width': 2,
-          'circle-stroke-color': theme === 'dark' ? '#0f172a' : '#ffffff',
+          'circle-stroke-color': POINT_STROKE_COLORS[theme],
+          'circle-opacity': 0.85,
         },
       });
 
-      attachInteractions(map, module);
+      attachInteractions(map, maplibre);
 
       if (!hasFitBoundsRef.current) {
         if (collection.features.length > 0) {
@@ -455,12 +481,12 @@ export function MonitoringMap() {
       if (!moduleRef.current) {
         moduleRef.current = await loadMapLibre();
       }
-      const module = moduleRef.current;
-      if (!module) {
+      const maplibre = moduleRef.current;
+      if (!maplibre) {
         return;
       }
       if (!mapRef.current) {
-        const map = new module.Map({
+        const map = new maplibre.Map({
           container: mapContainerRef.current,
           style: STYLE_URLS[theme],
           center: DEFAULT_CENTER,
@@ -468,12 +494,12 @@ export function MonitoringMap() {
           attributionControl: true,
         });
         mapRef.current = map;
-        map.addControl(new module.NavigationControl({ visualizePitch: false, showCompass: false }), 'top-right');
+        map.addControl(new maplibre.NavigationControl({ visualizePitch: false, showCompass: false }), 'top-right');
         map.on('load', () => {
-          applyDataToMap(map, module, collection);
+          applyDataToMap(map, maplibre, collection);
         });
       } else {
-        applyDataToMap(mapRef.current, module, collection);
+        applyDataToMap(mapRef.current, maplibre, collection);
       }
     },
     [applyDataToMap, theme]
@@ -491,10 +517,10 @@ export function MonitoringMap() {
       return;
     }
     const map = mapRef.current;
-    const module = moduleRef.current;
+    const maplibre = moduleRef.current;
     const onStyleData = () => {
       if (map.isStyleLoaded()) {
-        applyDataToMap(map, module, data);
+        applyDataToMap(map, maplibre, data);
       }
     };
     map.once('styledata', onStyleData);
@@ -505,22 +531,23 @@ export function MonitoringMap() {
   }, [theme, data, applyDataToMap]);
 
   const infoBoxes = useMemo(() => {
-    const boxes = [
+    const showPlaceholder = isInitialLoad || Boolean(error);
+    const formatValue = (value: number) => (showPlaceholder ? '–' : value.toString());
+    return [
       {
         label: 'Mit Koordinate',
-        value: loading ? '–' : withLocation.toString(),
+        value: formatValue(withLocation),
       },
       {
         label: 'Ohne Koordinate',
-        value: loading ? '–' : withoutLocation.toString(),
+        value: formatValue(withoutLocation),
       },
       {
         label: 'Gesamt',
-        value: loading ? '–' : totalGyms.toString(),
+        value: formatValue(totalGyms),
       },
     ];
-    return boxes;
-  }, [loading, totalGyms, withLocation, withoutLocation]);
+  }, [error, isInitialLoad, totalGyms, withLocation, withoutLocation]);
 
   return (
     <section className="space-y-5">
