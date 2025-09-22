@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { requireRole } from '@/lib/auth/server';
 import { ADMIN_ROUTES } from '@/lib/routes';
 import { fetchAdminDashboardData } from '@/server/admin/dashboard-data';
+import { AdminEventLogTable } from '@/components/admin/admin-event-log-table';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -192,47 +193,12 @@ export default async function AdminPage() {
             {dashboard.events.error}
           </div>
         ) : null}
-        {dashboard.events.items.length === 0 ? (
-          <div className="rounded-md border border-dashed border-subtle bg-card-muted px-4 py-6 text-sm text-muted">
-            Keine aktuellen Ereignisse vorhanden.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-[color:var(--page-border)]">
-              <thead className="bg-card-muted">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">
-                    Zeitstempel
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">
-                    Gym / Gerät
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">
-                    Typ
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">
-                    Details
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[color:var(--page-border)]">
-                {dashboard.events.items.map((event) => (
-                  <tr key={`${event.id}-${event.timestamp.toISOString()}`} className="hover:bg-card-muted">
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-page">{formatDateTime(event.timestamp)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-muted">
-                      {event.gymId ? `Gym ${event.gymId}` : '–'}
-                      {event.deviceId ? ` · Gerät ${event.deviceId}` : ''}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-page">
-                      {event.type ?? 'log'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-page">{event.description ?? 'Keine Beschreibung'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <AdminEventLogTable
+          entries={dashboard.events.items}
+          formatTimestamp={formatDateTime}
+          emptyLabel="Keine aktuellen Ereignisse vorhanden."
+          showGymColumn
+        />
         <p className="text-xs text-muted">
           Quelle: Firestore collectionGroup('logs') · Zugriff nur mit Admin-Session
         </p>

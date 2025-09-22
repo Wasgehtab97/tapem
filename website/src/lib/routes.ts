@@ -54,6 +54,8 @@ export const ADMIN_ROUTES = {
   dashboard: defineRoute('admin', '/admin' as Route),
   login: defineRoute('admin', '/admin/login' as Route),
   logout: defineRoute('admin', '/admin/logout' as Route),
+  monitoring: defineRoute('admin', '/admin/monitoring' as Route),
+  monitoringDetail: defineRoute('admin', '/admin/monitoring/[gymId]' as Route),
 } as const;
 
 export type AdminRouteDefinition =
@@ -133,7 +135,10 @@ const ADMIN_PUBLIC_PATHS = buildPathSet([
 
 const ADMIN_PROTECTED_PATHS = buildPathSet([
   ADMIN_ROUTES.dashboard.href,
+  ADMIN_ROUTES.monitoring.href,
 ]);
+
+const ADMIN_PROTECTED_PREFIXES = ['/admin/monitoring/'];
 
 export const AFTER_LOGIN_ROUTES = [
   PORTAL_ROUTES.gym,
@@ -239,6 +244,11 @@ export function buildAdminLoginRedirectRoute(target: AdminAfterLoginRoute): Rout
   return `${ADMIN_ROUTES.login.href}?next=${target}` as Route;
 }
 
+export function buildAdminMonitoringDetailRoute(gymId: string): Route {
+  const safe = encodeURIComponent(gymId);
+  return `/admin/monitoring/${safe}` as Route;
+}
+
 export function normalizePathname(pathname: string): string {
   if (!pathname) {
     return '/';
@@ -267,14 +277,21 @@ export function isPortalProtectedPath(pathname: string): boolean {
 
 export function isAdminPath(pathname: string): boolean {
   const normalized = normalizePathname(pathname);
-  return (
+  if (
     ADMIN_PUBLIC_PATHS.has(normalized) ||
     ADMIN_PROTECTED_PATHS.has(normalized)
-  );
+  ) {
+    return true;
+  }
+  return ADMIN_PROTECTED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
 export function isAdminProtectedPath(pathname: string): boolean {
-  return ADMIN_PROTECTED_PATHS.has(normalizePathname(pathname));
+  const normalized = normalizePathname(pathname);
+  if (ADMIN_PROTECTED_PATHS.has(normalized)) {
+    return true;
+  }
+  return ADMIN_PROTECTED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
 export function isRouteAllowedOnSite(pathname: string, site: SiteKey): boolean {

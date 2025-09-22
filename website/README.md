@@ -155,6 +155,15 @@ Server-Variablen dürfen **nicht** mit `NEXT_PUBLIC_` beginnen, damit sie nicht 
 - Während `npm run dev` aktiv ist, liefert `curl http://localhost:3000/api/health/firebase-admin` ein `{ "ok": true, ... }`, sobald das Admin SDK korrekt konfiguriert ist.
 - Für detailliertere Logs `TAPEM_DEBUG=1` in `.env.local` setzen.
 
+## Monitoring (Admin)
+
+- `/admin/monitoring` zeigt eine dynamische MapLibre-Karte mit allen Gyms, die über ein Geopoint-Feld `gyms.location` verfügen.
+- Gym-Statuswerte werden optional aus `gymStatus/{gymId}` oder `gyms/{gymId}/status/current` gelesen. Felder: `status`, `checkins24h`, `devicesOnline`, `lastEventAt`.
+- Gyms ohne Koordinate erscheinen nicht auf der Karte; der Zähler in der Infozeile weist auf fehlende Geodaten hin. Koordinaten können direkt in Firestore als `GeoPoint(lat, lng)` ergänzt werden.
+- Die API `/api/admin/gyms.geojson` liefert eine `FeatureCollection` ohne personenbezogene Daten und setzt `Cache-Control: private, max-age=60` sowie ETag-Header.
+- Detailseiten unter `/admin/monitoring/[gymId]` zeigen KPI-Karten (Check-ins/24h, Geräte online, letztes Ereignis) und binden das gefilterte Ereignislog ein.
+- DSGVO-Hinweis: In der Map-Payload befinden sich ausschließlich Gym-Metadaten und aggregierte Betriebskennzahlen – keine Nutzer:innen-Daten oder Geräteseriennummern.
+
 ### Guards & Middleware
 
 - `middleware.ts` unterscheidet Marketing/Portal/Admin-Hosts und prüft Session-Cookies.

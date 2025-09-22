@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "node --test tests/**/*.test.js",
     "check:admin": "node scripts/diag/firebase-admin-health.mjs",
     "health:admin": "node scripts/diag/http-admin-health.mjs"
   },
