@@ -14,6 +14,7 @@ type NavigationItem = {
   label: string;
   route?: AdminRouteDefinition;
   disabled?: boolean;
+  icon?: ReactNode;
 };
 
 const NAVIGATION: NavigationItem[] = [
@@ -22,6 +23,7 @@ const NAVIGATION: NavigationItem[] = [
   { label: 'Geräteverwaltung', disabled: true },
   { label: 'Challenges', disabled: true },
   { label: 'Event-Logs', disabled: true },
+  { label: 'Monitoring', route: ADMIN_ROUTES.monitoring, icon: '📡' },
 ];
 
 function NavigationMenu({ items }: { items: NavigationItem[] }) {
@@ -46,7 +48,14 @@ function NavigationMenu({ items }: { items: NavigationItem[] }) {
             href={item.route.href}
             className="block rounded-md px-3 py-2 text-sm font-medium text-page transition hover:bg-card-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {item.label}
+            <span className="flex items-center gap-2">
+              {item.icon ? (
+                <span aria-hidden className="text-base leading-none">
+                  {item.icon}
+                </span>
+              ) : null}
+              <span>{item.label}</span>
+            </span>
           </Link>
         );
       })}
