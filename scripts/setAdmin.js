@@ -10,7 +10,7 @@ admin.initializeApp({
 });
 
 // UID des Nutzers, der Admin werden soll:
-const TEST_UID = 'cPi7yDPfyZXZLRyo8I4fy1lX8U83';
+const TEST_UID = 'OtiulvoGMgQxHRmTdLKe2mK8cGg1';
 
 async function makeAdmin() {
   try {
