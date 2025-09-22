@@ -399,8 +399,8 @@ export function MonitoringMap() {
         type: 'geojson',
         data: collection,
         cluster: true,
-        clusterRadius: 60,
-        clusterMaxZoom: 12,
+        clusterRadius: 5,
+        clusterMaxZoom: 10,
       });
 
       map.addLayer({

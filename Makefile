@@ -96,7 +96,7 @@ apk-release:
 
 # localhost
 localhost:
-	cd website && TAPEM_DEBUG=1 npm run dev
+	cd website && rm -rf .next && TAPEM_DEBUG=1 npm run dev
 
 
 
