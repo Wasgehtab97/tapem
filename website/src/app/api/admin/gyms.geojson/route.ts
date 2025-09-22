@@ -3,56 +3,58 @@ import { createHash } from 'crypto';
 
 import { getAdminUserFromSession } from '@/src/server/auth/session';
 import { fetchGymsForMap } from '@/src/server/monitoring';
+import type { MonitoringGymsFeatureCollection } from '@/src/types/monitoring';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const CACHE_HEADER_VALUE = 'private, max-age=60';
-const EMPTY_HEADERS = new Headers({ 'Cache-Control': CACHE_HEADER_VALUE });
+const CACHE_HEADER_VALUE = 'public, max-age=60';
+const ERROR_HEADERS = new Headers({ 'Cache-Control': 'no-store' });
 
 function buildEtag(payload: string): string {
   const hash = createHash('sha1').update(payload).digest('base64url');
   return `"${hash}"`;
 }
 
+function createRequestId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function normalizeEtag(value: string): string {
+  return value.trim().replace(/^W\//i, '');
+}
+
+function etagMatches(candidateHeader: string | null, etag: string): boolean {
+  if (!candidateHeader) {
+    return false;
+  }
+  const normalized = normalizeEtag(etag);
+  return candidateHeader
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .some((value) => {
+      if (value === '*') {
+        return true;
+      }
+      return normalizeEtag(value) === normalized;
+    });
+}
+
 export async function GET(request: Request) {
-  const debugId = Math.random().toString(36).slice(2, 8);
+  const requestId = createRequestId();
+  const logPrefix = `[admin-monitoring] ${requestId}`;
   try {
     const user = await getAdminUserFromSession();
     if (!user) {
-      return NextResponse.json({ error: 'unauthorized', requestId: debugId }, { status: 401, headers: EMPTY_HEADERS });
+      return NextResponse.json({ error: 'unauthorized', requestId }, { status: 401, headers: ERROR_HEADERS });
     }
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return NextResponse.json({ error: 'forbidden', requestId: debugId }, { status: 403, headers: EMPTY_HEADERS });
+      return NextResponse.json({ error: 'forbidden', requestId }, { status: 403, headers: ERROR_HEADERS });
     }
 
-    const { gyms, total, missingLocation } = await fetchGymsForMap();
-    const featureCollection = {
-      type: 'FeatureCollection' as const,
-      features: gyms.map((gym) => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [gym.location.lng, gym.location.lat],
-        },
-        properties: {
-          id: gym.id,
-          name: gym.name,
-          slug: gym.slug,
-          city: gym.city ?? null,
-          state: gym.state ?? null,
-          status: gym.status?.status ?? null,
-          checkins24h: gym.status?.checkins24h ?? null,
-          devicesOnline: gym.status?.devicesOnline ?? null,
-        },
-      })),
-      meta: {
-        total,
-        missingLocation,
-      },
-    };
-
+    const featureCollection: MonitoringGymsFeatureCollection = await fetchGymsForMap({ requestId });
     const body = JSON.stringify(featureCollection);
     const etag = buildEtag(body);
     const headers = new Headers({
@@ -62,14 +64,19 @@ export async function GET(request: Request) {
     });
 
     const ifNoneMatch = request.headers.get('if-none-match');
-    if (ifNoneMatch && ifNoneMatch.replace(/^W\//, '') === etag.replace(/^W\//, '')) {
+    if (etagMatches(ifNoneMatch, etag)) {
+      headers.delete('Content-Type');
+      console.info(`${logPrefix} 304 cache-hit`);
       return new Response(null, { status: 304, headers });
     }
 
-    console.info(`[admin-monitoring] ${debugId} gyms=${gyms.length} missing=${missingLocation}`);
+    console.info(
+      `${logPrefix} features=${featureCollection.features.length} withCoords=${featureCollection.aggregates.withCoords} ` +
+        `withoutCoords=${featureCollection.aggregates.withoutCoords}`
+    );
     return new Response(body, { status: 200, headers });
   } catch (error) {
-    console.error(`[admin-monitoring] ${debugId} failed`, error);
-    return NextResponse.json({ error: 'internal_error', requestId: debugId }, { status: 500, headers: EMPTY_HEADERS });
+    console.error(`${logPrefix} failed`, error);
+    return NextResponse.json({ error: 'internal_error', requestId }, { status: 500, headers: ERROR_HEADERS });
   }
 }

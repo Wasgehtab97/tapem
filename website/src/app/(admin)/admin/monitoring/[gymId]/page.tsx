@@ -80,6 +80,7 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
 
   const status = summary.status?.status ?? null;
   const statusLabel = resolveStatusLabel(status);
+  const statusUpdatedAtLabel = formatTimestamp(summary.statusUpdatedAt);
   const nextCursorHref = events.nextCursor
     ? `${ADMIN_ROUTES.monitoringDetail.href.replace('[gymId]', encodeURIComponent(params.gymId))}?cursor=${encodeURIComponent(events.nextCursor)}`
     : null;
@@ -89,6 +90,13 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
   const coordinateLabel = summary.location
     ? `${summary.location.lat.toFixed(5)}, ${summary.location.lng.toFixed(5)}`
     : '—';
+  const infoItems: { label: string; value: string }[] = [
+    { label: 'Slug', value: summary.slug },
+    { label: 'Code', value: summary.code ?? '—' },
+    { label: 'Land', value: summary.countryCode ?? '—' },
+    { label: 'Koordinaten', value: coordinateLabel },
+    { label: 'Aktiv', value: summary.active ? 'Ja' : 'Nein' },
+  ];
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-6 py-12">
@@ -97,7 +105,14 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
           <p className="text-sm font-semibold uppercase tracking-wide text-muted">Monitoring</p>
           <h1 className="mt-1 text-3xl font-semibold text-page">{summary.name}</h1>
           <p className="mt-2 text-sm text-muted">{locationLabel}</p>
-          <p className="text-xs text-muted">Slug: {summary.slug} · Koordinaten: {coordinateLabel}</p>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {infoItems.map((item) => (
+              <div key={item.label} className="space-y-1">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{item.label}</dt>
+                <dd className="text-sm text-page">{item.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
         <div className="flex flex-col items-end gap-3 text-right">
           <span
@@ -115,7 +130,7 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
         </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <article className="rounded-lg border border-subtle bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Check-ins (24h)</p>
           <p className="mt-2 text-2xl font-semibold text-page">{formatNumber(summary.status?.checkins24h)}</p>
@@ -127,6 +142,10 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
         <article className="rounded-lg border border-subtle bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Letztes Ereignis</p>
           <p className="mt-2 text-base font-semibold text-page">{formatTimestamp(summary.status?.lastEventAt ?? null)}</p>
+        </article>
+        <article className="rounded-lg border border-subtle bg-card p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Letzte Status-Aktualisierung</p>
+          <p className="mt-2 text-base font-semibold text-page">{statusUpdatedAtLabel}</p>
         </article>
       </section>
 
