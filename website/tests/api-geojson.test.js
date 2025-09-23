@@ -4,13 +4,22 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 test('GeoJSON admin API exposes secure caching headers and properties', () => {
-  const filePath = resolve(process.cwd(), 'src/app/api/admin/gyms.geojson/route.ts');
-  const content = readFileSync(filePath, 'utf8');
-  assert.match(content, /FeatureCollection/, 'Response should include FeatureCollection type');
-  assert.match(content, /const CACHE_HEADER_VALUE = 'private, max-age=60';/, 'API must use private cache control');
+  const routePath = resolve(process.cwd(), 'src/app/api/admin/gyms.geojson/route.ts');
+  const routeContent = readFileSync(routePath, 'utf8');
+  assert.match(routeContent, /FeatureCollection/, 'Response should include FeatureCollection type');
+  assert.match(routeContent, /const CACHE_HEADER_VALUE = 'public, max-age=60';/, 'API must use public cache control');
+
+  const serverPath = resolve(process.cwd(), 'src/server/monitoring.ts');
+  const serverContent = readFileSync(serverPath, 'utf8');
   assert.match(
-    content,
-    /properties: \{\s*id: gym.id,\s*name: gym.name,\s*slug: gym.slug/s,
-    'GeoJSON features should expose id, name and slug'
+    serverContent,
+    /properties:\s*\{\s*id: doc.id,\s*name,\s*slug,\s*code,/s,
+    'GeoJSON features should expose id, name, slug and code'
+  );
+  assert.match(serverContent, /gyms: listItems/, 'GeoJSON response should include the gyms list for the UI');
+  assert.match(
+    serverContent,
+    /const aggregates: MonitoringGymsAggregates = \{\s*total:/,
+    'Aggregates should be calculated on the server'
   );
 });

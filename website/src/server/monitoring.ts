@@ -6,6 +6,7 @@ import { adminDb } from '@/src/server/firebase/admin';
 import type { AdminEventLogEntry } from '@/src/server/admin/dashboard-data';
 import type {
   MonitoringGymFeature,
+  MonitoringGymListItem,
   MonitoringGymsAggregates,
   MonitoringGymsFeatureCollection,
 } from '@/src/types/monitoring';
@@ -203,6 +204,8 @@ function isFailedPrecondition(error: unknown): boolean {
   return false;
 }
 
+const DACH_COUNTRY_CODES = ['DE', 'AT', 'CH'] as const;
+
 export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise<FetchGymsForMapResult> {
   const firestore = adminDb();
   const requestId = options?.requestId;
@@ -211,8 +214,7 @@ export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise
 
   const gymsSnapshot = await firestore
     .collection('gyms')
-    .where('active', '==', true)
-    .where('countryCode', '==', 'DE')
+    .where('countryCode', 'in', Array.from(DACH_COUNTRY_CODES))
     .get();
 
   if (debug) {
@@ -257,8 +259,9 @@ export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise
   });
 
   const features: MonitoringGymFeature[] = [];
+  const listItems: MonitoringGymListItem[] = [];
   const aggregates: MonitoringGymsAggregates = {
-    total: gymsSnapshot.size,
+    total: 0,
     withCoords: 0,
     withoutCoords: 0,
   };
@@ -266,23 +269,39 @@ export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise
   gymsSnapshot.docs.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const location = parseGeoPoint(data.location);
-    if (!location) {
-      aggregates.withoutCoords += 1;
-      if (debug) {
-        console.debug(`${logPrefix} missing-location gym=${doc.id}`);
-      }
-      return;
-    }
-
-    aggregates.withCoords += 1;
-
     const name = typeof data.name === 'string' && data.name.trim().length > 0 ? data.name : `Gym ${doc.id}`;
     const slug = typeof data.slug === 'string' && data.slug.trim().length > 0 ? data.slug : doc.id;
     const code = typeof data.code === 'string' && data.code.trim().length > 0 ? data.code : null;
     const active = typeof data.active === 'boolean' ? data.active : true;
     const status = statusMap.get(doc.id) ?? null;
     const statusUpdatedAt = status?.updatedAt ?? null;
-    const countryCode = typeof data.countryCode === 'string' && data.countryCode.trim().length > 0 ? data.countryCode : 'DE';
+    const countryCodeRaw = typeof data.countryCode === 'string' && data.countryCode.trim().length > 0 ? data.countryCode : null;
+    const countryCode = countryCodeRaw ?? 'DE';
+
+    aggregates.total += 1;
+    if (location) {
+      aggregates.withCoords += 1;
+    } else {
+      aggregates.withoutCoords += 1;
+      if (debug) {
+        console.debug(`${logPrefix} missing-location gym=${doc.id}`);
+      }
+    }
+
+    listItems.push({
+      id: doc.id,
+      name,
+      slug,
+      code,
+      countryCode: countryCodeRaw,
+      active,
+      location,
+      statusUpdatedAt: statusUpdatedAt ? statusUpdatedAt.toISOString() : null,
+    });
+
+    if (!location || !active) {
+      return;
+    }
 
     const feature: MonitoringGymFeature = {
       type: 'Feature',
@@ -308,6 +327,7 @@ export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise
     type: 'FeatureCollection',
     features,
     aggregates,
+    gyms: listItems,
   };
 }
 

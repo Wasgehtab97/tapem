@@ -12,3 +12,14 @@ test('Admin navigation includes Monitoring entry', () => {
     'Sidebar navigation should link to the Monitoring route'
   );
 });
+
+test('Monitoring list links to detail route', () => {
+  const filePath = resolve(process.cwd(), 'src/components/monitoring/monitoring-gym-list.tsx');
+  const content = readFileSync(filePath, 'utf8');
+  assert.match(
+    content,
+    /buildAdminMonitoringDetailRoute\(gym.id\)/,
+    'Monitoring list should use the detail route helper'
+  );
+  assert.match(content, />\s*Details<span aria-hidden>/, 'Monitoring list should render Details link label');
+});
