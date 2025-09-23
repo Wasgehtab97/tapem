@@ -3,9 +3,13 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('Monitoring page renders map component and heading', () => {
+test('Monitoring page renders overview component container', () => {
   const filePath = resolve(process.cwd(), 'src/app/(admin)/admin/monitoring/page.tsx');
   const content = readFileSync(filePath, 'utf8');
-  assert.match(content, /<h1 className=\"[^\"]*\">Standorte<\/h1>/, 'Monitoring page should render Standorte heading');
-  assert.match(content, /<MonitoringMap \/>/, 'Monitoring page should include MonitoringMap component');
+  assert.match(
+    content,
+    /<div className=\"mx-auto w-full max-w-6xl px-6 py-12\">/, 
+    'Monitoring page should keep the container layout'
+  );
+  assert.match(content, /<MonitoringOverview \/>/, 'Monitoring page should include MonitoringOverview component');
 });
