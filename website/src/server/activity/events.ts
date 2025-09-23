@@ -69,6 +69,40 @@ function sanitizeString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+type NormalizedFilters = {
+  eventTypes: string[];
+  severity: ActivityEventSeverity[];
+  userId: string | null;
+  deviceId: string | null;
+};
+
+function normalizeFilters(filters: ActivityEventFilters): NormalizedFilters {
+  const eventTypes = new Set<string>();
+  (filters.eventTypes ?? []).forEach((type) => {
+    if (typeof type !== 'string') {
+      return;
+    }
+    const trimmed = type.trim();
+    if (trimmed) {
+      eventTypes.add(trimmed);
+    }
+  });
+
+  const severity: ActivityEventSeverity[] = [];
+  (filters.severity ?? []).forEach((value) => {
+    if ((value === 'info' || value === 'warning' || value === 'error') && !severity.includes(value)) {
+      severity.push(value);
+    }
+  });
+
+  return {
+    eventTypes: Array.from(eventTypes),
+    severity,
+    userId: sanitizeString(filters.userId),
+    deviceId: sanitizeString(filters.deviceId),
+  };
+}
+
 function sanitizeActor(value: unknown): AdminActivityActor | null {
   if (!value || typeof value !== 'object') {
     return null;
@@ -223,32 +257,34 @@ export function mapActivityEventDoc(doc: QueryDocumentSnapshot): AdminActivityEv
 function buildBaseQuery(
   firestore: Firestore,
   gymId: string,
-  filters: ActivityEventFilters
+  filters: ActivityEventFilters,
+  options?: { useCollectionGroup?: boolean }
 ): Query {
-  let query: Query = firestore.collectionGroup('activity').where('gymId', '==', gymId);
+  const normalized = normalizeFilters(filters);
 
-  const normalizedEventTypes = (filters.eventTypes ?? []).filter((type) => typeof type === 'string' && type.trim());
-  if (normalizedEventTypes.length === 1) {
-    query = query.where('eventType', '==', normalizedEventTypes[0]!);
-  } else if (normalizedEventTypes.length > 1) {
-    query = query.where('eventType', 'in', normalizedEventTypes.slice(0, 10));
+  let query: Query =
+    options?.useCollectionGroup === false
+      ? firestore.collection('gyms').doc(gymId).collection('activity')
+      : firestore.collectionGroup('activity').where('gymId', '==', gymId);
+
+  if (normalized.eventTypes.length === 1) {
+    query = query.where('eventType', '==', normalized.eventTypes[0]!);
+  } else if (normalized.eventTypes.length > 1) {
+    query = query.where('eventType', 'in', normalized.eventTypes.slice(0, 10));
   }
 
-  const normalizedSeverity = (filters.severity ?? []).filter((value) => value === 'info' || value === 'warning' || value === 'error');
-  if (normalizedSeverity.length === 1) {
-    query = query.where('severity', '==', normalizedSeverity[0]!);
-  } else if (normalizedSeverity.length > 1) {
-    query = query.where('severity', 'in', normalizedSeverity.slice(0, 10));
+  if (normalized.severity.length === 1) {
+    query = query.where('severity', '==', normalized.severity[0]!);
+  } else if (normalized.severity.length > 1) {
+    query = query.where('severity', 'in', normalized.severity.slice(0, 10));
   }
 
-  const userId = sanitizeString(filters.userId);
-  if (userId) {
-    query = query.where('userId', '==', userId);
+  if (normalized.userId) {
+    query = query.where('userId', '==', normalized.userId);
   }
 
-  const deviceId = sanitizeString(filters.deviceId);
-  if (deviceId) {
-    query = query.where('deviceId', '==', deviceId);
+  if (normalized.deviceId) {
+    query = query.where('deviceId', '==', normalized.deviceId);
   }
 
   if (filters.from instanceof Date) {
@@ -294,6 +330,61 @@ function clampLimit(value: number | null | undefined): number {
   return Math.min(Math.max(Math.floor(value), MIN_LIMIT), MAX_LIMIT);
 }
 
+type StartAfterArgs = [Timestamp, string];
+
+function createStartAfterArgs(payload: CursorPayload | null): StartAfterArgs | null {
+  if (!payload) {
+    return null;
+  }
+  const cursorDate = new Date(payload.ts);
+  if (Number.isNaN(cursorDate.getTime())) {
+    return null;
+  }
+  const cursorDocId = payload.path.split('/').pop();
+  if (!cursorDocId) {
+    return null;
+  }
+  return [Timestamp.fromDate(cursorDate), cursorDocId];
+}
+
+function isFailedPrecondition(error: unknown): boolean {
+  const code = (error as { code?: unknown }).code;
+  if (typeof code === 'number') {
+    return code === 9;
+  }
+  if (typeof code === 'string') {
+    return code.toLowerCase() === 'failed-precondition';
+  }
+  const message = (error as { message?: unknown }).message;
+  if (typeof message === 'string' && message.toLowerCase().includes('failed-precondition')) {
+    return true;
+  }
+  const details = (error as { details?: unknown }).details;
+  if (typeof details === 'string' && details.toLowerCase().includes('failed-precondition')) {
+    return true;
+  }
+  return false;
+}
+
+function matchesNormalizedFilters(
+  entry: AdminActivityEventRecord,
+  normalized: NormalizedFilters
+): boolean {
+  if (normalized.eventTypes.length > 0 && !normalized.eventTypes.includes(entry.eventType)) {
+    return false;
+  }
+  if (normalized.severity.length > 0 && !normalized.severity.includes(entry.severity)) {
+    return false;
+  }
+  if (normalized.userId && entry.userId !== normalized.userId) {
+    return false;
+  }
+  if (normalized.deviceId && entry.deviceId !== normalized.deviceId) {
+    return false;
+  }
+  return true;
+}
+
 function createStats(): ActivityEventStats {
   return {
     total: 0,
@@ -310,20 +401,13 @@ export async function fetchActivityEventsForGym(
   const firestore = adminDb();
   const limit = clampLimit(filters.limit);
   const cursorPayload = parseCursor(filters.cursor);
-  const warnings: string[] = [];
-
-  try {
+  const runPrimaryQuery = async (): Promise<ActivityEventQueryResult> => {
     const baseQuery = buildBaseQuery(firestore, gymId, filters);
-    let itemsQuery = baseQuery
-      .orderBy('timestamp', 'desc')
-      .orderBy(FieldPath.documentId(), 'desc');
+    let itemsQuery = baseQuery.orderBy('timestamp', 'desc').orderBy(FieldPath.documentId(), 'desc');
 
-    if (cursorPayload) {
-      const cursorDate = new Date(cursorPayload.ts);
-      const cursorDocId = cursorPayload.path.split('/').pop();
-      if (!Number.isNaN(cursorDate.getTime()) && cursorDocId) {
-        itemsQuery = itemsQuery.startAfter(Timestamp.fromDate(cursorDate), cursorDocId);
-      }
+    const startAfterArgs = createStartAfterArgs(cursorPayload);
+    if (startAfterArgs) {
+      itemsQuery = itemsQuery.startAfter(...startAfterArgs);
     }
 
     const snapshot = await itemsQuery.limit(limit + 1).get();
@@ -335,6 +419,7 @@ export async function fetchActivityEventsForGym(
       .filter((entry): entry is AdminActivityEventRecord => Boolean(entry));
 
     const stats = createStats();
+    const warnings: string[] = [];
 
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -375,15 +460,110 @@ export async function fetchActivityEventsForGym(
       stats,
       warnings,
     };
+  };
+
+  const runFallbackQuery = async (): Promise<ActivityEventQueryResult> => {
+    const normalized = normalizeFilters(filters);
+    let baseQuery = firestore
+      .collection('gyms')
+      .doc(gymId)
+      .collection('activity')
+      .orderBy('timestamp', 'desc')
+      .orderBy(FieldPath.documentId(), 'desc');
+
+    if (filters.from instanceof Date) {
+      baseQuery = baseQuery.where('timestamp', '>=', Timestamp.fromDate(filters.from));
+    }
+    if (filters.to instanceof Date) {
+      baseQuery = baseQuery.where('timestamp', '<=', Timestamp.fromDate(filters.to));
+    }
+
+    const normalizedLimit = Math.min(500, Math.max(limit * 3, limit + 50));
+    const maxIterations = 5;
+    let iterations = 0;
+    let exhausted = false;
+    let cursorArgs = createStartAfterArgs(cursorPayload);
+    let lastFetchedDoc: QueryDocumentSnapshot | null = null;
+    const matches: { doc: QueryDocumentSnapshot; entry: AdminActivityEventRecord }[] = [];
+
+    while (matches.length < limit + 1 && iterations < maxIterations) {
+      let query: Query = baseQuery;
+      if (cursorArgs) {
+        query = query.startAfter(...cursorArgs);
+      }
+
+      const snapshot = await query.limit(normalizedLimit).get();
+      if (snapshot.empty) {
+        exhausted = true;
+        break;
+      }
+
+      snapshot.docs.forEach((doc) => {
+        const entry = mapActivityEventDoc(doc);
+        lastFetchedDoc = doc;
+        if (!entry) {
+          return;
+        }
+        if (!matchesNormalizedFilters(entry, normalized)) {
+          return;
+        }
+        matches.push({ doc, entry });
+      });
+
+      const trailingDoc = snapshot.docs[snapshot.docs.length - 1]!;
+      const trailingTimestamp = toDate(trailingDoc.get('timestamp'));
+      if (!trailingTimestamp) {
+        exhausted = true;
+        break;
+      }
+      cursorArgs = [Timestamp.fromDate(trailingTimestamp), trailingDoc.id];
+
+      iterations += 1;
+      if (snapshot.size < normalizedLimit) {
+        exhausted = true;
+        break;
+      }
+    }
+
+    const warnings = new Set<string>([
+      'index-required',
+      'total-count-unavailable',
+      '24h-count-unavailable',
+      '7d-count-unavailable',
+      '30d-count-unavailable',
+    ]);
+
+    const hasExtraMatch = matches.length > limit;
+    const relevantMatches = hasExtraMatch ? matches.slice(0, limit) : matches;
+    const items = relevantMatches.map((item) => item.entry);
+
+    let nextCursor: string | null = null;
+    if (hasExtraMatch) {
+      nextCursor = encodeCursor(matches[matches.length - 1]!.doc);
+    } else if (!exhausted && lastFetchedDoc) {
+      nextCursor = encodeCursor(lastFetchedDoc);
+    }
+
+    return {
+      items,
+      nextCursor,
+      stats: createStats(),
+      warnings: Array.from(warnings),
+    };
+  };
+
+  try {
+    return await runPrimaryQuery();
   } catch (error) {
-    if ((error as { code?: unknown }).code === 'failed-precondition' || (error as { code?: unknown }).code === 9) {
-      warnings.push('index-required');
-      return {
-        items: [],
-        nextCursor: null,
-        stats: createStats(),
-        warnings,
-      };
+    if (isFailedPrecondition(error)) {
+      try {
+        return await runFallbackQuery();
+      } catch (fallbackError) {
+        if (isFailedPrecondition(fallbackError)) {
+          throw error;
+        }
+        throw fallbackError;
+      }
     }
     throw error;
   }
