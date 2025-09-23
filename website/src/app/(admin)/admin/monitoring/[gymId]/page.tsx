@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { requireRole } from '@/src/lib/auth/server';
 import { ADMIN_ROUTES } from '@/src/lib/routes';
-import { AdminEventLogTable } from '@/src/components/admin/admin-event-log-table';
+import { GymActivityFeed } from '@/src/components/admin/gym-activity-feed';
 import { fetchGymEventLogs, fetchGymMonitoringSummary } from '@/src/server/monitoring';
 
 export const runtime = 'nodejs';
@@ -78,12 +78,25 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
     cursor: searchParams?.cursor ?? null,
   });
 
+  const initialEvents = events.entries.map((entry) => ({
+    id: entry.id,
+    gymId: entry.gymId,
+    timestamp: entry.timestamp.toISOString(),
+    eventType: entry.eventType,
+    severity: entry.severity ?? 'info',
+    source: entry.source ?? 'system',
+    summary: entry.summary ?? null,
+    userId: entry.userId ?? null,
+    deviceId: entry.deviceId ?? null,
+    sessionId: entry.sessionId ?? null,
+    actor: entry.actor ?? null,
+    targets: entry.targets ?? [],
+    data: entry.data ?? null,
+  }));
+
   const status = summary.status?.status ?? null;
   const statusLabel = resolveStatusLabel(status);
   const statusUpdatedAtLabel = formatTimestamp(summary.statusUpdatedAt);
-  const nextCursorHref = events.nextCursor
-    ? `${ADMIN_ROUTES.monitoringDetail.href.replace('[gymId]', encodeURIComponent(params.gymId))}?cursor=${encodeURIComponent(events.nextCursor)}`
-    : null;
 
   const locationParts = [summary.city, summary.state].filter((part): part is string => Boolean(part));
   const locationLabel = locationParts.length > 0 ? locationParts.join(' · ') : 'Keine Ortsangabe';
@@ -149,37 +162,13 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
         </article>
       </section>
 
-      <section className="space-y-4 rounded-lg border border-subtle bg-card p-6 shadow-sm">
-        <header className="space-y-1">
-          <h2 className="text-xl font-semibold text-page">Letzte Ereignisse</h2>
-          <p className="text-sm text-muted">
-            Ereignisprotokoll für dieses Gym. Datenbasis: Firestore collectionGroup('logs') mit Filter auf gymId.
-          </p>
-        </header>
-        {events.error ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/60 dark:bg-amber-500/10 dark:text-amber-200">
-            {events.error === 'Index erforderlich'
-              ? 'Keine Daten verfügbar. Firestore Index wird benötigt oder befindet sich im Aufbau.'
-              : 'Aktueller Ereignisstream konnte nicht geladen werden.'}
-          </div>
-        ) : null}
-        <AdminEventLogTable
-          entries={events.entries}
-          formatTimestamp={(date) => dateTimeFormatter.format(date)}
-          emptyLabel="Keine Ereignisse vorhanden."
-          showGymColumn={false}
-        />
-        {nextCursorHref ? (
-          <div className="text-right">
-            <Link
-              href={nextCursorHref}
-              className="text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Weitere Ereignisse laden
-            </Link>
-          </div>
-        ) : null}
-      </section>
+      <GymActivityFeed
+        gymId={params.gymId}
+        initialEvents={initialEvents}
+        initialCursor={events.nextCursor}
+        initialStats={events.stats}
+        initialWarnings={events.warnings}
+      />
     </div>
   );
 }

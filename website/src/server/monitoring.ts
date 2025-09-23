@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { GeoPoint, Timestamp, type DocumentSnapshot, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import { GeoPoint, Timestamp, type DocumentSnapshot } from 'firebase-admin/firestore';
 
 import { adminDb } from '@/src/server/firebase/admin';
-import type { AdminEventLogEntry } from '@/src/server/admin/dashboard-data';
+import { fetchActivityEventsForGym } from '@/src/server/activity/events';
+import type { ActivityEventStats, AdminActivityEventRecord } from '@/src/types/admin-activity';
 import type {
   MonitoringGymFeature,
   MonitoringGymListItem,
@@ -48,9 +49,10 @@ export type FetchGymEventLogsOptions = {
 };
 
 export type FetchGymEventLogsResult = {
-  entries: AdminEventLogEntry[];
+  entries: AdminActivityEventRecord[];
   nextCursor: string | null;
-  error?: string;
+  stats: ActivityEventStats;
+  warnings: string[];
 };
 
 function toDate(value: unknown): Date | null {
@@ -162,28 +164,6 @@ function parseStatusSnapshot(
     return null;
   }
   return parseStatus(record);
-}
-
-function encodeCursor(path: string): string {
-  return Buffer.from(path, 'utf8').toString('base64url');
-}
-
-function decodeCursor(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  try {
-    const decoded = Buffer.from(value, 'base64url').toString('utf8');
-    if (!decoded.startsWith('gyms/')) {
-      return null;
-    }
-    if (!decoded.includes('/logs/')) {
-      return null;
-    }
-    return decoded;
-  } catch {
-    return null;
-  }
 }
 
 function isFailedPrecondition(error: unknown): boolean {
@@ -406,72 +386,38 @@ export async function fetchGymMonitoringSummary(gymId: string): Promise<FetchGym
   };
 }
 
-function mapEventDoc(doc: QueryDocumentSnapshot): AdminEventLogEntry | null {
-  const data = doc.data() as Record<string, unknown>;
-  const timestampValue = data.timestamp ?? (data as { timestamp?: unknown }).timestamp;
-  const timestamp = toDate(timestampValue);
-  if (!timestamp) {
-    return null;
-  }
-  const segments = doc.ref.path.split('/');
-  const gymId = segments.length >= 2 ? segments[1] : undefined;
-  const deviceId = segments.length >= 4 ? segments[3] : undefined;
-  const typeValue = data.type ?? (data as { eventType?: unknown }).eventType;
-  const type = typeof typeValue === 'string' ? typeValue : undefined;
-  const descriptionValue =
-    typeof data.description === 'string'
-      ? data.description
-      : typeof (data as { message?: unknown }).message === 'string'
-      ? ((data as { message: string }).message as string)
-      : undefined;
-
-  return {
-    id: doc.id,
-    timestamp,
-    gymId,
-    deviceId,
-    type,
-    description: descriptionValue,
-  };
-}
-
 export async function fetchGymEventLogs(
   gymId: string,
   options?: FetchGymEventLogsOptions
 ): Promise<FetchGymEventLogsResult> {
-  const firestore = adminDb();
-  const pageSize = Math.min(Math.max(options?.limit ?? 20, 1), 100);
-  const cursorPath = decodeCursor(options?.cursor);
-
   try {
-    let query = firestore
-      .collectionGroup('logs')
-      .where('gymId', '==', gymId)
-      .orderBy('timestamp', 'desc');
+    const result = await fetchActivityEventsForGym(gymId, {
+      limit: options?.limit ?? 50,
+      cursor: options?.cursor ?? null,
+    });
 
-    if (cursorPath && cursorPath.includes(`/gyms/${gymId}/`)) {
-      const cursorSnapshot = await firestore.doc(cursorPath).get();
-      if (cursorSnapshot.exists) {
-        query = query.startAfter(cursorSnapshot);
-      }
-    }
-
-    const snapshot = await query.limit(pageSize + 1).get();
-    const docs = snapshot.docs;
-    const hasMore = docs.length > pageSize;
-    const relevantDocs = hasMore ? docs.slice(0, pageSize) : docs;
-    const entries = relevantDocs
-      .map((doc) => mapEventDoc(doc))
-      .filter((entry): entry is AdminEventLogEntry => Boolean(entry));
-    const nextCursor = hasMore ? encodeCursor(docs[docs.length - 1].ref.path) : null;
-
-    return { entries, nextCursor };
+    return {
+      entries: result.items,
+      nextCursor: result.nextCursor,
+      stats: result.stats,
+      warnings: result.warnings,
+    };
   } catch (error) {
     if (isFailedPrecondition(error)) {
-      console.warn(`[admin-monitoring] event-log index fehlt für ${gymId}`, error);
-      return { entries: [], nextCursor: null, error: 'Index erforderlich' };
+      console.warn(`[admin-monitoring] activity index fehlt für ${gymId}`, error);
+      return {
+        entries: [],
+        nextCursor: null,
+        stats: { total: 0, last24h: 0, last7d: 0, last30d: 0 },
+        warnings: ['index-required'],
+      };
     }
-    console.error(`[admin-monitoring] event-log abruf fehlgeschlagen für ${gymId}`, error);
-    return { entries: [], nextCursor: null, error: 'Abruf fehlgeschlagen' };
+    console.error(`[admin-monitoring] activity abruf fehlgeschlagen für ${gymId}`, error);
+    return {
+      entries: [],
+      nextCursor: null,
+      stats: { total: 0, last24h: 0, last7d: 0, last30d: 0 },
+      warnings: ['fetch-failed'],
+    };
   }
 }

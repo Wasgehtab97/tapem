@@ -185,7 +185,7 @@ export default async function AdminPage() {
         <header className="space-y-1">
           <h2 className="text-xl font-semibold text-page">Letzte Ereignisse</h2>
           <p className="text-sm text-muted">
-            Aktuelle Logs aus den Gym-Geräten. Zeigt Typ, Quelle und Beschreibung der Aktivität.
+            Vereinheitlichter Aktivitäten-Stream pro Gym. Zeigt Quelle, Typ, Betroffene sowie Metadaten.
           </p>
         </header>
         {dashboard.events.error ? (
@@ -200,7 +200,7 @@ export default async function AdminPage() {
           showGymColumn
         />
         <p className="text-xs text-muted">
-          Quelle: Firestore collectionGroup('logs') · Zugriff nur mit Admin-Session
+          Quelle: Firestore collectionGroup('activity') · Zugriff nur mit Admin-Session
         </p>
       </section>
 

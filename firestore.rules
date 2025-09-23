@@ -99,6 +99,14 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Activity stream (server only)
+    // ─────────────────────────
+    match /gyms/{gymId}/activity/{eventId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─────────────────────────
     // Global logs read (owner-only)
     // ─────────────────────────
     match /{path=**}/logs/{logId} {
