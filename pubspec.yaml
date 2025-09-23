@@ -127,6 +127,8 @@ flutter:
     - assets/avatars/mcfit_baelau/
     - assets/avatars/fitnessfirst_myzeil/
     - assets/avatars/medifitness_ruesselsheim/
+    - assets/avatars/gym_frankfurt/
+    - assets/avatars/bodypower_weissenthurm/
 
 l10n:
   arb-dir: lib/l10n
