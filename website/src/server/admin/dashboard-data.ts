@@ -1,23 +1,16 @@
 import 'server-only';
 
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldPath, Timestamp } from 'firebase-admin/firestore';
 
 import { adminDb } from '@/src/server/firebase/admin';
+import { mapActivityEventDoc } from '@/src/server/activity/events';
+import type { AdminActivityEventRecord } from '@/src/types/admin-activity';
 
 export type AdminKpiMetric = {
   id: string;
   label: string;
   value: number;
   helper?: string;
-};
-
-export type AdminEventLogEntry = {
-  id: string;
-  timestamp: Date;
-  gymId?: string;
-  deviceId?: string;
-  type?: string;
-  description?: string;
 };
 
 export type AdminActivityPoint = {
@@ -39,7 +32,7 @@ export type AdminDashboardData = {
     warnings: AdminDashboardWarning[];
   };
   events: {
-    items: AdminEventLogEntry[];
+    items: AdminActivityEventRecord[];
     error?: string;
   };
   activity: {
@@ -286,100 +279,59 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       : undefined;
 
   let eventsError: string | undefined;
-  const eventEntries: AdminEventLogEntry[] = [];
+  const eventEntries: AdminActivityEventRecord[] = [];
 
   try {
     const eventSnapshot = await firestore
-      .collectionGroup('logs')
+      .collectionGroup('activity')
       .orderBy('timestamp', 'desc')
+      .orderBy(FieldPath.documentId(), 'desc')
       .limit(20)
       .get();
 
     eventSnapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      const timestampValue = data.timestamp;
-      const timestamp =
-        timestampValue instanceof Timestamp
-          ? timestampValue.toDate()
-          : typeof timestampValue?.toDate === 'function'
-          ? timestampValue.toDate()
-          : null;
-
-      const segments = doc.ref.path.split('/');
-      const gymId = segments.length >= 2 ? segments[1] : undefined;
-      const deviceId = segments.length >= 4 ? segments[3] : undefined;
-      const type = typeof data.type === 'string' ? data.type : typeof data.eventType === 'string' ? data.eventType : undefined;
-      const description =
-        typeof data.description === 'string'
-          ? data.description
-          : typeof data.message === 'string'
-          ? data.message
-          : undefined;
-
-      if (timestamp) {
-        eventEntries.push({
-          id: doc.id,
-          timestamp,
-          gymId,
-          deviceId,
-          type,
-          description,
-        });
+      const entry = mapActivityEventDoc(doc);
+      if (entry) {
+        eventEntries.push(entry);
       }
     });
   } catch (error) {
     if (isFailedPrecondition(error)) {
-      console.warn('[admin-dashboard] Event-Log Index erforderlich – Fallback aktiv.', error);
+      console.warn('[admin-dashboard] Activity Index erforderlich – Fallback aktiv.', error);
       try {
         const fallbackSnapshot = await firestore
-          .collectionGroup('logs')
+          .collectionGroup('activity')
           .where('timestamp', '>=', Timestamp.fromDate(twoWeeksAgo))
-          .select('timestamp', 'type', 'eventType', 'description', 'message')
+          .select(
+            'timestamp',
+            'eventType',
+            'summary',
+            'severity',
+            'source',
+            'userId',
+            'deviceId',
+            'sessionId',
+            'actor',
+            'targets',
+            'data'
+          )
           .limit(1000)
           .get();
 
         const fallbackEntries = fallbackSnapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-            const timestampValue = data.timestamp;
-            const timestamp =
-              timestampValue instanceof Timestamp
-                ? timestampValue.toDate()
-                : typeof timestampValue?.toDate === 'function'
-                ? timestampValue.toDate()
-                : null;
-            if (!timestamp) return null;
-            const segments = doc.ref.path.split('/');
-            const gymId = segments.length >= 2 ? segments[1] : undefined;
-            const deviceId = segments.length >= 4 ? segments[3] : undefined;
-            const type = typeof data.type === 'string' ? data.type : typeof data.eventType === 'string' ? data.eventType : undefined;
-            const description =
-              typeof data.description === 'string'
-                ? data.description
-                : typeof data.message === 'string'
-                ? data.message
-                : undefined;
-            return {
-              id: doc.id,
-              timestamp,
-              gymId,
-              deviceId,
-              type,
-              description,
-            } as AdminEventLogEntry;
-          })
-          .filter((entry): entry is AdminEventLogEntry => Boolean(entry))
+          .map((doc) => mapActivityEventDoc(doc))
+          .filter((entry): entry is AdminActivityEventRecord => Boolean(entry))
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
           .slice(0, 20);
 
         eventEntries.push(...fallbackEntries);
         eventsError = 'Index für Aktivitätsprotokoll wird erstellt – Fallback aktiv.';
       } catch (fallbackError) {
-        console.error('[admin-dashboard] event log fallback failed', fallbackError);
+        console.error('[admin-dashboard] activity fallback failed', fallbackError);
         eventsError = 'Aktivitätsprotokoll konnte nicht geladen werden.';
       }
     } else {
-      console.error('[admin-dashboard] event log query failed', error);
+      console.error('[admin-dashboard] activity query failed', error);
       eventsError = 'Aktivitätsprotokoll konnte nicht geladen werden.';
     }
   }
