@@ -29,6 +29,7 @@ export type MonitoringGymSummary = {
   state?: string;
   location: { lat: number; lng: number } | null;
   active: boolean;
+  deviceCount: number | null;
   statusUpdatedAt: Date | null;
   status: MonitoringGymStatus | null;
 };
@@ -333,8 +334,11 @@ export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise
 
 export async function fetchGymMonitoringSummary(gymId: string): Promise<FetchGymMonitoringSummaryResult> {
   const firestore = adminDb();
+  const debug = process.env.TAPEM_DEBUG === '1';
   const gymRef = firestore.collection('gyms').doc(gymId);
-  const [gymSnapshot, rootStatusSnapshot, nestedStatusSnapshot] = await Promise.all([
+  const logPrefix = `[admin-monitoring] gym-detail ${gymId}`;
+
+  const [gymSnapshot, rootStatusSnapshot, nestedStatusSnapshot, deviceCount] = await Promise.all([
     gymRef.get(),
     firestore
       .collection('gymStatus')
@@ -346,6 +350,25 @@ export async function fetchGymMonitoringSummary(gymId: string): Promise<FetchGym
       .doc('current')
       .get()
       .catch(() => null),
+    gymRef
+      .collection('devices')
+      .count()
+      .get()
+      .then((snapshot) => snapshot.data().count ?? 0)
+      .catch(async (error) => {
+        if (debug) {
+          console.warn(`${logPrefix} devices-count query failed`, error);
+        }
+        try {
+          const fallbackSnapshot = await gymRef.collection('devices').select('__name__').get();
+          return fallbackSnapshot.size;
+        } catch (fallbackError) {
+          if (debug) {
+            console.warn(`${logPrefix} devices-count fallback failed`, fallbackError);
+          }
+          return null;
+        }
+      }),
   ]);
 
   if (!gymSnapshot.exists) {
@@ -377,6 +400,7 @@ export async function fetchGymMonitoringSummary(gymId: string): Promise<FetchGym
     state,
     location,
     active,
+    deviceCount: typeof deviceCount === 'number' ? deviceCount : null,
     statusUpdatedAt,
     status,
   };

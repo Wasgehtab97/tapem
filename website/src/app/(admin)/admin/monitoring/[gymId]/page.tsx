@@ -137,7 +137,7 @@ export default async function MonitoringDetailPage({ params, searchParams }: Pag
         </article>
         <article className="rounded-lg border border-subtle bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Geräte online</p>
-          <p className="mt-2 text-2xl font-semibold text-page">{formatNumber(summary.status?.devicesOnline)}</p>
+          <p className="mt-2 text-2xl font-semibold text-page">{formatNumber(summary.deviceCount)}</p>
         </article>
         <article className="rounded-lg border border-subtle bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Letztes Ereignis</p>
