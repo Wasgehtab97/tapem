@@ -94,6 +94,7 @@ class _TestList extends StatelessWidget {
             child: SetCard(
               index: entry.key,
               set: entry.value,
+              displayMode: SetCardDisplayMode.standalone,
             ),
           ),
       ],
