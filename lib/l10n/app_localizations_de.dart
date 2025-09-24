@@ -26,6 +26,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deviceHistoryTooltip => 'Verlauf anzeigen';
 
   @override
+  String get devicePreviousFieldLabel => 'Vorher';
+
+  @override
   String get deviceNotFound => 'Gerät nicht gefunden';
 
   @override
@@ -438,6 +441,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
+
+  @override
+  String get settingsPreviousSetsTitle => 'Vorherige Sätze anzeigen';
+
+  @override
+  String get settingsPreviousSetsDescription =>
+      'Zeigt Gewicht und Wiederholungen der letzten Einheit in den Set-Karten an.';
 
   @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';

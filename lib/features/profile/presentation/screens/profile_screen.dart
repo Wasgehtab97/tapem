@@ -224,6 +224,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           (_) => SimpleDialog(
             title: Text(loc.settingsDialogTitle),
             children: [
+              Consumer<SettingsProvider>(
+                builder: (context, settings, _) {
+                  return SwitchListTile.adaptive(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 24),
+                    title: Text(loc.settingsPreviousSetsTitle),
+                    subtitle: Text(loc.settingsPreviousSetsDescription),
+                    value: settings.showPreviousSets,
+                    onChanged: (value) {
+                      settings.setShowPreviousSets(value);
+                    },
+                  );
+                },
+              ),
               SimpleDialogOption(
                 onPressed: () {
                   Navigator.pop(context);
