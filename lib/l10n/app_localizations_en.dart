@@ -288,6 +288,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setReopenTooltip => 'Reopen set';
 
   @override
+  String get setCardPreviousLabel => 'Previous';
+
+  @override
   String get registerButton => 'Register';
 
   @override
@@ -438,6 +441,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
+
+  @override
+  String get settingsOptionSetCards => 'Set cards';
+
+  @override
+  String get settingsToggleOn => 'On';
+
+  @override
+  String get settingsToggleOff => 'Off';
+
+  @override
+  String get settingsSetCardDialogTitle => 'Set cards';
+
+  @override
+  String get settingsPreviousSetsLabel => 'Show previous set history';
 
   @override
   String get publicProfileDialogTitle => 'Profile visibility';

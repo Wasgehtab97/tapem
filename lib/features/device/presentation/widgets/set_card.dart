@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -97,6 +98,7 @@ class SetCard extends StatefulWidget {
   final bool readOnly;
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
+  final bool showPrevious;
   const SetCard({
     super.key,
     required this.index,
@@ -106,6 +108,7 @@ class SetCard extends StatefulWidget {
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
+    this.showPrevious = false,
   });
 
   @override
@@ -282,6 +285,7 @@ class SetCardState extends State<SetCard> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
     var tokens = SetCardTheme.of(context);
     final dense = widget.size == SetCardSize.dense;
     if (dense) {
@@ -370,6 +374,9 @@ class SetCardState extends State<SetCard> {
       filled: filled,
       isBodyweightMode: prov.isBodyweightMode,
       loc: loc,
+      showPrevious: widget.showPrevious,
+      previousLabel: loc.setCardPreviousLabel,
+      previousValue: _buildPreviousValue(loc, locale),
       weightController: _weightCtrl,
       weightFocus: _weightFocus,
       repsController: _repsCtrl,
@@ -405,6 +412,50 @@ class SetCardState extends State<SetCard> {
           : content,
     );
   }
+
+  String _buildPreviousValue(AppLocalizations loc, Locale locale) {
+    if (!widget.showPrevious) return '-';
+    final prev = widget.previous;
+    if (prev == null) return '-';
+
+    final rawWeight = (prev['weight'] ?? '').toString().trim();
+    final rawReps = (prev['reps'] ?? '').toString().trim();
+    final isBodyweight = prev['isBodyweight'] == true || prev['isBodyweight'] == 'true';
+
+    if (rawWeight.isEmpty && rawReps.isEmpty) {
+      return '-';
+    }
+
+    final formatter = NumberFormat.decimalPattern(locale.toString());
+    final sanitizedWeight = rawWeight.replaceAll(',', '.');
+    final parsedWeight = double.tryParse(sanitizedWeight);
+    final repsText = rawReps.isEmpty ? '-' : rawReps;
+
+    String weightText;
+    if (isBodyweight) {
+      if (parsedWeight == null || parsedWeight == 0) {
+        weightText = loc.bodyweight;
+      } else {
+        final formatted = formatter.format(parsedWeight);
+        weightText = loc.bodyweightPlus(formatted);
+      }
+    } else {
+      if (parsedWeight != null) {
+        final formatted = formatter.format(parsedWeight);
+        weightText = '$formatted ${loc.tableHeaderKg}';
+      } else if (rawWeight.isNotEmpty) {
+        weightText = rawWeight;
+      } else {
+        weightText = '-';
+      }
+    }
+
+    if (weightText == '-' && repsText == '-') {
+      return '-';
+    }
+
+    return '$weightText × $repsText';
+  }
 }
 
 class SetRowContent extends StatelessWidget {
@@ -418,6 +469,9 @@ class SetRowContent extends StatelessWidget {
   final bool filled;
   final bool isBodyweightMode;
   final AppLocalizations loc;
+  final bool showPrevious;
+  final String previousLabel;
+  final String previousValue;
   final TextEditingController weightController;
   final FocusNode weightFocus;
   final TextEditingController repsController;
@@ -448,6 +502,9 @@ class SetRowContent extends StatelessWidget {
     required this.filled,
     required this.isBodyweightMode,
     required this.loc,
+    required this.showPrevious,
+    required this.previousLabel,
+    required this.previousValue,
     required this.weightController,
     required this.weightFocus,
     required this.repsController,
@@ -469,6 +526,8 @@ class SetRowContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final weightFlex = showPrevious ? 3 : 4;
+    final repsFlex = showPrevious ? 2 : 3;
     Widget body = Padding(
       padding: padding,
       child: Column(
@@ -488,6 +547,7 @@ class SetRowContent extends StatelessWidget {
               ],
               SizedBox(width: dense ? 8 : 12),
               Expanded(
+                flex: weightFlex,
                 child: _InputPill(
                   controller: weightController,
                   focusNode: weightFocus,
@@ -506,7 +566,20 @@ class SetRowContent extends StatelessWidget {
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
+              if (showPrevious) ...[
+                Expanded(
+                  flex: 3,
+                  child: _StaticPill(
+                    label: previousLabel,
+                    value: previousValue,
+                    tokens: tokens,
+                    dense: dense,
+                  ),
+                ),
+                SizedBox(width: dense ? 8 : 12),
+              ],
               Expanded(
+                flex: repsFlex,
                 child: _InputPill(
                   controller: repsController,
                   focusNode: repsFocus,
@@ -737,6 +810,53 @@ class _InputPill extends StatelessWidget {
           ),
           style: dense ? const TextStyle(fontSize: 14) : null,
           validator: validator,
+        ),
+      ),
+    );
+  }
+}
+
+class _StaticPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final SetCardTheme tokens;
+  final bool dense;
+
+  const _StaticPill({
+    required this.label,
+    required this.value,
+    required this.tokens,
+    this.dense = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValue = value != '-';
+    final baseStyle = dense ? const TextStyle(fontSize: 14) : const TextStyle();
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.chipBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.chipBorder.withOpacity(0.6),
+          width: 1.3,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
+      alignment: Alignment.centerLeft,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          isDense: dense,
+          border: InputBorder.none,
+          labelText: label,
+          labelStyle: dense ? const TextStyle(fontSize: 14) : null,
+        ),
+        child: Text(
+          value,
+          style: baseStyle.copyWith(
+            fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
+            color: hasValue ? tokens.chipFg : tokens.chipFg.withOpacity(0.6),
+          ),
         ),
       ),
     );

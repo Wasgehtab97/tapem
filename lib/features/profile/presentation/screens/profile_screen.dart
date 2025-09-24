@@ -249,6 +249,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SimpleDialogOption(
                 onPressed: () {
                   Navigator.pop(context);
+                  _showSetCardSettingsDialog();
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(loc.settingsOptionSetCards)),
+                    Text(context.read<SettingsProvider>().showPreviousSets
+                        ? loc.settingsToggleOn
+                        : loc.settingsToggleOff),
+                  ],
+                ),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
                   _showPrivacyDialog();
                 },
                 child: Text(loc.settingsOptionPublicProfile),
@@ -262,6 +276,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showSetCardSettingsDialog() {
+    final loc = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(loc.settingsSetCardDialogTitle),
+          content: Consumer<SettingsProvider>(
+            builder: (_, settings, __) {
+              return SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(loc.settingsPreviousSetsLabel),
+                value: settings.showPreviousSets,
+                onChanged: (value) {
+                  settings.setShowPreviousSets(value);
+                },
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(loc.cancelButton),
+            ),
+          ],
+        );
+      },
     );
   }
 

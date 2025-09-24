@@ -373,6 +373,11 @@
     "description": "Tooltip when set is completed"
   },
 
+  "setCardPreviousLabel": "Previous",
+  "@setCardPreviousLabel": {
+    "description": "Label for the previous set value pill"
+  },
+
   "registerButton": "Register",
   "@registerButton": {
     "description": "Label for the Register button"
@@ -547,6 +552,16 @@
   "@settingsCreatineSavedEnabled": {"description": "Snackbar when creatine tracker enabled"},
   "settingsCreatineSavedDisabled": "Creatine tracker disabled.",
   "@settingsCreatineSavedDisabled": {"description": "Snackbar when creatine tracker disabled"},
+  "settingsOptionSetCards": "Set cards",
+  "@settingsOptionSetCards": {"description": "Settings option for set card preferences"},
+  "settingsToggleOn": "On",
+  "@settingsToggleOn": {"description": "Generic label for enabled toggles"},
+  "settingsToggleOff": "Off",
+  "@settingsToggleOff": {"description": "Generic label for disabled toggles"},
+  "settingsSetCardDialogTitle": "Set cards",
+  "@settingsSetCardDialogTitle": {"description": "Title for the set card settings dialog"},
+  "settingsPreviousSetsLabel": "Show previous set history",
+  "@settingsPreviousSetsLabel": {"description": "Toggle label for showing previous set values"},
   "publicProfileDialogTitle": "Profile visibility",
   "@publicProfileDialogTitle": {"description": "Title for public profile dialog"},
   "publicProfilePublic": "Public",

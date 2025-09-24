@@ -288,6 +288,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get setReopenTooltip => 'Satz wieder öffnen';
 
   @override
+  String get setCardPreviousLabel => 'Vorher';
+
+  @override
   String get registerButton => 'Registrieren';
 
   @override
@@ -438,6 +441,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
+
+  @override
+  String get settingsOptionSetCards => 'Satzkarten';
+
+  @override
+  String get settingsToggleOn => 'Ein';
+
+  @override
+  String get settingsToggleOff => 'Aus';
+
+  @override
+  String get settingsSetCardDialogTitle => 'Satzkarten';
+
+  @override
+  String get settingsPreviousSetsLabel => 'Vorherige Satzwerte anzeigen';
 
   @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';

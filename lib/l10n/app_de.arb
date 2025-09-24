@@ -375,6 +375,11 @@
     "description": "Tooltip wenn Satz abgeschlossen ist"
   },
 
+  "setCardPreviousLabel": "Vorher",
+  "@setCardPreviousLabel": {
+    "description": "Beschriftung für das Feld mit den vorherigen Satzzahlen"
+  },
+
   "registerButton": "Registrieren",
   "@registerButton": {
     "description": "Beschriftung für den Registrieren-Knopf"
@@ -549,6 +554,16 @@
   "@settingsCreatineSavedEnabled": {"description": "Snackbar wenn Kreatin-Tracker aktiviert wurde"},
   "settingsCreatineSavedDisabled": "Kreatin-Tracker deaktiviert.",
   "@settingsCreatineSavedDisabled": {"description": "Snackbar wenn Kreatin-Tracker deaktiviert wurde"},
+  "settingsOptionSetCards": "Satzkarten",
+  "@settingsOptionSetCards": {"description": "Einstellung für die Satzkarten"},
+  "settingsToggleOn": "Ein",
+  "@settingsToggleOn": {"description": "Allgemeine Bezeichnung für aktivierte Schalter"},
+  "settingsToggleOff": "Aus",
+  "@settingsToggleOff": {"description": "Allgemeine Bezeichnung für deaktivierte Schalter"},
+  "settingsSetCardDialogTitle": "Satzkarten",
+  "@settingsSetCardDialogTitle": {"description": "Titel des Satzkarten-Dialogs"},
+  "settingsPreviousSetsLabel": "Vorherige Satzwerte anzeigen",
+  "@settingsPreviousSetsLabel": {"description": "Schalter zum Anzeigen der vorherigen Satzwerte"},
   "publicProfileDialogTitle": "Profil-Sichtbarkeit",
   "@publicProfileDialogTitle": {"description": "Titel des Dialogs für öffentliche Profil-Option"},
   "publicProfilePublic": "Öffentlich",

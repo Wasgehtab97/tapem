@@ -617,6 +617,12 @@ abstract class AppLocalizations {
   /// **'Reopen set'**
   String get setReopenTooltip;
 
+  /// No description provided for @setCardPreviousLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get setCardPreviousLabel;
+
   /// Label for the Register button
   ///
   /// In en, this message translates to:
@@ -916,6 +922,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creatine tracker disabled.'**
   String get settingsCreatineSavedDisabled;
+
+  /// No description provided for @settingsOptionSetCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Set cards'**
+  String get settingsOptionSetCards;
+
+  /// No description provided for @settingsToggleOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get settingsToggleOn;
+
+  /// No description provided for @settingsToggleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsToggleOff;
+
+  /// No description provided for @settingsSetCardDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set cards'**
+  String get settingsSetCardDialogTitle;
+
+  /// No description provided for @settingsPreviousSetsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show previous set history'**
+  String get settingsPreviousSetsLabel;
 
   /// Title for public profile dialog
   ///

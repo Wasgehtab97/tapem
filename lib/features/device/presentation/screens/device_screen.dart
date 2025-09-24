@@ -15,6 +15,7 @@ import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
@@ -124,6 +125,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     String locale,
     ExerciseEntry? plannedEntry,
   ) {
+    final showPreviousSets = context.watch<SettingsProvider>().showPreviousSets;
     return Column(
       children: [
         const Padding(
@@ -173,6 +175,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         _GroupedSetList(
                           sets: prov.sets,
                           previousSessionSets: prov.lastSessionSets,
+                          showPreviousSets: showPreviousSets,
                           setKeys: _setKeys,
                           onRemove: (index, removed) {
                             context.read<DeviceProvider>().removeSet(index);
@@ -513,12 +516,14 @@ class _GroupedSetList extends StatelessWidget {
   final List<Map<String, dynamic>> previousSessionSets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
+  final bool showPreviousSets;
 
   const _GroupedSetList({
     required this.sets,
     required this.previousSessionSets,
     required this.setKeys,
     required this.onRemove,
+    required this.showPreviousSets,
   });
 
   @override
@@ -561,8 +566,10 @@ class _GroupedSetList extends StatelessWidget {
                 key: setKeys[index],
                 index: index,
                 set: sets[index],
-                previous:
-                    index < previousSessionSets.length ? previousSessionSets[index] : null,
+                previous: showPreviousSets && index < previousSessionSets.length
+                    ? previousSessionSets[index]
+                    : null,
+                showPrevious: showPreviousSets,
                 size: SetCardSize.dense,
                 displayMode: SetCardDisplayMode.grouped,
                 groupedRadius: BorderRadius.only(
