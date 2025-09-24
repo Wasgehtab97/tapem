@@ -31,6 +31,7 @@ import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dar
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 
 void _dlog(String m) {}
 
@@ -149,10 +150,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 if (_setKeys.length > prov.sets.length) {
                   _setKeys.removeRange(prov.sets.length, _setKeys.length);
                 }
-                final lastSnap = prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
-                final lastSets = lastSnap != null ? mapSnapshotToVM(lastSnap) : mapLegacySetsToVM(prov.lastSessionSets);
+                final lastSnap =
+                    prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+                final lastSets = lastSnap != null
+                    ? mapSnapshotToVM(lastSnap)
+                    : mapLegacySetsToVM(prov.lastSessionSets);
                 final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
                 final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+                final showPreviousSets =
+                    context.watch<SettingsProvider>().showPreviousSets;
                 return ListView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -172,7 +178,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       if (prov.sets.isNotEmpty)
                         _GroupedSetList(
                           sets: prov.sets,
-                          previousSessionSets: prov.lastSessionSets,
+                          previousSessionSets:
+                              showPreviousSets ? prov.lastSessionSets : const [],
+                          showPrevious: showPreviousSets,
                           setKeys: _setKeys,
                           onRemove: (index, removed) {
                             context.read<DeviceProvider>().removeSet(index);
@@ -513,12 +521,14 @@ class _GroupedSetList extends StatelessWidget {
   final List<Map<String, dynamic>> previousSessionSets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
+  final bool showPrevious;
 
   const _GroupedSetList({
     required this.sets,
     required this.previousSessionSets,
     required this.setKeys,
     required this.onRemove,
+    this.showPrevious = false,
   });
 
   @override
@@ -561,8 +571,10 @@ class _GroupedSetList extends StatelessWidget {
                 key: setKeys[index],
                 index: index,
                 set: sets[index],
-                previous:
-                    index < previousSessionSets.length ? previousSessionSets[index] : null,
+                previous: index < previousSessionSets.length
+                    ? previousSessionSets[index]
+                    : null,
+                showPrevious: showPrevious,
                 size: SetCardSize.dense,
                 displayMode: SetCardDisplayMode.grouped,
                 groupedRadius: BorderRadius.only(

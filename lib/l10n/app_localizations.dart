@@ -125,6 +125,12 @@ abstract class AppLocalizations {
   /// **'Show history'**
   String get deviceHistoryTooltip;
 
+  /// Label for the previous set summary field
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get devicePreviousFieldLabel;
+
   /// Error when the device cannot be loaded
   ///
   /// In en, this message translates to:
@@ -916,6 +922,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creatine tracker disabled.'**
   String get settingsCreatineSavedDisabled;
+
+  /// Toggle title for displaying previous set information
+  ///
+  /// In en, this message translates to:
+  /// **'Show previous sets'**
+  String get settingsPreviousSetsTitle;
+
+  /// Toggle description for displaying previous set information
+  ///
+  /// In en, this message translates to:
+  /// **'Display the weight and reps from your last session in set cards.'**
+  String get settingsPreviousSetsDescription;
 
   /// Title for public profile dialog
   ///

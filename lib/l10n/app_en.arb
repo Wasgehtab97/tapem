@@ -27,6 +27,9 @@
     "description": "Tooltip for the history button on device screen"
   },
 
+  "devicePreviousFieldLabel": "Previous",
+  "@devicePreviousFieldLabel": {"description": "Label for the previous set summary field"},
+
   "deviceNotFound": "Device not found",
   "@deviceNotFound": {
     "description": "Error when the device cannot be loaded"
@@ -547,6 +550,10 @@
   "@settingsCreatineSavedEnabled": {"description": "Snackbar when creatine tracker enabled"},
   "settingsCreatineSavedDisabled": "Creatine tracker disabled.",
   "@settingsCreatineSavedDisabled": {"description": "Snackbar when creatine tracker disabled"},
+  "settingsPreviousSetsTitle": "Show previous sets",
+  "@settingsPreviousSetsTitle": {"description": "Toggle title for displaying previous set information"},
+  "settingsPreviousSetsDescription": "Display the weight and reps from your last session in set cards.",
+  "@settingsPreviousSetsDescription": {"description": "Toggle description for displaying previous set information"},
   "publicProfileDialogTitle": "Profile visibility",
   "@publicProfileDialogTitle": {"description": "Title for public profile dialog"},
   "publicProfilePublic": "Public",

@@ -27,6 +27,9 @@
     "description": "Tooltip für den Verlauf-Button auf der Geräte-Seite"
   },
 
+  "devicePreviousFieldLabel": "Vorher",
+  "@devicePreviousFieldLabel": {"description": "Beschriftung für das Vorher-Feld in der Set-Karte"},
+
   "deviceNotFound": "Gerät nicht gefunden",
   "@deviceNotFound": {
     "description": "Fehlermeldung, wenn das Gerät nicht geladen werden kann"
@@ -549,6 +552,10 @@
   "@settingsCreatineSavedEnabled": {"description": "Snackbar wenn Kreatin-Tracker aktiviert wurde"},
   "settingsCreatineSavedDisabled": "Kreatin-Tracker deaktiviert.",
   "@settingsCreatineSavedDisabled": {"description": "Snackbar wenn Kreatin-Tracker deaktiviert wurde"},
+  "settingsPreviousSetsTitle": "Vorherige Sätze anzeigen",
+  "@settingsPreviousSetsTitle": {"description": "Schalter-Titel zum Anzeigen vorheriger Satzdaten"},
+  "settingsPreviousSetsDescription": "Zeigt Gewicht und Wiederholungen der letzten Einheit in den Set-Karten an.",
+  "@settingsPreviousSetsDescription": {"description": "Schalter-Beschreibung zum Anzeigen vorheriger Satzdaten"},
   "publicProfileDialogTitle": "Profil-Sichtbarkeit",
   "@publicProfileDialogTitle": {"description": "Titel des Dialogs für öffentliche Profil-Option"},
   "publicProfilePublic": "Öffentlich",

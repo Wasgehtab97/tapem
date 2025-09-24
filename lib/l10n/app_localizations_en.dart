@@ -26,6 +26,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceHistoryTooltip => 'Show history';
 
   @override
+  String get devicePreviousFieldLabel => 'Previous';
+
+  @override
   String get deviceNotFound => 'Device not found';
 
   @override
@@ -438,6 +441,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
+
+  @override
+  String get settingsPreviousSetsTitle => 'Show previous sets';
+
+  @override
+  String get settingsPreviousSetsDescription =>
+      'Display the weight and reps from your last session in set cards.';
 
   @override
   String get publicProfileDialogTitle => 'Profile visibility';

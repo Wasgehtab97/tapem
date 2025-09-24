@@ -93,6 +93,7 @@ class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
   final Map<String, dynamic>? previous;
+  final bool showPrevious;
   final SetCardSize size;
   final bool readOnly;
   final SetCardDisplayMode displayMode;
@@ -102,6 +103,7 @@ class SetCard extends StatefulWidget {
     required this.index,
     required this.set,
     this.previous,
+    this.showPrevious = false,
     this.size = SetCardSize.regular,
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
@@ -369,6 +371,8 @@ class SetCardState extends State<SetCard> {
       readOnly: widget.readOnly,
       filled: filled,
       isBodyweightMode: prov.isBodyweightMode,
+      showPrevious: widget.showPrevious,
+      previous: widget.previous,
       loc: loc,
       weightController: _weightCtrl,
       weightFocus: _weightFocus,
@@ -417,7 +421,9 @@ class SetRowContent extends StatelessWidget {
   final bool readOnly;
   final bool filled;
   final bool isBodyweightMode;
+  final bool showPrevious;
   final AppLocalizations loc;
+  final Map<String, dynamic>? previous;
   final TextEditingController weightController;
   final FocusNode weightFocus;
   final TextEditingController repsController;
@@ -447,7 +453,9 @@ class SetRowContent extends StatelessWidget {
     required this.readOnly,
     required this.filled,
     required this.isBodyweightMode,
+    required this.showPrevious,
     required this.loc,
+    required this.previous,
     required this.weightController,
     required this.weightFocus,
     required this.repsController,
@@ -469,6 +477,7 @@ class SetRowContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final previousValue = _formatPreviousValue(loc);
     Widget body = Padding(
       padding: padding,
       child: Column(
@@ -487,7 +496,20 @@ class SetRowContent extends StatelessWidget {
                 _DropBadge(tokens: tokens, dense: dense),
               ],
               SizedBox(width: dense ? 8 : 12),
+              if (showPrevious) ...[
+                Expanded(
+                  flex: 3,
+                  child: _DisplayPill(
+                    label: loc.devicePreviousFieldLabel,
+                    value: previousValue,
+                    tokens: tokens,
+                    dense: dense,
+                  ),
+                ),
+                SizedBox(width: dense ? 8 : 12),
+              ],
               Expanded(
+                flex: showPrevious ? 3 : 4,
                 child: _InputPill(
                   controller: weightController,
                   focusNode: weightFocus,
@@ -507,6 +529,7 @@ class SetRowContent extends StatelessWidget {
               ),
               SizedBox(width: dense ? 8 : 12),
               Expanded(
+                flex: showPrevious ? 2 : 3,
                 child: _InputPill(
                   controller: repsController,
                   focusNode: repsFocus,
@@ -599,6 +622,41 @@ class SetRowContent extends StatelessWidget {
     }
 
     return SizedBox(width: double.infinity, child: body);
+  }
+
+  String _formatPreviousValue(AppLocalizations loc) {
+    if (!showPrevious) return '';
+    final prev = previous;
+    if (prev == null) {
+      return '-';
+    }
+    final rawWeight = (prev['weight'] ?? '').toString().trim();
+    final rawReps = (prev['reps'] ?? '').toString().trim();
+    final isBodyweight = prev['isBodyweight'] == true;
+
+    final hasWeight = rawWeight.isNotEmpty && rawWeight.toLowerCase() != 'null';
+    final hasReps = rawReps.isNotEmpty && rawReps.toLowerCase() != 'null';
+
+    String? weightLabel;
+    if (isBodyweight) {
+      if (hasWeight) {
+        weightLabel = loc.bodyweightPlus(rawWeight);
+      } else {
+        weightLabel = loc.bodyweight;
+      }
+    } else if (hasWeight) {
+      weightLabel = '$rawWeight kg';
+    }
+
+    final parts = <String>[
+      if (weightLabel != null && weightLabel.isNotEmpty) weightLabel,
+      if (hasReps) '× $rawReps',
+    ];
+
+    if (parts.isEmpty) {
+      return '-';
+    }
+    return parts.join(' ');
   }
 }
 
@@ -737,6 +795,58 @@ class _InputPill extends StatelessWidget {
           ),
           style: dense ? const TextStyle(fontSize: 14) : null,
           validator: validator,
+        ),
+      ),
+    );
+  }
+}
+
+class _DisplayPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final SetCardTheme tokens;
+  final bool dense;
+
+  const _DisplayPill({
+    required this.label,
+    required this.value,
+    required this.tokens,
+    this.dense = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = TextStyle(
+      fontSize: dense ? 12 : 13,
+      color: tokens.chipFg.withOpacity(0.7),
+      fontWeight: FontWeight.w500,
+    );
+    final valueStyle = TextStyle(
+      fontSize: dense ? 14 : 16,
+      fontWeight: FontWeight.w600,
+      color: tokens.chipFg,
+    );
+
+    return Semantics(
+      label: '$label $value',
+      child: Container(
+        decoration: BoxDecoration(
+          color: tokens.chipBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: tokens.chipBorder.withOpacity(0.6),
+            width: 1.3,
+          ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 6 : 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: labelStyle),
+            SizedBox(height: dense ? 2 : 4),
+            Text(value, style: valueStyle),
+          ],
         ),
       ),
     );

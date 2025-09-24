@@ -8,6 +8,7 @@ class SettingsProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
 
   bool? _creatineEnabled;
+  bool _showPreviousSets = false;
   bool _isLoading = false;
   String? _error;
   String? _uid;
@@ -15,6 +16,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get creatineEnabled => _creatineEnabled ?? false;
+  bool get showPreviousSets => _showPreviousSets;
 
   DocumentReference<Map<String, dynamic>> _doc(String uid) {
     return _firestore
@@ -34,11 +36,30 @@ class SettingsProvider extends ChangeNotifier {
       final ref = _doc(uid);
       final snap = await ref.get();
       final data = snap.data();
-      if (data != null && data['creatineEnabled'] != null) {
-        _creatineEnabled = data['creatineEnabled'] as bool;
+      if (data != null) {
+        final merged = <String, dynamic>{};
+        if (data['creatineEnabled'] != null) {
+          _creatineEnabled = data['creatineEnabled'] as bool;
+        } else {
+          _creatineEnabled = false;
+          merged['creatineEnabled'] = false;
+        }
+        if (data['showPreviousSets'] != null) {
+          _showPreviousSets = data['showPreviousSets'] as bool;
+        } else {
+          _showPreviousSets = false;
+          merged['showPreviousSets'] = false;
+        }
+        if (merged.isNotEmpty) {
+          await ref.set(merged, SetOptions(merge: true));
+        }
       } else {
         _creatineEnabled = false;
-        await ref.set({'creatineEnabled': false}, SetOptions(merge: true));
+        _showPreviousSets = false;
+        await ref.set({
+          'creatineEnabled': false,
+          'showPreviousSets': false,
+        }, SetOptions(merge: true));
       }
     } catch (e) {
       _error = e.toString();
@@ -58,6 +79,22 @@ class SettingsProvider extends ChangeNotifier {
       await _doc(uid).set({'creatineEnabled': value}, SetOptions(merge: true));
     } catch (e) {
       _creatineEnabled = old;
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> setShowPreviousSets(bool value) async {
+    final uid = _uid;
+    if (uid == null) return;
+    final old = _showPreviousSets;
+    _showPreviousSets = value;
+    notifyListeners();
+    try {
+      await _doc(uid).set({'showPreviousSets': value}, SetOptions(merge: true));
+    } catch (e) {
+      _showPreviousSets = old;
       _error = e.toString();
       notifyListeners();
       rethrow;
