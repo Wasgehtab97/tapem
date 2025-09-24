@@ -917,6 +917,60 @@ abstract class AppLocalizations {
   /// **'Creatine tracker disabled.'**
   String get settingsCreatineSavedDisabled;
 
+  /// Settings option to configure set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Set cards'**
+  String get settingsOptionSetCard;
+
+  /// Label for previous values switch in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Previous values'**
+  String get settingsSetCardPrevious;
+
+  /// Description for previous values switch
+  ///
+  /// In en, this message translates to:
+  /// **'Display the weight and reps from your last session in each set card.'**
+  String get settingsSetCardPreviousDescription;
+
+  /// Status text when previous values are enabled
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get settingsSetCardPreviousEnabled;
+
+  /// Status text when previous values are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsSetCardPreviousDisabled;
+
+  /// Snackbar message after enabling previous values
+  ///
+  /// In en, this message translates to:
+  /// **'Previous values enabled'**
+  String get settingsSetCardPreviousSavedEnabled;
+
+  /// Snackbar message after disabling previous values
+  ///
+  /// In en, this message translates to:
+  /// **'Previous values disabled'**
+  String get settingsSetCardPreviousSavedDisabled;
+
+  /// Title for the set card preferences dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Set cards'**
+  String get settingsSetCardPreviousTitle;
+
+  /// Label for the previous value field in a set card
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get setCardPreviousLabel;
+
   /// Title for public profile dialog
   ///
   /// In en, this message translates to:

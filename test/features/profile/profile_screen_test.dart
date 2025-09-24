@@ -34,6 +34,7 @@ class FakeProfileProvider extends ProfileProvider {
 
 class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   bool _creatine = false;
+  bool _showPrevious = false;
 
   @override
   bool get creatineEnabled => _creatine;
@@ -45,11 +46,20 @@ class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   String? get error => null;
 
   @override
+  bool get showPreviousSets => _showPrevious;
+
+  @override
   Future<void> load(String uid) async {}
 
   @override
   Future<void> setCreatineEnabled(bool value) async {
     _creatine = value;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setShowPreviousSets(bool value) async {
+    _showPrevious = value;
     notifyListeners();
   }
 }

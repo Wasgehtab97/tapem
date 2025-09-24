@@ -249,6 +249,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SimpleDialogOption(
                 onPressed: () {
                   Navigator.pop(context);
+                  _showSetCardPreferencesDialog();
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(loc.settingsOptionSetCard)),
+                    Text(context.read<SettingsProvider>().showPreviousSets
+                        ? loc.settingsSetCardPreviousEnabled
+                        : loc.settingsSetCardPreviousDisabled),
+                  ],
+                ),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
                   _showPrivacyDialog();
                 },
                 child: Text(loc.settingsOptionPublicProfile),
@@ -262,6 +276,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showSetCardPreferencesDialog() {
+    final loc = AppLocalizations.of(context)!;
+    final settingsProv = context.read<SettingsProvider>();
+    var currentValue = settingsProv.showPreviousSets;
+    showDialog(
+      context: context,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(loc.settingsSetCardPreviousTitle),
+              content: SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: Text(loc.settingsSetCardPrevious),
+                subtitle: Text(loc.settingsSetCardPreviousDescription),
+                value: currentValue,
+                onChanged: (value) async {
+                  final previousValue = currentValue;
+                  setStateDialog(() => currentValue = value);
+                  try {
+                    await settingsProv.setShowPreviousSets(value);
+                    elogUi('settings_toggle_previous_sets', {'enabled': value});
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? loc.settingsSetCardPreviousSavedEnabled
+                              : loc.settingsSetCardPreviousSavedDisabled,
+                        ),
+                      ),
+                    );
+                  } catch (_) {
+                    setStateDialog(() => currentValue = previousValue);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Fehler beim Speichern.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(loc.cancelButton),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

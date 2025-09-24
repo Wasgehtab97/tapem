@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -97,6 +98,7 @@ class SetCard extends StatefulWidget {
   final bool readOnly;
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
+  final bool showPrevious;
   const SetCard({
     super.key,
     required this.index,
@@ -106,6 +108,7 @@ class SetCard extends StatefulWidget {
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
+    this.showPrevious = false,
   });
 
   @override
@@ -278,6 +281,52 @@ class SetCardState extends State<SetCard> {
     return null;
   }
 
+  String _formatPrevious(
+    Map<String, dynamic>? previous,
+    AppLocalizations loc,
+  ) {
+    if (previous == null) {
+      return '-';
+    }
+    final locale = loc.localeName;
+    final numberFormat = NumberFormat.decimalPattern(locale);
+    final repsRaw = (previous['reps'] ?? '').toString().trim();
+    final weightRaw = (previous['weight'] ?? '').toString().trim();
+    final isBodyweight = previous['isBodyweight'] == true;
+
+    String? weightPart;
+    if (isBodyweight) {
+      final parsed = double.tryParse(weightRaw);
+      if (parsed != null && parsed > 0) {
+        weightPart = loc.bodyweightPlus(numberFormat.format(parsed));
+      } else {
+        weightPart = loc.bodyweight;
+      }
+    } else {
+      final parsed = double.tryParse(weightRaw.replaceAll(',', '.'));
+      if (parsed != null) {
+        weightPart = '${numberFormat.format(parsed)} kg';
+      } else if (weightRaw.isNotEmpty) {
+        weightPart = '$weightRaw kg';
+      }
+    }
+
+    final hasWeight = weightPart != null && weightPart.isNotEmpty;
+    final reps = int.tryParse(repsRaw);
+    final hasReps = reps != null;
+    final parts = <String>[];
+    if (hasWeight) {
+      parts.add(weightPart!);
+    }
+    if (hasReps) {
+      parts.add('× ${reps.toString()}');
+    }
+    if (parts.isEmpty) {
+      return '-';
+    }
+    return parts.join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
@@ -304,6 +353,7 @@ class SetCardState extends State<SetCard> {
                 double.tryParse(weight.replaceAll(',', '.')) != null)) &&
         reps.isNotEmpty &&
         int.tryParse(reps) != null;
+    final previousValue = _formatPrevious(widget.showPrevious ? widget.previous : null, loc);
     VoidCallback? toggleExtras;
     if (!widget.readOnly) {
       toggleExtras = () {
@@ -370,6 +420,9 @@ class SetCardState extends State<SetCard> {
       filled: filled,
       isBodyweightMode: prov.isBodyweightMode,
       loc: loc,
+      showPrevious: widget.showPrevious,
+      previousLabel: loc.setCardPreviousLabel,
+      previousValue: previousValue,
       weightController: _weightCtrl,
       weightFocus: _weightFocus,
       repsController: _repsCtrl,
@@ -418,6 +471,9 @@ class SetRowContent extends StatelessWidget {
   final bool filled;
   final bool isBodyweightMode;
   final AppLocalizations loc;
+  final bool showPrevious;
+  final String previousLabel;
+  final String previousValue;
   final TextEditingController weightController;
   final FocusNode weightFocus;
   final TextEditingController repsController;
@@ -448,6 +504,9 @@ class SetRowContent extends StatelessWidget {
     required this.filled,
     required this.isBodyweightMode,
     required this.loc,
+    required this.showPrevious,
+    required this.previousLabel,
+    required this.previousValue,
     required this.weightController,
     required this.weightFocus,
     required this.repsController,
@@ -488,6 +547,7 @@ class SetRowContent extends StatelessWidget {
               ],
               SizedBox(width: dense ? 8 : 12),
               Expanded(
+                flex: 3,
                 child: _InputPill(
                   controller: weightController,
                   focusNode: weightFocus,
@@ -505,8 +565,21 @@ class SetRowContent extends StatelessWidget {
                   },
                 ),
               ),
+              if (showPrevious) ...[
+                SizedBox(width: dense ? 8 : 12),
+                Expanded(
+                  flex: 3,
+                  child: _ReadonlyPill(
+                    tokens: tokens,
+                    dense: dense,
+                    label: previousLabel,
+                    value: previousValue,
+                  ),
+                ),
+              ],
               SizedBox(width: dense ? 8 : 12),
               Expanded(
+                flex: 2,
                 child: _InputPill(
                   controller: repsController,
                   focusNode: repsFocus,
@@ -737,6 +810,70 @@ class _InputPill extends StatelessWidget {
           ),
           style: dense ? const TextStyle(fontSize: 14) : null,
           validator: validator,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadonlyPill extends StatelessWidget {
+  final SetCardTheme tokens;
+  final bool dense;
+  final String label;
+  final String value;
+
+  const _ReadonlyPill({
+    required this.tokens,
+    required this.dense,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = TextStyle(
+      fontSize: dense ? 12 : 13,
+      color: tokens.chipFg.withOpacity(0.72),
+      fontWeight: FontWeight.w500,
+    );
+    final valueStyle = TextStyle(
+      fontSize: dense ? 14 : 16,
+      fontWeight: FontWeight.w600,
+      color: tokens.chipFg,
+    );
+    return Semantics(
+      label: '$label $value',
+      child: Container(
+        decoration: BoxDecoration(
+          color: tokens.chipBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: tokens.chipBorder.withOpacity(0.6),
+            width: 1.3,
+          ),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: dense ? 6 : 8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: labelStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: valueStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

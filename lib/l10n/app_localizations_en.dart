@@ -440,6 +440,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
 
   @override
+  String get settingsOptionSetCard => 'Set cards';
+
+  @override
+  String get settingsSetCardPrevious => 'Previous values';
+
+  @override
+  String get settingsSetCardPreviousDescription =>
+      'Display the weight and reps from your last session in each set card.';
+
+  @override
+  String get settingsSetCardPreviousEnabled => 'On';
+
+  @override
+  String get settingsSetCardPreviousDisabled => 'Off';
+
+  @override
+  String get settingsSetCardPreviousSavedEnabled => 'Previous values enabled';
+
+  @override
+  String get settingsSetCardPreviousSavedDisabled => 'Previous values disabled';
+
+  @override
+  String get settingsSetCardPreviousTitle => 'Set cards';
+
+  @override
+  String get setCardPreviousLabel => 'Previous';
+
+  @override
   String get publicProfileDialogTitle => 'Profile visibility';
 
   @override

@@ -440,6 +440,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
 
   @override
+  String get settingsOptionSetCard => 'Set-Karten';
+
+  @override
+  String get settingsSetCardPrevious => 'Vorherige Werte';
+
+  @override
+  String get settingsSetCardPreviousDescription =>
+      'Zeigt das Gewicht und die Wiederholungen der letzten Einheit in jeder Set-Karte an.';
+
+  @override
+  String get settingsSetCardPreviousEnabled => 'An';
+
+  @override
+  String get settingsSetCardPreviousDisabled => 'Aus';
+
+  @override
+  String get settingsSetCardPreviousSavedEnabled => 'Vorherige Werte aktiviert';
+
+  @override
+  String get settingsSetCardPreviousSavedDisabled => 'Vorherige Werte deaktiviert';
+
+  @override
+  String get settingsSetCardPreviousTitle => 'Set-Karten';
+
+  @override
+  String get setCardPreviousLabel => 'Vorher';
+
+  @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';
 
   @override

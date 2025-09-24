@@ -17,6 +17,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
@@ -64,7 +65,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
+      final settingsProv = context.read<SettingsProvider>();
       _dlog('loadDevice() → start');
+      await settingsProv.load(auth.userId!);
       await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
@@ -169,11 +172,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      final showPreviousSets =
+                          context.watch<SettingsProvider>().showPreviousSets;
                       if (prov.sets.isNotEmpty)
                         _GroupedSetList(
                           sets: prov.sets,
                           previousSessionSets: prov.lastSessionSets,
                           setKeys: _setKeys,
+                          showPreviousSets: showPreviousSets,
                           onRemove: (index, removed) {
                             context.read<DeviceProvider>().removeSet(index);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -513,12 +519,14 @@ class _GroupedSetList extends StatelessWidget {
   final List<Map<String, dynamic>> previousSessionSets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
+  final bool showPreviousSets;
 
   const _GroupedSetList({
     required this.sets,
     required this.previousSessionSets,
     required this.setKeys,
     required this.onRemove,
+    required this.showPreviousSets,
   });
 
   @override
@@ -563,6 +571,7 @@ class _GroupedSetList extends StatelessWidget {
                 set: sets[index],
                 previous:
                     index < previousSessionSets.length ? previousSessionSets[index] : null,
+                showPrevious: showPreviousSets,
                 size: SetCardSize.dense,
                 displayMode: SetCardDisplayMode.grouped,
                 groupedRadius: BorderRadius.only(
