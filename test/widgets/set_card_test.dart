@@ -89,6 +89,7 @@ void main() {
               child: SetCard(
                 index: 0,
                 set: provider.sets[0],
+                displayMode: SetCardDisplayMode.standalone,
               ),
             ),
           ),

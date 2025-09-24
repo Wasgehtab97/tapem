@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 
@@ -167,61 +169,27 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: prov.sets.length,
-                        itemBuilder: (context, index) {
-                          final set = prov.sets[index];
-                          final prev = index < prov.lastSessionSets.length
-                              ? prov.lastSessionSets[index]
-                              : null;
-                          return Dismissible(
-                            key: ValueKey('set-${set['number']}'),
-                            direction: DismissDirection.endToStart,
-                            background: const SizedBox.shrink(),
-                            secondaryBackground: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              color: Colors.red.withOpacity(0.15),
-                              child: const Icon(
-                                Icons.delete,
-                                semanticLabel: 'Löschen',
-                              ),
-                            ),
-                            onDismissed: (_) {
-                              final removed = Map<String, dynamic>.from(set);
-                              context
-                                  .read<DeviceProvider>()
-                                  .removeSet(index);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(loc.setRemoved),
-                                  action: SnackBarAction(
-                                    label: loc.undo,
-                                    onPressed: () => context
-                                        .read<DeviceProvider>()
-                                        .insertSetAt(index, removed),
-                                  ),
+                      if (prov.sets.isNotEmpty)
+                        _GroupedSetList(
+                          sets: prov.sets,
+                          previousSessionSets: prov.lastSessionSets,
+                          setKeys: _setKeys,
+                          onRemove: (index, removed) {
+                            context.read<DeviceProvider>().removeSet(index);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(loc.setRemoved),
+                                action: SnackBarAction(
+                                  label: loc.undo,
+                                  onPressed: () => context
+                                      .read<DeviceProvider>()
+                                      .insertSetAt(index, removed),
                                 ),
-                              );
-                            },
-                            child: SetCard(
-                              key: _setKeys[index],
-                              index: index,
-                              set: set,
-                              previous: prev,
-                              size: SetCardSize.dense,
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, __) => const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Divider(thickness: 1, height: 1),
+                              ),
+                            );
+                          },
                         ),
-                      ),
+                      if (prov.sets.isNotEmpty) const SizedBox(height: 12),
                       Center(
                         child: TextButton.icon(
                           onPressed: _addSet,
@@ -536,6 +504,80 @@ class _DeviceScreenState extends State<DeviceScreen> {
         return true;
       },
       child: scaffold,
+    );
+  }
+}
+
+class _GroupedSetList extends StatelessWidget {
+  final List<Map<String, dynamic>> sets;
+  final List<Map<String, dynamic>> previousSessionSets;
+  final List<GlobalKey<SetCardState>> setKeys;
+  final void Function(int index, Map<String, dynamic> removed) onRemove;
+
+  const _GroupedSetList({
+    required this.sets,
+    required this.previousSessionSets,
+    required this.setKeys,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = Theme.of(context).extension<AppBrandTheme>();
+    final outlineRadius = (brand?.outlineRadius as BorderRadius?) ??
+        BorderRadius.circular(AppRadius.card);
+    final outlineWidth = brand?.outlineWidth ?? 2;
+    final innerRadius = outlineRadius - BorderRadius.circular(outlineWidth);
+
+    return BrandOutline(
+      padding: EdgeInsets.zero,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var index = 0; index < sets.length; index++) ...[
+            if (index > 0)
+              const Divider(
+                height: 1,
+                thickness: 1,
+              ),
+            Dismissible(
+              key: ValueKey('set-${sets[index]['number']}'),
+              direction: DismissDirection.endToStart,
+              background: const SizedBox.shrink(),
+              secondaryBackground: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                color: Colors.red.withOpacity(0.15),
+                child: const Icon(
+                  Icons.delete,
+                  semanticLabel: 'Löschen',
+                ),
+              ),
+              onDismissed: (_) {
+                final removed = Map<String, dynamic>.from(sets[index]);
+                onRemove(index, removed);
+              },
+              child: SetCard(
+                key: setKeys[index],
+                index: index,
+                set: sets[index],
+                previous:
+                    index < previousSessionSets.length ? previousSessionSets[index] : null,
+                size: SetCardSize.dense,
+                displayMode: SetCardDisplayMode.grouped,
+                groupedRadius: BorderRadius.only(
+                  topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
+                  topRight: index == 0 ? innerRadius.topRight : Radius.zero,
+                  bottomLeft:
+                      index == sets.length - 1 ? innerRadius.bottomLeft : Radius.zero,
+                  bottomRight:
+                      index == sets.length - 1 ? innerRadius.bottomRight : Radius.zero,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

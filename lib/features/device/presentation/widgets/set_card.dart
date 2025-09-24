@@ -87,12 +87,16 @@ class SetCardTheme {
 
 enum SetCardSize { regular, dense }
 
+enum SetCardDisplayMode { standalone, grouped }
+
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
   final Map<String, dynamic>? previous;
   final SetCardSize size;
   final bool readOnly;
+  final SetCardDisplayMode displayMode;
+  final BorderRadiusGeometry? groupedRadius;
   const SetCard({
     super.key,
     required this.index,
@@ -100,6 +104,8 @@ class SetCard extends StatefulWidget {
     this.previous,
     this.size = SetCardSize.regular,
     this.readOnly = false,
+    this.displayMode = SetCardDisplayMode.standalone,
+    this.groupedRadius,
   });
 
   @override
@@ -298,187 +304,301 @@ class SetCardState extends State<SetCard> {
                 double.tryParse(weight.replaceAll(',', '.')) != null)) &&
         reps.isNotEmpty &&
         int.tryParse(reps) != null;
+    VoidCallback? toggleExtras;
+    if (!widget.readOnly) {
+      toggleExtras = () {
+        _slog(
+          widget.index,
+          'tap: more options → ${!_showExtras}',
+        );
+        HapticFeedback.lightImpact();
+        setState(() => _showExtras = !_showExtras);
+      };
+    }
+
+    VoidCallback? toggleDone;
+    if (!widget.readOnly && filled) {
+      toggleDone = () {
+        _slog(
+          widget.index,
+          'tap: toggle done via provider',
+        );
+        final prov = context.read<DeviceProvider>();
+        final ok = prov.toggleSetDone(widget.index);
+        elogUi('SET_DONE_TAP', {
+          'index': widget.index,
+          'wasValid': ok,
+          if (!ok) 'reasonIfBlocked': 'invalid',
+        });
+        HapticFeedback.lightImpact();
+        if (ok) {
+          final sets = prov.sets;
+          final isDone = sets[widget.index]['done'] == true ||
+              sets[widget.index]['done'] == 'true';
+          if (isDone) {
+            final service = context.read<WorkoutSessionDurationService>();
+            if (!service.isRunning) {
+              final auth = context.read<AuthProvider>();
+              final branding = context.read<BrandingProvider>();
+              final uid = auth.userId;
+              final gymId = branding.gymId;
+              if (uid != null && gymId != null) {
+                unawaited(service.start(uid: uid, gymId: gymId));
+              }
+            }
+          }
+          context.read<OverlayNumericKeypadController>().close();
+        }
+      };
+    }
+
+    final displayMode = widget.displayMode;
+    final contentPadding =
+        displayMode == SetCardDisplayMode.grouped ? tokens.padding : EdgeInsets.zero;
+    final BorderRadius? rowRadius = displayMode == SetCardDisplayMode.grouped
+        ? (widget.groupedRadius as BorderRadius?)
+        : null;
+
+    final content = SetRowContent(
+      tokens: tokens,
+      dense: dense,
+      index: widget.index + 1,
+      dropActive: dropActive,
+      showExtras: _showExtras,
+      done: done,
+      readOnly: widget.readOnly,
+      filled: filled,
+      isBodyweightMode: prov.isBodyweightMode,
+      loc: loc,
+      weightController: _weightCtrl,
+      weightFocus: _weightFocus,
+      repsController: _repsCtrl,
+      repsFocus: _repsFocus,
+      dropWeightController: _dropWeightCtrl,
+      dropWeightFocus: _dropWeightFocus,
+      dropRepsController: _dropRepsCtrl,
+      dropRepsFocus: _dropRepsFocus,
+      onToggleExtras: toggleExtras,
+      onToggleDone: toggleDone,
+      onTapWeight:
+          widget.readOnly ? null : () => _openKeypad(_weightCtrl, allowDecimal: true),
+      onTapReps:
+          widget.readOnly ? null : () => _openKeypad(_repsCtrl, allowDecimal: false),
+      onTapDropWeight: done || widget.readOnly
+          ? null
+          : () => _openKeypad(_dropWeightCtrl, allowDecimal: true),
+      onTapDropReps: done || widget.readOnly
+          ? null
+          : () => _openKeypad(_dropRepsCtrl, allowDecimal: false),
+      dropValidator: _validateDrop,
+      padding: contentPadding,
+      radius: rowRadius,
+    );
 
     return Semantics(
       label: 'Set ${widget.index + 1}',
-      child: BrandOutline(
-        padding: tokens.padding,
-        child: Column(
-          children: [
+      child: displayMode == SetCardDisplayMode.standalone
+          ? BrandOutline(
+              padding: tokens.padding,
+              child: content,
+            )
+          : content,
+    );
+  }
+}
+
+class SetRowContent extends StatelessWidget {
+  final SetCardTheme tokens;
+  final bool dense;
+  final int index;
+  final bool dropActive;
+  final bool showExtras;
+  final bool done;
+  final bool readOnly;
+  final bool filled;
+  final bool isBodyweightMode;
+  final AppLocalizations loc;
+  final TextEditingController weightController;
+  final FocusNode weightFocus;
+  final TextEditingController repsController;
+  final FocusNode repsFocus;
+  final TextEditingController dropWeightController;
+  final FocusNode dropWeightFocus;
+  final TextEditingController dropRepsController;
+  final FocusNode dropRepsFocus;
+  final VoidCallback? onToggleExtras;
+  final VoidCallback? onToggleDone;
+  final VoidCallback? onTapWeight;
+  final VoidCallback? onTapReps;
+  final VoidCallback? onTapDropWeight;
+  final VoidCallback? onTapDropReps;
+  final FormFieldValidator<String>? dropValidator;
+  final EdgeInsetsGeometry padding;
+  final BorderRadius? radius;
+
+  const SetRowContent({
+    super.key,
+    required this.tokens,
+    required this.dense,
+    required this.index,
+    required this.dropActive,
+    required this.showExtras,
+    required this.done,
+    required this.readOnly,
+    required this.filled,
+    required this.isBodyweightMode,
+    required this.loc,
+    required this.weightController,
+    required this.weightFocus,
+    required this.repsController,
+    required this.repsFocus,
+    required this.dropWeightController,
+    required this.dropWeightFocus,
+    required this.dropRepsController,
+    required this.dropRepsFocus,
+    required this.onToggleExtras,
+    required this.onToggleDone,
+    required this.onTapWeight,
+    required this.onTapReps,
+    required this.onTapDropWeight,
+    required this.onTapDropReps,
+    required this.dropValidator,
+    this.padding = EdgeInsets.zero,
+    this.radius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget body = Padding(
+      padding: padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _IndexBadge(
+                tokens: tokens,
+                index: index,
+                dense: dense,
+              ),
+              if (dropActive) ...[
+                SizedBox(width: dense ? 4 : 6),
+                _DropBadge(tokens: tokens, dense: dense),
+              ],
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: _InputPill(
+                  controller: weightController,
+                  focusNode: weightFocus,
+                  label: isBodyweightMode ? loc.bodyweight : 'kg',
+                  readOnly: done || readOnly,
+                  tokens: tokens,
+                  dense: dense,
+                  onTap: onTapWeight,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                      return loc.numberInvalid;
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: _InputPill(
+                  controller: repsController,
+                  focusNode: repsFocus,
+                  label: 'x',
+                  readOnly: done || readOnly,
+                  tokens: tokens,
+                  dense: dense,
+                  onTap: onTapReps,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    if (int.tryParse(v) == null) return loc.intRequired;
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              _RoundButton(
+                tokens: tokens,
+                icon: showExtras ? Icons.expand_less : Icons.expand_more,
+                filled: false,
+                semantics: 'Mehr Optionen',
+                dense: dense,
+                iconColor: Colors.black,
+                disabledIconColor: Colors.black,
+                filledIconColor: Colors.black,
+                onTap: onToggleExtras,
+              ),
+              SizedBox(width: dense ? 6 : 8),
+              _RoundButton(
+                tokens: tokens,
+                icon: Icons.check,
+                filled: done,
+                semantics:
+                    done ? loc.setReopenTooltip : loc.setCompleteTooltip,
+                dense: dense,
+                iconColor: Colors.black,
+                disabledIconColor: Colors.black,
+                filledIconColor: Colors.black,
+                onTap: onToggleDone,
+              ),
+            ],
+          ),
+          if (showExtras) ...[
+            SizedBox(height: dense ? 8 : 12),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _IndexBadge(
-                  tokens: tokens,
-                  index: widget.index + 1,
-                  dense: dense,
-                ),
-                if (dropActive) ...[
-                  SizedBox(width: dense ? 4 : 6),
-                  _DropBadge(tokens: tokens, dense: dense),
-                ],
-                SizedBox(width: dense ? 8 : 12),
                 Expanded(
-                  child: _InputPill(
-                    controller: _weightCtrl,
-                    focusNode: _weightFocus,
-                    label: prov.isBodyweightMode ? loc.bodyweight : 'kg',
-                    readOnly: done || widget.readOnly,
-                    tokens: tokens,
-                    dense: dense,
-                    onTap: widget.readOnly
-                        ? null
-                        : () => _openKeypad(_weightCtrl, allowDecimal: true),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                        return loc.numberInvalid;
-                      }
-                      return null;
-                    },
+                  child: TextFormField(
+                    controller: dropWeightController,
+                    focusNode: dropWeightFocus,
+                    decoration: InputDecoration(
+                      labelText: loc.dropKgFieldLabel,
+                      isDense: true,
+                    ),
+                    enabled: !readOnly,
+                    readOnly: true,
+                    keyboardType: TextInputType.none,
+                    validator: dropValidator,
+                    onTap: onTapDropWeight,
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
                 Expanded(
-                  child: _InputPill(
-                    controller: _repsCtrl,
-                    focusNode: _repsFocus,
-                    label: 'x',
-                    readOnly: done || widget.readOnly,
-                    tokens: tokens,
-                    dense: dense,
-                    onTap: widget.readOnly
-                        ? null
-                        : () => _openKeypad(_repsCtrl, allowDecimal: false),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      if (int.tryParse(v) == null) return loc.intRequired;
-                      return null;
-                    },
+                  child: TextFormField(
+                    controller: dropRepsController,
+                    focusNode: dropRepsFocus,
+                    decoration: InputDecoration(
+                      labelText: loc.dropRepsFieldLabel,
+                      isDense: true,
+                    ),
+                    enabled: !readOnly,
+                    readOnly: true,
+                    keyboardType: TextInputType.none,
+                    validator: dropValidator,
+                    onTap: onTapDropReps,
                   ),
-                ),
-                SizedBox(width: dense ? 8 : 12),
-                _RoundButton(
-                  tokens: tokens,
-                  icon: _showExtras ? Icons.expand_less : Icons.expand_more,
-                  filled: false,
-                  semantics: 'Mehr Optionen',
-                  dense: dense,
-                  iconColor: Colors.black,
-                  disabledIconColor: Colors.black,
-                  filledIconColor: Colors.black,
-                  onTap: widget.readOnly
-                      ? null
-                      : () {
-                          _slog(
-                            widget.index,
-                            'tap: more options → ${!_showExtras}',
-                          );
-                          HapticFeedback.lightImpact();
-                          setState(() => _showExtras = !_showExtras);
-                        },
-                ),
-                SizedBox(width: dense ? 6 : 8),
-                _RoundButton(
-                  tokens: tokens,
-                  icon: Icons.check,
-                  filled: done,
-                  semantics:
-                      done ? loc.setReopenTooltip : loc.setCompleteTooltip,
-                  dense: dense,
-                  iconColor: Colors.black,
-                  disabledIconColor: Colors.black,
-                  filledIconColor: Colors.black,
-                  onTap: widget.readOnly || !filled
-                      ? null
-                      : () {
-                          _slog(
-                            widget.index,
-                            'tap: toggle done via provider',
-                          );
-                          final prov = context.read<DeviceProvider>();
-                          final ok = prov.toggleSetDone(widget.index);
-                          elogUi('SET_DONE_TAP', {
-                            'index': widget.index,
-                            'wasValid': ok,
-                            if (!ok) 'reasonIfBlocked': 'invalid',
-                          });
-                          HapticFeedback.lightImpact();
-                          if (ok) {
-                            final sets = prov.sets;
-                            final isDone = sets[widget.index]['done'] == true ||
-                                sets[widget.index]['done'] == 'true';
-                            if (isDone) {
-                              final service =
-                                  context.read<WorkoutSessionDurationService>();
-                              if (!service.isRunning) {
-                                final auth = context.read<AuthProvider>();
-                                final branding = context.read<BrandingProvider>();
-                                final uid = auth.userId;
-                                final gymId = branding.gymId;
-                                if (uid != null && gymId != null) {
-                                  unawaited(service.start(uid: uid, gymId: gymId));
-                                }
-                              }
-                            }
-                            context
-                                .read<OverlayNumericKeypadController>()
-                                .close();
-                          }
-                        },
                 ),
               ],
             ),
-            if (_showExtras) ...[
-              SizedBox(height: dense ? 8 : 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dropWeightCtrl,
-                      focusNode: _dropWeightFocus,
-                      decoration: InputDecoration(
-                        labelText: loc.dropKgFieldLabel,
-                        isDense: true,
-                      ),
-                      enabled: !widget.readOnly,
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      validator: _validateDrop,
-                      onTap: done || widget.readOnly
-                          ? null
-                          : () =>
-                              _openKeypad(_dropWeightCtrl, allowDecimal: true),
-                    ),
-                  ),
-                  SizedBox(width: dense ? 8 : 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dropRepsCtrl,
-                      focusNode: _dropRepsFocus,
-                      decoration: InputDecoration(
-                        labelText: loc.dropRepsFieldLabel,
-                        isDense: true,
-                      ),
-                      enabled: !widget.readOnly,
-                      readOnly: true,
-                      keyboardType: TextInputType.none,
-                      validator: _validateDrop,
-                      onTap: done || widget.readOnly
-                          ? null
-                          : () => _openKeypad(
-                                _dropRepsCtrl,
-                                allowDecimal: false,
-                              ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
+
+    if (radius != null) {
+      body = ClipRRect(
+        borderRadius: radius!,
+        child: body,
+      );
+    }
+
+    return SizedBox(width: double.infinity, child: body);
   }
 }
 
