@@ -632,31 +632,18 @@ class SetRowContent extends StatelessWidget {
     }
     final rawWeight = (prev['weight'] ?? '').toString().trim();
     final rawReps = (prev['reps'] ?? '').toString().trim();
-    final isBodyweight = prev['isBodyweight'] == true;
 
     final hasWeight = rawWeight.isNotEmpty && rawWeight.toLowerCase() != 'null';
     final hasReps = rawReps.isNotEmpty && rawReps.toLowerCase() != 'null';
 
-    String? weightLabel;
-    if (isBodyweight) {
-      if (hasWeight) {
-        weightLabel = loc.bodyweightPlus(rawWeight);
-      } else {
-        weightLabel = loc.bodyweight;
-      }
-    } else if (hasWeight) {
-      weightLabel = '$rawWeight kg';
-    }
-
-    final parts = <String>[
-      if (weightLabel != null && weightLabel.isNotEmpty) weightLabel,
-      if (hasReps) '× $rawReps',
-    ];
-
-    if (parts.isEmpty) {
+    if (!hasWeight && !hasReps) {
       return '-';
     }
-    return parts.join(' ');
+
+    final weightPart = hasWeight ? '$rawWeight kg' : '– kg';
+    final repsPart = hasReps ? rawReps : '–';
+
+    return '$weightPart × $repsPart';
   }
 }
 
@@ -733,7 +720,7 @@ class _DropBadge extends StatelessWidget {
   }
 }
 
-class _InputPill extends StatelessWidget {
+class _InputPill extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String label;
@@ -755,46 +742,129 @@ class _InputPill extends StatelessWidget {
   });
 
   @override
+  State<_InputPill> createState() => _InputPillState();
+}
+
+class _InputPillState extends State<_InputPill> {
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_handleFocusChange);
+    _focused = widget.focusNode.hasFocus;
+  }
+
+  @override
+  void didUpdateWidget(covariant _InputPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_handleFocusChange);
+      widget.focusNode.addListener(_handleFocusChange);
+      _focused = widget.focusNode.hasFocus;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_handleFocusChange);
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    if (!mounted) return;
+    setState(() {
+      _focused = widget.focusNode.hasFocus;
+    });
+  }
+
+  void _handleTap() {
+    if (widget.readOnly) return;
+    widget.focusNode.requestFocus();
+    widget.onTap?.call();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: readOnly ? null : () => onTap?.call(),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: tokens.chipBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: focusNode.hasFocus
-                ? tokens.chipBorder
-                : tokens.chipBorder.withOpacity(0.6),
-            width: 1.3,
+    final labelStyle = TextStyle(
+      fontSize: widget.dense ? 12 : 13,
+      fontWeight: FontWeight.w600,
+      color: widget.tokens.chipFg.withOpacity(0.65),
+      letterSpacing: 0.2,
+    );
+    final valueStyle = TextStyle(
+      fontSize: widget.dense ? 16 : 18,
+      fontWeight: FontWeight.w600,
+      color: widget.tokens.chipFg,
+      height: 1.2,
+      letterSpacing: 0.1,
+    );
+
+    return Semantics(
+      label: '${widget.label} ${widget.controller.text}'.trim(),
+      button: !widget.readOnly,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.readOnly ? null : _handleTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          decoration: BoxDecoration(
+            color: widget.tokens.chipBg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _focused
+                  ? widget.tokens.chipBorder
+                  : widget.tokens.chipBorder.withOpacity(0.35),
+              width: 1.2,
+            ),
+            boxShadow: _focused
+                ? [
+                    BoxShadow(
+                      color: widget.tokens.chipBorder.withOpacity(0.26),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: focusNode.hasFocus
-              ? [
-                  BoxShadow(
-                    color: tokens.chipBorder.withOpacity(0.28),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
-        alignment: Alignment.center,
-        child: TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          enabled: !readOnly,
-          readOnly: true,
-          onTap: readOnly ? null : onTap,
-          keyboardType: TextInputType.none,
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            labelText: label,
-            labelStyle: dense ? const TextStyle(fontSize: 14) : null,
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.dense ? 12 : 14,
+            vertical: widget.dense ? 8 : 10,
           ),
-          style: dense ? const TextStyle(fontSize: 14) : null,
-          validator: validator,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.label, style: labelStyle),
+              SizedBox(height: widget.dense ? 2 : 4),
+              TextFormField(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                enabled: !widget.readOnly,
+                readOnly: true,
+                onTap: widget.readOnly ? null : _handleTap,
+                keyboardType: TextInputType.none,
+                validator: widget.validator,
+                textAlign: TextAlign.left,
+                textAlignVertical: TextAlignVertical.center,
+                style: valueStyle,
+                cursorColor: widget.tokens.chipBorder,
+                minLines: 1,
+                maxLines: 1,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                strutStyle: StrutStyle(
+                  height: valueStyle.height,
+                  fontSize: valueStyle.fontSize,
+                  leading: 0.2,
+                  forceStrutHeight: true,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -819,12 +889,15 @@ class _DisplayPill extends StatelessWidget {
     final labelStyle = TextStyle(
       fontSize: dense ? 12 : 13,
       color: tokens.chipFg.withOpacity(0.7),
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
     );
     final valueStyle = TextStyle(
-      fontSize: dense ? 14 : 16,
+      fontSize: dense ? 15 : 17,
       fontWeight: FontWeight.w600,
       color: tokens.chipFg,
+      height: 1.2,
+      letterSpacing: 0.1,
     );
 
     return Semantics(
@@ -832,20 +905,32 @@ class _DisplayPill extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: tokens.chipBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: tokens.chipBorder.withOpacity(0.6),
             width: 1.3,
           ),
         ),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 6 : 8),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 8 : 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(label, style: labelStyle),
             SizedBox(height: dense ? 2 : 4),
-            Text(value, style: valueStyle),
+            Text(
+              value,
+              style: valueStyle,
+              maxLines: 1,
+              overflow: TextOverflow.fade,
+              softWrap: false,
+              strutStyle: StrutStyle(
+                height: valueStyle.height,
+                fontSize: valueStyle.fontSize,
+                leading: 0.2,
+                forceStrutHeight: true,
+              ),
+            ),
           ],
         ),
       ),
