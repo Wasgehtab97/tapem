@@ -216,6 +216,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showSetCardHistorySheet() {
+    final loc = AppLocalizations.of(context)!;
+    final settingsProv = context.read<SettingsProvider>();
+    final shown = settingsProv.showLastSessionInSetCard;
+    final rootContext = context;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(loc.settingsSetCardHistoryShow),
+              subtitle: Text(loc.settingsSetCardHistoryDescription),
+              trailing: shown ? const Icon(Icons.check) : null,
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                if (shown) return;
+                try {
+                  await settingsProv.setShowLastSessionInSetCard(true);
+                  elogUi('settings_set_last_session_badge', {'enabled': true});
+                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                    SnackBar(
+                      content: Text(loc.settingsSetCardHistorySavedShown),
+                    ),
+                  );
+                } catch (_) {
+                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                    SnackBar(content: Text('Fehler beim Speichern.')),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              title: Text(loc.settingsSetCardHistoryHide),
+              trailing: shown ? null : const Icon(Icons.check),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                if (!shown) return;
+                try {
+                  await settingsProv.setShowLastSessionInSetCard(false);
+                  elogUi('settings_set_last_session_badge', {'enabled': false});
+                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                    SnackBar(
+                      content: Text(loc.settingsSetCardHistorySavedHidden),
+                    ),
+                  );
+                } catch (_) {
+                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                    SnackBar(content: Text('Fehler beim Speichern.')),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showSettingsDialog() {
     final loc = AppLocalizations.of(context)!;
     showDialog(
@@ -243,6 +303,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(context.read<SettingsProvider>().creatineEnabled
                         ? loc.settingsCreatineEnabled
                         : loc.settingsCreatineDisabled),
+                  ],
+                ),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  elogUi('settings_open_set_card_history', {});
+                  _showSetCardHistorySheet();
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(loc.settingsSetCardHistory)),
+                    Text(context.read<SettingsProvider>().showLastSessionInSetCard
+                        ? loc.settingsSetCardHistoryShown
+                        : loc.settingsSetCardHistoryHidden),
                   ],
                 ),
               ),

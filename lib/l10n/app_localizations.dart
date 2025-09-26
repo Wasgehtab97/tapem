@@ -917,6 +917,60 @@ abstract class AppLocalizations {
   /// **'Creatine tracker disabled.'**
   String get settingsCreatineSavedDisabled;
 
+  /// Settings option for showing last session info on set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Last session on set cards'**
+  String get settingsSetCardHistory;
+
+  /// Option label to show last session info on set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get settingsSetCardHistoryShow;
+
+  /// Option label to hide last session info on set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get settingsSetCardHistoryHide;
+
+  /// Status text when last session info is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Shown'**
+  String get settingsSetCardHistoryShown;
+
+  /// Status text when last session info is hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get settingsSetCardHistoryHidden;
+
+  /// Description text for the last session inline toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Display the previous weight and reps directly in the set card.'**
+  String get settingsSetCardHistoryDescription;
+
+  /// Snackbar text when enabling last session info on set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Last session info will be shown.'**
+  String get settingsSetCardHistorySavedShown;
+
+  /// Snackbar text when disabling last session info on set cards
+  ///
+  /// In en, this message translates to:
+  /// **'Last session info hidden.'**
+  String get settingsSetCardHistorySavedHidden;
+
+  /// Label displayed above the previous session summary
+  ///
+  /// In en, this message translates to:
+  /// **'Last time'**
+  String get setCardPreviousLabel;
+
   /// Title for public profile dialog
   ///
   /// In en, this message translates to:

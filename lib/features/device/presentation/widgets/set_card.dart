@@ -45,19 +45,21 @@ class SetCardTheme {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    Color tint(Color base, {double lightAlpha = 0.12, double darkAlpha = 0.2}) {
-      final alpha = isDark ? darkAlpha : lightAlpha;
-      return Color.alphaBlend(scheme.primary.withOpacity(alpha), base);
+    Color blend(Color base, Color overlay, double opacity) {
+      return Color.alphaBlend(overlay.withOpacity(opacity), base);
     }
 
+    final surfaceBase = scheme.surface.withOpacity(isDark ? 0.82 : 0.96);
+    final surfaceVariant = scheme.surfaceVariant.withOpacity(isDark ? 0.78 : 0.92);
+
     return SetCardTheme(
-      padding: const EdgeInsets.all(16),
-      chipBg: tint(scheme.surface, lightAlpha: 0.14, darkAlpha: 0.28),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      chipBg: blend(surfaceBase, scheme.surfaceTint, isDark ? 0.32 : 0.18),
       chipFg: scheme.onSurface,
-      chipBorder: scheme.primary,
-      doneOn: scheme.primary,
+      chipBorder: scheme.primary.withOpacity(isDark ? 0.7 : 0.4),
+      doneOn: scheme.primaryContainer,
       doneOff: scheme.onSurface.withOpacity(0.5),
-      menuBg: tint(scheme.surfaceVariant, lightAlpha: 0.12, darkAlpha: 0.24),
+      menuBg: blend(surfaceVariant, scheme.primary, isDark ? 0.18 : 0.12),
       menuFg: scheme.primary,
     );
   }
@@ -97,6 +99,7 @@ class SetCard extends StatefulWidget {
   final bool readOnly;
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
+  final bool showPreviousSummary;
   const SetCard({
     super.key,
     required this.index,
@@ -106,6 +109,7 @@ class SetCard extends StatefulWidget {
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
+    this.showPreviousSummary = true,
   });
 
   @override
@@ -263,6 +267,46 @@ class SetCardState extends State<SetCard> {
     _openKeypad(_weightCtrl, allowDecimal: true);
   }
 
+  String? _buildPreviousSummary(AppLocalizations loc) {
+    if (!widget.showPreviousSummary) return null;
+    final prev = widget.previous;
+    if (prev == null) return null;
+    final rawWeight = (prev['weight'] ?? '').toString().trim();
+    final rawReps = (prev['reps'] ?? '').toString().trim();
+    final prevWeightRaw = rawWeight.toLowerCase() == 'null' ? '' : rawWeight;
+    final prevRepsRaw = rawReps.toLowerCase() == 'null' ? '' : rawReps;
+    final prevIsBodyweight = prev['isBodyweight'] == true ||
+        prev['isBodyweight'] == 'true';
+
+    String? weightPart;
+    if (prevIsBodyweight) {
+      final sanitized = prevWeightRaw.replaceAll(',', '.');
+      final parsed = double.tryParse(sanitized);
+      if (parsed == null || parsed == 0) {
+        weightPart = loc.bodyweight;
+      } else {
+        weightPart = loc.bodyweightPlus(prevWeightRaw);
+      }
+    } else if (prevWeightRaw.isNotEmpty) {
+      weightPart = '$prevWeightRaw kg';
+    }
+
+    final repsPart = prevRepsRaw.isEmpty ? null : '${prevRepsRaw} ×';
+    final parts = <String>[];
+    if (weightPart != null && weightPart.isNotEmpty) {
+      parts.add(weightPart);
+    }
+    if (repsPart != null && repsPart.isNotEmpty) {
+      parts.add(repsPart);
+    }
+
+    if (parts.isEmpty) {
+      return null;
+    }
+
+    return parts.join(' · ');
+  }
+
   String? _validateDrop(String? _) {
     final loc = AppLocalizations.of(context)!;
     final dw = _dropWeightCtrl.text.trim();
@@ -282,6 +326,7 @@ class SetCardState extends State<SetCard> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
+    final previousSummary = _buildPreviousSummary(loc);
     var tokens = SetCardTheme.of(context);
     final dense = widget.size == SetCardSize.dense;
     if (dense) {
@@ -393,6 +438,8 @@ class SetCardState extends State<SetCard> {
       dropValidator: _validateDrop,
       padding: contentPadding,
       radius: rowRadius,
+      previousSummary: previousSummary,
+      previousSummaryLabel: loc.setCardPreviousLabel,
     );
 
     return Semantics(
@@ -435,6 +482,8 @@ class SetRowContent extends StatelessWidget {
   final FormFieldValidator<String>? dropValidator;
   final EdgeInsetsGeometry padding;
   final BorderRadius? radius;
+  final String? previousSummary;
+  final String previousSummaryLabel;
 
   const SetRowContent({
     super.key,
@@ -465,6 +514,8 @@ class SetRowContent extends StatelessWidget {
     required this.dropValidator,
     this.padding = EdgeInsets.zero,
     this.radius,
+    this.previousSummary,
+    required this.previousSummaryLabel,
   });
 
   @override
@@ -485,6 +536,18 @@ class SetRowContent extends StatelessWidget {
               if (dropActive) ...[
                 SizedBox(width: dense ? 4 : 6),
                 _DropBadge(tokens: tokens, dense: dense),
+              ],
+              if (previousSummary != null) ...[
+                SizedBox(width: dense ? 6 : 8),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: dense ? 150 : 200),
+                  child: _PreviousStatBadge(
+                    tokens: tokens,
+                    dense: dense,
+                    label: previousSummaryLabel,
+                    summary: previousSummary!,
+                  ),
+                ),
               ],
               SizedBox(width: dense ? 8 : 12),
               Expanded(
@@ -529,9 +592,6 @@ class SetRowContent extends StatelessWidget {
                 filled: false,
                 semantics: 'Mehr Optionen',
                 dense: dense,
-                iconColor: Colors.black,
-                disabledIconColor: Colors.black,
-                filledIconColor: Colors.black,
                 onTap: onToggleExtras,
               ),
               SizedBox(width: dense ? 6 : 8),
@@ -542,9 +602,6 @@ class SetRowContent extends StatelessWidget {
                 semantics:
                     done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                 dense: dense,
-                iconColor: Colors.black,
-                disabledIconColor: Colors.black,
-                filledIconColor: Colors.black,
                 onTap: onToggleDone,
               ),
             ],
@@ -554,34 +611,28 @@ class SetRowContent extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: _InputPill(
                     controller: dropWeightController,
                     focusNode: dropWeightFocus,
-                    decoration: InputDecoration(
-                      labelText: loc.dropKgFieldLabel,
-                      isDense: true,
-                    ),
-                    enabled: !readOnly,
-                    readOnly: true,
-                    keyboardType: TextInputType.none,
-                    validator: dropValidator,
+                    label: loc.dropKgFieldLabel,
+                    readOnly: readOnly || done,
+                    tokens: tokens,
+                    dense: true,
                     onTap: onTapDropWeight,
+                    validator: dropValidator,
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
                 Expanded(
-                  child: TextFormField(
+                  child: _InputPill(
                     controller: dropRepsController,
                     focusNode: dropRepsFocus,
-                    decoration: InputDecoration(
-                      labelText: loc.dropRepsFieldLabel,
-                      isDense: true,
-                    ),
-                    enabled: !readOnly,
-                    readOnly: true,
-                    keyboardType: TextInputType.none,
-                    validator: dropValidator,
+                    label: loc.dropRepsFieldLabel,
+                    readOnly: readOnly || done,
+                    tokens: tokens,
+                    dense: true,
                     onTap: onTapDropReps,
+                    validator: dropValidator,
                   ),
                 ),
               ],
@@ -621,12 +672,26 @@ class _IndexBadge extends StatelessWidget {
         height: dense ? 28 : 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: tokens.chipBg,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.alphaBlend(tokens.chipBorder.withOpacity(0.2), tokens.chipBg),
+              tokens.chipBg,
+            ],
+          ),
           borderRadius: BorderRadius.circular(dense ? 14 : 16),
           border: Border.all(
-            color: tokens.chipBorder.withOpacity(0.65),
-            width: 1.2,
+            color: tokens.chipBorder.withOpacity(0.45),
+            width: 1.1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: tokens.chipBorder.withOpacity(0.18),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Text(
           '$index',
@@ -656,12 +721,26 @@ class _DropBadge extends StatelessWidget {
       height: dense ? 24 : 28,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: tokens.chipBg,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(tokens.chipBorder.withOpacity(0.18), tokens.chipBg),
+            tokens.chipBg,
+          ],
+        ),
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
         border: Border.all(
-          color: tokens.chipBorder.withOpacity(0.65),
-          width: 1.2,
+          color: tokens.chipBorder.withOpacity(0.45),
+          width: 1.1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.chipBorder.withOpacity(0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Text(
         '↘︎',
@@ -675,7 +754,78 @@ class _DropBadge extends StatelessWidget {
   }
 }
 
-class _InputPill extends StatelessWidget {
+class _PreviousStatBadge extends StatelessWidget {
+  final SetCardTheme tokens;
+  final bool dense;
+  final String label;
+  final String summary;
+  const _PreviousStatBadge({
+    required this.tokens,
+    required this.dense,
+    required this.label,
+    required this.summary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = TextStyle(
+      fontSize: dense ? 11 : 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: tokens.chipFg.withOpacity(0.65),
+    );
+    final summaryStyle = TextStyle(
+      fontSize: dense ? 12 : 13,
+      fontWeight: FontWeight.w700,
+      color: tokens.chipFg,
+      height: 1.2,
+    );
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 10 : 12,
+        vertical: dense ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(tokens.chipBorder.withOpacity(0.16), tokens.chipBg),
+            tokens.chipBg,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(dense ? 14 : 16),
+        border: Border.all(
+          color: tokens.chipBorder.withOpacity(0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.chipBorder.withOpacity(0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: labelStyle),
+          const SizedBox(height: 4),
+          Text(
+            summary,
+            style: summaryStyle,
+            softWrap: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InputPill extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String label;
@@ -684,6 +834,7 @@ class _InputPill extends StatelessWidget {
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
   final bool dense;
+  final String? supportingText;
 
   const _InputPill({
     required this.controller,
@@ -694,49 +845,162 @@ class _InputPill extends StatelessWidget {
     this.onTap,
     this.validator,
     this.dense = false,
+    this.supportingText,
   });
 
   @override
+  State<_InputPill> createState() => _InputPillState();
+}
+
+class _InputPillState extends State<_InputPill> {
+  late bool _hasFocus;
+  late String _text;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasFocus = widget.focusNode.hasFocus;
+    _text = widget.controller.text;
+    widget.focusNode.addListener(_handleFocus);
+    widget.controller.addListener(_handleText);
+  }
+
+  @override
+  void didUpdateWidget(covariant _InputPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_handleFocus);
+      _hasFocus = widget.focusNode.hasFocus;
+      widget.focusNode.addListener(_handleFocus);
+    }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleText);
+      _text = widget.controller.text;
+      widget.controller.addListener(_handleText);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_handleFocus);
+    widget.controller.removeListener(_handleText);
+    super.dispose();
+  }
+
+  void _handleFocus() {
+    if (!mounted) return;
+    final hasFocus = widget.focusNode.hasFocus;
+    if (_hasFocus != hasFocus) {
+      setState(() => _hasFocus = hasFocus);
+    }
+  }
+
+  void _handleText() {
+    if (!mounted) return;
+    final current = widget.controller.text;
+    if (_text != current) {
+      setState(() => _text = current);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final hasValue = _text.trim().isNotEmpty;
+    final hasFocus = _hasFocus;
+    final disabled = widget.readOnly;
+
+    final labelStyle = TextStyle(
+      fontSize: widget.dense ? 11 : 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.75 : 0.6),
+    );
+
+    final valueColor = widget.tokens.chipFg
+        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.55));
+    final valueStyle = TextStyle(
+      fontSize: widget.dense ? 18 : 20,
+      fontWeight: FontWeight.w700,
+      color: valueColor,
+      height: 1.1,
+    );
+
+    final supportingStyle = TextStyle(
+      fontSize: widget.dense ? 11 : 12,
+      color: widget.tokens.chipFg.withOpacity(0.62),
+    );
+
+    final gradientColors = [
+      Color.alphaBlend(
+        widget.tokens.chipBorder.withOpacity(hasFocus ? 0.24 : 0.12),
+        widget.tokens.chipBg,
+      ),
+      Color.alphaBlend(
+        Colors.black.withOpacity(hasFocus ? 0.05 : 0.02),
+        widget.tokens.chipBg,
+      ),
+    ];
+
     return GestureDetector(
-      onTap: readOnly ? null : () => onTap?.call(),
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.readOnly ? null : widget.onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: tokens.chipBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: focusNode.hasFocus
-                ? tokens.chipBorder
-                : tokens.chipBorder.withOpacity(0.6),
-            width: 1.3,
-          ),
-          boxShadow: focusNode.hasFocus
-              ? [
-                  BoxShadow(
-                    color: tokens.chipBorder.withOpacity(0.28),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: widget.dense ? 14 : 16,
+          vertical: widget.dense ? 10 : 12,
         ),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 2 : 4),
-        alignment: Alignment.center,
-        child: TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          enabled: !readOnly,
-          readOnly: true,
-          onTap: readOnly ? null : onTap,
-          keyboardType: TextInputType.none,
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            labelText: label,
-            labelStyle: dense ? const TextStyle(fontSize: 14) : null,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
           ),
-          style: dense ? const TextStyle(fontSize: 14) : null,
-          validator: validator,
+          borderRadius: BorderRadius.circular(widget.dense ? 14 : 18),
+          border: Border.all(
+            color: hasFocus
+                ? widget.tokens.chipBorder.withOpacity(0.6)
+                : widget.tokens.chipBorder.withOpacity(0.18),
+            width: hasFocus ? 1.4 : 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  widget.tokens.chipBorder.withOpacity(hasFocus ? 0.25 : 0.12),
+              blurRadius: hasFocus ? 20 : 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.label, style: labelStyle),
+            SizedBox(height: widget.dense ? 4 : 6),
+            TextFormField(
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              enabled: !widget.readOnly,
+              readOnly: true,
+              showCursor: false,
+              onTap: widget.readOnly ? null : widget.onTap,
+              keyboardType: TextInputType.none,
+              validator: widget.validator,
+              style: valueStyle,
+              cursorColor: Colors.transparent,
+              decoration: const InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            if (widget.supportingText != null) ...[
+              SizedBox(height: widget.dense ? 6 : 8),
+              Text(widget.supportingText!, style: supportingStyle),
+            ],
+          ],
         ),
       ),
     );

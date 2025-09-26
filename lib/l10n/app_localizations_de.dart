@@ -440,6 +440,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
 
   @override
+  String get settingsSetCardHistory => 'Letzte Session in Set-Karten';
+
+  @override
+  String get settingsSetCardHistoryShow => 'Anzeigen';
+
+  @override
+  String get settingsSetCardHistoryHide => 'Ausblenden';
+
+  @override
+  String get settingsSetCardHistoryShown => 'Aktiv';
+
+  @override
+  String get settingsSetCardHistoryHidden => 'Aus';
+
+  @override
+  String get settingsSetCardHistoryDescription =>
+      'Zeigt das Gewicht und die Wiederholungen der letzten Session direkt in der Set-Karte an.';
+
+  @override
+  String get settingsSetCardHistorySavedShown =>
+      'Letzte Session wird angezeigt.';
+
+  @override
+  String get settingsSetCardHistorySavedHidden =>
+      'Letzte Session ausgeblendet.';
+
+  @override
+  String get setCardPreviousLabel => 'Zuletzt';
+
+  @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';
 
   @override
