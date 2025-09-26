@@ -541,6 +541,8 @@ class SetRowContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     Widget body = Padding(
       padding: padding,
       child: Column(
@@ -610,6 +612,8 @@ class SetRowContent extends StatelessWidget {
                 semantics: 'Mehr Optionen',
                 dense: dense,
                 onTap: onToggleExtras,
+                iconColor: primaryColor,
+                disabledIconColor: primaryColor.withOpacity(0.4),
               ),
               SizedBox(width: dense ? 6 : 8),
               _RoundButton(
@@ -620,6 +624,9 @@ class SetRowContent extends StatelessWidget {
                     done ? loc.setReopenTooltip : loc.setCompleteTooltip,
                 dense: dense,
                 onTap: onToggleDone,
+                iconColor: primaryColor,
+                filledIconColor: primaryColor,
+                disabledIconColor: primaryColor.withOpacity(0.4),
               ),
             ],
           ),
@@ -677,6 +684,8 @@ class _IndexBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Semantics(
       label: 'Set $index',
       child: Container(
@@ -697,7 +706,7 @@ class _IndexBadge extends StatelessWidget {
         child: Text(
           '$index',
           style: TextStyle(
-            color: tokens.chipFg,
+            color: primaryColor,
             fontWeight: FontWeight.w700,
             fontSize: dense ? 14 : null,
           ),
