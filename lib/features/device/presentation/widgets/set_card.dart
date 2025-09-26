@@ -45,22 +45,24 @@ class SetCardTheme {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    Color blend(Color base, Color overlay, double opacity) {
+    Color tint(Color base, Color overlay, double opacity) {
       return Color.alphaBlend(overlay.withOpacity(opacity), base);
     }
 
-    final surfaceBase = scheme.surface.withOpacity(isDark ? 0.82 : 0.96);
-    final surfaceVariant = scheme.surfaceVariant.withOpacity(isDark ? 0.78 : 0.92);
+    final surface = theme.canvasColor;
+    final softenedSurface = tint(surface, scheme.surface, isDark ? 0.75 : 0.95);
+    final quietBase = tint(softenedSurface, scheme.primary, isDark ? 0.06 : 0.04);
+    final idleOverlay = tint(quietBase, scheme.surfaceTint, isDark ? 0.1 : 0.06);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      chipBg: blend(surfaceBase, scheme.surfaceTint, isDark ? 0.32 : 0.18),
-      chipFg: scheme.onSurface,
-      chipBorder: scheme.primary.withOpacity(isDark ? 0.7 : 0.4),
-      doneOn: scheme.primaryContainer,
-      doneOff: scheme.onSurface.withOpacity(0.5),
-      menuBg: blend(surfaceVariant, scheme.primary, isDark ? 0.18 : 0.12),
-      menuFg: scheme.primary,
+      chipBg: idleOverlay,
+      chipFg: scheme.onSurface.withOpacity(isDark ? 0.92 : 0.78),
+      chipBorder: scheme.onSurface.withOpacity(isDark ? 0.22 : 0.12),
+      doneOn: tint(quietBase, scheme.primaryContainer, isDark ? 0.4 : 0.25),
+      doneOff: scheme.onSurface.withOpacity(0.55),
+      menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
+      menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
     );
   }
 
@@ -291,20 +293,21 @@ class SetCardState extends State<SetCard> {
       weightPart = '$prevWeightRaw kg';
     }
 
-    final repsPart = prevRepsRaw.isEmpty ? null : '${prevRepsRaw} ×';
-    final parts = <String>[];
-    if (weightPart != null && weightPart.isNotEmpty) {
-      parts.add(weightPart);
-    }
-    if (repsPart != null && repsPart.isNotEmpty) {
-      parts.add(repsPart);
+    final repsPart = prevRepsRaw.isEmpty ? null : prevRepsRaw;
+
+    if (weightPart != null && repsPart != null) {
+      return '$weightPart × $repsPart';
     }
 
-    if (parts.isEmpty) {
-      return null;
+    if (weightPart != null) {
+      return weightPart;
     }
 
-    return parts.join(' · ');
+    if (repsPart != null) {
+      return '× $repsPart';
+    }
+
+    return null;
   }
 
   String? _validateDrop(String? _) {
@@ -404,7 +407,7 @@ class SetCardState extends State<SetCard> {
         ? (widget.groupedRadius as BorderRadius?)
         : null;
 
-    final content = SetRowContent(
+    Widget content = SetRowContent(
       tokens: tokens,
       dense: dense,
       index: widget.index + 1,
@@ -437,9 +440,28 @@ class SetCardState extends State<SetCard> {
           : () => _openKeypad(_dropRepsCtrl, allowDecimal: false),
       dropValidator: _validateDrop,
       padding: contentPadding,
-      radius: rowRadius,
       previousSummary: previousSummary,
-      previousSummaryLabel: loc.setCardPreviousLabel,
+    );
+
+    final backgroundRadius = rowRadius ??
+        (displayMode == SetCardDisplayMode.standalone
+            ? BorderRadius.circular(26)
+            : BorderRadius.circular(18));
+    content = ClipRRect(
+      borderRadius: backgroundRadius,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.alphaBlend(tokens.menuFg.withOpacity(0.1), tokens.chipBg),
+              Color.alphaBlend(tokens.menuFg.withOpacity(0.04), tokens.chipBg),
+            ],
+          ),
+        ),
+        child: content,
+      ),
     );
 
     return Semantics(
@@ -481,9 +503,7 @@ class SetRowContent extends StatelessWidget {
   final VoidCallback? onTapDropReps;
   final FormFieldValidator<String>? dropValidator;
   final EdgeInsetsGeometry padding;
-  final BorderRadius? radius;
   final String? previousSummary;
-  final String previousSummaryLabel;
 
   const SetRowContent({
     super.key,
@@ -513,9 +533,7 @@ class SetRowContent extends StatelessWidget {
     required this.onTapDropReps,
     required this.dropValidator,
     this.padding = EdgeInsets.zero,
-    this.radius,
     this.previousSummary,
-    required this.previousSummaryLabel,
   });
 
   @override
@@ -537,18 +555,6 @@ class SetRowContent extends StatelessWidget {
                 SizedBox(width: dense ? 4 : 6),
                 _DropBadge(tokens: tokens, dense: dense),
               ],
-              if (previousSummary != null) ...[
-                SizedBox(width: dense ? 6 : 8),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: dense ? 150 : 200),
-                  child: _PreviousStatBadge(
-                    tokens: tokens,
-                    dense: dense,
-                    label: previousSummaryLabel,
-                    summary: previousSummary!,
-                  ),
-                ),
-              ],
               SizedBox(width: dense ? 8 : 12),
               Expanded(
                 child: _InputPill(
@@ -566,6 +572,9 @@ class SetRowContent extends StatelessWidget {
                     }
                     return null;
                   },
+                  supportingText: previousSummary == null
+                      ? null
+                      : '${loc.setCardPreviousLabel}: $previousSummary',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -642,16 +651,9 @@ class SetRowContent extends StatelessWidget {
       ),
     );
 
-    if (radius != null) {
-      body = ClipRRect(
-        borderRadius: radius!,
-        child: body,
-      );
+      return SizedBox(width: double.infinity, child: body);
     }
-
-    return SizedBox(width: double.infinity, child: body);
   }
-}
 
 class _IndexBadge extends StatelessWidget {
   final SetCardTheme tokens;
@@ -672,24 +674,16 @@ class _IndexBadge extends StatelessWidget {
         height: dense ? 28 : 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.alphaBlend(tokens.chipBorder.withOpacity(0.2), tokens.chipBg),
-              tokens.chipBg,
-            ],
+          color: Color.alphaBlend(
+            tokens.menuFg.withOpacity(0.16),
+            tokens.chipBg,
           ),
           borderRadius: BorderRadius.circular(dense ? 14 : 16),
-          border: Border.all(
-            color: tokens.chipBorder.withOpacity(0.45),
-            width: 1.1,
-          ),
           boxShadow: [
             BoxShadow(
-              color: tokens.chipBorder.withOpacity(0.18),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: tokens.menuFg.withOpacity(0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -697,7 +691,7 @@ class _IndexBadge extends StatelessWidget {
           '$index',
           style: TextStyle(
             color: tokens.chipFg,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             fontSize: dense ? 14 : null,
           ),
         ),
@@ -721,24 +715,16 @@ class _DropBadge extends StatelessWidget {
       height: dense ? 24 : 28,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(tokens.chipBorder.withOpacity(0.18), tokens.chipBg),
-            tokens.chipBg,
-          ],
+        color: Color.alphaBlend(
+          tokens.menuFg.withOpacity(0.14),
+          tokens.chipBg,
         ),
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
-        border: Border.all(
-          color: tokens.chipBorder.withOpacity(0.45),
-          width: 1.1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: tokens.chipBorder.withOpacity(0.18),
+            color: tokens.menuFg.withOpacity(0.1),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -749,77 +735,6 @@ class _DropBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
           fontSize: dense ? 14 : 16,
         ),
-      ),
-    );
-  }
-}
-
-class _PreviousStatBadge extends StatelessWidget {
-  final SetCardTheme tokens;
-  final bool dense;
-  final String label;
-  final String summary;
-  const _PreviousStatBadge({
-    required this.tokens,
-    required this.dense,
-    required this.label,
-    required this.summary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final labelStyle = TextStyle(
-      fontSize: dense ? 11 : 12,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-      color: tokens.chipFg.withOpacity(0.65),
-    );
-    final summaryStyle = TextStyle(
-      fontSize: dense ? 12 : 13,
-      fontWeight: FontWeight.w700,
-      color: tokens.chipFg,
-      height: 1.2,
-    );
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: dense ? 10 : 12,
-        vertical: dense ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(tokens.chipBorder.withOpacity(0.16), tokens.chipBg),
-            tokens.chipBg,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(dense ? 14 : 16),
-        border: Border.all(
-          color: tokens.chipBorder.withOpacity(0.35),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: tokens.chipBorder.withOpacity(0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: labelStyle),
-          const SizedBox(height: 4),
-          Text(
-            summary,
-            style: summaryStyle,
-            softWrap: true,
-          ),
-        ],
       ),
     );
   }
@@ -908,12 +823,20 @@ class _InputPillState extends State<_InputPill> {
     final hasValue = _text.trim().isNotEmpty;
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final radius = BorderRadius.circular(widget.dense ? 18 : 22);
+    final baseOverlay = Color.alphaBlend(
+      widget.tokens.menuFg.withOpacity(hasFocus ? 0.22 : 0.1),
+      widget.tokens.chipBg,
+    );
+    final haloColor = widget.tokens.menuFg.withOpacity(hasFocus ? 0.28 : 0.08);
 
     final labelStyle = TextStyle(
       fontSize: widget.dense ? 11 : 12,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
-      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.75 : 0.6),
+      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.8 : 0.6),
     );
 
     final valueColor = widget.tokens.chipFg
@@ -927,19 +850,8 @@ class _InputPillState extends State<_InputPill> {
 
     final supportingStyle = TextStyle(
       fontSize: widget.dense ? 11 : 12,
-      color: widget.tokens.chipFg.withOpacity(0.62),
+      color: widget.tokens.chipFg.withOpacity(isDark ? 0.55 : 0.5),
     );
-
-    final gradientColors = [
-      Color.alphaBlend(
-        widget.tokens.chipBorder.withOpacity(hasFocus ? 0.24 : 0.12),
-        widget.tokens.chipBg,
-      ),
-      Color.alphaBlend(
-        Colors.black.withOpacity(hasFocus ? 0.05 : 0.02),
-        widget.tokens.chipBg,
-      ),
-    ];
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -948,28 +860,18 @@ class _InputPillState extends State<_InputPill> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: widget.dense ? 14 : 16,
-          vertical: widget.dense ? 10 : 12,
+          horizontal: widget.dense ? 16 : 18,
+          vertical: widget.dense ? 9 : 12,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-          ),
-          borderRadius: BorderRadius.circular(widget.dense ? 14 : 18),
-          border: Border.all(
-            color: hasFocus
-                ? widget.tokens.chipBorder.withOpacity(0.6)
-                : widget.tokens.chipBorder.withOpacity(0.18),
-            width: hasFocus ? 1.4 : 1.1,
-          ),
+          color: baseOverlay,
+          borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color:
-                  widget.tokens.chipBorder.withOpacity(hasFocus ? 0.25 : 0.12),
-              blurRadius: hasFocus ? 20 : 12,
-              offset: const Offset(0, 6),
+              color: haloColor,
+              blurRadius: hasFocus ? 24 : 12,
+              spreadRadius: hasFocus ? 0.8 : 0.2,
+              offset: Offset(0, hasFocus ? 10 : 6),
             ),
           ],
         ),
@@ -978,7 +880,7 @@ class _InputPillState extends State<_InputPill> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.label, style: labelStyle),
-            SizedBox(height: widget.dense ? 4 : 6),
+            SizedBox(height: widget.dense ? 2 : 4),
             TextFormField(
               controller: widget.controller,
               focusNode: widget.focusNode,
@@ -990,16 +892,28 @@ class _InputPillState extends State<_InputPill> {
               validator: widget.validator,
               style: valueStyle,
               cursorColor: Colors.transparent,
+              enableInteractiveSelection: false,
               decoration: const InputDecoration(
                 isCollapsed: true,
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            if (widget.supportingText != null) ...[
-              SizedBox(height: widget.dense ? 6 : 8),
-              Text(widget.supportingText!, style: supportingStyle),
-            ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: widget.supportingText == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      key: ValueKey(widget.supportingText),
+                      padding: EdgeInsets.only(top: widget.dense ? 4 : 6),
+                      child: Text(
+                        widget.supportingText!,
+                        style: supportingStyle,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
@@ -1062,25 +976,23 @@ class _RoundButtonState extends State<_RoundButton> {
             height: size,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: widget.filled
-                    ? widget.tokens.doneOn
-                    : widget.tokens.chipBorder
-                        .withOpacity(widget.onTap == null ? 0.35 : 0.7),
-                width: 1.3,
-              ),
-              color:
-                  widget.filled ? widget.tokens.doneOn : widget.tokens.menuBg,
+              color: widget.filled
+                  ? Color.alphaBlend(
+                      widget.tokens.menuFg.withOpacity(0.16),
+                      widget.tokens.doneOn,
+                    )
+                  : Color.alphaBlend(
+                      widget.tokens.menuFg.withOpacity(0.12),
+                      widget.tokens.chipBg,
+                    ),
               boxShadow: widget.onTap == null
                   ? null
                   : [
                       BoxShadow(
-                        color: (widget.filled
-                                ? widget.tokens.doneOn
-                                : widget.tokens.chipBorder)
-                            .withOpacity(0.24),
-                        blurRadius: widget.filled ? 12 : 8,
-                        offset: const Offset(0, 3),
+                        color: widget.tokens.menuFg
+                            .withOpacity(widget.filled ? 0.26 : 0.14),
+                        blurRadius: widget.filled ? 16 : 12,
+                        offset: const Offset(0, 6),
                       ),
                     ],
             ),
@@ -1096,9 +1008,10 @@ class _RoundButtonState extends State<_RoundButton> {
                 }
                 if (widget.onTap == null) {
                   return widget.disabledIconColor ??
-                      widget.tokens.menuFg.withOpacity(0.6);
+                      widget.tokens.menuFg.withOpacity(0.55);
                 }
-                return widget.iconColor ?? widget.tokens.menuFg;
+                return widget.iconColor ??
+                    theme.colorScheme.onSurface.withOpacity(0.8);
               }(),
             ),
           ),
