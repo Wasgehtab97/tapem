@@ -58,6 +58,7 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                     readOnly: true,
                     size: SetCardSize.dense,
                     displayMode: SetCardDisplayMode.standalone,
+                    showPreviousSummary: false,
                   ),
                   if (drops.isNotEmpty)
                     Padding(
