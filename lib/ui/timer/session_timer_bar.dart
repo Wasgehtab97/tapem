@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'session_timer_controller.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+
+import 'session_timer_controller.dart';
 
 class SessionTimerBar extends StatefulWidget {
   final Duration initialDuration;
@@ -69,6 +71,9 @@ class _SessionTimerBarState extends State<SessionTimerBar>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
+    final brand = theme.extension<AppBrandTheme>();
+    final highContrast = MediaQuery.of(context).highContrast;
+
     return ValueListenableBuilder<Duration>(
       valueListenable: _controller.remaining,
       builder: (context, remaining, _) {
@@ -99,12 +104,18 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                     widthFactor: progress,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primaryContainer,
-                            theme.colorScheme.primary,
-                          ],
-                        ),
+                        gradient: highContrast
+                            ? null
+                            : brand?.gradient ??
+                                LinearGradient(
+                                  colors: [
+                                    theme.colorScheme.primaryContainer,
+                                    theme.colorScheme.primary,
+                                  ],
+                                ),
+                        color: highContrast
+                            ? brand?.outlineColorFallback ?? theme.colorScheme.primary
+                            : null,
                       ),
                     ),
                   ),
