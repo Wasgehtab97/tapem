@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -851,7 +852,7 @@ class _InputPillState extends State<_InputPill> {
         ? (hasFocus ? 0.32 : 0.18)
         : (hasFocus ? 0.45 : 0.28));
 
-    final labelStyle = TextStyle(
+    final labelStyle = GoogleFonts.inter(
       fontSize: widget.dense ? 11 : 12,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
@@ -860,7 +861,7 @@ class _InputPillState extends State<_InputPill> {
 
     final valueColor = widget.tokens.chipFg
         .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.55));
-    final valueStyle = TextStyle(
+    final valueStyle = GoogleFonts.spaceGrotesk(
       fontSize: showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
       fontWeight: FontWeight.w700,
       color: valueColor,
@@ -881,23 +882,27 @@ class _InputPillState extends State<_InputPill> {
     final double verticalPadding =
         showLabel ? (widget.dense ? 9 : 12) : (widget.dense ? 12 : 16);
 
-    final Widget textField = TextFormField(
-      controller: widget.controller,
-      focusNode: widget.focusNode,
-      enabled: !widget.readOnly,
-      readOnly: true,
-      showCursor: false,
-      onTap: widget.readOnly ? null : widget.onTap,
-      keyboardType: TextInputType.none,
-      validator: widget.validator,
-      style: valueStyle,
-      cursorColor: Colors.transparent,
-      enableInteractiveSelection: false,
-      textAlignVertical: TextAlignVertical.center,
-      decoration: const InputDecoration(
-        isCollapsed: true,
-        border: InputBorder.none,
-        contentPadding: EdgeInsets.zero,
+    final Widget textField = SizedBox(
+      width: double.infinity,
+      child: TextFormField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        enabled: !widget.readOnly,
+        readOnly: true,
+        showCursor: false,
+        onTap: widget.readOnly ? null : widget.onTap,
+        keyboardType: TextInputType.none,
+        validator: widget.validator,
+        style: valueStyle,
+        cursorColor: Colors.transparent,
+        enableInteractiveSelection: false,
+        textAlignVertical: TextAlignVertical.center,
+        textAlign: TextAlign.center,
+        decoration: const InputDecoration(
+          isCollapsed: true,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
       ),
     );
 
@@ -935,12 +940,16 @@ class _InputPillState extends State<_InputPill> {
                 ],
         ),
         child: Stack(
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.center,
           children: [
             if (!showLabel && !hasValue && !hasFocus)
-              Text(
-                widget.placeholder ?? widget.label,
-                style: placeholderStyle,
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  widget.placeholder ?? widget.label,
+                  style: placeholderStyle,
+                  textAlign: TextAlign.center,
+                ),
               ),
             textField,
           ],
