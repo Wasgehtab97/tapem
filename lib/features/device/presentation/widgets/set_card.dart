@@ -28,6 +28,7 @@ class SetCardTheme {
   final Color doneOff;
   final Color menuBg;
   final Color menuFg;
+  final Color cardFill;
 
   const SetCardTheme({
     required this.padding,
@@ -38,6 +39,7 @@ class SetCardTheme {
     required this.doneOff,
     required this.menuBg,
     required this.menuFg,
+    required this.cardFill,
   });
 
   factory SetCardTheme.of(BuildContext context) {
@@ -53,6 +55,10 @@ class SetCardTheme {
     final softenedSurface = tint(surface, scheme.surface, isDark ? 0.75 : 0.95);
     final quietBase = tint(softenedSurface, scheme.primary, isDark ? 0.06 : 0.04);
     final idleOverlay = tint(quietBase, scheme.surfaceTint, isDark ? 0.1 : 0.06);
+    final cardFill = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.85 : 0.9),
+      softenedSurface,
+    );
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -63,6 +69,7 @@ class SetCardTheme {
       doneOff: scheme.onSurface.withOpacity(0.55),
       menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
       menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
+      cardFill: cardFill,
     );
   }
 
@@ -75,6 +82,7 @@ class SetCardTheme {
     Color? doneOff,
     Color? menuBg,
     Color? menuFg,
+    Color? cardFill,
   }) {
     return SetCardTheme(
       padding: padding ?? this.padding,
@@ -85,6 +93,7 @@ class SetCardTheme {
       doneOff: doneOff ?? this.doneOff,
       menuBg: menuBg ?? this.menuBg,
       menuFg: menuFg ?? this.menuFg,
+      cardFill: cardFill ?? this.cardFill,
     );
   }
 }
@@ -451,14 +460,7 @@ class SetCardState extends State<SetCard> {
       borderRadius: backgroundRadius,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.alphaBlend(tokens.menuFg.withOpacity(0.1), tokens.chipBg),
-              Color.alphaBlend(tokens.menuFg.withOpacity(0.04), tokens.chipBg),
-            ],
-          ),
+          color: tokens.cardFill,
         ),
         child: content,
       ),
