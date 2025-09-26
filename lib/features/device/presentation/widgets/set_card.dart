@@ -577,6 +577,9 @@ class SetRowContent extends StatelessWidget {
                   supportingText: previousSummary == null
                       ? null
                       : '${loc.setCardPreviousLabel}: $previousSummary',
+                  showLabel: false,
+                  placeholder:
+                      isBodyweightMode ? loc.bodyweight : '00.0',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -594,6 +597,8 @@ class SetRowContent extends StatelessWidget {
                     if (int.tryParse(v) == null) return loc.intRequired;
                     return null;
                   },
+                  showLabel: false,
+                  placeholder: '00',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -752,6 +757,8 @@ class _InputPill extends StatefulWidget {
   final String? Function(String?)? validator;
   final bool dense;
   final String? supportingText;
+  final bool showLabel;
+  final String? placeholder;
 
   const _InputPill({
     required this.controller,
@@ -763,6 +770,8 @@ class _InputPill extends StatefulWidget {
     this.validator,
     this.dense = false,
     this.supportingText,
+    this.showLabel = true,
+    this.placeholder,
   });
 
   @override
@@ -822,17 +831,25 @@ class _InputPillState extends State<_InputPill> {
 
   @override
   Widget build(BuildContext context) {
+    final showLabel = widget.showLabel;
     final hasValue = _text.trim().isNotEmpty;
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final radius = BorderRadius.circular(widget.dense ? 18 : 22);
-    final baseOverlay = Color.alphaBlend(
-      widget.tokens.menuFg.withOpacity(hasFocus ? 0.22 : 0.1),
-      widget.tokens.chipBg,
-    );
-    final haloColor = widget.tokens.menuFg.withOpacity(hasFocus ? 0.28 : 0.08);
+    final baseOverlay = showLabel
+        ? Color.alphaBlend(
+            widget.tokens.menuFg.withOpacity(hasFocus ? 0.22 : 0.1),
+            widget.tokens.chipBg,
+          )
+        : widget.tokens.cardFill;
+    final haloColor = widget.tokens.menuFg.withOpacity(showLabel
+        ? (hasFocus ? 0.28 : 0.08)
+        : (hasFocus ? 0.32 : 0.14));
+    final borderColor = widget.tokens.chipFg.withOpacity(showLabel
+        ? (hasFocus ? 0.32 : 0.18)
+        : (hasFocus ? 0.45 : 0.28));
 
     final labelStyle = TextStyle(
       fontSize: widget.dense ? 11 : 12,
@@ -844,10 +861,14 @@ class _InputPillState extends State<_InputPill> {
     final valueColor = widget.tokens.chipFg
         .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.55));
     final valueStyle = TextStyle(
-      fontSize: widget.dense ? 18 : 20,
+      fontSize: showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
       fontWeight: FontWeight.w700,
       color: valueColor,
-      height: 1.1,
+      height: 1.15,
+    );
+
+    final placeholderStyle = valueStyle.copyWith(
+      color: widget.tokens.chipFg.withOpacity(0.35),
     );
 
     final supportingStyle = TextStyle(
@@ -855,71 +876,121 @@ class _InputPillState extends State<_InputPill> {
       color: widget.tokens.chipFg.withOpacity(isDark ? 0.55 : 0.5),
     );
 
-    return GestureDetector(
+    final double horizontalPadding =
+        showLabel ? (widget.dense ? 16 : 18) : (widget.dense ? 18 : 22);
+    final double verticalPadding =
+        showLabel ? (widget.dense ? 9 : 12) : (widget.dense ? 12 : 16);
+
+    final Widget textField = TextFormField(
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      enabled: !widget.readOnly,
+      readOnly: true,
+      showCursor: false,
+      onTap: widget.readOnly ? null : widget.onTap,
+      keyboardType: TextInputType.none,
+      validator: widget.validator,
+      style: valueStyle,
+      cursorColor: Colors.transparent,
+      enableInteractiveSelection: false,
+      textAlignVertical: TextAlignVertical.center,
+      decoration: const InputDecoration(
+        isCollapsed: true,
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.zero,
+      ),
+    );
+
+    final Widget inputSurface = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: widget.readOnly ? null : widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: widget.dense ? 16 : 18,
-          vertical: widget.dense ? 9 : 12,
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
         ),
+        constraints:
+            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 58 : 68),
         decoration: BoxDecoration(
           color: baseOverlay,
           borderRadius: radius,
-          boxShadow: [
-            BoxShadow(
-              color: haloColor,
-              blurRadius: hasFocus ? 24 : 12,
-              spreadRadius: hasFocus ? 0.8 : 0.2,
-              offset: Offset(0, hasFocus ? 10 : 6),
-            ),
-          ],
+          border: Border.all(
+            color: borderColor,
+            width: showLabel ? 1 : 1.2,
+          ),
+          boxShadow: disabled
+              ? null
+              : [
+                  BoxShadow(
+                    color: haloColor,
+                    blurRadius:
+                        hasFocus ? (showLabel ? 24 : 28) : (showLabel ? 12 : 16),
+                    spreadRadius:
+                        hasFocus ? (showLabel ? 0.8 : 0.9) : (showLabel ? 0.2 : 0.3),
+                    offset:
+                        Offset(0, hasFocus ? (showLabel ? 10 : 12) : (showLabel ? 6 : 8)),
+                  ),
+                ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          alignment: Alignment.centerLeft,
           children: [
-            Text(widget.label, style: labelStyle),
-            SizedBox(height: widget.dense ? 2 : 4),
-            TextFormField(
-              controller: widget.controller,
-              focusNode: widget.focusNode,
-              enabled: !widget.readOnly,
-              readOnly: true,
-              showCursor: false,
-              onTap: widget.readOnly ? null : widget.onTap,
-              keyboardType: TextInputType.none,
-              validator: widget.validator,
-              style: valueStyle,
-              cursorColor: Colors.transparent,
-              enableInteractiveSelection: false,
-              decoration: const InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+            if (!showLabel && !hasValue && !hasFocus)
+              Text(
+                widget.placeholder ?? widget.label,
+                style: placeholderStyle,
               ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: widget.supportingText == null
-                  ? const SizedBox.shrink()
-                  : Padding(
-                      key: ValueKey(widget.supportingText),
-                      padding: EdgeInsets.only(top: widget.dense ? 4 : 6),
-                      child: Text(
-                        widget.supportingText!,
-                        style: supportingStyle,
-                      ),
-                    ),
-            ),
+            textField,
           ],
         ),
       ),
     );
+
+    final Widget supporting = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: widget.supportingText == null
+          ? const SizedBox.shrink()
+          : Padding(
+              key: ValueKey(widget.supportingText),
+              padding: EdgeInsets.only(
+                top: showLabel ? (widget.dense ? 4 : 6) : (widget.dense ? 6 : 8),
+              ),
+              child: Text(
+                widget.supportingText!,
+                style: supportingStyle,
+              ),
+            ),
+    );
+
+    if (showLabel) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(widget.label, style: labelStyle),
+          SizedBox(height: widget.dense ? 2 : 4),
+          inputSurface,
+          supporting,
+        ],
+      );
+    }
+
+    if (widget.supportingText != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          inputSurface,
+          supporting,
+        ],
+      );
+    }
+
+    return inputSurface;
   }
 }
 
