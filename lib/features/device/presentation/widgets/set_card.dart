@@ -580,7 +580,7 @@ class SetRowContent extends StatelessWidget {
                       : '${loc.setCardPreviousLabel}: $previousSummary',
                   showLabel: false,
                   placeholder:
-                      isBodyweightMode ? loc.bodyweight : '00.0',
+                      isBodyweightMode ? loc.bodyweight : 'kg',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -599,7 +599,7 @@ class SetRowContent extends StatelessWidget {
                     return null;
                   },
                   showLabel: false,
-                  placeholder: '00',
+                  placeholder: 'wdh',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -637,6 +637,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropWeight,
                     validator: dropValidator,
+                    placeholder: 'kg',
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
@@ -650,6 +651,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropReps,
                     validator: dropValidator,
+                    placeholder: 'wdh',
                   ),
                 ),
               ],
@@ -682,10 +684,7 @@ class _IndexBadge extends StatelessWidget {
         height: dense ? 28 : 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Color.alphaBlend(
-            tokens.menuFg.withOpacity(0.16),
-            tokens.chipBg,
-          ),
+          color: tokens.cardFill,
           borderRadius: BorderRadius.circular(dense ? 14 : 16),
           boxShadow: [
             BoxShadow(
@@ -723,10 +722,7 @@ class _DropBadge extends StatelessWidget {
       height: dense ? 24 : 28,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          tokens.menuFg.withOpacity(0.14),
-          tokens.chipBg,
-        ),
+        color: tokens.cardFill,
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
         boxShadow: [
           BoxShadow(
@@ -942,7 +938,7 @@ class _InputPillState extends State<_InputPill> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (!showLabel && !hasValue && !hasFocus)
+            if (!showLabel && !hasValue)
               Align(
                 alignment: Alignment.center,
                 child: Text(
@@ -1058,15 +1054,7 @@ class _RoundButtonState extends State<_RoundButton> {
             height: size,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: widget.filled
-                  ? Color.alphaBlend(
-                      widget.tokens.menuFg.withOpacity(0.16),
-                      widget.tokens.doneOn,
-                    )
-                  : Color.alphaBlend(
-                      widget.tokens.menuFg.withOpacity(0.12),
-                      widget.tokens.chipBg,
-                    ),
+              color: widget.tokens.cardFill,
               boxShadow: widget.onTap == null
                   ? null
                   : [
