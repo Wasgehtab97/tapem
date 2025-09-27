@@ -376,12 +376,34 @@ Future<void> main() async {
 
         // Restliche Provider
         ChangeNotifierProvider(create: (_) => GymProvider()),
-        ChangeNotifierProvider(
+        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        ChangeNotifierProvider(create: (_) => XpProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutSessionDurationService()),
+        ChangeNotifierProxyProvider4<
+            MembershipService,
+            XpProvider,
+            ChallengeProvider,
+            WorkoutSessionDurationService,
+            DeviceProvider>(
           create: (c) => DeviceProvider(
             firestore: FirebaseFirestore.instance,
             draftRepo: SessionDraftRepositoryImpl(),
             membership: c.read<MembershipService>(),
           ),
+          update: (_, membership, xp, challenge, duration, provider) {
+            final prov = provider ??
+                DeviceProvider(
+                  firestore: FirebaseFirestore.instance,
+                  draftRepo: SessionDraftRepositoryImpl(),
+                  membership: membership,
+                );
+            prov.attachExternalServices(
+              xpProvider: xp,
+              challengeProvider: challenge,
+              sessionDurationService: duration,
+            );
+            return prov;
+          },
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
@@ -418,9 +440,6 @@ Future<void> main() async {
               FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
-        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
-        ChangeNotifierProvider(create: (_) => XpProvider()),
-        ChangeNotifierProvider(create: (_) => WorkoutSessionDurationService()),
       ],
       child: const MyApp(),
     ),

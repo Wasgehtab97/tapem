@@ -22,6 +22,8 @@ void main() {
     );
     final draft = SessionDraft(
       deviceId: 'd1',
+      gymId: 'g1',
+      userId: 'u1',
       exerciseId: 'e1',
       createdAt: 1,
       updatedAt: 1,
@@ -46,6 +48,8 @@ void main() {
     );
     final oldDraft = SessionDraft(
       deviceId: 'd1',
+      gymId: 'g1',
+      userId: 'u1',
       createdAt: 0,
       updatedAt: 0,
       note: '',

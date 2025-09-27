@@ -327,7 +327,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           }
                           elogUi('SAVE_STARTED', base);
                           final ok = await prov.saveWorkoutSession(
-                            context: context,
                             gymId: widget.gymId,
                             userId: auth.userId!,
                             showInLeaderboard:
@@ -398,6 +397,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final auth = context.watch<AuthProvider>();
+    prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
     final locale = Localizations.localeOf(context).toString();
     final loc = AppLocalizations.of(context)!;
     final planProv = context.watch<TrainingPlanProvider>();

@@ -6,4 +6,5 @@ abstract class SessionDraftRepository {
   Future<void> delete(String key);
   Future<void> deleteExpired(int nowMs);
   Future<void> deleteAll();
+  Future<Map<String, SessionDraft>> getAll();
 }
