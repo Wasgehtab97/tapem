@@ -3,6 +3,7 @@
 // Fixes re-entrant rebuilds by avoiding notify on unchanged data.
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -59,6 +60,9 @@ class DeviceProvider extends ChangeNotifier {
   final SessionDraftRepository _draftRepo;
   final DeviceRepository deviceRepository;
   final MembershipService _membership;
+  XpProvider? _xpProvider;
+  ChallengeProvider? _challengeProvider;
+  WorkoutSessionDurationService? _sessionDurationService;
 
   List<Device> _devices = [];
 
@@ -83,6 +87,11 @@ class DeviceProvider extends ChangeNotifier {
   String? _draftKey;
   int? _draftCreatedAt;
   Timer? _draftSaveTimer;
+  Timer? _autoFinalizeTimer;
+  int? _lastActivityMs;
+  String? _currentGymId;
+  String? _currentUserId;
+  bool _showInLeaderboardPreference = true;
 
   // Snapshots (Historie zum Blättern)
   final List<DeviceSessionSnapshot> _sessionSnapshots = [];
@@ -113,6 +122,21 @@ class DeviceProvider extends ChangeNotifier {
        _log = log ?? _defaultLog,
        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
        _membership = membership;
+
+  void attachExternalServices({
+    required XpProvider xpProvider,
+    required ChallengeProvider challengeProvider,
+    required WorkoutSessionDurationService sessionDurationService,
+  }) {
+    _xpProvider = xpProvider;
+    _challengeProvider = challengeProvider;
+    _sessionDurationService = sessionDurationService;
+  }
+
+  void updateAutoSavePreference(bool showInLeaderboard) {
+    if (_showInLeaderboardPreference == showInLeaderboard) return;
+    _showInLeaderboardPreference = showInLeaderboard;
+  }
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -247,6 +271,13 @@ class DeviceProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _error = null;
+    _currentGymId = gymId;
+    _currentUserId = userId;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = null;
+    _autoFinalizeTimer?.cancel();
+    _autoFinalizeTimer = null;
+    _lastActivityMs = null;
 
     try {
       await _membership.ensureMembership(gymId, userId);
@@ -278,9 +309,6 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: exerciseId,
         isMulti: _device!.isMulti,
       );
-      if (_draftKey != null && _draftKey != newKey) {
-        await _draftRepo.delete(_draftKey!);
-      }
       _draftKey = newKey;
       await _draftRepo.deleteExpired(DateTime.now().millisecondsSinceEpoch);
 
@@ -343,7 +371,7 @@ class DeviceProvider extends ChangeNotifier {
     });
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
   }
 
   void insertSetAt(int index, Map<String, dynamic> set) {
@@ -357,7 +385,7 @@ class DeviceProvider extends ChangeNotifier {
       '↩️ [Provider] insertSetAt($index) → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
   }
 
   void updateSet(
@@ -394,7 +422,7 @@ class DeviceProvider extends ChangeNotifier {
     _sets[index] = after;
     _log('✏️ [Provider] updateSet($index) $before → $after');
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
   }
 
   void removeSet(int index) {
@@ -407,7 +435,7 @@ class DeviceProvider extends ChangeNotifier {
       '🗑️ [Provider] removeSet($index) removed=$removed → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
   }
 
   bool _isFilled(Map<String, dynamic> s) {
@@ -440,7 +468,7 @@ class DeviceProvider extends ChangeNotifier {
     _sets[index] = Map<String, dynamic>.from(s);
     _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
     return true;
   }
 
@@ -461,7 +489,7 @@ class DeviceProvider extends ChangeNotifier {
     _sets[idx] = s;
     _log('☑️ [Provider] completeNextFilledSet($idx)');
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
     return idx;
   }
 
@@ -479,7 +507,7 @@ class DeviceProvider extends ChangeNotifier {
     if (count > 0) {
       _log('☑️ [Provider] completeAllFilledNotDone count=$count');
       notifyListeners();
-      _scheduleDraftSave();
+      _onSessionMutated();
     }
     return count;
   }
@@ -513,7 +541,7 @@ class DeviceProvider extends ChangeNotifier {
     _note = text;
     _log('📝 [Provider] setNote "$text"');
     notifyListeners();
-    _scheduleDraftSave();
+    _onSessionMutated();
   }
 
   bool _isDraftEmpty() {
@@ -535,6 +563,16 @@ class DeviceProvider extends ChangeNotifier {
     return true;
   }
 
+  bool _hasCompletedSets() {
+    return _sets.any((s) => s['done'] == true || s['done'] == 'true');
+  }
+
+  void _onSessionMutated() {
+    _lastActivityMs = DateTime.now().millisecondsSinceEpoch;
+    _scheduleDraftSave();
+    _scheduleAutoFinalize();
+  }
+
   void _scheduleDraftSave() {
     final key = _draftKey;
     if (key == null) return;
@@ -542,6 +580,37 @@ class DeviceProvider extends ChangeNotifier {
     _draftSaveTimer = Timer(
       const Duration(milliseconds: kDeviceDraftDebounceMs),
       _saveDraftNow,
+    );
+  }
+
+  void _scheduleAutoFinalize() {
+    final last = _lastActivityMs;
+    if (last == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final remaining = kDeviceDraftTtlMs - (now - last);
+    if (remaining <= 0) {
+      unawaited(_handleAutoFinalizeTimer());
+      return;
+    }
+    _autoFinalizeTimer?.cancel();
+    _autoFinalizeTimer =
+        Timer(Duration(milliseconds: math.max(remaining, 1000)), () {
+      unawaited(_handleAutoFinalizeTimer());
+    });
+  }
+
+  Future<void> _handleAutoFinalizeTimer() async {
+    _autoFinalizeTimer?.cancel();
+    _autoFinalizeTimer = null;
+    if (_device == null) return;
+    if (_currentGymId == null || _currentUserId == null) return;
+    if (!_hasCompletedSets()) return;
+    if (_isSaving) return;
+    await saveWorkoutSession(
+      gymId: _currentGymId!,
+      userId: _currentUserId!,
+      showInLeaderboard: _showInLeaderboardPreference,
+      autoFinalize: true,
     );
   }
 
@@ -555,10 +624,13 @@ class DeviceProvider extends ChangeNotifier {
     }
     final draft = SessionDraft(
       deviceId: _device!.uid,
+      gymId: _currentGymId ?? '',
+      userId: _currentUserId ?? '',
       exerciseId: _device!.isMulti ? _currentExerciseId : null,
       createdAt: _draftCreatedAt ?? now,
       updatedAt: now,
       note: _note,
+      showInLeaderboard: _showInLeaderboardPreference,
       sets: [
         for (var i = 0; i < _sets.length; i++)
           SetDraft(
@@ -586,12 +658,21 @@ class DeviceProvider extends ChangeNotifier {
     final draft = await _draftRepo.get(key);
     if (draft == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - draft.updatedAt > draft.ttlMs) {
+    final draftHasCompletedSets =
+        draft.sets.any((set) => set.done == true);
+    if (now - draft.updatedAt > draft.ttlMs && !draftHasCompletedSets) {
       await _draftRepo.delete(key);
       return;
     }
     _draftCreatedAt = draft.createdAt;
     _note = draft.note;
+    if (draft.gymId.isNotEmpty) {
+      _currentGymId ??= draft.gymId;
+    }
+    if (draft.userId.isNotEmpty) {
+      _currentUserId ??= draft.userId;
+    }
+    _showInLeaderboardPreference = draft.showInLeaderboard;
     _sets = [
       for (var i = 0; i < draft.sets.length; i++)
         {
@@ -604,7 +685,12 @@ class DeviceProvider extends ChangeNotifier {
           'isBodyweight': draft.sets[i].isBodyweight,
         },
     ];
+    _lastActivityMs = draft.updatedAt;
     notifyListeners();
+    _scheduleAutoFinalize();
+    if (now - draft.updatedAt >= draft.ttlMs && _hasCompletedSets()) {
+      unawaited(_handleAutoFinalizeTimer());
+    }
   }
 
   void prefetchSnapshots({
@@ -623,10 +709,10 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   Future<bool> saveWorkoutSession({
-    required BuildContext context,
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
+    bool autoFinalize = false,
   }) async {
     final dayKey = logicDayKey(DateTime.now().toUtc());
     if (_device == null) {
@@ -640,6 +726,7 @@ class DeviceProvider extends ChangeNotifier {
       return false;
     }
 
+    _showInLeaderboardPreference = showInLeaderboard;
     final sessionId = _uuid.v4();
     final resolvedDeviceId = _device!.uid;
     final traceId = XpTrace.buildTraceId(
@@ -773,10 +860,8 @@ class DeviceProvider extends ChangeNotifier {
         'traceId': traceId,
       });
 
-      await Provider.of<WorkoutSessionDurationService>(
-        context,
-        listen: false,
-      ).registerSession(
+      final durationService = _sessionDurationService;
+      await durationService?.registerSession(
         sessionId: sessionId,
         completedAt: ts.toDate(),
       );
@@ -791,7 +876,7 @@ class DeviceProvider extends ChangeNotifier {
         'sessionId': sessionId,
         'isMulti': _device!.isMulti,
         'dayKey': dayKey,
-        'screen': 'DeviceScreen',
+        'screen': autoFinalize ? 'DeviceScreen.autoFinalize' : 'DeviceScreen',
       });
 
       final resolvedDeviceId = resolveDeviceId(snapshot);
@@ -815,8 +900,8 @@ class DeviceProvider extends ChangeNotifier {
         });
         XpTrace.log('CALL_ADD_SESSION_XP', {'intent': 'credit', 'traceId': traceId});
         try {
-          final xpResult = await Provider.of<XpProvider>(context, listen: false)
-              .addSessionXp(
+          final xpProv = _xpProvider;
+          final xpResult = await xpProv?.addSessionXp(
             gymId: gymId,
             userId: userId,
             deviceId: resolvedDeviceId,
@@ -826,11 +911,13 @@ class DeviceProvider extends ChangeNotifier {
             exerciseId: _currentExerciseId,
             traceId: traceId,
           );
-          XpTrace.log('CALL_RESULT', {
-            'result': xpResult.name,
-            'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
-            'traceId': traceId,
-          });
+          if (xpResult != null) {
+            XpTrace.log('CALL_RESULT', {
+              'result': xpResult.name,
+              'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
+              'traceId': traceId,
+            });
+          }
           if (xpResult == DeviceXpResult.okAdded) {
             final info = LevelService()
                 .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
@@ -838,10 +925,8 @@ class DeviceProvider extends ChangeNotifier {
             _xp = info.xp;
             notifyListeners();
           }
-          await Provider.of<ChallengeProvider>(
-            context,
-            listen: false,
-          ).checkChallenges(gymId, userId, resolvedDeviceId);
+          final challengeProv = _challengeProvider;
+          await challengeProv?.checkChallenges(gymId, userId, resolvedDeviceId);
         } catch (e, st) {
           XpTrace.log('CALL_RESULT', {'result': 'error', 'traceId': traceId, 'error': e.toString()});
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
@@ -889,6 +974,9 @@ class DeviceProvider extends ChangeNotifier {
         await _draftRepo.delete(_draftKey!);
       }
       _draftCreatedAt = null;
+      _autoFinalizeTimer?.cancel();
+      _autoFinalizeTimer = null;
+      _lastActivityMs = null;
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -1051,6 +1139,7 @@ class DeviceProvider extends ChangeNotifier {
   @override
   void dispose() {
     _draftSaveTimer?.cancel();
+    _autoFinalizeTimer?.cancel();
     unawaited(_saveDraftNow());
     super.dispose();
   }

@@ -59,4 +59,22 @@ class SessionDraftRepositoryImpl implements SessionDraftRepository {
       await prefs.remove(k);
     }
   }
+
+  @override
+  Future<Map<String, SessionDraft>> getAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final result = <String, SessionDraft>{};
+    final keys = prefs.getKeys().where((k) => k.startsWith(_prefix)).toList();
+    for (final k in keys) {
+      final raw = prefs.getString(k);
+      if (raw == null) continue;
+      try {
+        final draft = SessionDraft.decode(raw);
+        result[k.substring(_prefix.length)] = draft;
+      } catch (_) {
+        await prefs.remove(k);
+      }
+    }
+    return result;
+  }
 }

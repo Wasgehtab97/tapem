@@ -60,6 +60,8 @@ class SetDraft {
 
 class SessionDraft {
   final String deviceId;
+  final String gymId;
+  final String userId;
   final String? exerciseId;
   final int createdAt;
   final int updatedAt;
@@ -67,23 +69,29 @@ class SessionDraft {
   final String? units;
   final String note;
   final List<SetDraft> sets;
+  final bool showInLeaderboard;
   final int? version;
 
   SessionDraft({
     required this.deviceId,
     this.exerciseId,
+    required this.gymId,
+    required this.userId,
     required this.createdAt,
     required this.updatedAt,
     this.ttlMs = kDeviceDraftTtlMs,
     this.units,
     this.note = '',
     this.sets = const [],
+    this.showInLeaderboard = true,
     this.version,
   });
 
   factory SessionDraft.fromJson(Map<String, dynamic> json) => SessionDraft(
         deviceId: json['deviceId'] as String,
         exerciseId: json['exerciseId'] as String?,
+        gymId: json['gymId'] as String? ?? '',
+        userId: json['userId'] as String? ?? '',
         createdAt: json['createdAt'] as int,
         updatedAt: json['updatedAt'] as int,
         ttlMs: json['ttlMs'] as int? ?? kDeviceDraftTtlMs,
@@ -92,18 +100,22 @@ class SessionDraft {
         sets: (json['sets'] as List<dynamic>? ?? [])
             .map((e) => SetDraft.fromJson(Map<String, dynamic>.from(e)))
             .toList(),
+        showInLeaderboard: json['showInLeaderboard'] as bool? ?? true,
         version: json['version'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
         'deviceId': deviceId,
         if (exerciseId != null) 'exerciseId': exerciseId,
+        'gymId': gymId,
+        'userId': userId,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
         'ttlMs': ttlMs,
         if (units != null) 'units': units,
         'note': note,
         'sets': sets.map((e) => e.toJson()).toList(),
+        if (!showInLeaderboard) 'showInLeaderboard': false,
         if (version != null) 'version': version,
       };
 

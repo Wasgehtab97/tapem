@@ -247,6 +247,12 @@ void main() {
       );
       addTearDown(durationService.dispose);
 
+      provider.attachExternalServices(
+        xpProvider: xpProvider,
+        challengeProvider: challengeProvider,
+        sessionDurationService: durationService,
+      );
+
       await tester.pumpWidget(
         MultiProvider(
           providers: [
@@ -261,9 +267,7 @@ void main() {
         ),
       );
 
-      final ctx = tester.element(find.byType(SizedBox));
       final ok = await provider.saveWorkoutSession(
-        context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
@@ -311,10 +315,22 @@ void main() {
         autoStopDelay: const Duration(hours: 1),
       );
       addTearDown(durationService.dispose);
+      final xpProvider = XpProvider();
+      final challengeProvider = ChallengeProvider();
+
+      provider.attachExternalServices(
+        xpProvider: xpProvider,
+        challengeProvider: challengeProvider,
+        sessionDurationService: durationService,
+      );
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
+            ChangeNotifierProvider<XpProvider>.value(value: xpProvider),
+            ChangeNotifierProvider<ChallengeProvider>.value(
+              value: challengeProvider,
+            ),
             ChangeNotifierProvider<DeviceProvider>.value(value: provider),
             ChangeNotifierProvider<WorkoutSessionDurationService>.value(
               value: durationService,
@@ -324,9 +340,7 @@ void main() {
         ),
       );
 
-      final ctx = tester.element(find.byType(SizedBox));
       final ok = await provider.saveWorkoutSession(
-        context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
@@ -455,6 +469,12 @@ void main() {
       );
       addTearDown(durationService.dispose);
 
+      provider.attachExternalServices(
+        xpProvider: xpProvider,
+        challengeProvider: challengeProvider,
+        sessionDurationService: durationService,
+      );
+
       await tester.pumpWidget(
         MultiProvider(
           providers: [
@@ -469,9 +489,7 @@ void main() {
         ),
       );
 
-      final ctx = tester.element(find.byType(SizedBox));
       var ok = await provider.saveWorkoutSession(
-        context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
@@ -481,7 +499,6 @@ void main() {
       provider.updateSet(0, weight: '70', reps: '6');
       provider.toggleSetDone(0);
       ok = await provider.saveWorkoutSession(
-        context: ctx,
         gymId: 'g1',
         userId: 'u1',
         showInLeaderboard: false,
