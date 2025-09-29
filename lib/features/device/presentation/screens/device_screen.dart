@@ -416,13 +416,31 @@ class _DeviceScreenState extends State<DeviceScreen> {
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
     } else {
+      final theme = Theme.of(context);
+      final accentColor = theme.colorScheme.secondary;
+      final titleBase = theme.textTheme.titleLarge ??
+          const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          );
+      final titleStyle = titleBase.copyWith(color: accentColor);
+
       scaffold = Scaffold(
         appBar: AppBar(
+          foregroundColor: accentColor,
+          iconTheme: IconThemeData(color: accentColor),
+          actionsIconTheme: IconThemeData(color: accentColor),
+          titleTextStyle: titleStyle,
+          toolbarTextStyle:
+              theme.textTheme.titleMedium?.copyWith(color: accentColor),
           title: Hero(
             tag: 'device-${prov.device!.uid}',
             child: Material(
               type: MaterialType.transparency,
-              child: Text(prov.device!.name),
+              child: Text(
+                prov.device!.name,
+                style: titleStyle,
+              ),
             ),
           ),
           centerTitle: true,
@@ -436,8 +454,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
               icon: Icon(
                 Icons.accessibility_new,
                 color: prov.isBodyweightMode
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
+                    ? theme.colorScheme.primary
+                    : accentColor,
               ),
               tooltip: loc.bodyweightToggleTooltip,
               onPressed: () {
