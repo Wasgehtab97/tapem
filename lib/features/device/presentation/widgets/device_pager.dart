@@ -113,17 +113,6 @@ class DevicePagerState extends State<DevicePager> {
     return Stack(
       children: [
         pageView,
-        if (prov.sessionSnapshots.isEmpty && !prov.isLoadingSnapshots)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Center(
-                child: Text(
-                  'Keine Historie',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          ),
         EdgeGestureOverlay(
           enabled: isEditor,
           onLeftEdgeSwipe: _goToPreviousSession,

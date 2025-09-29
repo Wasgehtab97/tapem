@@ -10,6 +10,8 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 
@@ -191,17 +193,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       if (prov.sets.isNotEmpty) const SizedBox(height: 12),
                       Center(
-                        child: TextButton.icon(
+                        child: BrandPrimaryButton(
                           onPressed: _addSet,
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(loc.addSetButton),
+                            ],
                           ),
-                          icon: const Icon(Icons.add),
-                          label: Text(loc.addSetButton),
                         ),
                       ),
                     ],
@@ -246,7 +247,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: BrandPrimaryButton(
                   onPressed: () {
                     _closeKeyboard();
                     Navigator.pop(context);
@@ -256,7 +257,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: OutlinedButton(
+                child: BrandPrimaryButton(
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
                       : () async {
@@ -367,10 +368,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           });
                         },
                   child: prov.isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              onBrandColor,
+                            ),
+                          ),
                         )
                       : Text(loc.saveButton),
                 ),
@@ -419,6 +425,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
     } else {
       final theme = Theme.of(context);
       final accentColor = theme.colorScheme.secondary;
+      final onBrandColor =
+          theme.extension<BrandOnColors>()?.onCta ?? Colors.black;
       final titleBase = theme.textTheme.titleLarge ??
           const TextStyle(
             fontSize: 20,
@@ -438,13 +446,23 @@ class _DeviceScreenState extends State<DeviceScreen> {
             tag: 'device-${prov.device!.uid}',
             child: Material(
               type: MaterialType.transparency,
-              child: BrandGradientText(
-                prov.device!.name,
-                style: titleStyle,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return ConstrainedBox(
+                    constraints:
+                        BoxConstraints(maxWidth: constraints.maxWidth),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: BrandGradientText(
+                        prov.device!.name,
+                        style: titleStyle,
+                        textAlign: TextAlign.center,
+                        softWrap: false,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
