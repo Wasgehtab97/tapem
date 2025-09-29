@@ -126,6 +126,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     AppLocalizations loc,
     String locale,
     ExerciseEntry? plannedEntry,
+    Color onBrandColor,
   ) {
     return Column(
       children: [
@@ -533,7 +534,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
           userId: auth.userId!,
           provider: prov,
           editablePage:
-              _buildEditablePage(prov, loc, locale, plannedEntry),
+              _buildEditablePage(
+                prov,
+                loc,
+                locale,
+                plannedEntry,
+                onBrandColor,
+              ),
         ),
       );
     }
