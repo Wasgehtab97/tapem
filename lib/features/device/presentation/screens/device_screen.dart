@@ -10,7 +10,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
-import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -241,7 +241,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           child: Row(
             children: [
               Expanded(
-                child: BrandPrimaryButton(
+                child: BrandOutlineButton(
                   onPressed: () {
                     _closeKeyboard();
                     Navigator.pop(context);
@@ -251,7 +251,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: BrandPrimaryButton(
+                child: BrandOutlineButton(
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
                       : () async {
