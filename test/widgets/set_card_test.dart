@@ -121,4 +121,55 @@ void main() {
     );
     // Card keeps gradient background, no explicit color check here.
   });
+
+  testWidgets('SetCard shows previous session placeholders', (tester) async {
+    final provider = DeviceProvider(
+      firestore: FakeFirebaseFirestore(),
+      getDevicesForGym: GetDevicesForGym(_FakeRepo()),
+      log: (_, [__]) {},
+      membership: FakeMembershipService(),
+    );
+    provider.addSet();
+
+    final keypadController = OverlayNumericKeypadController();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DeviceProvider>.value(value: provider),
+          Provider<OverlayNumericKeypadController>.value(
+            value: keypadController,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => OverlayNumericKeypadHost(
+            controller: keypadController,
+            outsideTapMode: OutsideTapMode.closeAfterTap,
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Form(
+              child: SetCard(
+                index: 0,
+                set: provider.sets[0],
+                previous: const {
+                  'weight': '50',
+                  'reps': '8',
+                  'isBodyweight': false,
+                },
+                displayMode: SetCardDisplayMode.standalone,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('8'), findsOneWidget);
+  });
 }
