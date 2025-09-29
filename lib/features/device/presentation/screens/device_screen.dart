@@ -194,16 +194,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       if (prov.sets.isNotEmpty) const SizedBox(height: 12),
                       Center(
-                        child: BrandPrimaryButton(
+                        child: _AddSetButton(
+                          label: loc.addSetButton,
                           onPressed: _addSet,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.add),
-                              const SizedBox(width: AppSpacing.xs),
-                              Text(loc.addSetButton),
-                            ],
-                          ),
                         ),
                       ),
                     ],
@@ -555,6 +548,66 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 }
 
+class _AddSetButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String label;
+
+  const _AddSetButton({
+    required this.onPressed,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(
+          fontSize: AppFontSizes.title,
+          fontWeight: FontWeight.w600,
+        );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.xs,
+            horizontal: AppSpacing.sm,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) {
+                  final rect = bounds.isEmpty
+                      ? const Rect.fromLTWH(0, 0, 1, 1)
+                      : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
+                  return AppGradients.brandGradient.createShader(rect);
+                },
+                blendMode: BlendMode.srcIn,
+                child: const Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              BrandGradientText(
+                label,
+                style: textStyle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupedSetList extends StatelessWidget {
   final List<Map<String, dynamic>> sets;
   final List<GlobalKey<SetCardState>> setKeys;
@@ -801,10 +854,11 @@ class _PlannedTableState extends State<_PlannedTable> {
                   ],
                 ),
               ),
-            TextButton.icon(
-              onPressed: () => prov.addSet(),
-              icon: const Icon(Icons.add),
-              label: const Text('Set hinzufügen'),
+            Center(
+              child: _AddSetButton(
+                label: loc.addSetButton,
+                onPressed: () => prov.addSet(),
+              ),
             ),
             if (widget.entry.notes != null &&
                 widget.entry.notes!.isNotEmpty) ...[
