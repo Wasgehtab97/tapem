@@ -268,6 +268,7 @@ class DeviceProvider extends ChangeNotifier {
     required String deviceId,
     required String exerciseId,
     required String userId,
+    bool loadLastSession = FF.isLastSessionVisible,
   }) async {
     _setLoading(true);
     _error = null;
@@ -341,8 +342,7 @@ class DeviceProvider extends ChangeNotifier {
 
       await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
 
-      if (FF.showLastSessionOnDevicePage ||
-          FF.runtimeShowLastSessionOnDevicePage) {
+      if (loadLastSession) {
         await _loadLastSession(gymId, deviceId, exerciseId, userId);
       }
       await _loadUserNote(gymId, deviceId, userId);

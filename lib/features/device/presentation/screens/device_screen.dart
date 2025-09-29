@@ -66,11 +66,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       _dlog('loadDevice() → start');
+      final settings = context.read<SettingsProvider>();
+      final shouldLoadLastSession =
+          settings.showLastSessionInSetCard || FF.isLastSessionVisible;
       await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
         userId: auth.userId!,
+        loadLastSession: shouldLoadLastSession,
       );
       final planProv = context.read<TrainingPlanProvider>();
       if (planProv.plans.isEmpty && !planProv.isLoading) {
