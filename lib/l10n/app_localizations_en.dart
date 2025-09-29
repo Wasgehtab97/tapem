@@ -440,35 +440,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
 
   @override
-  String get settingsSetCardHistory => 'Last session on set cards';
-
-  @override
-  String get settingsSetCardHistoryShow => 'Show';
-
-  @override
-  String get settingsSetCardHistoryHide => 'Hide';
-
-  @override
-  String get settingsSetCardHistoryShown => 'Shown';
-
-  @override
-  String get settingsSetCardHistoryHidden => 'Hidden';
-
-  @override
-  String get settingsSetCardHistoryDescription =>
-      'Display the previous weight and reps directly in the set card.';
-
-  @override
-  String get settingsSetCardHistorySavedShown =>
-      'Last session info will be shown.';
-
-  @override
-  String get settingsSetCardHistorySavedHidden => 'Last session info hidden.';
-
-  @override
-  String get setCardPreviousLabel => 'Last time';
-
-  @override
   String get publicProfileDialogTitle => 'Profile visibility';
 
   @override

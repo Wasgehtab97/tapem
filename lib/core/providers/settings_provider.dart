@@ -8,7 +8,6 @@ class SettingsProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
 
   bool? _creatineEnabled;
-  bool? _showLastSessionInSetCard;
   bool _isLoading = false;
   String? _error;
   String? _uid;
@@ -16,7 +15,6 @@ class SettingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get creatineEnabled => _creatineEnabled ?? false;
-  bool get showLastSessionInSetCard => _showLastSessionInSetCard ?? true;
 
   DocumentReference<Map<String, dynamic>> _doc(String uid) {
     return _firestore
@@ -27,9 +25,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> load(String uid) async {
-    if (_uid == uid &&
-        _creatineEnabled != null &&
-        _showLastSessionInSetCard != null) {
+    if (_uid == uid && _creatineEnabled != null) {
       return;
     }
     _uid = uid;
@@ -46,13 +42,6 @@ class SettingsProvider extends ChangeNotifier {
       } else {
         _creatineEnabled = false;
         updates['creatineEnabled'] = false;
-      }
-      if (data != null && data['showLastSessionInSetCard'] != null) {
-        _showLastSessionInSetCard =
-            data['showLastSessionInSetCard'] as bool;
-      } else {
-        _showLastSessionInSetCard = true;
-        updates['showLastSessionInSetCard'] = true;
       }
       if (updates.isNotEmpty) {
         await ref.set(updates, SetOptions(merge: true));
@@ -81,20 +70,4 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> setShowLastSessionInSetCard(bool value) async {
-    final uid = _uid;
-    if (uid == null) return;
-    final old = _showLastSessionInSetCard;
-    _showLastSessionInSetCard = value;
-    notifyListeners();
-    try {
-      await _doc(uid)
-          .set({'showLastSessionInSetCard': value}, SetOptions(merge: true));
-    } catch (e) {
-      _showLastSessionInSetCard = old;
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
-  }
 }
