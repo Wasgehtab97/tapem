@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -423,7 +424,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
             fontSize: 20,
             fontWeight: FontWeight.w600,
           );
-      final titleStyle = titleBase.copyWith(color: accentColor);
+      final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
 
       scaffold = Scaffold(
         appBar: AppBar(
@@ -437,9 +438,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
             tag: 'device-${prov.device!.uid}',
             child: Material(
               type: MaterialType.transparency,
-              child: Text(
+              child: BrandGradientText(
                 prov.device!.name,
                 style: titleStyle,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
           ),
