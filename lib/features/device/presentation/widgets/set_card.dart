@@ -340,6 +340,47 @@ class SetCardState extends State<SetCard> {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
     final previousSummary = _buildPreviousSummary(loc);
+    final prev = widget.previous;
+
+    String sanitizePlaceholder(dynamic value) {
+      final raw = (value ?? '').toString().trim();
+      if (raw.isEmpty) return '';
+      if (raw.toLowerCase() == 'null') return '';
+      return raw;
+    }
+
+    String? weightPlaceholder;
+    String? repsPlaceholder;
+    String? dropWeightPlaceholder;
+    String? dropRepsPlaceholder;
+
+    if (prev != null) {
+      final prevIsBodyweight = prev['isBodyweight'] == true ||
+          (prev['isBodyweight'] is String &&
+              prev['isBodyweight'].toString().toLowerCase() == 'true');
+
+      final rawWeight = sanitizePlaceholder(prev['weight']);
+      if (prevIsBodyweight && rawWeight.isEmpty) {
+        weightPlaceholder = loc.bodyweight;
+      } else if (rawWeight.isNotEmpty) {
+        weightPlaceholder = rawWeight;
+      }
+
+      final rawReps = sanitizePlaceholder(prev['reps']);
+      if (rawReps.isNotEmpty) {
+        repsPlaceholder = rawReps;
+      }
+
+      final rawDropWeight = sanitizePlaceholder(prev['dropWeight']);
+      if (rawDropWeight.isNotEmpty) {
+        dropWeightPlaceholder = rawDropWeight;
+      }
+
+      final rawDropReps = sanitizePlaceholder(prev['dropReps']);
+      if (rawDropReps.isNotEmpty) {
+        dropRepsPlaceholder = rawDropReps;
+      }
+    }
     var tokens = SetCardTheme.of(context);
     final dense = widget.size == SetCardSize.dense;
     if (dense) {
@@ -581,8 +622,8 @@ class SetRowContent extends StatelessWidget {
                       ? null
                       : '${loc.setCardPreviousLabel}: $previousSummary',
                   showLabel: false,
-                  placeholder:
-                      isBodyweightMode ? loc.bodyweight : 'kg',
+                  placeholder: weightPlaceholder ??
+                      (isBodyweightMode ? loc.bodyweight : 'kg'),
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -601,7 +642,7 @@ class SetRowContent extends StatelessWidget {
                     return null;
                   },
                   showLabel: false,
-                  placeholder: 'wdh',
+                  placeholder: repsPlaceholder ?? 'wdh',
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -644,7 +685,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropWeight,
                     validator: dropValidator,
-                    placeholder: 'kg',
+                    placeholder: dropWeightPlaceholder ?? 'kg',
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
@@ -658,7 +699,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropReps,
                     validator: dropValidator,
-                    placeholder: 'wdh',
+                    placeholder: dropRepsPlaceholder ?? 'wdh',
                   ),
                 ),
               ],
