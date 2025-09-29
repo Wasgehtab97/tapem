@@ -121,4 +121,5 @@ void main() {
     );
     // Card keeps gradient background, no explicit color check here.
   });
+
 }

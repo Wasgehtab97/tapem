@@ -17,7 +17,6 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
-import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 import '../widgets/note_button_widget.dart';
@@ -154,8 +153,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 final lastSets = lastSnap != null ? mapSnapshotToVM(lastSnap) : mapLegacySetsToVM(prov.lastSessionSets);
                 final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
                 final lastNote = lastSnap?.note ?? prov.lastSessionNote;
-                final showLastSessionInline =
-                    context.watch<SettingsProvider>().showLastSessionInSetCard;
                 return ListView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -175,7 +172,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       if (prov.sets.isNotEmpty)
                         _GroupedSetList(
                           sets: prov.sets,
-                          previousSessionSets: prov.lastSessionSets,
                           setKeys: _setKeys,
                           onRemove: (index, removed) {
                             context.read<DeviceProvider>().removeSet(index);
@@ -191,7 +187,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               ),
                             );
                           },
-                          showPreviousSessionSummary: showLastSessionInline,
                         ),
                       if (prov.sets.isNotEmpty) const SizedBox(height: 12),
                       Center(
@@ -514,17 +509,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
 class _GroupedSetList extends StatelessWidget {
   final List<Map<String, dynamic>> sets;
-  final List<Map<String, dynamic>> previousSessionSets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
-  final bool showPreviousSessionSummary;
 
   const _GroupedSetList({
     required this.sets,
-    required this.previousSessionSets,
     required this.setKeys,
     required this.onRemove,
-    required this.showPreviousSessionSummary,
   });
 
   @override
@@ -567,13 +558,8 @@ class _GroupedSetList extends StatelessWidget {
                 key: setKeys[index],
                 index: index,
                 set: sets[index],
-                previous: showPreviousSessionSummary &&
-                        index < previousSessionSets.length
-                    ? previousSessionSets[index]
-                    : null,
                 size: SetCardSize.dense,
                 displayMode: SetCardDisplayMode.grouped,
-                showPreviousSummary: showPreviousSessionSummary,
                 groupedRadius: BorderRadius.only(
                   topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
                   topRight: index == 0 ? innerRadius.topRight : Radius.zero,

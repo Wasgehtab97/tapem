@@ -106,22 +106,18 @@ enum SetCardDisplayMode { standalone, grouped }
 class SetCard extends StatefulWidget {
   final int index;
   final Map<String, dynamic> set;
-  final Map<String, dynamic>? previous;
   final SetCardSize size;
   final bool readOnly;
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
-  final bool showPreviousSummary;
   const SetCard({
     super.key,
     required this.index,
     required this.set,
-    this.previous,
     this.size = SetCardSize.regular,
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
-    this.showPreviousSummary = true,
   });
 
   @override
@@ -279,47 +275,6 @@ class SetCardState extends State<SetCard> {
     _openKeypad(_weightCtrl, allowDecimal: true);
   }
 
-  String? _buildPreviousSummary(AppLocalizations loc) {
-    if (!widget.showPreviousSummary) return null;
-    final prev = widget.previous;
-    if (prev == null) return null;
-    final rawWeight = (prev['weight'] ?? '').toString().trim();
-    final rawReps = (prev['reps'] ?? '').toString().trim();
-    final prevWeightRaw = rawWeight.toLowerCase() == 'null' ? '' : rawWeight;
-    final prevRepsRaw = rawReps.toLowerCase() == 'null' ? '' : rawReps;
-    final prevIsBodyweight = prev['isBodyweight'] == true ||
-        prev['isBodyweight'] == 'true';
-
-    String? weightPart;
-    if (prevIsBodyweight) {
-      final sanitized = prevWeightRaw.replaceAll(',', '.');
-      final parsed = double.tryParse(sanitized);
-      if (parsed == null || parsed == 0) {
-        weightPart = loc.bodyweight;
-      } else {
-        weightPart = loc.bodyweightPlus(prevWeightRaw);
-      }
-    } else if (prevWeightRaw.isNotEmpty) {
-      weightPart = '$prevWeightRaw kg';
-    }
-
-    final repsPart = prevRepsRaw.isEmpty ? null : prevRepsRaw;
-
-    if (weightPart != null && repsPart != null) {
-      return '$weightPart × $repsPart';
-    }
-
-    if (weightPart != null) {
-      return weightPart;
-    }
-
-    if (repsPart != null) {
-      return '× $repsPart';
-    }
-
-    return null;
-  }
-
   String? _validateDrop(String? _) {
     final loc = AppLocalizations.of(context)!;
     final dw = _dropWeightCtrl.text.trim();
@@ -339,7 +294,6 @@ class SetCardState extends State<SetCard> {
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
     final loc = AppLocalizations.of(context)!;
-    final previousSummary = _buildPreviousSummary(loc);
     var tokens = SetCardTheme.of(context);
     final dense = widget.size == SetCardSize.dense;
     if (dense) {
@@ -417,6 +371,12 @@ class SetCardState extends State<SetCard> {
         ? (widget.groupedRadius as BorderRadius?)
         : null;
 
+    final weightPlaceholder =
+        prov.isBodyweightMode ? loc.bodyweight : 'kg';
+    const repsPlaceholder = 'wdh';
+    const dropWeightPlaceholder = 'kg';
+    const dropRepsPlaceholder = 'wdh';
+
     Widget content = SetRowContent(
       tokens: tokens,
       dense: dense,
@@ -450,7 +410,10 @@ class SetCardState extends State<SetCard> {
           : () => _openKeypad(_dropRepsCtrl, allowDecimal: false),
       dropValidator: _validateDrop,
       padding: contentPadding,
-      previousSummary: previousSummary,
+      weightPlaceholder: weightPlaceholder,
+      repsPlaceholder: repsPlaceholder,
+      dropWeightPlaceholder: dropWeightPlaceholder,
+      dropRepsPlaceholder: dropRepsPlaceholder,
     );
 
     final backgroundRadius = rowRadius ??
@@ -506,7 +469,10 @@ class SetRowContent extends StatelessWidget {
   final VoidCallback? onTapDropReps;
   final FormFieldValidator<String>? dropValidator;
   final EdgeInsetsGeometry padding;
-  final String? previousSummary;
+  final String weightPlaceholder;
+  final String repsPlaceholder;
+  final String dropWeightPlaceholder;
+  final String dropRepsPlaceholder;
 
   const SetRowContent({
     super.key,
@@ -536,7 +502,10 @@ class SetRowContent extends StatelessWidget {
     required this.onTapDropReps,
     required this.dropValidator,
     this.padding = EdgeInsets.zero,
-    this.previousSummary,
+    required this.weightPlaceholder,
+    required this.repsPlaceholder,
+    required this.dropWeightPlaceholder,
+    required this.dropRepsPlaceholder,
   });
 
   @override
@@ -577,12 +546,8 @@ class SetRowContent extends StatelessWidget {
                     }
                     return null;
                   },
-                  supportingText: previousSummary == null
-                      ? null
-                      : '${loc.setCardPreviousLabel}: $previousSummary',
                   showLabel: false,
-                  placeholder:
-                      isBodyweightMode ? loc.bodyweight : 'kg',
+                  placeholder: weightPlaceholder,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -601,7 +566,7 @@ class SetRowContent extends StatelessWidget {
                     return null;
                   },
                   showLabel: false,
-                  placeholder: 'wdh',
+                  placeholder: repsPlaceholder,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -644,7 +609,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropWeight,
                     validator: dropValidator,
-                    placeholder: 'kg',
+                    placeholder: dropWeightPlaceholder,
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
@@ -658,7 +623,7 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropReps,
                     validator: dropValidator,
-                    placeholder: 'wdh',
+                    placeholder: dropRepsPlaceholder,
                   ),
                 ),
               ],
