@@ -32,34 +32,40 @@ class BrandPrimaryButton extends StatelessWidget {
         Theme.of(context).extension<BrandOnColors>()?.onCta ?? Colors.black;
     final textStyle = surface?.textStyle;
     final height = surface?.height ?? 48;
-    final padding = surface?.padding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+    final padding = surface?.padding ??
+        const EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+    final isEnabled = onPressed != null;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: borderRadius,
-        boxShadow: shadow,
-      ),
-      child: Semantics(
-        button: true,
-        label: semanticsLabel,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            borderRadius: borderRadius,
-            splashColor: overlay,
-            highlightColor: overlay,
-            onTap: onPressed,
-            child: Container(
-              height: height,
-              padding: padding,
-              alignment: Alignment.center,
-              child: DefaultTextStyle.merge(
-                style: (textStyle ?? const TextStyle(fontWeight: FontWeight.bold))
-                    .copyWith(color: onBrand),
-                child: IconTheme(
-                  data: IconThemeData(color: onBrand),
-                  child: child,
+    return Opacity(
+      opacity: isEnabled ? 1 : 0.5,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: borderRadius,
+          boxShadow: shadow,
+        ),
+        child: Semantics(
+          button: true,
+          enabled: isEnabled,
+          label: semanticsLabel,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: borderRadius,
+              splashColor: isEnabled ? overlay : Colors.transparent,
+              highlightColor: isEnabled ? overlay : Colors.transparent,
+              onTap: isEnabled ? onPressed : null,
+              child: Container(
+                height: height,
+                padding: padding,
+                alignment: Alignment.center,
+                child: DefaultTextStyle.merge(
+                  style: (textStyle ?? const TextStyle(fontWeight: FontWeight.bold))
+                      .copyWith(color: onBrand),
+                  child: IconTheme(
+                    data: IconThemeData(color: onBrand),
+                    child: child,
+                  ),
                 ),
               ),
             ),
