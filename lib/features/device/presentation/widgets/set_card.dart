@@ -492,6 +492,10 @@ class SetCardState extends State<SetCard> {
       dropValidator: _validateDrop,
       padding: contentPadding,
       previousSummary: previousSummary,
+      weightPlaceholder: weightPlaceholder,
+      repsPlaceholder: repsPlaceholder,
+      dropWeightPlaceholder: dropWeightPlaceholder,
+      dropRepsPlaceholder: dropRepsPlaceholder,
     );
 
     final backgroundRadius = rowRadius ??
@@ -548,6 +552,10 @@ class SetRowContent extends StatelessWidget {
   final FormFieldValidator<String>? dropValidator;
   final EdgeInsetsGeometry padding;
   final String? previousSummary;
+  final String? weightPlaceholder;
+  final String? repsPlaceholder;
+  final String? dropWeightPlaceholder;
+  final String? dropRepsPlaceholder;
 
   const SetRowContent({
     super.key,
@@ -578,6 +586,10 @@ class SetRowContent extends StatelessWidget {
     required this.dropValidator,
     this.padding = EdgeInsets.zero,
     this.previousSummary,
+    this.weightPlaceholder,
+    this.repsPlaceholder,
+    this.dropWeightPlaceholder,
+    this.dropRepsPlaceholder,
   });
 
   @override
