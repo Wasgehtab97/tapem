@@ -10,8 +10,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
-import 'package:tapem/core/widgets/brand_primary_button.dart';
-import 'package:tapem/core/theme/brand_on_colors.dart';
+import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 
@@ -126,8 +125,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
     AppLocalizations loc,
     String locale,
     ExerciseEntry? plannedEntry,
-    Color onBrandColor,
   ) {
+    final theme = Theme.of(context);
+    final outlineColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     return Column(
       children: [
         const Padding(
@@ -241,7 +242,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           child: Row(
             children: [
               Expanded(
-                child: BrandPrimaryButton(
+                child: BrandOutlineButton(
                   onPressed: () {
                     _closeKeyboard();
                     Navigator.pop(context);
@@ -251,7 +252,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: BrandPrimaryButton(
+                child: BrandOutlineButton(
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
                       : () async {
@@ -367,9 +368,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              onBrandColor,
-                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
                           ),
                         )
                       : Text(loc.saveButton),
@@ -419,8 +418,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
     } else {
       final theme = Theme.of(context);
       final accentColor = theme.colorScheme.secondary;
-      final onBrandColor =
-          theme.extension<BrandOnColors>()?.onCta ?? Colors.black;
       final titleBase = theme.textTheme.titleLarge ??
           const TextStyle(
             fontSize: 20,
@@ -532,7 +529,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 loc,
                 locale,
                 plannedEntry,
-                onBrandColor,
               ),
         ),
       );
