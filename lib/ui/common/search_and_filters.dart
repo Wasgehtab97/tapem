@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -146,7 +148,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
           onChanged: widget.onQuery,
           decoration: InputDecoration(
             hintText: loc.multiDeviceSearchHint,
-            prefixIcon: const Icon(Icons.search),
+            prefixIcon: const BrandGradientIcon(Icons.search),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -159,7 +161,10 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
         Row(
           children: [
             FilterChip(
-              label: const Text('Name'),
+              label: BrandGradientText(
+                'Name',
+                style: theme.textTheme.labelLarge,
+              ),
               selected: widget.sort == SortOrder.za,
               onSelected: (_) => _showSortSheet(),
               shape: const StadiumBorder(),
@@ -168,7 +173,10 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             ),
             const SizedBox(width: 8),
             FilterChip(
-              label: const Text('Muskel'),
+              label: BrandGradientText(
+                'Muskel',
+                style: theme.textTheme.labelLarge,
+              ),
               selected: widget.muscleFilterIds.isNotEmpty,
               onSelected: (_) => _showMuscleSheet(),
               shape: const StadiumBorder(),
@@ -177,7 +185,10 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             ),
             const SizedBox(width: 8),
             FilterChip(
-              label: const Text('Zuletzt'),
+              label: BrandGradientText(
+                'Zuletzt',
+                style: theme.textTheme.labelLarge,
+              ),
               selected: widget.sort == SortOrder.recent,
               onSelected: (v) =>
                   widget.onSort(v ? SortOrder.recent : SortOrder.az),

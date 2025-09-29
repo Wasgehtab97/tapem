@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'brand_gradient_card.dart';
+import 'brand_gradient_icon.dart';
+import 'brand_gradient_text.dart';
 import 'brand_outline.dart';
 import '../theme/brand_on_colors.dart';
 import '../theme/design_tokens.dart';
@@ -61,33 +63,58 @@ class BrandActionTile extends StatelessWidget {
     if (uiLogEvent != null) {
       elogUi(uiLogEvent!, {'title': title});
     }
+    final theme = Theme.of(context);
     final onGradient =
-        Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
-    final titleStyle =
-        variant == BrandActionTileVariant.gradient ? TextStyle(color: onGradient) : null;
-    final subtitleStyle =
-        variant == BrandActionTileVariant.gradient ? TextStyle(color: onGradient) : null;
+        theme.extension<BrandOnColors>()?.onGradient ?? Colors.black;
+    final defaultTitleStyle = theme.textTheme.titleMedium;
+    final defaultSubtitleStyle = theme.textTheme.bodyMedium;
+
+    final Widget titleWidget = variant == BrandActionTileVariant.gradient
+        ? Text(
+            title,
+            textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+            style: TextStyle(color: onGradient),
+          )
+        : BrandGradientText(
+            title,
+            textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+            style: defaultTitleStyle,
+          );
+
+    final Widget? subtitleWidget = subtitle != null
+        ? (variant == BrandActionTileVariant.gradient
+            ? Text(
+                subtitle!,
+                style: TextStyle(color: onGradient),
+              )
+            : BrandGradientText(
+                subtitle!,
+                style: defaultSubtitleStyle,
+              ))
+        : null;
+
+    final Widget? leadingWidget = leading ??
+        (leadingIcon != null
+            ? (variant == BrandActionTileVariant.gradient
+                ? Icon(leadingIcon, color: onGradient)
+                : BrandGradientIcon(leadingIcon!))
+            : null);
+
+    final Widget? trailingWidget = showChevron
+        ? (trailing ??
+            (variant == BrandActionTileVariant.gradient
+                ? Icon(Icons.chevron_right, color: onGradient)
+                : const BrandGradientIcon(Icons.chevron_right)))
+        : trailing;
 
     final tile = ListTile(
       contentPadding: EdgeInsets.zero,
       dense: dense,
       minVerticalPadding: minVerticalPadding,
-      leading: leading ??
-          (leadingIcon != null ? Icon(leadingIcon, color: onGradient) : null),
-      title: Text(
-        title,
-        textAlign: centerTitle ? TextAlign.center : TextAlign.start,
-        style: titleStyle,
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: subtitleStyle,
-            )
-          : null,
-      trailing: showChevron
-          ? (trailing ?? Icon(Icons.chevron_right, color: onGradient))
-          : null,
+      leading: leadingWidget,
+      title: titleWidget,
+      subtitle: subtitleWidget,
+      trailing: trailingWidget,
     );
 
     final Widget card = variant == BrandActionTileVariant.gradient

@@ -12,6 +12,8 @@ import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
@@ -288,6 +290,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = auth.userId ?? '';
     const avatarSize = 44.0;
 
+    final theme = Theme.of(context);
+    final profileTitle = auth.userName ?? auth.userEmail ?? loc.profileTitle;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -328,6 +333,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+        title: BrandGradientText(
+          profileTitle,
+          style: theme.textTheme.titleLarge,
+        ),
         actions: [
           if (enableFriends)
             Consumer<FriendsProvider>(
@@ -336,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return IconButton(
                   icon: Stack(
                     children: [
-                      const Icon(Icons.group),
+                      const BrandGradientIcon(Icons.group),
                       if (showBadge)
                         const Positioned(
                           right: 0,
@@ -355,19 +364,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           if (context.watch<SettingsProvider>().creatineEnabled)
             IconButton(
-              icon: const Icon(Icons.medication),
+              icon: const BrandGradientIcon(Icons.medication),
               tooltip: loc.creatineTitle,
               onPressed: () {
                 Navigator.pushNamed(context, AppRouter.creatine);
               },
             ),
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const BrandGradientIcon(Icons.settings),
             tooltip: loc.settingsIconTooltip,
             onPressed: _showSettingsDialog,
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const BrandGradientIcon(Icons.logout),
             tooltip: loc.logoutTooltip,
             onPressed: () {
               context.read<AuthProvider>().logout();
@@ -386,12 +395,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      BrandGradientText(
                         'Trainingstage',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.sm),

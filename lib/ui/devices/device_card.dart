@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
@@ -37,7 +39,7 @@ class DeviceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  BrandGradientText(
                     device.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -46,7 +48,7 @@ class DeviceCard extends StatelessWidget {
                   if (brand.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
+                      child: BrandGradientText(
                         brand,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -67,10 +69,14 @@ class DeviceCard extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('ID: $idText', style: theme.textTheme.labelSmall),
+                      BrandGradientText(
+                        'ID: $idText',
+                        style: theme.textTheme.labelSmall,
+                      ),
                       if (onAssignMuscles != null || onResetMuscles != null)
                         PopupMenuButton<_Menu>(
                           tooltip: loc.assignMuscleGroups,
+                          icon: const BrandGradientIcon(Icons.more_vert),
                           onSelected: (v) {
                             switch (v) {
                               case _Menu.assign:

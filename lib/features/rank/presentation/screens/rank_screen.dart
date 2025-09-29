@@ -5,6 +5,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/logging/elog.dart';
 
@@ -40,12 +41,30 @@ class _RankScreenState extends State<RankScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Leaderboard'),
+        title: BrandGradientText(
+          'Leaderboard',
+          style: theme.textTheme.titleLarge,
+        ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'Rank'), Tab(text: 'Challenges')],
+          tabs: [
+            Tab(
+              child: BrandGradientText(
+                'Rank',
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            Tab(
+              child: BrandGradientText(
+                'Challenges',
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+          ],
         ),
       ),
       body: Consumer<RankProvider>(
