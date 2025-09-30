@@ -413,6 +413,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsOptionLanguage => 'Sprache';
 
   @override
+  String get settingsOptionTheme => 'App-Theme';
+
+  @override
+  String get settingsThemeDialogTitle => 'App-Theme auswählen';
+
+  @override
+  String get settingsThemeDefault => 'Studio-Standard';
+
+  @override
+  String get settingsThemeMintTurquoise => 'Mint & Türkis';
+
+  @override
+  String get settingsThemeMagentaViolet => 'Magenta & Violett';
+
+  @override
+  String get settingsThemeSaveError => 'Theme konnte nicht gespeichert werden.';
+
+  @override
   String get settingsOptionPublicProfile => 'Öffentliches Profil';
 
   @override

@@ -863,6 +863,42 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get settingsOptionLanguage;
 
+  /// Settings option to change the app theme
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsOptionTheme;
+
+  /// Title for the theme selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose app theme'**
+  String get settingsThemeDialogTitle;
+
+  /// Label for using the gym default theme
+  ///
+  /// In en, this message translates to:
+  /// **'Gym default'**
+  String get settingsThemeDefault;
+
+  /// Name of the mint & turquoise theme
+  ///
+  /// In en, this message translates to:
+  /// **'Mint & Turquoise'**
+  String get settingsThemeMintTurquoise;
+
+  /// Name of the magenta & violet theme
+  ///
+  /// In en, this message translates to:
+  /// **'Magenta & Violet'**
+  String get settingsThemeMagentaViolet;
+
+  /// Error shown when saving the theme failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save theme.'**
+  String get settingsThemeSaveError;
+
   /// Settings option to toggle profile visibility
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
+import 'package:tapem/core/theme/brand_theme_preset.dart';
 
 void main() {
   group('ThemeLoader', () {
@@ -63,6 +64,28 @@ void main() {
       expect(on.onSecondary, Colors.black);
       expect(on.onGradient, Colors.black);
       expect(on.onCta, Colors.black);
+    });
+
+    test('override applies mint theme regardless of gym defaults', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding(
+        'lifthouse_koblenz',
+        null,
+        overridePreset: BrandThemeId.mintTurquoise,
+      );
+      expect(loader.theme.colorScheme.primary, AppColors.accentMint);
+      expect(loader.theme.colorScheme.secondary, AppColors.accentTurquoise);
+    });
+
+    test('override applies magenta theme for non lifthouse gyms', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding(
+        'other',
+        null,
+        overridePreset: BrandThemeId.magentaViolet,
+      );
+      expect(loader.theme.colorScheme.primary, MagentaColors.primary600);
+      expect(loader.theme.colorScheme.secondary, MagentaColors.secondary);
     });
 
     test('lifthouse_koblenz surfaces are normalised to reference luminance', () {

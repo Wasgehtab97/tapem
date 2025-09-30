@@ -30,6 +30,7 @@ import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/core/providers/app_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/history_provider.dart';
@@ -365,11 +366,24 @@ Future<void> main() async {
             return p;
           },
         ),
-        ChangeNotifierProxyProvider<BrandingProvider, ThemeLoader>(
+        ChangeNotifierProxyProvider<AuthProvider, ThemePreferenceProvider>(
+          create: (_) => ThemePreferenceProvider(),
+          update: (_, auth, provider) {
+            final pref = provider ?? ThemePreferenceProvider();
+            pref.setUser(auth.userId);
+            return pref;
+          },
+        ),
+        ChangeNotifierProxyProvider2<
+            BrandingProvider, ThemePreferenceProvider, ThemeLoader>(
           create: (_) => ThemeLoader()..loadDefault(),
-          update: (_, branding, loader) {
+          update: (_, branding, themePref, loader) {
             final l = loader ?? (ThemeLoader()..loadDefault());
-            l.applyBranding(branding.gymId, branding.branding);
+            l.applyBranding(
+              branding.gymId,
+              branding.branding,
+              overridePreset: themePref.override,
+            );
             return l;
           },
         ),

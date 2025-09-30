@@ -8,9 +8,11 @@ import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
@@ -218,8 +220,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _themeOptionLabel(AppLocalizations loc, BrandThemeId id) {
+    switch (id) {
+      case BrandThemeId.mintTurquoise:
+        return loc.settingsThemeMintTurquoise;
+      case BrandThemeId.magentaViolet:
+        return loc.settingsThemeMagentaViolet;
+    }
+  }
+
+  String _currentThemeLabel(
+    AppLocalizations loc,
+    ThemePreferenceProvider themePref,
+    String? gymId,
+  ) {
+    final override = themePref.override;
+    if (override == null) {
+      return loc.settingsThemeDefault;
+    }
+    return _themeOptionLabel(loc, override);
+  }
+
+  void _showThemeDialog() {
+    final loc = AppLocalizations.of(context)!;
+    final auth = context.read<AuthProvider>();
+    final themePref = context.read<ThemePreferenceProvider>();
+    final gymId = auth.gymCode;
+    final manualDefault = themePref.manualDefaultForGym(gymId);
+    final additionalOptions = themePref
+        .availableForGym(gymId)
+        .where((id) => manualDefault == null || id != manualDefault)
+        .toList();
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final selected =
+            dialogContext.watch<ThemePreferenceProvider>().override;
+        return SimpleDialog(
+          title: Text(loc.settingsThemeDialogTitle),
+          children: [
+            RadioListTile<BrandThemeId?>(
+              value: null,
+              groupValue: selected,
+              onChanged: (_) => _onThemeSelected(dialogContext, null),
+              title: Text(loc.settingsThemeDefault),
+              subtitle: manualDefault != null
+                  ? Text(_themeOptionLabel(loc, manualDefault))
+                  : null,
+            ),
+            for (final option in additionalOptions)
+              RadioListTile<BrandThemeId?>(
+                value: option,
+                groupValue: selected,
+                onChanged: (_) => _onThemeSelected(dialogContext, option),
+                title: Text(_themeOptionLabel(loc, option)),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _onThemeSelected(
+    BuildContext dialogContext,
+    BrandThemeId? id,
+  ) async {
+    Navigator.pop(dialogContext);
+    try {
+      await context.read<ThemePreferenceProvider>().setTheme(id);
+    } catch (_) {
+      final loc = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.settingsThemeSaveError)),
+      );
+    }
+  }
+
   void _showSettingsDialog() {
     final loc = AppLocalizations.of(context)!;
+    final themePref = context.read<ThemePreferenceProvider>();
+    final gymId = context.read<AuthProvider>().gymCode;
+    final themeLabel = _currentThemeLabel(loc, themePref, gymId);
     showDialog(
       context: context,
       builder:
@@ -232,6 +313,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _showLanguageDialog();
                 },
                 child: Text(loc.settingsOptionLanguage),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showThemeDialog();
+                },
+                child: Row(
+                  children: [
+                    Expanded(child: Text(loc.settingsOptionTheme)),
+                    Text(themeLabel),
+                  ],
+                ),
               ),
               SimpleDialogOption(
                 onPressed: () {

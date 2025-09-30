@@ -413,6 +413,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOptionLanguage => 'Language';
 
   @override
+  String get settingsOptionTheme => 'Theme';
+
+  @override
+  String get settingsThemeDialogTitle => 'Choose app theme';
+
+  @override
+  String get settingsThemeDefault => 'Gym default';
+
+  @override
+  String get settingsThemeMintTurquoise => 'Mint & Turquoise';
+
+  @override
+  String get settingsThemeMagentaViolet => 'Magenta & Violet';
+
+  @override
+  String get settingsThemeSaveError => 'Could not save theme.';
+
+  @override
   String get settingsOptionPublicProfile => 'Public profile';
 
   @override
