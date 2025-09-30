@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../features/gym/domain/models/branding.dart';
-import 'design_tokens.dart';
-import 'theme.dart';
 import 'app_brand_theme.dart';
 import 'brand_on_colors.dart';
+import 'brand_theme_preset.dart';
+import 'design_tokens.dart';
+import 'theme.dart';
 
 /// Lädt dynamisch Themes je nach Gym.
 class ThemeLoader extends ChangeNotifier {
@@ -24,7 +25,17 @@ class ThemeLoader extends ChangeNotifier {
   }
 
   /// Wendet Branding-Daten auf das aktuelle Theme an.
-  void applyBranding(String? gymId, Branding? branding) {
+  void applyBranding(
+    String? gymId,
+    Branding? branding, {
+    BrandThemeId? overridePreset,
+  }) {
+    if (overridePreset != null) {
+      _applyPreset(BrandThemePresets.of(overridePreset));
+      notifyListeners();
+      return;
+    }
+
     if (gymId == 'lifthouse_koblenz') {
       if (branding == null) {
         _applyMagentaDefaults();
@@ -110,15 +121,7 @@ class ThemeLoader extends ChangeNotifier {
   }
 
   void _applyMagentaDefaults() {
-    _applyBrandColors(
-      primary: MagentaColors.primary600,
-      secondary: MagentaColors.secondary,
-      gradStart: MagentaColors.primary500,
-      gradEnd: MagentaColors.secondary,
-      focus: MagentaColors.focus,
-      useMagenta: true,
-    );
-    MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+    _applyPreset(BrandThemePresets.magentaViolet);
   }
 
   void _applyClubAktivDefaults() {
@@ -131,6 +134,23 @@ class ThemeLoader extends ChangeNotifier {
       useClubAktiv: true,
     );
     ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+  }
+
+  void _applyPreset(BrandThemePreset preset) {
+    _applyBrandColors(
+      primary: preset.primary,
+      secondary: preset.secondary,
+      gradStart: preset.gradientStart,
+      gradEnd: preset.gradientEnd,
+      focus: preset.focus,
+      useMagenta: preset.useMagentaTokens,
+      useClubAktiv: preset.useClubAktivTokens,
+    );
+    if (preset.useMagentaTokens) {
+      MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+    } else if (preset.useClubAktivTokens) {
+      ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+    }
   }
 
   Color _parseHex(String hex) {
