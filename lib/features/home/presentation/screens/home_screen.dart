@@ -18,6 +18,7 @@ import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -140,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     switch (_currentIndex) {
       case 0:
-        return Text(
+        return BrandGradientText(
           loc.gymTitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge,
@@ -149,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       case 1:
         final username = auth.userName ?? auth.userEmail ?? loc.profileTitle;
-        return Text(
+        return BrandGradientText(
           username,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge,

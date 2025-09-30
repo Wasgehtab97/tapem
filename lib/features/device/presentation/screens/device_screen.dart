@@ -149,19 +149,33 @@ class _DeviceScreenState extends State<DeviceScreen> {
       }
     }
 
-    final Widget titleWidget = headerTitle != null
-        ? Text(
-            headerTitle!,
-            key: ValueKey(headerTitle),
-            style: titleStyle,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          )
-        : const ActiveWorkoutTimer(
-            key: ValueKey('activeWorkoutTimer'),
-            padding: EdgeInsets.zero,
-          );
+    Widget titleWidget;
+    if (headerTitle != null) {
+      final gradientTitle = BrandGradientText(
+        headerTitle!,
+        key: ValueKey(headerTitle),
+        style: titleStyle,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+      if (prov.device != null) {
+        titleWidget = Hero(
+          tag: 'device-${prov.device!.uid}',
+          child: Material(
+            type: MaterialType.transparency,
+            child: gradientTitle,
+          ),
+        );
+      } else {
+        titleWidget = gradientTitle;
+      }
+    } else {
+      titleWidget = const ActiveWorkoutTimer(
+        key: ValueKey('activeWorkoutTimer'),
+        padding: EdgeInsets.zero,
+      );
+    }
 
     return AppBar(
       foregroundColor: accentColor,
@@ -183,7 +197,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
           ? null
           : _DeviceAppBarFooter(
               provider: prov,
-              titleStyle: titleStyle,
               gymId: widget.gymId,
               deviceId: widget.deviceId,
               exerciseId: widget.exerciseId,
@@ -526,7 +539,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
 class _DeviceAppBarFooter extends StatelessWidget
     implements PreferredSizeWidget {
   final DeviceProvider provider;
-  final TextStyle titleStyle;
   final String gymId;
   final String deviceId;
   final String exerciseId;
@@ -534,7 +546,6 @@ class _DeviceAppBarFooter extends StatelessWidget
 
   const _DeviceAppBarFooter({
     required this.provider,
-    required this.titleStyle,
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
@@ -558,32 +569,7 @@ class _DeviceAppBarFooter extends StatelessWidget
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              child: Hero(
-                tag: 'device-${provider.device!.uid}',
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return ConstrainedBox(
-                        constraints:
-                            BoxConstraints(maxWidth: constraints.maxWidth),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: BrandGradientText(
-                            provider.device!.name,
-                            style: titleStyle,
-                            textAlign: TextAlign.left,
-                            softWrap: false,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
+            const Expanded(child: SizedBox()),
             const SizedBox(width: 8),
             XpInfoButton(
               xp: provider.xp,
