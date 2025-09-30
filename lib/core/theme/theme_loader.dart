@@ -137,6 +137,11 @@ class ThemeLoader extends ChangeNotifier {
   }
 
   void _applyPreset(BrandThemePreset preset) {
+    if (preset.id == BrandThemeId.blackWhite) {
+      _applyBlackWhitePreset(preset);
+      return;
+    }
+
     _applyBrandColors(
       primary: preset.primary,
       secondary: preset.secondary,
@@ -153,6 +158,30 @@ class ThemeLoader extends ChangeNotifier {
     } else if (preset.useClubAktivTokens) {
       ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
     }
+  }
+
+  void _applyBlackWhitePreset(BrandThemePreset preset) {
+    _currentTheme = AppTheme.neutralTheme;
+    final onColors = preset.onColors ??
+        const BrandOnColors(
+          onPrimary: Colors.black,
+          onSecondary: Colors.white,
+          onGradient: Colors.white,
+          onCta: Colors.white,
+        );
+    AppGradients.setBrandGradient(preset.gradientStart, preset.gradientEnd);
+    AppGradients.setCtaGlow(preset.focus);
+    _currentTheme = _currentTheme.copyWith(
+      colorScheme: _currentTheme.colorScheme.copyWith(
+        onPrimary: onColors.onPrimary,
+        onSecondary: onColors.onSecondary,
+      ),
+    );
+    _attachBrandTheme(
+      focus: preset.focus,
+      onColors: onColors,
+      useNeutral: true,
+    );
   }
 
   Color _parseHex(String hex) {
@@ -206,17 +235,46 @@ class ThemeLoader extends ChangeNotifier {
     required BrandOnColors onColors,
     bool useMagenta = false,
     bool useClubAktiv = false,
+    bool useNeutral = false,
   }) {
     final ext = useMagenta
         ? AppBrandTheme.magenta()
         : useClubAktiv
-        ? AppBrandTheme.clubAktiv()
-        : AppBrandTheme.defaultTheme().copyWith(
-            gradient: AppGradients.brandGradient,
-            outlineGradient: AppGradients.brandGradient,
-            focusRing: focus,
-            onBrand: onColors.onCta,
-          );
+            ? AppBrandTheme.clubAktiv()
+            : useNeutral
+                ? AppBrandTheme.defaultTheme().copyWith(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.black, Colors.black],
+                    ),
+                    outlineGradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.white, Colors.white],
+                    ),
+                    outline: Colors.white,
+                    outlineColorFallback: Colors.white,
+                    outlineShadow: const [
+                      BoxShadow(color: Colors.white24, blurRadius: 12),
+                    ],
+                    shadow: const [
+                      BoxShadow(
+                        color: Colors.black87,
+                        blurRadius: 16,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                    pressedOverlay: Colors.white10,
+                    focusRing: focus,
+                    onBrand: onColors.onCta,
+                  )
+                : AppBrandTheme.defaultTheme().copyWith(
+                    gradient: AppGradients.brandGradient,
+                    outlineGradient: AppGradients.brandGradient,
+                    focusRing: focus,
+                    onBrand: onColors.onCta,
+                  );
     _currentTheme = _currentTheme.copyWith(extensions: [ext, onColors]);
   }
 }

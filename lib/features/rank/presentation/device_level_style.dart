@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 
 /// Provides widget styling for the device page depending on a user's level.
@@ -24,15 +25,18 @@ class DeviceLevelStyle {
     int level, {
     double opacity = 1.0,
     double brightness = -0.6,
+    ThemeData? theme,
   }) {
-    final colors = AppGradients.brandGradient.colors
+    final brandGradient = theme?.extension<AppBrandTheme>()?.gradient ??
+        AppGradients.brandGradient;
+    final colors = brandGradient.colors
         .map((c) => c.withOpacity(opacity))
         .toList();
 
     return BoxDecoration(
       gradient: LinearGradient(
-        begin: AppGradients.brandGradient.begin,
-        end: AppGradients.brandGradient.end,
+        begin: brandGradient.begin,
+        end: brandGradient.end,
         colors: colors,
       ),
       borderRadius: BorderRadius.circular(AppRadius.card),

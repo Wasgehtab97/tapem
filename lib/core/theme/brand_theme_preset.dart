@@ -107,9 +107,9 @@ class BrandThemePresets {
     id: BrandThemeId.blackWhite,
     nameKey: 'settingsThemeBlackWhite',
     primary: Colors.white,
-    secondary: Colors.black,
-    gradientStart: Colors.black,
-    gradientEnd: Color(0xFF3D3D3D),
+    secondary: Colors.white,
+    gradientStart: Colors.white,
+    gradientEnd: Colors.white,
     focus: Colors.white,
     onColors: const BrandOnColors(
       onPrimary: Colors.black,
@@ -117,7 +117,7 @@ class BrandThemePresets {
       onGradient: Colors.white,
       onCta: Colors.white,
     ),
-    background: Color(0xFF1E1E1E),
+    background: Colors.black,
   );
 
   static const List<BrandThemePreset> all = [

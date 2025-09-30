@@ -37,8 +37,14 @@ class BrandGradientIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
-    final effectiveGradient =
-        gradient ?? brandTheme?.gradient ?? AppGradients.brandGradient;
+    final isBlackWhiteTheme =
+        theme.colorScheme.background == Colors.black &&
+            theme.colorScheme.primary == Colors.white;
+    final effectiveGradient = gradient ??
+        (isBlackWhiteTheme
+            ? brandTheme?.outlineGradient
+            : brandTheme?.gradient) ??
+        AppGradients.brandGradient;
     return ShaderMask(
       shaderCallback: (bounds) {
         final rect = bounds.isEmpty
