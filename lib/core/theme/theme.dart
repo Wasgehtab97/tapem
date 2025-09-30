@@ -180,7 +180,7 @@ class AppTheme {
       foregroundColor: Colors.white,
       centerTitle: true,
     ),
-    tabBarTheme: const TabBarTheme(
+    tabBarTheme: const TabBarThemeData(
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white70,
       indicatorColor: Colors.white,
