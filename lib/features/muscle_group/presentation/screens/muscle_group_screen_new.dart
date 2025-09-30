@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
@@ -50,7 +51,10 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     }
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Muskelgruppen')),
+        appBar: AppBar(
+          title: const Text('Muskelgruppen'),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: Center(child: Text(prov.error!)),
       );
     }
@@ -127,7 +131,10 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Muskelgruppen')),
+      appBar: AppBar(
+        title: const Text('Muskelgruppen'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: DefaultTabController(

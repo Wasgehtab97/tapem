@@ -11,6 +11,7 @@ import 'package:tapem/features/training_details/presentation/widgets/session_exe
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -69,7 +70,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         subtitle.isNotEmpty ? '$title — $subtitle' : title;
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: Text(fullTitle)),
+        appBar: AppBar(
+          title: Text(fullTitle),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: Center(child: Text('${loc.errorPrefix}: ${prov.error}')),
       );
     }
@@ -265,7 +269,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return Scaffold(
-        appBar: AppBar(title: Text(fullTitle)),
+      appBar: AppBar(
+        title: Text(fullTitle),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverPadding(

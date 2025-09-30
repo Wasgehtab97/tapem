@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/app_router.dart';
 
 class DeviceLeaderboardListScreen extends StatelessWidget {
@@ -16,7 +17,10 @@ class DeviceLeaderboardListScreen extends StatelessWidget {
     final devices = gymProv.devices.where((d) => d.isMulti == false).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Geräte-Auswahl')),
+      appBar: AppBar(
+        title: const Text('Geräte-Auswahl'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: ListView.builder(
         itemCount: devices.length,
         itemBuilder: (_, i) {

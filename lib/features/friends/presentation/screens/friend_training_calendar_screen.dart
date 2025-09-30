@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
@@ -77,7 +78,10 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.friendName)),
+      appBar: AppBar(
+        title: Text(widget.friendName),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: body,
     );
   }

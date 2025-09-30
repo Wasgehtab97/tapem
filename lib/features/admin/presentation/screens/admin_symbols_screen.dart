@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -35,7 +36,10 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
     final auth = context.watch<AuthProvider>();
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: Text(loc.admin_symbols_title)),
+        appBar: AppBar(
+          title: Text(loc.admin_symbols_title),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
@@ -48,14 +52,16 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.admin_symbols_title),
-        actions: [
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.build),
-              tooltip: 'backfill usernameLower',
-              onPressed: () => _backfill(fs, gymId),
-            ),
-        ],
+        actions: buildGlobalAppBarActions(
+          leadingActions: [
+            if (kDebugMode)
+              IconButton(
+                icon: const Icon(Icons.build),
+                tooltip: 'backfill usernameLower',
+                onPressed: () => _backfill(fs, gymId),
+              ),
+          ],
+        ),
       ),
       body: Column(
         children: [

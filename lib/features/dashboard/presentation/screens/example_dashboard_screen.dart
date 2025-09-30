@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tapem/core/widgets/circular_xp_indicator.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/core/widgets/line_chart_widget.dart';
 import 'package:tapem/core/widgets/horizontal_bar_chart_widget.dart';
 import 'package:tapem/core/widgets/heatmap_widget.dart';
@@ -33,9 +34,11 @@ class ExampleDashboardScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
-        ],
+        actions: buildGlobalAppBarActions(
+          leadingActions: [
+            IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
+          ],
+        ),
         title: const Text('Dashboard'),
       ),
       body: SingleChildScrollView(

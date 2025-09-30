@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/functions_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -78,7 +79,10 @@ class _BrandingScreenState extends State<BrandingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Branding')),
+      appBar: AppBar(
+        title: const Text('Branding'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

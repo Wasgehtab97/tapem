@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
@@ -40,7 +41,10 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Trainingspläne')),
+      appBar: AppBar(
+        title: const Text('Trainingspläne'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Consumer<TrainingPlanProvider>(
         builder: (_, prov, __) {
           if (prov.isLoading) {

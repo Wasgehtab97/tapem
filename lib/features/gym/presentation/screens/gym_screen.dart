@@ -8,6 +8,7 @@ import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
@@ -98,6 +99,7 @@ class _GymScreenState extends State<GymScreen>
             loc.gymTitle,
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          actions: buildGlobalAppBarActions(),
         ),
         body: Center(child: Text('${loc.errorPrefix}: ${gymProv.error}')),
       );
@@ -115,6 +117,7 @@ class _GymScreenState extends State<GymScreen>
           loc.gymTitle,
           style: theme.textTheme.titleLarge,
         ),
+        actions: buildGlobalAppBarActions(),
       ),
       body: SafeArea(
         child: Column(

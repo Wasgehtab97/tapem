@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../../../app_router.dart';
 
@@ -50,7 +51,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(loc.resetPasswordTitle)),
+      appBar: AppBar(
+        title: Text(loc.resetPasswordTitle),
+        actions: buildGlobalAppBarActions(showNfcButton: false),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../widgets/svg_muscle_heatmap_widget.dart';
 import '../widgets/mesh_3d_heatmap_widget.dart';
@@ -54,13 +55,19 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
     }
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Muskelgruppen')),
+        appBar: AppBar(
+          title: const Text('Muskelgruppen'),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: Center(child: Text(prov.error!)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Muskelgruppen')),
+      appBar: AppBar(
+        title: const Text('Muskelgruppen'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Builder(

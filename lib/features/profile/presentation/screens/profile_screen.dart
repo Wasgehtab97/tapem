@@ -14,6 +14,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
@@ -337,12 +338,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           profileTitle,
           style: theme.textTheme.titleLarge,
         ),
-        actions: [
-          if (enableFriends)
-            Consumer<FriendsProvider>(
-              builder: (context, friends, _) {
-                final showBadge = friends.pendingCount > 0;
-                return IconButton(
+        actions: buildGlobalAppBarActions(
+          leadingActions: [
+            if (enableFriends)
+              Consumer<FriendsProvider>(
+                builder: (context, friends, _) {
+                  final showBadge = friends.pendingCount > 0;
+                  return IconButton(
                   icon: Stack(
                     children: [
                       const BrandGradientIcon(Icons.group),
@@ -375,15 +377,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: loc.settingsIconTooltip,
             onPressed: _showSettingsDialog,
           ),
-          IconButton(
-            icon: const BrandGradientIcon(Icons.logout),
-            tooltip: loc.logoutTooltip,
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.of(context).pushReplacementNamed(AppRouter.auth);
-            },
-          ),
-        ],
+            IconButton(
+              icon: const BrandGradientIcon(Icons.logout),
+              tooltip: loc.logoutTooltip,
+              onPressed: () {
+                context.read<AuthProvider>().logout();
+                Navigator.of(context).pushReplacementNamed(AppRouter.auth);
+              },
+            ),
+          ],
+        ),
       ),
       body:
           prov.isLoading

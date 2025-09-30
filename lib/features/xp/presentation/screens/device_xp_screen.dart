@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/gym_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
@@ -57,7 +58,10 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
       final xpProv = context.watch<XpProvider>();
       final devices = gymProv.devices.toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Geräte XP')),
+      appBar: AppBar(
+        title: const Text('Geräte XP'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: ListView.builder(
         itemCount: devices.length,
         itemBuilder: (_, i) {

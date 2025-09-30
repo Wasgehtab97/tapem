@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../survey.dart';
 import '../../survey_provider.dart';
 
@@ -33,7 +34,10 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.survey.title)),
+      appBar: AppBar(
+        title: Text(widget.survey.title),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

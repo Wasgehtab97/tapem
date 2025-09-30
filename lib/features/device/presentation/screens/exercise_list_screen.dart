@@ -4,6 +4,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../widgets/multi_device_banner.dart';
@@ -157,7 +158,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.multiDeviceExerciseListTitle)),
+      appBar: AppBar(
+        title: Text(loc.multiDeviceExerciseListTitle),
+        actions: buildGlobalAppBarActions(),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openAdd(),
         tooltip: loc.multiDeviceNewExercise,

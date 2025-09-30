@@ -11,6 +11,7 @@ import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
+import '../../../../core/widgets/global_app_bar_actions.dart';
 import '../../../../core/logging/elog.dart';
 
 class ReportScreenNew extends StatelessWidget {
@@ -30,7 +31,10 @@ class ReportScreenNew extends StatelessWidget {
     final int openCount = feedbackProvider.openEntries.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report')),
+      appBar: AppBar(
+        title: const Text('Report'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(

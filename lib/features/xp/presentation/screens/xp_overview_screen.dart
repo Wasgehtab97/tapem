@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
@@ -98,6 +99,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       appBar: AppBar(
         title: const Text('XP Übersicht'),
         backgroundColor: const Color(0xFF121212),
+        actions: buildGlobalAppBarActions(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

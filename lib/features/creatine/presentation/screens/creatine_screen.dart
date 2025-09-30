@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
@@ -162,7 +163,10 @@ class _CreatineScreenState extends State<CreatineScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.creatineTitle)),
+      appBar: AppBar(
+        title: Text(loc.creatineTitle),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: body,
     );
   }

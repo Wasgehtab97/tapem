@@ -15,7 +15,7 @@ import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
-import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -114,9 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        actions: const [
-          NfcScanButton(),
-        ],
+        actions: buildGlobalAppBarActions(),
       ),
       body: tabs[_currentIndex].page,
       bottomNavigationBar: BottomNavigationBar(

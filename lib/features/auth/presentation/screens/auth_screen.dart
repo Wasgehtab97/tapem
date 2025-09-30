@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/theme.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
 import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
 
@@ -39,6 +40,7 @@ class _AuthScreenState extends State<AuthScreen>
       child: Scaffold(
         appBar: AppBar(
           title: Text(loc.authTitle),
+          actions: buildGlobalAppBarActions(showNfcButton: false),
           bottom: TabBar(
             controller: _tabController,
             tabs: [Tab(text: loc.loginButton), Tab(text: loc.registerButton)],

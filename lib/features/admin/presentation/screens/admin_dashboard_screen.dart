@@ -16,6 +16,7 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -191,13 +192,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final loc = AppLocalizations.of(context)!;
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Adminbereich')),
+        appBar: AppBar(
+          title: const Text('Adminbereich'),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: const Center(child: Text('Keine Admin-Rechte')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin-Dashboard')),
+      appBar: AppBar(
+        title: const Text('Admin-Dashboard'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body:
           _loading
               ? const Center(child: CircularProgressIndicator())

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/friend_search_provider.dart';
@@ -55,6 +56,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.friends_title),
+        actions: buildGlobalAppBarActions(),
         bottom: TabBar(
           controller: _tabController,
           tabs: [

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -135,13 +136,15 @@ class _DayXpScreenState extends State<DayXpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erfahrung'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.leaderboard),
-            tooltip: 'Rangliste',
-            onPressed: _openLeaderboard,
-          ),
-        ],
+        actions: buildGlobalAppBarActions(
+          leadingActions: [
+            IconButton(
+              icon: const Icon(Icons.leaderboard),
+              tooltip: 'Rangliste',
+              onPressed: _openLeaderboard,
+            ),
+          ],
+        ),
       ),
       body: ListView(
         children: [

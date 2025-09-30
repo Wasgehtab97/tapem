@@ -28,3 +28,14 @@ String formatDurationHm(Duration duration) {
   final mStr = m.toString().padLeft(2, '0');
   return '$hStr:$mStr';
 }
+
+/// Formats [duration] as `HH:mm:ss`, including leading zeros for each unit.
+String formatDurationHms(Duration duration) {
+  final h = duration.inHours;
+  final m = duration.inMinutes % 60;
+  final s = duration.inSeconds % 60;
+  final hStr = h.toString().padLeft(2, '0');
+  final mStr = m.toString().padLeft(2, '0');
+  final sStr = s.toString().padLeft(2, '0');
+  return '$hStr:$mStr:$sStr';
+}

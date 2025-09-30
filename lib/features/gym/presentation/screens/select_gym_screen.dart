@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 
 class SelectGymScreen extends StatelessWidget {
   const SelectGymScreen({super.key});
@@ -10,7 +11,10 @@ class SelectGymScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gyms = context.watch<AuthProvider>().gymCodes ?? [];
     return Scaffold(
-      appBar: AppBar(title: const Text('Gym auswählen')),
+      appBar: AppBar(
+        title: const Text('Gym auswählen'),
+        actions: buildGlobalAppBarActions(showNfcButton: false),
+      ),
       body: ListView.separated(
         itemCount: gyms.length,
         separatorBuilder: (_, __) => const Divider(),

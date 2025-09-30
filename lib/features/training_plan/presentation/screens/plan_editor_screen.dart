@@ -13,6 +13,7 @@ import '../../domain/models/day_entry.dart';
 import '../../domain/models/week_block.dart';
 import '../widgets/device_selection_dialog.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 
 class PlanEditorScreen extends StatefulWidget {
   const PlanEditorScreen({super.key});
@@ -48,51 +49,53 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
       child: Scaffold(
         appBar: AppBar(
           title: Text(plan.name),
-          actions: [
-            IconButton(
-              icon:
-                  prov.isSaving
-                      ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : const Icon(Icons.check),
-              tooltip: 'Speichern',
-              onPressed:
-                  prov.isSaving
-                      ? null
-                      : () async {
-                        final gymId = context.read<AuthProvider>().gymCode!;
-                        await prov.saveCurrentPlan(gymId);
-                        if (context.mounted) {
-                          final msg = prov.error ?? 'Plan gespeichert';
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(msg)));
-                        }
-                      },
-            ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: plan.startDate,
-                  firstDate: DateTime.now().subtract(
-                    const Duration(days: 365 * 5),
-                  ),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                );
-                if (picked != null) {
-                  final monday = picked.subtract(
-                    Duration(days: picked.weekday - 1),
+          actions: buildGlobalAppBarActions(
+            leadingActions: [
+              IconButton(
+                icon:
+                    prov.isSaving
+                        ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.check),
+                tooltip: 'Speichern',
+                onPressed:
+                    prov.isSaving
+                        ? null
+                        : () async {
+                          final gymId = context.read<AuthProvider>().gymCode!;
+                          await prov.saveCurrentPlan(gymId);
+                          if (context.mounted) {
+                            final msg = prov.error ?? 'Plan gespeichert';
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(msg)));
+                          }
+                        },
+              ),
+              IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: plan.startDate,
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 365 * 5),
+                    ),
+                    lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                   );
-                  prov.setStartDate(monday);
-                }
-              },
-            ),
-          ],
+                  if (picked != null) {
+                    final monday = picked.subtract(
+                      Duration(days: picked.weekday - 1),
+                    );
+                    prov.setStartDate(monday);
+                  }
+                },
+              ),
+            ],
+          ),
           bottom: TabBar(
             controller: _weekController,
             isScrollable: true,

@@ -6,6 +6,7 @@ import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dar
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/logging/elog.dart';
 
@@ -49,6 +50,7 @@ class _RankScreenState extends State<RankScreen>
           'Leaderboard',
           style: theme.textTheme.titleLarge,
         ),
+        actions: buildGlobalAppBarActions(),
         bottom: TabBar(
           controller: _tabController,
           tabs: [

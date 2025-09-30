@@ -11,6 +11,7 @@ import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 
@@ -412,7 +413,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     } else if (prov.error != null || prov.device == null) {
       scaffold = Scaffold(
-        appBar: AppBar(title: const Text('Gerät nicht gefunden')),
+        appBar: AppBar(
+          title: const Text('Gerät nicht gefunden'),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
     } else {
@@ -458,7 +462,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
             ),
           ),
           centerTitle: true,
-          actions: [
+          actions: buildGlobalAppBarActions(
+            leadingActions: [
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: XpInfoButton(xp: prov.xp, level: prov.level),
@@ -513,7 +518,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 );
               },
             ),
-          ],
+            ],
+          ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),

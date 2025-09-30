@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../survey_provider.dart';
 import '../../survey.dart';
 
@@ -34,7 +35,10 @@ class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
     final prov = context.watch<SurveyProvider>();
     final surveys = prov.openSurveys;
     return Scaffold(
-      appBar: AppBar(title: const Text('Umfragen')),
+      appBar: AppBar(
+        title: const Text('Umfragen'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body:
           surveys.isEmpty
               ? const Center(child: Text('Keine offenen Umfragen'))
@@ -87,7 +91,10 @@ class _SurveyVoteDetailScreenState extends State<_SurveyVoteDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.survey.title)),
+      appBar: AppBar(
+        title: Text(widget.survey.title),
+        actions: buildGlobalAppBarActions(),
+      ),
       body:
           _submitted
               ? const Center(child: Text('Danke für deine Teilnahme!'))

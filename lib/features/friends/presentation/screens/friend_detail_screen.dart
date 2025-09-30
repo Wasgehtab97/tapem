@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
 
@@ -39,7 +40,10 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   Widget build(BuildContext context) {
     final name = _profile?.username ?? 'Profil';
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        title: Text(name),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Center(
         child: _profile == null
             ? const Text('Keine Daten')

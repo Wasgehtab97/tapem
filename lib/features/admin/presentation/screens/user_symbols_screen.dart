@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/config/remote_config.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -313,13 +314,19 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     final loc = AppLocalizations.of(context)!;
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: Text(loc.user_symbols_title(''))),
+        appBar: AppBar(
+          title: Text(loc.user_symbols_title('')),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (!_permitted) {
       return Scaffold(
-        appBar: AppBar(title: Text(loc.user_symbols_title(''))),
+        appBar: AppBar(
+          title: Text(loc.user_symbols_title('')),
+          actions: buildGlobalAppBarActions(),
+        ),
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
@@ -409,7 +416,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       builder: (context, snap) {
         final name = snap.data?.data()?['username'] as String? ?? widget.uid;
         return Scaffold(
-          appBar: AppBar(title: Text(loc.user_symbols_title(name))),
+          appBar: AppBar(
+            title: Text(loc.user_symbols_title(name)),
+            actions: buildGlobalAppBarActions(),
+          ),
           floatingActionButton: _permitted && _gymId.isNotEmpty
               ? FloatingActionButton(
                   onPressed: _openAddDialog,

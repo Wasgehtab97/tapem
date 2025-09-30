@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
 import '../../../../core/providers/device_provider.dart';
@@ -47,7 +48,10 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Plan importieren')),
+      appBar: AppBar(
+        title: const Text('Plan importieren'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: Consumer<TrainingPlanProvider>(
         builder:
             (context, prov, _) => Padding(

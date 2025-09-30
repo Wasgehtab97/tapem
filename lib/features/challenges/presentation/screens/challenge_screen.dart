@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 
 class ChallengeScreen extends StatelessWidget {
@@ -7,7 +8,10 @@ class ChallengeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Challenges')),
+      appBar: AppBar(
+        title: Text('Challenges'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: ChallengeTab(),
     );
   }

@@ -5,6 +5,7 @@ import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/feedback/models/feedback_entry.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 
 class FeedbackOverviewScreen extends StatefulWidget {
   final String gymId;
@@ -44,6 +45,7 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Feedback'),
+        actions: buildGlobalAppBarActions(),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [Tab(text: 'Offen'), Tab(text: 'Erledigt')],

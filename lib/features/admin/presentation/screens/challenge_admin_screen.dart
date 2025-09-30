@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/widgets/global_app_bar_actions.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 import '../../../../core/providers/auth_provider.dart';
@@ -121,7 +122,10 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
   Widget build(BuildContext context) {
     final devices = context.watch<GymProvider>().devices;
     return Scaffold(
-      appBar: AppBar(title: const Text('Challenges verwalten')),
+      appBar: AppBar(
+        title: const Text('Challenges verwalten'),
+        actions: buildGlobalAppBarActions(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
