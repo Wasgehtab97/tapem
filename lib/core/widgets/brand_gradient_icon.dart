@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_brand_theme.dart';
 import '../theme/design_tokens.dart';
 
 /// Icon widget that paints its glyph using the global brand gradient.
@@ -34,7 +35,10 @@ class BrandGradientIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveGradient = gradient ?? AppGradients.brandGradient;
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final effectiveGradient =
+        gradient ?? brandTheme?.gradient ?? AppGradients.brandGradient;
     return ShaderMask(
       shaderCallback: (bounds) {
         final rect = bounds.isEmpty
