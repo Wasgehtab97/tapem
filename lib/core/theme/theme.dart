@@ -154,9 +154,102 @@ class AppTheme {
 
   /// A neutral dark theme without strong branding accents.
   static final ThemeData neutralTheme = _buildTheme(
-    primary: AppColors.accentTurquoise,
-    secondary: AppColors.accentTurquoise,
-    buttonColor: AppColors.accentTurquoise,
+    primary: Colors.white,
+    secondary: Colors.white,
+    background: Colors.black,
+    surface: Colors.black,
+    textPrimary: Colors.white,
+    textSecondary: Colors.white,
+    focus: Colors.white,
+    buttonColor: Colors.white,
+  ).copyWith(
+    scaffoldBackgroundColor: Colors.black,
+    canvasColor: Colors.black,
+    colorScheme: const ColorScheme.dark(
+      primary: Colors.white,
+      secondary: Colors.white,
+      background: Colors.black,
+      surface: Colors.black,
+      onPrimary: Colors.black,
+      onSurface: Colors.white,
+      outline: Colors.white,
+    ),
+    appBarTheme: const AppBarTheme(
+      elevation: 0,
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      centerTitle: true,
+    ),
+    tabBarTheme: const TabBarTheme(
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white70,
+      indicatorColor: Colors.white,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        disabledBackgroundColor: Colors.black,
+        disabledForegroundColor: Colors.white.withOpacity(0.4),
+        overlayColor: Colors.white.withOpacity(0.1),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          side: const BorderSide(color: Colors.white, width: 2),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white.withOpacity(0.4),
+        overlayColor: Colors.white.withOpacity(0.1),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: const BorderSide(color: Colors.white, width: 2),
+        disabledForegroundColor: Colors.white.withOpacity(0.4),
+        overlayColor: Colors.white.withOpacity(0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.black,
+      labelStyle: const TextStyle(color: Colors.white),
+      floatingLabelStyle: const TextStyle(color: Colors.white),
+      hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderSide: const BorderSide(color: Colors.white, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderSide: const BorderSide(color: Colors.white, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderSide: const BorderSide(color: Colors.white, width: 2),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.4), width: 1.5),
+      ),
+    ),
+    progressIndicatorTheme:
+        const ProgressIndicatorThemeData(color: Colors.white),
+    dividerColor: Colors.white24,
+    textSelectionTheme: const TextSelectionThemeData(
+      cursorColor: Colors.white,
+      selectionColor: Colors.white24,
+      selectionHandleColor: Colors.white,
+    ),
   );
 
   /// Magenta dark theme for special gym branding.
