@@ -253,7 +253,8 @@ class SetCardState extends State<SetCard> {
   }
 
   void _openKeypad(
-    TextEditingController controller, {
+    TextEditingController controller,
+    FocusNode focusNode, {
     required bool allowDecimal,
     required DeviceSetFieldFocus field,
     bool notifyFocus = true,
@@ -262,7 +263,6 @@ class SetCardState extends State<SetCard> {
       widget.index,
       'open keypad field=$field allowDecimal=$allowDecimal text="${controller.text}"',
     );
-    FocusScope.of(context).unfocus();
     final prov = context.read<DeviceProvider>();
     if (notifyFocus) {
       _lastFocusRequestId = prov.requestFocus(
@@ -272,16 +272,22 @@ class SetCardState extends State<SetCard> {
     } else {
       _lastFocusRequestId = prov.focusRequestId;
     }
-    context.read<OverlayNumericKeypadController>().openFor(
+    final keypad = context.read<OverlayNumericKeypadController>();
+    keypad.openFor(
       controller,
       allowDecimal: allowDecimal,
     );
+    controller.selection = TextSelection.collapsed(offset: controller.text.length);
+    if (focusNode.canRequestFocus) {
+      focusNode.requestFocus();
+    }
     // Hinweis: ensureVisible nach dem Öffnen separat aufrufen (DeviceScreen macht das).
   }
 
   void focusWeight() {
     _openKeypad(
       _weightCtrl,
+      _weightFocus,
       allowDecimal: true,
       field: DeviceSetFieldFocus.weight,
     );
@@ -342,6 +348,7 @@ class SetCardState extends State<SetCard> {
           case DeviceSetFieldFocus.weight:
             _openKeypad(
               _weightCtrl,
+              _weightFocus,
               allowDecimal: true,
               field: focusField,
               notifyFocus: false,
@@ -350,6 +357,7 @@ class SetCardState extends State<SetCard> {
           case DeviceSetFieldFocus.reps:
             _openKeypad(
               _repsCtrl,
+              _repsFocus,
               allowDecimal: false,
               field: focusField,
               notifyFocus: false,
@@ -358,6 +366,7 @@ class SetCardState extends State<SetCard> {
           case DeviceSetFieldFocus.dropWeight:
             _openKeypad(
               _dropWeightCtrl,
+              _dropWeightFocus,
               allowDecimal: true,
               field: focusField,
               notifyFocus: false,
@@ -366,6 +375,7 @@ class SetCardState extends State<SetCard> {
           case DeviceSetFieldFocus.dropReps:
             _openKeypad(
               _dropRepsCtrl,
+              _dropRepsFocus,
               allowDecimal: false,
               field: focusField,
               notifyFocus: false,
@@ -447,6 +457,7 @@ class SetCardState extends State<SetCard> {
               ? null
               : () => _openKeypad(
                     _weightCtrl,
+                    _weightFocus,
                     allowDecimal: true,
                     field: DeviceSetFieldFocus.weight,
                   ),
@@ -455,6 +466,7 @@ class SetCardState extends State<SetCard> {
               ? null
               : () => _openKeypad(
                     _repsCtrl,
+                    _repsFocus,
                     allowDecimal: false,
                     field: DeviceSetFieldFocus.reps,
                   ),
@@ -462,6 +474,7 @@ class SetCardState extends State<SetCard> {
           ? null
           : () => _openKeypad(
                 _dropWeightCtrl,
+                _dropWeightFocus,
                 allowDecimal: true,
                 field: DeviceSetFieldFocus.dropWeight,
               ),
@@ -469,6 +482,7 @@ class SetCardState extends State<SetCard> {
           ? null
           : () => _openKeypad(
                 _dropRepsCtrl,
+                _dropRepsFocus,
                 allowDecimal: false,
                 field: DeviceSetFieldFocus.dropReps,
               ),
@@ -924,12 +938,15 @@ class _InputPillState extends State<_InputPill> {
         focusNode: widget.focusNode,
         enabled: !widget.readOnly,
         readOnly: true,
-        showCursor: false,
+        showCursor: !widget.readOnly,
         onTap: widget.readOnly ? null : widget.onTap,
         keyboardType: TextInputType.none,
         validator: widget.validator,
         style: valueStyle,
-        cursorColor: Colors.transparent,
+        cursorColor: brandColor,
+        cursorOpacityAnimates: true,
+        cursorWidth: 2.0,
+        cursorRadius: const Radius.circular(20),
         enableInteractiveSelection: false,
         textAlignVertical: TextAlignVertical.center,
         textAlign: TextAlign.center,
