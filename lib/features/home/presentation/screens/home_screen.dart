@@ -11,13 +11,10 @@ import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_sc
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
-import 'package:tapem/app_router.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
-import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/config/feature_flags.dart';
-import 'package:tapem/core/widgets/workout_timer_button.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -108,10 +105,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
-    final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
-    final userDisplay =
-        auth.userName ?? auth.userEmail ?? loc.genericUser;
     final allTabs = _buildTabs(context);
     final tabs = (FF.limitTabsForMembers && !isAdmin)
         ? [allTabs[0], allTabs[1], allTabs[5]]
@@ -121,9 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text(userDisplay),
         actions: const [
-          WorkoutTimerButton(),
           NfcScanButton(),
         ],
       ),

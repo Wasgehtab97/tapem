@@ -4,6 +4,7 @@ import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/services/membership_service.dart';
 
@@ -16,8 +17,18 @@ class NfcScanButton extends StatelessWidget {
     final getDeviceUC = context.read<GetDeviceByNfcCode>();
     final membership = context.read<MembershipService>();
 
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return IconButton(
       icon: const Icon(Icons.nfc),
+      style: IconButton.styleFrom(
+        backgroundColor: colors.secondary.withOpacity(0.15),
+        foregroundColor: colors.secondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+      ),
       onPressed: () async {
         // Alte Session beenden (falls offen)
         try {
