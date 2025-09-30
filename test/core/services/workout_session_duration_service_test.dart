@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/services.dart';
@@ -57,5 +59,44 @@ void main() {
     final expectedDuration =
         endTime.millisecondsSinceEpoch - startTs.toDate().millisecondsSinceEpoch;
     expect(data['durationMs'], expectedDuration);
+  });
+
+  test('setActiveContext isolates timers per user and gym', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(firestore: firestore);
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'userA', gymId: 'gymA');
+    expect(service.isRunning, isTrue);
+
+    await service.setActiveContext(uid: 'userB', gymId: 'gymB');
+    expect(service.isRunning, isFalse);
+
+    final second = WorkoutSessionDurationService(firestore: firestore);
+    addTearDown(second.dispose);
+    await second.setActiveContext(uid: 'userA', gymId: 'gymA');
+    expect(second.isRunning, isTrue);
+  });
+
+  test('legacy persisted state migrates to user and gym key', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    SharedPreferences.setMockInitialValues({
+      'workoutTimer:u1': jsonEncode({
+        'startEpochMs': now,
+        'uid': 'u1',
+        'gymId': 'g1',
+      }),
+    });
+
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(firestore: firestore);
+    addTearDown(service.dispose);
+
+    await service.setActiveContext(uid: 'u1', gymId: 'g1');
+    expect(service.isRunning, isTrue);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('workoutTimer:u1::g1'), isNotNull);
+    expect(prefs.getString('workoutTimer:u1'), isNull);
   });
 }
