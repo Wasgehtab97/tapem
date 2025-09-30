@@ -5,14 +5,20 @@ import 'package:tapem/app_router.dart';
 class XpInfoButton extends StatelessWidget {
   final int xp;
   final int level;
+  final Color? color;
 
-  const XpInfoButton({Key? key, required this.xp, required this.level})
-    : super(key: key);
+  const XpInfoButton({
+    Key? key,
+    required this.xp,
+    required this.level,
+    this.color,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = color ?? Theme.of(context).iconTheme.color;
     return IconButton(
-      icon: const Icon(Icons.auto_awesome),
+      icon: Icon(Icons.auto_awesome, color: iconColor),
       tooltip: 'XP',
       onPressed: () => _showInfo(context),
     );

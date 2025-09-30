@@ -6,14 +6,20 @@ import 'package:tapem/core/providers/auth_provider.dart';
 class FeedbackButton extends StatelessWidget {
   final String gymId;
   final String deviceId;
+  final Color? color;
 
-  const FeedbackButton({Key? key, required this.gymId, required this.deviceId})
-      : super(key: key);
+  const FeedbackButton({
+    Key? key,
+    required this.gymId,
+    required this.deviceId,
+    this.color,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = color ?? Theme.of(context).iconTheme.color;
     return IconButton(
-      icon: const Icon(Icons.feedback_outlined),
+      icon: Icon(Icons.feedback_outlined, color: iconColor),
       tooltip: 'Feedback',
       onPressed: () => _showDialog(context),
     );
