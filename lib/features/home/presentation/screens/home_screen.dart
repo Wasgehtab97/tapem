@@ -16,6 +16,7 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_overview_
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -114,8 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
+        title: const ActiveWorkoutTimer(),
         actions: const [
           NfcScanButton(),
+          SizedBox(width: 8),
         ],
       ),
       body: tabs[_currentIndex].page,
