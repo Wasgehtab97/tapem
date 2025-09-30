@@ -88,6 +88,32 @@ void main() {
       expect(loader.theme.colorScheme.secondary, MagentaColors.secondary);
     });
 
+    test('override applies red/orange theme', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding(
+        'other',
+        null,
+        overridePreset: BrandThemeId.redOrange,
+      );
+      expect(loader.theme.colorScheme.primary, ClubAktivColors.primary600);
+      expect(loader.theme.colorScheme.secondary, ClubAktivColors.secondary);
+    });
+
+    test('override applies black/white theme with custom contrasts', () {
+      final loader = ThemeLoader()..loadDefault();
+      loader.applyBranding(
+        'other',
+        null,
+        overridePreset: BrandThemeId.blackWhite,
+      );
+      expect(loader.theme.colorScheme.primary, Colors.white);
+      expect(loader.theme.colorScheme.secondary, Colors.black);
+      expect(loader.theme.colorScheme.onSecondary, Colors.white);
+      final on = loader.theme.extension<BrandOnColors>()!;
+      expect(on.onSecondary, Colors.white);
+      expect(on.onCta, Colors.white);
+    });
+
     test('lifthouse_koblenz surfaces are normalised to reference luminance', () {
       final loader = ThemeLoader()..loadDefault();
       loader.applyBranding('lifthouse_koblenz', null);

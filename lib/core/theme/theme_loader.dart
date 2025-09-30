@@ -145,6 +145,7 @@ class ThemeLoader extends ChangeNotifier {
       focus: preset.focus,
       useMagenta: preset.useMagentaTokens,
       useClubAktiv: preset.useClubAktivTokens,
+      onColors: preset.onColors,
     );
     if (preset.useMagentaTokens) {
       MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
@@ -167,6 +168,7 @@ class ThemeLoader extends ChangeNotifier {
     required Color focus,
     bool useMagenta = false,
     bool useClubAktiv = false,
+    BrandOnColors? onColors,
   }) {
     _currentTheme = AppTheme.customTheme(
       primary: primary,
@@ -175,21 +177,22 @@ class ThemeLoader extends ChangeNotifier {
     AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);
 
-    const onColors = BrandOnColors(
-      onPrimary: Colors.black,
-      onSecondary: Colors.black,
-      onGradient: Colors.black,
-      onCta: Colors.black,
-    );
+    final resolvedOnColors = onColors ??
+        const BrandOnColors(
+          onPrimary: Colors.black,
+          onSecondary: Colors.black,
+          onGradient: Colors.black,
+          onCta: Colors.black,
+        );
 
     final scheme = _currentTheme.colorScheme.copyWith(
-      onPrimary: onColors.onPrimary,
-      onSecondary: onColors.onSecondary,
+      onPrimary: resolvedOnColors.onPrimary,
+      onSecondary: resolvedOnColors.onSecondary,
     );
     _currentTheme = _currentTheme.copyWith(colorScheme: scheme);
     _attachBrandTheme(
       focus: focus,
-      onColors: onColors,
+      onColors: resolvedOnColors,
       useMagenta: useMagenta,
       useClubAktiv: useClubAktiv,
     );

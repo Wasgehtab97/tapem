@@ -893,6 +893,18 @@ abstract class AppLocalizations {
   /// **'Magenta & Violet'**
   String get settingsThemeMagentaViolet;
 
+  /// Name of the red/orange theme
+  ///
+  /// In en, this message translates to:
+  /// **'Red/Orange'**
+  String get settingsThemeRedOrange;
+
+  /// Name of the black/white theme
+  ///
+  /// In en, this message translates to:
+  /// **'Black/White'**
+  String get settingsThemeBlackWhite;
+
   /// Error shown when saving the theme failed
   ///
   /// In en, this message translates to:
