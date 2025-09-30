@@ -29,17 +29,40 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final brand = theme.extension<AppBrandTheme>();
             final gradient = brand?.gradient;
             final colors = theme.colorScheme;
-            final backgroundColor = gradient == null
-                ? colors.secondaryContainer
-                : null;
-            final foregroundColor = gradient == null
-                ? colors.onSecondaryContainer
-                : colors.onPrimary;
+            final gradientColors = gradient?.colors ?? const <Color>[];
+            final hasUsableGradient = gradientColors.isNotEmpty &&
+                gradientColors.any((c) => c.computeLuminance() > 0.2);
+
+            final Color? backgroundColor;
+            final LinearGradient? resolvedGradient;
+            Color foregroundColor;
+
+            if (hasUsableGradient) {
+              resolvedGradient = gradient;
+              backgroundColor = null;
+              foregroundColor = brand?.onBrand ?? colors.onSecondaryContainer;
+            } else {
+              resolvedGradient = null;
+              final fallbackBackground = colors.primary;
+              backgroundColor = fallbackBackground;
+              foregroundColor = colors.onPrimary;
+
+              final brightness = ThemeData.estimateBrightnessForColor(
+                fallbackBackground,
+              );
+              if (brightness == Brightness.dark &&
+                  foregroundColor.computeLuminance() < 0.6) {
+                foregroundColor = Colors.white;
+              } else if (brightness == Brightness.light &&
+                  foregroundColor.computeLuminance() > 0.6) {
+                foregroundColor = Colors.black;
+              }
+            }
 
             final borderRadius = BorderRadius.circular(AppRadius.button);
             final content = DecoratedBox(
               decoration: BoxDecoration(
-                gradient: gradient,
+                gradient: resolvedGradient,
                 color: backgroundColor,
                 borderRadius: borderRadius,
               ),
