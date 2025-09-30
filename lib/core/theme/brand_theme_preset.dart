@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'brand_on_colors.dart';
 import 'design_tokens.dart';
 
 /// Identifiers for built-in app brand themes that can be applied manually.
-enum BrandThemeId { mintTurquoise, magentaViolet }
+enum BrandThemeId {
+  mintTurquoise,
+  magentaViolet,
+  redOrange,
+  blackWhite,
+}
 
 extension BrandThemeIdX on BrandThemeId {
   String get storageValue {
@@ -12,6 +18,10 @@ extension BrandThemeIdX on BrandThemeId {
         return 'mintTurquoise';
       case BrandThemeId.magentaViolet:
         return 'magentaViolet';
+      case BrandThemeId.redOrange:
+        return 'redOrange';
+      case BrandThemeId.blackWhite:
+        return 'blackWhite';
     }
   }
 
@@ -21,6 +31,10 @@ extension BrandThemeIdX on BrandThemeId {
         return BrandThemeId.mintTurquoise;
       case 'magentaViolet':
         return BrandThemeId.magentaViolet;
+      case 'redOrange':
+        return BrandThemeId.redOrange;
+      case 'blackWhite':
+        return BrandThemeId.blackWhite;
     }
     return null;
   }
@@ -38,6 +52,7 @@ class BrandThemePreset {
     required this.focus,
     this.useMagentaTokens = false,
     this.useClubAktivTokens = false,
+    this.onColors,
   });
 
   final BrandThemeId id;
@@ -49,6 +64,7 @@ class BrandThemePreset {
   final Color focus;
   final bool useMagentaTokens;
   final bool useClubAktivTokens;
+  final BrandOnColors? onColors;
 }
 
 /// Built-in presets that users can manually select.
@@ -74,9 +90,38 @@ class BrandThemePresets {
     useMagentaTokens: true,
   );
 
+  static const BrandThemePreset redOrange = BrandThemePreset(
+    id: BrandThemeId.redOrange,
+    nameKey: 'settingsThemeRedOrange',
+    primary: ClubAktivColors.primary600,
+    secondary: ClubAktivColors.secondary,
+    gradientStart: ClubAktivColors.primary500,
+    gradientEnd: ClubAktivColors.primary600,
+    focus: ClubAktivColors.focus,
+    useClubAktivTokens: true,
+  );
+
+  static const BrandThemePreset blackWhite = BrandThemePreset(
+    id: BrandThemeId.blackWhite,
+    nameKey: 'settingsThemeBlackWhite',
+    primary: Colors.white,
+    secondary: Colors.black,
+    gradientStart: Colors.black,
+    gradientEnd: Color(0xFF3D3D3D),
+    focus: Colors.white,
+    onColors: const BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.white,
+      onGradient: Colors.white,
+      onCta: Colors.white,
+    ),
+  );
+
   static const List<BrandThemePreset> all = [
     mintTurquoise,
     magentaViolet,
+    redOrange,
+    blackWhite,
   ];
 
   static BrandThemePreset of(BrandThemeId id) {
@@ -85,6 +130,10 @@ class BrandThemePresets {
         return mintTurquoise;
       case BrandThemeId.magentaViolet:
         return magentaViolet;
+      case BrandThemeId.redOrange:
+        return redOrange;
+      case BrandThemeId.blackWhite:
+        return blackWhite;
     }
   }
 }

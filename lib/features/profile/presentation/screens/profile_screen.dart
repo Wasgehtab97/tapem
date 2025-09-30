@@ -226,6 +226,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return loc.settingsThemeMintTurquoise;
       case BrandThemeId.magentaViolet:
         return loc.settingsThemeMagentaViolet;
+      case BrandThemeId.redOrange:
+        return loc.settingsThemeRedOrange;
+      case BrandThemeId.blackWhite:
+        return loc.settingsThemeBlackWhite;
     }
   }
 

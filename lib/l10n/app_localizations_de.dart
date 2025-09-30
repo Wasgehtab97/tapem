@@ -428,6 +428,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemeMagentaViolet => 'Magenta & Violett';
 
   @override
+  String get settingsThemeRedOrange => 'Rot/Orange';
+
+  @override
+  String get settingsThemeBlackWhite => 'Schwarz/Weiß';
+
+  @override
   String get settingsThemeSaveError => 'Theme konnte nicht gespeichert werden.';
 
   @override
