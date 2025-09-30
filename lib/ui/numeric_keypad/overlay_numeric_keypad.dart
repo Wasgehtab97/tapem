@@ -367,16 +367,12 @@ class OverlayNumericKeypad extends StatelessWidget {
                     totalGridRows: 4,
                     gap: gap,
                     theme: theme,
-                    onHide: controller.close,
-                    onPaste: () async {
-                      final data = await Clipboard.getData('text/plain');
-                      if (data?.text != null) {
-                        _klog('paste "${data!.text}"');
-                        _pasteInto(context, controller, data.text!);
-                        _haptic(context);
-                      }
+                    onHide: () {
+                      Provider.of<DeviceProvider?>(context, listen: false)
+                          ?.clearFocus();
+                      controller.close();
                     },
-                    onCheckNext: () => _checkNext(context, controller),
+                    onNavigate: () => _navigateNext(context, controller),
                     onPlus: () => _increment(context, controller, 1),
                     onMinus: () => _increment(context, controller, -1),
                   ),
@@ -399,27 +395,85 @@ class OverlayNumericKeypad extends StatelessWidget {
     }
   }
 
-  static void _checkNext(
+  static void _navigateNext(
     BuildContext context,
     OverlayNumericKeypadController controller,
   ) {
     final prov = context.read<DeviceProvider>();
-    final next = prov.nextFilledNotDoneIndex();
-    elogUi('OVERLAY_CHECK_TAP', {
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+
+    elogUi('OVERLAY_NAVIGATE_NEXT', {
       'deviceId': prov.device?.uid,
-      'setIndexFocused': prov.focusedIndex,
-      'nextToComplete': next,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField?.name,
     });
-    final idx = prov.completeNextFilledSet();
-    if (idx != null) {
-      elogUi('AUTO_CHECK_NEXT_OK', {'completedIndex': idx});
-      if (prov.nextFilledNotDoneIndex() == null) {
-        controller.close();
-      }
-    } else {
-      elogUi('AUTO_CHECK_NEXT_SKIP', {'reason': 'none'});
-      controller.close();
+
+    if (focusedIndex == null || focusedField == null) {
+      _haptic(context);
+      return;
     }
+
+    int targetIndex = focusedIndex;
+    DeviceSetFieldFocus? targetField;
+
+    switch (focusedField) {
+      case DeviceSetFieldFocus.weight:
+        targetField = DeviceSetFieldFocus.reps;
+        break;
+      case DeviceSetFieldFocus.reps:
+        final done = prov.markSetDone(focusedIndex);
+        if (!done) {
+          elogUi('OVERLAY_NAVIGATE_BLOCKED', {
+            'reason': 'invalid_set',
+            'index': focusedIndex,
+          });
+          _haptic(context);
+          return;
+        }
+        final nextIndex = prov.nextPendingSetIndex(focusedIndex);
+        if (nextIndex != null) {
+          targetIndex = nextIndex;
+          targetField = DeviceSetFieldFocus.weight;
+        } else {
+          prov.clearFocus();
+          controller.close();
+          elogUi('OVERLAY_NAVIGATE_CLOSE', {'reason': 'all_sets_completed'});
+          _haptic(context);
+          return;
+        }
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        targetField = DeviceSetFieldFocus.dropReps;
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        final done = prov.markSetDone(focusedIndex);
+        if (!done) {
+          elogUi('OVERLAY_NAVIGATE_BLOCKED', {
+            'reason': 'invalid_set',
+            'index': focusedIndex,
+          });
+          _haptic(context);
+          return;
+        }
+        final nextIndex = prov.nextPendingSetIndex(focusedIndex);
+        if (nextIndex != null) {
+          targetIndex = nextIndex;
+          targetField = DeviceSetFieldFocus.weight;
+        } else {
+          prov.clearFocus();
+          controller.close();
+          elogUi('OVERLAY_NAVIGATE_CLOSE', {'reason': 'all_sets_completed'});
+          _haptic(context);
+          return;
+        }
+        break;
+    }
+
+    if (targetField != null) {
+      prov.requestFocus(index: targetIndex, field: targetField);
+    }
+
     _haptic(context);
   }
 
@@ -444,29 +498,6 @@ class OverlayNumericKeypad extends StatelessWidget {
       'hu',
     };
     return commaLangs.contains(lang) ? ',' : '.';
-  }
-
-  static void _pasteInto(
-    BuildContext ctx,
-    OverlayNumericKeypadController ctl,
-    String text,
-  ) {
-    final t = ctl.target;
-    if (t == null) return;
-    final cleaned = ctl.allowDecimal
-        ? text.trim().replaceAll(',', '.').replaceAll(RegExp(r'[^0-9\.]'), '')
-        : text.replaceAll(RegExp(r'[^0-9]'), '');
-    final parts = cleaned.split('.');
-    final normalized = ctl.allowDecimal && parts.length > 1
-        ? '${parts[0]}.${parts.sublist(1).join()}'
-        : cleaned;
-    final display = ctl.allowDecimal
-        ? normalized.replaceAll('.', _decimalChar(ctx))
-        : normalized;
-    t.value = TextEditingValue(
-      text: display,
-      selection: TextSelection.collapsed(offset: display.length),
-    );
   }
 
   static void _applyToken(
@@ -615,7 +646,7 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onPaste, onCheckNext, onPlus, onMinus;
+  final VoidCallback onHide, onNavigate, onPlus, onMinus;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -624,8 +655,7 @@ class _ActionRailCompact extends StatelessWidget {
     required this.gap,
     required this.theme,
     required this.onHide,
-    required this.onPaste,
-    required this.onCheckNext,
+    required this.onNavigate,
     required this.onPlus,
     required this.onMinus,
   });
@@ -637,8 +667,12 @@ class _ActionRailCompact extends StatelessWidget {
 
     // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
-      _RailAction(Icons.check_rounded, 'Bestätigen', onCheckNext),
-      _RailAction(Icons.paste_rounded, 'Einfügen', onPaste),
+      _RailAction(
+        Icons.arrow_forward_rounded,
+        'Weiter',
+        onNavigate,
+        wide: true,
+      ),
       _RailAction(Icons.remove_rounded, 'Verringern', onMinus, repeat: true),
       _RailAction(Icons.add_rounded, 'Erhöhen', onPlus, repeat: true),
       _RailAction(
