@@ -195,11 +195,11 @@ class AppTheme {
     ),
     iconTheme: const IconThemeData(color: Colors.white),
     primaryIconTheme: const IconThemeData(color: Colors.white),
-    cardTheme: const CardTheme(
+    cardTheme: const CardThemeData(
       color: Colors.black,
       surfaceTintColor: Colors.black,
     ),
-    dialogTheme: const DialogTheme(
+    dialogTheme: const DialogThemeData(
       backgroundColor: Colors.black,
       surfaceTintColor: Colors.black,
       titleTextStyle: TextStyle(
