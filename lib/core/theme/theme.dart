@@ -117,7 +117,26 @@ class AppTheme {
   static ThemeData customTheme({
     required Color primary,
     required Color secondary,
-  }) => _buildTheme(primary: primary, secondary: secondary);
+    Color? background,
+    Color? surface,
+    Color? surface2,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? focus,
+    Color? buttonColor,
+  }) {
+    return _buildTheme(
+      primary: primary,
+      secondary: secondary,
+      background: background ?? AppColors.background,
+      surface: surface ?? AppColors.surface,
+      surface2: surface2,
+      textPrimary: textPrimary ?? AppColors.textPrimary,
+      textSecondary: textSecondary ?? AppColors.textSecondary,
+      focus: focus ?? AppColors.accentTurquoise,
+      buttonColor: buttonColor,
+    );
+  }
 
   /// The default dark theme using mint as primary and turquoise as secondary.
   static final ThemeData mintDarkTheme = _buildTheme(

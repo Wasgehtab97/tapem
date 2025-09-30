@@ -146,6 +146,7 @@ class ThemeLoader extends ChangeNotifier {
       useMagenta: preset.useMagentaTokens,
       useClubAktiv: preset.useClubAktivTokens,
       onColors: preset.onColors,
+      background: preset.background,
     );
     if (preset.useMagentaTokens) {
       MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
@@ -169,10 +170,12 @@ class ThemeLoader extends ChangeNotifier {
     bool useMagenta = false,
     bool useClubAktiv = false,
     BrandOnColors? onColors,
+    Color? background,
   }) {
     _currentTheme = AppTheme.customTheme(
       primary: primary,
       secondary: secondary,
+      background: background,
     );
     AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);

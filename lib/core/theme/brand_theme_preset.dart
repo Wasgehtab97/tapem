@@ -53,6 +53,7 @@ class BrandThemePreset {
     this.useMagentaTokens = false,
     this.useClubAktivTokens = false,
     this.onColors,
+    this.background,
   });
 
   final BrandThemeId id;
@@ -65,6 +66,7 @@ class BrandThemePreset {
   final bool useMagentaTokens;
   final bool useClubAktivTokens;
   final BrandOnColors? onColors;
+  final Color? background;
 }
 
 /// Built-in presets that users can manually select.
@@ -115,6 +117,7 @@ class BrandThemePresets {
       onGradient: Colors.white,
       onCta: Colors.white,
     ),
+    background: Color(0xFF1E1E1E),
   );
 
   static const List<BrandThemePreset> all = [
