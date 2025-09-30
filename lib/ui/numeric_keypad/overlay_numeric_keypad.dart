@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -40,6 +41,30 @@ class NumericKeypadTheme {
     this.railIcon = Colors.white70,
     this.press = const Color(0xFF2A2E33),
   });
+
+  factory NumericKeypadTheme.fromContext(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final brand = theme.extension<AppBrandTheme>();
+
+    Color blend(Color base, Color overlay, double opacity) {
+      return Color.alphaBlend(overlay.withOpacity(opacity), base);
+    }
+
+    final surface = theme.canvasColor;
+    final sheetBg = blend(surface, Colors.black, 0.75);
+    final keyFg = brand?.gradient.colors.last ?? scheme.primary;
+    final press = brand?.pressedOverlay ?? keyFg.withOpacity(0.18);
+
+    return NumericKeypadTheme(
+      sheetBg: sheetBg,
+      keyBg: Colors.black,
+      keyFg: keyFg,
+      railBg: Colors.black,
+      railIcon: keyFg,
+      press: press,
+    );
+  }
 }
 
 class OverlayNumericKeypadController extends ChangeNotifier {
@@ -111,7 +136,7 @@ enum OutsideTapMode { none, closeAfterTap }
 class OverlayNumericKeypadHost extends StatefulWidget {
   final OverlayNumericKeypadController controller;
   final Widget child;
-  final NumericKeypadTheme theme;
+  final NumericKeypadTheme? theme;
   final bool interceptAndroidBack;
   final OutsideTapMode outsideTapMode;
 
@@ -119,7 +144,7 @@ class OverlayNumericKeypadHost extends StatefulWidget {
     super.key,
     required this.controller,
     required this.child,
-    this.theme = const NumericKeypadTheme(),
+    this.theme,
     this.interceptAndroidBack = true,
     this.outsideTapMode = OutsideTapMode.none,
   });
@@ -177,7 +202,7 @@ class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
         ? OverlayNumericKeypad(
             key: _keypadKey,
             controller: widget.controller,
-            theme: widget.theme,
+            theme: widget.theme ?? NumericKeypadTheme.fromContext(context),
           )
         : const SizedBox.shrink();
 
@@ -708,7 +733,7 @@ class _ActionRailCompact extends StatelessWidget {
     }
 
     return Container(
-      color: theme.sheetBg,
+      color: theme.railBg,
       child: ClipRRect(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(theme.corner),
@@ -802,11 +827,16 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: th.keyBg,
+            color: th.railBg,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
-          child: FittedBox(child: Icon(widget.icon, color: th.railIcon)),
+          child: FittedBox(
+            child: Icon(
+              widget.icon,
+              color: th.railIcon,
+            ),
+          ),
         ),
       ),
     );
@@ -839,12 +869,17 @@ class _RailBtnWide extends StatelessWidget {
         child: Container(
           height: height,
           decoration: BoxDecoration(
-            color: th.keyBg,
+            color: th.railBg,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
           // Icon only (consistent with compact rail); gets more visual weight
-          child: FittedBox(child: Icon(icon, color: th.railIcon)),
+          child: FittedBox(
+            child: Icon(
+              icon,
+              color: th.railIcon,
+            ),
+          ),
         ),
       ),
     );
@@ -903,14 +938,20 @@ class _KeyButtonState extends State<_KeyButton> {
   @override
   Widget build(BuildContext context) {
     final th = widget.theme;
+    final disabled = widget.disabled || widget.onTap == null;
+    final fg = disabled ? th.keyFg.withOpacity(0.35) : th.keyFg;
 
     final child = FittedBox(
       fit: BoxFit.scaleDown,
       child: widget.icon != null
-          ? Icon(widget.icon, color: th.keyFg)
+          ? Icon(widget.icon, color: fg)
           : Text(
               widget.label ?? '',
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
             ),
     );
 
@@ -927,7 +968,7 @@ class _KeyButtonState extends State<_KeyButton> {
         onTapCancel: _stop,
         child: Container(
           decoration: BoxDecoration(
-            color: widget.disabled ? th.keyBg.withOpacity(0.5) : th.keyBg,
+            color: disabled ? th.keyBg.withOpacity(0.5) : th.keyBg,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,

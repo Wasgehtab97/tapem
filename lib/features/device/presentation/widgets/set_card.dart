@@ -789,6 +789,7 @@ class _InputPillState extends State<_InputPill> {
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brandColor = Theme.of(context).colorScheme.primary;
 
     final radius = BorderRadius.circular(widget.dense ? 18 : 22);
     final baseOverlay = showLabel
@@ -811,8 +812,8 @@ class _InputPillState extends State<_InputPill> {
       color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.8 : 0.6),
     );
 
-    final valueColor = widget.tokens.chipFg
-        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.55));
+    final valueColor = brandColor
+        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.65));
     final valueStyle = GoogleFonts.spaceGrotesk(
       fontSize: showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
       fontWeight: FontWeight.w700,
@@ -821,7 +822,7 @@ class _InputPillState extends State<_InputPill> {
     );
 
     final placeholderStyle = valueStyle.copyWith(
-      color: widget.tokens.chipFg.withOpacity(0.35),
+      color: brandColor.withOpacity(0.35),
     );
 
     final supportingStyle = TextStyle(
