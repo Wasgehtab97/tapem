@@ -414,6 +414,25 @@ class OverlayNumericKeypad extends StatelessWidget {
       return;
     }
 
+    final targetController = controller.target;
+    if (targetController != null) {
+      final text = targetController.text;
+      switch (focusedField) {
+        case DeviceSetFieldFocus.weight:
+          prov.updateSet(focusedIndex, weight: text);
+          break;
+        case DeviceSetFieldFocus.reps:
+          prov.updateSet(focusedIndex, reps: text);
+          break;
+        case DeviceSetFieldFocus.dropWeight:
+          prov.updateSet(focusedIndex, dropWeight: text);
+          break;
+        case DeviceSetFieldFocus.dropReps:
+          prov.updateSet(focusedIndex, dropReps: text);
+          break;
+      }
+    }
+
     int targetIndex = focusedIndex;
     DeviceSetFieldFocus? targetField;
 
