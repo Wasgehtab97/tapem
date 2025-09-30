@@ -388,7 +388,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const avatarSize = 44.0;
 
     final theme = Theme.of(context);
-    final profileTitle = auth.userName ?? auth.userEmail ?? loc.profileTitle;
 
     return Scaffold(
       appBar: AppBar(
@@ -430,10 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
-        title: BrandGradientText(
-          profileTitle,
-          style: theme.textTheme.titleLarge,
-        ),
+        title: const SizedBox.shrink(),
         actions: [
           if (enableFriends)
             Consumer<FriendsProvider>(

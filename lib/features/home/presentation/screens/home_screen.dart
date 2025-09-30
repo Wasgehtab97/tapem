@@ -16,6 +16,7 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_overview_
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -116,7 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: const ActiveWorkoutTimer(),
+        centerTitle: true,
+        title: _buildAppBarTitle(context),
         actions: const [
           NfcScanButton(),
           SizedBox(width: 8),
@@ -130,6 +132,33 @@ class _HomeScreenState extends State<HomeScreen> {
         items: [for (final t in tabs) t.item],
       ),
     );
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
+
+    switch (_currentIndex) {
+      case 0:
+        return Text(
+          loc.gymTitle,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      case 1:
+        final username = auth.userName ?? auth.userEmail ?? loc.profileTitle;
+        return Text(
+          username,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      default:
+        return const ActiveWorkoutTimer();
+    }
   }
 }
 
