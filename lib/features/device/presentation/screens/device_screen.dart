@@ -5,34 +5,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/app_router.dart';
+import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
-import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/config/feature_flags.dart';
-
-import 'package:tapem/app_router.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/core/providers/training_plan_provider.dart';
-import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
-import '../../../training_plan/domain/models/exercise_entry.dart';
-import '../widgets/note_button_widget.dart';
-import '../widgets/set_card.dart';
-import '../models/session_set_vm.dart';
-import '../widgets/last_session_card.dart';
-import '../widgets/device_pager.dart';
-import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
+import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
-import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
-import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/time/logic_day.dart';
+
+import '../models/session_set_vm.dart';
+import '../widgets/device_pager.dart';
+import '../widgets/last_session_card.dart';
+import '../widgets/note_button_widget.dart';
+import '../widgets/set_card.dart';
+import '../../../training_plan/domain/models/exercise_entry.dart';
 
 void _dlog(String m) {}
 
@@ -118,6 +120,58 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void _closeKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
     context.read<OverlayNumericKeypadController>().close();
+  }
+
+  AppBar _buildAppBar(
+    BuildContext context,
+    DeviceProvider prov,
+    AppLocalizations loc,
+  ) {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.secondary;
+    final titleBase = theme.textTheme.titleLarge ??
+        const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        );
+    final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
+    final deviceTitle = prov.device?.name ?? loc.deviceNotFound;
+
+    return AppBar(
+      foregroundColor: accentColor,
+      iconTheme: IconThemeData(color: accentColor),
+      actionsIconTheme: IconThemeData(color: accentColor),
+      titleTextStyle: titleStyle,
+      toolbarTextStyle:
+          theme.textTheme.titleMedium?.copyWith(color: accentColor),
+      centerTitle: false,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              deviceTitle,
+              overflow: TextOverflow.ellipsis,
+              style: titleStyle,
+            ),
+          ),
+          const ActiveWorkoutTimer(padding: EdgeInsets.zero),
+        ],
+      ),
+      actions: const [
+        NfcScanButton(),
+        SizedBox(width: 8),
+      ],
+      bottom: prov.device == null
+          ? null
+          : _DeviceAppBarFooter(
+              provider: prov,
+              titleStyle: titleStyle,
+              gymId: widget.gymId,
+              deviceId: widget.deviceId,
+              exerciseId: widget.exerciseId,
+              closeKeyboard: _closeKeyboard,
+            ),
+    );
   }
 
   Widget _buildEditablePage(
@@ -410,114 +464,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
     Widget scaffold;
     if (prov.isLoading) {
-      scaffold = const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      scaffold = Scaffold(
+        appBar: _buildAppBar(context, prov, loc),
+        body: const Center(child: CircularProgressIndicator()),
       );
     } else if (prov.error != null || prov.device == null) {
       scaffold = Scaffold(
-        appBar: AppBar(title: const Text('Gerät nicht gefunden')),
+        appBar: _buildAppBar(context, prov, loc),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
     } else {
-      final theme = Theme.of(context);
-      final accentColor = theme.colorScheme.secondary;
-      final titleBase = theme.textTheme.titleLarge ??
-          const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          );
-      final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
-
       scaffold = Scaffold(
-        appBar: AppBar(
-          foregroundColor: accentColor,
-          iconTheme: IconThemeData(color: accentColor),
-          actionsIconTheme: IconThemeData(color: accentColor),
-          titleTextStyle: titleStyle,
-          toolbarTextStyle:
-              theme.textTheme.titleMedium?.copyWith(color: accentColor),
-          title: Hero(
-            tag: 'device-${prov.device!.uid}',
-            child: Material(
-              type: MaterialType.transparency,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return ConstrainedBox(
-                    constraints:
-                        BoxConstraints(maxWidth: constraints.maxWidth),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.center,
-                      child: BrandGradientText(
-                        prov.device!.name,
-                        style: titleStyle,
-                        textAlign: TextAlign.center,
-                        softWrap: false,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          centerTitle: true,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: XpInfoButton(xp: prov.xp, level: prov.level),
-            ),
-            FeedbackButton(gymId: widget.gymId, deviceId: widget.deviceId),
-            IconButton(
-              icon: Icon(
-                Icons.accessibility_new,
-                color: prov.isBodyweightMode
-                    ? theme.colorScheme.primary
-                    : accentColor,
-              ),
-              tooltip: loc.bodyweightToggleTooltip,
-              onPressed: () {
-                prov.toggleBodyweightMode();
-                elogUi('bodyweight_toggle', {
-                  'enabled': prov.isBodyweightMode,
-                  'deviceId': widget.deviceId,
-                  'exerciseId': widget.exerciseId,
-                });
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: 'Verlauf',
-              onPressed: () {
-                _closeKeyboard();
-                final deviceProv = context.read<DeviceProvider>();
-                String? exerciseName;
-                if (deviceProv.device?.isMulti ?? false) {
-                  final exProv = context.read<ExerciseProvider>();
-                  exerciseName = exProv.exercises
-                      .firstWhere(
-                        (e) => e.id == widget.exerciseId,
-                        orElse: () =>
-                            Exercise(id: '', name: 'Unknown', userId: ''),
-                      )
-                      .name;
-                }
-                Navigator.of(context).pushNamed(
-                  AppRouter.history,
-                  arguments: {
-                    'deviceId': widget.deviceId,
-                    'deviceName': deviceProv.device?.name ?? widget.deviceId,
-                    'deviceDescription': deviceProv.device?.description,
-                    'isMulti': deviceProv.device?.isMulti ?? false,
-                    if (deviceProv.device?.isMulti ?? false)
-                      'exerciseId': widget.exerciseId,
-                    if (deviceProv.device?.isMulti ?? false)
-                      'exerciseName': exerciseName,
-                  },
-                );
-              },
-            ),
-          ],
-        ),
+        appBar: _buildAppBar(context, prov, loc),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
         body: DevicePager(
@@ -543,6 +501,127 @@ class _DeviceScreenState extends State<DeviceScreen> {
         return true;
       },
       child: scaffold,
+    );
+  }
+}
+
+class _DeviceAppBarFooter extends StatelessWidget
+    implements PreferredSizeWidget {
+  final DeviceProvider provider;
+  final TextStyle titleStyle;
+  final String gymId;
+  final String deviceId;
+  final String exerciseId;
+  final VoidCallback closeKeyboard;
+
+  const _DeviceAppBarFooter({
+    required this.provider,
+    required this.titleStyle,
+    required this.gymId,
+    required this.deviceId,
+    required this.exerciseId,
+    required this.closeKeyboard,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(80);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.secondary;
+    final loc = AppLocalizations.of(context)!;
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Hero(
+                tag: 'device-${provider.device!.uid}',
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return ConstrainedBox(
+                        constraints:
+                            BoxConstraints(maxWidth: constraints.maxWidth),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: BrandGradientText(
+                            provider.device!.name,
+                            style: titleStyle,
+                            textAlign: TextAlign.left,
+                            softWrap: false,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            XpInfoButton(xp: provider.xp, level: provider.level),
+            const SizedBox(width: 4),
+            FeedbackButton(gymId: gymId, deviceId: deviceId),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(
+                Icons.accessibility_new,
+                color: provider.isBodyweightMode
+                    ? theme.colorScheme.primary
+                    : accentColor,
+              ),
+              tooltip: loc.bodyweightToggleTooltip,
+              onPressed: () {
+                provider.toggleBodyweightMode();
+                elogUi('bodyweight_toggle', {
+                  'enabled': provider.isBodyweightMode,
+                  'deviceId': deviceId,
+                  'exerciseId': exerciseId,
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: loc.deviceHistoryTooltip,
+              onPressed: () {
+                closeKeyboard();
+                final deviceProv = provider;
+                String? exerciseName;
+                if (deviceProv.device?.isMulti ?? false) {
+                  final exProv = context.read<ExerciseProvider>();
+                  exerciseName = exProv.exercises
+                      .firstWhere(
+                        (e) => e.id == exerciseId,
+                        orElse: () =>
+                            Exercise(id: '', name: 'Unknown', userId: ''),
+                      )
+                      .name;
+                }
+                Navigator.of(context).pushNamed(
+                  AppRouter.history,
+                  arguments: {
+                    'deviceId': deviceId,
+                    'deviceName': deviceProv.device?.name ?? deviceId,
+                    'deviceDescription': deviceProv.device?.description,
+                    'isMulti': deviceProv.device?.isMulti ?? false,
+                    if (deviceProv.device?.isMulti ?? false)
+                      'exerciseId': exerciseId,
+                    if (deviceProv.device?.isMulti ?? false)
+                      'exerciseName': exerciseName,
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
