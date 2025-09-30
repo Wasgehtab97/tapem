@@ -137,6 +137,10 @@ class ThemeLoader extends ChangeNotifier {
   }
 
   void _applyPreset(BrandThemePreset preset) {
+    if (preset.id == BrandThemeId.blackWhite) {
+      _applyBlackWhitePreset(preset);
+      return;
+    }
     _applyBrandColors(
       primary: preset.primary,
       secondary: preset.secondary,
@@ -147,12 +151,74 @@ class ThemeLoader extends ChangeNotifier {
       useClubAktiv: preset.useClubAktivTokens,
       onColors: preset.onColors,
       background: preset.background,
+      surface: preset.surface,
+      surface2: preset.surface2,
+      textPrimary: preset.textPrimary,
+      textSecondary: preset.textSecondary,
+      buttonColor: preset.buttonColor,
     );
     if (preset.useMagentaTokens) {
       MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
     } else if (preset.useClubAktivTokens) {
       ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
     }
+  }
+
+  void _applyBlackWhitePreset(BrandThemePreset preset) {
+    final base = AppTheme.neutralTheme;
+    final resolvedBackground = preset.background ?? Colors.black;
+    final resolvedSurface = preset.surface ?? Colors.black;
+    final resolvedSurface2 = preset.surface2 ?? resolvedSurface;
+    final resolvedTextPrimary = preset.textPrimary ?? Colors.white;
+    final resolvedTextSecondary =
+        preset.textSecondary ?? const Color(0xCCFFFFFF);
+    final resolvedOnColors = preset.onColors ??
+        const BrandOnColors(
+          onPrimary: Colors.black,
+          onSecondary: Colors.black,
+          onGradient: Colors.white,
+          onCta: Colors.white,
+        );
+
+    final colorScheme = base.colorScheme.copyWith(
+      primary: preset.primary,
+      secondary: preset.secondary,
+      background: resolvedBackground,
+      surface: resolvedSurface,
+      onPrimary: resolvedOnColors.onPrimary,
+      onSecondary: resolvedOnColors.onSecondary,
+      onSurface: resolvedTextSecondary,
+      outline: preset.focus,
+    );
+
+    _currentTheme = base.copyWith(
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: resolvedBackground,
+      canvasColor: resolvedSurface2,
+      cardColor: resolvedSurface,
+      dialogBackgroundColor: resolvedSurface,
+      hintColor: resolvedTextSecondary,
+      textTheme: base.textTheme.copyWith(
+        titleLarge:
+            base.textTheme.titleLarge?.copyWith(color: resolvedTextPrimary),
+        titleMedium:
+            base.textTheme.titleMedium?.copyWith(color: resolvedTextSecondary),
+        bodyMedium:
+            base.textTheme.bodyMedium?.copyWith(color: resolvedTextSecondary),
+      ),
+      bottomNavigationBarTheme: base.bottomNavigationBarTheme.copyWith(
+        backgroundColor: resolvedSurface,
+        selectedItemColor: preset.primary,
+        unselectedItemColor: resolvedTextSecondary,
+      ),
+    );
+
+    AppGradients.setBrandGradient(preset.gradientStart, preset.gradientEnd);
+    AppGradients.setCtaGlow(preset.focus);
+    _attachBrandTheme(
+      focus: preset.focus,
+      onColors: resolvedOnColors,
+    );
   }
 
   Color _parseHex(String hex) {
@@ -171,11 +237,21 @@ class ThemeLoader extends ChangeNotifier {
     bool useClubAktiv = false,
     BrandOnColors? onColors,
     Color? background,
+    Color? surface,
+    Color? surface2,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? buttonColor,
   }) {
     _currentTheme = AppTheme.customTheme(
       primary: primary,
       secondary: secondary,
       background: background,
+      surface: surface,
+      surface2: surface2,
+      textPrimary: textPrimary,
+      textSecondary: textSecondary,
+      buttonColor: buttonColor,
     );
     AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);

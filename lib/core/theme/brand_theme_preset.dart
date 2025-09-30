@@ -54,6 +54,11 @@ class BrandThemePreset {
     this.useClubAktivTokens = false,
     this.onColors,
     this.background,
+    this.surface,
+    this.surface2,
+    this.textPrimary,
+    this.textSecondary,
+    this.buttonColor,
   });
 
   final BrandThemeId id;
@@ -67,6 +72,11 @@ class BrandThemePreset {
   final bool useClubAktivTokens;
   final BrandOnColors? onColors;
   final Color? background;
+  final Color? surface;
+  final Color? surface2;
+  final Color? textPrimary;
+  final Color? textSecondary;
+  final Color? buttonColor;
 }
 
 /// Built-in presets that users can manually select.
@@ -107,17 +117,22 @@ class BrandThemePresets {
     id: BrandThemeId.blackWhite,
     nameKey: 'settingsThemeBlackWhite',
     primary: Colors.white,
-    secondary: Colors.black,
+    secondary: Colors.white,
     gradientStart: Colors.black,
     gradientEnd: Color(0xFF3D3D3D),
     focus: Colors.white,
     onColors: const BrandOnColors(
       onPrimary: Colors.black,
-      onSecondary: Colors.white,
+      onSecondary: Colors.black,
       onGradient: Colors.white,
       onCta: Colors.white,
     ),
-    background: Color(0xFF1E1E1E),
+    background: Colors.black,
+    surface: Colors.black,
+    surface2: Colors.black,
+    textPrimary: Colors.white,
+    textSecondary: Color(0xCCFFFFFF),
+    buttonColor: Colors.black,
   );
 
   static const List<BrandThemePreset> all = [
