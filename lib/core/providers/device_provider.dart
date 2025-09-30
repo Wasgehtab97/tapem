@@ -464,11 +464,15 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     final before = Map<String, dynamic>.from(s);
     final current = (s['done'] == true || s['done'] == 'true');
-    s['done'] = !current;
+    final toggledToDone = !current;
+    s['done'] = toggledToDone;
     _sets[index] = Map<String, dynamic>.from(s);
     _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
     _onSessionMutated();
+    if (toggledToDone) {
+      _maybeStartSessionTimer();
+    }
     return true;
   }
 
@@ -490,6 +494,7 @@ class DeviceProvider extends ChangeNotifier {
     _log('☑️ [Provider] completeNextFilledSet($idx)');
     notifyListeners();
     _onSessionMutated();
+    _maybeStartSessionTimer();
     return idx;
   }
 
@@ -508,6 +513,7 @@ class DeviceProvider extends ChangeNotifier {
       _log('☑️ [Provider] completeAllFilledNotDone count=$count');
       notifyListeners();
       _onSessionMutated();
+      _maybeStartSessionTimer();
     }
     return count;
   }
@@ -565,6 +571,16 @@ class DeviceProvider extends ChangeNotifier {
 
   bool _hasCompletedSets() {
     return _sets.any((s) => s['done'] == true || s['done'] == 'true');
+  }
+
+  void _maybeStartSessionTimer() {
+    final durationService = _sessionDurationService;
+    if (durationService == null || durationService.isRunning) return;
+    final uid = _currentUserId;
+    final gymId = _currentGymId;
+    if (uid == null || gymId == null) return;
+    if (!_hasCompletedSets()) return;
+    unawaited(durationService.start(uid: uid, gymId: gymId));
   }
 
   void _onSessionMutated() {
