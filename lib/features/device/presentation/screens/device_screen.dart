@@ -127,7 +127,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
     DeviceProvider prov,
   ) {
     final theme = Theme.of(context);
-    final accentColor = theme.colorScheme.secondary;
+    final accentColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final titleBase = theme.textTheme.titleLarge ??
         const TextStyle(
           fontSize: 20,
@@ -516,7 +517,8 @@ class _DeviceAppBarFooter extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accentColor = theme.colorScheme.secondary;
+    final accentColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final loc = AppLocalizations.of(context)!;
 
     return SafeArea(
@@ -553,9 +555,17 @@ class _DeviceAppBarFooter extends StatelessWidget
               ),
             ),
             const SizedBox(width: 8),
-            XpInfoButton(xp: provider.xp, level: provider.level),
+            XpInfoButton(
+              xp: provider.xp,
+              level: provider.level,
+              color: accentColor,
+            ),
             const SizedBox(width: 4),
-            FeedbackButton(gymId: gymId, deviceId: deviceId),
+            FeedbackButton(
+              gymId: gymId,
+              deviceId: deviceId,
+              color: accentColor,
+            ),
             const SizedBox(width: 4),
             IconButton(
               icon: Icon(
@@ -575,7 +585,7 @@ class _DeviceAppBarFooter extends StatelessWidget
               },
             ),
             IconButton(
-              icon: const Icon(Icons.history),
+              icon: Icon(Icons.history, color: accentColor),
               tooltip: loc.deviceHistoryTooltip,
               onPressed: () {
                 closeKeyboard();
