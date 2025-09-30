@@ -136,6 +136,33 @@ class _DeviceScreenState extends State<DeviceScreen> {
         );
     final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
 
+    String? headerTitle;
+    final device = prov.device;
+    if (device != null) {
+      if (device.isMulti) {
+        final exercises =
+            context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
+        final match = exercises.where((e) => e.id == widget.exerciseId);
+        headerTitle = match.isNotEmpty ? match.first.name : device.name;
+      } else {
+        headerTitle = device.name;
+      }
+    }
+
+    final Widget titleWidget = headerTitle != null
+        ? Text(
+            headerTitle!,
+            key: ValueKey(headerTitle),
+            style: titleStyle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          )
+        : const ActiveWorkoutTimer(
+            key: ValueKey('activeWorkoutTimer'),
+            padding: EdgeInsets.zero,
+          );
+
     return AppBar(
       foregroundColor: accentColor,
       iconTheme: IconThemeData(color: accentColor),
@@ -144,7 +171,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
       toolbarTextStyle:
           theme.textTheme.titleMedium?.copyWith(color: accentColor),
       centerTitle: true,
-      title: const ActiveWorkoutTimer(padding: EdgeInsets.zero),
+      title: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: titleWidget,
+      ),
       actions: const [
         NfcScanButton(),
         SizedBox(width: 8),
