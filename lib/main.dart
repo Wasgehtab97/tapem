@@ -378,7 +378,20 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),
-        ChangeNotifierProvider(create: (_) => WorkoutSessionDurationService()),
+        ChangeNotifierProxyProvider2<
+            AuthProvider,
+            BrandingProvider,
+            WorkoutSessionDurationService>(
+          create: (_) => WorkoutSessionDurationService(),
+          update: (_, auth, branding, service) {
+            final svc = service ?? WorkoutSessionDurationService();
+            unawaited(svc.setActiveContext(
+              uid: auth.userId,
+              gymId: branding.gymId,
+            ));
+            return svc;
+          },
+        ),
         ChangeNotifierProxyProvider4<
             MembershipService,
             XpProvider,

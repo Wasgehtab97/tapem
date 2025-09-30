@@ -36,11 +36,12 @@ class ActiveWorkoutTimer extends StatelessWidget {
                 ? colors.onSecondaryContainer
                 : colors.onPrimary;
 
+            final borderRadius = BorderRadius.circular(AppRadius.button);
             final content = DecoratedBox(
               decoration: BoxDecoration(
                 gradient: gradient,
                 color: backgroundColor,
-                borderRadius: BorderRadius.circular(AppRadius.button),
+                borderRadius: borderRadius,
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -68,7 +69,22 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final resolvedPadding = padding ?? const EdgeInsets.symmetric(horizontal: 16);
             return Padding(
               padding: resolvedPadding,
-              child: content,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: borderRadius,
+                  onTap: () async {
+                    final result = await service.confirmStop(context);
+                    if (!context.mounted) return;
+                    if (result == StopResult.save) {
+                      await service.save();
+                    } else if (result == StopResult.discard) {
+                      await service.discard();
+                    }
+                  },
+                  child: content,
+                ),
+              ),
             );
           },
         );

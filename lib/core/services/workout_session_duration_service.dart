@@ -15,6 +15,7 @@ enum StopResult { save, discard, cancel }
 
 class WorkoutSessionDurationService extends ChangeNotifier {
   static const _prefsKeyPrefix = 'workoutTimer:';
+  static const _prefsKeyDelimiter = '::';
   static const _queueKey = 'workoutTimerQueue';
   static const Duration _defaultAutoStopDelay = Duration(hours: 1);
 
@@ -28,6 +29,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   int? _startEpochMs;
   String? _uid;
   String? _gymId;
+  String? _activePrefsKey;
   Timer? _ticker;
   final StreamController<Duration> _tickCtrl = StreamController.broadcast();
   Timer? _autoStopTimer;
@@ -55,37 +57,86 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    // find any running state for current user? We cannot know uid yet
-    // but we can scan keys.
-    final keys = _prefs!.getKeys().where((k) => k.startsWith(_prefsKeyPrefix));
-    if (keys.isNotEmpty) {
-      final data = jsonDecode(_prefs!.getString(keys.first)!);
-      _startEpochMs = data['startEpochMs'] as int?;
-      _uid = data['uid'] as String?;
-      _gymId = data['gymId'] as String?;
-      _firstSessionId = data['firstSessionId'] as String?;
-      _lastSessionId = data['lastSessionId'] as String?;
-      final lastMs = data['lastSessionEpochMs'];
-      if (lastMs is int) {
-        _lastSessionEpochMs = lastMs;
-      } else if (lastMs is num) {
-        _lastSessionEpochMs = lastMs.toInt();
-      }
-      if (_startEpochMs != null) {
-        _isRunning = true;
-        _startTicker();
-        _resumeAutoStopTimer();
+    await _migrateLegacyKeys();
+    await _flushQueue();
+  }
+
+  Future<void> setActiveContext({String? uid, String? gymId}) async {
+    await _ensurePrefs();
+    final prefs = _prefs!;
+    final newKey =
+        (uid != null && gymId != null) ? _prefsKeyFor(uid, gymId) : null;
+
+    if (_activePrefsKey == newKey && _uid == uid && _gymId == gymId) {
+      return;
+    }
+
+    final wasRunning = _isRunning;
+
+    _stopTicker();
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
+
+    _uid = uid;
+    _gymId = gymId;
+    _activePrefsKey = newKey;
+    _firstSessionId = null;
+    _lastSessionId = null;
+    _lastSessionEpochMs = null;
+    _startEpochMs = null;
+    var shouldNotify = false;
+
+    if (newKey != null) {
+      final raw = prefs.getString(newKey) ?? await _readLegacy(uid!);
+      if (raw != null) {
+        try {
+          final data = jsonDecode(raw) as Map<String, dynamic>;
+          _startEpochMs = data['startEpochMs'] as int?;
+          _firstSessionId = data['firstSessionId'] as String?;
+          _lastSessionId = data['lastSessionId'] as String?;
+          final lastMs = data['lastSessionEpochMs'];
+          if (lastMs is int) {
+            _lastSessionEpochMs = lastMs;
+          } else if (lastMs is num) {
+            _lastSessionEpochMs = lastMs.toInt();
+          }
+        } catch (_) {
+          // ignore malformed persisted state
+        }
+
+        if (_startEpochMs != null) {
+          _isRunning = true;
+          _startTicker();
+          _resumeAutoStopTimer();
+          shouldNotify = true;
+          _tickCtrl.add(elapsed);
+          notifyListeners();
+          return;
+        }
+
+        _isRunning = false;
+        shouldNotify = true;
+        _tickCtrl.add(Duration.zero);
         notifyListeners();
+        return;
       }
     }
 
-    await _flushQueue();
+    if (wasRunning || _startEpochMs != null) {
+      shouldNotify = true;
+    }
+    _isRunning = false;
+    _tickCtrl.add(Duration.zero);
+    if (shouldNotify) {
+      notifyListeners();
+    }
   }
 
   Future<void> start({required String uid, required String gymId}) async {
     if (_isRunning) return;
     _uid = uid;
     _gymId = gymId;
+    _activePrefsKey = _prefsKeyFor(uid, gymId);
     final now = DateTime.now().millisecondsSinceEpoch;
     _startEpochMs = now;
     _firstSessionId = null;
@@ -230,12 +281,14 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     await _clearLocal();
   }
 
-  Future<void> _clearLocal() async {
+  Future<void> _clearLocal({bool removePersisted = true}) async {
     final uid = _uid;
+    final gymId = _gymId;
     _isRunning = false;
     _startEpochMs = null;
     _uid = null;
     _gymId = null;
+    _activePrefsKey = null;
     _firstSessionId = null;
     _lastSessionId = null;
     _lastSessionEpochMs = null;
@@ -244,8 +297,11 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _autoStopTimer = null;
     _tickCtrl.add(Duration.zero);
     notifyListeners();
-    if (uid != null) {
+    if (removePersisted && uid != null) {
       final prefs = _prefs ?? await SharedPreferences.getInstance();
+      if (gymId != null) {
+        await prefs.remove(_prefsKeyFor(uid, gymId));
+      }
       await prefs.remove('$_prefsKeyPrefix$uid');
     }
   }
@@ -259,19 +315,40 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     });
   }
 
+  void _stopTicker() {
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
+  Future<void> _ensurePrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  String _prefsKeyFor(String uid, String gymId) =>
+      '$_prefsKeyPrefix$uid$_prefsKeyDelimiter$gymId';
+
+  Future<String?> _readLegacy(String uid) async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    return prefs.getString('$_prefsKeyPrefix$uid');
+  }
+
   Future<void> _persistState() async {
     final uid = _uid;
-    if (!_isRunning || uid == null || _startEpochMs == null) return;
+    final gymId = _gymId;
+    if (!_isRunning || uid == null || gymId == null || _startEpochMs == null) {
+      return;
+    }
     final prefs = _prefs ??= await SharedPreferences.getInstance();
     final data = <String, dynamic>{
       'startEpochMs': _startEpochMs,
       'uid': uid,
-      'gymId': _gymId,
+      'gymId': gymId,
       if (_firstSessionId != null) 'firstSessionId': _firstSessionId,
       if (_lastSessionId != null) 'lastSessionId': _lastSessionId,
       if (_lastSessionEpochMs != null) 'lastSessionEpochMs': _lastSessionEpochMs,
     };
-    await prefs.setString('$_prefsKeyPrefix$uid', jsonEncode(data));
+    await prefs.setString(_prefsKeyFor(uid, gymId), jsonEncode(data));
+    await prefs.remove('$_prefsKeyPrefix$uid');
   }
 
   void _scheduleAutoStop() {
@@ -316,6 +393,27 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _autoStopTimer?.cancel();
     _tickCtrl.close();
     super.dispose();
+  }
+
+  Future<void> _migrateLegacyKeys() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith(_prefsKeyPrefix));
+    for (final key in keys) {
+      if (key.contains(_prefsKeyDelimiter)) continue;
+      final raw = prefs.getString(key);
+      if (raw == null) continue;
+      try {
+        final data = jsonDecode(raw) as Map<String, dynamic>;
+        final uid = data['uid'] as String?;
+        final gymId = data['gymId'] as String?;
+        if (uid == null || gymId == null) continue;
+        final newKey = _prefsKeyFor(uid, gymId);
+        await prefs.setString(newKey, raw);
+        await prefs.remove(key);
+      } catch (_) {
+        // ignore malformed legacy values
+      }
+    }
   }
 
   Future<void> _enqueuePersist(Map<String, dynamic> payload) async {
