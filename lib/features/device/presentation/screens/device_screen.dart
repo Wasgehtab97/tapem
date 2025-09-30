@@ -125,7 +125,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
   AppBar _buildAppBar(
     BuildContext context,
     DeviceProvider prov,
-    AppLocalizations loc,
   ) {
     final theme = Theme.of(context);
     final accentColor = theme.colorScheme.secondary;
@@ -135,7 +134,6 @@ class _DeviceScreenState extends State<DeviceScreen> {
           fontWeight: FontWeight.w600,
         );
     final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
-    final deviceTitle = prov.device?.name ?? loc.deviceNotFound;
 
     return AppBar(
       foregroundColor: accentColor,
@@ -144,19 +142,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
       titleTextStyle: titleStyle,
       toolbarTextStyle:
           theme.textTheme.titleMedium?.copyWith(color: accentColor),
-      centerTitle: false,
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              deviceTitle,
-              overflow: TextOverflow.ellipsis,
-              style: titleStyle,
-            ),
-          ),
-          const ActiveWorkoutTimer(padding: EdgeInsets.zero),
-        ],
-      ),
+      centerTitle: true,
+      title: const ActiveWorkoutTimer(padding: EdgeInsets.zero),
       actions: const [
         NfcScanButton(),
         SizedBox(width: 8),
@@ -465,17 +452,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
     Widget scaffold;
     if (prov.isLoading) {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov, loc),
+        appBar: _buildAppBar(context, prov),
         body: const Center(child: CircularProgressIndicator()),
       );
     } else if (prov.error != null || prov.device == null) {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov, loc),
+        appBar: _buildAppBar(context, prov),
         body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
       );
     } else {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov, loc),
+        appBar: _buildAppBar(context, prov),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
         body: DevicePager(

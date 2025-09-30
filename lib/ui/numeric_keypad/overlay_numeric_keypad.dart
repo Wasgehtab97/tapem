@@ -51,29 +51,48 @@ class NumericKeypadTheme {
       return Color.alphaBlend(overlay.withOpacity(opacity), base);
     }
 
-    final surface = theme.canvasColor;
-    final sheetBg = blend(surface, Colors.black, 0.75);
-    Color resolveKeyForeground() {
-      final candidate = brand?.gradient.colors.last ?? scheme.primary;
-
-      // Ensure the key foreground keeps enough contrast in high-contrast themes
-      // such as the black/white mode where the gradient collapses to black.
-      if (candidate.computeLuminance() < 0.2) {
-        return brand?.onBrand ?? Colors.white;
-      }
-
-      return candidate;
+    Color tintTowards(Color source, Color target, double amount) {
+      return Color.lerp(source, target, amount) ?? source;
     }
 
-    final keyFg = resolveKeyForeground();
-    final press = brand?.pressedOverlay ?? keyFg.withOpacity(0.18);
+    Color adjustForeground(Color foreground, Color background) {
+      final brightness = ThemeData.estimateBrightnessForColor(background);
+      final lum = foreground.computeLuminance();
+      if (brightness == Brightness.dark && lum < 0.35) {
+        return tintTowards(foreground, Colors.white, 0.35);
+      }
+      if (brightness == Brightness.light && lum > 0.65) {
+        return tintTowards(foreground, Colors.black, 0.4);
+      }
+      return foreground;
+    }
+
+    final gradientColors = brand?.gradient.colors ?? const <Color>[];
+    final accentBase =
+        gradientColors.isNotEmpty ? gradientColors.last : scheme.secondary;
+    final accent = accentBase.computeLuminance() < 0.08
+        ? scheme.primary
+        : accentBase;
+
+    final sheetBase = theme.canvasColor;
+    final keyBase = theme.colorScheme.surface;
+    final railBase = theme.colorScheme.surface;
+
+    final sheetBg = blend(sheetBase, accent, 0.32);
+    final keyBg = blend(keyBase, accent, 0.28);
+    final railBg = blend(railBase, accent, 0.22);
+
+    final keyFg = adjustForeground(accent, keyBg);
+    final railIcon = adjustForeground(accent, railBg);
+    final press = brand?.pressedOverlay ??
+        adjustForeground(accent, keyBg).withOpacity(0.18);
 
     return NumericKeypadTheme(
       sheetBg: sheetBg,
-      keyBg: Colors.black,
+      keyBg: keyBg,
       keyFg: keyFg,
-      railBg: Colors.black,
-      railIcon: keyFg,
+      railBg: railBg,
+      railIcon: railIcon,
       press: press,
     );
   }
