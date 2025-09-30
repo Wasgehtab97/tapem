@@ -171,7 +171,9 @@ class AppTheme {
       background: Colors.black,
       surface: Colors.black,
       onPrimary: Colors.black,
+      onSecondary: Colors.white,
       onSurface: Colors.white,
+      onBackground: Colors.white,
       outline: Colors.white,
     ),
     appBarTheme: const AppBarTheme(
@@ -184,6 +186,90 @@ class AppTheme {
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white70,
       indicatorColor: Colors.white,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Colors.black,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.white70,
+      showUnselectedLabels: true,
+    ),
+    iconTheme: const IconThemeData(color: Colors.white),
+    primaryIconTheme: const IconThemeData(color: Colors.white),
+    cardTheme: const CardTheme(
+      color: Colors.black,
+      surfaceTintColor: Colors.black,
+    ),
+    dialogTheme: const DialogTheme(
+      backgroundColor: Colors.black,
+      surfaceTintColor: Colors.black,
+      titleTextStyle: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+      ),
+      contentTextStyle: TextStyle(color: Colors.white),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Colors.black,
+      modalBackgroundColor: Colors.black,
+      surfaceTintColor: Colors.black,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
+      ),
+    ),
+    popupMenuTheme: const PopupMenuThemeData(
+      color: Colors.black,
+      textStyle: TextStyle(color: Colors.white),
+    ),
+    listTileTheme: const ListTileThemeData(
+      textColor: Colors.white,
+      iconColor: Colors.white,
+      tileColor: Colors.black,
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Colors.black,
+      contentTextStyle: TextStyle(color: Colors.white),
+      actionTextColor: Colors.white,
+      behavior: SnackBarBehavior.floating,
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    checkboxTheme: CheckboxThemeData(
+      checkColor: MaterialStateProperty.all(Colors.black),
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return Colors.white.withOpacity(0.3);
+        }
+        if (states.contains(MaterialState.selected)) {
+          return Colors.white;
+        }
+        return Colors.transparent;
+      }),
+      side: const BorderSide(color: Colors.white, width: 1.5),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return Colors.white.withOpacity(0.3);
+        }
+        return Colors.white;
+      }),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return Colors.white54;
+        }
+        return Colors.white;
+      }),
+      trackColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return Colors.white.withOpacity(0.2);
+        }
+        return Colors.white24;
+      }),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

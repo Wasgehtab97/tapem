@@ -775,7 +775,10 @@ class _PlannedTableState extends State<_PlannedTable> {
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Container(
-        decoration: DeviceLevelStyle.widgetDecorationFor(prov.level),
+        decoration: DeviceLevelStyle.widgetDecorationFor(
+          prov.level,
+          theme: Theme.of(context),
+        ),
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

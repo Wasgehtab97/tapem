@@ -4,6 +4,7 @@ import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/theme.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 
@@ -106,12 +107,17 @@ void main() {
         null,
         overridePreset: BrandThemeId.blackWhite,
       );
-      expect(loader.theme.colorScheme.primary, Colors.white);
-      expect(loader.theme.colorScheme.secondary, Colors.black);
-      expect(loader.theme.colorScheme.onSecondary, Colors.white);
-      final on = loader.theme.extension<BrandOnColors>()!;
-      expect(on.onSecondary, Colors.white);
+      final theme = loader.theme;
+      expect(theme.scaffoldBackgroundColor, Colors.black);
+      expect(theme.colorScheme.primary, Colors.white);
+      expect(theme.colorScheme.secondary, Colors.white);
+      expect(theme.colorScheme.onSecondary, Colors.white);
+      final on = theme.extension<BrandOnColors>()!;
+      expect(on.onGradient, Colors.white);
       expect(on.onCta, Colors.white);
+      final brandTheme = theme.extension<AppBrandTheme>()!;
+      expect(brandTheme.gradient.colors.first, Colors.black);
+      expect(brandTheme.outlineGradient.colors.first, Colors.white);
     });
 
     test('lifthouse_koblenz surfaces are normalised to reference luminance', () {
