@@ -53,7 +53,19 @@ class NumericKeypadTheme {
 
     final surface = theme.canvasColor;
     final sheetBg = blend(surface, Colors.black, 0.75);
-    final keyFg = brand?.gradient.colors.last ?? scheme.primary;
+    Color resolveKeyForeground() {
+      final candidate = brand?.gradient.colors.last ?? scheme.primary;
+
+      // Ensure the key foreground keeps enough contrast in high-contrast themes
+      // such as the black/white mode where the gradient collapses to black.
+      if (candidate.computeLuminance() < 0.2) {
+        return brand?.onBrand ?? Colors.white;
+      }
+
+      return candidate;
+    }
+
+    final keyFg = resolveKeyForeground();
     final press = brand?.pressedOverlay ?? keyFg.withOpacity(0.18);
 
     return NumericKeypadTheme(
