@@ -74,18 +74,18 @@ class NumericKeypadTheme {
         ? scheme.primary
         : accentBase;
 
-    final sheetBase = theme.canvasColor;
-    final keyBase = theme.colorScheme.surface;
-    final railBase = theme.colorScheme.surface;
+    const sheetBase = Colors.black;
+    const keyBase = Colors.black;
+    const railBase = Colors.black;
 
-    final sheetBg = blend(sheetBase, accent, 0.32);
-    final keyBg = blend(keyBase, accent, 0.28);
-    final railBg = blend(railBase, accent, 0.22);
+    const sheetBg = sheetBase;
+    const keyBg = keyBase;
+    const railBg = railBase;
 
     final keyFg = adjustForeground(accent, keyBg);
     final railIcon = adjustForeground(accent, railBg);
     final press = brand?.pressedOverlay ??
-        adjustForeground(accent, keyBg).withOpacity(0.18);
+        accent.withOpacity(0.2);
 
     return NumericKeypadTheme(
       sheetBg: sheetBg,
