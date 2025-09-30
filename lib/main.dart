@@ -495,6 +495,7 @@ class MyApp extends StatelessWidget {
         return OverlayNumericKeypadHost(
           controller: keypad,
           outsideTapMode: OutsideTapMode.closeAfterTap,
+          theme: NumericKeypadTheme.fromContext(context),
           child: app,
         );
       },
