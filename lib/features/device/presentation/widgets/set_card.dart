@@ -910,9 +910,13 @@ class _InputPillState extends State<_InputPill> {
 
     final valueColor = brandColor
         .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.65));
-    final valueStyle = GoogleFonts.spaceGrotesk(
-      fontSize: showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
-      fontWeight: FontWeight.w700,
+    final keypadTypeface = Theme.of(context).textTheme.titleLarge ??
+        Theme.of(context).textTheme.bodyMedium ??
+        const TextStyle();
+    final valueStyle = keypadTypeface.copyWith(
+      fontSize:
+          showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
+      fontWeight: FontWeight.w600,
       color: valueColor,
       height: 1.15,
     );
