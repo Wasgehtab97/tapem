@@ -17,7 +17,6 @@ import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
@@ -32,6 +31,13 @@ import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+
+enum DeviceSetFieldFocus {
+  weight,
+  reps,
+  dropWeight,
+  dropReps,
+}
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -448,9 +454,32 @@ class DeviceProvider extends ChangeNotifier {
     return weightValid && r.isNotEmpty && int.tryParse(r) != null;
   }
 
+  DeviceSetFieldFocus? _focusedField;
   int? _focusedIndex;
+  int _focusRequestId = 0;
+
   int? get focusedIndex => _focusedIndex;
-  void setFocusedIndex(int? i) => _focusedIndex = i;
+  DeviceSetFieldFocus? get focusedField => _focusedField;
+  int get focusRequestId => _focusRequestId;
+
+  int requestFocus({
+    required int index,
+    required DeviceSetFieldFocus field,
+  }) {
+    _focusedIndex = index;
+    _focusedField = field;
+    _focusRequestId++;
+    notifyListeners();
+    return _focusRequestId;
+  }
+
+  int clearFocus() {
+    _focusedIndex = null;
+    _focusedField = null;
+    _focusRequestId++;
+    notifyListeners();
+    return _focusRequestId;
+  }
 
   bool toggleSetDone(int index) {
     final s = _sets[index];
@@ -474,6 +503,45 @@ class DeviceProvider extends ChangeNotifier {
       _maybeStartSessionTimer();
     }
     return true;
+  }
+
+  bool markSetDone(int index) {
+    if (index < 0 || index >= _sets.length) return false;
+    final s = _sets[index];
+    if (!_isFilled(s)) {
+      _log(
+        '⚠️ [Provider] markSetDone($index) blocked: invalid',
+      );
+      return false;
+    }
+
+    final current = (s['done'] == true || s['done'] == 'true');
+    if (current) return true;
+
+    final after = Map<String, dynamic>.from(s);
+    after['done'] = true;
+    _sets[index] = after;
+    _log('☑️ [Provider] markSetDone($index)');
+    notifyListeners();
+    _onSessionMutated();
+    _maybeStartSessionTimer();
+    return true;
+  }
+
+  int? nextPendingSetIndex(int afterIndex) {
+    for (var i = afterIndex + 1; i < _sets.length; i++) {
+      final s = _sets[i];
+      if (s['done'] == true || s['done'] == 'true') continue;
+      return i;
+    }
+    return null;
+  }
+
+  bool get allSetsCompleted {
+    for (final s in _sets) {
+      if (!(s['done'] == true || s['done'] == 'true')) return false;
+    }
+    return _sets.isNotEmpty;
   }
 
   int? nextFilledNotDoneIndex() {

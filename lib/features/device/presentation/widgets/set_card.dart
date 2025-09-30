@@ -132,6 +132,7 @@ class SetCardState extends State<SetCard> {
   late final FocusNode _dropRepsFocus;
 
   bool _showExtras = false;
+  int _lastFocusRequestId = -1;
 
   // 🔒 Silent-update Mechanik
   bool _muteCtrls = false;
@@ -254,13 +255,23 @@ class SetCardState extends State<SetCard> {
   void _openKeypad(
     TextEditingController controller, {
     required bool allowDecimal,
+    required DeviceSetFieldFocus field,
+    bool notifyFocus = true,
   }) {
     _slog(
       widget.index,
-      'open keypad allowDecimal=$allowDecimal text="${controller.text}"',
+      'open keypad field=$field allowDecimal=$allowDecimal text="${controller.text}"',
     );
     FocusScope.of(context).unfocus();
-    context.read<DeviceProvider>().setFocusedIndex(widget.index);
+    final prov = context.read<DeviceProvider>();
+    if (notifyFocus) {
+      _lastFocusRequestId = prov.requestFocus(
+        index: widget.index,
+        field: field,
+      );
+    } else {
+      _lastFocusRequestId = prov.focusRequestId;
+    }
     context.read<OverlayNumericKeypadController>().openFor(
       controller,
       allowDecimal: allowDecimal,
@@ -269,7 +280,11 @@ class SetCardState extends State<SetCard> {
   }
 
   void focusWeight() {
-    _openKeypad(_weightCtrl, allowDecimal: true);
+    _openKeypad(
+      _weightCtrl,
+      allowDecimal: true,
+      field: DeviceSetFieldFocus.weight,
+    );
   }
 
   String? _validateDrop(String? _) {
@@ -313,6 +328,52 @@ class SetCardState extends State<SetCard> {
                 double.tryParse(weight.replaceAll(',', '.')) != null)) &&
         reps.isNotEmpty &&
         int.tryParse(reps) != null;
+
+    final focusField = prov.focusedField;
+    final focusRequestId = prov.focusRequestId;
+    if (!widget.readOnly &&
+        focusField != null &&
+        prov.focusedIndex == widget.index &&
+        focusRequestId != _lastFocusRequestId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _lastFocusRequestId = focusRequestId;
+        switch (focusField) {
+          case DeviceSetFieldFocus.weight:
+            _openKeypad(
+              _weightCtrl,
+              allowDecimal: true,
+              field: focusField,
+              notifyFocus: false,
+            );
+            break;
+          case DeviceSetFieldFocus.reps:
+            _openKeypad(
+              _repsCtrl,
+              allowDecimal: false,
+              field: focusField,
+              notifyFocus: false,
+            );
+            break;
+          case DeviceSetFieldFocus.dropWeight:
+            _openKeypad(
+              _dropWeightCtrl,
+              allowDecimal: true,
+              field: focusField,
+              notifyFocus: false,
+            );
+            break;
+          case DeviceSetFieldFocus.dropReps:
+            _openKeypad(
+              _dropRepsCtrl,
+              allowDecimal: false,
+              field: focusField,
+              notifyFocus: false,
+            );
+            break;
+        }
+      });
+    }
     VoidCallback? toggleExtras;
     if (!widget.readOnly) {
       toggleExtras = () {
@@ -341,6 +402,7 @@ class SetCardState extends State<SetCard> {
         });
         HapticFeedback.lightImpact();
         if (ok) {
+          prov.clearFocus();
           context.read<OverlayNumericKeypadController>().close();
         }
       };
@@ -381,15 +443,35 @@ class SetCardState extends State<SetCard> {
       onToggleExtras: toggleExtras,
       onToggleDone: toggleDone,
       onTapWeight:
-          widget.readOnly ? null : () => _openKeypad(_weightCtrl, allowDecimal: true),
+          widget.readOnly
+              ? null
+              : () => _openKeypad(
+                    _weightCtrl,
+                    allowDecimal: true,
+                    field: DeviceSetFieldFocus.weight,
+                  ),
       onTapReps:
-          widget.readOnly ? null : () => _openKeypad(_repsCtrl, allowDecimal: false),
+          widget.readOnly
+              ? null
+              : () => _openKeypad(
+                    _repsCtrl,
+                    allowDecimal: false,
+                    field: DeviceSetFieldFocus.reps,
+                  ),
       onTapDropWeight: done || widget.readOnly
           ? null
-          : () => _openKeypad(_dropWeightCtrl, allowDecimal: true),
+          : () => _openKeypad(
+                _dropWeightCtrl,
+                allowDecimal: true,
+                field: DeviceSetFieldFocus.dropWeight,
+              ),
       onTapDropReps: done || widget.readOnly
           ? null
-          : () => _openKeypad(_dropRepsCtrl, allowDecimal: false),
+          : () => _openKeypad(
+                _dropRepsCtrl,
+                allowDecimal: false,
+                field: DeviceSetFieldFocus.dropReps,
+              ),
       dropValidator: _validateDrop,
       padding: contentPadding,
       weightPlaceholder: weightPlaceholder,
