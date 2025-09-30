@@ -166,11 +166,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
                     else ...[
-                      Text(
-                        loc.newSessionTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Center(
+                        child: BrandGradientText(
+                          loc.newSessionTitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -629,11 +632,6 @@ class _GroupedSetList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var index = 0; index < sets.length; index++) ...[
-            if (index > 0)
-              const Divider(
-                height: 1,
-                thickness: 1,
-              ),
             Dismissible(
               key: ValueKey('set-${sets[index]['number']}'),
               direction: DismissDirection.endToStart,
