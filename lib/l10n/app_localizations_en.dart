@@ -292,6 +292,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Link every device to its discipline to keep track of your PR progress.';
 
   @override
+  String get powerliftingHeaviestTable => 'Heaviest sets';
+
+  @override
+  String get powerliftingE1rmTable => 'E1RM';
+
+  @override
   String get powerliftingEmptyTitle => 'Build your powerlifting board';
 
   @override

@@ -13,6 +13,11 @@ import 'package:tapem/features/profile/domain/models/powerlifting_discipline.dar
 import 'package:tapem/features/profile/domain/models/powerlifting_record.dart';
 import 'package:tapem/services/membership_service.dart';
 
+enum PowerliftingMetric {
+  heaviest,
+  e1rm,
+}
+
 class PowerliftingProvider extends ChangeNotifier {
   PowerliftingProvider({
     required FirebaseFirestore firestore,
@@ -43,8 +48,13 @@ class PowerliftingProvider extends ChangeNotifier {
     for (final d in PowerliftingDiscipline.values) d: <PowerliftingAssignment>[],
   };
 
-  final Map<PowerliftingDiscipline, List<PowerliftingRecord>> _records = {
-    for (final d in PowerliftingDiscipline.values) d: <PowerliftingRecord>[],
+  final Map<PowerliftingDiscipline,
+          Map<PowerliftingMetric, List<PowerliftingRecord>>> _records = {
+    for (final d in PowerliftingDiscipline.values)
+      d: {
+        for (final metric in PowerliftingMetric.values)
+          metric: <PowerliftingRecord>[],
+      },
   };
 
   final Map<String, Device> _deviceCache = <String, Device>{};
@@ -64,8 +74,11 @@ class PowerliftingProvider extends ChangeNotifier {
   List<PowerliftingAssignment> assignmentsFor(PowerliftingDiscipline discipline) =>
       List.unmodifiable(_assignments[discipline]!);
 
-  List<PowerliftingRecord> recordsFor(PowerliftingDiscipline discipline) =>
-      List.unmodifiable(_records[discipline]!);
+  List<PowerliftingRecord> recordsFor(
+    PowerliftingDiscipline discipline, {
+    PowerliftingMetric metric = PowerliftingMetric.heaviest,
+  }) =>
+      List.unmodifiable(_records[discipline]?[metric] ?? const []);
 
   @override
   void dispose() {
@@ -334,6 +347,10 @@ class PowerliftingProvider extends ChangeNotifier {
     }
   }
 
+  Map<PowerliftingMetric, List<PowerliftingRecord>> _createEmptyRecordMap() => {
+        for (final metric in PowerliftingMetric.values) metric: <PowerliftingRecord>[],
+      };
+
   Future<void> _reloadDisciplineRecords(
     PowerliftingDiscipline discipline,
   ) async {
@@ -346,7 +363,7 @@ class PowerliftingProvider extends ChangeNotifier {
   ) async {
     final entries = _assignments[discipline]!;
     if (entries.isEmpty) {
-      _records[discipline] = <PowerliftingRecord>[];
+      _records[discipline] = _createEmptyRecordMap();
       return;
     }
 
@@ -355,29 +372,46 @@ class PowerliftingProvider extends ChangeNotifier {
     final combined = results.expand((element) => element).toList();
     combined.removeWhere((record) => record.weightKg <= 0);
     if (combined.isEmpty) {
-      _records[discipline] = <PowerliftingRecord>[];
+      _records[discipline] = _createEmptyRecordMap();
       return;
     }
 
     final sortedByDate = List<PowerliftingRecord>.from(combined)
       ..sort((a, b) => a.performedAt.compareTo(b.performedAt));
 
-    final progressive = <PowerliftingRecord>[];
+    final heaviest = <PowerliftingRecord>[];
+    final e1rm = <PowerliftingRecord>[];
     var bestWeight = -double.infinity;
+    var bestE1rm = -double.infinity;
     for (final record in sortedByDate) {
       if (record.weightKg > bestWeight) {
-        progressive.add(record);
+        heaviest.add(record);
         bestWeight = record.weightKg;
+      }
+
+      final recordE1rm = record.e1rm;
+      if (recordE1rm > bestE1rm) {
+        e1rm.add(record);
+        bestE1rm = recordE1rm;
       }
     }
 
-    progressive.sort((a, b) {
+    heaviest.sort((a, b) {
       final weightCompare = b.weightKg.compareTo(a.weightKg);
       if (weightCompare != 0) return weightCompare;
       return b.performedAt.compareTo(a.performedAt);
     });
 
-    _records[discipline] = progressive;
+    e1rm.sort((a, b) {
+      final e1rmCompare = b.e1rm.compareTo(a.e1rm);
+      if (e1rmCompare != 0) return e1rmCompare;
+      return b.performedAt.compareTo(a.performedAt);
+    });
+
+    _records[discipline] = {
+      PowerliftingMetric.heaviest: heaviest,
+      PowerliftingMetric.e1rm: e1rm,
+    };
   }
 
   Future<List<PowerliftingRecord>> _fetchRecordsForAssignment(
@@ -503,7 +537,7 @@ class PowerliftingProvider extends ChangeNotifier {
     _disposeLogSubscriptions();
     for (final discipline in PowerliftingDiscipline.values) {
       _assignments[discipline] = <PowerliftingAssignment>[];
-      _records[discipline] = <PowerliftingRecord>[];
+      _records[discipline] = _createEmptyRecordMap();
     }
   }
 

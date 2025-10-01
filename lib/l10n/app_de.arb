@@ -386,6 +386,16 @@
     "description": "Einleitungstext auf der Powerlifting-Seite"
   },
 
+  "powerliftingHeaviestTable": "Schwerste Sätze",
+  "@powerliftingHeaviestTable": {
+    "description": "Beschriftung für die Ansicht der schwersten Sätze"
+  },
+
+  "powerliftingE1rmTable": "E1RM",
+  "@powerliftingE1rmTable": {
+    "description": "Beschriftung für die E1RM-Ansicht"
+  },
+
   "powerliftingEmptyTitle": "Baue dein Powerlifting-Board",
   "@powerliftingEmptyTitle": {
     "description": "Titel, wenn noch keine Powerlifting-Quellen vorhanden sind"

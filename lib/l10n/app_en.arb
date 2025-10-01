@@ -386,6 +386,16 @@
     "description": "Introductory text on the powerlifting page"
   },
 
+  "powerliftingHeaviestTable": "Heaviest sets",
+  "@powerliftingHeaviestTable": {
+    "description": "Label for the heaviest set table view"
+  },
+
+  "powerliftingE1rmTable": "E1RM",
+  "@powerliftingE1rmTable": {
+    "description": "Label for the E1RM table view"
+  },
+
   "powerliftingEmptyTitle": "Build your powerlifting board",
   "@powerliftingEmptyTitle": {
     "description": "Title shown when no powerlifting sources are configured"

@@ -20,6 +20,8 @@ class PowerliftingScreen extends StatefulWidget {
 }
 
 class _PowerliftingScreenState extends State<PowerliftingScreen> {
+  PowerliftingMetric _selectedMetric = PowerliftingMetric.heaviest;
+
   Future<void> _onAddPressed() async {
     final provider = context.read<PowerliftingProvider>();
     final loc = AppLocalizations.of(context)!;
@@ -401,9 +403,13 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
           .map(
             (discipline) => _DisciplineColumn(
               label: _disciplineLabel(loc, discipline),
-              records: provider.recordsFor(discipline),
+              records: provider.recordsFor(
+                discipline,
+                metric: _selectedMetric,
+              ),
               dateFormat: dateFormat,
               emptyLabel: loc.powerliftingNoRecords,
+              metric: _selectedMetric,
             ),
           )
           .toList();
@@ -422,12 +428,48 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        loc.powerliftingIntro,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.9),
-                          height: 1.4,
-                        ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final introText = Text(
+                            loc.powerliftingIntro,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.9),
+                              height: 1.4,
+                            ),
+                          );
+                          final switcher = _PowerliftingTableSwitcher(
+                            selectedMetric: _selectedMetric,
+                            onMetricChanged: (metric) {
+                              setState(() {
+                                _selectedMetric = metric;
+                              });
+                            },
+                          );
+
+                          if (constraints.maxWidth < 520) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                introText,
+                                const SizedBox(height: AppSpacing.md),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: switcher,
+                                ),
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: introText),
+                              const SizedBox(width: AppSpacing.md),
+                              switcher,
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       _GradientFrame(
@@ -484,6 +526,43 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
       case PowerliftingDiscipline.deadlift:
         return loc.powerliftingDeadlift;
     }
+  }
+}
+
+class _PowerliftingTableSwitcher extends StatelessWidget {
+  const _PowerliftingTableSwitcher({
+    required this.selectedMetric,
+    required this.onMetricChanged,
+  });
+
+  final PowerliftingMetric selectedMetric;
+  final ValueChanged<PowerliftingMetric> onMetricChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    return SegmentedButton<PowerliftingMetric>(
+      segments: [
+        ButtonSegment<PowerliftingMetric>(
+          value: PowerliftingMetric.heaviest,
+          label: Text(loc.powerliftingHeaviestTable),
+          icon: const Icon(Icons.monitor_weight_outlined),
+        ),
+        ButtonSegment<PowerliftingMetric>(
+          value: PowerliftingMetric.e1rm,
+          label: Text(loc.powerliftingE1rmTable),
+          icon: const Icon(Icons.trending_up_outlined),
+        ),
+      ],
+      selected: <PowerliftingMetric>{selectedMetric},
+      onSelectionChanged: (selection) {
+        if (selection.isEmpty) {
+          return;
+        }
+        onMetricChanged(selection.first);
+      },
+    );
   }
 }
 
@@ -624,12 +703,14 @@ class _DisciplineColumn {
     required this.records,
     required this.dateFormat,
     required this.emptyLabel,
+    required this.metric,
   });
 
   final String label;
   final List<PowerliftingRecord> records;
   final DateFormat dateFormat;
   final String emptyLabel;
+  final PowerliftingMetric metric;
 
   Widget buildCell(int index, TextStyle? valueStyle, TextStyle? metaStyle) {
     if (index >= records.length) {
@@ -639,34 +720,67 @@ class _DisciplineColumn {
     final record = records[index];
     final dateText = dateFormat.format(record.performedAt);
     final subtitle = record.exerciseName ?? record.deviceName;
-    final weight = record.weightKg % 1 == 0
-        ? record.weightKg.toStringAsFixed(0)
-        : record.weightKg.toStringAsFixed(1);
+    final mainValue = switch (metric) {
+      PowerliftingMetric.heaviest =>
+          '${_formatWeight(record.weightKg)} kg × ${record.reps}',
+      PowerliftingMetric.e1rm =>
+          '${_formatWeight(record.e1rm)} kg E1RM',
+    };
+    final supportingValue =
+        metric == PowerliftingMetric.e1rm
+            ? '${_formatWeight(record.weightKg)} kg × ${record.reps}'
+            : null;
+
+    final children = <Widget>[
+      Text(
+        mainValue,
+        style: valueStyle,
+        textAlign: TextAlign.center,
+      ),
+    ];
+
+    if (supportingValue != null) {
+      children.addAll([
+        const SizedBox(height: 4),
+        Text(
+          supportingValue,
+          style: metaStyle,
+          textAlign: TextAlign.center,
+        ),
+      ]);
+    }
+
+    children.addAll([
+      const SizedBox(height: 6),
+      Text(
+        dateText,
+        style: metaStyle,
+        textAlign: TextAlign.center,
+      ),
+    ]);
+
+    if (subtitle.isNotEmpty) {
+      children.addAll([
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: metaStyle,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ]);
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text('$weight kg × ${record.reps}', style: valueStyle, textAlign: TextAlign.center),
-        const SizedBox(height: 6),
-        Text(
-          dateText,
-          style: metaStyle,
-          textAlign: TextAlign.center,
-        ),
-        if (subtitle.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: metaStyle,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ],
+      children: children,
     );
   }
+
+  String _formatWeight(double value) =>
+      value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
 }
 
 class _EmptyState extends StatelessWidget {
