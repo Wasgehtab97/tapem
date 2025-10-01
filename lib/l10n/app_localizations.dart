@@ -503,6 +503,42 @@ abstract class AppLocalizations {
   /// **'Your training days of the year'**
   String get profileTrainingDaysTitle;
 
+  /// No description provided for @profileStatsButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get profileStatsButtonLabel;
+
+  /// No description provided for @profileStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get profileStatsTitle;
+
+  /// No description provided for @profileStatsTotalTrainingDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Total training days'**
+  String get profileStatsTotalTrainingDays;
+
+  /// No description provided for @profileStatsAverageTrainingDaysPerWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. training days per week'**
+  String get profileStatsAverageTrainingDaysPerWeek;
+
+  /// No description provided for @profileStatsFavoriteExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourite exercise'**
+  String get profileStatsFavoriteExercise;
+
+  /// No description provided for @profileStatsFavoriteExerciseFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions yet'**
+  String get profileStatsFavoriteExerciseFallback;
+
   /// Validation when reps are missing
   ///
   /// In en, this message translates to:

@@ -29,6 +29,7 @@ import '../../../survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import '../widgets/change_username_sheet.dart';
 import 'package:tapem/app_router.dart';
+import 'profile_stats_screen.dart';
 
 const bool enableFriends = true;
 
@@ -527,31 +528,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(color: brandColor),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            child: SizedBox(
-              width: double.infinity,
-              child: BrandActionTile(
-                title: 'Umfragen',
-                centerTitle: true,
-                dense: true,
-                minVerticalPadding: 0,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                onTap: () {
-                  final gymId = context.read<GymProvider>().currentGymId;
-                  final userId = context.read<AuthProvider>().userId ?? '';
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SurveyVoteScreen(
-                        gymId: gymId,
-                        userId: userId,
-                      ),
-                    ),
-                  );
-                },
-                variant: BrandActionTileVariant.outlined,
-                showChevron: false,
-                uiLogEvent: 'PROFILE_CARD_RENDER',
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: BrandActionTile(
+                    title: loc.profileStatsButtonLabel,
+                    centerTitle: true,
+                    dense: true,
+                    minVerticalPadding: 0,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileStatsScreen(),
+                        ),
+                      );
+                    },
+                    variant: BrandActionTileVariant.outlined,
+                    showChevron: false,
+                    uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
+                  child: BrandActionTile(
+                    title: 'Umfragen',
+                    centerTitle: true,
+                    dense: true,
+                    minVerticalPadding: 0,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    onTap: () {
+                      final gymId = context.read<GymProvider>().currentGymId;
+                      final userId = context.read<AuthProvider>().userId ?? '';
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SurveyVoteScreen(
+                            gymId: gymId,
+                            userId: userId,
+                          ),
+                        ),
+                      );
+                    },
+                    variant: BrandActionTileVariant.outlined,
+                    showChevron: false,
+                    uiLogEvent: 'PROFILE_CARD_RENDER',
+                  ),
+                ),
+              ],
             ),
           ),
         ),

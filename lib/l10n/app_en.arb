@@ -291,6 +291,36 @@
     "description": "Heading for the calendar on profile screen"
   },
 
+  "profileStatsButtonLabel": "Statistics",
+  "@profileStatsButtonLabel": {
+    "description": "Button label on profile screen to open the statistics page"
+  },
+
+  "profileStatsTitle": "Statistics",
+  "@profileStatsTitle": {
+    "description": "Title of the profile statistics page"
+  },
+
+  "profileStatsTotalTrainingDays": "Total training days",
+  "@profileStatsTotalTrainingDays": {
+    "description": "KPI label for total number of training days"
+  },
+
+  "profileStatsAverageTrainingDaysPerWeek": "Avg. training days per week",
+  "@profileStatsAverageTrainingDaysPerWeek": {
+    "description": "KPI label for average training days per week"
+  },
+
+  "profileStatsFavoriteExercise": "Favourite exercise",
+  "@profileStatsFavoriteExercise": {
+    "description": "KPI label for favourite exercise"
+  },
+
+  "profileStatsFavoriteExerciseFallback": "No sessions yet",
+  "@profileStatsFavoriteExerciseFallback": {
+    "description": "Fallback text when there is no favourite exercise"
+  },
+
   "repsRequired": "reps?",
   "@repsRequired": {
     "description": "Validation when reps are missing"
