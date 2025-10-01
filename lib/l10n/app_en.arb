@@ -321,6 +321,11 @@
     "description": "Fallback text when there is no favourite exercise"
   },
 
+  "profileStatsPowerliftingButton": "Powerlifting",
+  "@profileStatsPowerliftingButton": {
+    "description": "Button label that opens the powerlifting overview"
+  },
+
   "repsRequired": "reps?",
   "@repsRequired": {
     "description": "Validation when reps are missing"
@@ -334,6 +339,121 @@
   "intRequired": "Integer",
   "@intRequired": {
     "description": "Validation when an integer is expected"
+  },
+
+  "powerliftingTitle": "Powerlifting",
+  "@powerliftingTitle": {
+    "description": "Title of the powerlifting statistics page"
+  },
+
+  "powerliftingAddTooltip": "Assign devices",
+  "@powerliftingAddTooltip": {
+    "description": "Tooltip for the add button on the powerlifting page"
+  },
+
+  "powerliftingIntro": "Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.",
+  "@powerliftingIntro": {
+    "description": "Introductory text on the powerlifting page"
+  },
+
+  "powerliftingEmptyTitle": "Build your powerlifting board",
+  "@powerliftingEmptyTitle": {
+    "description": "Title shown when no powerlifting sources are configured"
+  },
+
+  "powerliftingEmptyDescription": "Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.",
+  "@powerliftingEmptyDescription": {
+    "description": "Description shown when there are no powerlifting assignments"
+  },
+
+  "powerliftingAddButton": "Add powerlifting source",
+  "@powerliftingAddButton": {
+    "description": "Button label in the empty state to add a source"
+  },
+
+  "powerliftingDisciplineSheetTitle": "Choose discipline",
+  "@powerliftingDisciplineSheetTitle": {
+    "description": "Bottom sheet title when selecting the discipline"
+  },
+
+  "powerliftingDeviceSheetTitle": "Select a device for {discipline}",
+  "@powerliftingDeviceSheetTitle": {
+    "description": "Bottom sheet title when choosing a device",
+    "placeholders": {
+      "discipline": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingDeviceIsMultiNote": "Multi device – choose an exercise next",
+  "@powerliftingDeviceIsMultiNote": {
+    "description": "Subtitle for multi devices in the selection sheet"
+  },
+
+  "powerliftingExerciseSheetTitle": "Select exercise on {device}",
+  "@powerliftingExerciseSheetTitle": {
+    "description": "Bottom sheet title when choosing an exercise",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingNoGymError": "Select a gym first to manage powerlifting.",
+  "@powerliftingNoGymError": {
+    "description": "Snackbar message when no gym is selected"
+  },
+
+  "powerliftingNoDevicesError": "No devices found in this gym.",
+  "@powerliftingNoDevicesError": {
+    "description": "Snackbar message when no devices are available"
+  },
+
+  "powerliftingNoExercisesError": "Create an exercise on {device} first.",
+  "@powerliftingNoExercisesError": {
+    "description": "Snackbar message when a multi device has no exercises",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingAddError": "Could not add powerlifting source.",
+  "@powerliftingAddError": {
+    "description": "Fallback error when assigning a source fails"
+  },
+
+  "powerliftingDuplicateError": "This device or exercise is already linked.",
+  "@powerliftingDuplicateError": {
+    "description": "Error shown when the source already exists"
+  },
+
+  "powerliftingAddSuccess": "Powerlifting source added.",
+  "@powerliftingAddSuccess": {
+    "description": "Confirmation when a powerlifting source is added"
+  },
+
+  "powerliftingNoRecords": "No records yet",
+  "@powerliftingNoRecords": {
+    "description": "Placeholder when no records exist for a discipline"
+  },
+
+  "powerliftingBenchPress": "Bench press",
+  "@powerliftingBenchPress": {
+    "description": "Label for bench press discipline"
+  },
+
+  "powerliftingSquat": "Squat",
+  "@powerliftingSquat": {
+    "description": "Label for squat discipline"
+  },
+
+  "powerliftingDeadlift": "Deadlift",
+  "@powerliftingDeadlift": {
+    "description": "Label for deadlift discipline"
   },
 
   "dropFillBoth": "Fill both drop fields or clear them.",

@@ -321,6 +321,11 @@
     "description": "Fallback-Text, wenn keine Lieblingsübung ermittelt werden kann"
   },
 
+  "profileStatsPowerliftingButton": "Powerlifting",
+  "@profileStatsPowerliftingButton": {
+    "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
+  },
+
   "repsRequired": "Wdh?",
   "@repsRequired": {
     "description": "Validierungsmeldung, wenn Wiederholungen fehlen"
@@ -334,6 +339,121 @@
   "intRequired": "Ganzzahl",
   "@intRequired": {
     "description": "Validierung, wenn eine Ganzzahl erwartet wird"
+  },
+
+  "powerliftingTitle": "Powerlifting",
+  "@powerliftingTitle": {
+    "description": "Titel der Powerlifting-Statistikseite"
+  },
+
+  "powerliftingAddTooltip": "Geräte zuordnen",
+  "@powerliftingAddTooltip": {
+    "description": "Tooltip für den Hinzufügen-Button auf der Powerlifting-Seite"
+  },
+
+  "powerliftingIntro": "Verknüpfe deine Lieblingsgeräte und Übungen, um deine stärksten Bankdrück-, Kniebeugen- und Kreuzhebe-Sätze zu verfolgen.",
+  "@powerliftingIntro": {
+    "description": "Einleitungstext auf der Powerlifting-Seite"
+  },
+
+  "powerliftingEmptyTitle": "Baue dein Powerlifting-Board",
+  "@powerliftingEmptyTitle": {
+    "description": "Titel, wenn noch keine Powerlifting-Quellen vorhanden sind"
+  },
+
+  "powerliftingEmptyDescription": "Füge Geräte oder Übungen für Bankdrücken, Kniebeugen und Kreuzheben hinzu, um automatisch deine schwersten Sätze zu sammeln.",
+  "@powerliftingEmptyDescription": {
+    "description": "Beschreibung im Leerzustand der Powerlifting-Seite"
+  },
+
+  "powerliftingAddButton": "Powerlifting-Quelle hinzufügen",
+  "@powerliftingAddButton": {
+    "description": "Button-Text im Leerzustand zum Hinzufügen einer Quelle"
+  },
+
+  "powerliftingDisciplineSheetTitle": "Disziplin wählen",
+  "@powerliftingDisciplineSheetTitle": {
+    "description": "Titel des Bottom Sheets bei der Disziplinwahl"
+  },
+
+  "powerliftingDeviceSheetTitle": "Gerät für {discipline} wählen",
+  "@powerliftingDeviceSheetTitle": {
+    "description": "Titel des Bottom Sheets bei der Geräteauswahl",
+    "placeholders": {
+      "discipline": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingDeviceIsMultiNote": "Multi-Gerät – wähle anschließend eine Übung",
+  "@powerliftingDeviceIsMultiNote": {
+    "description": "Hinweistext für Multi-Geräte in der Auswahl"
+  },
+
+  "powerliftingExerciseSheetTitle": "Übung an {device} wählen",
+  "@powerliftingExerciseSheetTitle": {
+    "description": "Titel des Bottom Sheets bei der Übungsauswahl",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingNoGymError": "Wähle zuerst ein Studio, um Powerlifting zu verwalten.",
+  "@powerliftingNoGymError": {
+    "description": "Snackbar-Meldung, wenn kein Studio ausgewählt ist"
+  },
+
+  "powerliftingNoDevicesError": "Keine Geräte in diesem Studio gefunden.",
+  "@powerliftingNoDevicesError": {
+    "description": "Snackbar-Meldung, wenn keine Geräte vorhanden sind"
+  },
+
+  "powerliftingNoExercisesError": "Lege zuerst eine Übung an {device} an.",
+  "@powerliftingNoExercisesError": {
+    "description": "Snackbar-Meldung, wenn ein Multi-Gerät keine Übungen hat",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+
+  "powerliftingAddError": "Powerlifting-Quelle konnte nicht hinzugefügt werden.",
+  "@powerliftingAddError": {
+    "description": "Fehlermeldung, wenn das Zuordnen fehlschlägt"
+  },
+
+  "powerliftingDuplicateError": "Dieses Gerät bzw. diese Übung ist bereits verknüpft.",
+  "@powerliftingDuplicateError": {
+    "description": "Fehler, wenn die Quelle schon existiert"
+  },
+
+  "powerliftingAddSuccess": "Powerlifting-Quelle hinzugefügt.",
+  "@powerliftingAddSuccess": {
+    "description": "Bestätigung nach erfolgreichem Hinzufügen einer Quelle"
+  },
+
+  "powerliftingNoRecords": "Noch keine Bestwerte",
+  "@powerliftingNoRecords": {
+    "description": "Platzhalter, wenn keine Werte vorliegen"
+  },
+
+  "powerliftingBenchPress": "Bankdrücken",
+  "@powerliftingBenchPress": {
+    "description": "Bezeichnung für die Disziplin Bankdrücken"
+  },
+
+  "powerliftingSquat": "Kniebeugen",
+  "@powerliftingSquat": {
+    "description": "Bezeichnung für die Disziplin Kniebeugen"
+  },
+
+  "powerliftingDeadlift": "Kreuzheben",
+  "@powerliftingDeadlift": {
+    "description": "Bezeichnung für die Disziplin Kreuzheben"
   },
 
   "dropFillBoth": "Beide Drop-Felder ausfüllen oder leeren.",

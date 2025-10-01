@@ -250,6 +250,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
 
   @override
+  String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
   String get repsRequired => 'reps?';
 
   @override
@@ -257,6 +260,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get intRequired => 'Integer';
+
+  @override
+  String get powerliftingTitle => 'Powerlifting';
+
+  @override
+  String get powerliftingAddTooltip => 'Assign devices';
+
+  @override
+  String get powerliftingIntro =>
+      'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.';
+
+  @override
+  String get powerliftingEmptyTitle => 'Build your powerlifting board';
+
+  @override
+  String get powerliftingEmptyDescription =>
+      'Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.';
+
+  @override
+  String get powerliftingAddButton => 'Add powerlifting source';
+
+  @override
+  String get powerliftingDisciplineSheetTitle => 'Choose discipline';
+
+  @override
+  String powerliftingDeviceSheetTitle(String discipline) {
+    return 'Select a device for $discipline';
+  }
+
+  @override
+  String get powerliftingDeviceIsMultiNote =>
+      'Multi device – choose an exercise next';
+
+  @override
+  String powerliftingExerciseSheetTitle(String device) {
+    return 'Select exercise on $device';
+  }
+
+  @override
+  String get powerliftingNoGymError =>
+      'Select a gym first to manage powerlifting.';
+
+  @override
+  String get powerliftingNoDevicesError => 'No devices found in this gym.';
+
+  @override
+  String powerliftingNoExercisesError(String device) {
+    return 'Create an exercise on $device first.';
+  }
+
+  @override
+  String get powerliftingAddError =>
+      'Could not add powerlifting source.';
+
+  @override
+  String get powerliftingDuplicateError =>
+      'This device or exercise is already linked.';
+
+  @override
+  String get powerliftingAddSuccess => 'Powerlifting source added.';
+
+  @override
+  String get powerliftingNoRecords => 'No records yet';
+
+  @override
+  String get powerliftingBenchPress => 'Bench press';
+
+  @override
+  String get powerliftingSquat => 'Squat';
+
+  @override
+  String get powerliftingDeadlift => 'Deadlift';
 
   @override
   String get dropFillBoth => 'Fill both drop fields or clear them.';

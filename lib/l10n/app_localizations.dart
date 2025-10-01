@@ -539,6 +539,12 @@ abstract class AppLocalizations {
   /// **'No sessions yet'**
   String get profileStatsFavoriteExerciseFallback;
 
+  /// No description provided for @profileStatsPowerliftingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Powerlifting'**
+  String get profileStatsPowerliftingButton;
+
   /// Validation when reps are missing
   ///
   /// In en, this message translates to:
@@ -556,6 +562,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Integer'**
   String get intRequired;
+
+  /// No description provided for @powerliftingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Powerlifting'**
+  String get powerliftingTitle;
+
+  /// No description provided for @powerliftingAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign devices'**
+  String get powerliftingAddTooltip;
+
+  /// No description provided for @powerliftingIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.'**
+  String get powerliftingIntro;
+
+  /// No description provided for @powerliftingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your powerlifting board'**
+  String get powerliftingEmptyTitle;
+
+  /// No description provided for @powerliftingEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.'**
+  String get powerliftingEmptyDescription;
+
+  /// No description provided for @powerliftingAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add powerlifting source'**
+  String get powerliftingAddButton;
+
+  /// No description provided for @powerliftingDisciplineSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose discipline'**
+  String get powerliftingDisciplineSheetTitle;
+
+  /// No description provided for @powerliftingDeviceSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a device for {discipline}'**
+  String powerliftingDeviceSheetTitle(String discipline);
+
+  /// No description provided for @powerliftingDeviceIsMultiNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi device – choose an exercise next'**
+  String get powerliftingDeviceIsMultiNote;
+
+  /// No description provided for @powerliftingExerciseSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exercise on {device}'**
+  String powerliftingExerciseSheetTitle(String device);
+
+  /// No description provided for @powerliftingNoGymError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a gym first to manage powerlifting.'**
+  String get powerliftingNoGymError;
+
+  /// No description provided for @powerliftingNoDevicesError.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices found in this gym.'**
+  String get powerliftingNoDevicesError;
+
+  /// No description provided for @powerliftingNoExercisesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an exercise on {device} first.'**
+  String powerliftingNoExercisesError(String device);
+
+  /// No description provided for @powerliftingAddError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add powerlifting source.'**
+  String get powerliftingAddError;
+
+  /// No description provided for @powerliftingDuplicateError.
+  ///
+  /// In en, this message translates to:
+  /// **'This device or exercise is already linked.'**
+  String get powerliftingDuplicateError;
+
+  /// No description provided for @powerliftingAddSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Powerlifting source added.'**
+  String get powerliftingAddSuccess;
+
+  /// No description provided for @powerliftingNoRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get powerliftingNoRecords;
+
+  /// No description provided for @powerliftingBenchPress.
+  ///
+  /// In en, this message translates to:
+  /// **'Bench press'**
+  String get powerliftingBenchPress;
+
+  /// No description provided for @powerliftingSquat.
+  ///
+  /// In en, this message translates to:
+  /// **'Squat'**
+  String get powerliftingSquat;
+
+  /// No description provided for @powerliftingDeadlift.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadlift'**
+  String get powerliftingDeadlift;
 
   /// Validation when only one drop field is filled
   ///

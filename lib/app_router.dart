@@ -35,6 +35,7 @@ import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.da
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
 import 'main.dart';
 
 class AppRouter {
@@ -64,6 +65,7 @@ class AppRouter {
   static const manageChallenges = '/manage_challenges';
   static const adminSymbols = '/admin_symbols';
   static const userSymbols = '/user_symbols';
+  static const powerlifting = '/powerlifting';
   static const feedbackOverview = '/feedback_overview';
   static const surveyOverview = '/survey_overview';
   static const surveyVote = '/survey_vote';
@@ -248,6 +250,9 @@ class AppRouter {
 
       case creatine:
         return MaterialPageRoute(builder: (_) => const CreatineScreen());
+
+      case powerlifting:
+        return MaterialPageRoute(builder: (_) => const PowerliftingScreen());
 
       default:
         return MaterialPageRoute(
