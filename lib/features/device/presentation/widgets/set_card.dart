@@ -419,8 +419,17 @@ class SetCardState extends State<SetCard> {
     }
 
     final displayMode = widget.displayMode;
-    final contentPadding =
-        displayMode == SetCardDisplayMode.grouped ? tokens.padding : EdgeInsets.zero;
+    final paddingBase = tokens.padding;
+    final isFirstGroupedRow =
+        displayMode == SetCardDisplayMode.grouped && widget.index == 0;
+    final EdgeInsets contentPadding = displayMode == SetCardDisplayMode.grouped
+        ? EdgeInsets.fromLTRB(
+            paddingBase.left,
+            isFirstGroupedRow ? 0 : paddingBase.top,
+            paddingBase.right,
+            paddingBase.bottom,
+          )
+        : EdgeInsets.zero;
     final BorderRadius? rowRadius = displayMode == SetCardDisplayMode.grouped
         ? (widget.groupedRadius as BorderRadius?)
         : null;
@@ -430,6 +439,7 @@ class SetCardState extends State<SetCard> {
       dense: dense,
       index: widget.index + 1,
       dropActive: dropActive,
+      showFieldHeaderRow: displayMode != SetCardDisplayMode.grouped,
       showExtras: _showExtras,
       done: done,
       readOnly: widget.readOnly,
@@ -515,6 +525,7 @@ class SetRowContent extends StatelessWidget {
   final bool dense;
   final int index;
   final bool dropActive;
+  final bool showFieldHeaderRow;
   final bool showExtras;
   final bool done;
   final bool readOnly;
@@ -544,6 +555,7 @@ class SetRowContent extends StatelessWidget {
     required this.dense,
     required this.index,
     required this.dropActive,
+    required this.showFieldHeaderRow,
     required this.showExtras,
     required this.done,
     required this.readOnly,
@@ -586,7 +598,7 @@ class SetRowContent extends StatelessWidget {
         (dense ? 28 : 32) + (dense ? 8 : 12) + (dropActive ? (dense ? 4 : 6) + (dense ? 24 : 28) : 0);
 
     final children = <Widget>[];
-    if (showFieldHeaders) {
+    if (showFieldHeaderRow && showFieldHeaders) {
       children.add(
         Padding(
           padding: EdgeInsets.only(bottom: dense ? 6 : 8),

@@ -3,6 +3,7 @@
 // PlannedTable uses silent updates to avoid re-entrant rebuilds.
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/app_router.dart';
@@ -722,16 +723,44 @@ class _GroupedSetList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brand = Theme.of(context).extension<AppBrandTheme>();
+    final loc = AppLocalizations.of(context)!;
+    final isBodyweightMode = context.watch<DeviceProvider>().isBodyweightMode;
+    var tokens = SetCardTheme.of(context);
+    const dense = true;
+    if (dense) {
+      tokens = tokens.copyWith(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      );
+    }
     final outlineRadius = (brand?.outlineRadius as BorderRadius?) ??
         BorderRadius.circular(AppRadius.card);
     final outlineWidth = brand?.outlineWidth ?? 2;
     final innerRadius = outlineRadius - BorderRadius.circular(outlineWidth);
+
+    bool dropActiveFor(Map<String, dynamic> set) {
+      final dropWeight = (set['dropWeight'] ?? '').toString();
+      final dropReps = (set['dropReps'] ?? '').toString();
+      return dropWeight.isNotEmpty && dropReps.isNotEmpty;
+    }
+
+    final header = sets.isEmpty
+        ? null
+        : _SetListFieldHeader(
+            tokens: tokens,
+            dense: dense,
+            dropActive: dropActiveFor(sets.first),
+            weightLabel: isBodyweightMode
+                ? loc.bodyweightFieldLabel(loc.tableHeaderKg)
+                : loc.weightFieldLabel(loc.tableHeaderKg),
+            repsLabel: loc.tableHeaderReps,
+          );
 
     return BrandOutline(
       padding: EdgeInsets.zero,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (header != null) header,
           for (var index = 0; index < sets.length; index++) ...[
             Dismissible(
               key: ValueKey('set-${sets[index]['number']}'),
@@ -767,6 +796,62 @@ class _GroupedSetList extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SetListFieldHeader extends StatelessWidget {
+  final SetCardTheme tokens;
+  final bool dense;
+  final bool dropActive;
+  final String weightLabel;
+  final String repsLabel;
+
+  const _SetListFieldHeader({
+    required this.tokens,
+    required this.dense,
+    required this.dropActive,
+    required this.weightLabel,
+    required this.repsLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final headerStyle = GoogleFonts.inter(
+      fontSize: dense ? 11 : 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: tokens.chipFg.withOpacity(0.78),
+    );
+    final double leadingWidth =
+        (dense ? 28 : 32) + (dense ? 8 : 12) + (dropActive ? (dense ? 4 : 6) + (dense ? 24 : 28) : 0);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.padding.left,
+        tokens.padding.top,
+        tokens.padding.right,
+        dense ? 6 : 8,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          SizedBox(width: leadingWidth),
+          Expanded(
+            child: Text(
+              weightLabel,
+              style: headerStyle,
+            ),
+          ),
+          SizedBox(width: dense ? 8 : 12),
+          Expanded(
+            child: Text(
+              repsLabel,
+              style: headerStyle,
+            ),
+          ),
         ],
       ),
     );
