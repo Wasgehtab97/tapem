@@ -589,6 +589,12 @@ class SetRowContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final placeholderStyle = TextStyle(
+      fontSize: dense ? 12 : 13,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.3,
+      color: primaryColor.withOpacity(0.45),
+    );
 
     Widget body = Padding(
       padding: padding,
@@ -626,6 +632,7 @@ class SetRowContent extends StatelessWidget {
                   },
                   showLabel: false,
                   placeholder: weightPlaceholder,
+                  placeholderTextStyle: placeholderStyle,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -645,6 +652,7 @@ class SetRowContent extends StatelessWidget {
                   },
                   showLabel: false,
                   placeholder: repsPlaceholder,
+                  placeholderTextStyle: placeholderStyle,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -808,6 +816,7 @@ class _InputPill extends StatefulWidget {
   final String? supportingText;
   final bool showLabel;
   final String? placeholder;
+  final TextStyle? placeholderTextStyle;
 
   const _InputPill({
     required this.controller,
@@ -821,6 +830,7 @@ class _InputPill extends StatefulWidget {
     this.supportingText,
     this.showLabel = true,
     this.placeholder,
+    this.placeholderTextStyle,
   });
 
   @override
@@ -921,9 +931,11 @@ class _InputPillState extends State<_InputPill> {
       height: 1.15,
     );
 
-    final placeholderStyle = valueStyle.copyWith(
-      color: brandColor.withOpacity(0.35),
-    );
+    final basePlaceholderStyle = widget.placeholderTextStyle ?? valueStyle;
+    final placeholderColor =
+        widget.placeholderTextStyle?.color ?? brandColor.withOpacity(0.35);
+    final placeholderStyle =
+        basePlaceholderStyle.copyWith(color: placeholderColor);
 
     final supportingStyle = TextStyle(
       fontSize: widget.dense ? 11 : 12,
@@ -1005,6 +1017,9 @@ class _InputPillState extends State<_InputPill> {
                   widget.placeholder ?? widget.label,
                   style: placeholderStyle,
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
                 ),
               ),
             textField,
