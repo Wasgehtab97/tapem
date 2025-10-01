@@ -617,6 +617,18 @@ abstract class AppLocalizations {
   /// **'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.'**
   String get powerliftingIntro;
 
+  /// No description provided for @powerliftingHeaviestTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Heaviest sets'**
+  String get powerliftingHeaviestTable;
+
+  /// No description provided for @powerliftingE1rmTable.
+  ///
+  /// In en, this message translates to:
+  /// **'E1RM'**
+  String get powerliftingE1rmTable;
+
   /// No description provided for @powerliftingEmptyTitle.
   ///
   /// In en, this message translates to:

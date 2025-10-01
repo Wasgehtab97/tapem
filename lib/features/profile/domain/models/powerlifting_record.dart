@@ -20,4 +20,6 @@ class PowerliftingRecord {
   final DateTime performedAt;
   final String deviceName;
   final String? exerciseName;
+
+  double get e1rm => weightKg * (1 + reps / 30);
 }

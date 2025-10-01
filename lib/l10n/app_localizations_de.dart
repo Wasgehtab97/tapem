@@ -293,6 +293,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verknüpfe alle Geräte mit der jeweiligen Disziplin um deinen PR Fortschritt zu tracken.';
 
   @override
+  String get powerliftingHeaviestTable => 'Schwerste Sätze';
+
+  @override
+  String get powerliftingE1rmTable => 'E1RM';
+
+  @override
   String get powerliftingEmptyTitle => 'Baue dein Powerlifting-Board';
 
   @override
