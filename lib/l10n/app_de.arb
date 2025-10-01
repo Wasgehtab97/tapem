@@ -640,6 +640,27 @@
     "description": "Tabellenkopf für Wiederholungen"
   },
 
+  "weightFieldLabel": "Gewicht ({unit})",
+  "@weightFieldLabel": {
+    "description": "Label für das normale Gewichtsfeld",
+    "placeholders": {
+      "unit": {}
+    }
+  },
+
+  "bodyweightFieldLabel": "Körpergewicht + Zusatz ({unit})",
+  "@bodyweightFieldLabel": {
+    "description": "Label für das Gewichtsfeld im Körpergewichtsmodus",
+    "placeholders": {
+      "unit": {}
+    }
+  },
+
+  "bodyweightModeActiveLabel": "Körpergewichtsmodus aktiv",
+  "@bodyweightModeActiveLabel": {
+    "description": "Hinweis, dass der Körpergewichtsmodus aktiv ist"
+  },
+
   "timerPauseLabel": "Pause",
   "@timerPauseLabel": {
     "description": "Prefix-Label für den Pausen-Timer"
