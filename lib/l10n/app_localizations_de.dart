@@ -250,6 +250,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsFavoriteExerciseFallback => 'Noch keine Sessions';
 
   @override
+  String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
   String get repsRequired => 'Wdh?';
 
   @override
@@ -257,6 +260,79 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get intRequired => 'Ganzzahl';
+
+  @override
+  String get powerliftingTitle => 'Powerlifting';
+
+  @override
+  String get powerliftingAddTooltip => 'Geräte zuordnen';
+
+  @override
+  String get powerliftingIntro =>
+      'Verknüpfe deine Lieblingsgeräte und Übungen, um deine stärksten Bankdrück-, Kniebeugen- und Kreuzhebe-Sätze zu verfolgen.';
+
+  @override
+  String get powerliftingEmptyTitle => 'Baue dein Powerlifting-Board';
+
+  @override
+  String get powerliftingEmptyDescription =>
+      'Füge Geräte oder Übungen für Bankdrücken, Kniebeugen und Kreuzheben hinzu, um automatisch deine schwersten Sätze zu sammeln.';
+
+  @override
+  String get powerliftingAddButton => 'Powerlifting-Quelle hinzufügen';
+
+  @override
+  String get powerliftingDisciplineSheetTitle => 'Disziplin wählen';
+
+  @override
+  String powerliftingDeviceSheetTitle(String discipline) {
+    return 'Gerät für $discipline wählen';
+  }
+
+  @override
+  String get powerliftingDeviceIsMultiNote =>
+      'Multi-Gerät – wähle anschließend eine Übung';
+
+  @override
+  String powerliftingExerciseSheetTitle(String device) {
+    return 'Übung an $device wählen';
+  }
+
+  @override
+  String get powerliftingNoGymError =>
+      'Wähle zuerst ein Studio, um Powerlifting zu verwalten.';
+
+  @override
+  String get powerliftingNoDevicesError =>
+      'Keine Geräte in diesem Studio gefunden.';
+
+  @override
+  String powerliftingNoExercisesError(String device) {
+    return 'Lege zuerst eine Übung an $device an.';
+  }
+
+  @override
+  String get powerliftingAddError =>
+      'Powerlifting-Quelle konnte nicht hinzugefügt werden.';
+
+  @override
+  String get powerliftingDuplicateError =>
+      'Dieses Gerät bzw. diese Übung ist bereits verknüpft.';
+
+  @override
+  String get powerliftingAddSuccess => 'Powerlifting-Quelle hinzugefügt.';
+
+  @override
+  String get powerliftingNoRecords => 'Noch keine Bestwerte';
+
+  @override
+  String get powerliftingBenchPress => 'Bankdrücken';
+
+  @override
+  String get powerliftingSquat => 'Kniebeugen';
+
+  @override
+  String get powerliftingDeadlift => 'Kreuzheben';
 
   @override
   String get dropFillBoth => 'Beide Drop-Felder ausfüllen oder leeren.';

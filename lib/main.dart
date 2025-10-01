@@ -56,6 +56,7 @@ import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
 import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/features/creatine/providers/creatine_provider.dart';
 import 'package:tapem/features/friends/providers/friend_search_provider.dart';
+import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'core/drafts/session_draft_repository_impl.dart';
@@ -435,6 +436,28 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProxyProvider2<AuthProvider, GymProvider,
+            PowerliftingProvider>(
+          create: (c) => PowerliftingProvider(
+            firestore: FirebaseFirestore.instance,
+            getDevicesForGym: c.read<GetDevicesForGym>(),
+            getExercisesForDevice: c.read<GetExercisesForDevice>(),
+            membership: c.read<MembershipService>(),
+          ),
+          update: (context, auth, gym, provider) {
+            final prov = provider ?? PowerliftingProvider(
+              firestore: FirebaseFirestore.instance,
+              getDevicesForGym: context.read<GetDevicesForGym>(),
+              getExercisesForDevice: context.read<GetExercisesForDevice>(),
+              membership: context.read<MembershipService>(),
+            );
+            unawaited(prov.updateContext(
+              userId: auth.userId,
+              gymId: gym.currentGymId,
+            ));
+            return prov;
+          },
+        ),
         ChangeNotifierProvider(
           create: (_) => CreatineProvider(repository: CreatineRepository()),
         ),

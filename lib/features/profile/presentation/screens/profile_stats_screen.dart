@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -86,6 +88,18 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
                 favoriteExercise,
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          BrandActionTile(
+            title: loc.profileStatsPowerliftingButton,
+            centerTitle: true,
+            dense: true,
+            minVerticalPadding: 0,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            variant: BrandActionTileVariant.outlined,
+            showChevron: false,
+            onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
+            uiLogEvent: 'PROFILE_STATS_POWERLIFTING',
           ),
         ],
       );
