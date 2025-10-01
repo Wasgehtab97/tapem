@@ -10,6 +10,7 @@ import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/presentation/widgets/session_exercise_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -54,9 +55,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final prov = context.watch<HistoryProvider>();
     final smallStyle = textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurface.withOpacity(0.6),
+      color: brandColor.withOpacity(0.7),
       fontSize: 10,
     );
 
@@ -69,13 +72,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
         subtitle.isNotEmpty ? '$title — $subtitle' : title;
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: Text(fullTitle)),
-        body: Center(child: Text('${loc.errorPrefix}: ${prov.error}')),
+        appBar: AppBar(
+          title: BrandGradientText(
+            fullTitle,
+            style: textTheme.titleLarge,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          centerTitle: true,
+          foregroundColor: brandColor,
+        ),
+        body: DefaultTextStyle.merge(
+          style: TextStyle(color: brandColor),
+          child: Center(
+            child: Text('${loc.errorPrefix}: ${prov.error}'),
+          ),
+        ),
       );
     }
 
     final e1rmPoints = prov.e1rmChart;
-    final sessionPoints = prov.sessionsChart;
     final localeString = Localizations.localeOf(context).toString();
 
     final e1rmValues = e1rmPoints.map((e) => e.value).toList();
@@ -88,18 +104,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         .toList();
     final e1rmDateInterval =
         e1rmPoints.isEmpty ? 1 : (e1rmPoints.length / 6).ceil().clamp(1, e1rmPoints.length);
-
-    final sessionValues = sessionPoints.map((e) => e.value).toList();
-    final sessionScale = NiceScale.fromValues(sessionValues,
-        tickCount: 6, forceMinZero: true);
-    final sessionSpots = sessionValues
-        .asMap()
-        .entries
-        .map((e) => FlSpot(e.key.toDouble(), e.value))
-        .toList();
-    final sessionDateInterval = sessionPoints.isEmpty
-        ? 1
-        : (sessionPoints.length / 6).ceil().clamp(1, sessionPoints.length);
 
     final sessionsMap = <String, List<WorkoutLog>>{};
     for (var log in prov.logs) {
@@ -187,207 +191,134 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
 
-    Widget buildSessionsChart() {
-      if (sessionPoints.isEmpty) {
-        return SizedBox(
-            height: 200,
-            child: Center(child: Text(loc.historyNoData, style: textTheme.bodySmall)));
-      }
-      final dates = sessionPoints.map((e) => e.date).toList();
-      return Semantics(
-        label: loc.historySessionsChartSemantics,
-        child: SizedBox(
-          height: 200,
-          child: LineChart(
-            LineChartData(
-              minY: sessionScale.min,
-              maxY: sessionScale.max,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: sessionScale.tickSpacing,
-              ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                bottomTitles: AxisTitles(
-                  axisNameWidget: Text(loc.historyAxisDate, style: smallStyle),
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: sessionDateInterval.toDouble(),
-                    getTitlesWidget: (value, meta) {
-                      final i = value.toInt();
-                      if (i < 0 || i >= dates.length) {
-                        return const SizedBox();
-                      }
-                      final d = dates[i];
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          DateFormat.Md(localeString).format(d),
-                          style: smallStyle,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  axisNameWidget: Text(loc.historyAxisSessions, style: smallStyle),
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: sessionScale.tickSpacing,
-                    getTitlesWidget: (value, meta) => Text(
-                      value.toStringAsFixed(0),
-                      style: smallStyle,
-                    ),
-                  ),
-                ),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: sessionSpots,
-                  isCurved: true,
-                  curveSmoothness: 0.2,
-                  barWidth: 3,
-                  isStrokeCapRound: true,
-                  dotData: FlDotData(show: false),
-                  belowBarData: BarAreaData(show: false),
-                ),
-              ],
-              lineTouchData: LineTouchData(enabled: false),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-        appBar: AppBar(title: Text(fullTitle)),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    loc.historyOverviewTitle,
-                    style:
-                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _kpiRing(loc.historyWorkouts, prov.workoutCount.toString()),
-                      _kpiRing(loc.historySetsAvg,
-                          prov.setsPerSessionAvg.toStringAsFixed(1)),
-                      _kpiRing(loc.historyHeaviest,
-                          '${prov.heaviest.toStringAsFixed(1)} kg'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.historyChartTitle,
-                    style:
-                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  buildE1rmChart(),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.historySessionsChartTitle,
-                    style:
-                        textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  buildSessionsChart(),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                loc.historyListTitle,
-                style:
-                    textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, idx) {
-                final logs = sessionEntries[idx].value;
-                final titleDate = DateFormat.yMMMMd(localeString)
-                    .format(logs.first.timestamp);
-
-                final sets = logs
-                    .map((e) => SessionSet(
-                          weight: e.weight,
-                          reps: e.reps,
-                          setNumber: e.setNumber,
-                          dropWeightKg: e.dropWeightKg,
-                          dropReps: e.dropReps,
-                          isBodyweight: e.isBodyweight,
-                        ))
-                    .toList();
-                elogUi('HISTORY_CARD_RENDER', {
-                  'sessionId': sessionEntries[idx].key,
-                  'setNumbers': sets.take(10).map((s) => s.setNumber).toList(),
-                });
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: _HistoryExpansionTile(
-                    title: titleDate,
-                    child: SessionExerciseCard(
-                      title: title,
-                      subtitle: subtitle.isNotEmpty ? subtitle : null,
-                      sets: sets,
-                      padding: const EdgeInsets.all(12),
+      appBar: AppBar(
+        title: BrandGradientText(
+          fullTitle,
+          style: textTheme.titleLarge,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: true,
+        foregroundColor: brandColor,
+      ),
+      body: DefaultTextStyle.merge(
+        style: TextStyle(color: brandColor),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      loc.historyOverviewTitle,
+                      style:
+                          textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                );
-              },
-              childCount: sessionEntries.length,
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _kpiRing(loc.historyWorkouts, prov.workoutCount.toString()),
+                        _kpiRing(
+                          loc.historySetsAvg,
+                          prov.setsPerSessionAvg.toStringAsFixed(1),
+                        ),
+                        _kpiRing(
+                          loc.historyHeaviest,
+                          '${prov.heaviest.toStringAsFixed(1)} kg',
+                        ),
+                        _kpiRing(
+                          loc.historyAxisE1rm,
+                          '${prov.maxE1rm.toStringAsFixed(1)} kg',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-        ],
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.historyChartTitle,
+                      style:
+                          textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    buildE1rmChart(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  loc.historyListTitle,
+                  style:
+                      textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, idx) {
+                  final logs = sessionEntries[idx].value;
+                  final titleDate =
+                      DateFormat.yMMMMd(localeString).format(logs.first.timestamp);
+
+                  final sets = logs
+                      .map((e) => SessionSet(
+                            weight: e.weight,
+                            reps: e.reps,
+                            setNumber: e.setNumber,
+                            dropWeightKg: e.dropWeightKg,
+                            dropReps: e.dropReps,
+                            isBodyweight: e.isBodyweight,
+                          ))
+                      .toList();
+                  elogUi('HISTORY_CARD_RENDER', {
+                    'sessionId': sessionEntries[idx].key,
+                    'setNumbers': sets.take(10).map((s) => s.setNumber).toList(),
+                  });
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: _HistoryExpansionTile(
+                      title: titleDate,
+                      child: SessionExerciseCard(
+                        title: title,
+                        subtitle: subtitle.isNotEmpty ? subtitle : null,
+                        sets: sets,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                  );
+                },
+                childCount: sessionEntries.length,
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _kpiRing(String label, String value) {
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
     return Semantics(
       label: '$label: $value',
       child: SizedBox(
@@ -402,13 +333,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 Text(
                   value,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: onBrandColor,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: onBrandColor,
+                  ),
                 ),
               ],
             ),

@@ -483,6 +483,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
     prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
     final locale = Localizations.localeOf(context).toString();
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final planProv = context.watch<TrainingPlanProvider>();
     final plannedEntry = planProv.entryForDate(
       widget.deviceId,
@@ -502,26 +505,32 @@ class _DeviceScreenState extends State<DeviceScreen> {
     } else if (prov.error != null || prov.device == null) {
       scaffold = Scaffold(
         appBar: _buildAppBar(context, prov),
-        body: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
+        body: DefaultTextStyle.merge(
+          style: TextStyle(color: brandColor),
+          child: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
+        ),
       );
     } else {
       scaffold = Scaffold(
         appBar: _buildAppBar(context, prov),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
-        body: DevicePager(
-          key: _pagerKey,
-          gymId: widget.gymId,
-          deviceId: prov.device!.uid,
-          userId: auth.userId!,
-          provider: prov,
-          editablePage:
-              _buildEditablePage(
-                prov,
-                loc,
-                locale,
-                plannedEntry,
-              ),
+        body: DefaultTextStyle.merge(
+          style: TextStyle(color: brandColor),
+          child: DevicePager(
+            key: _pagerKey,
+            gymId: widget.gymId,
+            deviceId: prov.device!.uid,
+            userId: auth.userId!,
+            provider: prov,
+            editablePage:
+                _buildEditablePage(
+                  prov,
+                  loc,
+                  locale,
+                  plannedEntry,
+                ),
+          ),
         ),
       );
     }

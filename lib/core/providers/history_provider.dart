@@ -28,8 +28,8 @@ class HistoryProvider extends ChangeNotifier {
   int _workoutCount = 0;
   double _setsPerSessionAvg = 0;
   double _heaviest = 0;
+  double _maxE1rm = 0;
   List<ChartPoint> _e1rmChart = [];
-  List<ChartPoint> _sessionsChart = [];
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -37,8 +37,8 @@ class HistoryProvider extends ChangeNotifier {
   int get workoutCount => _workoutCount;
   double get setsPerSessionAvg => _setsPerSessionAvg;
   double get heaviest => _heaviest;
+  double get maxE1rm => _maxE1rm;
   List<ChartPoint> get e1rmChart => List.unmodifiable(_e1rmChart);
-  List<ChartPoint> get sessionsChart => List.unmodifiable(_sessionsChart);
 
   /// Lädt die Historie für [deviceId] und den aktuell eingeloggten User.
   Future<void> loadHistory({
@@ -80,8 +80,8 @@ class HistoryProvider extends ChangeNotifier {
       _workoutCount = 0;
       _setsPerSessionAvg = 0;
       _heaviest = 0;
+      _maxE1rm = 0;
       _e1rmChart = [];
-      _sessionsChart = [];
       return;
     }
 
@@ -108,18 +108,7 @@ class HistoryProvider extends ChangeNotifier {
       return ChartPoint(date, e1rm);
     }).toList();
 
-    final perDay = <DateTime, int>{};
-    for (final entry in sessionEntries) {
-      final day = DateTime(entry.value.first.timestamp.year,
-          entry.value.first.timestamp.month, entry.value.first.timestamp.day);
-      perDay.update(day, (v) => v + 1, ifAbsent: () => 1);
-    }
-    final sortedDays = perDay.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    var cumulative = 0;
-    _sessionsChart = sortedDays.map((e) {
-      cumulative += e.value;
-      return ChartPoint(e.key, cumulative.toDouble());
-    }).toList();
+    _maxE1rm =
+        _e1rmChart.map((e) => e.value).reduce((a, b) => a > b ? a : b);
   }
 }

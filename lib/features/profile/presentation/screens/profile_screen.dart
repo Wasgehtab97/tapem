@@ -13,6 +13,7 @@ import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
@@ -388,9 +389,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const avatarSize = 44.0;
 
     final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+
+    Widget buildBody() {
+      if (prov.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (prov.error != null) {
+        return Center(child: Text('Fehler: ${prov.error}'));
+      }
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BrandGradientText(
+              'Trainingstage',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openCalendarPopup(userId, prov.trainingDates),
+                child: Calendar(
+                  trainingDates: prov.trainingDates,
+                  showNavigation: false,
+                  year: DateTime.now().year,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
+        foregroundColor: brandColor,
         automaticallyImplyLeading: false,
         leadingWidth: avatarSize + AppSpacing.md * 2,
         leading: Padding(
@@ -477,70 +517,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
         ],
+        ),
+      body: DefaultTextStyle.merge(
+        style: TextStyle(color: brandColor),
+        child: buildBody(),
       ),
-      body:
-          prov.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : prov.error != null
-              ? Center(child: Text('Fehler: ${prov.error}'))
-              : Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      BrandGradientText(
-                        'Trainingstage',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _openCalendarPopup(userId, prov.trainingDates),
-                          child: Calendar(
-                            trainingDates: prov.trainingDates,
-                            showNavigation: false,
-                            year: DateTime.now().year,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: SizedBox(
-            width: double.infinity,
-            child: BrandActionTile(
-              title: 'Umfragen',
-              centerTitle: true,
-              dense: true,
-              minVerticalPadding: 0,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              onTap: () {
-                final gymId = context.read<GymProvider>().currentGymId;
-                final userId = context.read<AuthProvider>().userId ?? '';
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SurveyVoteScreen(
-                      gymId: gymId,
-                      userId: userId,
-                    ),
-                  ),
-                );
-              },
-              variant: BrandActionTileVariant.outlined,
-              showChevron: false,
-              uiLogEvent: 'PROFILE_CARD_RENDER',
+          child: DefaultTextStyle.merge(
+            style: TextStyle(color: brandColor),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: SizedBox(
+                width: double.infinity,
+                child: BrandActionTile(
+                  title: 'Umfragen',
+                  centerTitle: true,
+                  dense: true,
+                  minVerticalPadding: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  onTap: () {
+                    final gymId = context.read<GymProvider>().currentGymId;
+                    final userId = context.read<AuthProvider>().userId ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SurveyVoteScreen(
+                          gymId: gymId,
+                          userId: userId,
+                        ),
+                      ),
+                    );
+                  },
+                  variant: BrandActionTileVariant.outlined,
+                  showChevron: false,
+                  uiLogEvent: 'PROFILE_CARD_RENDER',
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
 }
