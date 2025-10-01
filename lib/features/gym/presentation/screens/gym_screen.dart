@@ -10,6 +10,7 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 class GymScreen extends StatefulWidget {
   const GymScreen({super.key});
@@ -86,13 +87,21 @@ class _GymScreenState extends State<GymScreen>
     final auth = context.read<AuthProvider>();
     final gymProv = context.watch<GymProvider>();
     final gymId = auth.gymCode ?? '';
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
 
     if (gymProv.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (gymProv.error != null) {
       return Scaffold(
-        body: Center(child: Text('${loc.errorPrefix}: ${gymProv.error}')),
+        body: Center(
+          child: Text(
+            '${loc.errorPrefix}: ${gymProv.error}',
+            style: TextStyle(color: brandColor),
+          ),
+        ),
       );
     }
     if (_sort == SortOrder.recent) {
@@ -100,82 +109,85 @@ class _GymScreenState extends State<GymScreen>
     }
     final devices = _filtered(gymProv.devices);
 
-    final theme = Theme.of(context);
-
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SearchAndFilters(
-                query: _query,
-                onQuery: (v) => setState(() => _query = v),
-                sort: _sort,
-                onSort: (v) {
-                  setState(() => _sort = v);
-                  if (v == SortOrder.recent) {
-                    _loadRecent(gymId);
-                  }
-                },
-                muscleFilterIds: _muscles,
-                onMuscleFilter: (v) => setState(() => _muscles = v),
+      body: DefaultTextStyle.merge(
+        style: TextStyle(color: brandColor),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SearchAndFilters(
+                  query: _query,
+                  onQuery: (v) => setState(() => _query = v),
+                  sort: _sort,
+                  onSort: (v) {
+                    setState(() => _sort = v);
+                    if (v == SortOrder.recent) {
+                      _loadRecent(gymId);
+                    }
+                  },
+                  muscleFilterIds: _muscles,
+                  onMuscleFilter: (v) => setState(() => _muscles = v),
+                ),
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async => gymProv.loadGymData(gymId),
-                child: devices.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.5,
-                            child: Center(child: Text(loc.gymNoDevices)),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async => gymProv.loadGymData(gymId),
+                    child: devices.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height: MediaQuery.of(context).size.height * 0.5,
+                                child: Center(child: Text(loc.gymNoDevices)),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: devices.length,
+                            itemBuilder: (ctx, i) {
+                              final d = devices[i];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                child: DeviceCard(
+                                  device: d,
+                                  onTap: () {
+                                    final nav = Navigator.of(context);
+                                    final idStr = d.uid;
+                                    if (d.isMulti) {
+                                      nav.pushNamed(
+                                        AppRouter.exerciseList,
+                                        arguments: {
+                                          'gymId': gymId,
+                                          'deviceId': idStr,
+                                        },
+                                      );
+                                    } else {
+                                      nav.pushNamed(
+                                        AppRouter.device,
+                                        arguments: {
+                                          'gymId': gymId,
+                                          'deviceId': idStr,
+                                          'exerciseId': idStr,
+                                        },
+                                      );
+                                    }
+                                  },
+                                ),
+                              );
+                            },
                           ),
-                        ],
-                      )
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: devices.length,
-                        itemBuilder: (ctx, i) {
-                          final d = devices[i];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: DeviceCard(
-                              device: d,
-                              onTap: () {
-                                final nav = Navigator.of(context);
-                                final idStr = d.uid;
-                                if (d.isMulti) {
-                                  nav.pushNamed(
-                                    AppRouter.exerciseList,
-                                    arguments: {
-                                      'gymId': gymId,
-                                      'deviceId': idStr,
-                                    },
-                                  );
-                                } else {
-                                  nav.pushNamed(
-                                    AppRouter.device,
-                                    arguments: {
-                                      'gymId': gymId,
-                                      'deviceId': idStr,
-                                      'exerciseId': idStr,
-                                    },
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
     );
   }
 }
