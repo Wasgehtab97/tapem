@@ -648,7 +648,7 @@
     }
   },
 
-  "bodyweightFieldLabel": "Körpergewicht + Zusatz ({unit})",
+  "bodyweightFieldLabel": "BW + Zusatz ({unit})",
   "@bodyweightFieldLabel": {
     "description": "Label für das Gewichtsfeld im Körpergewichtsmodus",
     "placeholders": {

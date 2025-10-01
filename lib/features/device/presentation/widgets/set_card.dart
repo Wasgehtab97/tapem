@@ -574,16 +574,47 @@ class SetRowContent extends StatelessWidget {
     final weightLabel = isBodyweightMode
         ? loc.bodyweightFieldLabel(loc.tableHeaderKg)
         : loc.weightFieldLabel(loc.tableHeaderKg);
-    final weightSupportingText =
-        isBodyweightMode ? loc.bodyweightModeActiveLabel : null;
     final repsLabel = loc.tableHeaderReps;
+    final showFieldHeaders = index == 0;
+    final headerStyle = GoogleFonts.inter(
+      fontSize: dense ? 11 : 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: tokens.chipFg.withOpacity(0.78),
+    );
+    final double leadingWidth =
+        (dense ? 28 : 32) + (dense ? 8 : 12) + (dropActive ? (dense ? 4 : 6) + (dense ? 24 : 28) : 0);
 
-    Widget body = Padding(
-      padding: padding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    final children = <Widget>[];
+    if (showFieldHeaders) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: dense ? 6 : 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              SizedBox(width: leadingWidth),
+              Expanded(
+                child: Text(
+                  weightLabel,
+                  style: headerStyle,
+                ),
+              ),
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: Text(
+                  repsLabel,
+                  style: headerStyle,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    children.add(
+      Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _IndexBadge(
@@ -612,8 +643,8 @@ class SetRowContent extends StatelessWidget {
                     }
                     return null;
                   },
-                  showLabel: true,
-                  supportingText: weightSupportingText,
+                  showLabel: false,
+                  placeholder: weightLabel,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -631,7 +662,8 @@ class SetRowContent extends StatelessWidget {
                     if (int.tryParse(v) == null) return loc.intRequired;
                     return null;
                   },
-                  showLabel: true,
+                  showLabel: false,
+                  placeholder: repsLabel,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -660,39 +692,49 @@ class SetRowContent extends StatelessWidget {
               ),
             ],
           ),
-          if (showExtras) ...[
-            SizedBox(height: dense ? 8 : 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _InputPill(
-                    controller: dropWeightController,
-                    focusNode: dropWeightFocus,
-                    label: loc.dropKgFieldLabel,
-                    readOnly: readOnly || done,
-                    tokens: tokens,
-                    dense: true,
-                    onTap: onTapDropWeight,
-                    validator: dropValidator,
-                  ),
-                ),
-                SizedBox(width: dense ? 8 : 12),
-                Expanded(
-                  child: _InputPill(
-                    controller: dropRepsController,
-                    focusNode: dropRepsFocus,
-                    label: loc.dropRepsFieldLabel,
-                    readOnly: readOnly || done,
-                    tokens: tokens,
-                    dense: true,
-                    onTap: onTapDropReps,
-                    validator: dropValidator,
-                  ),
-                ),
-              ],
+        ),
+    );
+    if (showExtras) {
+      children.addAll([
+        SizedBox(height: dense ? 8 : 12),
+        Row(
+          children: [
+            Expanded(
+              child: _InputPill(
+                controller: dropWeightController,
+                focusNode: dropWeightFocus,
+                label: loc.dropKgFieldLabel,
+                readOnly: readOnly || done,
+                tokens: tokens,
+                dense: true,
+                onTap: onTapDropWeight,
+                validator: dropValidator,
+              ),
+            ),
+            SizedBox(width: dense ? 8 : 12),
+            Expanded(
+              child: _InputPill(
+                controller: dropRepsController,
+                focusNode: dropRepsFocus,
+                label: loc.dropRepsFieldLabel,
+                readOnly: readOnly || done,
+                tokens: tokens,
+                dense: true,
+                onTap: onTapDropReps,
+                validator: dropValidator,
+              ),
             ),
           ],
-        ],
+        ),
+      ]);
+    }
+
+    Widget body = Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: children,
       ),
     );
 
@@ -874,22 +916,23 @@ class _InputPillState extends State<_InputPill> {
     final hasValue = _text.trim().isNotEmpty;
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final brandColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final brandColor = colorScheme.primary;
 
     final radius = BorderRadius.circular(widget.dense ? 18 : 22);
-    final baseOverlay = showLabel
-        ? Color.alphaBlend(
-            widget.tokens.menuFg.withOpacity(hasFocus ? 0.22 : 0.1),
-            widget.tokens.chipBg,
-          )
-        : widget.tokens.cardFill;
-    final haloColor = widget.tokens.menuFg.withOpacity(showLabel
-        ? (hasFocus ? 0.28 : 0.08)
-        : (hasFocus ? 0.32 : 0.14));
-    final borderColor = widget.tokens.chipFg.withOpacity(showLabel
-        ? (hasFocus ? 0.32 : 0.18)
-        : (hasFocus ? 0.45 : 0.28));
+    final baseOverlay = Colors.transparent;
+    final haloColor = Colors.black.withOpacity(
+      hasFocus
+          ? (isDark ? 0.28 : 0.22)
+          : (isDark ? 0.18 : 0.12),
+    );
+    final borderColor = colorScheme.outline.withOpacity(
+      hasFocus
+          ? (isDark ? 0.7 : 0.6)
+          : (isDark ? 0.45 : 0.4),
+    );
 
     final labelStyle = GoogleFonts.inter(
       fontSize: widget.dense ? 11 : 12,
