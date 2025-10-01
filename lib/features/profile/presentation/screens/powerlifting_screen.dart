@@ -556,7 +556,8 @@ class _PowerliftingTable extends StatelessWidget {
           ],
         ),
         if (maxRows == 0)
-          TableRow(children: [
+          TableRow(
+            children: [
               for (final column in columns)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.sm),
@@ -566,8 +567,8 @@ class _PowerliftingTable extends StatelessWidget {
                     style: metaStyle,
                   ),
                 ),
-                ),
-            ])
+            ],
+          )
         else
           for (var row = 0; row < maxRows; row++)
             TableRow(
