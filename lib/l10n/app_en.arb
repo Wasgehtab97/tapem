@@ -381,7 +381,7 @@
     "description": "Snackbar shown when clearing assignments fails"
   },
 
-  "powerliftingIntro": "Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.",
+  "powerliftingIntro": "Link every device to its discipline to keep track of your PR progress.",
   "@powerliftingIntro": {
     "description": "Introductory text on the powerlifting page"
   },
@@ -404,6 +404,16 @@
   "powerliftingDisciplineSheetTitle": "Choose discipline",
   "@powerliftingDisciplineSheetTitle": {
     "description": "Bottom sheet title when selecting the discipline"
+  },
+
+  "powerliftingAssignmentSheetTitle": "Select devices and exercises for {discipline}",
+  "@powerliftingAssignmentSheetTitle": {
+    "description": "Bottom sheet title when selecting multiple devices and exercises",
+    "placeholders": {
+      "discipline": {
+        "type": "String"
+      }
+    }
   },
 
   "powerliftingDeviceSheetTitle": "Select a device for {discipline}",

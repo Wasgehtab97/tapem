@@ -381,7 +381,7 @@
     "description": "Snackbar, wenn das Zurücksetzen fehlgeschlagen ist"
   },
 
-  "powerliftingIntro": "Verknüpfe deine Lieblingsgeräte und Übungen, um deine stärksten Bankdrück-, Kniebeugen- und Kreuzhebe-Sätze zu verfolgen.",
+  "powerliftingIntro": "Verknüpfe alle Geräte mit der jeweiligen Disziplin um deinen PR Fortschritt zu tracken.",
   "@powerliftingIntro": {
     "description": "Einleitungstext auf der Powerlifting-Seite"
   },
@@ -404,6 +404,16 @@
   "powerliftingDisciplineSheetTitle": "Disziplin wählen",
   "@powerliftingDisciplineSheetTitle": {
     "description": "Titel des Bottom Sheets bei der Disziplinwahl"
+  },
+
+  "powerliftingAssignmentSheetTitle": "Geräte und Übungen für {discipline} auswählen",
+  "@powerliftingAssignmentSheetTitle": {
+    "description": "Titel des Bottom Sheets zum gleichzeitigen Zuordnen mehrerer Geräte und Übungen",
+    "placeholders": {
+      "discipline": {
+        "type": "String"
+      }
+    }
   },
 
   "powerliftingDeviceSheetTitle": "Gerät für {discipline} wählen",

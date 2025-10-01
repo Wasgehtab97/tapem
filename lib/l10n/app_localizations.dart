@@ -641,6 +641,12 @@ abstract class AppLocalizations {
   /// **'Choose discipline'**
   String get powerliftingDisciplineSheetTitle;
 
+  /// No description provided for @powerliftingAssignmentSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select devices and exercises for {discipline}'**
+  String powerliftingAssignmentSheetTitle(String discipline);
+
   /// No description provided for @powerliftingDeviceSheetTitle.
   ///
   /// In en, this message translates to:
