@@ -104,10 +104,7 @@ class PowerliftingProvider extends ChangeNotifier {
           .collection(_assignmentCollection)
           .get();
 
-      for (final discipline in PowerliftingDiscipline.values) {
-        _assignments[discipline] = <PowerliftingAssignment>[];
-        _records[discipline] = <PowerliftingRecord>[];
-      }
+      _resetAssignmentsAndRecords();
 
       for (final doc in snapshot.docs) {
         final data = doc.data();
@@ -271,16 +268,53 @@ class PowerliftingProvider extends ChangeNotifier {
   }
 
   void _clearState() {
-    for (final discipline in PowerliftingDiscipline.values) {
-      _assignments[discipline] = <PowerliftingAssignment>[];
-      _records[discipline] = <PowerliftingRecord>[];
-    }
+    _resetAssignmentsAndRecords();
     _deviceCache.clear();
     _exerciseCache.clear();
     _error = null;
     _isLoading = false;
     _isSaving = false;
     notifyListeners();
+  }
+
+  Future<bool> clearAssignments() async {
+    final uid = _userId;
+    final gymId = _activeGymId;
+    if (uid == null || uid.isEmpty || gymId == null || gymId.isEmpty) {
+      return false;
+    }
+
+    _isSaving = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _membership.ensureMembership(gymId, uid);
+      final collection = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection(_assignmentCollection);
+      final snapshot = await collection.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+
+      _resetAssignmentsAndRecords();
+      _deviceCache.clear();
+      _exerciseCache.clear();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadRecordsForAllDisciplines() async {
@@ -301,12 +335,30 @@ class PowerliftingProvider extends ChangeNotifier {
     final futures = entries.map(_fetchRecordsForAssignment);
     final results = await Future.wait(futures);
     final combined = results.expand((element) => element).toList();
-    combined.sort((a, b) {
+    if (combined.isEmpty) {
+      _records[discipline] = <PowerliftingRecord>[];
+      return;
+    }
+
+    final sortedByDate = List<PowerliftingRecord>.from(combined)
+      ..sort((a, b) => a.performedAt.compareTo(b.performedAt));
+
+    final progressive = <PowerliftingRecord>[];
+    var bestWeight = -double.infinity;
+    for (final record in sortedByDate) {
+      if (record.weightKg > bestWeight) {
+        progressive.add(record);
+        bestWeight = record.weightKg;
+      }
+    }
+
+    progressive.sort((a, b) {
       final weightCompare = b.weightKg.compareTo(a.weightKg);
       if (weightCompare != 0) return weightCompare;
       return b.performedAt.compareTo(a.performedAt);
     });
-    _records[discipline] = combined;
+
+    _records[discipline] = progressive;
   }
 
   Future<List<PowerliftingRecord>> _fetchRecordsForAssignment(
@@ -339,7 +391,7 @@ class PowerliftingProvider extends ChangeNotifier {
       query = query
           .orderBy('weight', descending: true)
           .orderBy('timestamp', descending: true)
-          .limit(_logsLimitPerSource);
+          .limit(1);
       final snapshot = await query.get();
       docs = snapshot.docs;
     } on FirebaseException {
@@ -352,7 +404,7 @@ class PowerliftingProvider extends ChangeNotifier {
       docs = snapshot.docs;
     }
 
-    final records = <PowerliftingRecord>[];
+    PowerliftingRecord? bestRecord;
     for (final doc in docs) {
       final data = doc.data();
       final weight = (data['weight'] as num?)?.toDouble() ?? 0;
@@ -360,19 +412,29 @@ class PowerliftingProvider extends ChangeNotifier {
       final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      records.add(
-        PowerliftingRecord(
-          id: doc.id,
-          discipline: assignment.discipline,
-          weightKg: weight,
-          reps: reps,
-          performedAt: timestamp,
-          deviceName: labels.deviceName,
-          exerciseName: labels.exerciseName,
-        ),
+      final record = PowerliftingRecord(
+        id: doc.id,
+        discipline: assignment.discipline,
+        weightKg: weight,
+        reps: reps,
+        performedAt: timestamp,
+        deviceName: labels.deviceName,
+        exerciseName: labels.exerciseName,
       );
+
+      if (bestRecord == null ||
+          record.weightKg > bestRecord.weightKg ||
+          (record.weightKg == bestRecord.weightKg &&
+              record.performedAt.isAfter(bestRecord.performedAt))) {
+        bestRecord = record;
+      }
     }
-    return records;
+
+    if (bestRecord == null) {
+      return <PowerliftingRecord>[];
+    }
+
+    return <PowerliftingRecord>[bestRecord];
   }
 
   Future<_PowerliftingLabels> _resolveLabels(
@@ -410,6 +472,13 @@ class PowerliftingProvider extends ChangeNotifier {
       _deviceCache['$gymId|${device.uid}'] = device;
     }
     return _deviceCache['$gymId|$deviceId'];
+  }
+
+  void _resetAssignmentsAndRecords() {
+    for (final discipline in PowerliftingDiscipline.values) {
+      _assignments[discipline] = <PowerliftingAssignment>[];
+      _records[discipline] = <PowerliftingRecord>[];
+    }
   }
 }
 

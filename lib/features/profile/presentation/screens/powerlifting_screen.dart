@@ -87,6 +87,50 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
     }
   }
 
+  Future<void> _onClearPressed() async {
+    final provider = context.read<PowerliftingProvider>();
+    final loc = AppLocalizations.of(context)!;
+
+    final shouldReset = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(loc.powerliftingClearConfirmTitle),
+            content: Text(loc.powerliftingClearConfirmMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(loc.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(loc.powerliftingClearConfirmAction),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!mounted || !shouldReset) {
+      return;
+    }
+
+    final success = await provider.clearAssignments();
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.powerliftingClearSuccess)),
+      );
+    } else {
+      final message = provider.error ?? loc.powerliftingClearError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   Future<PowerliftingDiscipline?> _selectDiscipline(AppLocalizations loc) {
     final theme = Theme.of(context);
     return showModalBottomSheet<PowerliftingDiscipline>(
@@ -267,6 +311,13 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
         title: Text(loc.powerliftingTitle),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: loc.powerliftingClearTooltip,
+            onPressed: provider.isSaving || !provider.hasAssignments
+                ? null
+                : _onClearPressed,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: loc.powerliftingAddTooltip,

@@ -575,6 +575,42 @@ abstract class AppLocalizations {
   /// **'Assign devices'**
   String get powerliftingAddTooltip;
 
+  /// No description provided for @powerliftingClearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset powerlifting board'**
+  String get powerliftingClearTooltip;
+
+  /// No description provided for @powerliftingClearConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset powerlifting board?'**
+  String get powerliftingClearConfirmTitle;
+
+  /// No description provided for @powerliftingClearConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes all linked devices for your powerlifting board. Do you want to continue?'**
+  String get powerliftingClearConfirmMessage;
+
+  /// No description provided for @powerliftingClearConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get powerliftingClearConfirmAction;
+
+  /// No description provided for @powerliftingClearSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Powerlifting board reset.'**
+  String get powerliftingClearSuccess;
+
+  /// No description provided for @powerliftingClearError.
+  ///
+  /// In en, this message translates to:
+  /// **'Powerlifting board could not be reset.'**
+  String get powerliftingClearError;
+
   /// No description provided for @powerliftingIntro.
   ///
   /// In en, this message translates to:

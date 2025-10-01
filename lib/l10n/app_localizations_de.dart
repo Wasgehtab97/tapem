@@ -268,6 +268,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get powerliftingAddTooltip => 'Geräte zuordnen';
 
   @override
+  String get powerliftingClearTooltip => 'Board zurücksetzen';
+
+  @override
+  String get powerliftingClearConfirmTitle =>
+      'Powerlifting-Board zurücksetzen?';
+
+  @override
+  String get powerliftingClearConfirmMessage =>
+      'Dadurch werden alle verknüpften Geräte aus deinem Powerlifting-Board entfernt. Möchtest du fortfahren?';
+
+  @override
+  String get powerliftingClearConfirmAction => 'Zurücksetzen';
+
+  @override
+  String get powerliftingClearSuccess => 'Powerlifting-Board zurückgesetzt.';
+
+  @override
+  String get powerliftingClearError =>
+      'Powerlifting-Board konnte nicht zurückgesetzt werden.';
+
+  @override
   String get powerliftingIntro =>
       'Verknüpfe deine Lieblingsgeräte und Übungen, um deine stärksten Bankdrück-, Kniebeugen- und Kreuzhebe-Sätze zu verfolgen.';
 

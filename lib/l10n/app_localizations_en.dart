@@ -268,6 +268,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powerliftingAddTooltip => 'Assign devices';
 
   @override
+  String get powerliftingClearTooltip => 'Reset powerlifting board';
+
+  @override
+  String get powerliftingClearConfirmTitle => 'Reset powerlifting board?';
+
+  @override
+  String get powerliftingClearConfirmMessage =>
+      'This removes all linked devices for your powerlifting board. Do you want to continue?';
+
+  @override
+  String get powerliftingClearConfirmAction => 'Reset';
+
+  @override
+  String get powerliftingClearSuccess => 'Powerlifting board reset.';
+
+  @override
+  String get powerliftingClearError =>
+      'Powerlifting board could not be reset.';
+
+  @override
   String get powerliftingIntro =>
       'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.';
 
