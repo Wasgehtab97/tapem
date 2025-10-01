@@ -50,6 +50,9 @@ class PowerliftingProvider extends ChangeNotifier {
   final Map<String, Device> _deviceCache = <String, Device>{};
   final Map<String, List<Exercise>> _exerciseCache = <String, List<Exercise>>{};
   final Set<String> _loadingExercises = <String>{};
+  final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
+      _logSubscriptions =
+          <String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>{};
 
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
@@ -63,6 +66,12 @@ class PowerliftingProvider extends ChangeNotifier {
 
   List<PowerliftingRecord> recordsFor(PowerliftingDiscipline discipline) =>
       List.unmodifiable(_records[discipline]!);
+
+  @override
+  void dispose() {
+    _disposeLogSubscriptions();
+    super.dispose();
+  }
 
   Future<void> updateContext({
     required String? userId,
@@ -124,6 +133,7 @@ class PowerliftingProvider extends ChangeNotifier {
       }
 
       await _loadRecordsForAllDisciplines();
+      _setupLogSubscriptions();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -210,6 +220,7 @@ class PowerliftingProvider extends ChangeNotifier {
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
       await _loadRecordsForDiscipline(discipline);
+      _ensureLogSubscription(assignment);
       return true;
     } catch (e) {
       _error = e.toString();
@@ -321,6 +332,13 @@ class PowerliftingProvider extends ChangeNotifier {
     for (final discipline in PowerliftingDiscipline.values) {
       await _loadRecordsForDiscipline(discipline);
     }
+  }
+
+  Future<void> _reloadDisciplineRecords(
+    PowerliftingDiscipline discipline,
+  ) async {
+    await _loadRecordsForDiscipline(discipline);
+    notifyListeners();
   }
 
   Future<void> _loadRecordsForDiscipline(
@@ -475,10 +493,84 @@ class PowerliftingProvider extends ChangeNotifier {
   }
 
   void _resetAssignmentsAndRecords() {
+    _disposeLogSubscriptions();
     for (final discipline in PowerliftingDiscipline.values) {
       _assignments[discipline] = <PowerliftingAssignment>[];
       _records[discipline] = <PowerliftingRecord>[];
     }
+  }
+
+  void _setupLogSubscriptions() {
+    for (final discipline in PowerliftingDiscipline.values) {
+      for (final assignment in _assignments[discipline]!) {
+        _ensureLogSubscription(assignment);
+      }
+    }
+  }
+
+  void _ensureLogSubscription(PowerliftingAssignment assignment) {
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) {
+      return;
+    }
+
+    if (_logSubscriptions.containsKey(assignment.id)) {
+      return;
+    }
+
+    final logsCollection = _firestore
+        .collection('gyms')
+        .doc(assignment.gymId)
+        .collection('devices')
+        .doc(assignment.deviceId)
+        .collection('logs');
+
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? subscription;
+
+    void listenTo(
+      Query<Map<String, dynamic>> query, {
+      required bool allowFallback,
+    }) {
+      final currentSubscription = query.snapshots().listen(
+        (_) => unawaited(_reloadDisciplineRecords(assignment.discipline)),
+        onError: (Object error, StackTrace stackTrace) {
+          if (allowFallback && error is FirebaseException) {
+            final previous = subscription;
+            subscription = null;
+            unawaited(previous?.cancel());
+            final fallbackQuery = logsCollection
+                .where('userId', isEqualTo: uid)
+                .where('exerciseId', isEqualTo: assignment.exerciseId)
+                .orderBy('timestamp', descending: true)
+                .limit(_logsLimitPerSource);
+            listenTo(fallbackQuery, allowFallback: false);
+          } else if (!allowFallback && error is FirebaseException) {
+            final previous = subscription;
+            subscription = null;
+            unawaited(previous?.cancel());
+            _logSubscriptions.remove(assignment.id);
+          }
+        },
+      );
+      subscription = currentSubscription;
+      _logSubscriptions[assignment.id] = currentSubscription;
+    }
+
+    final primaryQuery = logsCollection
+        .where('userId', isEqualTo: uid)
+        .where('exerciseId', isEqualTo: assignment.exerciseId)
+        .orderBy('weight', descending: true)
+        .orderBy('timestamp', descending: true)
+        .limit(1);
+
+    listenTo(primaryQuery, allowFallback: true);
+  }
+
+  void _disposeLogSubscriptions() {
+    for (final entry in _logSubscriptions.values) {
+      unawaited(entry.cancel());
+    }
+    _logSubscriptions.clear();
   }
 }
 
