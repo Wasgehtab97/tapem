@@ -517,44 +517,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
         ],
-        ),
+      ),
       body: DefaultTextStyle.merge(
         style: TextStyle(color: brandColor),
         child: buildBody(),
       ),
       bottomNavigationBar: SafeArea(
-          child: DefaultTextStyle.merge(
-            style: TextStyle(color: brandColor),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: SizedBox(
-                width: double.infinity,
-                child: BrandActionTile(
-                  title: 'Umfragen',
-                  centerTitle: true,
-                  dense: true,
-                  minVerticalPadding: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  onTap: () {
-                    final gymId = context.read<GymProvider>().currentGymId;
-                    final userId = context.read<AuthProvider>().userId ?? '';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SurveyVoteScreen(
-                          gymId: gymId,
-                          userId: userId,
-                        ),
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: brandColor),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: SizedBox(
+              width: double.infinity,
+              child: BrandActionTile(
+                title: 'Umfragen',
+                centerTitle: true,
+                dense: true,
+                minVerticalPadding: 0,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                onTap: () {
+                  final gymId = context.read<GymProvider>().currentGymId;
+                  final userId = context.read<AuthProvider>().userId ?? '';
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SurveyVoteScreen(
+                        gymId: gymId,
+                        userId: userId,
                       ),
-                    );
-                  },
-                  variant: BrandActionTileVariant.outlined,
-                  showChevron: false,
-                  uiLogEvent: 'PROFILE_CARD_RENDER',
-                ),
+                    ),
+                  );
+                },
+                variant: BrandActionTileVariant.outlined,
+                showChevron: false,
+                uiLogEvent: 'PROFILE_CARD_RENDER',
               ),
             ),
           ),
+        ),
+      ),
     );
   }
 }
