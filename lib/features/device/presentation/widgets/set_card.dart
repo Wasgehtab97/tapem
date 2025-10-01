@@ -615,84 +615,82 @@ class SetRowContent extends StatelessWidget {
 
     children.add(
       Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _IndexBadge(
-                tokens: tokens,
-                index: index,
-                dense: dense,
-              ),
-              if (dropActive) ...[
-                SizedBox(width: dense ? 4 : 6),
-                _DropBadge(tokens: tokens, dense: dense),
-              ],
-              SizedBox(width: dense ? 8 : 12),
-              Expanded(
-                child: _InputPill(
-                  controller: weightController,
-                  focusNode: weightFocus,
-                  label: weightLabel,
-                  readOnly: done || readOnly,
-                  tokens: tokens,
-                  dense: dense,
-                  onTap: onTapWeight,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                      return loc.numberInvalid;
-                    }
-                    return null;
-                  },
-                  showLabel: false,
-                  placeholder: weightLabel,
-                ),
-              ),
-              SizedBox(width: dense ? 8 : 12),
-              Expanded(
-                child: _InputPill(
-                  controller: repsController,
-                  focusNode: repsFocus,
-                  label: repsLabel,
-                  readOnly: done || readOnly,
-                  tokens: tokens,
-                  dense: dense,
-                  onTap: onTapReps,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    if (int.tryParse(v) == null) return loc.intRequired;
-                    return null;
-                  },
-                  showLabel: false,
-                  placeholder: repsLabel,
-                ),
-              ),
-              SizedBox(width: dense ? 8 : 12),
-              _RoundButton(
-                tokens: tokens,
-                icon: showExtras ? Icons.expand_less : Icons.expand_more,
-                filled: false,
-                semantics: 'Mehr Optionen',
-                dense: dense,
-                onTap: onToggleExtras,
-                iconColor: primaryColor,
-                disabledIconColor: primaryColor.withOpacity(0.4),
-              ),
-              SizedBox(width: dense ? 6 : 8),
-              _RoundButton(
-                tokens: tokens,
-                icon: Icons.check,
-                filled: done,
-                semantics:
-                    done ? loc.setReopenTooltip : loc.setCompleteTooltip,
-                dense: dense,
-                onTap: onToggleDone,
-                iconColor: primaryColor,
-                filledIconColor: primaryColor,
-                disabledIconColor: primaryColor.withOpacity(0.4),
-              ),
-            ],
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _IndexBadge(
+            tokens: tokens,
+            index: index,
+            dense: dense,
           ),
-        ),
+          if (dropActive) ...[
+            SizedBox(width: dense ? 4 : 6),
+            _DropBadge(tokens: tokens, dense: dense),
+          ],
+          SizedBox(width: dense ? 8 : 12),
+          Expanded(
+            child: _InputPill(
+              controller: weightController,
+              focusNode: weightFocus,
+              label: weightLabel,
+              readOnly: done || readOnly,
+              tokens: tokens,
+              dense: dense,
+              onTap: onTapWeight,
+              validator: (v) {
+                if (v == null || v.isEmpty) return null;
+                if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                  return loc.numberInvalid;
+                }
+                return null;
+              },
+              showLabel: false,
+              placeholder: weightLabel,
+            ),
+          ),
+          SizedBox(width: dense ? 8 : 12),
+          Expanded(
+            child: _InputPill(
+              controller: repsController,
+              focusNode: repsFocus,
+              label: repsLabel,
+              readOnly: done || readOnly,
+              tokens: tokens,
+              dense: dense,
+              onTap: onTapReps,
+              validator: (v) {
+                if (v == null || v.isEmpty) return null;
+                if (int.tryParse(v) == null) return loc.intRequired;
+                return null;
+              },
+              showLabel: false,
+              placeholder: repsLabel,
+            ),
+          ),
+          SizedBox(width: dense ? 8 : 12),
+          _RoundButton(
+            tokens: tokens,
+            icon: showExtras ? Icons.expand_less : Icons.expand_more,
+            filled: false,
+            semantics: 'Mehr Optionen',
+            dense: dense,
+            onTap: onToggleExtras,
+            iconColor: primaryColor,
+            disabledIconColor: primaryColor.withOpacity(0.4),
+          ),
+          SizedBox(width: dense ? 6 : 8),
+          _RoundButton(
+            tokens: tokens,
+            icon: Icons.check,
+            filled: done,
+            semantics: done ? loc.setReopenTooltip : loc.setCompleteTooltip,
+            dense: dense,
+            onTap: onToggleDone,
+            iconColor: primaryColor,
+            filledIconColor: primaryColor,
+            disabledIconColor: primaryColor.withOpacity(0.4),
+          ),
+        ],
+      ),
     );
     if (showExtras) {
       children.addAll([
