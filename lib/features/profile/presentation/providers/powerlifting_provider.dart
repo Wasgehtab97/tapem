@@ -353,6 +353,7 @@ class PowerliftingProvider extends ChangeNotifier {
     final futures = entries.map(_fetchRecordsForAssignment);
     final results = await Future.wait(futures);
     final combined = results.expand((element) => element).toList();
+    combined.removeWhere((record) => record.weightKg <= 0);
     if (combined.isEmpty) {
       _records[discipline] = <PowerliftingRecord>[];
       return;
@@ -400,30 +401,45 @@ class PowerliftingProvider extends ChangeNotifier {
         .doc(assignment.deviceId)
         .collection('logs');
 
-    Query<Map<String, dynamic>> query = logsCollection
+    final baseQuery = logsCollection
         .where('userId', isEqualTo: uid)
         .where('exerciseId', isEqualTo: assignment.exerciseId);
 
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
-    try {
-      query = query
-          .orderBy('weight', descending: true)
-          .orderBy('timestamp', descending: true)
-          .limit(1);
+    final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>> docs =
+        <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
+
+    Future<void> collect(
+      Query<Map<String, dynamic>> query,
+    ) async {
       final snapshot = await query.get();
-      docs = snapshot.docs;
-    } on FirebaseException {
-      final snapshot = await logsCollection
-          .where('userId', isEqualTo: uid)
-          .where('exerciseId', isEqualTo: assignment.exerciseId)
-          .orderBy('timestamp', descending: true)
-          .limit(_logsLimitPerSource)
-          .get();
-      docs = snapshot.docs;
+      for (final doc in snapshot.docs) {
+        docs[doc.id] = doc;
+      }
     }
 
-    PowerliftingRecord? bestRecord;
-    for (final doc in docs) {
+    try {
+      await collect(
+        baseQuery
+            .orderBy('weight', descending: true)
+            .orderBy('timestamp', descending: true)
+            .limit(_logsLimitPerSource),
+      );
+    } on FirebaseException catch (error) {
+      if (error.code != 'failed-precondition') rethrow;
+    }
+
+    await collect(
+      baseQuery.orderBy('timestamp', descending: true).limit(
+            _logsLimitPerSource,
+          ),
+    );
+
+    if (docs.isEmpty) {
+      return <PowerliftingRecord>[];
+    }
+
+    final records = <PowerliftingRecord>[];
+    for (final doc in docs.values) {
       final data = doc.data();
       final weight = (data['weight'] as num?)?.toDouble() ?? 0;
       final reps = (data['reps'] as num?)?.toInt() ?? 0;
@@ -440,19 +456,10 @@ class PowerliftingProvider extends ChangeNotifier {
         exerciseName: labels.exerciseName,
       );
 
-      if (bestRecord == null ||
-          record.weightKg > bestRecord.weightKg ||
-          (record.weightKg == bestRecord.weightKg &&
-              record.performedAt.isAfter(bestRecord.performedAt))) {
-        bestRecord = record;
-      }
+      records.add(record);
     }
 
-    if (bestRecord == null) {
-      return <PowerliftingRecord>[];
-    }
-
-    return <PowerliftingRecord>[bestRecord];
+    return records;
   }
 
   Future<_PowerliftingLabels> _resolveLabels(

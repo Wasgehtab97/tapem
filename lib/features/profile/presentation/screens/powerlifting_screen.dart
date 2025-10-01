@@ -498,29 +498,30 @@ class _PowerliftingTable extends StatelessWidget {
         .map((column) => column.records.length)
         .fold<int>(0, (prev, value) => value > prev ? value : prev);
     final theme = Theme.of(context);
+    const tableBackground = Colors.black;
+    const headerBackground = Color(0xFF121212);
+    const alternateRowBackground = Color(0xFF181818);
+    final dividerColor = Colors.white.withOpacity(0.14);
+
     final headerStyle = theme.textTheme.titleSmall?.copyWith(
-      color: theme.colorScheme.onSurface,
+      color: Colors.white,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.6,
     );
     final valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurface,
+      color: Colors.white,
       fontWeight: FontWeight.w600,
     );
     final metaStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurface.withOpacity(0.7),
+      color: Colors.white.withOpacity(0.7),
       height: 1.3,
     );
-    final dividerColor = theme.colorScheme.outline.withOpacity(0.4);
-
-    final headerBackground =
-        theme.colorScheme.surfaceVariant.withOpacity(0.35);
 
     final tableBorder = TableBorder(
-      top: BorderSide(color: dividerColor, width: 1),
-      bottom: BorderSide(color: dividerColor, width: 1),
-      left: BorderSide(color: dividerColor, width: 1),
-      right: BorderSide(color: dividerColor, width: 1),
+      top: const BorderSide(color: Colors.transparent, width: 0),
+      bottom: const BorderSide(color: Colors.transparent, width: 0),
+      left: const BorderSide(color: Colors.transparent, width: 0),
+      right: const BorderSide(color: Colors.transparent, width: 0),
       horizontalInside: BorderSide(color: dividerColor, width: 1),
       verticalInside: BorderSide(color: dividerColor, width: 1),
     );
@@ -535,7 +536,7 @@ class _PowerliftingTable extends StatelessWidget {
       border: tableBorder,
       children: [
         TableRow(
-          decoration: BoxDecoration(color: headerBackground),
+          decoration: const BoxDecoration(color: headerBackground),
           children: [
             for (final column in columns)
               Padding(
@@ -556,26 +557,25 @@ class _PowerliftingTable extends StatelessWidget {
           ],
         ),
         if (maxRows == 0)
-          TableRow(
-            children: [
-              for (final column in columns)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Text(
-                    column.emptyLabel,
-                    textAlign: TextAlign.center,
-                    style: metaStyle,
+            TableRow(
+              decoration: const BoxDecoration(color: tableBackground),
+              children: [
+                for (final column in columns)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Text(
+                      column.emptyLabel,
+                      textAlign: TextAlign.center,
+                      style: metaStyle,
+                    ),
                   ),
-                ),
-            ],
-          )
+              ],
+            )
         else
           for (var row = 0; row < maxRows; row++)
             TableRow(
               decoration: BoxDecoration(
-                color: row.isEven
-                    ? theme.colorScheme.surfaceVariant.withOpacity(0.1)
-                    : Colors.transparent,
+                color: row.isEven ? tableBackground : alternateRowBackground,
               ),
               children: [
                 for (final column in columns)
@@ -738,7 +738,7 @@ class _GradientFrame extends StatelessWidget {
     final gradient = brand?.gradient ?? AppGradients.brandGradient;
     final resolvedRadius = (brand?.outlineRadius ?? BorderRadius.circular(AppRadius.card))
         .resolve(Directionality.of(context));
-    final background = theme.colorScheme.surface.withOpacity(0.85);
+    const background = Colors.black;
 
     return DecoratedBox(
       decoration: BoxDecoration(
