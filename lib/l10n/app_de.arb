@@ -291,6 +291,36 @@
     "description": "Überschrift für den Kalender auf der Profilseite"
   },
 
+  "profileStatsButtonLabel": "Statistiken",
+  "@profileStatsButtonLabel": {
+    "description": "Button auf der Profilseite für die Statistik-Ansicht"
+  },
+
+  "profileStatsTitle": "Statistiken",
+  "@profileStatsTitle": {
+    "description": "Titel der Statistikseite im Profil"
+  },
+
+  "profileStatsTotalTrainingDays": "Trainingstage insgesamt",
+  "@profileStatsTotalTrainingDays": {
+    "description": "KPI-Bezeichnung für die Gesamtzahl der Trainingstage"
+  },
+
+  "profileStatsAverageTrainingDaysPerWeek": "Durchschnittliche Trainingstage/Woche",
+  "@profileStatsAverageTrainingDaysPerWeek": {
+    "description": "KPI-Bezeichnung für durchschnittliche Trainingstage je Woche"
+  },
+
+  "profileStatsFavoriteExercise": "Lieblingsübung",
+  "@profileStatsFavoriteExercise": {
+    "description": "KPI-Bezeichnung für die Lieblingsübung"
+  },
+
+  "profileStatsFavoriteExerciseFallback": "Noch keine Sessions",
+  "@profileStatsFavoriteExerciseFallback": {
+    "description": "Fallback-Text, wenn keine Lieblingsübung ermittelt werden kann"
+  },
+
   "repsRequired": "Wdh?",
   "@repsRequired": {
     "description": "Validierungsmeldung, wenn Wiederholungen fehlen"

@@ -231,6 +231,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTrainingDaysTitle => 'Your training days of the year';
 
   @override
+  String get profileStatsButtonLabel => 'Statistics';
+
+  @override
+  String get profileStatsTitle => 'Statistics';
+
+  @override
+  String get profileStatsTotalTrainingDays => 'Total training days';
+
+  @override
+  String get profileStatsAverageTrainingDaysPerWeek =>
+      'Avg. training days per week';
+
+  @override
+  String get profileStatsFavoriteExercise => 'Favourite exercise';
+
+  @override
+  String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
+
+  @override
   String get repsRequired => 'reps?';
 
   @override

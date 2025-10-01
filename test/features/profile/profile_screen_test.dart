@@ -206,6 +206,7 @@ void main() {
 
     expect(find.text('Admin'), findsNothing);
     expect(find.text('Trainingstage'), findsOneWidget);
+    expect(find.text('Statistiken'), findsOneWidget);
     expect(find.byTooltip('Profilbild ändern'), findsOneWidget);
   });
 

@@ -63,6 +63,7 @@ class AuthProvider extends ChangeNotifier {
   String? get userId => _user?.id;
   String? get role => _user?.role;
   bool get isAdmin => role == 'admin';
+  DateTime? get createdAt => _user?.createdAt;
 
   /// Opt-out für Leaderboard
   bool? get showInLeaderboard => _user?.showInLeaderboard;

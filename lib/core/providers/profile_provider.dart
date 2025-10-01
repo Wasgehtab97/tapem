@@ -1,5 +1,7 @@
 // lib/core/providers/profile_provider.dart
 
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +14,18 @@ class ProfileProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   List<String> _trainingDates = [];
+  List<DateTime> _trainingDayDates = [];
+  int _totalTrainingDays = 0;
+  double _avgTrainingDaysPerWeek = 0;
+  String? _favoriteExerciseName;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<String> get trainingDates => List.unmodifiable(_trainingDates);
+  List<DateTime> get trainingDayDates => List.unmodifiable(_trainingDayDates);
+  int get totalTrainingDays => _totalTrainingDays;
+  double get averageTrainingDaysPerWeek => _avgTrainingDaysPerWeek;
+  String? get favoriteExerciseName => _favoriteExerciseName;
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(BuildContext context) async {
@@ -36,15 +46,52 @@ class ProfileProvider extends ChangeNotifier {
           .where('userId', isEqualTo: userId)
           .get();
 
-      final datesSet = <String>{};
+      final dateSet = <DateTime>{};
+      final sessionAggregates = <String, _ExerciseAggregate>{};
+
       for (final doc in snapshot.docs) {
-        final dt = (doc['timestamp'] as Timestamp).toDate();
-        final key =
-            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-        datesSet.add(key);
+        final data = doc.data();
+        final timestamp = (data['timestamp'] as Timestamp).toDate();
+        final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
+        dateSet.add(day);
+
+        final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
+        if (sessionId.isEmpty) {
+          continue;
+        }
+
+        final deviceRef = doc.reference.parent.parent;
+        final deviceId = deviceRef?.id ?? '';
+        final gymRef = deviceRef?.parent.parent;
+        final gymId = gymRef?.id ?? '';
+        if (deviceId.isEmpty || gymId.isEmpty) {
+          continue;
+        }
+
+        final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
+        final key = '$gymId|$deviceId|$exerciseId';
+        final aggregate = sessionAggregates.putIfAbsent(
+          key,
+          () => _ExerciseAggregate(
+            gymId: gymId,
+            deviceId: deviceId,
+            exerciseId: exerciseId,
+          ),
+        );
+        aggregate.sessionIds.add(sessionId);
       }
 
-      _trainingDates = datesSet.toList()..sort();
+      _trainingDayDates = dateSet.toList()
+        ..sort((a, b) => a.compareTo(b));
+      _trainingDates = _trainingDayDates
+          .map((dt) =>
+              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
+          .toList();
+      _totalTrainingDays = _trainingDates.length;
+      _avgTrainingDaysPerWeek =
+          _calculateAverageTrainingDaysPerWeek(authProv.createdAt);
+      _favoriteExerciseName =
+          await _resolveFavoriteExerciseName(sessionAggregates.values);
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
       if (e is FirebaseException && e.code == 'failed-precondition') {
@@ -59,4 +106,105 @@ class ProfileProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  double _calculateAverageTrainingDaysPerWeek(DateTime? createdAt) {
+    if (_trainingDayDates.isEmpty) {
+      return 0;
+    }
+
+    final normalizedCreatedAt = createdAt == null
+        ? _trainingDayDates.first
+        : DateTime(createdAt.year, createdAt.month, createdAt.day);
+    final firstMonday = _firstMondayAfter(normalizedCreatedAt);
+    final filteredDays =
+        _trainingDayDates.where((day) => !day.isBefore(firstMonday)).toList();
+    if (filteredDays.isEmpty) {
+      return 0;
+    }
+
+    final now = DateTime.now();
+    final lastRelevantDay = filteredDays.last.isAfter(now)
+        ? filteredDays.last
+        : now;
+    final spanDays = max(1, lastRelevantDay.difference(firstMonday).inDays + 1);
+    final weeks = spanDays / 7.0;
+    if (weeks <= 0) {
+      return filteredDays.length.toDouble();
+    }
+    return filteredDays.length / weeks;
+  }
+
+  DateTime _firstMondayAfter(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final offset = (DateTime.monday - normalized.weekday + 7) % 7;
+    final daysToAdd = offset == 0 ? 7 : offset;
+    return normalized.add(Duration(days: daysToAdd));
+  }
+
+  Future<String?> _resolveFavoriteExerciseName(
+    Iterable<_ExerciseAggregate> aggregates,
+  ) async {
+    if (aggregates.isEmpty) {
+      return null;
+    }
+
+    _ExerciseAggregate? best;
+    for (final aggregate in aggregates) {
+      if (best == null ||
+          aggregate.sessionIds.length > best.sessionIds.length) {
+        best = aggregate;
+      }
+    }
+
+    if (best == null || best.sessionIds.isEmpty) {
+      return null;
+    }
+
+    try {
+      final deviceRef = FirebaseFirestore.instance
+          .collection('gyms')
+          .doc(best.gymId)
+          .collection('devices')
+          .doc(best.deviceId);
+      final deviceSnap = await deviceRef.get();
+      String deviceName = best.deviceId;
+      if (deviceSnap.exists) {
+        final data = deviceSnap.data();
+        final name = data?['name'] as String?;
+        if (name != null && name.trim().isNotEmpty) {
+          deviceName = name.trim();
+        }
+      }
+
+      final exerciseId = best.exerciseId;
+      if (exerciseId != null && exerciseId.isNotEmpty) {
+        try {
+          final exerciseSnap =
+              await deviceRef.collection('exercises').doc(exerciseId).get();
+          final exerciseName = exerciseSnap.data()?['name'] as String?;
+          if (exerciseName != null && exerciseName.trim().isNotEmpty) {
+            return exerciseName.trim();
+          }
+        } catch (_) {}
+      }
+
+      return deviceName;
+    } catch (e, st) {
+      elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
+      return null;
+    }
+  }
+}
+
+class _ExerciseAggregate {
+  _ExerciseAggregate({
+    required this.gymId,
+    required this.deviceId,
+    required this.exerciseId,
+  });
+
+  final String gymId;
+  final String deviceId;
+  final String? exerciseId;
+  final Set<String> sessionIds = <String>{};
 }
