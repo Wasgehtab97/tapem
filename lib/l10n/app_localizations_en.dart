@@ -458,7 +458,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String bodyweightFieldLabel(Object unit) {
-    return 'Bodyweight + extra ($unit)';
+    return 'BW + extra ($unit)';
   }
 
   @override

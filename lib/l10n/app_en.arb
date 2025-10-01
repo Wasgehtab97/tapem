@@ -646,7 +646,7 @@
     }
   },
 
-  "bodyweightFieldLabel": "Bodyweight + extra ({unit})",
+  "bodyweightFieldLabel": "BW + extra ({unit})",
   "@bodyweightFieldLabel": {
     "description": "Label for the weight input field when bodyweight mode is active",
     "placeholders": {
