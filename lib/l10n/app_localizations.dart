@@ -911,6 +911,24 @@ abstract class AppLocalizations {
   /// **'Reps'**
   String get tableHeaderReps;
 
+  /// Label for the standard weight input field
+  ///
+  /// In en, this message translates to:
+  /// **'Weight ({unit})'**
+  String weightFieldLabel(Object unit);
+
+  /// Label for the weight input field when bodyweight mode is active
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight + extra ({unit})'**
+  String bodyweightFieldLabel(Object unit);
+
+  /// Indicator shown when bodyweight mode is enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight mode active'**
+  String get bodyweightModeActiveLabel;
+
   /// Prefix label for the rest timer
   ///
   /// In en, this message translates to:

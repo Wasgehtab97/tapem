@@ -638,6 +638,27 @@
     "description": "Table header for reps column"
   },
 
+  "weightFieldLabel": "Weight ({unit})",
+  "@weightFieldLabel": {
+    "description": "Label for the standard weight input field",
+    "placeholders": {
+      "unit": {}
+    }
+  },
+
+  "bodyweightFieldLabel": "Bodyweight + extra ({unit})",
+  "@bodyweightFieldLabel": {
+    "description": "Label for the weight input field when bodyweight mode is active",
+    "placeholders": {
+      "unit": {}
+    }
+  },
+
+  "bodyweightModeActiveLabel": "Bodyweight mode active",
+  "@bodyweightModeActiveLabel": {
+    "description": "Indicator shown when bodyweight mode is enabled"
+  },
+
   "timerPauseLabel": "Rest",
   "@timerPauseLabel": {
     "description": "Prefix label for the rest timer"

@@ -452,6 +452,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tableHeaderReps => 'Reps';
 
   @override
+  String weightFieldLabel(Object unit) {
+    return 'Weight ($unit)';
+  }
+
+  @override
+  String bodyweightFieldLabel(Object unit) {
+    return 'Bodyweight + extra ($unit)';
+  }
+
+  @override
+  String get bodyweightModeActiveLabel => 'Bodyweight mode active';
+
+  @override
   String get timerPauseLabel => 'Rest';
 
   @override

@@ -425,12 +425,6 @@ class SetCardState extends State<SetCard> {
         ? (widget.groupedRadius as BorderRadius?)
         : null;
 
-    final weightPlaceholder =
-        prov.isBodyweightMode ? loc.bodyweight : 'kg';
-    const repsPlaceholder = 'wdh';
-    const dropWeightPlaceholder = 'kg';
-    const dropRepsPlaceholder = 'wdh';
-
     Widget content = SetRowContent(
       tokens: tokens,
       dense: dense,
@@ -488,10 +482,6 @@ class SetCardState extends State<SetCard> {
               ),
       dropValidator: _validateDrop,
       padding: contentPadding,
-      weightPlaceholder: weightPlaceholder,
-      repsPlaceholder: repsPlaceholder,
-      dropWeightPlaceholder: dropWeightPlaceholder,
-      dropRepsPlaceholder: dropRepsPlaceholder,
     );
 
     final backgroundRadius = rowRadius ??
@@ -547,10 +537,6 @@ class SetRowContent extends StatelessWidget {
   final VoidCallback? onTapDropReps;
   final FormFieldValidator<String>? dropValidator;
   final EdgeInsetsGeometry padding;
-  final String weightPlaceholder;
-  final String repsPlaceholder;
-  final String dropWeightPlaceholder;
-  final String dropRepsPlaceholder;
 
   const SetRowContent({
     super.key,
@@ -580,21 +566,17 @@ class SetRowContent extends StatelessWidget {
     required this.onTapDropReps,
     required this.dropValidator,
     this.padding = EdgeInsets.zero,
-    required this.weightPlaceholder,
-    required this.repsPlaceholder,
-    required this.dropWeightPlaceholder,
-    required this.dropRepsPlaceholder,
   });
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final placeholderStyle = TextStyle(
-      fontSize: dense ? 12 : 13,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.3,
-      color: primaryColor.withOpacity(0.45),
-    );
+    final weightLabel = isBodyweightMode
+        ? loc.bodyweightFieldLabel(loc.tableHeaderKg)
+        : loc.weightFieldLabel(loc.tableHeaderKg);
+    final weightSupportingText =
+        isBodyweightMode ? loc.bodyweightModeActiveLabel : null;
+    final repsLabel = loc.tableHeaderReps;
 
     Widget body = Padding(
       padding: padding,
@@ -618,7 +600,7 @@ class SetRowContent extends StatelessWidget {
                 child: _InputPill(
                   controller: weightController,
                   focusNode: weightFocus,
-                  label: isBodyweightMode ? loc.bodyweight : 'kg',
+                  label: weightLabel,
                   readOnly: done || readOnly,
                   tokens: tokens,
                   dense: dense,
@@ -630,9 +612,8 @@ class SetRowContent extends StatelessWidget {
                     }
                     return null;
                   },
-                  showLabel: false,
-                  placeholder: weightPlaceholder,
-                  placeholderTextStyle: placeholderStyle,
+                  showLabel: true,
+                  supportingText: weightSupportingText,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -640,7 +621,7 @@ class SetRowContent extends StatelessWidget {
                 child: _InputPill(
                   controller: repsController,
                   focusNode: repsFocus,
-                  label: 'x',
+                  label: repsLabel,
                   readOnly: done || readOnly,
                   tokens: tokens,
                   dense: dense,
@@ -650,9 +631,7 @@ class SetRowContent extends StatelessWidget {
                     if (int.tryParse(v) == null) return loc.intRequired;
                     return null;
                   },
-                  showLabel: false,
-                  placeholder: repsPlaceholder,
-                  placeholderTextStyle: placeholderStyle,
+                  showLabel: true,
                 ),
               ),
               SizedBox(width: dense ? 8 : 12),
@@ -695,7 +674,6 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropWeight,
                     validator: dropValidator,
-                    placeholder: dropWeightPlaceholder,
                   ),
                 ),
                 SizedBox(width: dense ? 8 : 12),
@@ -709,7 +687,6 @@ class SetRowContent extends StatelessWidget {
                     dense: true,
                     onTap: onTapDropReps,
                     validator: dropValidator,
-                    placeholder: dropRepsPlaceholder,
                   ),
                 ),
               ],
@@ -719,9 +696,12 @@ class SetRowContent extends StatelessWidget {
       ),
     );
 
-      return SizedBox(width: double.infinity, child: body);
-    }
+    return SizedBox(
+      width: double.infinity,
+      child: body,
+    );
   }
+}
 
 class _IndexBadge extends StatelessWidget {
   final SetCardTheme tokens;
