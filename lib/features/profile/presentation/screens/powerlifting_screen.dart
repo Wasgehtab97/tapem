@@ -45,46 +45,74 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
       return;
     }
 
-    final device = await _selectDevice(loc, devices, discipline);
-    if (!mounted || device == null) return;
-
-    String exerciseId = device.uid;
-    if (device.isMulti) {
-      final exercises = await provider.loadExercisesForDevice(device.uid);
-      if (!mounted) return;
-
-      if (exercises.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.powerliftingNoExercisesError(device.name))),
-        );
-        return;
-      }
-
-      final exercise = await _selectExercise(loc, device, exercises);
-      if (!mounted || exercise == null) return;
-      exerciseId = exercise.id;
-    }
-
-    final success = await provider.addAssignment(
-      discipline: discipline,
-      gymId: gymId,
-      deviceId: device.uid,
-      exerciseId: exerciseId,
+    final selections = await _selectAssignments(
+      loc,
+      discipline,
+      devices,
     );
 
-    if (!mounted) return;
-
-    if (!success) {
-      final message = provider.error == 'POWERLIFTING_DUPLICATE'
-          ? loc.powerliftingDuplicateError
-          : provider.error ?? loc.powerliftingAddError;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.powerliftingAddSuccess)),
-      );
+    if (!mounted || selections == null || selections.isEmpty) {
+      return;
     }
+
+    var successCount = 0;
+    var duplicateFailure = false;
+    String? failureMessage;
+
+    for (final selection in selections) {
+      final success = await provider.addAssignment(
+        discipline: discipline,
+        gymId: gymId,
+        deviceId: selection.deviceId,
+        exerciseId: selection.exerciseId,
+      );
+
+      final error = provider.error;
+
+      if (success) {
+        successCount++;
+      } else if (error == 'POWERLIFTING_DUPLICATE') {
+        duplicateFailure = true;
+      } else {
+        failureMessage =
+            (error == null || error.isEmpty) ? loc.powerliftingAddError : error;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final totalSelections = selections.length;
+    final successMessage = loc.powerliftingAddSuccess;
+    final duplicateMessage = loc.powerliftingDuplicateError;
+
+    if (successCount == totalSelections &&
+        !duplicateFailure &&
+        failureMessage == null) {
+      messenger.showSnackBar(SnackBar(content: Text(successMessage)));
+      return;
+    }
+
+    final messages = <String>[];
+    if (successCount > 0) {
+      messages.add(successMessage);
+    }
+    if (duplicateFailure) {
+      messages.add(duplicateMessage);
+    }
+    if (failureMessage != null) {
+      messages.add(failureMessage!);
+    }
+
+    if (messages.isEmpty) {
+      messages.add(loc.powerliftingAddError);
+    }
+
+    messenger.showSnackBar(
+      SnackBar(content: Text(messages.join(' – '))),
+    );
   }
 
   Future<void> _onClearPressed() async {
@@ -159,90 +187,179 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
     );
   }
 
-  Future<Device?> _selectDevice(
+  Future<List<_AssignmentSelection>?> _selectAssignments(
     AppLocalizations loc,
-    List<Device> devices,
     PowerliftingDiscipline discipline,
-  ) {
+    List<Device> devices,
+  ) async {
+    final provider = context.read<PowerliftingProvider>();
     final theme = Theme.of(context);
-    return showModalBottomSheet<Device>(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: SizedBox(
-            height: 420,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  title: Text(
-                    loc.powerliftingDeviceSheetTitle(
-                      _disciplineLabel(loc, discipline),
-                    ),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: devices.length,
-                    itemBuilder: (_, index) {
-                      final device = devices[index];
-                      final subtitle = device.isMulti
-                          ? loc.powerliftingDeviceIsMultiNote
-                          : null;
-                      return ListTile(
-                        title: Text(device.name),
-                        subtitle:
-                            subtitle == null ? null : Text(subtitle),
-                        onTap: () => Navigator.of(sheetContext).pop(device),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+    final messenger = ScaffoldMessenger.of(context);
 
-  Future<Exercise?> _selectExercise(
-    AppLocalizations loc,
-    Device device,
-    List<Exercise> exercises,
-  ) {
-    final theme = Theme.of(context);
-    return showModalBottomSheet<Exercise>(
+    final exerciseMap = <String, List<Exercise>>{};
+    final unavailableDevices = <Device>[];
+
+    for (final device in devices.where((d) => d.isMulti)) {
+      final exercises = await provider.loadExercisesForDevice(device.uid);
+      if (!mounted) {
+        return null;
+      }
+
+      if (exercises.isEmpty) {
+        unavailableDevices.add(device);
+        continue;
+      }
+
+      exerciseMap[device.uid] = exercises;
+    }
+
+    if (unavailableDevices.isNotEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            loc.powerliftingNoExercisesError(unavailableDevices.first.name),
+          ),
+        ),
+      );
+    }
+
+    final availableDevices = devices
+        .where((device) => !device.isMulti || exerciseMap.containsKey(device.uid))
+        .toList();
+
+    if (availableDevices.isEmpty) {
+      return null;
+    }
+
+    return showModalBottomSheet<List<_AssignmentSelection>>(
       context: context,
+      isScrollControlled: true,
       builder: (sheetContext) {
+        final selected = <_AssignmentSelection>{};
         return SafeArea(
-          child: SizedBox(
-            height: 420,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  title: Text(
-                    loc.powerliftingExerciseSheetTitle(device.name),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: exercises.length,
-                    itemBuilder: (_, index) {
-                      final exercise = exercises[index];
-                      return ListTile(
-                        title: Text(exercise.name),
-                        onTap: () => Navigator.of(sheetContext).pop(exercise),
-                      );
-                    },
-                  ),
-                ),
-              ],
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(sheetContext).size.height * 0.75,
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ListTile(
+                        title: Text(
+                          loc.powerliftingAssignmentSheetTitle(
+                            _disciplineLabel(loc, discipline),
+                          ),
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs,
+                          ),
+                          children: [
+                            for (final device in availableDevices)
+                              if (!device.isMulti)
+                                Builder(
+                                  builder: (_) {
+                                    final selection = _AssignmentSelection(
+                                      deviceId: device.uid,
+                                      exerciseId: device.uid,
+                                      deviceName: device.name,
+                                    );
+                                    return CheckboxListTile(
+                                      value: selected.contains(selection),
+                                      title: Text(device.name),
+                                      controlAffinity:
+                                          ListTileControlAffinity.leading,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.md,
+                                      ),
+                                      onChanged: (checked) {
+                                        setState(() {
+                                          if (checked ?? false) {
+                                            selected.add(selection);
+                                          } else {
+                                            selected.remove(selection);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  },
+                                )
+                              else
+                                ExpansionTile(
+                                  title: Text(device.name),
+                                  subtitle: Text(loc.powerliftingDeviceIsMultiNote),
+                                  childrenPadding: const EdgeInsets.only(
+                                    left: AppSpacing.md,
+                                    right: AppSpacing.md,
+                                  ),
+                                  children: [
+                                    for (final exercise in exerciseMap[device.uid]!)
+                                      Builder(
+                                        builder: (_) {
+                                          final selection = _AssignmentSelection(
+                                            deviceId: device.uid,
+                                            exerciseId: exercise.id,
+                                            deviceName: device.name,
+                                            exerciseName: exercise.name,
+                                          );
+                                          return CheckboxListTile(
+                                            value: selected.contains(selection),
+                                            title: Text(exercise.name),
+                                            controlAffinity:
+                                                ListTileControlAffinity.leading,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.md,
+                                            ),
+                                            onChanged: (checked) {
+                                              setState(() {
+                                                if (checked ?? false) {
+                                                  selected.add(selection);
+                                                } else {
+                                                  selected.remove(selection);
+                                                }
+                                              });
+                                            },
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                              child: Text(loc.commonCancel),
+                            ),
+                            const Spacer(),
+                            FilledButton(
+                              onPressed: selected.isEmpty
+                                  ? null
+                                  : () => Navigator.of(sheetContext)
+                                      .pop(selected.toList()),
+                              child: Text(loc.commonSave),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -314,10 +431,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       _GradientFrame(
-                        child: _PowerliftingTable(
-                          columns: columns,
-                          accentColor: brandColor,
-                        ),
+                        child: _PowerliftingTable(columns: columns),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                     ],
@@ -350,12 +464,9 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
         ],
       ),
       body: SafeArea(
-        child: DefaultTextStyle.merge(
-          style: TextStyle(color: brandColor),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: body,
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: body,
         ),
       ),
     );
@@ -377,10 +488,9 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
 }
 
 class _PowerliftingTable extends StatelessWidget {
-  const _PowerliftingTable({required this.columns, required this.accentColor});
+  const _PowerliftingTable({required this.columns});
 
   final List<_DisciplineColumn> columns;
-  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +499,7 @@ class _PowerliftingTable extends StatelessWidget {
         .fold<int>(0, (prev, value) => value > prev ? value : prev);
     final theme = Theme.of(context);
     final headerStyle = theme.textTheme.titleSmall?.copyWith(
-      color: accentColor,
+      color: theme.colorScheme.onSurface,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.6,
     );
@@ -401,7 +511,19 @@ class _PowerliftingTable extends StatelessWidget {
       color: theme.colorScheme.onSurface.withOpacity(0.7),
       height: 1.3,
     );
-    final dividerColor = theme.colorScheme.outline.withOpacity(0.25);
+    final dividerColor = theme.colorScheme.outline.withOpacity(0.4);
+
+    final headerBackground =
+        theme.colorScheme.surfaceVariant.withOpacity(0.35);
+
+    final tableBorder = TableBorder(
+      top: BorderSide(color: dividerColor, width: 1),
+      bottom: BorderSide(color: dividerColor, width: 1),
+      left: BorderSide(color: dividerColor, width: 1),
+      right: BorderSide(color: dividerColor, width: 1),
+      horizontalInside: BorderSide(color: dividerColor, width: 1),
+      verticalInside: BorderSide(color: dividerColor, width: 1),
+    );
 
     return Table(
       columnWidths: const {
@@ -410,11 +532,10 @@ class _PowerliftingTable extends StatelessWidget {
         2: FlexColumnWidth(),
       },
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      border: tableBorder,
       children: [
         TableRow(
-          decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.12),
-          ),
+          decoration: BoxDecoration(color: headerBackground),
           children: [
             for (final column in columns)
               Padding(
@@ -422,22 +543,20 @@ class _PowerliftingTable extends StatelessWidget {
                   vertical: AppSpacing.sm,
                   horizontal: AppSpacing.xs,
                 ),
-                child: Text(
-                  column.label,
-                  textAlign: TextAlign.center,
-                  style: headerStyle,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    column.label,
+                    textAlign: TextAlign.center,
+                    style: headerStyle,
+                    maxLines: 1,
+                  ),
                 ),
               ),
           ],
         ),
         if (maxRows == 0)
-          TableRow(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: dividerColor, width: 1),
-              ),
-            ),
-            children: [
+          TableRow(children: [
               for (final column in columns)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.sm),
@@ -447,8 +566,8 @@ class _PowerliftingTable extends StatelessWidget {
                     style: metaStyle,
                   ),
                 ),
-            ],
-          )
+                ),
+            ])
         else
           for (var row = 0; row < maxRows; row++)
             TableRow(
@@ -456,9 +575,6 @@ class _PowerliftingTable extends StatelessWidget {
                 color: row.isEven
                     ? theme.colorScheme.surfaceVariant.withOpacity(0.1)
                     : Colors.transparent,
-                border: Border(
-                  top: BorderSide(color: dividerColor, width: 1),
-                ),
               ),
               children: [
                 for (final column in columns)
@@ -474,6 +590,31 @@ class _PowerliftingTable extends StatelessWidget {
       ],
     );
   }
+}
+
+class _AssignmentSelection {
+  const _AssignmentSelection({
+    required this.deviceId,
+    required this.exerciseId,
+    required this.deviceName,
+    this.exerciseName,
+  });
+
+  final String deviceId;
+  final String exerciseId;
+  final String deviceName;
+  final String? exerciseName;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _AssignmentSelection &&
+        other.deviceId == deviceId &&
+        other.exerciseId == exerciseId;
+  }
+
+  @override
+  int get hashCode => Object.hash(deviceId, exerciseId);
 }
 
 class _DisciplineColumn {

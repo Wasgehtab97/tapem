@@ -289,7 +289,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get powerliftingIntro =>
-      'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.';
+      'Link every device to its discipline to keep track of your PR progress.';
 
   @override
   String get powerliftingEmptyTitle => 'Build your powerlifting board';
@@ -303,6 +303,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get powerliftingDisciplineSheetTitle => 'Choose discipline';
+
+  @override
+  String powerliftingAssignmentSheetTitle(String discipline) {
+    return 'Select devices and exercises for $discipline';
+  }
 
   @override
   String powerliftingDeviceSheetTitle(String discipline) {
