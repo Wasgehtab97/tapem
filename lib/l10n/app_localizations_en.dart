@@ -865,6 +865,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bodyweight => 'Bodyweight';
 
   @override
+  String get bodyweightAbbrev => 'BW';
+
+  @override
   String bodyweightPlus(Object kg) {
     return 'Bodyweight + $kg kg';
   }

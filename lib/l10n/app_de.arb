@@ -921,6 +921,8 @@
   "friends_search_min_chars": "Mindestens 2 Zeichen eingeben"
   ,"bodyweight": "Körpergewicht"
   ,"@bodyweight": {"description": "Label für Körpergewicht"}
+  ,"bodyweightAbbrev": "BW"
+  ,"@bodyweightAbbrev": {"description": "Abkürzung für Bodyweight"}
   ,"bodyweightPlus": "Körpergewicht + {kg} kg"
   ,"@bodyweightPlus": {"description": "Körpergewicht plus Zusatzgewicht","placeholders": {"kg": {}}}
   ,"bodyweightToggleTooltip": "Körpergewicht umschalten"

@@ -1721,6 +1721,12 @@ abstract class AppLocalizations {
   /// **'Bodyweight'**
   String get bodyweight;
 
+  /// Abbreviation for bodyweight
+  ///
+  /// In en, this message translates to:
+  /// **'BW'**
+  String get bodyweightAbbrev;
+
   /// Bodyweight plus additional weight
   ///
   /// In en, this message translates to:
