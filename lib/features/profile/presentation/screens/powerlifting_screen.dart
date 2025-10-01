@@ -264,11 +264,20 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
     if (provider.isLoading) {
       body = const Center(child: CircularProgressIndicator());
     } else if (!provider.hasAssignments) {
-      body = _EmptyState(
-        title: loc.powerliftingEmptyTitle,
-        description: loc.powerliftingEmptyDescription,
-        buttonLabel: loc.powerliftingAddButton,
-        onAdd: provider.isSaving ? null : _onAddPressed,
+      body = Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: _GradientFrame(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: _EmptyState(
+              title: loc.powerliftingEmptyTitle,
+              description: loc.powerliftingEmptyDescription,
+              buttonLabel: loc.powerliftingAddButton,
+              onAdd: provider.isSaving ? null : _onAddPressed,
+              accentColor: brandColor,
+            ),
+          ),
+        ),
       );
     } else {
       final columns = PowerliftingDiscipline.values
@@ -282,27 +291,42 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
           )
           .toList();
 
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            loc.powerliftingIntro,
-            style: theme.textTheme.bodyMedium?.copyWith(color: brandColor),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppSpacing.md),
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: _PowerliftingTable(columns: columns),
+      body = LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        loc.powerliftingIntro,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.9),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _GradientFrame(
+                        child: _PowerliftingTable(
+                          columns: columns,
+                          accentColor: brandColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          );
+        },
       );
     }
 
@@ -353,19 +377,31 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
 }
 
 class _PowerliftingTable extends StatelessWidget {
-  const _PowerliftingTable({required this.columns});
+  const _PowerliftingTable({required this.columns, required this.accentColor});
 
   final List<_DisciplineColumn> columns;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     final maxRows = columns
         .map((column) => column.records.length)
         .fold<int>(0, (prev, value) => value > prev ? value : prev);
-    final headerStyle = Theme.of(context)
-        .textTheme
-        .titleMedium
-        ?.copyWith(fontWeight: FontWeight.bold);
+    final theme = Theme.of(context);
+    final headerStyle = theme.textTheme.titleSmall?.copyWith(
+      color: accentColor,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.6,
+    );
+    final valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurface,
+      fontWeight: FontWeight.w600,
+    );
+    final metaStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface.withOpacity(0.7),
+      height: 1.3,
+    );
+    final dividerColor = theme.colorScheme.outline.withOpacity(0.25);
 
     return Table(
       columnWidths: const {
@@ -373,14 +409,12 @@ class _PowerliftingTable extends StatelessWidget {
         1: FlexColumnWidth(),
         2: FlexColumnWidth(),
       },
-      border: TableBorder.symmetric(
-        inside: BorderSide(
-          color: Theme.of(context).dividerColor.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         TableRow(
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.12),
+          ),
           children: [
             for (final column in columns)
               Padding(
@@ -398,6 +432,11 @@ class _PowerliftingTable extends StatelessWidget {
         ),
         if (maxRows == 0)
           TableRow(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: dividerColor, width: 1),
+              ),
+            ),
             children: [
               for (final column in columns)
                 Padding(
@@ -405,6 +444,7 @@ class _PowerliftingTable extends StatelessWidget {
                   child: Text(
                     column.emptyLabel,
                     textAlign: TextAlign.center,
+                    style: metaStyle,
                   ),
                 ),
             ],
@@ -412,14 +452,22 @@ class _PowerliftingTable extends StatelessWidget {
         else
           for (var row = 0; row < maxRows; row++)
             TableRow(
+              decoration: BoxDecoration(
+                color: row.isEven
+                    ? theme.colorScheme.surfaceVariant.withOpacity(0.1)
+                    : Colors.transparent,
+                border: Border(
+                  top: BorderSide(color: dividerColor, width: 1),
+                ),
+              ),
               children: [
                 for (final column in columns)
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.sm,
-                      horizontal: AppSpacing.xs,
+                      vertical: AppSpacing.md,
+                      horizontal: AppSpacing.sm,
                     ),
-                    child: column.buildCell(row),
+                    child: column.buildCell(row, valueStyle, metaStyle),
                   ),
               ],
             ),
@@ -441,30 +489,39 @@ class _DisciplineColumn {
   final DateFormat dateFormat;
   final String emptyLabel;
 
-  Widget buildCell(int index) {
+  Widget buildCell(int index, TextStyle? valueStyle, TextStyle? metaStyle) {
     if (index >= records.length) {
-      return const Text('-', textAlign: TextAlign.center);
+      return Text('-', textAlign: TextAlign.center, style: valueStyle);
     }
 
     final record = records[index];
     final dateText = dateFormat.format(record.performedAt);
     final subtitle = record.exerciseName ?? record.deviceName;
+    final weight = record.weightKg % 1 == 0
+        ? record.weightKg.toStringAsFixed(0)
+        : record.weightKg.toStringAsFixed(1);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('${record.weightKg.toStringAsFixed(1)} kg × ${record.reps}'),
-        const SizedBox(height: 4),
+        Text('$weight kg × ${record.reps}', style: valueStyle, textAlign: TextAlign.center),
+        const SizedBox(height: 6),
         Text(
           dateText,
-          style: const TextStyle(fontSize: 12),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: const TextStyle(fontSize: 12),
+          style: metaStyle,
           textAlign: TextAlign.center,
         ),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: metaStyle,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ],
     );
   }
@@ -476,38 +533,87 @@ class _EmptyState extends StatelessWidget {
     required this.description,
     required this.buttonLabel,
     required this.onAdd,
+    required this.accentColor,
   });
 
   final String title;
   final String description;
   final String buttonLabel;
   final VoidCallback? onAdd;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            width: 320,
-            child: Text(
-              description,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
+    final onSurface = theme.colorScheme.onSurface;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(Icons.auto_graph_rounded, size: 40, color: accentColor),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Text(
+            description,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: onSurface.withOpacity(0.8),
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: Text(buttonLabel),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        FilledButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add),
+          label: Text(buttonLabel),
+        ),
+      ],
+    );
+  }
+}
+
+class _GradientFrame extends StatelessWidget {
+  const _GradientFrame({required this.child, this.padding});
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final gradient = brand?.gradient ?? AppGradients.brandGradient;
+    final resolvedRadius = (brand?.outlineRadius ?? BorderRadius.circular(AppRadius.card))
+        .resolve(Directionality.of(context));
+    final background = theme.colorScheme.surface.withOpacity(0.85);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: resolvedRadius,
+        boxShadow: brand?.shadow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(1.5),
+        child: ClipRRect(
+          borderRadius: resolvedRadius,
+          child: Container(
+            color: background,
+            padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+            child: child,
           ),
-        ],
+        ),
       ),
     );
   }

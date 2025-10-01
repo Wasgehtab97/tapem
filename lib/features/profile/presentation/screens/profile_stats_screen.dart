@@ -5,8 +5,8 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class ProfileStatsScreen extends StatefulWidget {
@@ -87,19 +87,8 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
                 loc.profileStatsFavoriteExercise,
                 favoriteExercise,
               ),
+              _powerliftingButton(context, loc),
             ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          BrandActionTile(
-            title: loc.profileStatsPowerliftingButton,
-            centerTitle: true,
-            dense: true,
-            minVerticalPadding: 0,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            variant: BrandActionTileVariant.outlined,
-            showChevron: false,
-            onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
-            uiLogEvent: 'PROFILE_STATS_POWERLIFTING',
           ),
         ],
       );
@@ -127,39 +116,82 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
+    return _circularBrandCard(
+      context,
+      semanticsLabel: '$label: $value',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: onBrandColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: onBrandColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _powerliftingButton(BuildContext context, AppLocalizations loc) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
+
+    elogUi('PROFILE_STATS_POWERLIFTING', {'title': loc.profileStatsPowerliftingButton});
+
+    return _circularBrandCard(
+      context,
+      semanticsLabel: loc.profileStatsPowerliftingButton,
+      onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.fitness_center_rounded, color: onBrandColor, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            loc.profileStatsPowerliftingButton,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: onBrandColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _circularBrandCard(
+    BuildContext context, {
+    required Widget child,
+    VoidCallback? onTap,
+    String? semanticsLabel,
+  }) {
     return Semantics(
-      label: '$label: $value',
+      button: onTap != null,
+      label: semanticsLabel,
       child: SizedBox(
         width: 112,
         height: 112,
         child: BrandGradientCard(
           borderRadius: BorderRadius.circular(56),
           padding: EdgeInsets.zero,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: onBrandColor,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: onBrandColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          onTap: onTap,
+          child: Center(child: child),
         ),
       ),
     );
