@@ -351,6 +351,36 @@
     "description": "Tooltip for the add button on the powerlifting page"
   },
 
+  "powerliftingClearTooltip": "Reset powerlifting board",
+  "@powerliftingClearTooltip": {
+    "description": "Tooltip for the reset button on the powerlifting page"
+  },
+
+  "powerliftingClearConfirmTitle": "Reset powerlifting board?",
+  "@powerliftingClearConfirmTitle": {
+    "description": "Confirmation dialog title before clearing assignments"
+  },
+
+  "powerliftingClearConfirmMessage": "This removes all linked devices for your powerlifting board. Do you want to continue?",
+  "@powerliftingClearConfirmMessage": {
+    "description": "Confirmation dialog message before clearing assignments"
+  },
+
+  "powerliftingClearConfirmAction": "Reset",
+  "@powerliftingClearConfirmAction": {
+    "description": "Confirmation dialog action to clear assignments"
+  },
+
+  "powerliftingClearSuccess": "Powerlifting board reset.",
+  "@powerliftingClearSuccess": {
+    "description": "Snackbar shown after clearing assignments"
+  },
+
+  "powerliftingClearError": "Powerlifting board could not be reset.",
+  "@powerliftingClearError": {
+    "description": "Snackbar shown when clearing assignments fails"
+  },
+
   "powerliftingIntro": "Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.",
   "@powerliftingIntro": {
     "description": "Introductory text on the powerlifting page"

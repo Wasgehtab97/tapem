@@ -351,6 +351,36 @@
     "description": "Tooltip für den Hinzufügen-Button auf der Powerlifting-Seite"
   },
 
+  "powerliftingClearTooltip": "Board zurücksetzen",
+  "@powerliftingClearTooltip": {
+    "description": "Tooltip für den Zurücksetzen-Button auf der Powerlifting-Seite"
+  },
+
+  "powerliftingClearConfirmTitle": "Powerlifting-Board zurücksetzen?",
+  "@powerliftingClearConfirmTitle": {
+    "description": "Dialogtitel vor dem Zurücksetzen der Powerlifting-Zuordnungen"
+  },
+
+  "powerliftingClearConfirmMessage": "Dadurch werden alle verknüpften Geräte aus deinem Powerlifting-Board entfernt. Möchtest du fortfahren?",
+  "@powerliftingClearConfirmMessage": {
+    "description": "Dialogtext vor dem Zurücksetzen der Powerlifting-Zuordnungen"
+  },
+
+  "powerliftingClearConfirmAction": "Zurücksetzen",
+  "@powerliftingClearConfirmAction": {
+    "description": "Bestätigungsaktion zum Zurücksetzen der Powerlifting-Zuordnungen"
+  },
+
+  "powerliftingClearSuccess": "Powerlifting-Board zurückgesetzt.",
+  "@powerliftingClearSuccess": {
+    "description": "Snackbar nach erfolgreichem Zurücksetzen"
+  },
+
+  "powerliftingClearError": "Powerlifting-Board konnte nicht zurückgesetzt werden.",
+  "@powerliftingClearError": {
+    "description": "Snackbar, wenn das Zurücksetzen fehlgeschlagen ist"
+  },
+
   "powerliftingIntro": "Verknüpfe deine Lieblingsgeräte und Übungen, um deine stärksten Bankdrück-, Kniebeugen- und Kreuzhebe-Sätze zu verfolgen.",
   "@powerliftingIntro": {
     "description": "Einleitungstext auf der Powerlifting-Seite"
