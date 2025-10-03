@@ -931,7 +931,7 @@ class _InputPillState extends State<_InputPill> {
     final colorScheme = theme.colorScheme;
     final brandColor = colorScheme.primary;
 
-    final radius = BorderRadius.circular(widget.dense ? 18 : 22);
+    final radius = BorderRadius.circular(widget.dense ? 16 : 20);
     final baseOverlay = Colors.transparent;
     final haloColor = Colors.black.withOpacity(
       hasFocus
@@ -976,9 +976,9 @@ class _InputPillState extends State<_InputPill> {
     );
 
     final double horizontalPadding =
-        showLabel ? (widget.dense ? 16 : 18) : (widget.dense ? 18 : 22);
+        showLabel ? (widget.dense ? 12 : 14) : (widget.dense ? 12 : 16);
     final double verticalPadding =
-        showLabel ? (widget.dense ? 9 : 12) : (widget.dense ? 12 : 16);
+        showLabel ? (widget.dense ? 6 : 8) : (widget.dense ? 8 : 10);
 
     final Widget textField = SizedBox(
       width: double.infinity,
@@ -1018,7 +1018,7 @@ class _InputPillState extends State<_InputPill> {
           vertical: verticalPadding,
         ),
         constraints:
-            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 58 : 68),
+            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 48 : 56),
         decoration: BoxDecoration(
           color: baseOverlay,
           borderRadius: radius,
