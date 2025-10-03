@@ -4,6 +4,7 @@ import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/utils/duration_format.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
 
 class ActiveWorkoutTimer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
@@ -28,49 +29,8 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final formatted = formatDurationHm(duration);
             final theme = Theme.of(context);
             final brand = theme.extension<AppBrandTheme>();
-            final gradient = brand?.gradient;
             final colors = theme.colorScheme;
-            final gradientColors = gradient?.colors ?? const <Color>[];
-            final hasUsableGradient = gradientColors.isNotEmpty &&
-                gradientColors.any((c) => c.computeLuminance() > 0.2);
-
-            Color? backgroundColor;
-            final LinearGradient? resolvedGradient;
-            Color foregroundColor;
-
-            final isBlackWhiteTheme =
-                !hasUsableGradient &&
-                    theme.colorScheme.background == Colors.black &&
-                    theme.colorScheme.primary == Colors.white &&
-                    (brand?.gradient.colors
-                            .every((c) => c.computeLuminance() < 0.05) ??
-                        false);
-
-            if (hasUsableGradient) {
-              resolvedGradient = gradient;
-              backgroundColor = null;
-              foregroundColor = brand?.onBrand ?? colors.onSecondaryContainer;
-            } else {
-              resolvedGradient = null;
-              final fallbackBackground = colors.primary;
-              backgroundColor = fallbackBackground;
-              foregroundColor = colors.onPrimary;
-
-              final brightness = ThemeData.estimateBrightnessForColor(
-                fallbackBackground,
-              );
-              if (isBlackWhiteTheme) {
-                backgroundColor = Colors.white.withOpacity(0.12);
-                foregroundColor = Colors.white;
-              } else if (brightness == Brightness.dark &&
-                  foregroundColor.computeLuminance() < 0.6) {
-                foregroundColor = Colors.white;
-              } else if (brightness == Brightness.light &&
-                  foregroundColor.computeLuminance() > 0.6) {
-                foregroundColor = Colors.black;
-              }
-            }
-
+            final outlineColor = brand?.outline ?? colors.primary;
             final borderRadius = BorderRadius.circular(AppRadius.button);
             final iconSize = compact ? 16.0 : 18.0;
             final resolvedPadding = padding ??
@@ -82,32 +42,26 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     : theme.textTheme.titleMedium) ??
                 theme.textTheme.bodyMedium ??
                 const TextStyle(fontSize: 14);
-            final content = DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: resolvedGradient,
-                color: backgroundColor,
-                borderRadius: borderRadius,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: iconSize,
-                      color: foregroundColor,
+            final content = BrandOutline(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              radiusOverride: borderRadius,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: iconSize,
+                    color: outlineColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    formatted,
+                    style: baseTextStyle.copyWith(
+                      color: outlineColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      formatted,
-                      style: baseTextStyle.copyWith(
-                        color: foregroundColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
 
