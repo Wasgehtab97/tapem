@@ -1864,6 +1864,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the session.'**
   String get trainingDetailsDeleteSessionError;
+
+  /// No description provided for @profileChangeAvatar.
+  String get profileChangeAvatar;
+
+  /// No description provided for @homeTabAdmin.
+  String get homeTabAdmin;
+
+  /// No description provided for @homeTabRank.
+  String get homeTabRank;
+
+  /// No description provided for @homeTabAffiliate.
+  String get homeTabAffiliate;
+
+  /// No description provided for @homeTabPlans.
+  String get homeTabPlans;
+
+  /// No description provided for @reportTitle.
+  String get reportTitle;
+
+  /// No description provided for @reportFeedbackCardTitle.
+  String get reportFeedbackCardTitle;
+
+  /// No description provided for @reportFeedbackOpenEntries.
+  String reportFeedbackOpenEntries(int count);
+
+  /// No description provided for @reportFeedbackNoOpenEntries.
+  String get reportFeedbackNoOpenEntries;
+
+  /// No description provided for @reportCreateSurveyTitle.
+  String get reportCreateSurveyTitle;
+
+  /// No description provided for @reportViewSurveysTitle.
+  String get reportViewSurveysTitle;
+
+  /// No description provided for @reportDeviceFilterHint.
+  String get reportDeviceFilterHint;
+
+  /// No description provided for @reportDeviceUsageSessions.
+  String reportDeviceUsageSessions(int count);
+
+  /// No description provided for @exerciseDeleteTitle.
+  String get exerciseDeleteTitle;
+
+  /// No description provided for @exerciseDeleteMessage.
+  String exerciseDeleteMessage(Object name);
+
+  /// No description provided for @commonDelete.
+  String get commonDelete;
+
+  /// No description provided for @commonSaveError.
+  String get commonSaveError;
+
+  /// No description provided for @commonUnknown.
+  String get commonUnknown;
+
+  /// No description provided for @commonTitle.
+  String get commonTitle;
+
+  /// No description provided for @commonDescription.
+  String get commonDescription;
+
+  /// No description provided for @commonCreate.
+  String get commonCreate;
+
+  /// No description provided for @commonSubmit.
+  String get commonSubmit;
+
+  /// No description provided for @commonDiscard.
+  String get commonDiscard;
+
+  /// No description provided for @commonNoAccess.
+  String get commonNoAccess;
+
+  /// No description provided for @xpDeviceTitle.
+  String get xpDeviceTitle;
+
+  /// No description provided for @xpOverviewTitle.
+  String get xpOverviewTitle;
+
+  /// No description provided for @xpOverviewPeriodLabel.
+  String get xpOverviewPeriodLabel;
+
+  /// No description provided for @xpOverviewPeriodLast7Days.
+  String get xpOverviewPeriodLast7Days;
+
+  /// No description provided for @xpOverviewPeriodLast30Days.
+  String get xpOverviewPeriodLast30Days;
+
+  /// No description provided for @xpOverviewPeriodTotal.
+  String get xpOverviewPeriodTotal;
+
+  /// No description provided for @xpOverviewTableHeaderMuscleGroup.
+  String get xpOverviewTableHeaderMuscleGroup;
+
+  /// No description provided for @xpOverviewTableHeaderXp.
+  String get xpOverviewTableHeaderXp;
+
+  /// No description provided for @xpOverviewLeaderboardTitle.
+  String xpOverviewLeaderboardTitle(Object region);
+
+  /// No description provided for @challengeAdminTitle.
+  String get challengeAdminTitle;
+
+  /// No description provided for @challengeAdminErrorFillAllFields.
+  String get challengeAdminErrorFillAllFields;
+
+  /// No description provided for @challengeAdminFieldRequiredSets.
+  String get challengeAdminFieldRequiredSets;
+
+  /// No description provided for @challengeAdminFieldXpReward.
+  String get challengeAdminFieldXpReward;
+
+  /// No description provided for @challengeAdminFieldType.
+  String get challengeAdminFieldType;
+
+  /// No description provided for @challengeAdminTypeWeekly.
+  String get challengeAdminTypeWeekly;
+
+  /// No description provided for @challengeAdminTypeMonthly.
+  String get challengeAdminTypeMonthly;
+
+  /// No description provided for @challengeAdminFieldWeek.
+  String get challengeAdminFieldWeek;
+
+  /// No description provided for @challengeAdminWeekLabel.
+  String challengeAdminWeekLabel(int week);
+
+  /// No description provided for @challengeAdminFieldMonth.
+  String get challengeAdminFieldMonth;
+
+  /// No description provided for @challengeAdminMonthLabel.
+  String challengeAdminMonthLabel(int month);
+
+  /// No description provided for @challengeAdminFieldDevices.
+  String get challengeAdminFieldDevices;
+
+  /// No description provided for @adminAreaTitle.
+  String get adminAreaTitle;
+
+  /// No description provided for @adminAreaNoPermission.
+  String get adminAreaNoPermission;
+
+  /// No description provided for @adminDashboardTitle.
+  String get adminDashboardTitle;
+
+  /// No description provided for @adminDashboardCreateDeviceDialogTitle.
+  String get adminDashboardCreateDeviceDialogTitle;
+
+  /// No description provided for @adminDashboardMultipleExercises.
+  String get adminDashboardMultipleExercises;
+
+  /// No description provided for @adminDashboardDeviceIdLabel.
+  String adminDashboardDeviceIdLabel(Object id);
+
+  /// No description provided for @adminDashboardCreateDevice.
+  String get adminDashboardCreateDevice;
+
+  /// No description provided for @adminDashboardBranding.
+  String get adminDashboardBranding;
+
+  /// No description provided for @adminSymbolsAddButton.
+  String adminSymbolsAddButton(int count);
+
+  /// No description provided for @adminSymbolsAddSuccess.
+  String adminSymbolsAddSuccess(int count);
+
+  /// No description provided for @adminSymbolsRetryLater.
+  String get adminSymbolsRetryLater;
+
+  /// No description provided for @adminSymbolsNoGlobalAssets.
+  String get adminSymbolsNoGlobalAssets;
+
+  /// No description provided for @adminSymbolsNoAssetsForTitle.
+  String adminSymbolsNoAssetsForTitle(Object title);
+
+  /// No description provided for @adminSymbolsAllGlobalAssigned.
+  String get adminSymbolsAllGlobalAssigned;
+
+  /// No description provided for @adminSymbolsAllTitleAssigned.
+  String adminSymbolsAllTitleAssigned(Object title);
+
+  /// No description provided for @brandingImageTooLarge.
+  String get brandingImageTooLarge;
+
+  /// No description provided for @brandingInvalidConfig.
+  String get brandingInvalidConfig;
+
+  /// No description provided for @brandingPickLogo.
+  String get brandingPickLogo;
+
+  /// No description provided for @brandingPrimaryColorLabel.
+  String get brandingPrimaryColorLabel;
+
+  /// No description provided for @brandingAccentColorLabel.
+  String get brandingAccentColorLabel;
+
+  /// No description provided for @nfcNoCode.
+  String get nfcNoCode;
+
+  /// No description provided for @nfcNoGymSelected.
+  String get nfcNoGymSelected;
+
+  /// No description provided for @nfcError.
+  String nfcError(Object error);
+
+  /// No description provided for @surveyThanks.
+  String get surveyThanks;
+
+  /// No description provided for @surveySelectOptionPrompt.
+  String get surveySelectOptionPrompt;
+
+  /// No description provided for @surveyClose.
+  String get surveyClose;
+
+  /// No description provided for @surveyVotesCountWithPercent.
+  String surveyVotesCountWithPercent(int count, Object percent);
+
+  /// No description provided for @surveyListTitle.
+  String get surveyListTitle;
+
+  /// No description provided for @surveyEmpty.
+  String get surveyEmpty;
+
+  /// No description provided for @surveyResultsTitle.
+  String get surveyResultsTitle;
+
+  /// No description provided for @selectGymTitle.
+  String get selectGymTitle;
+
+  /// No description provided for @sessionStopTitle.
+  String get sessionStopTitle;
+
+  /// No description provided for @sessionStopMessage.
+  String sessionStopMessage(Object duration);
+
+  /// No description provided for @numericKeypadSemanticsDigit.
+  String numericKeypadSemanticsDigit(Object digit);
+
+  /// No description provided for @numericKeypadSemanticsDecimal.
+  String get numericKeypadSemanticsDecimal;
+
+  /// No description provided for @numericKeypadSemanticsDelete.
+  String get numericKeypadSemanticsDelete;
+
+  /// No description provided for @numericKeypadSemanticsNext.
+  String get numericKeypadSemanticsNext;
+
+  /// No description provided for @numericKeypadSemanticsDecrease.
+  String get numericKeypadSemanticsDecrease;
+
+  /// No description provided for @numericKeypadSemanticsIncrease.
+  String get numericKeypadSemanticsIncrease;
+
+  /// No description provided for @numericKeypadSemanticsHideKeyboard.
+  String get numericKeypadSemanticsHideKeyboard;
+
+  /// No description provided for @adminDeviceNfcWritten.
+  String get adminDeviceNfcWritten;
+
+  /// No description provided for @adminDeviceNfcWriteError.
+  String adminDeviceNfcWriteError(Object error);
+
+  /// No description provided for @deviceDeleteTooltip.
+  String get deviceDeleteTooltip;
+
+  /// No description provided for @deviceDeleteDialogTitle.
+  String get deviceDeleteDialogTitle;
+
+  /// No description provided for @deviceDeleteDialogMessage.
+  String deviceDeleteDialogMessage(Object name);
+
+  /// No description provided for @deviceDeleteSuccess.
+  String get deviceDeleteSuccess;
+
+  /// No description provided for @deviceWriteNfcTooltip.
+  String get deviceWriteNfcTooltip;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

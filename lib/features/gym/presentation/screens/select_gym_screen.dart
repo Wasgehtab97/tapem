@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class SelectGymScreen extends StatelessWidget {
   const SelectGymScreen({super.key});
@@ -9,8 +10,9 @@ class SelectGymScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gyms = context.watch<AuthProvider>().gymCodes ?? [];
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Gym auswählen')),
+      appBar: AppBar(title: Text(loc.selectGymTitle)),
       body: ListView.separated(
         itemCount: gyms.length,
         separatorBuilder: (_, __) => const Divider(),

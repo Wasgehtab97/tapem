@@ -934,4 +934,314 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingDetailsDeleteSessionError => 'Could not delete the session.';
+
+  @override
+  String get profileChangeAvatar => 'Change profile picture';
+
+  @override
+  String get homeTabAdmin => 'Admin';
+
+  @override
+  String get homeTabRank => 'Rank';
+
+  @override
+  String get homeTabAffiliate => 'Affiliate';
+
+  @override
+  String get homeTabPlans => 'Plans';
+
+  @override
+  String get reportTitle => 'Report';
+
+  @override
+  String get reportFeedbackCardTitle => 'Feedback';
+
+  @override
+  String reportFeedbackOpenEntries(int count) {
+    return '$count open entries';
+  }
+
+  @override
+  String get reportFeedbackNoOpenEntries => 'No open feedback';
+
+  @override
+  String get reportCreateSurveyTitle => 'Create survey';
+
+  @override
+  String get reportViewSurveysTitle => 'View surveys';
+
+  @override
+  String get reportDeviceFilterHint => 'Filter devices';
+
+  @override
+  String reportDeviceUsageSessions(int count) {
+    return '$count sessions';
+  }
+
+  @override
+  String get exerciseDeleteTitle => 'Delete exercise';
+
+  @override
+  String exerciseDeleteMessage(Object name) {
+    return 'Do you really want to delete the exercise "$name"?';
+  }
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
+  String get commonSaveError => 'Failed to save.';
+
+  @override
+  String get commonUnknown => 'Unknown';
+
+  @override
+  String get commonTitle => 'Title';
+
+  @override
+  String get commonDescription => 'Description';
+
+  @override
+  String get commonCreate => 'Create';
+
+  @override
+  String get commonSubmit => 'Submit';
+
+  @override
+  String get commonDiscard => 'Discard';
+
+  @override
+  String get commonNoAccess => 'No access';
+
+  @override
+  String get xpDeviceTitle => 'Device XP';
+
+  @override
+  String get xpOverviewTitle => 'XP overview';
+
+  @override
+  String get xpOverviewPeriodLabel => 'Time range:';
+
+  @override
+  String get xpOverviewPeriodLast7Days => 'Last 7 days';
+
+  @override
+  String get xpOverviewPeriodLast30Days => 'Last 30 days';
+
+  @override
+  String get xpOverviewPeriodTotal => 'Total';
+
+  @override
+  String get xpOverviewTableHeaderMuscleGroup => 'Muscle group';
+
+  @override
+  String get xpOverviewTableHeaderXp => 'XP';
+
+  @override
+  String xpOverviewLeaderboardTitle(Object region) {
+    return 'Leaderboard: $region';
+  }
+
+  @override
+  String get challengeAdminTitle => 'Manage challenges';
+
+  @override
+  String get challengeAdminErrorFillAllFields => 'Please fill out all fields.';
+
+  @override
+  String get challengeAdminFieldRequiredSets => 'Required sets';
+
+  @override
+  String get challengeAdminFieldXpReward => 'XP reward';
+
+  @override
+  String get challengeAdminFieldType => 'Type';
+
+  @override
+  String get challengeAdminTypeWeekly => 'Weekly';
+
+  @override
+  String get challengeAdminTypeMonthly => 'Monthly';
+
+  @override
+  String get challengeAdminFieldWeek => 'Calendar week';
+
+  @override
+  String challengeAdminWeekLabel(int week) {
+    return 'CW $week';
+  }
+
+  @override
+  String get challengeAdminFieldMonth => 'Month';
+
+  @override
+  String challengeAdminMonthLabel(int month) {
+    return 'Month $month';
+  }
+
+  @override
+  String get challengeAdminFieldDevices => 'Devices';
+
+  @override
+  String get adminAreaTitle => 'Admin area';
+
+  @override
+  String get adminAreaNoPermission => 'No admin rights';
+
+  @override
+  String get adminDashboardTitle => 'Admin dashboard';
+
+  @override
+  String get adminDashboardCreateDeviceDialogTitle => 'Create device';
+
+  @override
+  String get adminDashboardMultipleExercises => 'Multiple exercises?';
+
+  @override
+  String adminDashboardDeviceIdLabel(Object id) {
+    return 'Device ID: $id';
+  }
+
+  @override
+  String get adminDashboardCreateDevice => 'Create device';
+
+  @override
+  String get adminDashboardBranding => 'Branding';
+
+  @override
+  String adminSymbolsAddButton(int count) {
+    return 'Add ($count)';
+  }
+
+  @override
+  String adminSymbolsAddSuccess(int count) {
+    return 'Added $count symbol(s)';
+  }
+
+  @override
+  String get adminSymbolsRetryLater => 'No connection – please try again later.';
+
+  @override
+  String get adminSymbolsNoGlobalAssets => 'Manifest contains no global assets';
+
+  @override
+  String adminSymbolsNoAssetsForTitle(Object title) {
+    return 'Manifest contains no $title assets';
+  }
+
+  @override
+  String get adminSymbolsAllGlobalAssigned => 'All global symbols already assigned.';
+
+  @override
+  String adminSymbolsAllTitleAssigned(Object title) {
+    return 'All $title symbols already assigned.';
+  }
+
+  @override
+  String get brandingImageTooLarge => 'Image too large (max 500KB)';
+
+  @override
+  String get brandingInvalidConfig => 'Please select valid colours and a logo.';
+
+  @override
+  String get brandingPickLogo => 'Choose logo';
+
+  @override
+  String get brandingPrimaryColorLabel => 'Primary colour (hex)';
+
+  @override
+  String get brandingAccentColorLabel => 'Accent colour (hex)';
+
+  @override
+  String get nfcNoCode => 'No NFC code detected';
+
+  @override
+  String get nfcNoGymSelected => 'No gym selected';
+
+  @override
+  String nfcError(Object error) {
+    return 'NFC error: $error';
+  }
+
+  @override
+  String get surveyThanks => 'Thanks for participating!';
+
+  @override
+  String get surveySelectOptionPrompt => 'Please choose an option:';
+
+  @override
+  String get surveyClose => 'Close survey';
+
+  @override
+  String surveyVotesCountWithPercent(int count, Object percent) {
+    return '$count votes ($percent%)';
+  }
+
+  @override
+  String get surveyListTitle => 'Surveys';
+
+  @override
+  String get surveyEmpty => 'No open surveys';
+
+  @override
+  String get surveyResultsTitle => 'Results';
+
+  @override
+  String get selectGymTitle => 'Select gym';
+
+  @override
+  String get sessionStopTitle => 'End workout?';
+
+  @override
+  String sessionStopMessage(Object duration) {
+    return 'Duration: $duration. Do you want to save or discard the time?';
+  }
+
+  @override
+  String numericKeypadSemanticsDigit(Object digit) {
+    return 'Key $digit';
+  }
+
+  @override
+  String get numericKeypadSemanticsDecimal => 'Decimal separator';
+
+  @override
+  String get numericKeypadSemanticsDelete => 'Delete';
+
+  @override
+  String get numericKeypadSemanticsNext => 'Next';
+
+  @override
+  String get numericKeypadSemanticsDecrease => 'Decrease';
+
+  @override
+  String get numericKeypadSemanticsIncrease => 'Increase';
+
+  @override
+  String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
+
+  @override
+  String get adminDeviceNfcWritten => 'NFC tag written';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Error writing NFC tag: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Delete device';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Delete device?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Do you really want to delete the device "$name"?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Device deleted';
+
+  @override
+  String get deviceWriteNfcTooltip => 'Write NFC tag';
 }

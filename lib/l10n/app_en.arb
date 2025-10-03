@@ -970,4 +970,188 @@
   ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar text shown after a session was deleted."}
   ,"trainingDetailsDeleteSessionError": "Could not delete the session."
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar text shown when deleting a session failed."}
+  ,"profileChangeAvatar": "Change profile picture"
+  ,"@profileChangeAvatar": {"description": "Tooltip and accessibility label for changing the profile avatar"}
+  ,"homeTabAdmin": "Admin"
+  ,"@homeTabAdmin": {"description": "Label of the admin tab"}
+  ,"homeTabRank": "Rank"
+  ,"@homeTabRank": {"description": "Label of the rank tab"}
+  ,"homeTabAffiliate": "Affiliate"
+  ,"@homeTabAffiliate": {"description": "Label of the affiliate tab"}
+  ,"homeTabPlans": "Plans"
+  ,"@homeTabPlans": {"description": "Label of the plans tab"}
+  ,"reportTitle": "Report"
+  ,"@reportTitle": {"description": "AppBar title of the report screen"}
+  ,"reportFeedbackCardTitle": "Feedback"
+  ,"@reportFeedbackCardTitle": {"description": "Title of the feedback card on the report screen"}
+  ,"reportFeedbackOpenEntries": "{count} open entries"
+  ,"@reportFeedbackOpenEntries": {"description": "Subtitle showing open feedback entries","placeholders": {"count": {"type": "int"}}}
+  ,"reportFeedbackNoOpenEntries": "No open feedback"
+  ,"@reportFeedbackNoOpenEntries": {"description": "Subtitle shown when there are no open feedback entries"}
+  ,"reportCreateSurveyTitle": "Create survey"
+  ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
+  ,"reportViewSurveysTitle": "View surveys"
+  ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportDeviceFilterHint": "Filter devices"
+  ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
+  ,"reportDeviceUsageSessions": "{count} sessions"
+  ,"@reportDeviceUsageSessions": {"description": "Tooltip line with the number of sessions","placeholders": {"count": {"type": "int"}}}
+  ,"exerciseDeleteTitle": "Delete exercise"
+  ,"@exerciseDeleteTitle": {"description": "Dialog title asking to delete an exercise"}
+  ,"exerciseDeleteMessage": "Do you really want to delete the exercise \"{name}\"?"
+  ,"@exerciseDeleteMessage": {"description": "Dialog message asking to delete an exercise","placeholders": {"name": {}}}
+  ,"commonDelete": "Delete"
+  ,"@commonDelete": {"description": "Generic delete action label"}
+  ,"commonSaveError": "Failed to save."
+  ,"@commonSaveError": {"description": "Snackbar text shown when saving fails"}
+  ,"commonUnknown": "Unknown"
+  ,"@commonUnknown": {"description": "Generic fallback label for unknown values"}
+  ,"commonTitle": "Title"
+  ,"@commonTitle": {"description": "Generic title label"}
+  ,"commonDescription": "Description"
+  ,"@commonDescription": {"description": "Generic description label"}
+  ,"commonCreate": "Create"
+  ,"@commonCreate": {"description": "Generic create action label"}
+  ,"commonSubmit": "Submit"
+  ,"@commonSubmit": {"description": "Generic submit action label"}
+  ,"commonDiscard": "Discard"
+  ,"@commonDiscard": {"description": "Generic discard action label"}
+  ,"commonNoAccess": "No access"
+  ,"@commonNoAccess": {"description": "Message shown when the user has no access"}
+  ,"xpDeviceTitle": "Device XP"
+  ,"@xpDeviceTitle": {"description": "Title of the device XP screen"}
+  ,"xpOverviewTitle": "XP overview"
+  ,"@xpOverviewTitle": {"description": "AppBar title of the XP overview screen"}
+  ,"xpOverviewPeriodLabel": "Time range:"
+  ,"@xpOverviewPeriodLabel": {"description": "Label for the time range dropdown"}
+  ,"xpOverviewPeriodLast7Days": "Last 7 days"
+  ,"@xpOverviewPeriodLast7Days": {"description": "Dropdown option for the last 7 days"}
+  ,"xpOverviewPeriodLast30Days": "Last 30 days"
+  ,"@xpOverviewPeriodLast30Days": {"description": "Dropdown option for the last 30 days"}
+  ,"xpOverviewPeriodTotal": "Total"
+  ,"@xpOverviewPeriodTotal": {"description": "Dropdown option for total XP"}
+  ,"xpOverviewTableHeaderMuscleGroup": "Muscle group"
+  ,"@xpOverviewTableHeaderMuscleGroup": {"description": "Table header for muscle group"}
+  ,"xpOverviewTableHeaderXp": "XP"
+  ,"@xpOverviewTableHeaderXp": {"description": "Table header for XP"}
+  ,"xpOverviewLeaderboardTitle": "Leaderboard: {region}"
+  ,"@xpOverviewLeaderboardTitle": {"description": "Title of the leaderboard dialog","placeholders": {"region": {}}}
+  ,"challengeAdminTitle": "Manage challenges"
+  ,"@challengeAdminTitle": {"description": "AppBar title of the challenge admin screen"}
+  ,"challengeAdminErrorFillAllFields": "Please fill out all fields."
+  ,"@challengeAdminErrorFillAllFields": {"description": "Error shown when required fields are missing"}
+  ,"challengeAdminFieldRequiredSets": "Required sets"
+  ,"@challengeAdminFieldRequiredSets": {"description": "Label for the required sets field"}
+  ,"challengeAdminFieldXpReward": "XP reward"
+  ,"@challengeAdminFieldXpReward": {"description": "Label for the XP reward field"}
+  ,"challengeAdminFieldType": "Type"
+  ,"@challengeAdminFieldType": {"description": "Label for the challenge type field"}
+  ,"challengeAdminTypeWeekly": "Weekly"
+  ,"@challengeAdminTypeWeekly": {"description": "Weekly challenge option"}
+  ,"challengeAdminTypeMonthly": "Monthly"
+  ,"@challengeAdminTypeMonthly": {"description": "Monthly challenge option"}
+  ,"challengeAdminFieldWeek": "Calendar week"
+  ,"@challengeAdminFieldWeek": {"description": "Label for the calendar week selector"}
+  ,"challengeAdminWeekLabel": "CW {week}"
+  ,"@challengeAdminWeekLabel": {"description": "Displayed label for a specific calendar week","placeholders": {"week": {"type": "int"}}}
+  ,"challengeAdminFieldMonth": "Month"
+  ,"@challengeAdminFieldMonth": {"description": "Label for the month selector"}
+  ,"challengeAdminMonthLabel": "Month {month}"
+  ,"@challengeAdminMonthLabel": {"description": "Displayed label for a specific month","placeholders": {"month": {"type": "int"}}}
+  ,"challengeAdminFieldDevices": "Devices"
+  ,"@challengeAdminFieldDevices": {"description": "Section title listing devices"}
+  ,"adminAreaTitle": "Admin area"
+  ,"@adminAreaTitle": {"description": "AppBar title when user enters the admin area"}
+  ,"adminAreaNoPermission": "No admin rights"
+  ,"@adminAreaNoPermission": {"description": "Message shown when a user lacks admin rights"}
+  ,"adminDashboardTitle": "Admin dashboard"
+  ,"@adminDashboardTitle": {"description": "AppBar title of the admin dashboard"}
+  ,"adminDashboardCreateDeviceDialogTitle": "Create device"
+  ,"@adminDashboardCreateDeviceDialogTitle": {"description": "Dialog title when creating a device"}
+  ,"adminDashboardMultipleExercises": "Multiple exercises?"
+  ,"@adminDashboardMultipleExercises": {"description": "Label asking whether the device has multiple exercises"}
+  ,"adminDashboardDeviceIdLabel": "Device ID: {id}"
+  ,"@adminDashboardDeviceIdLabel": {"description": "Label showing the generated device ID","placeholders": {"id": {}}}
+  ,"adminDashboardCreateDevice": "Create device"
+  ,"@adminDashboardCreateDevice": {"description": "Action card title to create a device"}
+  ,"adminDashboardBranding": "Branding"
+  ,"@adminDashboardBranding": {"description": "Action card title for branding settings"}
+  ,"adminDeviceNfcWritten": "NFC tag written"
+  ,"@adminDeviceNfcWritten": {"description": "Snackbar shown after writing an NFC tag"}
+  ,"adminDeviceNfcWriteError": "Error writing NFC tag: {error}"
+  ,"@adminDeviceNfcWriteError": {"description": "Snackbar shown when writing an NFC tag failed","placeholders": {"error": {}}}
+  ,"deviceDeleteTooltip": "Delete device"
+  ,"@deviceDeleteTooltip": {"description": "Tooltip for the delete device action"}
+  ,"deviceDeleteDialogTitle": "Delete device?"
+  ,"@deviceDeleteDialogTitle": {"description": "Title for the delete device confirmation dialog"}
+  ,"deviceDeleteDialogMessage": "Do you really want to delete the device \"{name}\"?"
+  ,"@deviceDeleteDialogMessage": {"description": "Message shown when confirming device deletion","placeholders": {"name": {}}}
+  ,"deviceDeleteSuccess": "Device deleted"
+  ,"@deviceDeleteSuccess": {"description": "Snackbar shown after a device was deleted"}
+  ,"deviceWriteNfcTooltip": "Write NFC tag"
+  ,"@deviceWriteNfcTooltip": {"description": "Tooltip for writing an NFC tag"}
+  ,"adminSymbolsAddButton": "Add ({count})"
+  ,"@adminSymbolsAddButton": {"description": "Button label to add selected symbols","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsAddSuccess": "Added {count} symbol(s)"
+  ,"@adminSymbolsAddSuccess": {"description": "Snackbar after symbols were added","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsRetryLater": "No connection – please try again later."
+  ,"@adminSymbolsRetryLater": {"description": "Snackbar shown when a network request failed"}
+  ,"adminSymbolsNoGlobalAssets": "Manifest contains no global assets"
+  ,"@adminSymbolsNoGlobalAssets": {"description": "Message shown when no global assets were found"}
+  ,"adminSymbolsNoAssetsForTitle": "Manifest contains no {title} assets"
+  ,"@adminSymbolsNoAssetsForTitle": {"description": "Message shown when no assets were found for a specific title","placeholders": {"title": {}}}
+  ,"adminSymbolsAllGlobalAssigned": "All global symbols already assigned."
+  ,"@adminSymbolsAllGlobalAssigned": {"description": "Message shown when all global symbols are already assigned"}
+  ,"adminSymbolsAllTitleAssigned": "All {title} symbols already assigned."
+  ,"@adminSymbolsAllTitleAssigned": {"description": "Message shown when all symbols for a specific source are assigned","placeholders": {"title": {}}}
+  ,"brandingImageTooLarge": "Image too large (max 500KB)"
+  ,"@brandingImageTooLarge": {"description": "Error shown when the selected logo is too large"}
+  ,"brandingInvalidConfig": "Please select valid colours and a logo."
+  ,"@brandingInvalidConfig": {"description": "Error shown when required branding fields are missing"}
+  ,"brandingPickLogo": "Choose logo"
+  ,"@brandingPickLogo": {"description": "Button label to pick a branding logo"}
+  ,"brandingPrimaryColorLabel": "Primary colour (hex)"
+  ,"@brandingPrimaryColorLabel": {"description": "Input label for the primary colour"}
+  ,"brandingAccentColorLabel": "Accent colour (hex)"
+  ,"@brandingAccentColorLabel": {"description": "Input label for the accent colour"}
+  ,"nfcNoCode": "No NFC code detected"
+  ,"@nfcNoCode": {"description": "Snackbar shown when no NFC code was read"}
+  ,"nfcNoGymSelected": "No gym selected"
+  ,"@nfcNoGymSelected": {"description": "Snackbar shown when no gym is selected"}
+  ,"nfcError": "NFC error: {error}"
+  ,"@nfcError": {"description": "Snackbar shown when an NFC error occurs","placeholders": {"error": {}}}
+  ,"surveyThanks": "Thanks for participating!"
+  ,"@surveyThanks": {"description": "Message shown after submitting a survey"}
+  ,"surveySelectOptionPrompt": "Please choose an option:"
+  ,"@surveySelectOptionPrompt": {"description": "Prompt asking the user to choose an option"}
+  ,"surveyClose": "Close survey"
+  ,"@surveyClose": {"description": "Button label to close a survey"}
+  ,"surveyVotesCountWithPercent": "{count} votes ({percent}%)"
+  ,"@surveyVotesCountWithPercent": {"description": "Displays vote count with percentage","placeholders": {"count": {"type": "int"}, "percent": {}}}
+  ,"surveyListTitle": "Surveys"
+  ,"@surveyListTitle": {"description": "AppBar title for the survey list"}
+  ,"surveyEmpty": "No open surveys"
+  ,"@surveyEmpty": {"description": "Message shown when there are no open surveys"}
+  ,"surveyResultsTitle": "Results"
+  ,"@surveyResultsTitle": {"description": "Heading shown above survey results"}
+  ,"selectGymTitle": "Select gym"
+  ,"@selectGymTitle": {"description": "AppBar title of the gym selection screen"}
+  ,"sessionStopTitle": "End workout?"
+  ,"@sessionStopTitle": {"description": "Dialog title asking to end the workout"}
+  ,"sessionStopMessage": "Duration: {duration}. Do you want to save or discard the time?"
+  ,"@sessionStopMessage": {"description": "Dialog body asking whether to save the tracked duration","placeholders": {"duration": {}}}
+  ,"numericKeypadSemanticsDigit": "Key {digit}"
+  ,"@numericKeypadSemanticsDigit": {"description": "Semantics label for a digit key","placeholders": {"digit": {}}}
+  ,"numericKeypadSemanticsDecimal": "Decimal separator"
+  ,"@numericKeypadSemanticsDecimal": {"description": "Semantics label for the decimal separator key"}
+  ,"numericKeypadSemanticsDelete": "Delete"
+  ,"@numericKeypadSemanticsDelete": {"description": "Semantics label for the delete key"}
+  ,"numericKeypadSemanticsNext": "Next"
+  ,"@numericKeypadSemanticsNext": {"description": "Semantics label for the next button"}
+  ,"numericKeypadSemanticsDecrease": "Decrease"
+  ,"@numericKeypadSemanticsDecrease": {"description": "Semantics label for the decrease button"}
+  ,"numericKeypadSemanticsIncrease": "Increase"
+  ,"@numericKeypadSemanticsIncrease": {"description": "Semantics label for the increase button"}
+  ,"numericKeypadSemanticsHideKeyboard": "Hide keyboard"
+  ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantics label for the hide keyboard button"}
 }

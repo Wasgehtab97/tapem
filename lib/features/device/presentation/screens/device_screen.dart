@@ -508,7 +508,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
         appBar: _buildAppBar(context, prov),
         body: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
-          child: Center(child: Text('Fehler: ${prov.error ?? "Unbekannt"}')),
+          child: Center(
+            child: Text('${loc.errorPrefix}: ${prov.error ?? loc.commonUnknown}'),
+          ),
         ),
       );
     } else {

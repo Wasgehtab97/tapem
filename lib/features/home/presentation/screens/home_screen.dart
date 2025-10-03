@@ -36,48 +36,67 @@ class _HomeScreenState extends State<HomeScreen> {
     final gymId = gymProv.currentGymId;
     final devices = gymProv.devices.where((d) => !d.isMulti).toList();
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
+    final loc = AppLocalizations.of(context)!;
 
     return [
       _TabInfo(
         const GymScreen(key: PageStorageKey('Gym')),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center), label: 'Gym'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.fitness_center),
+          label: loc.gymTitle,
+        ),
       ),
       _TabInfo(
         const ProfileScreen(key: PageStorageKey('Profile')),
-        const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.person),
+          label: loc.profileTitle,
+        ),
       ),
       _TabInfo(
         const ReportScreen(key: PageStorageKey('Report')),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart), label: 'Report'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.insert_chart),
+          label: loc.reportTitle,
+        ),
       ),
       _TabInfo(
         const MuscleGroupScreenNew(key: PageStorageKey('Muskeln')),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.accessibility_new), label: 'Muskeln'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.accessibility_new),
+          label: loc.muscleGroupTitle,
+        ),
       ),
       _TabInfo(
         const AdminDashboardScreen(key: PageStorageKey('Admin')),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.admin_panel_settings),
+          label: loc.homeTabAdmin,
+        ),
       ),
       _TabInfo(
         RankScreen(
             key: const PageStorageKey('Rank'),
             gymId: gymId,
             deviceId: deviceId),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard), label: 'Rank'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.leaderboard),
+          label: loc.homeTabRank,
+        ),
       ),
       _TabInfo(
         const AffiliateScreen(key: PageStorageKey('Affiliate')),
-        const BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Affiliate'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.group),
+          label: loc.homeTabAffiliate,
+        ),
       ),
       _TabInfo(
         const PlanOverviewScreen(key: PageStorageKey('Plaene')),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.event_note), label: 'Pläne'),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.event_note),
+          label: loc.homeTabPlans,
+        ),
       ),
     ];
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../survey.dart';
 import '../../survey_provider.dart';
@@ -32,6 +33,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.survey.title)),
       body: Padding(
@@ -39,9 +41,9 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Ergebnisse',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              loc.surveyResultsTitle,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -82,7 +84,10 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '$count Stimmen (${(percent * 100).toStringAsFixed(1)}%)',
+                                  loc.surveyVotesCountWithPercent(
+                                    count,
+                                    (percent * 100).toStringAsFixed(1),
+                                  ),
                                 ),
                               ],
                             ),
@@ -98,7 +103,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.close),
-                  label: const Text('Umfrage abschließen'),
+                  label: Text(loc.surveyClose),
                   onPressed: () async {
                     await context.read<SurveyProvider>().closeSurvey(
                       gymId: widget.gymId,

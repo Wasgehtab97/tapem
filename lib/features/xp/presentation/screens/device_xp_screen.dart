@@ -8,6 +8,7 @@ import '../../../../core/logging/elog.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
 import 'leaderboard_screen.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class DeviceXpScreen extends StatefulWidget {
   const DeviceXpScreen({Key? key}) : super(key: key);
@@ -53,11 +54,12 @@ class _DeviceXpScreenState extends State<DeviceXpScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final gymProv = context.watch<GymProvider>();
-      final xpProv = context.watch<XpProvider>();
-      final devices = gymProv.devices.toList();
+    final loc = AppLocalizations.of(context)!;
+    final gymProv = context.watch<GymProvider>();
+    final xpProv = context.watch<XpProvider>();
+    final devices = gymProv.devices.toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Geräte XP')),
+      appBar: AppBar(title: Text(loc.xpDeviceTitle)),
       body: ListView.builder(
         itemCount: devices.length,
         itemBuilder: (_, i) {

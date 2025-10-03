@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
@@ -61,6 +62,7 @@ class MuscleChips extends StatelessWidget {
 
     final theme = Theme.of(context);
     final groups = context.watch<MuscleGroupProvider>().groups;
+    final loc = AppLocalizations.of(context)!;
 
     MuscleRegion regionFor(String id, MuscleGroup? g) {
       if (g != null) return g.region;
@@ -79,7 +81,7 @@ class MuscleChips extends StatelessWidget {
       final color = primary ? theme.colorScheme.primary : theme.colorScheme.tertiary;
       final textColor = primary ? theme.colorScheme.onPrimary : theme.colorScheme.tertiary;
       return Semantics(
-        label: '$name, ${primary ? 'primär' : 'sekundär'}',
+        label: '$name, ${primary ? loc.muscleTabsPrimary : loc.muscleTabsSecondary}',
         child: Chip(
           visualDensity: VisualDensity.compact,
           backgroundColor: primary ? color : Colors.transparent,

@@ -47,7 +47,7 @@ class CreatineRepository {
     final key = dateKey.trim();
     final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
     if (!regex.hasMatch(key)) {
-      throw StateError('Ungültiges Datum');
+      throw StateError('Invalid date');
     }
     return key;
   }
@@ -56,7 +56,7 @@ class CreatineRepository {
     final today = toDateKeyLocal(nowLocal());
     final yesterday = toDateKeyLocal(nowLocal().subtract(const Duration(days: 1)));
     if (key != today && key != yesterday) {
-      throw StateError('Nur heute oder gestern möglich.');
+      throw StateError('Only today or yesterday allowed.');
     }
   }
 }
@@ -64,7 +64,7 @@ class CreatineRepository {
 String currentUidOrFail() {
   final uid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
   if (uid.isEmpty) {
-    throw StateError('Anmeldung erforderlich');
+    throw StateError('Sign-in required');
   }
   return uid;
 }

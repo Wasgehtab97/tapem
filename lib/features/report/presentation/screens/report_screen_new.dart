@@ -12,6 +12,7 @@ import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
 import '../../../../core/logging/elog.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ReportScreenNew extends StatelessWidget {
   final String gymId;
@@ -22,6 +23,7 @@ class ReportScreenNew extends StatelessWidget {
   Widget build(BuildContext context) {
     final usageData = context.watch<ReportProvider>().usageCounts;
     final feedbackProvider = context.watch<FeedbackProvider>();
+    final loc = AppLocalizations.of(context)!;
     if (!feedbackProvider.isLoading && feedbackProvider.entries.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<FeedbackProvider>().loadFeedback(gymId);
@@ -30,7 +32,7 @@ class ReportScreenNew extends StatelessWidget {
     final int openCount = feedbackProvider.openEntries.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report')),
+      appBar: AppBar(title: Text(loc.reportTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
@@ -40,10 +42,10 @@ class ReportScreenNew extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             BrandActionTile(
               leadingIcon: Icons.feedback_outlined,
-              title: 'Feedback',
+              title: loc.reportFeedbackCardTitle,
               subtitle: openCount > 0
-                  ? '$openCount offene Einträge'
-                  : 'Kein offenes Feedback',
+                  ? loc.reportFeedbackOpenEntries(openCount)
+                  : loc.reportFeedbackNoOpenEntries,
               onTap: () {
                 Navigator.push(
                   context,
@@ -58,7 +60,7 @@ class ReportScreenNew extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             BrandActionTile(
               leadingIcon: Icons.add_circle_outline,
-              title: 'Umfrage erstellen',
+              title: loc.reportCreateSurveyTitle,
               onTap: () => _showCreateSurveyDialog(context),
               variant: BrandActionTileVariant.outlined,
               uiLogEvent: 'REPORT_CARD_RENDER',
@@ -66,7 +68,7 @@ class ReportScreenNew extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             BrandActionTile(
               leadingIcon: Icons.poll,
-              title: 'Umfragen ansehen',
+              title: loc.reportViewSurveysTitle,
               onTap: () {
                 Navigator.push(
                   context,

@@ -125,6 +125,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       debugPrint('[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global='
           '${catalog.globalCount}, catalog_gym=${catalog.gymCount(_gymId)}, available_global=${global.length}, available_gym=${gym.length}');
 
+    final loc = AppLocalizations.of(context)!;
     final selected = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
@@ -145,13 +146,15 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                 if (keys.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(catalogCount == 0
-                        ? (title == 'Global'
-                            ? 'Manifest enthält keine globalen Assets'
-                            : 'Manifest enthält keine $title-Assets')
-                        : (title == 'Global'
-                            ? 'Alle globalen Symbole bereits zugewiesen.'
-                            : 'Alle $title-Symbole bereits zugewiesen.')),
+                    child: Text(
+                      catalogCount == 0
+                          ? (title == 'Global'
+                              ? loc.adminSymbolsNoGlobalAssets
+                              : loc.adminSymbolsNoAssetsForTitle(title))
+                          : (title == 'Global'
+                              ? loc.adminSymbolsAllGlobalAssigned
+                              : loc.adminSymbolsAllTitleAssigned(title)),
+                    ),
                   )
                 else
                   GridView.builder(
@@ -247,15 +250,14 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Abbrechen'),
+                        child: Text(loc.commonCancel),
                       ),
                       const Spacer(),
                       ElevatedButton(
                         onPressed: picks.isEmpty
                             ? null
                             : () => Navigator.pop(context, picks.toList()),
-                        child:
-                            Text('Hinzufügen (${picks.length})'),
+                        child: Text(loc.adminSymbolsAddButton(picks.length)),
                       ),
                     ],
                   ),
@@ -284,9 +286,8 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
             'isAdmin=$adminFlag success=true');
         // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${selected.length} Symbol(e) hinzugefügt')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.adminSymbolsAddSuccess(selected.length))));
       } on FirebaseException catch (e) {
         setState(() => _keys.removeAll(selected));
         final adminFlag = context.read<AuthProvider>().isAdmin;
@@ -301,7 +302,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           );
         } else {
           messenger.showSnackBar(
-            const SnackBar(content: Text('Keine Verbindung – später erneut versuchen.')),
+            SnackBar(content: Text(loc.adminSymbolsRetryLater)),
           );
         }
       }
@@ -320,7 +321,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     if (!_permitted) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.user_symbols_title(''))),
-        body: const Center(child: Text('Kein Zugriff')),
+        body: Center(child: Text(loc.commonNoAccess)),
       );
     }
     final catalog = AvatarCatalog.instance;
