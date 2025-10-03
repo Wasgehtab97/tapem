@@ -15,12 +15,12 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
-import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
@@ -124,9 +124,29 @@ class _DeviceScreenState extends State<DeviceScreen> {
     context.read<OverlayNumericKeypadController>().close();
   }
 
+  String? _resolveExerciseTitle(BuildContext context, DeviceProvider prov) {
+    final device = prov.device;
+    if (device == null) {
+      return null;
+    }
+    if (!device.isMulti) {
+      return device.name;
+    }
+    final deviceFallback = device.name;
+    return context.select<ExerciseProvider, String?>((p) {
+      for (final exercise in p.exercises) {
+        if (exercise.id == widget.exerciseId) {
+          return exercise.name;
+        }
+      }
+      return deviceFallback;
+    });
+  }
+
   AppBar _buildAppBar(
     BuildContext context,
     DeviceProvider prov,
+    String? exerciseTitle,
   ) {
     final theme = Theme.of(context);
     final accentColor =
@@ -138,18 +158,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
         );
     final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
 
-    String? headerTitle;
     final device = prov.device;
-    if (device != null) {
-      if (device.isMulti) {
-        final exercises =
-            context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
-        final match = exercises.where((e) => e.id == widget.exerciseId);
-        headerTitle = match.isNotEmpty ? match.first.name : device.name;
-      } else {
-        headerTitle = device.name;
-      }
-    }
+    final headerTitle = device?.name ?? exerciseTitle;
 
     Widget titleWidget;
     if (headerTitle != null) {
@@ -168,19 +178,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
             type: MaterialType.transparency,
             child: TimerAppBarTitle(
               title: gradientTitle,
+              showTimer: false,
             ),
           ),
         );
       } else {
         titleWidget = TimerAppBarTitle(
           title: gradientTitle,
+          showTimer: false,
         );
       }
     } else {
-      titleWidget = const ActiveWorkoutTimer(
-        key: ValueKey('activeWorkoutTimer'),
-        padding: EdgeInsets.zero,
-      );
+      titleWidget = const SizedBox.shrink();
     }
 
     return AppBar(
@@ -216,12 +225,29 @@ class _DeviceScreenState extends State<DeviceScreen> {
     AppLocalizations loc,
     String locale,
     ExerciseEntry? plannedEntry,
+    String? exerciseTitle,
   ) {
     final theme = Theme.of(context);
     final outlineColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     return Column(
       children: [
+        Selector<WorkoutSessionDurationService, bool>(
+          selector: (_, service) => service.isRunning,
+          builder: (context, isRunning, _) {
+            if (!isRunning) {
+              return const SizedBox(height: 12);
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: const Center(
+                child: ActiveWorkoutTimer(
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            );
+          },
+        ),
         const Padding(
           padding: EdgeInsets.all(8),
           child: SessionTimerBar(
@@ -249,25 +275,26 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 final lastSets = lastSnap != null ? mapSnapshotToVM(lastSnap) : mapLegacySetsToVM(prov.lastSessionSets);
                 final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
                 final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+                final headingText = exerciseTitle ?? loc.newSessionTitle;
                 return ListView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                   children: [
+                    Center(
+                      child: BrandGradientText(
+                        headingText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     if (plannedEntry != null)
                       _PlannedTable(entry: plannedEntry)
                     else ...[
-                      Center(
-                        child: BrandGradientText(
-                          loc.newSessionTitle,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       if (prov.sets.isNotEmpty)
                         _GroupedSetList(
                           sets: prov.sets,
@@ -498,6 +525,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       widget.exerciseId,
       DateTime.now(),
     );
+    final exerciseTitle = _resolveExerciseTitle(context, prov);
     _dlog(
       'build() isLoading=${prov.isLoading} error=${prov.error} sets=${prov.sets.length}',
     );
@@ -505,12 +533,12 @@ class _DeviceScreenState extends State<DeviceScreen> {
     Widget scaffold;
     if (prov.isLoading) {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov),
+        appBar: _buildAppBar(context, prov, exerciseTitle),
         body: const Center(child: CircularProgressIndicator()),
       );
     } else if (prov.error != null || prov.device == null) {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov),
+        appBar: _buildAppBar(context, prov, exerciseTitle),
         body: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
           child: Center(
@@ -520,7 +548,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     } else {
       scaffold = Scaffold(
-        appBar: _buildAppBar(context, prov),
+        appBar: _buildAppBar(context, prov, exerciseTitle),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
         body: DefaultTextStyle.merge(
@@ -537,6 +565,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                   loc,
                   locale,
                   plannedEntry,
+                  exerciseTitle,
                 ),
           ),
         ),
