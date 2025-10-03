@@ -37,6 +37,14 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final LinearGradient? resolvedGradient;
             Color foregroundColor;
 
+            final isBlackWhiteTheme =
+                !hasUsableGradient &&
+                    theme.colorScheme.background == Colors.black &&
+                    theme.colorScheme.primary == Colors.white &&
+                    (brand?.gradient.colors
+                            .every((c) => c.computeLuminance() < 0.05) ??
+                        false);
+
             if (hasUsableGradient) {
               resolvedGradient = gradient;
               backgroundColor = null;
@@ -50,7 +58,10 @@ class ActiveWorkoutTimer extends StatelessWidget {
               final brightness = ThemeData.estimateBrightnessForColor(
                 fallbackBackground,
               );
-              if (brightness == Brightness.dark &&
+              if (isBlackWhiteTheme) {
+                backgroundColor = Colors.white.withOpacity(0.12);
+                foregroundColor = Colors.white;
+              } else if (brightness == Brightness.dark &&
                   foregroundColor.computeLuminance() < 0.6) {
                 foregroundColor = Colors.white;
               } else if (brightness == Brightness.light &&
