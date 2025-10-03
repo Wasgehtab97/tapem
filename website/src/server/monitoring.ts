@@ -185,7 +185,7 @@ function isFailedPrecondition(error: unknown): boolean {
   return false;
 }
 
-const DACH_COUNTRY_CODES = ['DE', 'AT', 'CH'] as const;
+const DACH_COUNTRY_CODES = ['DE', 'AT', 'CH', 'GB'] as const;
 
 export async function fetchGymsForMap(options?: FetchGymsForMapOptions): Promise<FetchGymsForMapResult> {
   const firestore = adminDb();

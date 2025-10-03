@@ -13,6 +13,11 @@ test('GeoJSON admin API exposes secure caching headers and properties', () => {
   const serverContent = readFileSync(serverPath, 'utf8');
   assert.match(
     serverContent,
+    /const DACH_COUNTRY_CODES = \['DE', 'AT', 'CH', 'GB'\] as const;/,
+    'Monitoring query should include British gyms'
+  );
+  assert.match(
+    serverContent,
     /properties:\s*\{\s*id: doc.id,\s*name,\s*slug,\s*code,/s,
     'GeoJSON features should expose id, name, slug and code'
   );
