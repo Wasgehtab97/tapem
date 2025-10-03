@@ -3,7 +3,21 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, Tar
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    return ios;
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'DefaultFirebaseOptions are not configured for web. '
+        'Provide web Firebase configuration before targeting that platform.',
+      );
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return ios;
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not configured for this platform. '
+          'Android and other native platforms should use their bundled Firebase config files.',
+        );
+    }
   }
 
   static const FirebaseOptions ios = FirebaseOptions(

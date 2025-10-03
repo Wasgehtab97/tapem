@@ -104,16 +104,24 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// Später auf `true` setzen, wenn APNs/FCM korrekt eingerichtet sind.
 const bool kEnablePush = false;
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Falls der Prozess im Hintergrund startet, Firebase erneut initialisieren.
+Future<void> _initializeFirebaseApp() async {
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await Firebase.initializeApp();
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
   } on FirebaseException catch (e) {
     if (e.code != 'duplicate-app') rethrow;
   }
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Falls der Prozess im Hintergrund startet, Firebase erneut initialisieren.
+  await _initializeFirebaseApp();
   // Aktuell keine weitere Logik
 }
 
@@ -192,13 +200,7 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
   // Firebase init (einheitlich)
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } on FirebaseException catch (e) {
-    if (e.code != 'duplicate-app') rethrow;
-  }
+  await _initializeFirebaseApp();
   assert(() {
     debugPrint('[Firebase] projectId=' + Firebase.app().options.projectId);
     return true;
