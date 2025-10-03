@@ -54,6 +54,13 @@ class ReadOnlySnapshotPage extends StatelessWidget {
                       'dropReps': '',
                       'done': s.done,
                       'isBodyweight': s.isBodyweight,
+                      'drops': [
+                        for (final d in drops)
+                          {
+                            'weight': d.kg.toString(),
+                            'reps': d.reps.toString(),
+                          },
+                      ],
                     },
                     readOnly: true,
                     size: SetCardSize.dense,

@@ -23,6 +23,7 @@ class SetDraft {
   final String? dropReps;
   final bool done;
   final bool isBodyweight;
+  final List<DropDraft> drops;
 
   SetDraft({
     required this.index,
@@ -33,6 +34,7 @@ class SetDraft {
     this.dropReps,
     this.done = false,
     this.isBodyweight = false,
+    this.drops = const [],
   });
 
   factory SetDraft.fromJson(Map<String, dynamic> json) => SetDraft(
@@ -44,6 +46,9 @@ class SetDraft {
         dropReps: json['dropReps'] as String?,
         done: json['done'] as bool? ?? false,
         isBodyweight: json['isBodyweight'] as bool? ?? false,
+        drops: (json['drops'] as List<dynamic>? ?? [])
+            .map((e) => DropDraft.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +60,27 @@ class SetDraft {
         if (dropReps != null) 'dropReps': dropReps,
         'done': done,
         if (isBodyweight) 'isBodyweight': true,
+        if (drops.isNotEmpty) 'drops': drops.map((d) => d.toJson()).toList(),
+      };
+}
+
+class DropDraft {
+  final String weight;
+  final String reps;
+
+  DropDraft({
+    this.weight = '',
+    this.reps = '',
+  });
+
+  factory DropDraft.fromJson(Map<String, dynamic> json) => DropDraft(
+        weight: json['weight'] as String? ?? '',
+        reps: json['reps'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'weight': weight,
+        'reps': reps,
       };
 }
 

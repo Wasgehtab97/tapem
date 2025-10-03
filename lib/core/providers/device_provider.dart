@@ -49,8 +49,87 @@ void _defaultLog(String message, [StackTrace? stack]) {
   }
 }
 
+List<Map<String, String>> _sanitizeDrops(List<Map<String, String>> drops) {
+  return [
+    for (final drop in drops)
+      () {
+        final weight = (drop['weight'] ?? '').toString().trim();
+        final reps = (drop['reps'] ?? '').toString().trim();
+        if (weight.isEmpty || reps.isEmpty) {
+          return {'weight': '', 'reps': ''};
+        }
+        return {'weight': weight, 'reps': reps};
+      }(),
+  ];
+}
+
+bool _dropHasValue(Map<String, String> drop) {
+  return drop['weight']!.isNotEmpty && drop['reps']!.isNotEmpty;
+}
+
+List<Map<String, String>> _dropsFromSet(Map<String, dynamic> set) {
+  final raw = set['drops'];
+  final drops = <Map<String, String>>[];
+  if (raw is List) {
+    for (final entry in raw) {
+      if (entry is Map) {
+        final map = Map<String, dynamic>.from(entry);
+        drops.add({
+          'weight': (map['weight'] ?? map['kg'] ?? '').toString(),
+          'reps': (map['reps'] ?? map['wdh'] ?? '').toString(),
+        });
+      }
+    }
+  }
+  if (drops.isEmpty) {
+    final legacyWeight = (set['dropWeight'] ?? '').toString();
+    final legacyReps = (set['dropReps'] ?? '').toString();
+    if (legacyWeight.isNotEmpty && legacyReps.isNotEmpty) {
+      drops.add({'weight': legacyWeight, 'reps': legacyReps});
+    }
+  }
+  return _sanitizeDrops(drops);
+}
+
+List<Map<String, String>> _cloneDrops(List<Map<String, String>> drops) {
+  return [
+    for (final drop in drops)
+      {'weight': drop['weight'] ?? '', 'reps': drop['reps'] ?? ''},
+  ];
+}
+
+void _applyDropsToSet(Map<String, dynamic> target, List<Map<String, String>> drops) {
+  final normalized = _sanitizeDrops(drops);
+  target['drops'] = [
+    for (final drop in normalized)
+      {'weight': drop['weight'] ?? '', 'reps': drop['reps'] ?? ''},
+  ];
+  final firstWithValue = normalized.firstWhere(
+    _dropHasValue,
+    orElse: () => const {'weight': '', 'reps': ''},
+  );
+  target['dropWeight'] = firstWithValue['weight'] ?? '';
+  target['dropReps'] = firstWithValue['reps'] ?? '';
+}
+
+Map<String, dynamic> _withNormalizedDrops(Map<String, dynamic> set) {
+  final result = Map<String, dynamic>.from(set);
+  final drops = _dropsFromSet(result);
+  _applyDropsToSet(result, drops);
+  return result;
+}
+
 String _setsBrief(List<Map<String, dynamic>> sets) {
-  return '[${sets.map((s) => '{#${s['number']}:w=${s['weight']},r=${s['reps']},dw=${s['dropWeight']},dr=${s['dropReps']},d=${s['done']}}').join(', ')}]';
+  return '[${sets.map((s) {
+        final drops = _dropsFromSet(s);
+        final dropSummary = drops.where(_dropHasValue).isEmpty
+            ? '-'
+            : drops
+                .where(_dropHasValue)
+                .map((d) => '${d['weight']}x${d['reps']}')
+                .join('|');
+        return '{#${s['number']}:w=${s['weight']},r=${s['reps']},drops=$dropSummary,d=${s['done']}}';
+      }).join(', ')}]';
 }
 
 String? resolveDeviceId(DeviceSessionSnapshot snap) {
@@ -322,7 +401,7 @@ class DeviceProvider extends ChangeNotifier {
       _level = 1;
 
       _sets = [
-        {
+        _withNormalizedDrops({
           'number': '1',
           'weight': '',
           'reps': '',
@@ -330,7 +409,7 @@ class DeviceProvider extends ChangeNotifier {
           'dropReps': '',
           'done': false, // bool statt String
           'isBodyweight': false,
-        },
+        }),
       ];
       _lastSessionSets = [];
       _lastSessionDate = null;
@@ -366,15 +445,17 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void addSet() {
-    _sets.add({
-      'number': '${_sets.length + 1}',
-      'weight': '',
-      'reps': '',
-      'dropWeight': '',
-      'dropReps': '',
-      'done': false,
-      'isBodyweight': _isBodyweightMode,
-    });
+    _sets.add(
+      _withNormalizedDrops({
+        'number': '${_sets.length + 1}',
+        'weight': '',
+        'reps': '',
+        'dropWeight': '',
+        'dropReps': '',
+        'done': false,
+        'isBodyweight': _isBodyweightMode,
+      }),
+    );
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
     _onSessionMutated();
@@ -383,7 +464,7 @@ class DeviceProvider extends ChangeNotifier {
   void insertSetAt(int index, Map<String, dynamic> set) {
     final s = Map<String, dynamic>.from(set);
     s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
-    _sets.insert(index, s);
+    _sets.insert(index, _withNormalizedDrops(s));
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
@@ -407,16 +488,26 @@ class DeviceProvider extends ChangeNotifier {
 
     if (weight != null) after['weight'] = weight;
     if (reps != null) after['reps'] = reps;
-    if (dropWeight != null) after['dropWeight'] = dropWeight;
-    if (dropReps != null) after['dropReps'] = dropReps;
     if (isBodyweight != null) after['isBodyweight'] = isBodyweight;
 
-    final dw = (after['dropWeight'] ?? '').toString().trim();
-    final dr = (after['dropReps'] ?? '').toString().trim();
-    if (dw.isEmpty || dr.isEmpty) {
-      after['dropWeight'] = '';
-      after['dropReps'] = '';
+    var drops = _dropsFromSet(after);
+    if (dropWeight != null || dropReps != null) {
+      if (drops.isEmpty) {
+        drops = [
+          {
+            'weight': dropWeight ?? '',
+            'reps': dropReps ?? '',
+          },
+        ];
+      } else {
+        final first = Map<String, String>.from(drops.first);
+        if (dropWeight != null) first['weight'] = dropWeight;
+        if (dropReps != null) first['reps'] = dropReps;
+        drops[0] = first;
+      }
     }
+    drops = _sanitizeDrops(drops);
+    _applyDropsToSet(after, drops);
 
     after['number'] = '${index + 1}';
     after['done'] = (after['done'] == true || after['done'] == 'true');
@@ -429,6 +520,68 @@ class DeviceProvider extends ChangeNotifier {
     _log('✏️ [Provider] updateSet($index) $before → $after');
     notifyListeners();
     _onSessionMutated();
+  }
+
+  int addDropToSet(int index) {
+    final before = Map<String, dynamic>.from(_sets[index]);
+    final drops = _cloneDrops(_dropsFromSet(before));
+    drops.add({'weight': '', 'reps': ''});
+    final after = Map<String, dynamic>.from(before);
+    _applyDropsToSet(after, drops);
+    after['number'] = '${index + 1}';
+
+    if (mapEquals(before, after)) {
+      return drops.length - 1;
+    }
+
+    _sets[index] = after;
+    _log('➕ [Provider] addDropToSet($index) drops=${drops.length}');
+    notifyListeners();
+    _onSessionMutated();
+    return drops.length - 1;
+  }
+
+  void updateDrop(
+    int setIndex,
+    int dropIndex, {
+    String? weight,
+    String? reps,
+  }) {
+    final before = Map<String, dynamic>.from(_sets[setIndex]);
+    final drops = _cloneDrops(_dropsFromSet(before));
+    if (dropIndex >= drops.length) {
+      drops.addAll(
+        List.generate(
+          dropIndex - drops.length + 1,
+          (_) => {'weight': '', 'reps': ''},
+        ),
+      );
+    }
+    final drop = Map<String, String>.from(drops[dropIndex]);
+    if (weight != null) drop['weight'] = weight;
+    if (reps != null) drop['reps'] = reps;
+    drops[dropIndex] = drop;
+
+    final after = Map<String, dynamic>.from(before);
+    _applyDropsToSet(after, drops);
+    after['number'] = '${setIndex + 1}';
+
+    if (mapEquals(before, after)) {
+      return;
+    }
+
+    _sets[setIndex] = after;
+    _log('✏️ [Provider] updateDrop($setIndex,$dropIndex) $before → $after');
+    notifyListeners();
+    _onSessionMutated();
+  }
+
+  int ensureDropSlot(int index) {
+    final drops = _dropsFromSet(_sets[index]);
+    if (drops.isEmpty) {
+      return addDropToSet(index);
+    }
+    return drops.length - 1;
   }
 
   void removeSet(int index) {
@@ -456,18 +609,22 @@ class DeviceProvider extends ChangeNotifier {
 
   DeviceSetFieldFocus? _focusedField;
   int? _focusedIndex;
+  int? _focusedDropIndex;
   int _focusRequestId = 0;
 
   int? get focusedIndex => _focusedIndex;
   DeviceSetFieldFocus? get focusedField => _focusedField;
+  int? get focusedDropIndex => _focusedDropIndex;
   int get focusRequestId => _focusRequestId;
 
   int requestFocus({
     required int index,
     required DeviceSetFieldFocus field,
+    int? dropIndex,
   }) {
     _focusedIndex = index;
     _focusedField = field;
+    _focusedDropIndex = dropIndex;
     _focusRequestId++;
     notifyListeners();
     return _focusRequestId;
@@ -476,6 +633,7 @@ class DeviceProvider extends ChangeNotifier {
   int clearFocus() {
     _focusedIndex = null;
     _focusedField = null;
+    _focusedDropIndex = null;
     _focusRequestId++;
     notifyListeners();
     return _focusRequestId;
@@ -623,14 +781,9 @@ class DeviceProvider extends ChangeNotifier {
     for (final s in _sets) {
       final w = (s['weight'] ?? '').toString().trim();
       final r = (s['reps'] ?? '').toString().trim();
-      final dw = (s['dropWeight'] ?? '').toString().trim();
-      final dr = (s['dropReps'] ?? '').toString().trim();
       final d = s['done'] == true || s['done'] == 'true';
-      if (w.isNotEmpty ||
-          r.isNotEmpty ||
-          dw.isNotEmpty ||
-          dr.isNotEmpty ||
-          d) {
+      final hasDropValues = _dropsFromSet(s).any(_dropHasValue);
+      if (w.isNotEmpty || r.isNotEmpty || hasDropValues || d) {
         return false;
       }
     }
@@ -717,19 +870,30 @@ class DeviceProvider extends ChangeNotifier {
       showInLeaderboard: _showInLeaderboardPreference,
       sets: [
         for (var i = 0; i < _sets.length; i++)
-          SetDraft(
-            index: i + 1,
-            weight: (_sets[i]['weight'] ?? '').toString(),
-            reps: (_sets[i]['reps'] ?? '').toString(),
-            dropWeight: (_sets[i]['dropWeight'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['dropWeight']).toString(),
-            dropReps: (_sets[i]['dropReps'] ?? '').toString().isEmpty
-                ? null
-                : (_sets[i]['dropReps']).toString(),
-            done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
-            isBodyweight: _sets[i]['isBodyweight'] == true,
-          ),
+          () {
+            final drops = _dropsFromSet(_sets[i]);
+            final first = drops.firstWhere(
+              _dropHasValue,
+              orElse: () => const {'weight': '', 'reps': ''},
+            );
+            return SetDraft(
+              index: i + 1,
+              weight: (_sets[i]['weight'] ?? '').toString(),
+              reps: (_sets[i]['reps'] ?? '').toString(),
+              dropWeight: _dropHasValue(first) ? first['weight'] : null,
+              dropReps: _dropHasValue(first) ? first['reps'] : null,
+              drops: [
+                for (final drop in drops)
+                  if (_dropHasValue(drop))
+                    DropDraft(
+                      weight: drop['weight']!,
+                      reps: drop['reps']!,
+                    ),
+              ],
+              done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
+              isBodyweight: _sets[i]['isBodyweight'] == true,
+            );
+          }(),
       ],
     );
     await _draftRepo.put(key, draft);
@@ -759,7 +923,7 @@ class DeviceProvider extends ChangeNotifier {
     _showInLeaderboardPreference = draft.showInLeaderboard;
     _sets = [
       for (var i = 0; i < draft.sets.length; i++)
-        {
+        _withNormalizedDrops({
           'number': '${i + 1}',
           'weight': draft.sets[i].weight,
           'reps': draft.sets[i].reps,
@@ -767,7 +931,11 @@ class DeviceProvider extends ChangeNotifier {
           'dropReps': draft.sets[i].dropReps ?? '',
           'done': draft.sets[i].done,
           'isBodyweight': draft.sets[i].isBodyweight,
-        },
+          'drops': [
+            for (final drop in draft.sets[i].drops)
+              {'weight': drop.weight, 'reps': drop.reps},
+          ],
+        }),
     ];
     _lastActivityMs = draft.updatedAt;
     notifyListeners();
@@ -910,12 +1078,23 @@ class DeviceProvider extends ChangeNotifier {
           'tz': tz,
           if (isBw) 'isBodyweight': true,
         };
-        if ((set['dropWeight'] ?? '').toString().isNotEmpty &&
-            (set['dropReps'] ?? '').toString().isNotEmpty) {
-          data['dropWeightKg'] = double.parse(
-            set['dropWeight']!.replaceAll(',', '.'),
-          );
-          data['dropReps'] = int.parse(set['dropReps']!);
+        final dropEntriesForLog = <Map<String, dynamic>>[];
+        for (final drop in _dropsFromSet(set)) {
+          if (_dropHasValue(drop)) {
+            final weight = double.tryParse(
+              drop['weight']!.replaceAll(',', '.'),
+            );
+            final repsVal = int.tryParse(drop['reps']!);
+            if (weight != null && repsVal != null) {
+              dropEntriesForLog.add({'kg': weight, 'reps': repsVal});
+            }
+          }
+        }
+        if (dropEntriesForLog.isNotEmpty) {
+          final firstDrop = dropEntriesForLog.first;
+          data['dropWeightKg'] = firstDrop['kg'];
+          data['dropReps'] = firstDrop['reps'];
+          data['drops'] = dropEntriesForLog;
         }
         batch.set(ref, data);
       }
@@ -1019,14 +1198,18 @@ class DeviceProvider extends ChangeNotifier {
 
       _lastSessionSets = [
         for (final s in savedSets)
-          {
+          _withNormalizedDrops({
             'number': s['number'].toString(),
             'weight': s['weight'].toString(),
             'reps': s['reps'].toString(),
             'dropWeight': (s['dropWeight'] ?? '').toString(),
             'dropReps': (s['dropReps'] ?? '').toString(),
             'isBodyweight': s['isBodyweight'] == true,
-          },
+            'drops': [
+              for (final drop in _dropsFromSet(s))
+                {'weight': drop['weight'] ?? '', 'reps': drop['reps'] ?? ''},
+            ],
+          }),
       ];
       _lastSessionDate = ts.toDate();
       _lastSessionNote = _note;
@@ -1035,7 +1218,7 @@ class DeviceProvider extends ChangeNotifier {
       _sets.removeWhere((s) => (s['done'] == true || s['done'] == 'true'));
       if (_sets.isEmpty) {
         _sets = [
-          {
+          _withNormalizedDrops({
             'number': '1',
             'weight': '',
             'reps': '',
@@ -1043,7 +1226,7 @@ class DeviceProvider extends ChangeNotifier {
             'dropWeight': '',
             'dropReps': '',
             'isBodyweight': _isBodyweightMode,
-          },
+          }),
         ];
       }
       for (var i = 0; i < _sets.length; i++) {
@@ -1088,30 +1271,30 @@ class DeviceProvider extends ChangeNotifier {
       note: _note,
       sets: _sets
           .map(
-            (s) => SetEntry(
-              kg:
-                  num.tryParse(
-                    s['weight']?.toString().replaceAll(',', '.') ?? '0',
-                  ) ??
-                  0,
-              reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
-              done: s['done'] == true || s['done'] == 'true',
-              drops:
-                  (s['dropWeight']?.toString().isNotEmpty == true &&
-                      s['dropReps']?.toString().isNotEmpty == true)
-                  ? [
-                      DropEntry(
-                        kg:
-                            num.tryParse(
-                              s['dropWeight']!.toString().replaceAll(',', '.'),
-                            ) ??
-                            0,
-                        reps: int.tryParse(s['dropReps']!.toString()) ?? 0,
-                      ),
-                    ]
-                  : const [],
-              isBodyweight: s['isBodyweight'] == true,
-            ),
+            (s) {
+              final drops = <DropEntry>[];
+              for (final drop in _dropsFromSet(s)) {
+                if (_dropHasValue(drop)) {
+                  final kg = num.tryParse(
+                        drop['weight']!.replaceAll(',', '.'),
+                      ) ??
+                      0;
+                  final reps = int.tryParse(drop['reps']!) ?? 0;
+                  drops.add(DropEntry(kg: kg, reps: reps));
+                }
+              }
+              return SetEntry(
+                kg:
+                    num.tryParse(
+                      s['weight']?.toString().replaceAll(',', '.') ?? '0',
+                    ) ??
+                    0,
+                reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+                done: s['done'] == true || s['done'] == 'true',
+                drops: drops,
+                isBodyweight: s['isBodyweight'] == true,
+              );
+            },
           )
           .toList(),
       renderVersion: 1,
@@ -1154,14 +1337,38 @@ class DeviceProvider extends ChangeNotifier {
 
     _lastSessionSets = [
       for (var entry in sessionDocs.docs.asMap().entries)
-        {
-          'number': '${entry.key + 1}',
-          'weight': '${entry.value.data()['weight']}',
-          'reps': '${entry.value.data()['reps']}',
-          'dropWeight': '${entry.value.data()['dropWeightKg'] ?? ''}',
-          'dropReps': '${entry.value.data()['dropReps'] ?? ''}',
-          'isBodyweight': entry.value.data()['isBodyweight'] ?? false,
-        },
+        () {
+          final data = entry.value.data();
+          final dropList = <Map<String, String>>[];
+          final rawDrops = data['drops'];
+          if (rawDrops is List) {
+            for (final drop in rawDrops) {
+              if (drop is Map) {
+                final map = Map<String, dynamic>.from(drop);
+                dropList.add({
+                  'weight': '${map['kg'] ?? map['weight'] ?? ''}',
+                  'reps': '${map['reps'] ?? map['wdh'] ?? ''}',
+                });
+              }
+            }
+          }
+          if (dropList.isEmpty) {
+            final legacyWeight = '${data['dropWeightKg'] ?? ''}';
+            final legacyReps = '${data['dropReps'] ?? ''}';
+            if (legacyWeight.isNotEmpty && legacyReps.isNotEmpty) {
+              dropList.add({'weight': legacyWeight, 'reps': legacyReps});
+            }
+          }
+          return _withNormalizedDrops({
+            'number': '${entry.key + 1}',
+            'weight': '${data['weight']}',
+            'reps': '${data['reps']}',
+            'dropWeight': '${data['dropWeightKg'] ?? ''}',
+            'dropReps': '${data['dropReps'] ?? ''}',
+            'isBodyweight': data['isBodyweight'] ?? false,
+            'drops': dropList,
+          });
+        }(),
     ];
     _lastSessionDate = ts;
     _lastSessionNote = note;

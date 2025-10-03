@@ -124,12 +124,14 @@ class SetCard extends StatefulWidget {
 class SetCardState extends State<SetCard> {
   late final TextEditingController _weightCtrl;
   late final TextEditingController _repsCtrl;
-  late final TextEditingController _dropWeightCtrl;
-  late final TextEditingController _dropRepsCtrl;
+  final List<TextEditingController> _dropWeightCtrls = [];
+  final List<TextEditingController> _dropRepsCtrls = [];
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
-  late final FocusNode _dropWeightFocus;
-  late final FocusNode _dropRepsFocus;
+  final List<FocusNode> _dropWeightFocuses = [];
+  final List<FocusNode> _dropRepsFocuses = [];
+  final List<VoidCallback?> _dropWeightListeners = [];
+  final List<VoidCallback?> _dropRepsListeners = [];
 
   bool _showExtras = false;
   int _lastFocusRequestId = -1;
@@ -159,19 +161,154 @@ class SetCardState extends State<SetCard> {
     );
   }
 
+  List<Map<String, String>> _dropMapsFromSet(Map<String, dynamic> set) {
+    final raw = set['drops'];
+    final drops = <Map<String, String>>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map) {
+          final map = Map<String, dynamic>.from(entry);
+          drops.add({
+            'weight': (map['weight'] ?? map['kg'] ?? '').toString(),
+            'reps': (map['reps'] ?? map['wdh'] ?? '').toString(),
+          });
+        }
+      }
+    }
+    if (drops.isEmpty) {
+      final legacyWeight = (set['dropWeight'] ?? '').toString();
+      final legacyReps = (set['dropReps'] ?? '').toString();
+      if (legacyWeight.isNotEmpty && legacyReps.isNotEmpty) {
+        drops.add({'weight': legacyWeight, 'reps': legacyReps});
+      }
+    }
+    return drops;
+  }
+
+  void _handleDropWeightChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final index = _dropWeightCtrls.indexOf(controller);
+    if (index == -1) return;
+    _slog(widget.index, 'dropWeight[$index] → "${controller.text}"');
+    context.read<DeviceProvider>().updateDrop(
+          widget.index,
+          index,
+          weight: controller.text,
+        );
+  }
+
+  void _handleDropRepsChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final index = _dropRepsCtrls.indexOf(controller);
+    if (index == -1) return;
+    _slog(widget.index, 'dropReps[$index] → "${controller.text}"');
+    context.read<DeviceProvider>().updateDrop(
+          widget.index,
+          index,
+          reps: controller.text,
+        );
+  }
+
+  void _addDropController() {
+    final weightCtrl = TextEditingController();
+    final repsCtrl = TextEditingController();
+    final weightFocus = FocusNode();
+    final repsFocus = FocusNode();
+    _dropWeightCtrls.add(weightCtrl);
+    _dropRepsCtrls.add(repsCtrl);
+    _dropWeightFocuses.add(weightFocus);
+    _dropRepsFocuses.add(repsFocus);
+    if (!widget.readOnly) {
+      final weightListener = () => _handleDropWeightChanged(weightCtrl);
+      final repsListener = () => _handleDropRepsChanged(repsCtrl);
+      weightCtrl.addListener(weightListener);
+      repsCtrl.addListener(repsListener);
+      _dropWeightListeners.add(weightListener);
+      _dropRepsListeners.add(repsListener);
+    } else {
+      _dropWeightListeners.add(null);
+      _dropRepsListeners.add(null);
+    }
+  }
+
+  void _removeDropController(int index) {
+    final weightCtrl = _dropWeightCtrls.removeAt(index);
+    final repsCtrl = _dropRepsCtrls.removeAt(index);
+    final weightFocus = _dropWeightFocuses.removeAt(index);
+    final repsFocus = _dropRepsFocuses.removeAt(index);
+    final weightListener = _dropWeightListeners.removeAt(index);
+    final repsListener = _dropRepsListeners.removeAt(index);
+    if (weightListener != null) weightCtrl.removeListener(weightListener);
+    if (repsListener != null) repsCtrl.removeListener(repsListener);
+    weightCtrl.dispose();
+    repsCtrl.dispose();
+    weightFocus.dispose();
+    repsFocus.dispose();
+  }
+
+  void _setDropControllerCount(int count) {
+    final current = _dropWeightCtrls.length;
+    if (current < count) {
+      for (var i = current; i < count; i++) {
+        _addDropController();
+      }
+    } else if (current > count) {
+      for (var i = current - 1; i >= count; i--) {
+        _removeDropController(i);
+      }
+    }
+  }
+
+  void _syncDropControllersFromWidget() {
+    final drops = _dropMapsFromSet(widget.set);
+    _setDropControllerCount(drops.length);
+    for (var i = 0; i < drops.length; i++) {
+      final weight = drops[i]['weight'] ?? '';
+      final reps = drops[i]['reps'] ?? '';
+      if (_dropWeightCtrls[i].text != weight) {
+        _setTextSilently(_dropWeightCtrls[i], weight, 'dropWeight[$i]');
+      }
+      if (_dropRepsCtrls[i].text != reps) {
+        _setTextSilently(_dropRepsCtrls[i], reps, 'dropReps[$i]');
+      }
+    }
+    if (drops.isEmpty) {
+      _setDropControllerCount(0);
+    }
+  }
+
+  void _clearDropControllers() {
+    for (var i = _dropWeightCtrls.length - 1; i >= 0; i--) {
+      _removeDropController(i);
+    }
+  }
+
+  void _handleAddDrop() {
+    final prov = context.read<DeviceProvider>();
+    final newIndex = prov.addDropToSet(widget.index);
+    HapticFeedback.lightImpact();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (newIndex < _dropWeightCtrls.length) {
+        _openKeypad(
+          _dropWeightCtrls[newIndex],
+          _dropWeightFocuses[newIndex],
+          allowDecimal: true,
+          field: DeviceSetFieldFocus.dropWeight,
+          dropIndex: newIndex,
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _weightCtrl = TextEditingController(text: widget.set['weight'] as String?);
     _repsCtrl = TextEditingController(text: widget.set['reps'] as String?);
-    _dropWeightCtrl =
-        TextEditingController(text: widget.set['dropWeight'] as String?);
-    _dropRepsCtrl =
-        TextEditingController(text: widget.set['dropReps'] as String?);
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
-    _dropWeightFocus = FocusNode();
-    _dropRepsFocus = FocusNode();
+    _syncDropControllersFromWidget();
 
     if (!widget.readOnly) {
       _weightCtrl.addListener(() {
@@ -192,24 +329,6 @@ class SetCardState extends State<SetCard> {
           reps: _repsCtrl.text,
         );
       });
-      _dropWeightCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'dropWeight → "${_dropWeightCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          dropWeight: _dropWeightCtrl.text,
-          dropReps: _dropRepsCtrl.text,
-        );
-      });
-      _dropRepsCtrl.addListener(() {
-        if (_muteCtrls) return;
-        _slog(widget.index, 'dropReps → "${_dropRepsCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
-          widget.index,
-          dropWeight: _dropWeightCtrl.text,
-          dropReps: _dropRepsCtrl.text,
-        );
-      });
     }
   }
 
@@ -218,8 +337,6 @@ class SetCardState extends State<SetCard> {
     super.didUpdateWidget(oldWidget);
     final w = widget.set['weight'] as String? ?? '';
     final r = widget.set['reps'] as String? ?? '';
-    final dw = widget.set['dropWeight'] as String? ?? '';
-    final dr = widget.set['dropReps'] as String? ?? '';
     if (oldWidget.set['weight'] != w) {
       _slog(widget.index, 'didUpdateWidget sync weight "$w"');
       _setTextSilently(_weightCtrl, w, 'weight');
@@ -228,14 +345,7 @@ class SetCardState extends State<SetCard> {
       _slog(widget.index, 'didUpdateWidget sync reps "$r"');
       _setTextSilently(_repsCtrl, r, 'reps');
     }
-    if (oldWidget.set['dropWeight'] != dw) {
-      _slog(widget.index, 'didUpdateWidget sync dropWeight "$dw"');
-      _setTextSilently(_dropWeightCtrl, dw, 'dropWeight');
-    }
-    if (oldWidget.set['dropReps'] != dr) {
-      _slog(widget.index, 'didUpdateWidget sync dropReps "$dr"');
-      _setTextSilently(_dropRepsCtrl, dr, 'dropReps');
-    }
+    _syncDropControllersFromWidget();
   }
 
   @override
@@ -243,12 +353,9 @@ class SetCardState extends State<SetCard> {
     _slog(widget.index, 'dispose()');
     _weightCtrl.dispose();
     _repsCtrl.dispose();
-    _dropWeightCtrl.dispose();
-    _dropRepsCtrl.dispose();
     _weightFocus.dispose();
     _repsFocus.dispose();
-    _dropWeightFocus.dispose();
-    _dropRepsFocus.dispose();
+    _clearDropControllers();
     super.dispose();
   }
 
@@ -258,6 +365,7 @@ class SetCardState extends State<SetCard> {
     required bool allowDecimal,
     required DeviceSetFieldFocus field,
     bool notifyFocus = true,
+    int? dropIndex,
   }) {
     _slog(
       widget.index,
@@ -268,6 +376,7 @@ class SetCardState extends State<SetCard> {
       _lastFocusRequestId = prov.requestFocus(
         index: widget.index,
         field: field,
+        dropIndex: dropIndex,
       );
     } else {
       _lastFocusRequestId = prov.focusRequestId;
@@ -293,12 +402,15 @@ class SetCardState extends State<SetCard> {
     );
   }
 
-  String? _validateDrop(String? _) {
+  String? _validateDrop(int index) {
     final loc = AppLocalizations.of(context)!;
-    final dw = _dropWeightCtrl.text.trim();
-    final dr = _dropRepsCtrl.text.trim();
+    if (index >= _dropWeightCtrls.length || index >= _dropRepsCtrls.length) {
+      return null;
+    }
+    final dw = _dropWeightCtrls[index].text.trim();
+    final dr = _dropRepsCtrls[index].text.trim();
     if (dw.isEmpty && dr.isEmpty) return null;
-    if (dw.isEmpty || dr.isEmpty) return null;
+    if (dw.isEmpty || dr.isEmpty) return loc.dropFillBoth;
     final base = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     final drop = double.tryParse(dw.replaceAll(',', '.'));
     if (base == null || drop == null) return loc.numberInvalid;
@@ -321,9 +433,12 @@ class SetCardState extends State<SetCard> {
     }
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
-    final dropActive =
-        (widget.set['dropWeight'] ?? '').toString().isNotEmpty &&
-            (widget.set['dropReps'] ?? '').toString().isNotEmpty;
+    final dropMaps = _dropMapsFromSet(widget.set);
+    final dropActive = dropMaps.any((d) {
+      final weightText = (d['weight'] ?? '').toString().trim();
+      final repsText = (d['reps'] ?? '').toString().trim();
+      return weightText.isNotEmpty && repsText.isNotEmpty;
+    });
     final weight = (widget.set['weight'] ?? '').toString().trim();
     final reps = (widget.set['reps'] ?? '').toString().trim();
     final isBw = widget.set['isBodyweight'] == true;
@@ -364,22 +479,30 @@ class SetCardState extends State<SetCard> {
             );
             break;
           case DeviceSetFieldFocus.dropWeight:
-            _openKeypad(
-              _dropWeightCtrl,
-              _dropWeightFocus,
-              allowDecimal: true,
-              field: focusField,
-              notifyFocus: false,
-            );
+            final dropIndex = prov.focusedDropIndex ?? 0;
+            if (dropIndex < _dropWeightCtrls.length) {
+              _openKeypad(
+                _dropWeightCtrls[dropIndex],
+                _dropWeightFocuses[dropIndex],
+                allowDecimal: true,
+                field: focusField,
+                notifyFocus: false,
+                dropIndex: dropIndex,
+              );
+            }
             break;
           case DeviceSetFieldFocus.dropReps:
-            _openKeypad(
-              _dropRepsCtrl,
-              _dropRepsFocus,
-              allowDecimal: false,
-              field: focusField,
-              notifyFocus: false,
-            );
+            final dropIndex = prov.focusedDropIndex ?? 0;
+            if (dropIndex < _dropRepsCtrls.length) {
+              _openKeypad(
+                _dropRepsCtrls[dropIndex],
+                _dropRepsFocuses[dropIndex],
+                allowDecimal: false,
+                field: focusField,
+                notifyFocus: false,
+                dropIndex: dropIndex,
+              );
+            }
             break;
         }
       });
@@ -392,7 +515,11 @@ class SetCardState extends State<SetCard> {
           'tap: more options → ${!_showExtras}',
         );
         HapticFeedback.lightImpact();
-        setState(() => _showExtras = !_showExtras);
+        final next = !_showExtras;
+        setState(() => _showExtras = next);
+        if (next && _dropWeightCtrls.isEmpty) {
+          context.read<DeviceProvider>().ensureDropSlot(widget.index);
+        }
       };
     }
 
@@ -417,6 +544,38 @@ class SetCardState extends State<SetCard> {
         }
       };
     }
+
+    final canMutateDrops = !widget.readOnly && !done;
+    final dropRows = <_DropRowConfig>[
+      for (var i = 0; i < _dropWeightCtrls.length; i++)
+        _DropRowConfig(
+          weightController: _dropWeightCtrls[i],
+          weightFocus: _dropWeightFocuses[i],
+          repsController: _dropRepsCtrls[i],
+          repsFocus: _dropRepsFocuses[i],
+          onTapWeight: widget.readOnly
+              ? null
+              : () => _openKeypad(
+                    _dropWeightCtrls[i],
+                    _dropWeightFocuses[i],
+                    allowDecimal: true,
+                    field: DeviceSetFieldFocus.dropWeight,
+                    dropIndex: i,
+                  ),
+          onTapReps: widget.readOnly
+              ? null
+              : () => _openKeypad(
+                    _dropRepsCtrls[i],
+                    _dropRepsFocuses[i],
+                    allowDecimal: false,
+                    field: DeviceSetFieldFocus.dropReps,
+                    dropIndex: i,
+                  ),
+          validator: (_) => _validateDrop(i),
+          showAddButton: canMutateDrops && i == _dropWeightCtrls.length - 1,
+          onAdd: canMutateDrops ? _handleAddDrop : null,
+        ),
+    ];
 
     final displayMode = widget.displayMode;
     final paddingBase = tokens.padding;
@@ -450,10 +609,6 @@ class SetCardState extends State<SetCard> {
       weightFocus: _weightFocus,
       repsController: _repsCtrl,
       repsFocus: _repsFocus,
-      dropWeightController: _dropWeightCtrl,
-      dropWeightFocus: _dropWeightFocus,
-      dropRepsController: _dropRepsCtrl,
-      dropRepsFocus: _dropRepsFocus,
       onToggleExtras: toggleExtras,
       onToggleDone: toggleDone,
       onTapWeight:
@@ -474,23 +629,7 @@ class SetCardState extends State<SetCard> {
                     allowDecimal: false,
                     field: DeviceSetFieldFocus.reps,
                   ),
-      onTapDropWeight: done || widget.readOnly
-          ? null
-          : () => _openKeypad(
-                _dropWeightCtrl,
-                _dropWeightFocus,
-                allowDecimal: true,
-                field: DeviceSetFieldFocus.dropWeight,
-              ),
-      onTapDropReps: done || widget.readOnly
-          ? null
-          : () => _openKeypad(
-                _dropRepsCtrl,
-                _dropRepsFocus,
-                allowDecimal: false,
-                field: DeviceSetFieldFocus.dropReps,
-              ),
-      dropValidator: _validateDrop,
+      dropRows: dropRows,
       padding: contentPadding,
     );
 
@@ -536,17 +675,11 @@ class SetRowContent extends StatelessWidget {
   final FocusNode weightFocus;
   final TextEditingController repsController;
   final FocusNode repsFocus;
-  final TextEditingController dropWeightController;
-  final FocusNode dropWeightFocus;
-  final TextEditingController dropRepsController;
-  final FocusNode dropRepsFocus;
   final VoidCallback? onToggleExtras;
   final VoidCallback? onToggleDone;
   final VoidCallback? onTapWeight;
   final VoidCallback? onTapReps;
-  final VoidCallback? onTapDropWeight;
-  final VoidCallback? onTapDropReps;
-  final FormFieldValidator<String>? dropValidator;
+  final List<_DropRowConfig> dropRows;
   final EdgeInsetsGeometry padding;
 
   const SetRowContent({
@@ -566,17 +699,11 @@ class SetRowContent extends StatelessWidget {
     required this.weightFocus,
     required this.repsController,
     required this.repsFocus,
-    required this.dropWeightController,
-    required this.dropWeightFocus,
-    required this.dropRepsController,
-    required this.dropRepsFocus,
     required this.onToggleExtras,
     required this.onToggleDone,
     required this.onTapWeight,
     required this.onTapReps,
-    required this.onTapDropWeight,
-    required this.onTapDropReps,
-    required this.dropValidator,
+    required this.dropRows,
     this.padding = EdgeInsets.zero,
   });
 
@@ -705,38 +832,57 @@ class SetRowContent extends StatelessWidget {
       ),
     );
     if (showExtras) {
-      children.addAll([
-        SizedBox(height: dense ? 8 : 12),
-        Row(
-          children: [
-            Expanded(
-              child: _InputPill(
-                controller: dropWeightController,
-                focusNode: dropWeightFocus,
-                label: loc.dropKgFieldLabel,
-                readOnly: readOnly || done,
-                tokens: tokens,
-                dense: true,
-                onTap: onTapDropWeight,
-                validator: dropValidator,
+      children.add(SizedBox(height: dense ? 8 : 12));
+      for (var i = 0; i < dropRows.length; i++) {
+        final drop = dropRows[i];
+        children.add(
+          Row(
+            children: [
+              Expanded(
+                child: _InputPill(
+                  controller: drop.weightController,
+                  focusNode: drop.weightFocus,
+                  label: loc.dropKgFieldLabel,
+                  readOnly: readOnly || done,
+                  tokens: tokens,
+                  dense: true,
+                  onTap: drop.onTapWeight,
+                  validator: drop.validator,
+                ),
               ),
-            ),
-            SizedBox(width: dense ? 8 : 12),
-            Expanded(
-              child: _InputPill(
-                controller: dropRepsController,
-                focusNode: dropRepsFocus,
-                label: loc.dropRepsFieldLabel,
-                readOnly: readOnly || done,
-                tokens: tokens,
-                dense: true,
-                onTap: onTapDropReps,
-                validator: dropValidator,
+              SizedBox(width: dense ? 8 : 12),
+              Expanded(
+                child: _InputPill(
+                  controller: drop.repsController,
+                  focusNode: drop.repsFocus,
+                  label: loc.dropRepsFieldLabel,
+                  readOnly: readOnly || done,
+                  tokens: tokens,
+                  dense: true,
+                  onTap: drop.onTapReps,
+                  validator: drop.validator,
+                ),
               ),
-            ),
-          ],
-        ),
-      ]);
+              if (!readOnly && drop.showAddButton) ...[
+                SizedBox(width: dense ? 8 : 12),
+                _RoundButton(
+                  tokens: tokens,
+                  icon: Icons.add,
+                  filled: false,
+                  semantics: loc.addSetButton,
+                  dense: true,
+                  onTap: drop.onAdd,
+                  iconColor: primaryColor,
+                  disabledIconColor: primaryColor.withOpacity(0.4),
+                ),
+              ],
+            ],
+          ),
+        );
+        if (i != dropRows.length - 1) {
+          children.add(SizedBox(height: dense ? 8 : 12));
+        }
+      }
     }
 
     Widget body = Padding(
@@ -753,6 +899,30 @@ class SetRowContent extends StatelessWidget {
       child: body,
     );
   }
+}
+
+class _DropRowConfig {
+  final TextEditingController weightController;
+  final FocusNode weightFocus;
+  final TextEditingController repsController;
+  final FocusNode repsFocus;
+  final VoidCallback? onTapWeight;
+  final VoidCallback? onTapReps;
+  final FormFieldValidator<String>? validator;
+  final bool showAddButton;
+  final VoidCallback? onAdd;
+
+  const _DropRowConfig({
+    required this.weightController,
+    required this.weightFocus,
+    required this.repsController,
+    required this.repsFocus,
+    this.onTapWeight,
+    this.onTapReps,
+    this.validator,
+    this.showAddButton = false,
+    this.onAdd,
+  });
 }
 
 class _IndexBadge extends StatelessWidget {
