@@ -7,8 +7,9 @@ import 'package:tapem/core/utils/duration_format.dart';
 
 class ActiveWorkoutTimer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
+  final bool compact;
 
-  const ActiveWorkoutTimer({super.key, this.padding});
+  const ActiveWorkoutTimer({super.key, this.padding, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +72,16 @@ class ActiveWorkoutTimer extends StatelessWidget {
             }
 
             final borderRadius = BorderRadius.circular(AppRadius.button);
+            final iconSize = compact ? 16.0 : 18.0;
+            final resolvedPadding = padding ??
+                (compact
+                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4)
+                    : const EdgeInsets.symmetric(horizontal: 16));
+            final baseTextStyle = (compact
+                    ? theme.textTheme.titleSmall
+                    : theme.textTheme.titleMedium) ??
+                theme.textTheme.bodyMedium ??
+                const TextStyle(fontSize: 14);
             final content = DecoratedBox(
               decoration: BoxDecoration(
                 gradient: resolvedGradient,
@@ -84,13 +95,13 @@ class ActiveWorkoutTimer extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.timer_outlined,
-                      size: 18,
+                      size: iconSize,
                       color: foregroundColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       formatted,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: baseTextStyle.copyWith(
                         color: foregroundColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -100,7 +111,6 @@ class ActiveWorkoutTimer extends StatelessWidget {
               ),
             );
 
-            final resolvedPadding = padding ?? const EdgeInsets.symmetric(horizontal: 16);
             return Padding(
               padding: resolvedPadding,
               child: Material(
