@@ -22,6 +22,11 @@
     "description": "Label for the cancel button"
   },
 
+  "commonOk": "OK",
+  "@commonOk": {
+    "description": "Label for a generic OK action"
+  },
+
   "deviceHistoryTooltip": "Show history",
   "@deviceHistoryTooltip": {
     "description": "Tooltip for the history button on device screen"
@@ -97,6 +102,38 @@
   "@rankMuscleLevel": {
     "description": "Title card for muscle group stats on rank tab"
   },
+
+  "leaderboardTitle": "Leaderboard",
+  "@leaderboardTitle": {"description": "App bar title for the leaderboard"},
+  "leaderboardRankTab": "Rank",
+  "@leaderboardRankTab": {"description": "Tab label for ranking view"},
+  "leaderboardChallengesTab": "Challenges",
+  "@leaderboardChallengesTab": {"description": "Tab label for challenges view"},
+
+  "xpInfoTooltip": "XP info",
+  "@xpInfoTooltip": {"description": "Tooltip for the XP info button"},
+  "xpInfoTitle": "XP info",
+  "@xpInfoTitle": {"description": "Title of the XP info dialog"},
+  "xpInfoCurrentXp": "XP: {xp}",
+  "@xpInfoCurrentXp": {
+    "description": "Label for current XP in the XP dialog",
+    "placeholders": {"xp": {"type": "int"}}
+  },
+  "xpInfoLevel": "Level: {level}",
+  "@xpInfoLevel": {
+    "description": "Label for the current level in the XP dialog",
+    "placeholders": {"level": {}}
+  },
+  "xpInfoProgress": "{xpRemaining} XP to level {nextLevel}",
+  "@xpInfoProgress": {
+    "description": "Progress message towards the next level",
+    "placeholders": {
+      "xpRemaining": {"type": "int"},
+      "nextLevel": {"type": "int"}
+    }
+  },
+  "xpInfoDetails": "Details",
+  "@xpInfoDetails": {"description": "Button to open XP details"},
 
   "gymCodeFieldLabel": "Gym Code",
   "@gymCodeFieldLabel": {
@@ -289,6 +326,11 @@
   "profileTrainingDaysTitle": "Your training days of the year",
   "@profileTrainingDaysTitle": {
     "description": "Heading for the calendar on profile screen"
+  },
+
+  "profileTrainingDaysHeading": "Training days",
+  "@profileTrainingDaysHeading": {
+    "description": "Short heading for the training days calendar on the profile"
   },
 
   "profileStatsButtonLabel": "Statistics",
@@ -890,6 +932,12 @@
   "@filterNameChip": {"description": "Chip label for sorting by name"},
   "filterMuscleChip": "Muscle",
   "@filterMuscleChip": {"description": "Chip label for muscle filter"},
+  "filterRecentChip": "Recent",
+  "@filterRecentChip": {"description": "Chip label for recent sort"},
+  "filterSortAz": "A→Z",
+  "@filterSortAz": {"description": "Sort option from A to Z"},
+  "filterSortZa": "Z→A",
+  "@filterSortZa": {"description": "Sort option from Z to A"},
   "a11yMgSelected": "Muscle group: {name}, selected",
   "@a11yMgSelected": {
     "description": "Semantics for selected muscle group",
@@ -988,6 +1036,16 @@
   ,"@reportFeedbackOpenEntries": {"description": "Subtitle showing open feedback entries","placeholders": {"count": {"type": "int"}}}
   ,"reportFeedbackNoOpenEntries": "No open feedback"
   ,"@reportFeedbackNoOpenEntries": {"description": "Subtitle shown when there are no open feedback entries"}
+  ,"feedbackDialogTitle": "Feedback"
+  ,"@feedbackDialogTitle": {"description": "Title of the feedback dialog"}
+  ,"feedbackTooltip": "Feedback"
+  ,"@feedbackTooltip": {"description": "Tooltip for the feedback button"}
+  ,"feedbackPlaceholder": "Your feedback..."
+  ,"@feedbackPlaceholder": {"description": "Placeholder text for the feedback input"}
+  ,"feedbackSubmit": "Send"
+  ,"@feedbackSubmit": {"description": "Submit button label for feedback"}
+  ,"feedbackSent": "Feedback sent"
+  ,"@feedbackSent": {"description": "Snackbar shown after sending feedback"}
   ,"reportCreateSurveyTitle": "Create survey"
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
@@ -1046,6 +1104,18 @@
   ,"@challengeAdminFieldXpReward": {"description": "Label for the XP reward field"}
   ,"challengeAdminFieldType": "Type"
   ,"@challengeAdminFieldType": {"description": "Label for the challenge type field"}
+  ,"challengeTabActive": "Active"
+  ,"@challengeTabActive": {"description": "Tab label for active challenges"}
+  ,"challengeTabCompleted": "Completed"
+  ,"@challengeTabCompleted": {"description": "Tab label for completed challenges"}
+  ,"challengeEmptyActive": "No active challenges"
+  ,"@challengeEmptyActive": {"description": "Message shown when there are no active challenges"}
+  ,"challengeEmptyCompleted": "No completed challenges"
+  ,"@challengeEmptyCompleted": {"description": "Message shown when there are no completed challenges"}
+  ,"challengeDetailXpReward": "XP: {xp}"
+  ,"@challengeDetailXpReward": {"description": "XP reward shown in the challenge dialog","placeholders": {"xp": {"type": "int"}}}
+  ,"challengeDetailDevices": "Devices: {devices}"
+  ,"@challengeDetailDevices": {"description": "Device list shown in the challenge dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Weekly"
   ,"@challengeAdminTypeWeekly": {"description": "Weekly challenge option"}
   ,"challengeAdminTypeMonthly": "Monthly"
@@ -1130,8 +1200,14 @@
   ,"@surveyVotesCountWithPercent": {"description": "Displays vote count with percentage","placeholders": {"count": {"type": "int"}, "percent": {}}}
   ,"surveyListTitle": "Surveys"
   ,"@surveyListTitle": {"description": "AppBar title for the survey list"}
+  ,"surveyTabOpen": "Open"
+  ,"@surveyTabOpen": {"description": "Tab label for open surveys"}
+  ,"surveyTabClosed": "Completed"
+  ,"@surveyTabClosed": {"description": "Tab label for completed surveys"}
   ,"surveyEmpty": "No open surveys"
   ,"@surveyEmpty": {"description": "Message shown when there are no open surveys"}
+  ,"surveyEmptyClosed": "No completed surveys"
+  ,"@surveyEmptyClosed": {"description": "Message shown when there are no completed surveys"}
   ,"surveyResultsTitle": "Results"
   ,"@surveyResultsTitle": {"description": "Heading shown above survey results"}
   ,"selectGymTitle": "Select gym"

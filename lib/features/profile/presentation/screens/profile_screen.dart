@@ -407,7 +407,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BrandGradientText(
-              'Trainingstage',
+              loc.profileTrainingDaysHeading,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -558,7 +558,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: BrandActionTile(
-                    title: 'Umfragen',
+                    title: loc.surveyListTitle,
                     centerTitle: true,
                     dense: true,
                     minVerticalPadding: 0,

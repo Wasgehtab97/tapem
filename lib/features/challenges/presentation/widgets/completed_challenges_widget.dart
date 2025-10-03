@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+
 import '../../../../core/providers/challenge_provider.dart';
 
 class CompletedChallengesWidget extends StatelessWidget {
@@ -8,8 +10,9 @@ class CompletedChallengesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final completed = context.watch<ChallengeProvider>().completed;
+    final loc = AppLocalizations.of(context)!;
     if (completed.isEmpty) {
-      return const Center(child: Text('Keine abgeschlossenen Challenges'));
+      return Center(child: Text(loc.challengeEmptyCompleted));
     }
     return ListView.builder(
       itemCount: completed.length,

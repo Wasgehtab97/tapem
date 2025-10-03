@@ -21,6 +21,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancel';
+  String get commonOk => 'OK';
 
   @override
   String get deviceHistoryTooltip => 'Show history';
@@ -103,6 +104,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rankMuscleLevel => 'Muscle level';
+
+  @override
+  String get leaderboardTitle => 'Leaderboard';
+
+  @override
+  String get leaderboardRankTab => 'Rank';
+
+  @override
+  String get leaderboardChallengesTab => 'Challenges';
+
+  @override
+  String get xpInfoTooltip => 'XP info';
+
+  @override
+  String get xpInfoTitle => 'XP info';
+
+  @override
+  String xpInfoCurrentXp(int xp) {
+    return 'XP: $xp';
+  }
+
+  @override
+  String xpInfoLevel(Object level) {
+    return 'Level: $level';
+  }
+
+  @override
+  String xpInfoProgress(int xpRemaining, int nextLevel) {
+    return '$xpRemaining XP to level $nextLevel';
+  }
+
+  @override
+  String get xpInfoDetails => 'Details';
 
   @override
   String get gymCodeFieldLabel => 'Gym Code';
@@ -229,6 +263,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileTrainingDaysTitle => 'Your training days of the year';
+
+  @override
+  String get profileTrainingDaysHeading => 'Training days';
 
   @override
   String get profileStatsButtonLabel => 'Statistics';
@@ -752,6 +789,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterMuscleChip => 'Muscle';
 
   @override
+  String get filterRecentChip => 'Recent';
+
+  @override
+  String get filterSortAz => 'A→Z';
+
+  @override
+  String get filterSortZa => 'Z→A';
+
+  @override
   String a11yMgSelected(Object name) {
     return 'Muscle group: $name, selected';
   }
@@ -965,6 +1011,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportFeedbackNoOpenEntries => 'No open feedback';
 
   @override
+  String get feedbackDialogTitle => 'Feedback';
+
+  @override
+  String get feedbackTooltip => 'Feedback';
+
+  @override
+  String get feedbackPlaceholder => 'Your feedback...';
+
+  @override
+  String get feedbackSubmit => 'Send';
+
+  @override
+  String get feedbackSent => 'Feedback sent';
+
+  @override
   String get reportCreateSurveyTitle => 'Create survey';
 
   @override
@@ -1056,6 +1117,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get challengeAdminFieldType => 'Type';
+
+  @override
+  String get challengeTabActive => 'Active';
+
+  @override
+  String get challengeTabCompleted => 'Completed';
+
+  @override
+  String get challengeEmptyActive => 'No active challenges';
+
+  @override
+  String get challengeEmptyCompleted => 'No completed challenges';
+
+  @override
+  String challengeDetailXpReward(int xp) {
+    return 'XP: $xp';
+  }
+
+  @override
+  String challengeDetailDevices(Object devices) {
+    return 'Devices: $devices';
+  }
 
   @override
   String get challengeAdminTypeWeekly => 'Weekly';
@@ -1181,7 +1264,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surveyListTitle => 'Surveys';
 
   @override
+  String get surveyTabOpen => 'Open';
+
+  @override
+  String get surveyTabClosed => 'Completed';
+
+  @override
   String get surveyEmpty => 'No open surveys';
+
+  @override
+  String get surveyEmptyClosed => 'No completed surveys';
 
   @override
   String get surveyResultsTitle => 'Results';

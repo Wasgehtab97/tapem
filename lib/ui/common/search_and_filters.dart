@@ -64,6 +64,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   }
 
   Future<void> _showSortSheet() async {
+    final loc = AppLocalizations.of(context)!;
     final res = await showModalBottomSheet<SortOrder>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -71,11 +72,11 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('A→Z'),
+              title: Text(loc.filterSortAz),
               onTap: () => Navigator.pop(ctx, SortOrder.az),
             ),
             ListTile(
-              title: const Text('Z→A'),
+              title: Text(loc.filterSortZa),
               onTap: () => Navigator.pop(ctx, SortOrder.za),
             ),
           ],
@@ -86,6 +87,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   }
 
   Future<void> _showMuscleSheet() async {
+    final loc = AppLocalizations.of(context)!;
     final prov = context.read<MuscleGroupProvider>();
     final groups = prov.groups;
     final selected = Set<String>.from(widget.muscleFilterIds);
@@ -124,7 +126,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('OK'),
+                    child: Text(loc.commonOk),
                   ),
                 ),
               ],
@@ -162,7 +164,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
           children: [
             FilterChip(
               label: BrandGradientText(
-                'Name',
+                loc.filterNameChip,
                 style: theme.textTheme.labelLarge,
               ),
               selected: widget.sort == SortOrder.za,
@@ -174,7 +176,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             const SizedBox(width: 8),
             FilterChip(
               label: BrandGradientText(
-                'Muskel',
+                loc.filterMuscleChip,
                 style: theme.textTheme.labelLarge,
               ),
               selected: widget.muscleFilterIds.isNotEmpty,
@@ -186,7 +188,7 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             const SizedBox(width: 8),
             FilterChip(
               label: BrandGradientText(
-                'Zuletzt',
+                loc.filterRecentChip,
                 style: theme.textTheme.labelLarge,
               ),
               selected: widget.sort == SortOrder.recent,

@@ -16,6 +16,7 @@ import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_u
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class _DummyMuscleGroupRepo implements MuscleGroupRepository {
   @override
@@ -171,6 +172,9 @@ void main() {
   testWidgets('muscle filter reduces list', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: ChangeNotifierProvider<MuscleGroupProvider>.value(
           value: _TestMuscleGroupProvider(groups),
           child: const Scaffold(body: _Harness()),
@@ -180,7 +184,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Alpha'), findsOneWidget);
     expect(find.text('Beta'), findsOneWidget);
-    await tester.tap(find.text('Muskel'));
+    await tester.tap(find.text('Muscle'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Chest'));
     await tester.tap(find.text('OK'));
@@ -192,6 +196,9 @@ void main() {
   testWidgets('sort name Z→A', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: ChangeNotifierProvider<MuscleGroupProvider>.value(
           value: _TestMuscleGroupProvider(groups),
           child: const Scaffold(body: _Harness()),
@@ -210,6 +217,9 @@ void main() {
   testWidgets('recent filter sorts by last usage', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: ChangeNotifierProvider<MuscleGroupProvider>.value(
           value: _TestMuscleGroupProvider(groups),
           child: const Scaffold(body: _Harness()),
@@ -217,7 +227,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Zuletzt'));
+    await tester.tap(find.text('Recent'));
     await tester.pumpAndSettle();
     final first = tester.widget<Text>(find.byKey(const ValueKey('device-0')));
     expect(first.data, 'Beta');

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 class FeedbackButton extends StatelessWidget {
   final String gymId;
   final String deviceId;
@@ -17,33 +18,35 @@ class FeedbackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final iconColor = color ?? Theme.of(context).iconTheme.color;
     return IconButton(
       icon: Icon(Icons.feedback_outlined, color: iconColor),
-      tooltip: 'Feedback',
+      tooltip: loc.feedbackTooltip,
       onPressed: () => _showDialog(context),
     );
   }
 
   void _showDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Feedback'),
+          title: Text(loc.feedbackDialogTitle),
           content: TextField(
             controller: controller,
             maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Dein Feedback...',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: loc.feedbackPlaceholder,
+              border: const OutlineInputBorder(),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
+              child: Text(loc.cancelButton),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -59,11 +62,11 @@ class FeedbackButton extends StatelessWidget {
                   );
                   Navigator.of(ctx).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Feedback gesendet')),
+                    SnackBar(content: Text(loc.feedbackSent)),
                   );
                 }
               },
-              child: const Text('Senden'),
+              child: Text(loc.feedbackSubmit),
             ),
           ],
         );

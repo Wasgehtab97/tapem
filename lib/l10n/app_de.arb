@@ -22,6 +22,11 @@
     "description": "Beschriftung für den Abbrechen-Button"
   },
 
+  "commonOk": "OK",
+  "@commonOk": {
+    "description": "Beschriftung für eine generische OK-Aktion"
+  },
+
   "deviceHistoryTooltip": "Verlauf anzeigen",
   "@deviceHistoryTooltip": {
     "description": "Tooltip für den Verlauf-Button auf der Geräte-Seite"
@@ -97,6 +102,38 @@
   "@rankMuscleLevel": {
     "description": "Titelkarte für Muskelgruppenstatistik im Rank-Tab"
   },
+
+  "leaderboardTitle": "Leaderboard",
+  "@leaderboardTitle": {"description": "AppBar-Titel für die Rangliste"},
+  "leaderboardRankTab": "Rank",
+  "@leaderboardRankTab": {"description": "Tab-Label für die Rangliste"},
+  "leaderboardChallengesTab": "Challenges",
+  "@leaderboardChallengesTab": {"description": "Tab-Label für Challenges"},
+
+  "xpInfoTooltip": "XP-Info",
+  "@xpInfoTooltip": {"description": "Tooltip für den XP-Info-Button"},
+  "xpInfoTitle": "XP-Info",
+  "@xpInfoTitle": {"description": "Titel des XP-Info-Dialogs"},
+  "xpInfoCurrentXp": "XP: {xp}",
+  "@xpInfoCurrentXp": {
+    "description": "Anzeige der aktuellen XP im Dialog",
+    "placeholders": {"xp": {"type": "int"}}
+  },
+  "xpInfoLevel": "Level: {level}",
+  "@xpInfoLevel": {
+    "description": "Anzeige des aktuellen Levels im Dialog",
+    "placeholders": {"level": {}}
+  },
+  "xpInfoProgress": "{xpRemaining} XP bis Level {nextLevel}",
+  "@xpInfoProgress": {
+    "description": "Fortschrittsmeldung bis zum nächsten Level",
+    "placeholders": {
+      "xpRemaining": {"type": "int"},
+      "nextLevel": {"type": "int"}
+    }
+  },
+  "xpInfoDetails": "Details",
+  "@xpInfoDetails": {"description": "Button um XP-Details zu öffnen"},
 
   "gymCodeFieldLabel": "Gym-Code",
   "@gymCodeFieldLabel": {
@@ -289,6 +326,11 @@
   "profileTrainingDaysTitle": "Deine Trainingstage im Jahr",
   "@profileTrainingDaysTitle": {
     "description": "Überschrift für den Kalender auf der Profilseite"
+  },
+
+  "profileTrainingDaysHeading": "Trainingstage",
+  "@profileTrainingDaysHeading": {
+    "description": "Kurze Überschrift für den Trainingskalender im Profil"
   },
 
   "profileStatsButtonLabel": "Statistiken",
@@ -892,6 +934,12 @@
   "@filterNameChip": {"description": "Chip-Label für Sortierung nach Name"},
   "filterMuscleChip": "Muskel",
   "@filterMuscleChip": {"description": "Chip-Label für Muskel-Filter"},
+  "filterRecentChip": "Zuletzt",
+  "@filterRecentChip": {"description": "Chip-Label für Sortierung nach letzter Nutzung"},
+  "filterSortAz": "A→Z",
+  "@filterSortAz": {"description": "Sortieroption von A nach Z"},
+  "filterSortZa": "Z→A",
+  "@filterSortZa": {"description": "Sortieroption von Z nach A"},
   "a11yMgSelected": "Muskelgruppe: {name}, ausgewählt",
   "@a11yMgSelected": {
     "description": "Semantik für ausgewählte Muskelgruppe",
@@ -990,6 +1038,16 @@
   ,"@reportFeedbackOpenEntries": {"description": "Untertitel für offene Feedback-Einträge","placeholders": {"count": {"type": "int"}}}
   ,"reportFeedbackNoOpenEntries": "Kein offenes Feedback"
   ,"@reportFeedbackNoOpenEntries": {"description": "Untertitel wenn kein offenes Feedback vorhanden ist"}
+  ,"feedbackDialogTitle": "Feedback"
+  ,"@feedbackDialogTitle": {"description": "Titel des Feedback-Dialogs"}
+  ,"feedbackTooltip": "Feedback"
+  ,"@feedbackTooltip": {"description": "Tooltip für den Feedback-Button"}
+  ,"feedbackPlaceholder": "Dein Feedback..."
+  ,"@feedbackPlaceholder": {"description": "Platzhaltertext für das Feedbackfeld"}
+  ,"feedbackSubmit": "Senden"
+  ,"@feedbackSubmit": {"description": "Absende-Button für Feedback"}
+  ,"feedbackSent": "Feedback gesendet"
+  ,"@feedbackSent": {"description": "Snackbar nach dem Senden von Feedback"}
   ,"reportCreateSurveyTitle": "Umfrage erstellen"
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
@@ -1048,6 +1106,18 @@
   ,"@challengeAdminFieldXpReward": {"description": "Label für das XP-Reward-Feld"}
   ,"challengeAdminFieldType": "Typ"
   ,"@challengeAdminFieldType": {"description": "Label für den Challenge-Typ"}
+  ,"challengeTabActive": "Aktiv"
+  ,"@challengeTabActive": {"description": "Tab-Label für aktive Challenges"}
+  ,"challengeTabCompleted": "Abgeschlossen"
+  ,"@challengeTabCompleted": {"description": "Tab-Label für abgeschlossene Challenges"}
+  ,"challengeEmptyActive": "Keine aktiven Challenges"
+  ,"@challengeEmptyActive": {"description": "Meldung wenn keine aktiven Challenges vorhanden sind"}
+  ,"challengeEmptyCompleted": "Keine abgeschlossenen Challenges"
+  ,"@challengeEmptyCompleted": {"description": "Meldung wenn keine abgeschlossenen Challenges vorhanden sind"}
+  ,"challengeDetailXpReward": "XP: {xp}"
+  ,"@challengeDetailXpReward": {"description": "XP-Belohnung im Challenge-Dialog","placeholders": {"xp": {"type": "int"}}}
+  ,"challengeDetailDevices": "Geräte: {devices}"
+  ,"@challengeDetailDevices": {"description": "Geräteliste im Challenge-Dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Wöchentlich"
   ,"@challengeAdminTypeWeekly": {"description": "Option für wöchentliche Challenges"}
   ,"challengeAdminTypeMonthly": "Monatlich"
@@ -1132,8 +1202,14 @@
   ,"@surveyVotesCountWithPercent": {"description": "Anzeige der Stimmenzahl mit Prozentangabe","placeholders": {"count": {"type": "int"}, "percent": {}}}
   ,"surveyListTitle": "Umfragen"
   ,"@surveyListTitle": {"description": "AppBar-Titel für die Umfragenliste"}
+  ,"surveyTabOpen": "Offen"
+  ,"@surveyTabOpen": {"description": "Tab-Label für offene Umfragen"}
+  ,"surveyTabClosed": "Abgeschlossen"
+  ,"@surveyTabClosed": {"description": "Tab-Label für abgeschlossene Umfragen"}
   ,"surveyEmpty": "Keine offenen Umfragen"
   ,"@surveyEmpty": {"description": "Hinweis wenn keine offenen Umfragen vorhanden sind"}
+  ,"surveyEmptyClosed": "Keine abgeschlossenen Umfragen"
+  ,"@surveyEmptyClosed": {"description": "Hinweis wenn keine abgeschlossenen Umfragen vorhanden sind"}
   ,"surveyResultsTitle": "Ergebnisse"
   ,"@surveyResultsTitle": {"description": "Überschrift über den Umfrageergebnissen"}
   ,"selectGymTitle": "Gym auswählen"

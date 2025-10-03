@@ -119,6 +119,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancelButton;
 
+  /// Label for a generic OK action
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
   /// Tooltip for the history button on device screen
   ///
   /// In en, this message translates to:
@@ -262,6 +268,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Muscle level'**
   String get rankMuscleLevel;
+
+  /// App bar title for the leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboardTitle;
+
+  /// Tab label for ranking view
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get leaderboardRankTab;
+
+  /// Tab label for challenges view
+  ///
+  /// In en, this message translates to:
+  /// **'Challenges'**
+  String get leaderboardChallengesTab;
+
+  /// Tooltip for the XP info button
+  ///
+  /// In en, this message translates to:
+  /// **'XP info'**
+  String get xpInfoTooltip;
+
+  /// Title of the XP info dialog
+  ///
+  /// In en, this message translates to:
+  /// **'XP info'**
+  String get xpInfoTitle;
+
+  /// Label for current XP in the XP dialog
+  ///
+  /// In en, this message translates to:
+  /// **'XP: {xp}'**
+  String xpInfoCurrentXp(int xp);
+
+  /// Label for the current level in the XP dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Level: {level}'**
+  String xpInfoLevel(Object level);
+
+  /// Progress message towards the next level
+  ///
+  /// In en, this message translates to:
+  /// **'{xpRemaining} XP to level {nextLevel}'**
+  String xpInfoProgress(int xpRemaining, int nextLevel);
+
+  /// Button to open XP details
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get xpInfoDetails;
 
   /// Label for the gym code input
   ///
@@ -502,6 +562,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your training days of the year'**
   String get profileTrainingDaysTitle;
+
+  /// Short heading for the training days calendar on the profile
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get profileTrainingDaysHeading;
 
   /// Button label on profile screen to open the statistics page
   ///
@@ -1517,6 +1583,24 @@ abstract class AppLocalizations {
   /// **'Muscle'**
   String get filterMuscleChip;
 
+  /// Chip label for recent sort
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get filterRecentChip;
+
+  /// Sort option from A to Z
+  ///
+  /// In en, this message translates to:
+  /// **'A→Z'**
+  String get filterSortAz;
+
+  /// Sort option from Z to A
+  ///
+  /// In en, this message translates to:
+  /// **'Z→A'**
+  String get filterSortZa;
+
   /// Semantics for selected muscle group
   ///
   /// In en, this message translates to:
@@ -1892,6 +1976,21 @@ abstract class AppLocalizations {
   /// No description provided for @reportFeedbackNoOpenEntries.
   String get reportFeedbackNoOpenEntries;
 
+  /// No description provided for @feedbackDialogTitle.
+  String get feedbackDialogTitle;
+
+  /// No description provided for @feedbackTooltip.
+  String get feedbackTooltip;
+
+  /// No description provided for @feedbackPlaceholder.
+  String get feedbackPlaceholder;
+
+  /// No description provided for @feedbackSubmit.
+  String get feedbackSubmit;
+
+  /// No description provided for @feedbackSent.
+  String get feedbackSent;
+
   /// No description provided for @reportCreateSurveyTitle.
   String get reportCreateSurveyTitle;
 
@@ -1978,6 +2077,24 @@ abstract class AppLocalizations {
 
   /// No description provided for @challengeAdminFieldType.
   String get challengeAdminFieldType;
+
+  /// No description provided for @challengeTabActive.
+  String get challengeTabActive;
+
+  /// No description provided for @challengeTabCompleted.
+  String get challengeTabCompleted;
+
+  /// No description provided for @challengeEmptyActive.
+  String get challengeEmptyActive;
+
+  /// No description provided for @challengeEmptyCompleted.
+  String get challengeEmptyCompleted;
+
+  /// No description provided for @challengeDetailXpReward.
+  String challengeDetailXpReward(int xp);
+
+  /// No description provided for @challengeDetailDevices.
+  String challengeDetailDevices(Object devices);
 
   /// No description provided for @challengeAdminTypeWeekly.
   String get challengeAdminTypeWeekly;
@@ -2084,8 +2201,17 @@ abstract class AppLocalizations {
   /// No description provided for @surveyListTitle.
   String get surveyListTitle;
 
+  /// No description provided for @surveyTabOpen.
+  String get surveyTabOpen;
+
+  /// No description provided for @surveyTabClosed.
+  String get surveyTabClosed;
+
   /// No description provided for @surveyEmpty.
   String get surveyEmpty;
+
+  /// No description provided for @surveyEmptyClosed.
+  String get surveyEmptyClosed;
 
   /// No description provided for @surveyResultsTitle.
   String get surveyResultsTitle;

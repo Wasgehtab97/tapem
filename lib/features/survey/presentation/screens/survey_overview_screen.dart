@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../survey_provider.dart';
 import '../../survey.dart';
 import 'survey_detail_screen.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class SurveyOverviewScreen extends StatefulWidget {
   final String gymId;
@@ -39,19 +40,23 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
   @override
   Widget build(BuildContext context) {
     final surveyProv = context.watch<SurveyProvider>();
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Umfragen'),
+        title: Text(loc.surveyListTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'Offen'), Tab(text: 'Abgeschlossen')],
+          tabs: [
+            Tab(text: loc.surveyTabOpen),
+            Tab(text: loc.surveyTabClosed),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildList(context, surveyProv.openSurveys, open: true),
-          _buildList(context, surveyProv.closedSurveys, open: false),
+          _buildList(context, surveyProv.openSurveys, loc, open: true),
+          _buildList(context, surveyProv.closedSurveys, loc, open: false),
         ],
       ),
     );
@@ -60,10 +65,11 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
   Widget _buildList(
     BuildContext context,
     List<Survey> surveys, {
+    required AppLocalizations loc,
     required bool open,
   }) {
     if (surveys.isEmpty) {
-      return const Center(child: Text('Keine Umfragen'));
+      return Center(child: Text(open ? loc.surveyEmpty : loc.surveyEmptyClosed));
     }
     return ListView.builder(
       itemCount: surveys.length,
