@@ -2,6 +2,7 @@
 // SetCard with silent controller updates to prevent re-entrant rebuilds.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -836,47 +837,74 @@ class SetRowContent extends StatelessWidget {
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
         children.add(
-          Row(
-            children: [
-              Expanded(
-                child: _InputPill(
-                  controller: drop.weightController,
-                  focusNode: drop.weightFocus,
-                  label: loc.dropKgFieldLabel,
-                  readOnly: readOnly || done,
-                  tokens: tokens,
-                  dense: true,
-                  onTap: drop.onTapWeight,
-                  validator: drop.validator,
-                ),
-              ),
-              SizedBox(width: dense ? 8 : 12),
-              Expanded(
-                child: _InputPill(
-                  controller: drop.repsController,
-                  focusNode: drop.repsFocus,
-                  label: loc.dropRepsFieldLabel,
-                  readOnly: readOnly || done,
-                  tokens: tokens,
-                  dense: true,
-                  onTap: drop.onTapReps,
-                  validator: drop.validator,
-                ),
-              ),
-              if (!readOnly && drop.showAddButton) ...[
-                SizedBox(width: dense ? 8 : 12),
-                _RoundButton(
-                  tokens: tokens,
-                  icon: Icons.add,
-                  filled: false,
-                  semantics: loc.addSetButton,
-                  dense: true,
-                  onTap: drop.onAdd,
-                  iconColor: primaryColor,
-                  disabledIconColor: primaryColor.withOpacity(0.4),
-                ),
-              ],
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final hasAddButton = !readOnly && drop.showAddButton;
+                final fieldGap = dense ? 8.0 : 12.0;
+                final buttonSize = dense ? 40.0 : 44.0;
+                final trailingLeadingGap = fieldGap;
+                final trailingBetweenGap = dense ? 6.0 : 8.0;
+                final trailingReservedWidth =
+                    trailingLeadingGap + buttonSize + trailingBetweenGap + buttonSize;
+                final available = constraints.maxWidth -
+                    leadingWidth -
+                    fieldGap -
+                    trailingReservedWidth;
+                final fieldWidth = math.max(0.0, available / 2);
+                final trailingRemainder = trailingBetweenGap + buttonSize;
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: leadingWidth),
+                    SizedBox(
+                      width: fieldWidth,
+                      child: _InputPill(
+                        controller: drop.weightController,
+                        focusNode: drop.weightFocus,
+                        label: loc.dropKgFieldLabel,
+                        readOnly: readOnly || done,
+                        tokens: tokens,
+                        dense: true,
+                        onTap: drop.onTapWeight,
+                        validator: drop.validator,
+                      ),
+                    ),
+                    SizedBox(width: fieldGap),
+                    SizedBox(
+                      width: fieldWidth,
+                      child: _InputPill(
+                        controller: drop.repsController,
+                        focusNode: drop.repsFocus,
+                        label: loc.dropRepsFieldLabel,
+                        readOnly: readOnly || done,
+                        tokens: tokens,
+                        dense: true,
+                        onTap: drop.onTapReps,
+                        validator: drop.validator,
+                      ),
+                    ),
+                    if (hasAddButton) ...[
+                      SizedBox(width: trailingLeadingGap),
+                      _RoundButton(
+                        tokens: tokens,
+                        icon: Icons.add,
+                        filled: false,
+                        semantics: loc.addSetButton,
+                        dense: true,
+                        onTap: drop.onAdd,
+                        iconColor: primaryColor,
+                        disabledIconColor: primaryColor.withOpacity(0.4),
+                      ),
+                      SizedBox(width: trailingRemainder),
+                    ] else
+                      SizedBox(width: trailingReservedWidth),
+                  ],
+                );
+              },
+            ),
           ),
         );
         if (i != dropRows.length - 1) {
