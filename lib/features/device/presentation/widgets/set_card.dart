@@ -434,12 +434,6 @@ class SetCardState extends State<SetCard> {
     }
     final doneVal = widget.set['done'];
     final done = doneVal == true || doneVal == 'true';
-    final dropMaps = _dropMapsFromSet(widget.set);
-    final dropActive = dropMaps.any((d) {
-      final weightText = (d['weight'] ?? '').toString().trim();
-      final repsText = (d['reps'] ?? '').toString().trim();
-      return weightText.isNotEmpty && repsText.isNotEmpty;
-    });
     final weight = (widget.set['weight'] ?? '').toString().trim();
     final reps = (widget.set['reps'] ?? '').toString().trim();
     final isBw = widget.set['isBodyweight'] == true;
@@ -598,7 +592,6 @@ class SetCardState extends State<SetCard> {
       tokens: tokens,
       dense: dense,
       index: widget.index + 1,
-      dropActive: dropActive,
       showFieldHeaderRow: displayMode != SetCardDisplayMode.grouped,
       showExtras: _showExtras,
       done: done,
@@ -664,7 +657,6 @@ class SetRowContent extends StatelessWidget {
   final SetCardTheme tokens;
   final bool dense;
   final int index;
-  final bool dropActive;
   final bool showFieldHeaderRow;
   final bool showExtras;
   final bool done;
@@ -688,7 +680,6 @@ class SetRowContent extends StatelessWidget {
     required this.tokens,
     required this.dense,
     required this.index,
-    required this.dropActive,
     required this.showFieldHeaderRow,
     required this.showExtras,
     required this.done,
@@ -722,8 +713,10 @@ class SetRowContent extends StatelessWidget {
       letterSpacing: 0.2,
       color: tokens.chipFg.withOpacity(0.78),
     );
-    final double leadingWidth =
-        (dense ? 28 : 32) + (dense ? 8 : 12) + (dropActive ? (dense ? 4 : 6) + (dense ? 24 : 28) : 0);
+    final double indexBadgeWidth = dense ? 28.0 : 32.0;
+    final double indexBadgeGap = dense ? 8.0 : 12.0;
+    final double dropBadgeToFieldGap = dense ? 8.0 : 12.0;
+    final double leadingWidth = indexBadgeWidth + indexBadgeGap;
 
     final children = <Widget>[];
     if (showFieldHeaderRow && showFieldHeaders) {
@@ -762,10 +755,6 @@ class SetRowContent extends StatelessWidget {
             index: index,
             dense: dense,
           ),
-          if (dropActive) ...[
-            SizedBox(width: dense ? 4 : 6),
-            _DropBadge(tokens: tokens, dense: dense),
-          ],
           SizedBox(width: dense ? 8 : 12),
           Expanded(
             child: _InputPill(
@@ -858,7 +847,18 @@ class SetRowContent extends StatelessWidget {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(width: leadingWidth),
+                    SizedBox(
+                      width: leadingWidth,
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            end: dropBadgeToFieldGap,
+                          ),
+                          child: _DropBadge(tokens: tokens, dense: dense),
+                        ),
+                      ),
+                    ),
                     SizedBox(
                       width: fieldWidth,
                       child: _InputPill(
