@@ -14,6 +14,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
@@ -535,12 +536,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: BrandActionTile(
+                    leading: const _ProfileStatsLeadingIcon(),
                     title: loc.profileStatsButtonLabel,
-                    centerTitle: true,
-                    dense: true,
-                    minVerticalPadding: 0,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    subtitle: loc.profileStatsButtonSubtitle,
+                    minVerticalPadding: AppSpacing.xs,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.sm,
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -549,7 +552,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                    variant: BrandActionTileVariant.outlined,
+                    trailing: const _ProfileStatsSparkline(),
+                    variant: BrandActionTileVariant.gradient,
                     showChevron: false,
                     uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
                   ),
@@ -587,6 +591,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileStatsLeadingIcon extends StatelessWidget {
+  const _ProfileStatsLeadingIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final glowColor = gradient.colors.last;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const BrandGradientIcon(
+        Icons.auto_graph,
+        size: 28,
+      ),
+    );
+  }
+}
+
+class _ProfileStatsSparkline extends StatelessWidget {
+  const _ProfileStatsSparkline({super.key});
+
+  static const _bars = [10.0, 20.0, 14.0, 26.0, 18.0, 30.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onGradient =
+        theme.extension<BrandOnColors>()?.onGradient ?? Colors.black;
+    final barColor = Color.lerp(onGradient, Colors.white, 0.6) ?? onGradient;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: List.generate(_bars.length, (index) {
+        final target = _bars[index];
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: target),
+          duration: Duration(milliseconds: 500 + index * 90),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1.5),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: barColor.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(AppRadius.button),
+                ),
+                child: SizedBox(
+                  width: 6,
+                  height: value,
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

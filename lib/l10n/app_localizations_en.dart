@@ -274,6 +274,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsButtonLabel => 'Statistics';
 
   @override
+  String get profileStatsButtonSubtitle => 'Dive into your progress highlights';
+
+  @override
   String get profileStatsTitle => 'Statistics';
 
   @override
