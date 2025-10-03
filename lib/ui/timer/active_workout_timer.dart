@@ -33,7 +33,7 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final hasUsableGradient = gradientColors.isNotEmpty &&
                 gradientColors.any((c) => c.computeLuminance() > 0.2);
 
-            final Color? backgroundColor;
+            Color? backgroundColor;
             final LinearGradient? resolvedGradient;
             Color foregroundColor;
 
