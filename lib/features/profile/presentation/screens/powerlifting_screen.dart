@@ -542,6 +542,15 @@ class _PowerliftingTableSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color resolveForeground(Set<MaterialState> states) {
+      if (states.contains(MaterialState.selected)) {
+        return colorScheme.onPrimary;
+      }
+      return colorScheme.onSurface;
+    }
+
     return SegmentedButton<PowerliftingMetric>(
       segments: [
         ButtonSegment<PowerliftingMetric>(
@@ -555,6 +564,10 @@ class _PowerliftingTableSwitcher extends StatelessWidget {
           icon: const Icon(Icons.trending_up_outlined),
         ),
       ],
+      style: ButtonStyle(
+        foregroundColor: MaterialStateProperty.resolveWith(resolveForeground),
+        iconColor: MaterialStateProperty.resolveWith(resolveForeground),
+      ),
       selected: <PowerliftingMetric>{selectedMetric},
       onSelectionChanged: (selection) {
         if (selection.isEmpty) {
