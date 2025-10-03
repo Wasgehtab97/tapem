@@ -57,6 +57,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   void _showCreateDialog() {
     final gymId = context.read<AuthProvider>().gymCode!;
+    final loc = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final newUid = _uuid.v4();
@@ -74,7 +75,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           final maxListHeight =
               min(MediaQuery.of(ctx2).size.height * 0.4, 300.0);
           return AlertDialog(
-            title: const Text('Neues Gerät anlegen'),
+            title: Text(loc.adminDashboardCreateDeviceDialogTitle),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -85,58 +86,58 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       TextField(
                         controller: nameCtrl,
-                        decoration: const InputDecoration(labelText: 'Name'),
+                        decoration: InputDecoration(labelText: loc.multiDeviceNameFieldLabel),
                       ),
                       const SizedBox(height: 8),
-                  TextField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Beschreibung',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Muskelgruppen',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    height: maxListHeight,
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        for (final g in muscleProv.groups)
-                          CheckboxListTile(
-                            value: selectedGroups.contains(g.id),
-                            title: Text(g.name),
-                            onChanged: (v) => setSt(() {
-                              if (v == true) {
-                                selectedGroups.add(g.id);
-                              } else {
-                                selectedGroups.remove(g.id);
-                              }
-                            }),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('Mehrere Übungen?'),
-                      Switch(
-                        value: isMulti,
-                        onChanged: (v) => setSt(() => isMulti = v),
+                      TextField(
+                        controller: descCtrl,
+                        decoration: InputDecoration(
+                          labelText: loc.commonDescription,
+                        ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Device ID: $newId',
-                    style: TextStyle(
-                      fontSize: AppFontSizes.body,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
+                      const SizedBox(height: 8),
+                      Text(
+                        loc.muscleGroupTitle,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(
+                        height: maxListHeight,
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            for (final g in muscleProv.groups)
+                              CheckboxListTile(
+                                value: selectedGroups.contains(g.id),
+                                title: Text(g.name),
+                                onChanged: (v) => setSt(() {
+                                  if (v == true) {
+                                    selectedGroups.add(g.id);
+                                  } else {
+                                    selectedGroups.remove(g.id);
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(loc.adminDashboardMultipleExercises),
+                          Switch(
+                            value: isMulti,
+                            onChanged: (v) => setSt(() => isMulti = v),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        loc.adminDashboardDeviceIdLabel(newId),
+                        style: TextStyle(
+                          fontSize: AppFontSizes.body,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                 ],
                 ),
               ),
@@ -145,7 +146,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx2).pop(false),
-                child: const Text('Abbrechen'),
+                child: Text(loc.commonCancel),
               ),
               BrandPrimaryButton(
                 onPressed: () async {
@@ -176,7 +177,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Navigator.of(ctx2).pop(true);
                   await _loadDevices();
                 },
-                child: const Text('Erstellen'),
+                child: Text(loc.commonCreate),
               ),
             ],
           );
@@ -191,13 +192,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final loc = AppLocalizations.of(context)!;
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Adminbereich')),
-        body: const Center(child: Text('Keine Admin-Rechte')),
+        appBar: AppBar(title: Text(loc.adminAreaTitle)),
+        body: Center(child: Text(loc.adminAreaNoPermission)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin-Dashboard')),
+      appBar: AppBar(title: Text(loc.adminDashboardTitle)),
       body:
           _loading
               ? const Center(child: CircularProgressIndicator())
@@ -207,7 +208,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   children: [
                     BrandActionTile(
                       leadingIcon: Icons.add,
-                      title: 'Gerät anlegen',
+                      title: loc.adminDashboardCreateDevice,
                       onTap: _showCreateDialog,
                       variant: BrandActionTileVariant.outlined,
                       showChevron: false,
@@ -216,7 +217,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     BrandActionTile(
                       leadingIcon: Icons.fitness_center,
-                      title: 'Muskelgruppen',
+                      title: loc.muscleGroupTitle,
                       onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRouter.manageMuscleGroups);
@@ -228,7 +229,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     BrandActionTile(
                       leadingIcon: Icons.brush,
-                      title: 'Branding',
+                      title: loc.adminDashboardBranding,
                       onTap: () {
                         Navigator.of(context).pushNamed(AppRouter.branding);
                       },
@@ -239,7 +240,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     BrandActionTile(
                       leadingIcon: Icons.flag,
-                      title: 'Challenges verwalten',
+                      title: loc.challengeAdminTitle,
                       onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRouter.manageChallenges);

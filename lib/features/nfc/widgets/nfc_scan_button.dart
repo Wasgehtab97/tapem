@@ -7,6 +7,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class NfcScanButton extends StatelessWidget {
   const NfcScanButton({super.key});
@@ -16,6 +17,7 @@ class NfcScanButton extends StatelessWidget {
     final authProv = context.read<AuthProvider>();
     final getDeviceUC = context.read<GetDeviceByNfcCode>();
     final membership = context.read<MembershipService>();
+    final loc = AppLocalizations.of(context)!;
 
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -55,7 +57,7 @@ class NfcScanButton extends StatelessWidget {
 
               if (code.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Kein NFC-Code erkannt')),
+                  SnackBar(content: Text(loc.nfcNoCode)),
                 );
                 return;
               }
@@ -63,7 +65,7 @@ class NfcScanButton extends StatelessWidget {
               final gymId = authProv.gymCode;
               if (gymId == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Kein Gym ausgewählt')),
+                  SnackBar(content: Text(loc.nfcNoGymSelected)),
                 );
                 return;
               }
@@ -71,7 +73,7 @@ class NfcScanButton extends StatelessWidget {
               final dev = await getDeviceUC.execute(gymId, code);
               if (dev == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gerät nicht gefunden')),
+                  SnackBar(content: Text(loc.deviceNotFound)),
                 );
                 return;
               }
@@ -103,7 +105,7 @@ class NfcScanButton extends StatelessWidget {
           } catch (_) {}
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('NFC-Fehler: $error')));
+          ).showSnackBar(SnackBar(content: Text(loc.nfcError(error.toString()))));
         }
       },
     );

@@ -48,7 +48,7 @@ class CreatineProvider extends ChangeNotifier {
 
   Future<bool> toggleIntake(String uid) async {
     if (!canToggle) {
-      throw StateError('Nur heute oder gestern möglich.');
+      throw StateError('Only today or yesterday allowed.');
     }
     final dateKey = selectedDateKey;
     final exists = _intakeDates.contains(dateKey);

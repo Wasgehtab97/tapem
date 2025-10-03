@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -632,20 +633,21 @@ class _KeyGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final items = <_KeySpec>[
       for (final n in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-        _KeySpec(token: n, label: n, semantics: 'Taste $n'),
+        _KeySpec(token: n, label: n, semantics: loc.numericKeypadSemanticsDigit(n)),
       _KeySpec(
         token: allowDecimal ? 'dec' : '_',
         label: allowDecimal ? decimalLabel : '',
         disabled: !allowDecimal,
-        semantics: 'Dezimaltrennzeichen',
+        semantics: loc.numericKeypadSemanticsDecimal,
       ),
-      _KeySpec(token: '0', label: '0', semantics: 'Taste 0'),
+      _KeySpec(token: '0', label: '0', semantics: loc.numericKeypadSemanticsDigit('0')),
       _KeySpec(
         token: 'del',
         icon: Icons.backspace_outlined,
-        semantics: 'Löschen',
+        semantics: loc.numericKeypadSemanticsDelete,
       ),
     ];
 
@@ -714,20 +716,21 @@ class _ActionRailCompact extends StatelessWidget {
   Widget build(BuildContext context) {
     final availableH =
         totalGridRows * gridCellHeight + (totalGridRows - 1) * gap;
+    final loc = AppLocalizations.of(context)!;
 
     // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
       _RailAction(
         Icons.arrow_forward_rounded,
-        'Weiter',
+        loc.numericKeypadSemanticsNext,
         onNavigate,
         wide: true,
       ),
-      _RailAction(Icons.remove_rounded, 'Verringern', onMinus, repeat: true),
-      _RailAction(Icons.add_rounded, 'Erhöhen', onPlus, repeat: true),
+      _RailAction(Icons.remove_rounded, loc.numericKeypadSemanticsDecrease, onMinus, repeat: true),
+      _RailAction(Icons.add_rounded, loc.numericKeypadSemanticsIncrease, onPlus, repeat: true),
       _RailAction(
         Icons.keyboard_hide_rounded,
-        'Tastatur ausblenden',
+        loc.numericKeypadSemanticsHideKeyboard,
         onHide,
         wide: true,
       ),

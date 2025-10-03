@@ -59,19 +59,20 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   }
 
   Future<void> _deleteExercise(Exercise ex) async {
+    final loc = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Übung löschen'),
-        content: Text('Übung "${ex.name}" wirklich löschen?'),
+        title: Text(loc.exerciseDeleteTitle),
+        content: Text(loc.exerciseDeleteMessage(ex.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Abbrechen'),
+            child: Text(loc.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Löschen'),
+            child: Text(loc.commonDelete),
           ),
         ],
       ),
@@ -99,7 +100,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     if (prov.isLoading) {
       body = const Center(child: CircularProgressIndicator());
     } else if (prov.error != null) {
-      body = Center(child: Text('Fehler: ${prov.error}'));
+      body = Center(child: Text('${loc.errorPrefix}: ${prov.error}'));
     } else if (exercises.isEmpty) {
       body = Center(
         child: Column(
@@ -147,7 +148,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () => _deleteExercise(ex),
-                  tooltip: 'Übung löschen',
+                  tooltip: loc.exerciseDeleteTitle,
                 ),
               ],
             ),

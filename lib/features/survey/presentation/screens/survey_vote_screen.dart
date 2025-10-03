@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../survey_provider.dart';
 import '../../survey.dart';
@@ -33,11 +34,12 @@ class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<SurveyProvider>();
     final surveys = prov.openSurveys;
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Umfragen')),
+      appBar: AppBar(title: Text(loc.surveyListTitle)),
       body:
           surveys.isEmpty
-              ? const Center(child: Text('Keine offenen Umfragen'))
+              ? Center(child: Text(loc.surveyEmpty))
               : ListView.builder(
                 itemCount: surveys.length,
                 itemBuilder: (_, index) {
@@ -86,19 +88,20 @@ class _SurveyVoteDetailScreenState extends State<_SurveyVoteDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.survey.title)),
       body:
           _submitted
-              ? const Center(child: Text('Danke für deine Teilnahme!'))
+              ? Center(child: Text(loc.surveyThanks))
               : Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Bitte wähle eine Option:',
-                      style: TextStyle(fontSize: 16),
+                    Text(
+                      loc.surveySelectOptionPrompt,
+                      style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 16),
                     Expanded(
@@ -135,7 +138,7 @@ class _SurveyVoteDetailScreenState extends State<_SurveyVoteDetailScreen> {
                                   _submitted = true;
                                 });
                               },
-                      child: const Text('Absenden'),
+                      child: Text(loc.commonSubmit),
                     ),
                   ],
                 ),

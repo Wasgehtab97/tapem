@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
 
@@ -33,7 +34,8 @@ class _BrandingScreenState extends State<BrandingScreen> {
     final bytes = result.files.single.bytes;
     if (bytes == null) return;
     if (bytes.length > 500 * 1024) {
-      setState(() => _error = 'Bild zu groß (max 500KB)');
+      final loc = AppLocalizations.of(context)!;
+      setState(() => _error = loc.brandingImageTooLarge);
       return;
     }
     setState(() {
@@ -46,11 +48,12 @@ class _BrandingScreenState extends State<BrandingScreen> {
     final gymId = context.read<AuthProvider>().gymCode!;
     final primary = _primaryCtrl.text.replaceAll('#', '');
     final accent = _accentCtrl.text.replaceAll('#', '');
+    final loc = AppLocalizations.of(context)!;
 
     if (!_hexReg.hasMatch(primary) ||
         !_hexReg.hasMatch(accent) ||
         _logoBytes == null) {
-      setState(() => _error = 'Bitte gültige Farben und Logo wählen');
+      setState(() => _error = loc.brandingInvalidConfig);
       return;
     }
 
@@ -69,7 +72,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
       });
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      setState(() => _error = 'Fehler: $e');
+      setState(() => _error = '${loc.errorPrefix}: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -77,8 +80,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Branding')),
+      appBar: AppBar(title: Text(loc.adminDashboardBranding)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -87,17 +91,17 @@ class _BrandingScreenState extends State<BrandingScreen> {
             if (_logoBytes != null) Image.memory(_logoBytes!, height: 100),
             ElevatedButton(
               onPressed: _pickLogo,
-              child: const Text('Logo auswählen'),
+              child: Text(loc.brandingPickLogo),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _primaryCtrl,
-              decoration: const InputDecoration(labelText: 'Primärfarbe (hex)'),
+              decoration: InputDecoration(labelText: loc.brandingPrimaryColorLabel),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _accentCtrl,
-              decoration: const InputDecoration(labelText: 'Akzentfarbe (hex)'),
+              decoration: InputDecoration(labelText: loc.brandingAccentColorLabel),
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
@@ -116,7 +120,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                      : const Text('Speichern'),
+                      : Text(loc.commonSave),
             ),
           ],
         ),

@@ -161,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             } catch (_) {
               // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Fehler beim Speichern')),
+                SnackBar(content: Text(loc.commonSaveError)),
               );
             }
           },
@@ -193,7 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                 } catch (_) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fehler beim Speichern.')),
+                    SnackBar(content: Text(loc.commonSaveError)),
                   );
                 }
               },
@@ -211,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                 } catch (_) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fehler beim Speichern.')),
+                    SnackBar(content: Text(loc.commonSaveError)),
                   );
                 }
               },
@@ -440,10 +440,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: avatarSize,
             height: avatarSize,
             child: Tooltip(
-              message: 'Profilbild ändern',
+              message: loc.profileChangeAvatar,
               child: Semantics(
                 button: true,
-                label: 'Profilbild ändern',
+                label: loc.profileChangeAvatar,
                 child: GestureDetector(
                   onTap: () => _showAvatarSheet(auth),
                   child: Builder(builder: (context) {

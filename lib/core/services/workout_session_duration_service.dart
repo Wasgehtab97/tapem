@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
@@ -172,24 +173,25 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final elapsedDur = elapsed;
     final locale = Localizations.localeOf(context);
     final formatted = formatDuration(elapsedDur, locale: locale);
+    final loc = AppLocalizations.of(context)!;
     final result = await showDialog<StopResult>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Training beenden?'),
-        content: Text('Dauer: $formatted. Möchtest du die Zeit speichern oder verwerfen?'),
+        title: Text(loc.sessionStopTitle),
+        content: Text(loc.sessionStopMessage(formatted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(StopResult.cancel),
-            child: const Text('Abbrechen'),
+            child: Text(loc.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(StopResult.discard),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Verwerfen'),
+            child: Text(loc.commonDiscard),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(StopResult.save),
-            child: const Text('Speichern'),
+            child: Text(loc.commonSave),
           ),
         ],
       ),

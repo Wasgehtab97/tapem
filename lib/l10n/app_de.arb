@@ -972,4 +972,188 @@
   ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar-Text nach erfolgreichem Löschen einer Session."}
   ,"trainingDetailsDeleteSessionError": "Session konnte nicht gelöscht werden."
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar-Text, wenn das Löschen einer Session fehlgeschlagen ist."}
+  ,"profileChangeAvatar": "Profilbild ändern"
+  ,"@profileChangeAvatar": {"description": "Tooltip und Accessibility-Label zum Ändern des Profilbilds"}
+  ,"homeTabAdmin": "Admin"
+  ,"@homeTabAdmin": {"description": "Label des Admin-Tabs"}
+  ,"homeTabRank": "Ranking"
+  ,"@homeTabRank": {"description": "Label des Ranking-Tabs"}
+  ,"homeTabAffiliate": "Affiliate"
+  ,"@homeTabAffiliate": {"description": "Label des Affiliate-Tabs"}
+  ,"homeTabPlans": "Pläne"
+  ,"@homeTabPlans": {"description": "Label des Pläne-Tabs"}
+  ,"reportTitle": "Report"
+  ,"@reportTitle": {"description": "AppBar-Titel des Report-Screens"}
+  ,"reportFeedbackCardTitle": "Feedback"
+  ,"@reportFeedbackCardTitle": {"description": "Titel der Feedback-Karte im Report"}
+  ,"reportFeedbackOpenEntries": "{count} offene Einträge"
+  ,"@reportFeedbackOpenEntries": {"description": "Untertitel für offene Feedback-Einträge","placeholders": {"count": {"type": "int"}}}
+  ,"reportFeedbackNoOpenEntries": "Kein offenes Feedback"
+  ,"@reportFeedbackNoOpenEntries": {"description": "Untertitel wenn kein offenes Feedback vorhanden ist"}
+  ,"reportCreateSurveyTitle": "Umfrage erstellen"
+  ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
+  ,"reportViewSurveysTitle": "Umfragen ansehen"
+  ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportDeviceFilterHint": "Gerät filtern"
+  ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
+  ,"reportDeviceUsageSessions": "{count} Sessions"
+  ,"@reportDeviceUsageSessions": {"description": "Tooltip-Zeile mit der Anzahl an Sessions","placeholders": {"count": {"type": "int"}}}
+  ,"exerciseDeleteTitle": "Übung löschen"
+  ,"@exerciseDeleteTitle": {"description": "Dialogtitel zum Löschen einer Übung"}
+  ,"exerciseDeleteMessage": "Übung \"{name}\" wirklich löschen?"
+  ,"@exerciseDeleteMessage": {"description": "Dialogtext zum Löschen einer Übung","placeholders": {"name": {}}}
+  ,"commonDelete": "Löschen"
+  ,"@commonDelete": {"description": "Allgemeines Label für Löschen"}
+  ,"commonSaveError": "Fehler beim Speichern."
+  ,"@commonSaveError": {"description": "Snackbar-Text bei einem Speicherfehler"}
+  ,"commonUnknown": "Unbekannt"
+  ,"@commonUnknown": {"description": "Allgemeines Fallback-Label für unbekannte Werte"}
+  ,"commonTitle": "Titel"
+  ,"@commonTitle": {"description": "Allgemeines Label für Titel"}
+  ,"commonDescription": "Beschreibung"
+  ,"@commonDescription": {"description": "Allgemeines Label für Beschreibungen"}
+  ,"commonCreate": "Erstellen"
+  ,"@commonCreate": {"description": "Allgemeines Label für Erstellen-Aktionen"}
+  ,"commonSubmit": "Absenden"
+  ,"@commonSubmit": {"description": "Allgemeines Label für Absenden-Aktionen"}
+  ,"commonDiscard": "Verwerfen"
+  ,"@commonDiscard": {"description": "Allgemeines Label für Verwerfen-Aktionen"}
+  ,"commonNoAccess": "Kein Zugriff"
+  ,"@commonNoAccess": {"description": "Hinweis wenn kein Zugriff besteht"}
+  ,"xpDeviceTitle": "Geräte XP"
+  ,"@xpDeviceTitle": {"description": "Titel des Geräte-XP-Screens"}
+  ,"xpOverviewTitle": "XP Übersicht"
+  ,"@xpOverviewTitle": {"description": "AppBar-Titel der XP-Übersicht"}
+  ,"xpOverviewPeriodLabel": "Zeitraum:"
+  ,"@xpOverviewPeriodLabel": {"description": "Label für die Zeitraum-Auswahl"}
+  ,"xpOverviewPeriodLast7Days": "7 Tage"
+  ,"@xpOverviewPeriodLast7Days": {"description": "Dropdown-Option für die letzten 7 Tage"}
+  ,"xpOverviewPeriodLast30Days": "30 Tage"
+  ,"@xpOverviewPeriodLast30Days": {"description": "Dropdown-Option für die letzten 30 Tage"}
+  ,"xpOverviewPeriodTotal": "Gesamt"
+  ,"@xpOverviewPeriodTotal": {"description": "Dropdown-Option für Gesamt-XP"}
+  ,"xpOverviewTableHeaderMuscleGroup": "Muskelgruppe"
+  ,"@xpOverviewTableHeaderMuscleGroup": {"description": "Tabellenkopf für Muskelgruppen"}
+  ,"xpOverviewTableHeaderXp": "XP"
+  ,"@xpOverviewTableHeaderXp": {"description": "Tabellenkopf für XP"}
+  ,"xpOverviewLeaderboardTitle": "Rangliste: {region}"
+  ,"@xpOverviewLeaderboardTitle": {"description": "Titel des Ranglisten-Dialogs","placeholders": {"region": {}}}
+  ,"challengeAdminTitle": "Challenges verwalten"
+  ,"@challengeAdminTitle": {"description": "AppBar-Titel des Challenge-Admin-Screens"}
+  ,"challengeAdminErrorFillAllFields": "Alle Felder ausfüllen."
+  ,"@challengeAdminErrorFillAllFields": {"description": "Fehlerhinweis wenn Pflichtfelder fehlen"}
+  ,"challengeAdminFieldRequiredSets": "Benötigte Sätze"
+  ,"@challengeAdminFieldRequiredSets": {"description": "Label für das Feld der benötigten Sätze"}
+  ,"challengeAdminFieldXpReward": "XP-Reward"
+  ,"@challengeAdminFieldXpReward": {"description": "Label für das XP-Reward-Feld"}
+  ,"challengeAdminFieldType": "Typ"
+  ,"@challengeAdminFieldType": {"description": "Label für den Challenge-Typ"}
+  ,"challengeAdminTypeWeekly": "Wöchentlich"
+  ,"@challengeAdminTypeWeekly": {"description": "Option für wöchentliche Challenges"}
+  ,"challengeAdminTypeMonthly": "Monatlich"
+  ,"@challengeAdminTypeMonthly": {"description": "Option für monatliche Challenges"}
+  ,"challengeAdminFieldWeek": "Kalenderwoche"
+  ,"@challengeAdminFieldWeek": {"description": "Label für die Kalenderwochen-Auswahl"}
+  ,"challengeAdminWeekLabel": "KW {week}"
+  ,"@challengeAdminWeekLabel": {"description": "Anzeigetext für eine bestimmte Kalenderwoche","placeholders": {"week": {"type": "int"}}}
+  ,"challengeAdminFieldMonth": "Monat"
+  ,"@challengeAdminFieldMonth": {"description": "Label für die Monats-Auswahl"}
+  ,"challengeAdminMonthLabel": "Monat {month}"
+  ,"@challengeAdminMonthLabel": {"description": "Anzeigetext für einen bestimmten Monat","placeholders": {"month": {"type": "int"}}}
+  ,"challengeAdminFieldDevices": "Geräte"
+  ,"@challengeAdminFieldDevices": {"description": "Bereichsüberschrift für die Geräteliste"}
+  ,"adminAreaTitle": "Adminbereich"
+  ,"@adminAreaTitle": {"description": "AppBar-Titel beim Betreten des Adminbereichs"}
+  ,"adminAreaNoPermission": "Keine Admin-Rechte"
+  ,"@adminAreaNoPermission": {"description": "Hinweis wenn einem Nutzer Admin-Rechte fehlen"}
+  ,"adminDashboardTitle": "Admin-Dashboard"
+  ,"@adminDashboardTitle": {"description": "AppBar-Titel des Admin-Dashboards"}
+  ,"adminDashboardCreateDeviceDialogTitle": "Neues Gerät anlegen"
+  ,"@adminDashboardCreateDeviceDialogTitle": {"description": "Dialogtitel zum Erstellen eines Geräts"}
+  ,"adminDashboardMultipleExercises": "Mehrere Übungen?"
+  ,"@adminDashboardMultipleExercises": {"description": "Label ob ein Gerät mehrere Übungen hat"}
+  ,"adminDashboardDeviceIdLabel": "Geräte-ID: {id}"
+  ,"@adminDashboardDeviceIdLabel": {"description": "Label für die generierte Geräte-ID","placeholders": {"id": {}}}
+  ,"adminDashboardCreateDevice": "Gerät anlegen"
+  ,"@adminDashboardCreateDevice": {"description": "Aktionskarte zum Anlegen eines Geräts"}
+  ,"adminDashboardBranding": "Branding"
+  ,"@adminDashboardBranding": {"description": "Aktionskarte für Branding-Einstellungen"}
+  ,"adminDeviceNfcWritten": "NFC-Tag geschrieben"
+  ,"@adminDeviceNfcWritten": {"description": "Snackbar nach erfolgreichem Schreiben eines NFC-Tags"}
+  ,"adminDeviceNfcWriteError": "Fehler beim Schreiben: {error}"
+  ,"@adminDeviceNfcWriteError": {"description": "Snackbar wenn das Schreiben eines NFC-Tags fehlschlägt","placeholders": {"error": {}}}
+  ,"deviceDeleteTooltip": "Gerät löschen"
+  ,"@deviceDeleteTooltip": {"description": "Tooltip für die Geräte-Löschen-Aktion"}
+  ,"deviceDeleteDialogTitle": "Gerät löschen?"
+  ,"@deviceDeleteDialogTitle": {"description": "Titel des Dialogs zum Löschen eines Geräts"}
+  ,"deviceDeleteDialogMessage": "Soll das Gerät \"{name}\" wirklich gelöscht werden?"
+  ,"@deviceDeleteDialogMessage": {"description": "Nachfrage beim Löschen eines Geräts","placeholders": {"name": {}}}
+  ,"deviceDeleteSuccess": "Gerät gelöscht"
+  ,"@deviceDeleteSuccess": {"description": "Snackbar nach dem Löschen eines Geräts"}
+  ,"deviceWriteNfcTooltip": "NFC-Tag beschreiben"
+  ,"@deviceWriteNfcTooltip": {"description": "Tooltip zum Beschreiben eines NFC-Tags"}
+  ,"adminSymbolsAddButton": "Hinzufügen ({count})"
+  ,"@adminSymbolsAddButton": {"description": "Button-Label zum Hinzufügen ausgewählter Symbole","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsAddSuccess": "{count} Symbol(e) hinzugefügt"
+  ,"@adminSymbolsAddSuccess": {"description": "Snackbar nachdem Symbole hinzugefügt wurden","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsRetryLater": "Keine Verbindung – später erneut versuchen."
+  ,"@adminSymbolsRetryLater": {"description": "Snackbar bei einem fehlgeschlagenen Netzwerkaufruf"}
+  ,"adminSymbolsNoGlobalAssets": "Manifest enthält keine globalen Assets"
+  ,"@adminSymbolsNoGlobalAssets": {"description": "Hinweis wenn keine globalen Assets vorhanden sind"}
+  ,"adminSymbolsNoAssetsForTitle": "Manifest enthält keine {title}-Assets"
+  ,"@adminSymbolsNoAssetsForTitle": {"description": "Hinweis wenn keine Assets für einen bestimmten Titel vorhanden sind","placeholders": {"title": {}}}
+  ,"adminSymbolsAllGlobalAssigned": "Alle globalen Symbole bereits zugewiesen."
+  ,"@adminSymbolsAllGlobalAssigned": {"description": "Hinweis wenn alle globalen Symbole vergeben wurden"}
+  ,"adminSymbolsAllTitleAssigned": "Alle {title}-Symbole bereits zugewiesen."
+  ,"@adminSymbolsAllTitleAssigned": {"description": "Hinweis wenn alle Symbole eines Bereichs vergeben wurden","placeholders": {"title": {}}}
+  ,"brandingImageTooLarge": "Bild zu groß (max 500KB)"
+  ,"@brandingImageTooLarge": {"description": "Fehler wenn das Logo zu groß ist"}
+  ,"brandingInvalidConfig": "Bitte gültige Farben und Logo wählen"
+  ,"@brandingInvalidConfig": {"description": "Fehler wenn Angaben für Branding fehlen"}
+  ,"brandingPickLogo": "Logo auswählen"
+  ,"@brandingPickLogo": {"description": "Button zum Auswählen des Logos"}
+  ,"brandingPrimaryColorLabel": "Primärfarbe (hex)"
+  ,"@brandingPrimaryColorLabel": {"description": "Label für die Primärfarbe"}
+  ,"brandingAccentColorLabel": "Akzentfarbe (hex)"
+  ,"@brandingAccentColorLabel": {"description": "Label für die Akzentfarbe"}
+  ,"nfcNoCode": "Kein NFC-Code erkannt"
+  ,"@nfcNoCode": {"description": "Snackbar wenn kein NFC-Code gelesen wurde"}
+  ,"nfcNoGymSelected": "Kein Gym ausgewählt"
+  ,"@nfcNoGymSelected": {"description": "Snackbar wenn kein Gym ausgewählt ist"}
+  ,"nfcError": "NFC-Fehler: {error}"
+  ,"@nfcError": {"description": "Snackbar bei einem NFC-Fehler","placeholders": {"error": {}}}
+  ,"surveyThanks": "Danke für deine Teilnahme!"
+  ,"@surveyThanks": {"description": "Hinweis nach Teilnahme an einer Umfrage"}
+  ,"surveySelectOptionPrompt": "Bitte wähle eine Option:"
+  ,"@surveySelectOptionPrompt": {"description": "Aufforderung zur Auswahl einer Option"}
+  ,"surveyClose": "Umfrage abschließen"
+  ,"@surveyClose": {"description": "Button-Label zum Schließen einer Umfrage"}
+  ,"surveyVotesCountWithPercent": "{count} Stimmen ({percent}%)"
+  ,"@surveyVotesCountWithPercent": {"description": "Anzeige der Stimmenzahl mit Prozentangabe","placeholders": {"count": {"type": "int"}, "percent": {}}}
+  ,"surveyListTitle": "Umfragen"
+  ,"@surveyListTitle": {"description": "AppBar-Titel für die Umfragenliste"}
+  ,"surveyEmpty": "Keine offenen Umfragen"
+  ,"@surveyEmpty": {"description": "Hinweis wenn keine offenen Umfragen vorhanden sind"}
+  ,"surveyResultsTitle": "Ergebnisse"
+  ,"@surveyResultsTitle": {"description": "Überschrift über den Umfrageergebnissen"}
+  ,"selectGymTitle": "Gym auswählen"
+  ,"@selectGymTitle": {"description": "AppBar-Titel der Gym-Auswahl"}
+  ,"sessionStopTitle": "Training beenden?"
+  ,"@sessionStopTitle": {"description": "Dialogtitel beim Beenden des Trainings"}
+  ,"sessionStopMessage": "Dauer: {duration}. Möchtest du die Zeit speichern oder verwerfen?"
+  ,"@sessionStopMessage": {"description": "Dialogtext ob die aufgezeichnete Zeit gespeichert werden soll","placeholders": {"duration": {}}}
+  ,"numericKeypadSemanticsDigit": "Taste {digit}"
+  ,"@numericKeypadSemanticsDigit": {"description": "Semantik-Label für eine Zahlentaste","placeholders": {"digit": {}}}
+  ,"numericKeypadSemanticsDecimal": "Dezimaltrennzeichen"
+  ,"@numericKeypadSemanticsDecimal": {"description": "Semantik-Label für die Dezimaltaste"}
+  ,"numericKeypadSemanticsDelete": "Löschen"
+  ,"@numericKeypadSemanticsDelete": {"description": "Semantik-Label für die Löschtaste"}
+  ,"numericKeypadSemanticsNext": "Weiter"
+  ,"@numericKeypadSemanticsNext": {"description": "Semantik-Label für den Weiter-Button"}
+  ,"numericKeypadSemanticsDecrease": "Verringern"
+  ,"@numericKeypadSemanticsDecrease": {"description": "Semantik-Label für den Verringern-Button"}
+  ,"numericKeypadSemanticsIncrease": "Erhöhen"
+  ,"@numericKeypadSemanticsIncrease": {"description": "Semantik-Label für den Erhöhen-Button"}
+  ,"numericKeypadSemanticsHideKeyboard": "Tastatur ausblenden"
+  ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantik-Label für den Button zum Ausblenden der Tastatur"}
 }

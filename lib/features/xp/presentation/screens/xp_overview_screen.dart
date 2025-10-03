@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
@@ -48,6 +49,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
   Widget build(BuildContext context) {
     final xpProv = context.watch<XpProvider>();
     final muscleProv = context.watch<MuscleGroupProvider>();
+    final loc = AppLocalizations.of(context)!;
 
     // Map region→total XP by summing all muscle group entries and mapping to
     // their region via MuscleGroupProvider.
@@ -86,7 +88,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
         MaterialPageRoute(
           builder:
               (_) => LeaderboardScreen(
-                title: 'Rangliste: ${region.name}',
+                title: loc.xpOverviewLeaderboardTitle(region.name),
                 fetchEntries: fetchEntries,
               ),
         ),
@@ -96,7 +98,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('XP Übersicht'),
+        title: Text(loc.xpOverviewTitle),
         backgroundColor: const Color(0xFF121212),
       ),
       body: SingleChildScrollView(
@@ -107,9 +109,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
             // Time period selector and chart.
             Row(
               children: [
-                const Text(
-                  'Zeitraum:',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Text(
+                  loc.xpOverviewPeriodLabel,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(width: 8),
                 DropdownButton<XpPeriod>(
@@ -117,18 +119,18 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                   dropdownColor: const Color(0xFF1E1E1E),
                   style: const TextStyle(color: Colors.white),
                   underline: const SizedBox.shrink(),
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: XpPeriod.last7Days,
-                      child: Text('7 Tage'),
+                      child: Text(loc.xpOverviewPeriodLast7Days),
                     ),
                     DropdownMenuItem(
                       value: XpPeriod.last30Days,
-                      child: Text('30 Tage'),
+                      child: Text(loc.xpOverviewPeriodLast30Days),
                     ),
                     DropdownMenuItem(
                       value: XpPeriod.total,
-                      child: Text('Gesamt'),
+                      child: Text(loc.xpOverviewPeriodTotal),
                     ),
                   ],
                   onChanged:
@@ -137,9 +139,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Muskelgruppen',
-              style: TextStyle(
+            Text(
+              loc.muscleGroupTitle,
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -163,9 +165,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
             ),
             const SizedBox(height: 24),
             DataTable(
-              columns: const [
-                DataColumn(label: Text('Muskelgruppe')),
-                DataColumn(label: Text('XP')),
+              columns: [
+                DataColumn(label: Text(loc.xpOverviewTableHeaderMuscleGroup)),
+                DataColumn(label: Text(loc.xpOverviewTableHeaderXp)),
               ],
               rows: [
                 for (final region in MuscleRegion.values)

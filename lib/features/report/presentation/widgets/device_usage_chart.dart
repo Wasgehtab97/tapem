@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/utils/chart_interval.dart';
 
@@ -20,6 +21,8 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     final entries =
         widget.usageData.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
+
+    final loc = AppLocalizations.of(context)!;
 
     final filtered =
         entries
@@ -72,9 +75,9 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search),
-            hintText: 'Gerät filtern',
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: loc.reportDeviceFilterHint,
           ),
           onChanged: (v) => setState(() => _filter = v),
         ),
@@ -125,7 +128,7 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
                     final i = group.x.toInt();
                     final entry = display[i];
                     return BarTooltipItem(
-                      '${entry.key}\n${entry.value} Sessions',
+                      '${entry.key}\n${loc.reportDeviceUsageSessions(entry.value)}',
                       const TextStyle(color: Colors.white, fontSize: 12),
                     );
                   },

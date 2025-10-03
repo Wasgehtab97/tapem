@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/gym_provider.dart';
@@ -42,6 +43,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
   }
 
   Future<void> _create() async {
+    final loc = AppLocalizations.of(context)!;
     final title = _titleCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     final reqSets = int.tryParse(_setCtrl.text) ?? 0;
@@ -54,7 +56,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
         _deviceIds.isEmpty ||
         (_type == 'weekly' && _week == null) ||
         (_type == 'monthly' && _month == null)) {
-      setState(() => _error = 'Alle Felder ausfüllen');
+      setState(() => _error = loc.challengeAdminErrorFillAllFields);
       return;
     }
 
@@ -111,7 +113,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Fehler: $e';
+        _error = '${loc.errorPrefix}: $e';
         _saving = false;
       });
     }
@@ -120,8 +122,9 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final devices = context.watch<GymProvider>().devices;
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Challenges verwalten')),
+      appBar: AppBar(title: Text(loc.challengeAdminTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -129,12 +132,12 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
           children: [
             TextField(
               controller: _titleCtrl,
-              decoration: const InputDecoration(labelText: 'Titel'),
+              decoration: InputDecoration(labelText: loc.commonTitle),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _descCtrl,
-              decoration: const InputDecoration(labelText: 'Beschreibung'),
+              decoration: InputDecoration(labelText: loc.commonDescription),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -145,7 +148,7 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               onTap: () => context
                   .read<OverlayNumericKeypadController>()
                   .openFor(_setCtrl, allowDecimal: false),
-              decoration: const InputDecoration(labelText: 'Benötigte Sätze'),
+              decoration: InputDecoration(labelText: loc.challengeAdminFieldRequiredSets),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -156,20 +159,20 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               onTap: () => context
                   .read<OverlayNumericKeypadController>()
                   .openFor(_xpCtrl, allowDecimal: false),
-              decoration: const InputDecoration(labelText: 'XP-Reward'),
+              decoration: InputDecoration(labelText: loc.challengeAdminFieldXpReward),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _type,
-              items: const [
-                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+              items: [
+                DropdownMenuItem(value: 'weekly', child: Text(loc.challengeAdminTypeWeekly)),
+                DropdownMenuItem(value: 'monthly', child: Text(loc.challengeAdminTypeMonthly)),
               ],
               onChanged:
                   (v) => setState(() {
                     _type = v ?? 'weekly';
                   }),
-              decoration: const InputDecoration(labelText: 'Typ'),
+              decoration: InputDecoration(labelText: loc.challengeAdminFieldType),
             ),
             const SizedBox(height: 8),
             if (_type == 'weekly')
@@ -177,23 +180,23 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
                 value: _week,
                 items: [
                   for (var i = 1; i <= 53; i++)
-                    DropdownMenuItem(value: i, child: Text('KW $i')),
+                    DropdownMenuItem(value: i, child: Text(loc.challengeAdminWeekLabel(i))),
                 ],
                 onChanged: (v) => setState(() => _week = v),
-                decoration: const InputDecoration(labelText: 'Kalenderwoche'),
+                decoration: InputDecoration(labelText: loc.challengeAdminFieldWeek),
               )
             else
               DropdownButtonFormField<int>(
                 value: _month,
                 items: [
                   for (var i = 1; i <= 12; i++)
-                    DropdownMenuItem(value: i, child: Text('Monat $i')),
+                    DropdownMenuItem(value: i, child: Text(loc.challengeAdminMonthLabel(i))),
                 ],
                 onChanged: (v) => setState(() => _month = v),
-                decoration: const InputDecoration(labelText: 'Monat'),
+                decoration: InputDecoration(labelText: loc.challengeAdminFieldMonth),
               ),
             const SizedBox(height: 16),
-            const Text('Geräte', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(loc.challengeAdminFieldDevices, style: const TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(
               height: 150,
               child: ListView(

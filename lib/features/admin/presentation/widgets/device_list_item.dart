@@ -8,6 +8,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/delete_device_usecase.dart';
 import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class DeviceListItem extends StatelessWidget {
   final Device device;
@@ -24,6 +25,7 @@ class DeviceListItem extends StatelessWidget {
     final writeUC = context.read<WriteNfcTagUseCase>();
     final deleteUC = context.read<DeleteDeviceUseCase>();
     final gymId = context.read<AuthProvider>().gymCode!;
+    final loc = AppLocalizations.of(context)!;
 
     return ListTile(
       leading: Text('${device.id}'),
@@ -35,18 +37,17 @@ class DeviceListItem extends StatelessWidget {
           // NFC-Tag beschreiben
           IconButton(
             icon: const Icon(Icons.nfc),
-            tooltip: 'NFC-Tag beschreiben',
+            tooltip: loc.deviceWriteNfcTooltip,
             onPressed:
                 device.nfcCode != null
                     ? () async {
                       try {
                         await writeUC.execute(device.nfcCode!);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('NFC-Tag geschrieben')),
-                        );
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(loc.adminDeviceNfcWritten)));
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Fehler beim Schreiben: $e')),
+                          SnackBar(content: Text(loc.adminDeviceNfcWriteError(e.toString()))),
                         );
                       }
                     }
@@ -56,24 +57,22 @@ class DeviceListItem extends StatelessWidget {
           // Gerät löschen
           IconButton(
             icon: const Icon(Icons.delete),
-            tooltip: 'Gerät löschen',
+            tooltip: loc.deviceDeleteTooltip,
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder:
                     (ctx) => AlertDialog(
-                      title: const Text('Gerät löschen?'),
-                      content: Text(
-                        'Soll das Gerät "${device.name}" wirklich gelöscht werden?',
-                      ),
+                      title: Text(loc.deviceDeleteDialogTitle),
+                      content: Text(loc.deviceDeleteDialogMessage(device.name)),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Abbrechen'),
+                          child: Text(loc.commonCancel),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Löschen'),
+                          child: Text(loc.commonDelete),
                         ),
                       ],
                     ),
@@ -89,7 +88,7 @@ class DeviceListItem extends StatelessWidget {
 
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Gerät gelöscht')));
+              ).showSnackBar(SnackBar(content: Text(loc.deviceDeleteSuccess)));
             },
           ),
         ],
