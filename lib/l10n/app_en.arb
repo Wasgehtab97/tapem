@@ -343,6 +343,11 @@
     "description": "Button label on profile screen to open the statistics page"
   },
 
+  "profileStatsButtonSubtitle": "Dive into your progress highlights",
+  "@profileStatsButtonSubtitle": {
+    "description": "Subtitle for the statistics call-to-action on the profile screen"
+  },
+
   "profileStatsTitle": "Statistics",
   "@profileStatsTitle": {
     "description": "Title of the profile statistics page"

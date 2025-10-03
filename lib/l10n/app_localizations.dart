@@ -581,6 +581,12 @@ abstract class AppLocalizations {
   /// **'Statistics'**
   String get profileStatsButtonLabel;
 
+  /// Subtitle for the statistics call-to-action on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Dive into your progress highlights'**
+  String get profileStatsButtonSubtitle;
+
   /// Title of the profile statistics page
   ///
   /// In en, this message translates to:

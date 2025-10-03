@@ -343,6 +343,11 @@
     "description": "Button auf der Profilseite für die Statistik-Ansicht"
   },
 
+  "profileStatsButtonSubtitle": "Entdecke deine Fortschritte in Echtzeit",
+  "@profileStatsButtonSubtitle": {
+    "description": "Untertitel für den Statistik-Button auf der Profilseite"
+  },
+
   "profileStatsTitle": "Statistiken",
   "@profileStatsTitle": {
     "description": "Titel der Statistikseite im Profil"

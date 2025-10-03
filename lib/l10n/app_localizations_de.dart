@@ -274,6 +274,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsButtonLabel => 'Statistiken';
 
   @override
+  String get profileStatsButtonSubtitle => 'Entdecke deine Fortschritte in Echtzeit';
+
+  @override
   String get profileStatsTitle => 'Statistiken';
 
   @override
