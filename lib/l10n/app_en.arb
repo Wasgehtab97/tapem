@@ -1,6 +1,11 @@
 {
   "@@locale": "en",
 
+  "appTitle": "Tapem",
+  "@appTitle": {
+    "description": "Fallback application title for the home screen"
+  },
+
   "addSetButton": "Add set",
   "@addSetButton": {
     "description": "Button label to add a new set"

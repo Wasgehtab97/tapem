@@ -1,6 +1,11 @@
 {
   "@@locale": "de",
 
+  "appTitle": "Tapem",
+  "@appTitle": {
+    "description": "Fallback-App-Titel für den Homescreen"
+  },
+
   "addSetButton": "Set hinzufügen",
   "@addSetButton": {
     "description": "Button-Label um ein neues Set hinzuzufügen"

@@ -95,6 +95,12 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
+  /// Fallback application title for the home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tapem'**
+  String get appTitle;
+
   /// Button label to add a new set
   ///
   /// In en, this message translates to:
