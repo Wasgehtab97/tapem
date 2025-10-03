@@ -9,6 +9,9 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String get appTitle => 'Tapem';
+
+  @override
   String get addSetButton => 'Set hinzufügen';
 
   @override
