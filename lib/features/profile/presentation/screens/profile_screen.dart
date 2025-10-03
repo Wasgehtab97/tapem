@@ -145,6 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showAvatarSheet(AuthProvider auth) {
+    final loc = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (_) {
