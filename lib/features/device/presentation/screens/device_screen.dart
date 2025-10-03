@@ -29,7 +29,6 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
-import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 
 import '../models/session_set_vm.dart';
 import '../widgets/device_pager.dart';
@@ -124,6 +123,27 @@ class _DeviceScreenState extends State<DeviceScreen> {
     context.read<OverlayNumericKeypadController>().close();
   }
 
+  String? _resolveExerciseTitle(
+    BuildContext context,
+    DeviceProvider prov, {
+    List<Exercise>? exercises,
+  }) {
+    final device = prov.device;
+    if (device == null) {
+      return null;
+    }
+    if (!device.isMulti) {
+      return device.name;
+    }
+    final availableExercises =
+        exercises ?? context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
+    final match = availableExercises.where((e) => e.id == widget.exerciseId);
+    if (match.isNotEmpty) {
+      return match.first.name;
+    }
+    return device.name;
+  }
+
   AppBar _buildAppBar(
     BuildContext context,
     DeviceProvider prov,
@@ -138,23 +158,23 @@ class _DeviceScreenState extends State<DeviceScreen> {
         );
     final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
 
-    String? headerTitle;
-    final device = prov.device;
-    if (device != null) {
-      if (device.isMulti) {
-        final exercises =
-            context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
-        final match = exercises.where((e) => e.id == widget.exerciseId);
-        headerTitle = match.isNotEmpty ? match.first.name : device.name;
-      } else {
-        headerTitle = device.name;
-      }
-    }
+    final isMulti = prov.device?.isMulti ?? false;
+    final exercises = isMulti
+        ? context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises)
+        : null;
+    final headerTitle = _resolveExerciseTitle(
+      context,
+      prov,
+      exercises: exercises,
+    );
+    final hasOutlineBranding = theme.extension<AppBrandTheme>() != null;
 
     Widget titleWidget;
-    if (headerTitle != null) {
+    if (hasOutlineBranding) {
+      titleWidget = const _DeviceAppBarTimer();
+    } else if (headerTitle != null) {
       final gradientTitle = BrandGradientText(
-        headerTitle!,
+        headerTitle,
         key: ValueKey(headerTitle),
         style: titleStyle,
         textAlign: TextAlign.center,
@@ -166,21 +186,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
           tag: 'device-${prov.device!.uid}',
           child: Material(
             type: MaterialType.transparency,
-            child: TimerAppBarTitle(
-              title: gradientTitle,
-            ),
+            child: gradientTitle,
           ),
         );
       } else {
-        titleWidget = TimerAppBarTitle(
-          title: gradientTitle,
-        );
+        titleWidget = gradientTitle;
       }
     } else {
-      titleWidget = const ActiveWorkoutTimer(
-        key: ValueKey('activeWorkoutTimer'),
-        padding: EdgeInsets.zero,
-      );
+      titleWidget = const SizedBox.shrink();
     }
 
     return AppBar(
@@ -220,6 +233,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final theme = Theme.of(context);
     final outlineColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    final exercises = prov.device?.isMulti ?? false
+        ? context.watch<ExerciseProvider>().exercises
+        : null;
+    final exerciseTitle = _resolveExerciseTitle(
+      context,
+      prov,
+      exercises: exercises,
+    );
     return Column(
       children: [
         const Padding(
@@ -259,7 +280,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     else ...[
                       Center(
                         child: BrandGradientText(
-                          loc.newSessionTitle,
+                          exerciseTitle ?? loc.newSessionTitle,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 18,
@@ -549,6 +570,24 @@ class _DeviceScreenState extends State<DeviceScreen> {
         return true;
       },
       child: scaffold,
+    );
+  }
+}
+
+class _DeviceAppBarTimer extends StatelessWidget {
+  const _DeviceAppBarTimer();
+
+  @override
+  Widget build(BuildContext context) {
+    final hasOutlineBranding =
+        Theme.of(context).extension<AppBrandTheme>() != null;
+    if (!hasOutlineBranding) {
+      return const SizedBox.shrink();
+    }
+    return const ActiveWorkoutTimer(
+      key: ValueKey('deviceAppBarTimer'),
+      padding: EdgeInsets.zero,
+      compact: true,
     );
   }
 }

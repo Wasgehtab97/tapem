@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 class TimerAppBarTitle extends StatelessWidget {
@@ -13,9 +14,18 @@ class TimerAppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasOutlineBranding = theme.extension<AppBrandTheme>() != null;
     final alignment = centerTitle ? Alignment.center : Alignment.centerLeft;
     final mainAxisAlignment =
         centerTitle ? MainAxisAlignment.center : MainAxisAlignment.start;
+
+    if (!hasOutlineBranding) {
+      return Align(
+        alignment: alignment,
+        child: title,
+      );
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.max,
