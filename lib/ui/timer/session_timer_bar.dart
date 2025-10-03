@@ -95,7 +95,7 @@ class _SessionTimerBarState extends State<SessionTimerBar>
         }
 
         final backgroundColor = isBlackWhiteTheme
-            ? Colors.white.withOpacity(0.12)
+            ? Colors.black
             : theme.colorScheme.surfaceVariant;
         final borderColor = isBlackWhiteTheme
             ? Colors.white.withOpacity(0.24)
