@@ -55,8 +55,8 @@ class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildList(context, surveyProv.openSurveys, loc, open: true),
-          _buildList(context, surveyProv.closedSurveys, loc, open: false),
+          _buildList(context, surveyProv.openSurveys, loc: loc, open: true),
+          _buildList(context, surveyProv.closedSurveys, loc: loc, open: false),
         ],
       ),
     );
