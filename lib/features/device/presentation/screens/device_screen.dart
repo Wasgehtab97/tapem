@@ -740,8 +740,21 @@ class _GroupedSetList extends StatelessWidget {
     final innerRadius = outlineRadius - BorderRadius.circular(outlineWidth);
 
     bool dropActiveFor(Map<String, dynamic> set) {
-      final dropWeight = (set['dropWeight'] ?? '').toString();
-      final dropReps = (set['dropReps'] ?? '').toString();
+      final rawDrops = set['drops'];
+      if (rawDrops is List) {
+        for (final drop in rawDrops) {
+          if (drop is Map) {
+            final weight =
+                (drop['weight'] ?? drop['kg'] ?? '').toString().trim();
+            final reps = (drop['reps'] ?? drop['wdh'] ?? '').toString().trim();
+            if (weight.isNotEmpty && reps.isNotEmpty) {
+              return true;
+            }
+          }
+        }
+      }
+      final dropWeight = (set['dropWeight'] ?? '').toString().trim();
+      final dropReps = (set['dropReps'] ?? '').toString().trim();
       return dropWeight.isNotEmpty && dropReps.isNotEmpty;
     }
 

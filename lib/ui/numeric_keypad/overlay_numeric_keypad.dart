@@ -446,6 +446,7 @@ class OverlayNumericKeypad extends StatelessWidget {
       return;
     }
 
+    final dropIndex = prov.focusedDropIndex ?? 0;
     final targetController = controller.target;
     if (targetController != null) {
       final text = targetController.text;
@@ -457,16 +458,17 @@ class OverlayNumericKeypad extends StatelessWidget {
           prov.updateSet(focusedIndex, reps: text);
           break;
         case DeviceSetFieldFocus.dropWeight:
-          prov.updateSet(focusedIndex, dropWeight: text);
+          prov.updateDrop(focusedIndex, dropIndex, weight: text);
           break;
         case DeviceSetFieldFocus.dropReps:
-          prov.updateSet(focusedIndex, dropReps: text);
+          prov.updateDrop(focusedIndex, dropIndex, reps: text);
           break;
       }
     }
 
     int targetIndex = focusedIndex;
     DeviceSetFieldFocus? targetField;
+    int? targetDropIndex;
 
     switch (focusedField) {
       case DeviceSetFieldFocus.weight:
@@ -496,6 +498,7 @@ class OverlayNumericKeypad extends StatelessWidget {
         break;
       case DeviceSetFieldFocus.dropWeight:
         targetField = DeviceSetFieldFocus.dropReps;
+        targetDropIndex = dropIndex;
         break;
       case DeviceSetFieldFocus.dropReps:
         final done = prov.markSetDone(focusedIndex);
@@ -522,7 +525,11 @@ class OverlayNumericKeypad extends StatelessWidget {
     }
 
     if (targetField != null) {
-      prov.requestFocus(index: targetIndex, field: targetField);
+      prov.requestFocus(
+        index: targetIndex,
+        field: targetField,
+        dropIndex: targetDropIndex,
+      );
     }
 
     _haptic(context);

@@ -34,16 +34,32 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
   final vm = <SessionSetVM>[];
   var ordinal = 1;
   for (final s in sets) {
-    final List<DropEntry> drops =
-        (s['dropWeight'] != null && s['dropWeight']!.isNotEmpty &&
-                s['dropReps'] != null && s['dropReps']!.isNotEmpty)
-            ? [
-                DropEntry(
-                  kg: num.tryParse(s['dropWeight']!) ?? 0,
-                  reps: int.tryParse(s['dropReps']!) ?? 0,
-                )
-              ]
-            : <DropEntry>[];
+    final drops = <DropEntry>[];
+    final rawDrops = s['drops'];
+    if (rawDrops is List) {
+      for (final drop in rawDrops) {
+        if (drop is Map) {
+          final map = Map<String, dynamic>.from(drop);
+          final weightText = (map['weight'] ?? map['kg'] ?? '').toString();
+          final repsText = (map['reps'] ?? map['wdh'] ?? '').toString();
+          if (weightText.isEmpty || repsText.isEmpty) continue;
+          final weight = num.tryParse(weightText.replaceAll(',', '.')) ?? 0;
+          final reps = int.tryParse(repsText) ?? 0;
+          drops.add(DropEntry(kg: weight, reps: reps));
+        }
+      }
+    } else {
+      final dropWeight = (s['dropWeight'] ?? '').toString();
+      final dropReps = (s['dropReps'] ?? '').toString();
+      if (dropWeight.isNotEmpty && dropReps.isNotEmpty) {
+        drops.add(
+          DropEntry(
+            kg: num.tryParse(dropWeight.replaceAll(',', '.')) ?? 0,
+            reps: int.tryParse(dropReps) ?? 0,
+          ),
+        );
+      }
+    }
     vm.add(SessionSetVM(
       ordinal: ordinal++,
       kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
