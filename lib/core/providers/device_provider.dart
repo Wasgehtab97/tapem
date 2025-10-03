@@ -55,7 +55,7 @@ List<Map<String, String>> _sanitizeDrops(List<Map<String, String>> drops) {
       () {
         final weight = (drop['weight'] ?? '').toString().trim();
         final reps = (drop['reps'] ?? '').toString().trim();
-        if (weight.isEmpty || reps.isEmpty) {
+        if (weight.isEmpty && reps.isEmpty) {
           return {'weight': '', 'reps': ''};
         }
         return {'weight': weight, 'reps': reps};
