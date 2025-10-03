@@ -117,10 +117,15 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                             ? null
                             : brand?.gradient ??
                                 LinearGradient(
-                                  colors: [
-                                    theme.colorScheme.primaryContainer,
-                                    theme.colorScheme.primary,
-                                  ],
+                                  colors: isBlackWhiteTheme
+                                      ? [
+                                          Colors.white.withOpacity(0.7),
+                                          Colors.white,
+                                        ]
+                                      : [
+                                          theme.colorScheme.primaryContainer,
+                                          theme.colorScheme.primary,
+                                        ],
                                 ),
                         color: highContrast
                             ? brand?.outlineColorFallback ?? theme.colorScheme.primary
