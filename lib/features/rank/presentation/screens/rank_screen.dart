@@ -42,11 +42,12 @@ class _RankScreenState extends State<RankScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         title: BrandGradientText(
-          'Leaderboard',
+          loc.leaderboardTitle,
           style: theme.textTheme.titleLarge,
         ),
         bottom: TabBar(
@@ -54,13 +55,13 @@ class _RankScreenState extends State<RankScreen>
           tabs: [
             Tab(
               child: BrandGradientText(
-                'Rank',
+                loc.leaderboardRankTab,
                 style: theme.textTheme.titleMedium,
               ),
             ),
             Tab(
               child: BrandGradientText(
-                'Challenges',
+                loc.leaderboardChallengesTab,
                 style: theme.textTheme.titleMedium,
               ),
             ),
@@ -76,7 +77,7 @@ class _RankScreenState extends State<RankScreen>
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
                   BrandActionTile(
-                    title: AppLocalizations.of(context)!.rankExperience,
+                    title: loc.rankExperience,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
                     centerTitle: true,
@@ -88,7 +89,7 @@ class _RankScreenState extends State<RankScreen>
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
-                    title: AppLocalizations.of(context)!.rankDeviceLevel,
+                    title: loc.rankDeviceLevel,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
                     centerTitle: true,
@@ -100,7 +101,7 @@ class _RankScreenState extends State<RankScreen>
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   BrandActionTile(
-                    title: AppLocalizations.of(context)!.rankMuscleLevel,
+                    title: loc.rankMuscleLevel,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
                     centerTitle: true,

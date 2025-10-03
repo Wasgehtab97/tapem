@@ -21,6 +21,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cancelButton => 'Abbrechen';
+  String get commonOk => 'OK';
 
   @override
   String get deviceHistoryTooltip => 'Verlauf anzeigen';
@@ -103,6 +104,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get rankMuscleLevel => 'Mucki level';
+
+  @override
+  String get leaderboardTitle => 'Leaderboard';
+
+  @override
+  String get leaderboardRankTab => 'Rank';
+
+  @override
+  String get leaderboardChallengesTab => 'Challenges';
+
+  @override
+  String get xpInfoTooltip => 'XP-Info';
+
+  @override
+  String get xpInfoTitle => 'XP-Info';
+
+  @override
+  String xpInfoCurrentXp(int xp) {
+    return 'XP: $xp';
+  }
+
+  @override
+  String xpInfoLevel(Object level) {
+    return 'Level: $level';
+  }
+
+  @override
+  String xpInfoProgress(int xpRemaining, int nextLevel) {
+    return '$xpRemaining XP bis Level $nextLevel';
+  }
+
+  @override
+  String get xpInfoDetails => 'Details';
 
   @override
   String get gymCodeFieldLabel => 'Gym-Code';
@@ -229,6 +263,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileTrainingDaysTitle => 'Deine Trainingstage im Jahr';
+
+  @override
+  String get profileTrainingDaysHeading => 'Trainingstage';
 
   @override
   String get profileStatsButtonLabel => 'Statistiken';
@@ -752,6 +789,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get filterMuscleChip => 'Muskel';
 
   @override
+  String get filterRecentChip => 'Zuletzt';
+
+  @override
+  String get filterSortAz => 'A→Z';
+
+  @override
+  String get filterSortZa => 'Z→A';
+
+  @override
   String a11yMgSelected(Object name) {
     return 'Muskelgruppe: $name, ausgewählt';
   }
@@ -965,6 +1011,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportFeedbackNoOpenEntries => 'Kein offenes Feedback';
 
   @override
+  String get feedbackDialogTitle => 'Feedback';
+
+  @override
+  String get feedbackTooltip => 'Feedback';
+
+  @override
+  String get feedbackPlaceholder => 'Dein Feedback...';
+
+  @override
+  String get feedbackSubmit => 'Senden';
+
+  @override
+  String get feedbackSent => 'Feedback gesendet';
+
+  @override
   String get reportCreateSurveyTitle => 'Umfrage erstellen';
 
   @override
@@ -1056,6 +1117,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get challengeAdminFieldType => 'Typ';
+
+  @override
+  String get challengeTabActive => 'Aktiv';
+
+  @override
+  String get challengeTabCompleted => 'Abgeschlossen';
+
+  @override
+  String get challengeEmptyActive => 'Keine aktiven Challenges';
+
+  @override
+  String get challengeEmptyCompleted => 'Keine abgeschlossenen Challenges';
+
+  @override
+  String challengeDetailXpReward(int xp) {
+    return 'XP: $xp';
+  }
+
+  @override
+  String challengeDetailDevices(Object devices) {
+    return 'Geräte: $devices';
+  }
 
   @override
   String get challengeAdminTypeWeekly => 'Wöchentlich';
@@ -1181,7 +1264,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get surveyListTitle => 'Umfragen';
 
   @override
+  String get surveyTabOpen => 'Offen';
+
+  @override
+  String get surveyTabClosed => 'Abgeschlossen';
+
+  @override
   String get surveyEmpty => 'Keine offenen Umfragen';
+
+  @override
+  String get surveyEmptyClosed => 'Keine abgeschlossenen Umfragen';
 
   @override
   String get surveyResultsTitle => 'Ergebnisse';

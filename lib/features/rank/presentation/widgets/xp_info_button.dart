@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class XpInfoButton extends StatelessWidget {
   final int xp;
@@ -16,44 +17,46 @@ class XpInfoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final iconColor = color ?? Theme.of(context).iconTheme.color;
     return IconButton(
       icon: Icon(Icons.auto_awesome, color: iconColor),
-      tooltip: 'XP',
+      tooltip: loc.xpInfoTooltip,
       onPressed: () => _showInfo(context),
     );
   }
 
   void _showInfo(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final xpRemaining = LevelService.xpPerLevel - xp;
+    final nextLevel = level + 1;
     showDialog(
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('XP Info'),
+            title: Text(loc.xpInfoTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('XP: $xp'),
-                Text('Level: ${_toRoman(level)}'),
+                Text(loc.xpInfoCurrentXp(xp)),
+                Text(loc.xpInfoLevel(_toRoman(level))),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(value: xp / LevelService.xpPerLevel),
-                Text(
-                  '${LevelService.xpPerLevel - xp} XP bis Level ${level + 1}',
-                ),
+                Text(loc.xpInfoProgress(xpRemaining, nextLevel)),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                child: Text(loc.commonOk),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).pushNamed(AppRouter.xpOverview);
                 },
-                child: const Text('Details'),
+                child: Text(loc.xpInfoDetails),
               ),
             ],
           ),

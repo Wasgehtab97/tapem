@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class FriendTrainingCalendarScreen extends StatefulWidget {
   final String friendUid;
@@ -43,21 +44,22 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
   Widget build(BuildContext context) {
     final prov = context.watch<FriendCalendarProvider>();
     final dates = prov.trainingDates;
+    final loc = AppLocalizations.of(context)!;
 
     Widget body;
     if (prov.isLoading) {
       body = const Center(child: CircularProgressIndicator());
     } else if (prov.error != null) {
-      body = const Center(child: Text('Nur für Freunde sichtbar'));
+      body = Center(child: Text(loc.friends_privacy_no_access));
     } else {
       body = Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Trainingstage',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Text(
+              loc.friends_action_training_days,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Expanded(

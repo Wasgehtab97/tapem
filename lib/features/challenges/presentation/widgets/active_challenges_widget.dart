@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+
 import '../../../../core/providers/challenge_provider.dart';
 
 class ActiveChallengesWidget extends StatelessWidget {
@@ -8,8 +10,9 @@ class ActiveChallengesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final challenges = context.watch<ChallengeProvider>().challenges;
+    final loc = AppLocalizations.of(context)!;
     if (challenges.isEmpty) {
-      return const Center(child: Text('Keine aktiven Challenges'));
+      return Center(child: Text(loc.challengeEmptyActive));
     }
     return ListView.builder(
       itemCount: challenges.length,
@@ -31,15 +34,15 @@ class ActiveChallengesWidget extends StatelessWidget {
                         children: [
                           Text(c.description),
                           const SizedBox(height: 8),
-                          Text('XP: ${c.xpReward}'),
+                          Text(loc.challengeDetailXpReward(c.xpReward)),
                           const SizedBox(height: 8),
-                          Text('Geräte: ${c.deviceIds.join(', ')}'),
+                          Text(loc.challengeDetailDevices(c.deviceIds.join(', '))),
                         ],
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Schließen'),
+                          child: Text(loc.commonOk),
                         ),
                       ],
                     ),

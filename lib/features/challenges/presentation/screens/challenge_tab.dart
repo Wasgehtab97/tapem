@@ -5,6 +5,7 @@ import '../../../../core/providers/gym_provider.dart';
 import '../widgets/active_challenges_widget.dart';
 import '../widgets/completed_challenges_widget.dart';
 import '../../../../core/providers/challenge_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class ChallengeTab extends StatefulWidget {
   const ChallengeTab({Key? key}) : super(key: key);
@@ -36,11 +37,15 @@ class _ChallengeTabState extends State<ChallengeTab>
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Column(
       children: [
         TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'Aktiv'), Tab(text: 'Abgeschlossen')],
+          tabs: [
+            Tab(text: loc.challengeTabActive),
+            Tab(text: loc.challengeTabCompleted),
+          ],
         ),
         Expanded(
           child: TabBarView(
