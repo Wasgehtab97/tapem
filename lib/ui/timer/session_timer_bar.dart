@@ -79,11 +79,20 @@ class _SessionTimerBarState extends State<SessionTimerBar>
       builder: (context, remaining, _) {
         final progress =
             1 - (remaining.inMilliseconds / _controller.total.inMilliseconds).clamp(0.0, 1.0);
-        final textColor = Color.lerp(
+        Color? textColor = Color.lerp(
           theme.colorScheme.onSurface,
           theme.colorScheme.onPrimary,
           progress,
         );
+
+        final isBlackWhiteTheme =
+            theme.colorScheme.background == Colors.black &&
+                theme.colorScheme.primary == Colors.white &&
+                theme.colorScheme.onPrimary == Colors.black;
+
+        if (isBlackWhiteTheme) {
+          textColor = Colors.white;
+        }
         return Semantics(
           label: loc.timerPauseLabel,
           value: _fmt(remaining),
