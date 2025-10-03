@@ -17,7 +17,7 @@ import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/ui/timer/active_workout_timer.dart';
+import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -134,17 +134,20 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;
     }
+    final currentTab = tabs[_currentIndex];
+    final currentLabel = currentTab.item.label ?? '';
+
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
         centerTitle: true,
-        title: _buildAppBarTitle(context),
+        title: _buildAppBarTitle(context, currentLabel),
         actions: const [
           NfcScanButton(),
           SizedBox(width: 8),
         ],
       ),
-      body: tabs[_currentIndex].page,
+      body: currentTab.page,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
@@ -154,30 +157,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAppBarTitle(BuildContext context) {
+  Widget _buildAppBarTitle(BuildContext context, String currentLabel) {
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
 
     switch (_currentIndex) {
       case 0:
-        return BrandGradientText(
-          loc.gymTitle,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        return TimerAppBarTitle(
+          title: BrandGradientText(
+            loc.gymTitle,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       case 1:
         final username = auth.userName ?? auth.userEmail ?? loc.profileTitle;
-        return BrandGradientText(
-          username,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        return TimerAppBarTitle(
+          title: BrandGradientText(
+            username,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       default:
-        return const ActiveWorkoutTimer();
+        final resolvedLabel = currentLabel.isNotEmpty ? currentLabel : loc.appTitle;
+        return TimerAppBarTitle(
+          title: BrandGradientText(
+            resolvedLabel,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
     }
   }
 }

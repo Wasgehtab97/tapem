@@ -29,6 +29,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
+import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 
 import '../models/session_set_vm.dart';
 import '../widgets/device_pager.dart';
@@ -165,11 +166,15 @@ class _DeviceScreenState extends State<DeviceScreen> {
           tag: 'device-${prov.device!.uid}',
           child: Material(
             type: MaterialType.transparency,
-            child: gradientTitle,
+            child: TimerAppBarTitle(
+              title: gradientTitle,
+            ),
           ),
         );
       } else {
-        titleWidget = gradientTitle;
+        titleWidget = TimerAppBarTitle(
+          title: gradientTitle,
+        );
       }
     } else {
       titleWidget = const ActiveWorkoutTimer(
