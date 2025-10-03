@@ -240,8 +240,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsTotalTrainingDays => 'Trainingstage insgesamt';
 
   @override
-  String get profileStatsAverageTrainingDaysPerWeek =>
-      'Durchschnittliche Trainingstage/Woche';
+  String get profileStatsAverageTrainingDaysPerWeek => 'Durchschnittliche Trainingstage/Woche';
 
   @override
   String get profileStatsFavoriteExercise => 'Lieblingsübung';
@@ -271,12 +270,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get powerliftingClearTooltip => 'Board zurücksetzen';
 
   @override
-  String get powerliftingClearConfirmTitle =>
-      'Powerlifting-Board zurücksetzen?';
+  String get powerliftingClearConfirmTitle => 'Powerlifting-Board zurücksetzen?';
 
   @override
-  String get powerliftingClearConfirmMessage =>
-      'Dadurch werden alle verknüpften Geräte aus deinem Powerlifting-Board entfernt. Möchtest du fortfahren?';
+  String get powerliftingClearConfirmMessage => 'Dadurch werden alle verknüpften Geräte aus deinem Powerlifting-Board entfernt. Möchtest du fortfahren?';
 
   @override
   String get powerliftingClearConfirmAction => 'Zurücksetzen';
@@ -285,12 +282,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get powerliftingClearSuccess => 'Powerlifting-Board zurückgesetzt.';
 
   @override
-  String get powerliftingClearError =>
-      'Powerlifting-Board konnte nicht zurückgesetzt werden.';
+  String get powerliftingClearError => 'Powerlifting-Board konnte nicht zurückgesetzt werden.';
 
   @override
-  String get powerliftingIntro =>
-      'Verknüpfe alle Geräte mit der jeweiligen Disziplin um deinen PR Fortschritt zu tracken.';
+  String get powerliftingIntro => 'Verknüpfe alle Geräte mit der jeweiligen Disziplin um deinen PR Fortschritt zu tracken.';
 
   @override
   String get powerliftingHeaviestTable => 'Schwerste Sätze';
@@ -302,8 +297,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get powerliftingEmptyTitle => 'Baue dein Powerlifting-Board';
 
   @override
-  String get powerliftingEmptyDescription =>
-      'Füge Geräte oder Übungen für Bankdrücken, Kniebeugen und Kreuzheben hinzu, um automatisch deine schwersten Sätze zu sammeln.';
+  String get powerliftingEmptyDescription => 'Füge Geräte oder Übungen für Bankdrücken, Kniebeugen und Kreuzheben hinzu, um automatisch deine schwersten Sätze zu sammeln.';
 
   @override
   String get powerliftingAddButton => 'Powerlifting-Quelle hinzufügen';
@@ -322,8 +316,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get powerliftingDeviceIsMultiNote =>
-      'Multi-Gerät – wähle anschließend eine Übung';
+  String get powerliftingDeviceIsMultiNote => 'Multi-Gerät – wähle anschließend eine Übung';
 
   @override
   String powerliftingExerciseSheetTitle(String device) {
@@ -331,12 +324,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get powerliftingNoGymError =>
-      'Wähle zuerst ein Studio, um Powerlifting zu verwalten.';
+  String get powerliftingNoGymError => 'Wähle zuerst ein Studio, um Powerlifting zu verwalten.';
 
   @override
-  String get powerliftingNoDevicesError =>
-      'Keine Geräte in diesem Studio gefunden.';
+  String get powerliftingNoDevicesError => 'Keine Geräte in diesem Studio gefunden.';
 
   @override
   String powerliftingNoExercisesError(String device) {
@@ -344,12 +335,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get powerliftingAddError =>
-      'Powerlifting-Quelle konnte nicht hinzugefügt werden.';
+  String get powerliftingAddError => 'Powerlifting-Quelle konnte nicht hinzugefügt werden.';
 
   @override
-  String get powerliftingDuplicateError =>
-      'Dieses Gerät bzw. diese Übung ist bereits verknüpft.';
+  String get powerliftingDuplicateError => 'Dieses Gerät bzw. diese Übung ist bereits verknüpft.';
 
   @override
   String get powerliftingAddSuccess => 'Powerlifting-Quelle hinzugefügt.';

@@ -240,8 +240,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsTotalTrainingDays => 'Total training days';
 
   @override
-  String get profileStatsAverageTrainingDaysPerWeek =>
-      'Avg. training days per week';
+  String get profileStatsAverageTrainingDaysPerWeek => 'Avg. training days per week';
 
   @override
   String get profileStatsFavoriteExercise => 'Favourite exercise';
@@ -274,8 +273,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powerliftingClearConfirmTitle => 'Reset powerlifting board?';
 
   @override
-  String get powerliftingClearConfirmMessage =>
-      'This removes all linked devices for your powerlifting board. Do you want to continue?';
+  String get powerliftingClearConfirmMessage => 'This removes all linked devices for your powerlifting board. Do you want to continue?';
 
   @override
   String get powerliftingClearConfirmAction => 'Reset';
@@ -284,12 +282,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powerliftingClearSuccess => 'Powerlifting board reset.';
 
   @override
-  String get powerliftingClearError =>
-      'Powerlifting board could not be reset.';
+  String get powerliftingClearError => 'Powerlifting board could not be reset.';
 
   @override
-  String get powerliftingIntro =>
-      'Link every device to its discipline to keep track of your PR progress.';
+  String get powerliftingIntro => 'Link every device to its discipline to keep track of your PR progress.';
 
   @override
   String get powerliftingHeaviestTable => 'Heaviest sets';
@@ -301,8 +297,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get powerliftingEmptyTitle => 'Build your powerlifting board';
 
   @override
-  String get powerliftingEmptyDescription =>
-      'Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.';
+  String get powerliftingEmptyDescription => 'Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.';
 
   @override
   String get powerliftingAddButton => 'Add powerlifting source';
@@ -321,8 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get powerliftingDeviceIsMultiNote =>
-      'Multi device – choose an exercise next';
+  String get powerliftingDeviceIsMultiNote => 'Multi device – choose an exercise next';
 
   @override
   String powerliftingExerciseSheetTitle(String device) {
@@ -330,8 +324,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get powerliftingNoGymError =>
-      'Select a gym first to manage powerlifting.';
+  String get powerliftingNoGymError => 'Select a gym first to manage powerlifting.';
 
   @override
   String get powerliftingNoDevicesError => 'No devices found in this gym.';
@@ -342,12 +335,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get powerliftingAddError =>
-      'Could not add powerlifting source.';
+  String get powerliftingAddError => 'Could not add powerlifting source.';
 
   @override
-  String get powerliftingDuplicateError =>
-      'This device or exercise is already linked.';
+  String get powerliftingDuplicateError => 'This device or exercise is already linked.';
 
   @override
   String get powerliftingAddSuccess => 'Powerlifting source added.';

@@ -503,43 +503,43 @@ abstract class AppLocalizations {
   /// **'Your training days of the year'**
   String get profileTrainingDaysTitle;
 
-  /// No description provided for @profileStatsButtonLabel.
+  /// Button label on profile screen to open the statistics page
   ///
   /// In en, this message translates to:
   /// **'Statistics'**
   String get profileStatsButtonLabel;
 
-  /// No description provided for @profileStatsTitle.
+  /// Title of the profile statistics page
   ///
   /// In en, this message translates to:
   /// **'Statistics'**
   String get profileStatsTitle;
 
-  /// No description provided for @profileStatsTotalTrainingDays.
+  /// KPI label for total number of training days
   ///
   /// In en, this message translates to:
   /// **'Total training days'**
   String get profileStatsTotalTrainingDays;
 
-  /// No description provided for @profileStatsAverageTrainingDaysPerWeek.
+  /// KPI label for average training days per week
   ///
   /// In en, this message translates to:
   /// **'Avg. training days per week'**
   String get profileStatsAverageTrainingDaysPerWeek;
 
-  /// No description provided for @profileStatsFavoriteExercise.
+  /// KPI label for favourite exercise
   ///
   /// In en, this message translates to:
   /// **'Favourite exercise'**
   String get profileStatsFavoriteExercise;
 
-  /// No description provided for @profileStatsFavoriteExerciseFallback.
+  /// Fallback text when there is no favourite exercise
   ///
   /// In en, this message translates to:
   /// **'No sessions yet'**
   String get profileStatsFavoriteExerciseFallback;
 
-  /// No description provided for @profileStatsPowerliftingButton.
+  /// Button label that opens the powerlifting overview
   ///
   /// In en, this message translates to:
   /// **'Powerlifting'**
@@ -563,175 +563,175 @@ abstract class AppLocalizations {
   /// **'Integer'**
   String get intRequired;
 
-  /// No description provided for @powerliftingTitle.
+  /// Title of the powerlifting statistics page
   ///
   /// In en, this message translates to:
   /// **'Powerlifting'**
   String get powerliftingTitle;
 
-  /// No description provided for @powerliftingAddTooltip.
+  /// Tooltip for the add button on the powerlifting page
   ///
   /// In en, this message translates to:
   /// **'Assign devices'**
   String get powerliftingAddTooltip;
 
-  /// No description provided for @powerliftingClearTooltip.
+  /// Tooltip for the reset button on the powerlifting page
   ///
   /// In en, this message translates to:
   /// **'Reset powerlifting board'**
   String get powerliftingClearTooltip;
 
-  /// No description provided for @powerliftingClearConfirmTitle.
+  /// Confirmation dialog title before clearing assignments
   ///
   /// In en, this message translates to:
   /// **'Reset powerlifting board?'**
   String get powerliftingClearConfirmTitle;
 
-  /// No description provided for @powerliftingClearConfirmMessage.
+  /// Confirmation dialog message before clearing assignments
   ///
   /// In en, this message translates to:
   /// **'This removes all linked devices for your powerlifting board. Do you want to continue?'**
   String get powerliftingClearConfirmMessage;
 
-  /// No description provided for @powerliftingClearConfirmAction.
+  /// Confirmation dialog action to clear assignments
   ///
   /// In en, this message translates to:
   /// **'Reset'**
   String get powerliftingClearConfirmAction;
 
-  /// No description provided for @powerliftingClearSuccess.
+  /// Snackbar shown after clearing assignments
   ///
   /// In en, this message translates to:
   /// **'Powerlifting board reset.'**
   String get powerliftingClearSuccess;
 
-  /// No description provided for @powerliftingClearError.
+  /// Snackbar shown when clearing assignments fails
   ///
   /// In en, this message translates to:
   /// **'Powerlifting board could not be reset.'**
   String get powerliftingClearError;
 
-  /// No description provided for @powerliftingIntro.
+  /// Introductory text on the powerlifting page
   ///
   /// In en, this message translates to:
-  /// **'Link your favourite devices and exercises to track your strongest bench press, squat and deadlift sets.'**
+  /// **'Link every device to its discipline to keep track of your PR progress.'**
   String get powerliftingIntro;
 
-  /// No description provided for @powerliftingHeaviestTable.
+  /// Label for the heaviest set table view
   ///
   /// In en, this message translates to:
   /// **'Heaviest sets'**
   String get powerliftingHeaviestTable;
 
-  /// No description provided for @powerliftingE1rmTable.
+  /// Label for the E1RM table view
   ///
   /// In en, this message translates to:
   /// **'E1RM'**
   String get powerliftingE1rmTable;
 
-  /// No description provided for @powerliftingEmptyTitle.
+  /// Title shown when no powerlifting sources are configured
   ///
   /// In en, this message translates to:
   /// **'Build your powerlifting board'**
   String get powerliftingEmptyTitle;
 
-  /// No description provided for @powerliftingEmptyDescription.
+  /// Description shown when there are no powerlifting assignments
   ///
   /// In en, this message translates to:
   /// **'Add devices or exercises for bench press, squat and deadlift to automatically collect your heaviest sets.'**
   String get powerliftingEmptyDescription;
 
-  /// No description provided for @powerliftingAddButton.
+  /// Button label in the empty state to add a source
   ///
   /// In en, this message translates to:
   /// **'Add powerlifting source'**
   String get powerliftingAddButton;
 
-  /// No description provided for @powerliftingDisciplineSheetTitle.
+  /// Bottom sheet title when selecting the discipline
   ///
   /// In en, this message translates to:
   /// **'Choose discipline'**
   String get powerliftingDisciplineSheetTitle;
 
-  /// No description provided for @powerliftingAssignmentSheetTitle.
+  /// Bottom sheet title when selecting multiple devices and exercises
   ///
   /// In en, this message translates to:
   /// **'Select devices and exercises for {discipline}'**
   String powerliftingAssignmentSheetTitle(String discipline);
 
-  /// No description provided for @powerliftingDeviceSheetTitle.
+  /// Bottom sheet title when choosing a device
   ///
   /// In en, this message translates to:
   /// **'Select a device for {discipline}'**
   String powerliftingDeviceSheetTitle(String discipline);
 
-  /// No description provided for @powerliftingDeviceIsMultiNote.
+  /// Subtitle for multi devices in the selection sheet
   ///
   /// In en, this message translates to:
   /// **'Multi device – choose an exercise next'**
   String get powerliftingDeviceIsMultiNote;
 
-  /// No description provided for @powerliftingExerciseSheetTitle.
+  /// Bottom sheet title when choosing an exercise
   ///
   /// In en, this message translates to:
   /// **'Select exercise on {device}'**
   String powerliftingExerciseSheetTitle(String device);
 
-  /// No description provided for @powerliftingNoGymError.
+  /// Snackbar message when no gym is selected
   ///
   /// In en, this message translates to:
   /// **'Select a gym first to manage powerlifting.'**
   String get powerliftingNoGymError;
 
-  /// No description provided for @powerliftingNoDevicesError.
+  /// Snackbar message when no devices are available
   ///
   /// In en, this message translates to:
   /// **'No devices found in this gym.'**
   String get powerliftingNoDevicesError;
 
-  /// No description provided for @powerliftingNoExercisesError.
+  /// Snackbar message when a multi device has no exercises
   ///
   /// In en, this message translates to:
   /// **'Create an exercise on {device} first.'**
   String powerliftingNoExercisesError(String device);
 
-  /// No description provided for @powerliftingAddError.
+  /// Fallback error when assigning a source fails
   ///
   /// In en, this message translates to:
   /// **'Could not add powerlifting source.'**
   String get powerliftingAddError;
 
-  /// No description provided for @powerliftingDuplicateError.
+  /// Error shown when the source already exists
   ///
   /// In en, this message translates to:
   /// **'This device or exercise is already linked.'**
   String get powerliftingDuplicateError;
 
-  /// No description provided for @powerliftingAddSuccess.
+  /// Confirmation when a powerlifting source is added
   ///
   /// In en, this message translates to:
   /// **'Powerlifting source added.'**
   String get powerliftingAddSuccess;
 
-  /// No description provided for @powerliftingNoRecords.
+  /// Placeholder when no records exist for a discipline
   ///
   /// In en, this message translates to:
   /// **'No records yet'**
   String get powerliftingNoRecords;
 
-  /// No description provided for @powerliftingBenchPress.
+  /// Label for bench press discipline
   ///
   /// In en, this message translates to:
   /// **'Bench press'**
   String get powerliftingBenchPress;
 
-  /// No description provided for @powerliftingSquat.
+  /// Label for squat discipline
   ///
   /// In en, this message translates to:
   /// **'Squat'**
   String get powerliftingSquat;
 
-  /// No description provided for @powerliftingDeadlift.
+  /// Label for deadlift discipline
   ///
   /// In en, this message translates to:
   /// **'Deadlift'**
@@ -920,7 +920,7 @@ abstract class AppLocalizations {
   /// Label for the weight input field when bodyweight mode is active
   ///
   /// In en, this message translates to:
-  /// **'Bodyweight + extra ({unit})'**
+  /// **'BW + extra ({unit})'**
   String bodyweightFieldLabel(Object unit);
 
   /// Indicator shown when bodyweight mode is enabled
