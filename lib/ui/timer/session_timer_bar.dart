@@ -93,6 +93,34 @@ class _SessionTimerBarState extends State<SessionTimerBar>
         if (isBlackWhiteTheme) {
           textColor = Colors.white;
         }
+
+        final backgroundColor = isBlackWhiteTheme
+            ? Colors.white.withOpacity(0.12)
+            : theme.colorScheme.surfaceVariant;
+        final borderColor = isBlackWhiteTheme
+            ? Colors.white.withOpacity(0.24)
+            : Colors.transparent;
+        final progressDecoration = BoxDecoration(
+          gradient: highContrast
+              ? null
+              : isBlackWhiteTheme
+                  ? LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.45),
+                        Colors.white,
+                      ],
+                    )
+                  : brand?.gradient ??
+                      LinearGradient(
+                        colors: [
+                          theme.colorScheme.primaryContainer,
+                          theme.colorScheme.primary,
+                        ],
+                      ),
+          color: highContrast
+              ? brand?.outlineColorFallback ?? theme.colorScheme.primary
+              : null,
+        );
         return Semantics(
           label: loc.timerPauseLabel,
           value: _fmt(remaining),
@@ -102,7 +130,8 @@ class _SessionTimerBarState extends State<SessionTimerBar>
             child: Container(
               height: 60,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant,
+                color: backgroundColor,
+                border: Border.all(color: borderColor),
                 borderRadius: BorderRadius.circular(12),
               ),
               clipBehavior: Clip.hardEdge,
@@ -112,25 +141,7 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                     alignment: Alignment.centerLeft,
                     widthFactor: progress,
                     child: Container(
-                      decoration: BoxDecoration(
-                        gradient: highContrast
-                            ? null
-                            : brand?.gradient ??
-                                LinearGradient(
-                                  colors: isBlackWhiteTheme
-                                      ? [
-                                          Colors.white.withOpacity(0.7),
-                                          Colors.white,
-                                        ]
-                                      : [
-                                          theme.colorScheme.primaryContainer,
-                                          theme.colorScheme.primary,
-                                        ],
-                                ),
-                        color: highContrast
-                            ? brand?.outlineColorFallback ?? theme.colorScheme.primary
-                            : null,
-                      ),
+                      decoration: progressDecoration,
                     ),
                   ),
                   Row(
