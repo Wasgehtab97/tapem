@@ -31,6 +31,7 @@ import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 
+import '../../../device/domain/models/exercise.dart';
 import '../models/session_set_vm.dart';
 import '../widgets/device_pager.dart';
 import '../widgets/last_session_card.dart';

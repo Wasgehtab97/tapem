@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 
@@ -28,11 +29,14 @@ class ActiveWorkoutTimer extends StatelessWidget {
             final formatted = formatDurationHm(duration);
             final theme = Theme.of(context);
             final brand = theme.extension<AppBrandTheme>();
+            final onColors = theme.extension<BrandOnColors>();
             final gradient = brand?.gradient;
             final colors = theme.colorScheme;
             final gradientColors = gradient?.colors ?? const <Color>[];
             final hasUsableGradient = gradientColors.isNotEmpty &&
                 gradientColors.any((c) => c.computeLuminance() > 0.2);
+
+            final isOutlineBrandTheme = brand != null && onColors != null;
 
             Color? backgroundColor;
             final LinearGradient? resolvedGradient;
@@ -46,7 +50,12 @@ class ActiveWorkoutTimer extends StatelessWidget {
                             .every((c) => c.computeLuminance() < 0.05) ??
                         false);
 
-            if (hasUsableGradient) {
+            if (isOutlineBrandTheme) {
+              resolvedGradient = null;
+              backgroundColor = null;
+              foregroundColor = brand?.outline ?? onColors?.onGradient ??
+                  colors.onSecondaryContainer;
+            } else if (hasUsableGradient) {
               resolvedGradient = gradient;
               backgroundColor = null;
               foregroundColor = brand?.onBrand ?? colors.onSecondaryContainer;
@@ -82,34 +91,68 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     : theme.textTheme.titleMedium) ??
                 theme.textTheme.bodyMedium ??
                 const TextStyle(fontSize: 14);
-            final content = DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: resolvedGradient,
-                color: backgroundColor,
-                borderRadius: borderRadius,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: iconSize,
+            final outlineRadius =
+                (brand?.outlineRadius ?? borderRadius) as BorderRadius;
+            final outlineWidth = brand?.outlineWidth ?? 2.0;
+            final innerRadius = outlineRadius - BorderRadius.circular(outlineWidth);
+            final outlineSurfaceColor = theme.appBarTheme.backgroundColor ??
+                theme.colorScheme.surface;
+
+            final chipBody = Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: iconSize,
+                    color: foregroundColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    formatted,
+                    style: baseTextStyle.copyWith(
                       color: foregroundColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      formatted,
-                      style: baseTextStyle.copyWith(
-                        color: foregroundColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
+
+            Widget content;
+            if (isOutlineBrandTheme) {
+              content = Container(
+                decoration: BoxDecoration(
+                  gradient: brand?.outlineGradient,
+                  color: brand?.outlineGradient == null ? brand?.outline : null,
+                  borderRadius: outlineRadius,
+                ),
+                child: Container(
+                  margin: EdgeInsets.all(outlineWidth),
+                  decoration: BoxDecoration(
+                    color: outlineSurfaceColor,
+                    borderRadius: innerRadius,
+                    border: brand?.outlineGradient == null
+                        ? Border.all(
+                            color: brand?.outline ?? foregroundColor,
+                            width: outlineWidth,
+                          )
+                        : null,
+                  ),
+                  child: chipBody,
+                ),
+              );
+            } else {
+              content = DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: resolvedGradient,
+                  color: backgroundColor,
+                  borderRadius: borderRadius,
+                ),
+                child: chipBody,
+              );
+            }
 
             return Padding(
               padding: resolvedPadding,
