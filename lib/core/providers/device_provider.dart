@@ -659,6 +659,7 @@ class DeviceProvider extends ChangeNotifier {
     _onSessionMutated();
     if (toggledToDone) {
       _maybeStartSessionTimer();
+      _recordSetCompletionForTimer();
     }
     return true;
   }
@@ -683,6 +684,7 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
     _onSessionMutated();
     _maybeStartSessionTimer();
+    _recordSetCompletionForTimer();
     return true;
   }
 
@@ -736,6 +738,7 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
     _onSessionMutated();
     _maybeStartSessionTimer();
+    _recordSetCompletionForTimer();
     return idx;
   }
 
@@ -755,6 +758,7 @@ class DeviceProvider extends ChangeNotifier {
       notifyListeners();
       _onSessionMutated();
       _maybeStartSessionTimer();
+      _recordSetCompletionForTimer();
     }
     return count;
   }
@@ -817,6 +821,16 @@ class DeviceProvider extends ChangeNotifier {
     if (uid == null || gymId == null) return;
     if (!_hasCompletedSets()) return;
     unawaited(durationService.start(uid: uid, gymId: gymId));
+  }
+
+  void _recordSetCompletionForTimer() {
+    final durationService = _sessionDurationService;
+    if (durationService == null) return;
+    unawaited(
+      durationService.registerSetCompletion(
+        completedAt: DateTime.now(),
+      ),
+    );
   }
 
   void _onSessionMutated() {

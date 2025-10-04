@@ -36,7 +36,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   Timer? _autoStopTimer;
   String? _firstSessionId;
   String? _lastSessionId;
-  int? _lastSessionEpochMs;
+  int? _lastActivityEpochMs;
 
   WorkoutSessionDurationService({
     FirebaseFirestore? firestore,
@@ -83,7 +83,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _activePrefsKey = newKey;
     _firstSessionId = null;
     _lastSessionId = null;
-    _lastSessionEpochMs = null;
+    _lastActivityEpochMs = null;
     _startEpochMs = null;
     var shouldNotify = false;
 
@@ -95,11 +95,12 @@ class WorkoutSessionDurationService extends ChangeNotifier {
           _startEpochMs = data['startEpochMs'] as int?;
           _firstSessionId = data['firstSessionId'] as String?;
           _lastSessionId = data['lastSessionId'] as String?;
-          final lastMs = data['lastSessionEpochMs'];
+          final lastMs =
+              data['lastActivityEpochMs'] ?? data['lastSessionEpochMs'];
           if (lastMs is int) {
-            _lastSessionEpochMs = lastMs;
+            _lastActivityEpochMs = lastMs;
           } else if (lastMs is num) {
-            _lastSessionEpochMs = lastMs.toInt();
+            _lastActivityEpochMs = lastMs.toInt();
           }
         } catch (_) {
           // ignore malformed persisted state
@@ -142,7 +143,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _startEpochMs = now;
     _firstSessionId = null;
     _lastSessionId = null;
-    _lastSessionEpochMs = null;
+    _lastActivityEpochMs = null;
     _autoStopTimer?.cancel();
     _isRunning = true;
     await _persistState();
@@ -158,7 +159,16 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     if (!_isRunning || _startEpochMs == null) return;
     _firstSessionId ??= sessionId;
     _lastSessionId = sessionId;
-    _lastSessionEpochMs = completedAt.millisecondsSinceEpoch;
+    _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
+    await _persistState();
+    _scheduleAutoStop();
+  }
+
+  Future<void> registerSetCompletion({
+    required DateTime completedAt,
+  }) async {
+    if (!_isRunning || _startEpochMs == null) return;
+    _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
     await _persistState();
     _scheduleAutoStop();
   }
@@ -293,7 +303,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _activePrefsKey = null;
     _firstSessionId = null;
     _lastSessionId = null;
-    _lastSessionEpochMs = null;
+    _lastActivityEpochMs = null;
     _ticker?.cancel();
     _autoStopTimer?.cancel();
     _autoStopTimer = null;
@@ -347,14 +357,17 @@ class WorkoutSessionDurationService extends ChangeNotifier {
       'gymId': gymId,
       if (_firstSessionId != null) 'firstSessionId': _firstSessionId,
       if (_lastSessionId != null) 'lastSessionId': _lastSessionId,
-      if (_lastSessionEpochMs != null) 'lastSessionEpochMs': _lastSessionEpochMs,
+      if (_lastActivityEpochMs != null) ...{
+        'lastActivityEpochMs': _lastActivityEpochMs,
+        'lastSessionEpochMs': _lastActivityEpochMs,
+      },
     };
     await prefs.setString(_prefsKeyFor(uid, gymId), jsonEncode(data));
     await prefs.remove('$_prefsKeyPrefix$uid');
   }
 
   void _scheduleAutoStop() {
-    if (!_isRunning || _lastSessionEpochMs == null) return;
+    if (!_isRunning || _lastActivityEpochMs == null) return;
     _autoStopTimer?.cancel();
     if (_autoStopDelay <= Duration.zero) {
       unawaited(_autoFinalize());
@@ -366,9 +379,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   }
 
   void _resumeAutoStopTimer() {
-    if (!_isRunning || _lastSessionEpochMs == null) return;
+    if (!_isRunning || _lastActivityEpochMs == null) return;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final target = _lastSessionEpochMs! + _autoStopDelay.inMilliseconds;
+    final target = _lastActivityEpochMs! + _autoStopDelay.inMilliseconds;
     final remainingMs = target - nowMs;
     if (remainingMs <= 0) {
       unawaited(_autoFinalize());
@@ -381,10 +394,10 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   }
 
   Future<void> _autoFinalize() async {
-    if (!_isRunning || _startEpochMs == null || _lastSessionEpochMs == null) {
+    if (!_isRunning || _startEpochMs == null || _lastActivityEpochMs == null) {
       return;
     }
-    final end = DateTime.fromMillisecondsSinceEpoch(_lastSessionEpochMs!);
+    final end = DateTime.fromMillisecondsSinceEpoch(_lastActivityEpochMs!);
     final sid = _firstSessionId ?? _lastSessionId;
     await save(endTime: end, sessionId: sid);
   }

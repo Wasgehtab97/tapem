@@ -61,6 +61,40 @@ void main() {
     expect(data['durationMs'], expectedDuration);
   });
 
+  test('auto stop after inactivity uses last set completion timestamp', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(
+      firestore: firestore,
+      autoStopDelay: const Duration(milliseconds: 50),
+    );
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'u1', gymId: 'g1');
+    final setCompletion = DateTime.now().add(const Duration(minutes: 45));
+    await service.registerSetCompletion(completedAt: setCompletion);
+
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+
+    expect(service.isRunning, isFalse);
+
+    final snap = await firestore
+        .collection('gyms')
+        .doc('g1')
+        .collection('users')
+        .doc('u1')
+        .collection('session_meta')
+        .get();
+
+    expect(snap.docs, hasLength(1));
+    final data = snap.docs.single.data();
+    final startTs = data['startTime'] as Timestamp;
+    final endTs = data['endTime'] as Timestamp;
+    expect(endTs.toDate(), setCompletion);
+    final expectedDuration = setCompletion.millisecondsSinceEpoch -
+        startTs.toDate().millisecondsSinceEpoch;
+    expect(data['durationMs'], expectedDuration);
+  });
+
   test('setActiveContext isolates timers per user and gym', () async {
     final firestore = FakeFirebaseFirestore();
     final service = WorkoutSessionDurationService(firestore: firestore);
