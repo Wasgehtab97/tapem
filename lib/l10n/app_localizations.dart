@@ -941,6 +941,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveButton;
 
+  /// Label for the button that resumes the active device session
+  ///
+  /// In en, this message translates to:
+  /// **'Back to session'**
+  String get resumeSessionButton;
+
   /// Tooltip for the settings icon
   ///
   /// In en, this message translates to:

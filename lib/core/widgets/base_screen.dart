@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/features/device/presentation/widgets/back_to_session_button.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 
@@ -22,6 +23,7 @@ class BaseScreen extends StatelessWidget {
           ),
         ),
         actions: const [
+          BackToSessionButton(),
           NfcScanButton(), // Button-getriggertes NFC-Scanning
           SizedBox(width: 8),
         ],
