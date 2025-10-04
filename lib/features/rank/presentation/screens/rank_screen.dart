@@ -213,10 +213,36 @@ class _BicepsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return const _BrandColoredEmojiIcon(
+      emoji: '💪',
+      size: 24,
+    );
+  }
+}
+
+class _BrandColoredEmojiIcon extends StatelessWidget {
+  const _BrandColoredEmojiIcon({
+    required this.emoji,
+    required this.size,
+  });
+
+  final String emoji;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Text(
-      '💪',
-      style: theme.textTheme.headlineSmall?.copyWith(fontSize: 24),
+    final iconColor = IconTheme.of(context).color ??
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
+
+    return ColorFiltered(
+      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+      child: Text(
+        emoji,
+        style: theme.textTheme.headlineSmall?.copyWith(fontSize: size) ??
+            TextStyle(fontSize: size),
+      ),
     );
   }
 }
