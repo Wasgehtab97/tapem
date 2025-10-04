@@ -14,7 +14,6 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
-import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -537,21 +536,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _ProfileActionButton(
                     title: loc.surveyListTitle,
                     subtitle: loc.reportViewSurveysTitle,
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.onSurface.withOpacity(0.06),
-                        border: Border.all(
-                          color: brandColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.poll_outlined,
-                        color: theme.colorScheme.onSurface.withOpacity(0.75),
-                      ),
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: _ProfileSurveyLeadingIcon(),
                     ),
                     onTap: () {
                       final gymId = context.read<GymProvider>().currentGymId;
@@ -628,6 +615,33 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
   }
 }
 
+class _ProfileSurveyLeadingIcon extends StatelessWidget {
+  const _ProfileSurveyLeadingIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        border: Border.all(color: borderColor),
+      ),
+      child: Icon(
+        Icons.poll_outlined,
+        size: 28,
+        color: brandColor,
+      ),
+    );
+  }
+}
+
 class _ProfileStatsSparkline extends StatelessWidget {
   const _ProfileStatsSparkline({super.key});
 
@@ -636,9 +650,9 @@ class _ProfileStatsSparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final onGradient =
-        theme.extension<BrandOnColors>()?.onGradient ?? Colors.black;
-    final barColor = Color.lerp(onGradient, Colors.white, 0.6) ?? onGradient;
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final barColor = Color.lerp(brandColor, Colors.white, 0.15) ?? brandColor;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -809,7 +823,7 @@ class _ProfileActionButtonState extends State<_ProfileActionButton> {
                         const SizedBox(width: AppSpacing.md),
                         Icon(
                           Icons.chevron_right,
-                          color: onSurface.withOpacity(0.55),
+                          color: brandColor,
                         ),
                       ],
                     ],
