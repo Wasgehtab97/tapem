@@ -289,6 +289,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Favourite exercise';
 
   @override
+  String get profileStatsFavoriteExerciseDialogTitle =>
+      'Top 5 favourite exercises';
+
+  @override
   String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
 
   @override

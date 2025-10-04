@@ -611,6 +611,12 @@ abstract class AppLocalizations {
   /// **'Favourite exercise'**
   String get profileStatsFavoriteExercise;
 
+  /// Dialog title that shows the top five favourite exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Top 5 favourite exercises'**
+  String get profileStatsFavoriteExerciseDialogTitle;
+
   /// Fallback text when there is no favourite exercise
   ///
   /// In en, this message translates to:

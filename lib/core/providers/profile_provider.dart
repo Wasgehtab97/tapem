@@ -18,6 +18,7 @@ class ProfileProvider extends ChangeNotifier {
   int _totalTrainingDays = 0;
   double _avgTrainingDaysPerWeek = 0;
   String? _favoriteExerciseName;
+  List<FavoriteExerciseUsage> _favoriteExerciseUsages = [];
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -26,6 +27,8 @@ class ProfileProvider extends ChangeNotifier {
   int get totalTrainingDays => _totalTrainingDays;
   double get averageTrainingDaysPerWeek => _avgTrainingDaysPerWeek;
   String? get favoriteExerciseName => _favoriteExerciseName;
+  List<FavoriteExerciseUsage> get favoriteExerciseUsages =>
+      List.unmodifiable(_favoriteExerciseUsages);
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(BuildContext context) async {
@@ -90,8 +93,7 @@ class ProfileProvider extends ChangeNotifier {
       _totalTrainingDays = _trainingDates.length;
       _avgTrainingDaysPerWeek =
           _calculateAverageTrainingDaysPerWeek(authProv.createdAt);
-      _favoriteExerciseName =
-          await _resolveFavoriteExerciseName(sessionAggregates.values);
+      await _resolveFavoriteExercises(sessionAggregates.values);
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
       if (e is FirebaseException && e.code == 'failed-precondition') {
@@ -141,33 +143,50 @@ class ProfileProvider extends ChangeNotifier {
     return normalized.add(Duration(days: daysToAdd));
   }
 
-  Future<String?> _resolveFavoriteExerciseName(
+  Future<void> _resolveFavoriteExercises(
     Iterable<_ExerciseAggregate> aggregates,
   ) async {
     if (aggregates.isEmpty) {
-      return null;
+      _favoriteExerciseUsages = [];
+      _favoriteExerciseName = null;
+      return;
     }
 
-    _ExerciseAggregate? best;
-    for (final aggregate in aggregates) {
-      if (best == null ||
-          aggregate.sessionIds.length > best.sessionIds.length) {
-        best = aggregate;
-      }
+    final sortedAggregates = aggregates
+        .where((aggregate) => aggregate.sessionIds.isNotEmpty)
+        .toList()
+      ..sort(
+        (a, b) =>
+            b.sessionIds.length.compareTo(a.sessionIds.length),
+      );
+
+    final usages = <FavoriteExerciseUsage>[];
+
+    for (final aggregate in sortedAggregates.take(5)) {
+      final name = await _resolveExerciseName(aggregate);
+      usages.add(
+        FavoriteExerciseUsage(
+          name: name,
+          sessionCount: aggregate.sessionIds.length,
+        ),
+      );
     }
 
-    if (best == null || best.sessionIds.isEmpty) {
-      return null;
-    }
+    _favoriteExerciseUsages = usages;
+    _favoriteExerciseName =
+        usages.isEmpty ? null : usages.first.name;
+  }
 
+  Future<String> _resolveExerciseName(_ExerciseAggregate aggregate) async {
     try {
       final deviceRef = FirebaseFirestore.instance
           .collection('gyms')
-          .doc(best.gymId)
+          .doc(aggregate.gymId)
           .collection('devices')
-          .doc(best.deviceId);
+          .doc(aggregate.deviceId);
+      String deviceName = aggregate.deviceId;
+
       final deviceSnap = await deviceRef.get();
-      String deviceName = best.deviceId;
       if (deviceSnap.exists) {
         final data = deviceSnap.data();
         final name = data?['name'] as String?;
@@ -176,7 +195,7 @@ class ProfileProvider extends ChangeNotifier {
         }
       }
 
-      final exerciseId = best.exerciseId;
+      final exerciseId = aggregate.exerciseId;
       if (exerciseId != null && exerciseId.isNotEmpty) {
         try {
           final exerciseSnap =
@@ -188,10 +207,14 @@ class ProfileProvider extends ChangeNotifier {
         } catch (_) {}
       }
 
+      if (deviceName.trim().isEmpty) {
+        return '—';
+      }
+
       return deviceName;
     } catch (e, st) {
       elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
-      return null;
+      return '—';
     }
   }
 }
@@ -207,4 +230,14 @@ class _ExerciseAggregate {
   final String deviceId;
   final String? exerciseId;
   final Set<String> sessionIds = <String>{};
+}
+
+class FavoriteExerciseUsage {
+  FavoriteExerciseUsage({
+    required this.name,
+    required this.sessionCount,
+  });
+
+  final String name;
+  final int sessionCount;
 }

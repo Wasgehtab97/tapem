@@ -86,6 +86,7 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
                 context,
                 loc.profileStatsFavoriteExercise,
                 favoriteExercise,
+                onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
               ),
               _powerliftingButton(context, loc),
             ],
@@ -112,13 +113,19 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     );
   }
 
-  Widget _kpiRing(BuildContext context, String label, String value) {
+  Widget _kpiRing(
+    BuildContext context,
+    String label,
+    String value, {
+    VoidCallback? onTap,
+  }) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
     return _circularBrandCard(
       context,
       semanticsLabel: '$label: $value',
+      onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -194,6 +201,67 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
           child: Center(child: child),
         ),
       ),
+    );
+  }
+
+  Future<void> _showFavoriteExercisesDialog(
+    BuildContext context,
+    ProfileProvider prov,
+    AppLocalizations loc,
+  ) async {
+    final usages = prov.favoriteExerciseUsages;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(loc.profileStatsFavoriteExerciseDialogTitle),
+          content: usages.isEmpty
+              ? Text(loc.profileStatsFavoriteExerciseFallback)
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final usage in usages)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.xs,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                usage.name,
+                                style: Theme.of(dialogContext)
+                                    .textTheme
+                                    .bodyMedium,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              loc.reportDeviceUsageSessions(
+                                usage.sessionCount,
+                              ),
+                              style: Theme.of(dialogContext)
+                                  .textTheme
+                                  .bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                MaterialLocalizations.of(dialogContext).closeButtonLabel,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
