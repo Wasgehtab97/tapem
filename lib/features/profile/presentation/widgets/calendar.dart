@@ -10,12 +10,14 @@ class Calendar extends StatefulWidget {
   final void Function(DateTime)? onDayTap;
   final bool showNavigation;
   final int year;
+  final bool showDayNumbers;
 
   Calendar({
     Key? key,
     required this.trainingDates,
     this.onDayTap,
     this.showNavigation = true,
+    this.showDayNumbers = false,
     int? year,
   }) : year = year ?? DateTime.now().year,
        super(key: key);
@@ -130,6 +132,20 @@ class _CalendarState extends State<Calendar> {
                       date.month == today.month &&
                       date.day == today.day;
 
+                  final textStyle = theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 8,
+                        color: isTrain
+                            ? theme.colorScheme.onSecondary.withOpacity(0.9)
+                            : theme.textTheme.labelSmall?.color ??
+                                theme.colorScheme.onSurface.withOpacity(0.7),
+                      ) ??
+                      TextStyle(
+                        fontSize: 8,
+                        color: isTrain
+                            ? theme.colorScheme.onSecondary.withOpacity(0.9)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                      );
+
                   Widget box = Container(
                     width: cellSize,
                     height: cellSize,
@@ -148,6 +164,15 @@ class _CalendarState extends State<Calendar> {
                       ),
                       borderRadius: BorderRadius.circular(2),
                     ),
+                    child: widget.showDayNumbers
+                        ? Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Text('${date.day}', style: textStyle),
+                            ),
+                          )
+                        : null,
                   );
 
                   if (widget.onDayTap != null) {
