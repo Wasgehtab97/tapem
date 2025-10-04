@@ -608,25 +608,21 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
-    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
-    final glowColor = gradient.colors.last;
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final backgroundColor = theme.scaffoldBackgroundColor;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.button),
-        boxShadow: [
-          BoxShadow(
-            color: glowColor.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: borderColor),
       ),
-      child: const BrandGradientIcon(
+      child: Icon(
         Icons.auto_graph,
         size: 28,
+        color: brandColor,
       ),
     );
   }
