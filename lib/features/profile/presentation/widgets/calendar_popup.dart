@@ -92,6 +92,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 trainingDates: widget.trainingDates,
                 year: widget.initialYear,
                 showNavigation: false,
+                showDayNumbers: true,
                 onDayTap: (date) {
                   Navigator.of(context).pop(date);
                   if (widget.navigateOnTap) {
