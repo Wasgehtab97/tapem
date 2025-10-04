@@ -686,6 +686,21 @@ class DeviceProvider extends ChangeNotifier {
     return true;
   }
 
+  bool markSetNotDone(int index) {
+    if (index < 0 || index >= _sets.length) return false;
+    final s = _sets[index];
+    final current = s['done'] == true || s['done'] == 'true';
+    if (!current) return true;
+
+    final after = Map<String, dynamic>.from(s);
+    after['done'] = false;
+    _sets[index] = after;
+    _log('⬜️ [Provider] markSetNotDone($index)');
+    notifyListeners();
+    _onSessionMutated();
+    return true;
+  }
+
   int? nextPendingSetIndex(int afterIndex) {
     for (var i = afterIndex + 1; i < _sets.length; i++) {
       final s = _sets[i];
