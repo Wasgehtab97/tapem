@@ -139,8 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         titleSpacing: 0,
         centerTitle: true,
+        leadingWidth: kToolbarHeight + 8,
+        leading: const SizedBox(width: kToolbarHeight + 8),
         title: _buildAppBarTitle(context, currentLabel),
         actions: const [
           NfcScanButton(),

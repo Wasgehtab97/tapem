@@ -78,7 +78,7 @@ class _RankScreenState extends State<RankScreen>
                 children: [
                   _RankCard(
                     title: loc.rankExperience,
-                    icon: Icons.auto_graph,
+                    icon: const _XpMonogram(),
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
@@ -86,7 +86,7 @@ class _RankScreenState extends State<RankScreen>
                   const SizedBox(height: AppSpacing.sm),
                   _RankCard(
                     title: loc.rankDeviceLevel,
-                    icon: Icons.fitness_center,
+                    icon: const Icon(Icons.fitness_center),
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
@@ -94,7 +94,7 @@ class _RankScreenState extends State<RankScreen>
                   const SizedBox(height: AppSpacing.sm),
                   _RankCard(
                     title: loc.rankMuscleLevel,
-                    icon: Icons.bolt,
+                    icon: const _BicepsIcon(),
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
@@ -120,7 +120,7 @@ class _RankCard extends StatelessWidget {
 
   final String title;
   final String? subtitle;
-  final IconData icon;
+  final Widget icon;
   final VoidCallback onTap;
 
   @override
@@ -137,7 +137,7 @@ class _RankCard extends StatelessWidget {
       uiLogEvent: 'RANK_CARD_RENDER',
       child: Row(
         children: [
-          _RankIcon(icon: icon),
+          _RankIcon(child: icon),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -174,9 +174,9 @@ class _RankCard extends StatelessWidget {
 }
 
 class _RankIcon extends StatelessWidget {
-  const _RankIcon({required this.icon});
+  const _RankIcon({required this.child});
 
-  final IconData icon;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +193,50 @@ class _RankIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.button),
         border: Border.all(color: borderColor),
       ),
-      child: Icon(icon, color: brandColor, size: 28),
+      child: IconTheme(
+        data: IconThemeData(
+          color: brandColor,
+          size: 28,
+        ),
+        child: DefaultTextStyle(
+          style: theme.textTheme.titleMedium?.copyWith(color: brandColor) ??
+              TextStyle(color: brandColor),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+class _BicepsIcon extends StatelessWidget {
+  const _BicepsIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      '💪',
+      style: theme.textTheme.headlineSmall?.copyWith(fontSize: 24),
+    );
+  }
+}
+
+class _XpMonogram extends StatelessWidget {
+  const _XpMonogram();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return BrandGradientText(
+      '𝑿𝑷',
+      style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.2,
+          ) ??
+          const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.2,
+          ),
     );
   }
 }
