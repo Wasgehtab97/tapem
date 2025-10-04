@@ -1234,6 +1234,10 @@
   ,"@numericKeypadSemanticsDelete": {"description": "Semantics label for the delete key"}
   ,"numericKeypadSemanticsNext": "Next"
   ,"@numericKeypadSemanticsNext": {"description": "Semantics label for the next button"}
+  ,"numericKeypadSemanticsPrevious": "Previous"
+  ,"@numericKeypadSemanticsPrevious": {"description": "Semantics label for the previous button"}
+  ,"numericKeypadSemanticsDuplicate": "Duplicate previous set values"
+  ,"@numericKeypadSemanticsDuplicate": {"description": "Semantics label for the duplicate-from-previous button"}
   ,"numericKeypadSemanticsDecrease": "Decrease"
   ,"@numericKeypadSemanticsDecrease": {"description": "Semantics label for the decrease button"}
   ,"numericKeypadSemanticsIncrease": "Increase"

@@ -1310,6 +1310,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get numericKeypadSemanticsNext => 'Next';
 
   @override
+  String get numericKeypadSemanticsPrevious => 'Previous';
+
+  @override
+  String get numericKeypadSemanticsDuplicate => 'Duplicate previous set values';
+
+  @override
   String get numericKeypadSemanticsDecrease => 'Decrease';
 
   @override

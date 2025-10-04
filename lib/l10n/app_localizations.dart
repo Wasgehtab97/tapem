@@ -2249,6 +2249,12 @@ abstract class AppLocalizations {
   /// No description provided for @numericKeypadSemanticsNext.
   String get numericKeypadSemanticsNext;
 
+  /// No description provided for @numericKeypadSemanticsPrevious.
+  String get numericKeypadSemanticsPrevious;
+
+  /// No description provided for @numericKeypadSemanticsDuplicate.
+  String get numericKeypadSemanticsDuplicate;
+
   /// No description provided for @numericKeypadSemanticsDecrease.
   String get numericKeypadSemanticsDecrease;
 

@@ -1236,6 +1236,10 @@
   ,"@numericKeypadSemanticsDelete": {"description": "Semantik-Label für die Löschtaste"}
   ,"numericKeypadSemanticsNext": "Weiter"
   ,"@numericKeypadSemanticsNext": {"description": "Semantik-Label für den Weiter-Button"}
+  ,"numericKeypadSemanticsPrevious": "Zurück"
+  ,"@numericKeypadSemanticsPrevious": {"description": "Semantik-Label für den Zurück-Button"}
+  ,"numericKeypadSemanticsDuplicate": "Vorherigen Satz übernehmen"
+  ,"@numericKeypadSemanticsDuplicate": {"description": "Semantik-Label für den Button zum Übernehmen des vorherigen Satzes"}
   ,"numericKeypadSemanticsDecrease": "Verringern"
   ,"@numericKeypadSemanticsDecrease": {"description": "Semantik-Label für den Verringern-Button"}
   ,"numericKeypadSemanticsIncrease": "Erhöhen"

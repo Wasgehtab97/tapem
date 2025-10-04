@@ -576,6 +576,35 @@ class DeviceProvider extends ChangeNotifier {
     _onSessionMutated();
   }
 
+  int dropCountForSet(int index) {
+    if (index < 0 || index >= _sets.length) return 0;
+    return _dropsFromSet(_sets[index]).length;
+  }
+
+  String? valueForField({
+    required int index,
+    required DeviceSetFieldFocus field,
+    int? dropIndex,
+  }) {
+    if (index < 0 || index >= _sets.length) return null;
+    final set = _sets[index];
+    switch (field) {
+      case DeviceSetFieldFocus.weight:
+        return (set['weight'] ?? '').toString();
+      case DeviceSetFieldFocus.reps:
+        return (set['reps'] ?? '').toString();
+      case DeviceSetFieldFocus.dropWeight:
+      case DeviceSetFieldFocus.dropReps:
+        final drops = _dropsFromSet(set);
+        final di = dropIndex ?? 0;
+        if (di < 0 || di >= drops.length) return null;
+        final drop = drops[di];
+        return field == DeviceSetFieldFocus.dropWeight
+            ? (drop['weight'] ?? '').toString()
+            : (drop['reps'] ?? '').toString();
+    }
+  }
+
   int ensureDropSlot(int index) {
     final drops = _dropsFromSet(_sets[index]);
     if (drops.isEmpty) {
