@@ -15,6 +15,7 @@ import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/features/device/presentation/widgets/back_to_session_button.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/timer_app_bar_title.dart';
@@ -146,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: const SizedBox(width: kToolbarHeight + 8),
         title: _buildAppBarTitle(context, currentLabel),
         actions: const [
+          BackToSessionButton(),
           NfcScanButton(),
           SizedBox(width: 8),
         ],

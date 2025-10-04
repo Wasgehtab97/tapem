@@ -231,6 +231,14 @@ class DeviceProvider extends ChangeNotifier {
   List<Device> get devices => List.unmodifiable(_devices);
   List<Map<String, dynamic>> get sets => List.unmodifiable(_sets);
   String get note => _note;
+  bool get hasActiveUnsavedSession =>
+      _device != null && _hasCompletedSets() && !_isSaving;
+  String? get activeSessionGymId =>
+      hasActiveUnsavedSession ? _currentGymId : null;
+  String? get activeSessionDeviceId =>
+      hasActiveUnsavedSession ? _device?.uid : null;
+  String? get activeSessionExerciseId =>
+      hasActiveUnsavedSession ? _currentExerciseId : null;
   List<Map<String, dynamic>> get lastSessionSets =>
       List.unmodifiable(_lastSessionSets);
   DateTime? get lastSessionDate => _lastSessionDate;

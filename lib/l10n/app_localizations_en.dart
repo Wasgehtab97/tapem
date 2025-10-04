@@ -463,6 +463,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveButton => 'Save';
 
   @override
+  String get resumeSessionButton => 'Back to session';
+
+  @override
   String get settingsIconTooltip => 'Settings';
 
   @override
