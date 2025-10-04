@@ -652,6 +652,11 @@
     "description": "Beschriftung für Speichern-Button"
   },
 
+  "resumeSessionButton": "Zurück zur Session",
+  "@resumeSessionButton": {
+    "description": "Beschriftung der Schaltfläche zum Fortsetzen der aktiven Gerätesession"
+  },
+
   "settingsIconTooltip": "Einstellungen",
   "@settingsIconTooltip": {
     "description": "Tooltip für das Zahnrad-Icon"
