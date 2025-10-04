@@ -15,7 +15,6 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
-import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -535,9 +534,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 SizedBox(
                   width: double.infinity,
-                  child: _SurveyButton(
+                  child: _ProfileActionButton(
                     title: loc.surveyListTitle,
                     subtitle: loc.reportViewSurveysTitle,
+                    leading: Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.onSurface.withOpacity(0.06),
+                        border: Border.all(
+                          color: brandColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.poll_outlined,
+                        color: theme.colorScheme.onSurface.withOpacity(0.75),
+                      ),
+                    ),
                     onTap: () {
                       final gymId = context.read<GymProvider>().currentGymId;
                       final userId = context.read<AuthProvider>().userId ?? '';
@@ -551,20 +566,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
+                    uiLogEvent: 'PROFILE_CARD_RENDER',
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 SizedBox(
                   width: double.infinity,
-                  child: BrandActionTile(
-                    leading: const _ProfileStatsLeadingIcon(),
+                  child: _ProfileActionButton(
                     title: loc.profileStatsButtonLabel,
                     subtitle: loc.profileStatsButtonSubtitle,
-                    minVerticalPadding: AppSpacing.xs,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.sm,
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: _ProfileStatsLeadingIcon(),
                     ),
+                    trailing: const _ProfileStatsSparkline(),
+                    showChevron: false,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -573,9 +589,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                    trailing: const _ProfileStatsSparkline(),
-                    variant: BrandActionTileVariant.gradient,
-                    showChevron: false,
                     uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
                   ),
                 ),
@@ -599,6 +612,7 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
     final glowColor = gradient.colors.last;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: gradient,
         borderRadius: BorderRadius.circular(AppRadius.button),
@@ -660,28 +674,38 @@ class _ProfileStatsSparkline extends StatelessWidget {
   }
 }
 
-class _SurveyButton extends StatefulWidget {
-  const _SurveyButton({
+class _ProfileActionButton extends StatefulWidget {
+  const _ProfileActionButton({
     required this.title,
     required this.subtitle,
+    required this.leading,
     required this.onTap,
+    this.trailing,
+    this.showChevron = true,
+    this.uiLogEvent,
   });
 
   final String title;
   final String subtitle;
+  final Widget leading;
+  final Widget? trailing;
+  final bool showChevron;
   final VoidCallback onTap;
+  final String? uiLogEvent;
 
   @override
-  State<_SurveyButton> createState() => _SurveyButtonState();
+  State<_ProfileActionButton> createState() => _ProfileActionButtonState();
 }
 
-class _SurveyButtonState extends State<_SurveyButton> {
+class _ProfileActionButtonState extends State<_ProfileActionButton> {
   bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
-    elogUi('PROFILE_CARD_RENDER', {'title': widget.title});
+    if (widget.uiLogEvent != null) {
+      elogUi(widget.uiLogEvent!, {'title': widget.title});
+    }
   }
 
   void _handleHighlight(bool value) {
@@ -753,22 +777,9 @@ class _SurveyButtonState extends State<_SurveyButton> {
                     vertical: AppSpacing.md,
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: onSurface.withOpacity(0.06),
-                          border: Border.all(
-                            color: brandColor.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.poll_outlined,
-                          color: onSurface.withOpacity(0.75),
-                        ),
-                      ),
+                      widget.leading,
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
@@ -794,11 +805,17 @@ class _SurveyButtonState extends State<_SurveyButton> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      Icon(
-                        Icons.chevron_right,
-                        color: onSurface.withOpacity(0.55),
-                      ),
+                      if (widget.trailing != null) ...[
+                        const SizedBox(width: AppSpacing.md),
+                        widget.trailing!,
+                      ],
+                      if (widget.showChevron) ...[
+                        const SizedBox(width: AppSpacing.md),
+                        Icon(
+                          Icons.chevron_right,
+                          color: onSurface.withOpacity(0.55),
+                        ),
+                      ],
                     ],
                   ),
                 ),
