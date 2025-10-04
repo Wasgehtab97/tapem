@@ -535,6 +535,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 SizedBox(
                   width: double.infinity,
+                  child: _SurveyButton(
+                    title: loc.surveyListTitle,
+                    subtitle: loc.reportViewSurveysTitle,
+                    onTap: () {
+                      final gymId = context.read<GymProvider>().currentGymId;
+                      final userId = context.read<AuthProvider>().userId ?? '';
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SurveyVoteScreen(
+                            gymId: gymId,
+                            userId: userId,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
                   child: BrandActionTile(
                     leading: const _ProfileStatsLeadingIcon(),
                     title: loc.profileStatsButtonLabel,
@@ -556,27 +577,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     variant: BrandActionTileVariant.gradient,
                     showChevron: false,
                     uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                SizedBox(
-                  width: double.infinity,
-                  child: _SurveyButton(
-                    title: loc.surveyListTitle,
-                    subtitle: loc.reportViewSurveysTitle,
-                    onTap: () {
-                      final gymId = context.read<GymProvider>().currentGymId;
-                      final userId = context.read<AuthProvider>().userId ?? '';
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SurveyVoteScreen(
-                            gymId: gymId,
-                            userId: userId,
-                          ),
-                        ),
-                      );
-                    },
                   ),
                 ),
               ],
@@ -693,14 +693,17 @@ class _SurveyButtonState extends State<_SurveyButton> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
-    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
     final radius =
         (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
-    final overlay = brandTheme?.pressedOverlay ?? Colors.white24;
     final onSurface = theme.colorScheme.onSurface;
-    final onGradient =
-        theme.extension<BrandOnColors>()?.onGradient ?? Colors.black;
-    final accentShadow = gradient.colors.last;
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final overlay = brandTheme?.pressedOverlay ?? onSurface.withOpacity(0.08);
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    final restingBorder = onSurface.withOpacity(0.12);
+    final activeBorder = brandColor.withOpacity(0.45);
+    final borderColor =
+        Color.lerp(restingBorder, activeBorder, _isPressed ? 1 : 0)!;
+    final shadowColor = theme.shadowColor.withOpacity(_isPressed ? 0.08 : 0.16);
 
     return Material(
       color: Colors.transparent,
@@ -711,139 +714,95 @@ class _SurveyButtonState extends State<_SurveyButton> {
         onHighlightChanged: _handleHighlight,
         onTap: widget.onTap,
         child: AnimatedScale(
-          scale: _isPressed ? 0.97 : 1,
-          duration: const Duration(milliseconds: 140),
+          scale: _isPressed ? 0.985 : 1,
+          duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              gradient: gradient,
+              color: backgroundColor,
               borderRadius: radius,
+              border: Border.all(color: borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: accentShadow.withOpacity(_isPressed ? 0.35 : 0.45),
-                  blurRadius: _isPressed ? 16 : 26,
-                  offset: const Offset(0, 18),
+                  color: shadowColor,
+                  blurRadius: _isPressed ? 10 : 20,
+                  offset: Offset(0, _isPressed ? 6 : 14),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(1.5),
-            child: ClipRRect(
-              borderRadius: radius,
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          theme.colorScheme.surface
-                              .withOpacity(_isPressed ? 0.72 : 0.65),
-                          theme.colorScheme.surface
-                              .withOpacity(_isPressed ? 0.95 : 0.85),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    opacity: _isPressed ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutCubic,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: overlay.withOpacity(0.35),
+                        borderRadius: radius,
                       ),
                     ),
                   ),
-                  Positioned(
-                    right: -40,
-                    top: -20,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            accentShadow.withOpacity(0.35),
-                            Colors.transparent,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: onSurface.withOpacity(0.06),
+                          border: Border.all(
+                            color: brandColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.poll_outlined,
+                          color: onSurface.withOpacity(0.75),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: brandColor,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              widget.subtitle,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: onSurface.withOpacity(0.7),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    left: -20,
-                    bottom: -50,
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            gradient.colors.first.withOpacity(0.3),
-                            Colors.transparent,
-                          ],
-                        ),
+                      const SizedBox(width: AppSpacing.md),
+                      Icon(
+                        Icons.chevron_right,
+                        color: onSurface.withOpacity(0.55),
                       ),
-                    ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: gradient,
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentShadow.withOpacity(0.45),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.poll,
-                            color: onGradient,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              BrandGradientText(
-                                widget.title,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                widget.subtitle,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: onSurface.withOpacity(0.7),
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.12),
-                          ),
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          child: Icon(
-                            Icons.chevron_right,
-                            color: onSurface.withOpacity(0.85),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
