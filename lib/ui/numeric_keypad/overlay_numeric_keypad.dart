@@ -404,9 +404,11 @@ class OverlayNumericKeypad extends StatelessWidget {
                           ?.clearFocus();
                       controller.close();
                     },
+                    onNavigateBack: () =>
+                        _navigatePrevious(context, controller),
                     onNavigate: () => _navigateNext(context, controller),
-                    onPlus: () => _increment(context, controller, 1),
-                    onMinus: () => _increment(context, controller, -1),
+                    onDuplicate: () =>
+                        _duplicateFromPrevious(context, controller),
                   ),
                 ),
               ],
@@ -535,6 +537,151 @@ class OverlayNumericKeypad extends StatelessWidget {
     _haptic(context);
   }
 
+  static void _navigatePrevious(
+    BuildContext context,
+    OverlayNumericKeypadController controller,
+  ) {
+    final prov = context.read<DeviceProvider>();
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+
+    elogUi('OVERLAY_NAVIGATE_PREVIOUS', {
+      'deviceId': prov.device?.uid,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField?.name,
+    });
+
+    if (focusedIndex == null || focusedField == null) {
+      _haptic(context);
+      return;
+    }
+
+    final dropIndex = prov.focusedDropIndex ?? 0;
+    final targetController = controller.target;
+    if (targetController != null) {
+      final text = targetController.text;
+      switch (focusedField) {
+        case DeviceSetFieldFocus.weight:
+          prov.updateSet(focusedIndex, weight: text);
+          break;
+        case DeviceSetFieldFocus.reps:
+          prov.updateSet(focusedIndex, reps: text);
+          break;
+        case DeviceSetFieldFocus.dropWeight:
+          prov.updateDrop(focusedIndex, dropIndex, weight: text);
+          break;
+        case DeviceSetFieldFocus.dropReps:
+          prov.updateDrop(focusedIndex, dropIndex, reps: text);
+          break;
+      }
+    }
+
+    int targetIndex = focusedIndex;
+    DeviceSetFieldFocus? targetField;
+    int? targetDropIndex;
+
+    switch (focusedField) {
+      case DeviceSetFieldFocus.weight:
+        final prevIndex = focusedIndex - 1;
+        if (prevIndex < 0) {
+          _haptic(context);
+          return;
+        }
+        targetIndex = prevIndex;
+        final dropCount = prov.dropCountForSet(prevIndex);
+        if (dropCount > 0) {
+          targetField = DeviceSetFieldFocus.dropReps;
+          targetDropIndex = dropCount - 1;
+        } else {
+          targetField = DeviceSetFieldFocus.reps;
+        }
+        break;
+      case DeviceSetFieldFocus.reps:
+        targetField = DeviceSetFieldFocus.weight;
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        targetField = DeviceSetFieldFocus.reps;
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        targetField = DeviceSetFieldFocus.dropWeight;
+        targetDropIndex = dropIndex;
+        break;
+    }
+
+    if (targetField != null) {
+      prov.requestFocus(
+        index: targetIndex,
+        field: targetField,
+        dropIndex: targetDropIndex,
+      );
+    }
+
+    _haptic(context);
+  }
+
+  static void _duplicateFromPrevious(
+    BuildContext context,
+    OverlayNumericKeypadController controller,
+  ) {
+    final prov = context.read<DeviceProvider>();
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+
+    elogUi('OVERLAY_DUPLICATE_PREVIOUS', {
+      'deviceId': prov.device?.uid,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField?.name,
+    });
+
+    if (focusedIndex == null || focusedField == null) {
+      _haptic(context);
+      return;
+    }
+
+    final prevIndex = focusedIndex - 1;
+    if (prevIndex < 0) {
+      _haptic(context);
+      return;
+    }
+
+    final dropIndex = prov.focusedDropIndex ?? 0;
+    final previousValue = prov.valueForField(
+      index: prevIndex,
+      field: focusedField,
+      dropIndex: dropIndex,
+    );
+
+    if (previousValue == null) {
+      _haptic(context);
+      return;
+    }
+
+    final targetController = controller.target;
+    if (targetController != null) {
+      targetController.value = TextEditingValue(
+        text: previousValue,
+        selection: TextSelection.collapsed(offset: previousValue.length),
+      );
+    }
+
+    switch (focusedField) {
+      case DeviceSetFieldFocus.weight:
+        prov.updateSet(focusedIndex, weight: previousValue);
+        break;
+      case DeviceSetFieldFocus.reps:
+        prov.updateSet(focusedIndex, reps: previousValue);
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        prov.updateDrop(focusedIndex, dropIndex, weight: previousValue);
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        prov.updateDrop(focusedIndex, dropIndex, reps: previousValue);
+        break;
+    }
+
+    _haptic(context);
+  }
+
   static String _decimalChar(BuildContext ctx) {
     final lc = Localizations.localeOf(ctx);
     final lang = lc.languageCode.toLowerCase();
@@ -589,36 +736,6 @@ class OverlayNumericKeypad extends StatelessWidget {
     _haptic(ctx);
   }
 
-  static void _increment(
-    BuildContext ctx,
-    OverlayNumericKeypadController ctl,
-    int direction,
-  ) {
-    final t = ctl.target;
-    if (t == null) return;
-
-    final raw = t.text.replaceAll(',', '.');
-    final step = ctl.allowDecimal ? ctl.decimalStep : ctl.integerStep;
-
-    double current = 0;
-    if (raw.isNotEmpty) current = double.tryParse(raw) ?? 0;
-    final next = current + (step * direction);
-    final rawValue = ctl.allowDecimal
-        ? next.toStringAsFixed(2)
-        : next.round().toString();
-    final value = ctl.allowDecimal
-        ? rawValue.replaceAll('.', _decimalChar(ctx))
-        : rawValue;
-
-    _klog(
-      '${direction > 0 ? 'plus' : 'minus'} step=$step from="$raw" → "$value"',
-    );
-    t.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
-    );
-    _haptic(ctx);
-  }
 }
 
 class _KeyGrid extends StatelessWidget {
@@ -705,7 +822,7 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onNavigate, onPlus, onMinus;
+  final VoidCallback onHide, onNavigateBack, onNavigate, onDuplicate;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -714,9 +831,9 @@ class _ActionRailCompact extends StatelessWidget {
     required this.gap,
     required this.theme,
     required this.onHide,
+    required this.onNavigateBack,
     required this.onNavigate,
-    required this.onPlus,
-    required this.onMinus,
+    required this.onDuplicate,
   });
 
   @override
@@ -728,13 +845,20 @@ class _ActionRailCompact extends StatelessWidget {
     // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
       _RailAction(
+        Icons.arrow_back_rounded,
+        loc.numericKeypadSemanticsPrevious,
+        onNavigateBack,
+      ),
+      _RailAction(
         Icons.arrow_forward_rounded,
         loc.numericKeypadSemanticsNext,
         onNavigate,
-        wide: true,
       ),
-      _RailAction(Icons.remove_rounded, loc.numericKeypadSemanticsDecrease, onMinus, repeat: true),
-      _RailAction(Icons.add_rounded, loc.numericKeypadSemanticsIncrease, onPlus, repeat: true),
+      _RailAction(
+        Icons.control_point_duplicate_rounded,
+        loc.numericKeypadSemanticsDuplicate,
+        onDuplicate,
+      ),
       _RailAction(
         Icons.keyboard_hide_rounded,
         loc.numericKeypadSemanticsHideKeyboard,
@@ -771,15 +895,15 @@ class _ActionRailCompact extends StatelessWidget {
 
     int slotsUsed = 0;
     final rows = <Widget>[];
-      while (slotsUsed < slotCount) {
-        // pick next action(s)
-        // We'll consume from a moving pointer instead of recomputing; simpler:
-        // Build sequentially
-        int i = 0;
-        while (i < actions.length && actions[i]._consumed) {
-          i++;
-        }
-        if (i >= actions.length) break;
+    while (slotsUsed < slotCount) {
+      // pick next action(s)
+      // We'll consume from a moving pointer instead of recomputing; simpler:
+      // Build sequentially
+      int i = 0;
+      while (i < actions.length && actions[i]._consumed) {
+        i++;
+      }
+      if (i >= actions.length) break;
       final a = actions[i].._consumed = true;
       if (a.wide) {
         rows.add(
@@ -791,10 +915,10 @@ class _ActionRailCompact extends StatelessWidget {
         slotsUsed += 2;
       } else {
         // Try to pair with a second 1x action
-          int j = i + 1;
-          while (j < actions.length && actions[j]._consumed) {
-            j++;
-          }
+        int j = i + 1;
+        while (j < actions.length && actions[j]._consumed) {
+          j++;
+        }
         _RailAction? b;
         if (j < actions.length && !actions[j].wide) {
           b = actions[j].._consumed = true;
