@@ -405,8 +405,8 @@ class OverlayNumericKeypad extends StatelessWidget {
                       controller.close();
                     },
                     onNavigate: () => _navigateNext(context, controller),
-                    onPlus: () => _increment(context, controller, 1),
-                    onMinus: () => _increment(context, controller, -1),
+                    onNavigateBack: () => _navigatePrevious(context, controller),
+                    onDuplicate: () => _duplicateFromPrevious(context, controller),
                   ),
                 ),
               ],
@@ -535,6 +535,183 @@ class OverlayNumericKeypad extends StatelessWidget {
     _haptic(context);
   }
 
+  static void _navigatePrevious(
+    BuildContext context,
+    OverlayNumericKeypadController controller,
+  ) {
+    final prov = context.read<DeviceProvider>();
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+
+    elogUi('OVERLAY_NAVIGATE_PREVIOUS', {
+      'deviceId': prov.device?.uid,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField?.name,
+    });
+
+    if (focusedIndex == null || focusedField == null) {
+      _haptic(context);
+      return;
+    }
+
+    final dropIndex = prov.focusedDropIndex ?? 0;
+    final targetController = controller.target;
+    if (targetController != null) {
+      final text = targetController.text;
+      switch (focusedField) {
+        case DeviceSetFieldFocus.weight:
+          prov.updateSet(focusedIndex, weight: text);
+          break;
+        case DeviceSetFieldFocus.reps:
+          prov.updateSet(focusedIndex, reps: text);
+          break;
+        case DeviceSetFieldFocus.dropWeight:
+          prov.updateDrop(focusedIndex, dropIndex, weight: text);
+          break;
+        case DeviceSetFieldFocus.dropReps:
+          prov.updateDrop(focusedIndex, dropIndex, reps: text);
+          break;
+      }
+    }
+
+    var targetIndex = focusedIndex;
+    DeviceSetFieldFocus? targetField;
+    int? targetDropIndex;
+
+    switch (focusedField) {
+      case DeviceSetFieldFocus.reps:
+        targetField = DeviceSetFieldFocus.weight;
+        break;
+      case DeviceSetFieldFocus.weight:
+        final prevIndex = focusedIndex - 1;
+        if (prevIndex >= 0 && prevIndex < prov.sets.length) {
+          targetIndex = prevIndex;
+          final drops = _dropMapsFromSet(prov.sets[prevIndex]);
+          if (drops.isNotEmpty) {
+            targetField = DeviceSetFieldFocus.dropReps;
+            targetDropIndex = drops.length - 1;
+          } else {
+            targetField = DeviceSetFieldFocus.reps;
+          }
+        }
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        targetField = DeviceSetFieldFocus.dropWeight;
+        targetDropIndex = dropIndex;
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        if (dropIndex > 0) {
+          targetField = DeviceSetFieldFocus.dropReps;
+          targetDropIndex = dropIndex - 1;
+        } else {
+          targetField = DeviceSetFieldFocus.reps;
+        }
+        break;
+    }
+
+    if (targetField != null) {
+      prov.requestFocus(
+        index: targetIndex,
+        field: targetField,
+        dropIndex: targetDropIndex,
+      );
+    }
+
+    _haptic(context);
+  }
+
+  static void _duplicateFromPrevious(
+    BuildContext context,
+    OverlayNumericKeypadController controller,
+  ) {
+    final prov = context.read<DeviceProvider>();
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+    final dropIndex = prov.focusedDropIndex ?? 0;
+    final targetController = controller.target;
+
+    elogUi('OVERLAY_DUPLICATE_PREVIOUS', {
+      'deviceId': prov.device?.uid,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField?.name,
+    });
+
+    if (focusedIndex == null ||
+        focusedField == null ||
+        targetController == null ||
+        focusedIndex <= 0 ||
+        focusedIndex >= prov.sets.length) {
+      _haptic(context);
+      return;
+    }
+
+    final previousSet = prov.sets[focusedIndex - 1];
+
+    String? value;
+    switch (focusedField) {
+      case DeviceSetFieldFocus.weight:
+        value = (previousSet['weight'] ?? '').toString();
+        break;
+      case DeviceSetFieldFocus.reps:
+        value = (previousSet['reps'] ?? '').toString();
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        value = _valueFromDrops(previousSet, dropIndex, 'weight');
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        value = _valueFromDrops(previousSet, dropIndex, 'reps');
+        break;
+    }
+
+    if (value == null) {
+      _haptic(context);
+      return;
+    }
+
+    targetController.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+
+    _haptic(context);
+  }
+
+  static List<Map<String, String>> _dropMapsFromSet(Map<String, dynamic> set) {
+    final raw = set['drops'];
+    final drops = <Map<String, String>>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map) {
+          final map = Map<String, dynamic>.from(entry);
+          drops.add({
+            'weight': (map['weight'] ?? map['kg'] ?? '').toString(),
+            'reps': (map['reps'] ?? map['wdh'] ?? '').toString(),
+          });
+        }
+      }
+    }
+    if (drops.isEmpty) {
+      final legacyWeight = (set['dropWeight'] ?? '').toString();
+      final legacyReps = (set['dropReps'] ?? '').toString();
+      if (legacyWeight.isNotEmpty || legacyReps.isNotEmpty) {
+        drops.add({'weight': legacyWeight, 'reps': legacyReps});
+      }
+    }
+    return drops;
+  }
+
+  static String? _valueFromDrops(
+    Map<String, dynamic> set,
+    int dropIndex,
+    String key,
+  ) {
+    final drops = _dropMapsFromSet(set);
+    if (drops.isEmpty) return null;
+    final index = dropIndex.clamp(0, drops.length - 1);
+    final value = drops[index.toInt()][key];
+    return value?.toString();
+  }
+
   static String _decimalChar(BuildContext ctx) {
     final lc = Localizations.localeOf(ctx);
     final lang = lc.languageCode.toLowerCase();
@@ -585,37 +762,6 @@ class OverlayNumericKeypad extends StatelessWidget {
     t.value = TextEditingValue(
       text: v,
       selection: TextSelection.collapsed(offset: v.length),
-    );
-    _haptic(ctx);
-  }
-
-  static void _increment(
-    BuildContext ctx,
-    OverlayNumericKeypadController ctl,
-    int direction,
-  ) {
-    final t = ctl.target;
-    if (t == null) return;
-
-    final raw = t.text.replaceAll(',', '.');
-    final step = ctl.allowDecimal ? ctl.decimalStep : ctl.integerStep;
-
-    double current = 0;
-    if (raw.isNotEmpty) current = double.tryParse(raw) ?? 0;
-    final next = current + (step * direction);
-    final rawValue = ctl.allowDecimal
-        ? next.toStringAsFixed(2)
-        : next.round().toString();
-    final value = ctl.allowDecimal
-        ? rawValue.replaceAll('.', _decimalChar(ctx))
-        : rawValue;
-
-    _klog(
-      '${direction > 0 ? 'plus' : 'minus'} step=$step from="$raw" → "$value"',
-    );
-    t.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
     );
     _haptic(ctx);
   }
@@ -705,7 +851,10 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
-  final VoidCallback onHide, onNavigate, onPlus, onMinus;
+  final VoidCallback onHide;
+  final VoidCallback onNavigate;
+  final VoidCallback onNavigateBack;
+  final VoidCallback onDuplicate;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -715,8 +864,8 @@ class _ActionRailCompact extends StatelessWidget {
     required this.theme,
     required this.onHide,
     required this.onNavigate,
-    required this.onPlus,
-    required this.onMinus,
+    required this.onNavigateBack,
+    required this.onDuplicate,
   });
 
   @override
@@ -728,13 +877,20 @@ class _ActionRailCompact extends StatelessWidget {
     // Actions without "done". Last action is WIDE hide-keyboard.
     final actions = <_RailAction>[
       _RailAction(
+        Icons.arrow_back_rounded,
+        loc.numericKeypadSemanticsPrevious,
+        onNavigateBack,
+      ),
+      _RailAction(
         Icons.arrow_forward_rounded,
         loc.numericKeypadSemanticsNext,
         onNavigate,
-        wide: true,
       ),
-      _RailAction(Icons.remove_rounded, loc.numericKeypadSemanticsDecrease, onMinus, repeat: true),
-      _RailAction(Icons.add_rounded, loc.numericKeypadSemanticsIncrease, onPlus, repeat: true),
+      _RailAction(
+        Icons.copy_all_rounded,
+        loc.numericKeypadSemanticsDuplicate,
+        onDuplicate,
+      ),
       _RailAction(
         Icons.keyboard_hide_rounded,
         loc.numericKeypadSemanticsHideKeyboard,
@@ -771,15 +927,15 @@ class _ActionRailCompact extends StatelessWidget {
 
     int slotsUsed = 0;
     final rows = <Widget>[];
-      while (slotsUsed < slotCount) {
-        // pick next action(s)
-        // We'll consume from a moving pointer instead of recomputing; simpler:
-        // Build sequentially
-        int i = 0;
-        while (i < actions.length && actions[i]._consumed) {
-          i++;
-        }
-        if (i >= actions.length) break;
+    while (slotsUsed < slotCount) {
+      // pick next action(s)
+      // We'll consume from a moving pointer instead of recomputing; simpler:
+      // Build sequentially
+      int i = 0;
+      while (i < actions.length && actions[i]._consumed) {
+        i++;
+      }
+      if (i >= actions.length) break;
       final a = actions[i].._consumed = true;
       if (a.wide) {
         rows.add(
@@ -791,10 +947,10 @@ class _ActionRailCompact extends StatelessWidget {
         slotsUsed += 2;
       } else {
         // Try to pair with a second 1x action
-          int j = i + 1;
-          while (j < actions.length && actions[j]._consumed) {
-            j++;
-          }
+        int j = i + 1;
+        while (j < actions.length && actions[j]._consumed) {
+          j++;
+        }
         _RailAction? b;
         if (j < actions.length && !actions[j].wide) {
           b = actions[j].._consumed = true;
