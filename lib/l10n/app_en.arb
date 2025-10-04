@@ -650,6 +650,11 @@
     "description": "Label for the save button"
   },
 
+  "resumeSessionButton": "Back to session",
+  "@resumeSessionButton": {
+    "description": "Label for the button that resumes the active device session"
+  },
+
   "settingsIconTooltip": "Settings",
   "@settingsIconTooltip": {
     "description": "Tooltip for the settings icon"
