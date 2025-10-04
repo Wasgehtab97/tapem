@@ -4,10 +4,10 @@ import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_action_tile.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/logging/elog.dart';
 
 /// Rank landing displayed in the "Rank" tab of the leaderboard.
 class RankScreen extends StatefulWidget {
@@ -76,40 +76,28 @@ class _RankScreenState extends State<RankScreen>
               ListView(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
-                  BrandActionTile(
+                  _RankCard(
                     title: loc.rankExperience,
+                    icon: Icons.auto_graph,
+                    subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.dayXp),
-                    centerTitle: true,
-                    showChevron: false,
-                    variant: BrandActionTileVariant.outlined,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm),
-                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  BrandActionTile(
+                  _RankCard(
                     title: loc.rankDeviceLevel,
+                    icon: Icons.fitness_center,
+                    subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
-                    centerTitle: true,
-                    showChevron: false,
-                    variant: BrandActionTileVariant.outlined,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm),
-                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  BrandActionTile(
+                  _RankCard(
                     title: loc.rankMuscleLevel,
+                    icon: Icons.bolt,
+                    subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
-                    centerTitle: true,
-                    showChevron: false,
-                    variant: BrandActionTileVariant.outlined,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm),
-                    uiLogEvent: 'RANK_CARD_RENDER',
                   ),
                 ],
               ),
@@ -118,6 +106,94 @@ class _RankScreenState extends State<RankScreen>
           );
         },
       ),
+    );
+  }
+}
+
+class _RankCard extends StatelessWidget {
+  const _RankCard({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final secondary = theme.colorScheme.onSurface.withOpacity(0.7);
+
+    return BrandInteractiveCard(
+      onTap: onTap,
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      semanticLabel: subtitle != null ? '$title, $subtitle' : title,
+      uiLogEvent: 'RANK_CARD_RENDER',
+      child: Row(
+        children: [
+          _RankIcon(icon: icon),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: brandColor,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: secondary,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Icon(Icons.chevron_right, color: brandColor),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankIcon extends StatelessWidget {
+  const _RankIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final background = theme.scaffoldBackgroundColor;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        border: Border.all(color: borderColor),
+      ),
+      child: Icon(icon, color: brandColor, size: 28),
     );
   }
 }

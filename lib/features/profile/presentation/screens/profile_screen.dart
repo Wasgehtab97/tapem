@@ -16,6 +16,7 @@ import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
@@ -684,7 +685,7 @@ class _ProfileStatsSparkline extends StatelessWidget {
   }
 }
 
-class _ProfileActionButton extends StatefulWidget {
+class _ProfileActionButton extends StatelessWidget {
   const _ProfileActionButton({
     required this.title,
     required this.subtitle,
@@ -704,26 +705,6 @@ class _ProfileActionButton extends StatefulWidget {
   final String? uiLogEvent;
 
   @override
-  State<_ProfileActionButton> createState() => _ProfileActionButtonState();
-}
-
-class _ProfileActionButtonState extends State<_ProfileActionButton> {
-  bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.uiLogEvent != null) {
-      elogUi(widget.uiLogEvent!, {'title': widget.title});
-    }
-  }
-
-  void _handleHighlight(bool value) {
-    if (value == _isPressed || !mounted) return;
-    setState(() => _isPressed = value);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
@@ -731,108 +712,53 @@ class _ProfileActionButtonState extends State<_ProfileActionButton> {
         (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
     final onSurface = theme.colorScheme.onSurface;
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final overlay = brandTheme?.pressedOverlay ?? onSurface.withOpacity(0.08);
-    final backgroundColor = theme.scaffoldBackgroundColor;
-    final restingBorder = onSurface.withOpacity(0.12);
-    final activeBorder = brandColor.withOpacity(0.45);
-    final borderColor =
-        Color.lerp(restingBorder, activeBorder, _isPressed ? 1 : 0)!;
-    final shadowColor = theme.shadowColor.withOpacity(_isPressed ? 0.08 : 0.16);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: radius,
-        splashColor: overlay.withOpacity(0.3),
-        highlightColor: Colors.transparent,
-        onHighlightChanged: _handleHighlight,
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.985 : 1,
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: radius,
-              border: Border.all(color: borderColor),
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor,
-                  blurRadius: _isPressed ? 10 : 20,
-                  offset: Offset(0, _isPressed ? 6 : 14),
-                ),
-              ],
-            ),
-            child: Stack(
+    return BrandInteractiveCard(
+      onTap: onTap,
+      uiLogEvent: uiLogEvent,
+      borderRadius: radius,
+      semanticLabel: '$title, $subtitle',
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          leading,
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Positioned.fill(
-                  child: AnimatedOpacity(
-                    opacity: _isPressed ? 1 : 0,
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.easeOutCubic,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: overlay.withOpacity(0.35),
-                        borderRadius: radius,
-                      ),
-                    ),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: brandColor,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      widget.leading,
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              widget.title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: brandColor,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              widget.subtitle,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: onSurface.withOpacity(0.7),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (widget.trailing != null) ...[
-                        const SizedBox(width: AppSpacing.md),
-                        widget.trailing!,
-                      ],
-                      if (widget.showChevron) ...[
-                        const SizedBox(width: AppSpacing.md),
-                        Icon(
-                          Icons.chevron_right,
-                          color: brandColor,
-                        ),
-                      ],
-                    ],
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: onSurface.withOpacity(0.7),
+                    letterSpacing: 0.2,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          if (trailing != null) ...[
+            const SizedBox(width: AppSpacing.md),
+            trailing!,
+          ],
+          if (showChevron) ...[
+            const SizedBox(width: AppSpacing.md),
+            Icon(
+              Icons.chevron_right,
+              color: brandColor,
+            ),
+          ],
+        ],
       ),
     );
   }
