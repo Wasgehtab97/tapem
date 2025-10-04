@@ -1303,6 +1303,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get sessionStopResumeAction => 'Zurück zur Übung';
+
+  @override
+  String get sessionStopResumeSelectionTitle => 'Session auswählen';
+
+  @override
   String numericKeypadSemanticsDigit(Object digit) {
     return 'Taste $digit';
   }

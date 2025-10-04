@@ -2249,6 +2249,12 @@ abstract class AppLocalizations {
   /// No description provided for @sessionStopMessage.
   String sessionStopMessage(Object duration);
 
+  /// No description provided for @sessionStopResumeAction.
+  String get sessionStopResumeAction;
+
+  /// No description provided for @sessionStopResumeSelectionTitle.
+  String get sessionStopResumeSelectionTitle;
+
   /// No description provided for @numericKeypadSemanticsDigit.
   String numericKeypadSemanticsDigit(Object digit);
 
