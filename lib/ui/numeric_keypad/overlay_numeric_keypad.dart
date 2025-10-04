@@ -406,6 +406,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                     },
                     onNavigate: () => _navigateNext(context, controller),
                     onNavigateBack: () => _navigatePrevious(context, controller),
+                    onAddSet: () => _addSet(context),
                     onDuplicate: () => _duplicateFromPrevious(context, controller),
                   ),
                 ),
@@ -610,12 +611,29 @@ class OverlayNumericKeypad extends StatelessWidget {
     }
 
     if (targetField != null) {
+      if (targetIndex != focusedIndex) {
+        prov.markSetNotDone(targetIndex);
+      }
       prov.requestFocus(
         index: targetIndex,
         field: targetField,
         dropIndex: targetDropIndex,
       );
     }
+
+    _haptic(context);
+  }
+
+  static void _addSet(BuildContext context) {
+    final prov = context.read<DeviceProvider>();
+
+    elogUi('OVERLAY_ADD_SET', {
+      'deviceId': prov.device?.uid,
+      'focusedIndex': prov.focusedIndex,
+      'focusedField': prov.focusedField?.name,
+    });
+
+    prov.addSet();
 
     _haptic(context);
   }
@@ -854,6 +872,7 @@ class _ActionRailCompact extends StatelessWidget {
   final VoidCallback onHide;
   final VoidCallback onNavigate;
   final VoidCallback onNavigateBack;
+  final VoidCallback onAddSet;
   final VoidCallback onDuplicate;
 
   const _ActionRailCompact({
@@ -865,6 +884,7 @@ class _ActionRailCompact extends StatelessWidget {
     required this.onHide,
     required this.onNavigate,
     required this.onNavigateBack,
+    required this.onAddSet,
     required this.onDuplicate,
   });
 
@@ -885,6 +905,11 @@ class _ActionRailCompact extends StatelessWidget {
         Icons.arrow_forward_rounded,
         loc.numericKeypadSemanticsNext,
         onNavigate,
+      ),
+      _RailAction(
+        Icons.add_rounded,
+        loc.addSetButton,
+        onAddSet,
       ),
       _RailAction(
         Icons.copy_all_rounded,

@@ -94,21 +94,18 @@ class _DeviceScreenState extends State<DeviceScreen> {
     _dlog('tap: +Set (before=${prov.sets.length})');
     prov.addSet();
 
-    // PostFrame #1: Keypad öffnen (fokussiert Gewicht)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final index = prov.sets.length - 1;
       if (index >= 0 && index < _setKeys.length) {
         final key = _setKeys[index];
-        key.currentState?.focusWeight();
-
-        // PostFrame #2: erst NACH keypad-open scrollen (korrektes bottomPad)
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (key.currentContext != null) {
+          final context = key.currentContext;
+          if (context != null) {
             _dlog(
               'after add: sets=${prov.sets.length}, ensureVisible index=$index',
             );
             Scrollable.ensureVisible(
-              key.currentContext!,
+              context,
               alignment: 0.5,
               duration: const Duration(milliseconds: 200),
             );
@@ -354,19 +351,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: BrandOutlineButton(
-                  onPressed: () {
-                    _closeKeyboard();
-                    Navigator.pop(context);
-                  },
-                  child: Text(loc.cancelButton),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: SizedBox(
+                width: double.infinity,
                 child: BrandOutlineButton(
                   onPressed: prov.hasSessionToday || prov.isSaving
                       ? null
@@ -489,7 +478,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       : Text(loc.saveButton),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ],
