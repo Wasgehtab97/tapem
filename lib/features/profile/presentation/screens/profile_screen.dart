@@ -561,13 +561,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: AppSpacing.xs),
                 SizedBox(
                   width: double.infinity,
-                  child: BrandActionTile(
+                  child: _SurveyActionButton(
                     title: loc.surveyListTitle,
-                    centerTitle: true,
-                    dense: true,
-                    minVerticalPadding: 0,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    subtitle: loc.reportViewSurveysTitle,
                     onTap: () {
                       final gymId = context.read<GymProvider>().currentGymId;
                       final userId = context.read<AuthProvider>().userId ?? '';
@@ -581,9 +577,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                    variant: BrandActionTileVariant.outlined,
-                    showChevron: false,
-                    uiLogEvent: 'PROFILE_CARD_RENDER',
                   ),
                 ),
               ],
@@ -620,6 +613,198 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
       child: const BrandGradientIcon(
         Icons.auto_graph,
         size: 28,
+      ),
+    );
+  }
+}
+
+class _SurveyActionButton extends StatefulWidget {
+  const _SurveyActionButton({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  State<_SurveyActionButton> createState() => _SurveyActionButtonState();
+}
+
+class _SurveyActionButtonState extends State<_SurveyActionButton> {
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      elogUi('PROFILE_CARD_RENDER', {'title': widget.title});
+    });
+  }
+
+  void _handleHighlightChanged(bool isPressed) {
+    if (_isPressed != isPressed) {
+      setState(() {
+        _isPressed = isPressed;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final radius = BorderRadius.circular(AppRadius.card);
+    final glowColor = gradient.colors.last.withOpacity(0.35);
+    final onSurface = theme.colorScheme.onSurface;
+
+    final content = Ink(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface.withOpacity(0.85),
+            theme.colorScheme.surface.withOpacity(0.65),
+            gradient.colors.first.withOpacity(0.25),
+          ],
+        ),
+        border: Border.all(
+          width: 1.4,
+          color: gradient.colors.last.withOpacity(0.45),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor,
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: gradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: gradient.colors.first.withOpacity(0.45),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(12),
+                child: Icon(
+                  Icons.poll,
+                  color: Colors.black,
+                  size: 24,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      color: onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: onSurface.withOpacity(0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _SurveyActionPill(gradient: gradient),
+          ],
+        ),
+      ),
+    );
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      scale: _isPressed ? 0.97 : 1,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: widget.onTap,
+          onHighlightChanged: _handleHighlightChanged,
+          overlayColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.pressed)) {
+              return gradient.colors.last.withOpacity(0.2);
+            }
+            if (states.contains(MaterialState.hovered)) {
+              return gradient.colors.last.withOpacity(0.1);
+            }
+            return Colors.transparent;
+          }),
+          splashFactory: InkRipple.splashFactory,
+          child: content,
+        ),
+      ),
+    );
+  }
+}
+
+class _SurveyActionPill extends StatelessWidget {
+  const _SurveyActionPill({required this.gradient});
+
+  final LinearGradient gradient;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: gradient,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.bolt,
+              size: 16,
+              color: Colors.black,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'LIVE',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

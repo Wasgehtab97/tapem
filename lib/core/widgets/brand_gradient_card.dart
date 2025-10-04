@@ -4,7 +4,7 @@ import '../theme/design_tokens.dart';
 import '../theme/brand_on_colors.dart';
 
 /// Reusable card container with the brand gradient and rounded corners.
-class BrandGradientCard extends StatelessWidget {
+class BrandGradientCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final BorderRadiusGeometry? borderRadius;
@@ -19,11 +19,26 @@ class BrandGradientCard extends StatelessWidget {
   });
 
   @override
+  State<BrandGradientCard> createState() => _BrandGradientCardState();
+}
+
+class _BrandGradientCardState extends State<BrandGradientCard> {
+  bool _isPressed = false;
+
+  void _handleHighlightChanged(bool isPressed) {
+    if (_isPressed != isPressed) {
+      setState(() {
+        _isPressed = isPressed;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final surface = theme.extension<AppBrandTheme>();
     final BorderRadius radius =
-        (borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card))
+        (widget.borderRadius ?? surface?.radius ?? BorderRadius.circular(AppRadius.card))
             as BorderRadius;
     final gradient = surface?.gradient ?? AppGradients.brandGradient;
     final shadow = surface?.shadow;
@@ -38,30 +53,44 @@ class BrandGradientCard extends StatelessWidget {
         borderRadius: radius,
         boxShadow: shadow,
       ),
-      padding: padding ?? const EdgeInsets.all(AppSpacing.sm),
+      padding: widget.padding ?? const EdgeInsets.all(AppSpacing.sm),
       child: DefaultTextStyle.merge(
         style: TextStyle(color: onBrand),
         child: IconTheme(
           data: IconThemeData(color: onBrand),
-          child: child,
+          child: widget.child,
         ),
       ),
     );
 
-    if (onTap != null) {
+    if (widget.onTap != null) {
       content = Material(
         type: MaterialType.transparency,
         child: InkWell(
           borderRadius: radius,
-          splashColor: overlay,
-          highlightColor: overlay,
-          onTap: onTap,
+          onTap: widget.onTap,
+          onHighlightChanged: _handleHighlightChanged,
+          overlayColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.pressed)) {
+              return overlay.withOpacity(0.6);
+            }
+            if (states.contains(MaterialState.hovered)) {
+              return overlay.withOpacity(0.3);
+            }
+            return overlay.withOpacity(0.15);
+          }),
+          splashFactory: InkRipple.splashFactory,
           child: content,
         ),
       );
     }
 
-    return content;
+    return AnimatedScale(
+      scale: _isPressed ? 0.97 : 1,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: content,
+    );
   }
 }
 
