@@ -368,6 +368,11 @@
     "description": "KPI label for favourite exercise"
   },
 
+  "profileStatsFavoriteExerciseDialogTitle": "Top 5 favourite exercises",
+  "@profileStatsFavoriteExerciseDialogTitle": {
+    "description": "Dialog title that shows the top five favourite exercises"
+  },
+
   "profileStatsFavoriteExerciseFallback": "No sessions yet",
   "@profileStatsFavoriteExerciseFallback": {
     "description": "Fallback text when there is no favourite exercise"

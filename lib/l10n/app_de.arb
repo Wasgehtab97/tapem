@@ -368,6 +368,11 @@
     "description": "KPI-Bezeichnung für die Lieblingsübung"
   },
 
+  "profileStatsFavoriteExerciseDialogTitle": "Top 5 Lieblingsübungen",
+  "@profileStatsFavoriteExerciseDialogTitle": {
+    "description": "Dialogtitel, der die fünf meistgenutzten Übungen zeigt"
+  },
+
   "profileStatsFavoriteExerciseFallback": "Noch keine Sessions",
   "@profileStatsFavoriteExerciseFallback": {
     "description": "Fallback-Text, wenn keine Lieblingsübung ermittelt werden kann"
