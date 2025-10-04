@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -72,12 +73,23 @@ class ActiveWorkoutTimer extends StatelessWidget {
                 child: InkWell(
                   borderRadius: borderRadius,
                   onTap: () async {
-                    final result = await service.confirmStop(context);
+                    final dialogResult = await service.confirmStop(context);
                     if (!context.mounted) return;
-                    if (result == StopResult.save) {
+                    if (dialogResult.result == StopResult.save) {
                       await service.save();
-                    } else if (result == StopResult.discard) {
+                    } else if (dialogResult.result == StopResult.discard) {
                       await service.discard();
+                    } else if (dialogResult.result == StopResult.resume &&
+                        dialogResult.resumeTarget != null) {
+                      final target = dialogResult.resumeTarget!;
+                      Navigator.of(context).pushNamed(
+                        AppRouter.device,
+                        arguments: {
+                          'gymId': target.gymId,
+                          'deviceId': target.deviceId,
+                          'exerciseId': target.exerciseId ?? target.deviceId,
+                        },
+                      );
                     }
                   },
                   child: content,

@@ -1303,6 +1303,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get sessionStopResumeAction => 'Back to exercise';
+
+  @override
+  String get sessionStopResumeSelectionTitle => 'Choose a session';
+
+  @override
   String numericKeypadSemanticsDigit(Object digit) {
     return 'Key $digit';
   }
