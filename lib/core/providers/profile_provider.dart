@@ -1,8 +1,7 @@
 // lib/core/providers/profile_provider.dart
 
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -109,7 +108,10 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  double _calculateAverageTrainingDaysPerWeek(DateTime? createdAt) {
+  double _calculateAverageTrainingDaysPerWeek(
+    DateTime? createdAt, {
+    DateTime Function()? nowProvider,
+  }) {
     if (_trainingDayDates.isEmpty) {
       return 0;
     }
@@ -118,22 +120,50 @@ class ProfileProvider extends ChangeNotifier {
         ? _trainingDayDates.first
         : DateTime(createdAt.year, createdAt.month, createdAt.day);
     final firstMonday = _firstMondayAfter(normalizedCreatedAt);
-    final filteredDays =
-        _trainingDayDates.where((day) => !day.isBefore(firstMonday)).toList();
+    final now = (nowProvider ?? DateTime.now).call();
+    final today = DateTime(now.year, now.month, now.day);
+    final daysSinceSunday = today.weekday % 7;
+    final lastCompletedWeekEnd = today.subtract(
+      Duration(days: daysSinceSunday == 0 ? 7 : daysSinceSunday),
+    );
+
+    if (lastCompletedWeekEnd
+        .isBefore(firstMonday.add(const Duration(days: 6)))) {
+      return 0;
+    }
+
+    final filteredDays = _trainingDayDates.where((day) {
+      return !day.isBefore(firstMonday) && !day.isAfter(lastCompletedWeekEnd);
+    }).toList();
+
     if (filteredDays.isEmpty) {
       return 0;
     }
 
-    final now = DateTime.now();
-    final lastRelevantDay = filteredDays.last.isAfter(now)
-        ? filteredDays.last
-        : now;
-    final spanDays = max(1, lastRelevantDay.difference(firstMonday).inDays + 1);
-    final weeks = spanDays / 7.0;
-    if (weeks <= 0) {
-      return filteredDays.length.toDouble();
+    final completedWeeks =
+        (lastCompletedWeekEnd.difference(firstMonday).inDays + 1) ~/ 7;
+    if (completedWeeks <= 0) {
+      return 0;
     }
-    return filteredDays.length / weeks;
+
+    return filteredDays.length / completedWeeks;
+  }
+
+  @visibleForTesting
+  void setTrainingDayDatesForTest(List<DateTime> days) {
+    _trainingDayDates = List<DateTime>.from(days)
+      ..sort((a, b) => a.compareTo(b));
+  }
+
+  @visibleForTesting
+  double calculateAverageTrainingDaysPerWeekForTest(
+    DateTime? createdAt, {
+    DateTime Function()? nowProvider,
+  }) {
+    return _calculateAverageTrainingDaysPerWeek(
+      createdAt,
+      nowProvider: nowProvider,
+    );
   }
 
   DateTime _firstMondayAfter(DateTime date) {
