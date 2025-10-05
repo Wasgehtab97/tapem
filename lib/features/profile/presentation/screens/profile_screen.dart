@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
@@ -42,12 +42,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final AudioPlayer _audioPlayer;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AudioPlayer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
@@ -62,14 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     super.dispose();
   }
 
   Future<void> _playProfileSound() async {
     try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/sound.wav'));
+      await SystemSound.play(SystemSoundType.click);
     } catch (error) {
       if (kDebugMode) {
         debugPrint('[ProfileSound] Failed to play sound: $error');
@@ -432,6 +428,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Semantics(
+              button: true,
+              label: loc.profilePlayAvatarSound,
+              child: FilledButton.icon(
+                onPressed: _playProfileSound,
+                icon: const Icon(Icons.play_arrow),
+                label: Text(loc.profilePlayAvatarSound),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
