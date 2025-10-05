@@ -60,7 +60,7 @@ class TimerSoundPlayer {
 
     try {
       await _player.stop();
-      await _player.resume();
+      await _player.play(AssetSource(_assetPath));
     } on Object catch (error, stackTrace) {
       log(
         'Failed to play the session timer audio cue.',
