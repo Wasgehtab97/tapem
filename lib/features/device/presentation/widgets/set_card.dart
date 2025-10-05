@@ -220,8 +220,8 @@ class SetCardState extends State<SetCard> {
     _dropWeightFocuses.add(weightFocus);
     _dropRepsFocuses.add(repsFocus);
     if (!widget.readOnly) {
-      final weightListener = () => _handleDropWeightChanged(weightCtrl);
-      final repsListener = () => _handleDropRepsChanged(repsCtrl);
+      void weightListener() => _handleDropWeightChanged(weightCtrl);
+      void repsListener() => _handleDropRepsChanged(repsCtrl);
       weightCtrl.addListener(weightListener);
       repsCtrl.addListener(repsListener);
       _dropWeightListeners.add(weightListener);

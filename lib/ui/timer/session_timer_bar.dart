@@ -32,7 +32,6 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     super.initState();
     _tickListener = (duration) => widget.onTick?.call(duration);
     _doneListener = () {
-      SystemSound.play(SystemSoundType.click);
       HapticFeedback.mediumImpact();
       widget.onDone?.call();
     };

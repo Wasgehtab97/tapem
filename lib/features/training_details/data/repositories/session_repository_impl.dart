@@ -161,9 +161,10 @@ class SessionRepositoryImpl implements SessionRepository {
     DateTime? earliest;
     final exerciseIds = <String>{};
     for (final entry in entries) {
-      earliest = earliest == null
-          ? entry.timestamp
-          : (entry.timestamp.isBefore(earliest!) ? entry.timestamp : earliest);
+      final currentEarliest = earliest;
+      if (currentEarliest == null || entry.timestamp.isBefore(currentEarliest)) {
+        earliest = entry.timestamp;
+      }
       if (entry.exerciseId.isNotEmpty) {
         exerciseIds.add(entry.exerciseId);
       }

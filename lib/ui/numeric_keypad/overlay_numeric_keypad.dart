@@ -48,10 +48,6 @@ class NumericKeypadTheme {
     final scheme = theme.colorScheme;
     final brand = theme.extension<AppBrandTheme>();
 
-    Color blend(Color base, Color overlay, double opacity) {
-      return Color.alphaBlend(overlay.withOpacity(opacity), base);
-    }
-
     Color tintTowards(Color source, Color target, double amount) {
       return Color.lerp(source, target, amount) ?? source;
     }
@@ -525,13 +521,17 @@ class OverlayNumericKeypad extends StatelessWidget {
         break;
     }
 
-    if (targetField != null) {
-      prov.requestFocus(
-        index: targetIndex,
-        field: targetField,
-        dropIndex: targetDropIndex,
-      );
+    final fieldToFocus = targetField;
+    if (fieldToFocus == null) {
+      _haptic(context);
+      return;
     }
+
+    prov.requestFocus(
+      index: targetIndex,
+      field: fieldToFocus,
+      dropIndex: targetDropIndex,
+    );
 
     _haptic(context);
   }
@@ -610,16 +610,20 @@ class OverlayNumericKeypad extends StatelessWidget {
         break;
     }
 
-    if (targetField != null) {
-      if (targetIndex != focusedIndex) {
-        prov.markSetNotDone(targetIndex);
-      }
-      prov.requestFocus(
-        index: targetIndex,
-        field: targetField,
-        dropIndex: targetDropIndex,
-      );
+    final fieldToFocus = targetField;
+    if (fieldToFocus == null) {
+      _haptic(context);
+      return;
     }
+
+    if (targetIndex != focusedIndex) {
+      prov.markSetNotDone(targetIndex);
+    }
+    prov.requestFocus(
+      index: targetIndex,
+      field: fieldToFocus,
+      dropIndex: targetDropIndex,
+    );
 
     _haptic(context);
   }
