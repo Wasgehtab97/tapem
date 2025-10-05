@@ -70,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await _audioPlayer.stop();
       await _audioPlayer.setReleaseMode(ReleaseMode.stop);
-      await _audioPlayer.play(const AssetSource('sounds/sound.wav'));
+      await _audioPlayer.play(AssetSource('sounds/sound.wav'));
     } catch (error) {
       if (kDebugMode) {
         debugPrint('[ProfileSound] Failed to play sound: $error');
