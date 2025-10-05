@@ -10,13 +10,12 @@ class TimerAudioService {
     AudioPlayer? player,
     this.preAlertAssetPath = defaultAssetPath,
     this.endAssetPath = defaultAssetPath,
-  })  : _player = player ??
-            AudioPlayer(
-              playerId: 'session_timer',
-              mode: PlayerMode.lowLatency,
-            ) {
+  })  : _player = player ?? AudioPlayer(
+            playerId: 'session_timer',
+          ) {
     _ensureAudioContext();
     unawaited(_player.setReleaseMode(ReleaseMode.stop));
+    unawaited(_player.setPlayerMode(PlayerMode.lowLatency));
   }
 
   static const String defaultAssetPath = 'assets/sounds/session_timer_end.wav';
@@ -35,7 +34,7 @@ class TimerAudioService {
   static void _ensureAudioContext() {
     if (_audioContextConfigured) return;
     AudioPlayer.global.setAudioContext(
-      const AudioContext(
+      AudioContext(
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
           options: {AVAudioSessionOptions.mixWithOthers},
