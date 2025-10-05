@@ -12,8 +12,8 @@ class TimerSoundPlayer {
     _preloadAsset();
   }
 
-  static const String _assetLookupKey = 'audio/session_timer_end.wav';
-  static const String _assetDisplayPath = 'assets/$_assetLookupKey';
+  static const String _assetLookupKey = 'assets/audio/session_timer_end.wav';
+  static const String _assetDisplayPath = _assetLookupKey;
 
   final AudioPlayer _player;
   bool _hasValidSource = false;
@@ -26,7 +26,7 @@ class TimerSoundPlayer {
     }
     _isPreloading = true;
     try {
-      await _player.setSourceAsset(_assetLookupKey);
+      await _player.setSource(AssetSource(_assetLookupKey));
       _hasValidSource = true;
     } on Object catch (error, stackTrace) {
       _hasValidSource = false;
