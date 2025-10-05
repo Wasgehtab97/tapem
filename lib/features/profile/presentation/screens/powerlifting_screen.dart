@@ -22,9 +22,17 @@ class PowerliftingScreen extends StatefulWidget {
 class _PowerliftingScreenState extends State<PowerliftingScreen> {
   PowerliftingMetric _selectedMetric = PowerliftingMetric.heaviest;
 
+  AppLocalizations _requireLoc(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    if (loc == null) {
+      throw StateError('AppLocalizations not available in the current context.');
+    }
+    return loc;
+  }
+
   Future<void> _onAddPressed() async {
     final provider = context.read<PowerliftingProvider>();
-    final loc = AppLocalizations.of(context)!;
+    final loc = _requireLoc(context);
     final gymId = provider.activeGymId;
 
     if (gymId == null || gymId.isEmpty) {
@@ -119,7 +127,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
 
   Future<void> _onClearPressed() async {
     final provider = context.read<PowerliftingProvider>();
-    final loc = AppLocalizations.of(context)!;
+    final loc = _requireLoc(context);
 
     final shouldReset = await showDialog<bool>(
           context: context,
@@ -371,7 +379,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
+    final loc = _requireLoc(context);
     final provider = context.watch<PowerliftingProvider>();
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
@@ -540,7 +548,7 @@ class _PowerliftingTableSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
+    final loc = _requireLoc(context);
 
     final colorScheme = Theme.of(context).colorScheme;
 

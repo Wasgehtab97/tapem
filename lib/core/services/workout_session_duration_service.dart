@@ -335,8 +335,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
           exerciseName = exerciseDoc.data()?['name'] as String?;
         }
         final parts = [deviceName, exerciseName]
-            .where((value) => value != null && value!.trim().isNotEmpty)
-            .cast<String>()
+            .whereType<String>()
+            .map((value) => value.trim())
+            .where((value) => value.isNotEmpty)
             .toList();
         if (parts.isNotEmpty) {
           title = parts.join(' — ');

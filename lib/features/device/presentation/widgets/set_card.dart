@@ -220,8 +220,8 @@ class SetCardState extends State<SetCard> {
     _dropWeightFocuses.add(weightFocus);
     _dropRepsFocuses.add(repsFocus);
     if (!widget.readOnly) {
-      final weightListener = () => _handleDropWeightChanged(weightCtrl);
-      final repsListener = () => _handleDropRepsChanged(repsCtrl);
+      void weightListener() => _handleDropWeightChanged(weightCtrl);
+      void repsListener() => _handleDropRepsChanged(repsCtrl);
       weightCtrl.addListener(weightListener);
       repsCtrl.addListener(repsListener);
       _dropWeightListeners.add(weightListener);
@@ -1043,10 +1043,8 @@ class _InputPill extends StatefulWidget {
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
   final bool dense;
-  final String? supportingText;
   final bool showLabel;
   final String? placeholder;
-  final TextStyle? placeholderTextStyle;
 
   const _InputPill({
     required this.controller,
@@ -1057,10 +1055,8 @@ class _InputPill extends StatefulWidget {
     this.onTap,
     this.validator,
     this.dense = false,
-    this.supportingText,
     this.showLabel = true,
     this.placeholder,
-    this.placeholderTextStyle,
   });
 
   @override
@@ -1162,16 +1158,8 @@ class _InputPillState extends State<_InputPill> {
       height: 1.15,
     );
 
-    final basePlaceholderStyle = widget.placeholderTextStyle ?? valueStyle;
-    final placeholderColor =
-        widget.placeholderTextStyle?.color ?? brandColor.withOpacity(0.35);
     final placeholderStyle =
-        basePlaceholderStyle.copyWith(color: placeholderColor);
-
-    final supportingStyle = TextStyle(
-      fontSize: widget.dense ? 11 : 12,
-      color: widget.tokens.chipFg.withOpacity(isDark ? 0.55 : 0.5),
-    );
+        valueStyle.copyWith(color: brandColor.withOpacity(0.35));
 
     final double horizontalPadding =
         showLabel ? (widget.dense ? 12 : 14) : (widget.dense ? 12 : 16);
@@ -1259,24 +1247,6 @@ class _InputPillState extends State<_InputPill> {
       ),
     );
 
-    final Widget supporting = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      child: widget.supportingText == null
-          ? const SizedBox.shrink()
-          : Padding(
-              key: ValueKey(widget.supportingText),
-              padding: EdgeInsets.only(
-                top: showLabel ? (widget.dense ? 4 : 6) : (widget.dense ? 6 : 8),
-              ),
-              child: Text(
-                widget.supportingText!,
-                style: supportingStyle,
-              ),
-            ),
-    );
-
     if (showLabel) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1285,18 +1255,6 @@ class _InputPillState extends State<_InputPill> {
           Text(widget.label, style: labelStyle),
           SizedBox(height: widget.dense ? 2 : 4),
           inputSurface,
-          supporting,
-        ],
-      );
-    }
-
-    if (widget.supportingText != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          inputSurface,
-          supporting,
         ],
       );
     }

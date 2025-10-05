@@ -48,10 +48,6 @@ class NumericKeypadTheme {
     final scheme = theme.colorScheme;
     final brand = theme.extension<AppBrandTheme>();
 
-    Color blend(Color base, Color overlay, double opacity) {
-      return Color.alphaBlend(overlay.withOpacity(opacity), base);
-    }
-
     Color tintTowards(Color source, Color target, double amount) {
       return Color.lerp(source, target, amount) ?? source;
     }
@@ -468,7 +464,7 @@ class OverlayNumericKeypad extends StatelessWidget {
     }
 
     int targetIndex = focusedIndex;
-    DeviceSetFieldFocus? targetField;
+    late final DeviceSetFieldFocus targetField;
     int? targetDropIndex;
 
     switch (focusedField) {
@@ -525,13 +521,11 @@ class OverlayNumericKeypad extends StatelessWidget {
         break;
     }
 
-    if (targetField != null) {
-      prov.requestFocus(
-        index: targetIndex,
-        field: targetField,
-        dropIndex: targetDropIndex,
-      );
-    }
+    prov.requestFocus(
+      index: targetIndex,
+      field: targetField,
+      dropIndex: targetDropIndex,
+    );
 
     _haptic(context);
   }
@@ -938,7 +932,6 @@ class _ActionRailCompact extends StatelessWidget {
       icon: a.icon,
       semanticsLabel: a.label,
       onTap: a.onTap,
-      repeat: a.repeat,
       theme: theme,
     );
 
@@ -1027,7 +1020,6 @@ class _RailAction {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool repeat;
   final bool wide;
 
   // internal bookkeeping for layout
@@ -1037,7 +1029,6 @@ class _RailAction {
     this.icon,
     this.label,
     this.onTap, {
-    this.repeat = false,
     this.wide = false,
   });
 }

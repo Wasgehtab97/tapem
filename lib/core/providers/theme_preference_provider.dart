@@ -78,8 +78,9 @@ class ThemePreferenceProvider extends ChangeNotifier {
     await _loadCachedOverride(uid);
     notifyListeners();
     try {
-      final data = _fetchOverride != null
-          ? await _fetchOverride!(uid)
+      final fetchOverride = _fetchOverride;
+      final data = fetchOverride != null
+          ? await fetchOverride(uid)
           : (await _doc(uid).get()).data();
       final value = data != null ? data['themeId'] as String? : null;
       final resolved = value != null ? BrandThemeIdX.fromStorage(value) : null;

@@ -7,7 +7,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
