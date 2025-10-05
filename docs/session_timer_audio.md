@@ -4,7 +4,7 @@ The session timer uses the `TimerSoundPlayer` class to play a short chime when t
 
 ## 1. Prepare the audio asset
 
-1. Create or source a very short (≤ 1 second) notification-style chime in WAV format. The clip should be optimised for low latency and avoid long fades so that the cue is immediately recognisable.
+1. Create or source a concise (≈ 3 second) notification-style chime in WAV format. The clip should be optimised for low latency and avoid long fades so that the cue begins crisply and can finish as the countdown reaches zero.
 2. Verify that your chosen audio is licensed for your intended distribution. Keep the license text alongside the asset if attribution is required.
 3. Normalise the audio to avoid clipping while ensuring it remains audible on quiet devices. A peak level of −3 dBFS is typically sufficient.
 
@@ -31,6 +31,6 @@ flutter:
 ## 4. Update packages and rebuild
 
 1. Run `flutter pub get` to ensure the `audioplayers` dependency is installed.
-2. Rebuild the application. When the session timer completes, you should now hear the audio cue in addition to the existing haptic feedback and system click.
+2. Rebuild the application. Three seconds before the session timer completes, you should now hear the audio cue alongside the existing haptic feedback and system click that trigger at completion.
 
 If the sound does not play, check the debug console for log statements from `TimerSoundPlayer`—they will indicate whether the asset is missing or if playback failed on the target platform.

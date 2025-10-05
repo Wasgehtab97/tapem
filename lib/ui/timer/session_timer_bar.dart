@@ -26,20 +26,26 @@ class SessionTimerBar extends StatefulWidget {
 }
 
 class _SessionTimerBarState extends State<SessionTimerBar> {
+  static const Duration _soundLeadTime = Duration(seconds: 3);
+
   late final ValueChanged<Duration> _tickListener;
   late final VoidCallback _doneListener;
   late final TimerSoundPlayer _soundPlayer;
   SessionTimerService? _service;
+  bool _hasQueuedSound = false;
 
   @override
   void initState() {
     super.initState();
     _soundPlayer = TimerSoundPlayer();
-    _tickListener = (duration) => widget.onTick?.call(duration);
+    _tickListener = (duration) {
+      _handleSoundScheduling(duration);
+      widget.onTick?.call(duration);
+    };
     _doneListener = () {
-      unawaited(_soundPlayer.play());
       SystemSound.play(SystemSoundType.click);
       HapticFeedback.mediumImpact();
+      _hasQueuedSound = false;
       widget.onDone?.call();
     };
   }
@@ -62,6 +68,9 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
   void dispose() {
     _service?.removeTickListener(_tickListener);
     _service?.removeDoneListener(_doneListener);
+    _hasQueuedSound = false;
+    unawaited(_soundPlayer.stop());
+    unawaited(_soundPlayer.dispose());
     super.dispose();
   }
 
@@ -70,6 +79,27 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     final m = (s ~/ 60).toString().padLeft(2, '0');
     final r = (s % 60).toString().padLeft(2, '0');
     return '$m:$r';
+  }
+
+  void _handleSoundScheduling(Duration remaining) {
+    if (remaining > _soundLeadTime) {
+      if (_hasQueuedSound) {
+        unawaited(_soundPlayer.stop());
+      }
+      _hasQueuedSound = false;
+      return;
+    }
+
+    if (_hasQueuedSound) {
+      return;
+    }
+
+    if (remaining <= Duration.zero) {
+      return;
+    }
+
+    _hasQueuedSound = true;
+    unawaited(_soundPlayer.play());
   }
 
   @override
@@ -163,7 +193,11 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
                             onPressed: () {
                               if (running) {
                                 service.stop();
+                                _hasQueuedSound = false;
+                                unawaited(_soundPlayer.stop());
                               } else {
+                                _hasQueuedSound = false;
+                                unawaited(_soundPlayer.stop());
                                 service.startWith(service.selectedDuration);
                               }
                             },
