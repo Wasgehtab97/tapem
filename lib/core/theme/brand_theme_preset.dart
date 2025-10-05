@@ -111,7 +111,7 @@ class BrandThemePresets {
     gradientStart: Colors.white,
     gradientEnd: Colors.white,
     focus: Colors.white,
-    onColors: const BrandOnColors(
+    onColors: BrandOnColors(
       onPrimary: Colors.black,
       onSecondary: Colors.white,
       onGradient: Colors.white,
