@@ -933,6 +933,7 @@ class _ActionRailCompact extends StatelessWidget {
       semanticsLabel: a.label,
       onTap: a.onTap,
       theme: theme,
+      repeat: a.repeat,
     );
 
     Widget wideBtn(_RailAction a) => _RailBtnWide(
@@ -1021,6 +1022,7 @@ class _RailAction {
   final String label;
   final VoidCallback onTap;
   final bool wide;
+  final bool repeat;
 
   // internal bookkeeping for layout
   bool _consumed = false;
@@ -1030,6 +1032,7 @@ class _RailAction {
     this.label,
     this.onTap, {
     this.wide = false,
+    this.repeat = false,
   });
 }
 
