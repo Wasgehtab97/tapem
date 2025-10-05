@@ -13,7 +13,7 @@ class TimerSoundPlayer {
   }
 
   static const String _assetLookupKey = 'assets/audio/session_timer_end.wav';
-  static const String _assetDisplayPath = _assetLookupKey;
+  static const String _assetDisplayPath = 'assets/audio/session_timer_end.wav';
 
   final AudioPlayer _player;
   bool _hasValidSource = false;
