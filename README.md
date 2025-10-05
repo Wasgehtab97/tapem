@@ -76,6 +76,7 @@ Eine Übersicht über die Steuerung des Pausen-Timers findet sich in [docs/devic
    ```bash
    flutter pub get
    ```
+   > Hinweis: Lege die vom Maintainer bereitgestellte Audiodatei `assets/sounds/session_timer_end.wav` ab, bevor du den Session-Timer testest. Fehlt die Datei, werden die akustischen Hinweise bewusst übersprungen.
 4. **Firebase konfigurieren**
    - `google-services.json` in `android/app/`
    - `GoogleService-Info.plist` in `ios/Runner/`

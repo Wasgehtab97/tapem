@@ -58,6 +58,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   json_annotation: ^4.9.0
   url_launcher: ^6.1.7
+  audioplayers: ^6.1.0
 
   # Local Storage & Timezone
   shared_preferences: ^2.4.10
@@ -130,6 +131,7 @@ flutter:
     - assets/avatars/gym_frankfurt/
     - assets/avatars/bodypower_weissenthurm/
     - assets/avatars/studentgym_london/
+    - assets/sounds/
 
 l10n:
   arb-dir: lib/l10n
