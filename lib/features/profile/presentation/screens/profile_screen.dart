@@ -1,8 +1,8 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
@@ -42,10 +42,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final AudioPlayer _audioPlayer;
 
   @override
   void initState() {
     super.initState();
+    _audioPlayer = AudioPlayer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
@@ -60,12 +62,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   Future<void> _playProfileSound() async {
     try {
-      await SystemSound.play(SystemSoundType.click);
+      await _audioPlayer.stop();
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+      await _audioPlayer.play(const AssetSource('sounds/sound.wav'));
     } catch (error) {
       if (kDebugMode) {
         debugPrint('[ProfileSound] Failed to play sound: $error');
@@ -487,44 +492,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       return const Icon(Icons.person);
                     });
                     final theme = Theme.of(context);
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        DailyXpAvatar(
-                          image: image.image,
-                          size: avatarSize,
-                          xp: xp.dailyLevelXp,
-                          level: xp.dailyLevel,
-                        ),
-                        Positioned(
-                          bottom: -4,
-                          right: -4,
-                          child: Semantics(
-                            button: true,
-                            label: loc.profilePlayAvatarSound,
-                            child: Tooltip(
-                              message: loc.profilePlayAvatarSound,
-                              child: Material(
-                                type: MaterialType.circle,
-                                color: theme.colorScheme.primary,
-                                elevation: 2,
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  onTap: _playProfileSound,
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.play_arrow,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    return DailyXpAvatar(
+                      image: image.image,
+                      size: avatarSize,
+                      xp: xp.dailyLevelXp,
+                      level: xp.dailyLevel,
                     );
                   }),
                 ),
