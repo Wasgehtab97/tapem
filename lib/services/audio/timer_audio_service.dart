@@ -38,7 +38,7 @@ class TimerAudioService {
       AudioContext(
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
-          options: const [AVAudioSessionOptions.mixWithOthers],
+          options: const {AVAudioSessionOptions.mixWithOthers},
         ),
         android: AudioContextAndroid(
           usageType: AndroidUsageType.assistanceSonification,
