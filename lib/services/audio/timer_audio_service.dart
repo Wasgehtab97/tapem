@@ -13,9 +13,9 @@ class TimerAudioService {
   })  : _player = player ??
             AudioPlayer(
               playerId: 'session_timer',
-              mode: PlayerMode.lowLatency,
             ) {
     _ensureAudioContext();
+    unawaited(_player.setPlayerMode(PlayerMode.lowLatency));
     unawaited(_player.setReleaseMode(ReleaseMode.stop));
   }
 
@@ -35,7 +35,7 @@ class TimerAudioService {
   static void _ensureAudioContext() {
     if (_audioContextConfigured) return;
     AudioPlayer.global.setAudioContext(
-      const AudioContext(
+      AudioContext(
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
           options: {AVAudioSessionOptions.mixWithOthers},
