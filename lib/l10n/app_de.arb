@@ -1042,6 +1042,8 @@
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar-Text, wenn das Löschen einer Session fehlgeschlagen ist."}
   ,"profileChangeAvatar": "Profilbild ändern"
   ,"@profileChangeAvatar": {"description": "Tooltip und Accessibility-Label zum Ändern des Profilbilds"}
+  ,"profilePlayAvatarSound": "Profil-Sound abspielen"
+  ,"@profilePlayAvatarSound": {"description": "Tooltip und Accessibility-Label zum Abspielen des Profil-Sounds"}
   ,"homeTabAdmin": "Admin"
   ,"@homeTabAdmin": {"description": "Label des Admin-Tabs"}
   ,"homeTabRank": "Ranking"

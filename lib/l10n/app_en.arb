@@ -1040,6 +1040,8 @@
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar text shown when deleting a session failed."}
   ,"profileChangeAvatar": "Change profile picture"
   ,"@profileChangeAvatar": {"description": "Tooltip and accessibility label for changing the profile avatar"}
+  ,"profilePlayAvatarSound": "Play profile sound"
+  ,"@profilePlayAvatarSound": {"description": "Tooltip and accessibility label for playing the profile sound"}
   ,"homeTabAdmin": "Admin"
   ,"@homeTabAdmin": {"description": "Label of the admin tab"}
   ,"homeTabRank": "Rank"
