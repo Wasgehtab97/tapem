@@ -120,6 +120,7 @@ flutter:
     - assets/muscle_heatmap.svg
     - assets/body_front.svg
     - assets/body_back.svg
+    - assets/audio/session_timer_end.wav
     # Bundle all avatar assets recursively
     - assets/avatars/global/
     - assets/avatars/lifthouse_koblenz/

@@ -70,4 +70,23 @@ class TimerSoundPlayer {
       );
     }
   }
+
+  /// Stops playback if the cue is currently playing.
+  Future<void> stop() async {
+    try {
+      await _player.stop();
+    } on Object catch (error, stackTrace) {
+      log(
+        'Failed to stop the session timer audio cue.',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'TimerSoundPlayer',
+      );
+    }
+  }
+
+  /// Releases any resources held by the underlying audio player.
+  Future<void> dispose() async {
+    await _player.dispose();
+  }
 }
