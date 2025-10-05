@@ -6,7 +6,6 @@ class SessionTimerController {
     required Duration total,
     bool initiallyRunning = false,
     this.onTick,
-    this.onDone,
     TickerProvider? vsync,
   })  : _total = total,
         remaining = ValueNotifier(total),
@@ -23,7 +22,6 @@ class SessionTimerController {
   final ValueNotifier<Duration> remaining;
   final ValueNotifier<bool> running;
   final ValueChanged<Duration>? onTick;
-  final VoidCallback? onDone;
 
   late final Ticker _ticker;
   Duration _elapsed = Duration.zero;
@@ -39,7 +37,6 @@ class SessionTimerController {
       running.value = false;
       _ticker.stop();
       onTick?.call(Duration.zero);
-      onDone?.call();
     } else {
       remaining.value = left;
       onTick?.call(left);

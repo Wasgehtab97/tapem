@@ -12,7 +12,6 @@ class SessionTimerService extends ChangeNotifier {
     _controller = SessionTimerController(
       total: Duration(seconds: _durations[_selectedIndex]),
       onTick: _handleTick,
-      onDone: _handleDone,
     );
   }
 
@@ -24,7 +23,6 @@ class SessionTimerService extends ChangeNotifier {
   bool _hasUserInteraction = false;
 
   final List<ValueChanged<Duration>> _tickListeners = <ValueChanged<Duration>>[];
-  final List<VoidCallback> _doneListeners = <VoidCallback>[];
 
   UnmodifiableListView<int> get availableDurations =>
       UnmodifiableListView(_durations);
@@ -49,16 +47,6 @@ class SessionTimerService extends ChangeNotifier {
 
   void removeTickListener(ValueChanged<Duration> listener) {
     _tickListeners.remove(listener);
-  }
-
-  void addDoneListener(VoidCallback listener) {
-    if (!_doneListeners.contains(listener)) {
-      _doneListeners.add(listener);
-    }
-  }
-
-  void removeDoneListener(VoidCallback listener) {
-    _doneListeners.remove(listener);
   }
 
   void applyInitialDuration(Duration duration) {
@@ -101,12 +89,6 @@ class SessionTimerService extends ChangeNotifier {
   void _handleTick(Duration remaining) {
     for (final listener in List<ValueChanged<Duration>>.from(_tickListeners)) {
       listener(remaining);
-    }
-  }
-
-  void _handleDone() {
-    for (final listener in List<VoidCallback>.from(_doneListeners)) {
-      listener();
     }
   }
 

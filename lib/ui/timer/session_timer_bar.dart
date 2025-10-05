@@ -9,13 +9,11 @@ import 'session_timer_service.dart';
 class SessionTimerBar extends StatefulWidget {
   final Duration initialDuration;
   final ValueChanged<Duration>? onTick;
-  final VoidCallback? onDone;
 
   const SessionTimerBar({
     super.key,
     required this.initialDuration,
     this.onTick,
-    this.onDone,
   });
 
   @override
@@ -24,16 +22,22 @@ class SessionTimerBar extends StatefulWidget {
 
 class _SessionTimerBarState extends State<SessionTimerBar> {
   late final ValueChanged<Duration> _tickListener;
-  late final VoidCallback _doneListener;
   SessionTimerService? _service;
+  bool _hasCompleted = false;
 
   @override
   void initState() {
     super.initState();
-    _tickListener = (duration) => widget.onTick?.call(duration);
-    _doneListener = () {
-      HapticFeedback.mediumImpact();
-      widget.onDone?.call();
+    _tickListener = (duration) {
+      widget.onTick?.call(duration);
+      if (duration <= Duration.zero) {
+        if (!_hasCompleted) {
+          _hasCompleted = true;
+          HapticFeedback.mediumImpact();
+        }
+      } else {
+        _hasCompleted = false;
+      }
     };
   }
 
@@ -43,18 +47,16 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     final nextService = context.read<SessionTimerService>();
     if (!identical(_service, nextService)) {
       _service?.removeTickListener(_tickListener);
-      _service?.removeDoneListener(_doneListener);
       _service = nextService;
       _service!.addTickListener(_tickListener);
-      _service!.addDoneListener(_doneListener);
       _service!.applyInitialDuration(widget.initialDuration);
+      _hasCompleted = false;
     }
   }
 
   @override
   void dispose() {
     _service?.removeTickListener(_tickListener);
-    _service?.removeDoneListener(_doneListener);
     super.dispose();
   }
 
