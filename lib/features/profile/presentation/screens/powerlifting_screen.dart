@@ -12,6 +12,14 @@ import 'package:tapem/features/profile/domain/models/powerlifting_record.dart';
 import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
+AppLocalizations _requireLoc(BuildContext context) {
+  final loc = AppLocalizations.of(context);
+  if (loc == null) {
+    throw StateError('AppLocalizations not available in the current context.');
+  }
+  return loc;
+}
+
 class PowerliftingScreen extends StatefulWidget {
   const PowerliftingScreen({super.key});
 
@@ -21,14 +29,6 @@ class PowerliftingScreen extends StatefulWidget {
 
 class _PowerliftingScreenState extends State<PowerliftingScreen> {
   PowerliftingMetric _selectedMetric = PowerliftingMetric.heaviest;
-
-  AppLocalizations _requireLoc(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    if (loc == null) {
-      throw StateError('AppLocalizations not available in the current context.');
-    }
-    return loc;
-  }
 
   Future<void> _onAddPressed() async {
     final provider = context.read<PowerliftingProvider>();
@@ -113,7 +113,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
       messages.add(duplicateMessage);
     }
     if (failureMessage != null) {
-      messages.add(failureMessage!);
+      messages.add(failureMessage);
     }
 
     if (messages.isEmpty) {
