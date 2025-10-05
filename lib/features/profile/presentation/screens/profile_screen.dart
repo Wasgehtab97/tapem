@@ -1,5 +1,7 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
+    _configureAudioSession();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
@@ -76,6 +79,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         debugPrint('[ProfileSound] Failed to play sound: $error');
       }
     }
+  }
+
+  void _configureAudioSession() {
+    const audioContext = AudioContext(
+      android: AudioContextAndroid(
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.assistanceSonification,
+        audioFocus: AndroidAudioFocus.gainTransient,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {
+          AVAudioSessionOptions.mixWithOthers,
+          AVAudioSessionOptions.defaultToSpeaker,
+        },
+      ),
+    );
+
+    unawaited(AudioPlayer.global.setAudioContext(audioContext));
   }
 
   void _showLanguageDialog() {
