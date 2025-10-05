@@ -12,7 +12,8 @@ class TimerSoundPlayer {
     _preloadAsset();
   }
 
-  static const String _assetPath = 'assets/audio/session_timer_end.wav';
+  static const String _assetLookupKey = 'audio/session_timer_end.wav';
+  static const String _assetDisplayPath = 'assets/$_assetLookupKey';
 
   final AudioPlayer _player;
   bool _hasValidSource = false;
@@ -25,13 +26,13 @@ class TimerSoundPlayer {
     }
     _isPreloading = true;
     try {
-      await _player.setSourceAsset(_assetPath);
+      await _player.setSourceAsset(_assetLookupKey);
       _hasValidSource = true;
     } on Object catch (error, stackTrace) {
       _hasValidSource = false;
       log(
         'Unable to prepare the session timer audio asset. '
-        'Verify that the file exists at $_assetPath and is declared in pubspec.yaml.',
+        'Verify that the file exists at $_assetDisplayPath and is declared in pubspec.yaml.',
         error: error,
         stackTrace: stackTrace,
         name: 'TimerSoundPlayer',
@@ -51,7 +52,7 @@ class TimerSoundPlayer {
       if (kDebugMode) {
         log(
           'Skipping session timer audio playback because the asset '
-          'is unavailable. Ensure the file exists at $_assetPath.',
+          'is unavailable. Ensure the file exists at $_assetDisplayPath.',
           name: 'TimerSoundPlayer',
         );
       }
@@ -60,7 +61,7 @@ class TimerSoundPlayer {
 
     try {
       await _player.stop();
-      await _player.play(AssetSource(_assetPath));
+      await _player.play(AssetSource(_assetLookupKey));
     } on Object catch (error, stackTrace) {
       log(
         'Failed to play the session timer audio cue.',
