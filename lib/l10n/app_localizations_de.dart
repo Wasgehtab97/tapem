@@ -24,6 +24,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cancelButton => 'Abbrechen';
+
+  @override
   String get commonOk => 'OK';
 
   @override
@@ -289,8 +291,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Lieblingsübung';
 
   @override
-  String get profileStatsFavoriteExerciseDialogTitle =>
-      'Top 5 Lieblingsübungen';
+  String get profileStatsFavoriteExerciseDialogTitle => 'Top 5 Lieblingsübungen';
 
   @override
   String get profileStatsFavoriteExerciseFallback => 'Noch keine Sessions';
@@ -1057,7 +1058,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String exerciseDeleteMessage(Object name) {
-    return 'Übung "$name" wirklich löschen?';
+    return 'Übung \"$name\" wirklich löschen?';
   }
 
   @override
@@ -1205,6 +1206,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminDashboardBranding => 'Branding';
 
   @override
+  String get adminDeviceNfcWritten => 'NFC-Tag geschrieben';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Fehler beim Schreiben: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Gerät löschen';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Gerät löschen?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Soll das Gerät \"$name\" wirklich gelöscht werden?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Gerät gelöscht';
+
+  @override
+  String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
+
+  @override
   String adminSymbolsAddButton(int count) {
     return 'Hinzufügen ($count)';
   }
@@ -1222,7 +1248,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminSymbolsNoAssetsForTitle(Object title) {
-    return 'Manifest enthält keine ${title}-Assets';
+    return 'Manifest enthält keine $title-Assets';
   }
 
   @override
@@ -1230,7 +1256,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminSymbolsAllTitleAssigned(Object title) {
-    return 'Alle ${title}-Symbole bereits zugewiesen.';
+    return 'Alle $title-Symbole bereits zugewiesen.';
   }
 
   @override
@@ -1336,29 +1362,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Tastatur ausblenden';
-
-  @override
-  String get adminDeviceNfcWritten => 'NFC-Tag geschrieben';
-
-  @override
-  String adminDeviceNfcWriteError(Object error) {
-    return 'Fehler beim Schreiben: $error';
-  }
-
-  @override
-  String get deviceDeleteTooltip => 'Gerät löschen';
-
-  @override
-  String get deviceDeleteDialogTitle => 'Gerät löschen?';
-
-  @override
-  String deviceDeleteDialogMessage(Object name) {
-    return 'Soll das Gerät "$name" wirklich gelöscht werden?';
-  }
-
-  @override
-  String get deviceDeleteSuccess => 'Gerät gelöscht';
-
-  @override
-  String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
 }

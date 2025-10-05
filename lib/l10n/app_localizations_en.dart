@@ -24,6 +24,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancel';
+
+  @override
   String get commonOk => 'OK';
 
   @override
@@ -289,8 +291,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Favourite exercise';
 
   @override
-  String get profileStatsFavoriteExerciseDialogTitle =>
-      'Top 5 favourite exercises';
+  String get profileStatsFavoriteExerciseDialogTitle => 'Top 5 favourite exercises';
 
   @override
   String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
@@ -1057,7 +1058,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String exerciseDeleteMessage(Object name) {
-    return 'Do you really want to delete the exercise "$name"?';
+    return 'Do you really want to delete the exercise \"$name\"?';
   }
 
   @override
@@ -1205,6 +1206,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminDashboardBranding => 'Branding';
 
   @override
+  String get adminDeviceNfcWritten => 'NFC tag written';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Error writing NFC tag: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Delete device';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Delete device?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Do you really want to delete the device \"$name\"?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Device deleted';
+
+  @override
+  String get deviceWriteNfcTooltip => 'Write NFC tag';
+
+  @override
   String adminSymbolsAddButton(int count) {
     return 'Add ($count)';
   }
@@ -1336,29 +1362,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
-
-  @override
-  String get adminDeviceNfcWritten => 'NFC tag written';
-
-  @override
-  String adminDeviceNfcWriteError(Object error) {
-    return 'Error writing NFC tag: $error';
-  }
-
-  @override
-  String get deviceDeleteTooltip => 'Delete device';
-
-  @override
-  String get deviceDeleteDialogTitle => 'Delete device?';
-
-  @override
-  String deviceDeleteDialogMessage(Object name) {
-    return 'Do you really want to delete the device "$name"?';
-  }
-
-  @override
-  String get deviceDeleteSuccess => 'Device deleted';
-
-  @override
-  String get deviceWriteNfcTooltip => 'Write NFC tag';
 }
