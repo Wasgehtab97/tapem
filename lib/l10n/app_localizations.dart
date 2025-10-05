@@ -1976,6 +1976,9 @@ abstract class AppLocalizations {
   /// No description provided for @profileChangeAvatar.
   String get profileChangeAvatar;
 
+  /// No description provided for @profilePlayAvatarSound.
+  String get profilePlayAvatarSound;
+
   /// No description provided for @homeTabAdmin.
   String get homeTabAdmin;
 
