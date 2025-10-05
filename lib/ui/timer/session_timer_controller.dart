@@ -7,11 +7,13 @@ class SessionTimerController {
     bool initiallyRunning = false,
     this.onTick,
     this.onDone,
-    required TickerProvider vsync,
+    TickerProvider? vsync,
   })  : _total = total,
         remaining = ValueNotifier(total),
         running = ValueNotifier(initiallyRunning) {
-    _ticker = vsync.createTicker(_onTick);
+    _ticker = (vsync != null)
+        ? vsync.createTicker(_onTick)
+        : Ticker(_onTick);
     if (initiallyRunning) {
       _ticker.start();
     }
@@ -68,8 +70,18 @@ class SessionTimerController {
     _ticker.stop();
     _elapsed = Duration.zero;
     _lastTick = Duration.zero;
-      remaining.value = _total;
+    remaining.value = _total;
     running.value = false;
+  }
+
+  void setTotal(Duration total) {
+    final isRunning = running.value;
+    _total = total;
+    if (!isRunning) {
+      _elapsed = Duration.zero;
+      _lastTick = Duration.zero;
+      remaining.value = _total;
+    }
   }
 
   void dispose() {
