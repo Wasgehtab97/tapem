@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import 'session_timer_controller.dart';
+import 'session_timer_service.dart';
 
 class SessionTimerBar extends StatefulWidget {
   final Duration initialDuration;
@@ -21,35 +22,40 @@ class SessionTimerBar extends StatefulWidget {
   State<SessionTimerBar> createState() => _SessionTimerBarState();
 }
 
-class _SessionTimerBarState extends State<SessionTimerBar>
-    with SingleTickerProviderStateMixin {
-  static const _durations = [60, 90, 120, 150, 180];
-  late int _selectedIndex;
-  late final SessionTimerController _controller;
+class _SessionTimerBarState extends State<SessionTimerBar> {
+  late final ValueChanged<Duration> _tickListener;
+  late final VoidCallback _doneListener;
+  SessionTimerService? _service;
 
   @override
   void initState() {
     super.initState();
-    final initialSeconds = widget.initialDuration.inSeconds;
-    _selectedIndex = _durations.indexOf(initialSeconds);
-    if (_selectedIndex == -1) {
-      _selectedIndex = _durations.indexOf(90);
+    _tickListener = (duration) => widget.onTick?.call(duration);
+    _doneListener = () {
+      SystemSound.play(SystemSoundType.click);
+      HapticFeedback.mediumImpact();
+      widget.onDone?.call();
+    };
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextService = context.read<SessionTimerService>();
+    if (!identical(_service, nextService)) {
+      _service?.removeTickListener(_tickListener);
+      _service?.removeDoneListener(_doneListener);
+      _service = nextService;
+      _service!.addTickListener(_tickListener);
+      _service!.addDoneListener(_doneListener);
+      _service!.applyInitialDuration(widget.initialDuration);
     }
-    _controller = SessionTimerController(
-      total: Duration(seconds: _durations[_selectedIndex]),
-      onTick: widget.onTick,
-      onDone: () {
-        SystemSound.play(SystemSoundType.click);
-        HapticFeedback.mediumImpact();
-        widget.onDone?.call();
-      },
-      vsync: this,
-    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _service?.removeTickListener(_tickListener);
+    _service?.removeDoneListener(_doneListener);
     super.dispose();
   }
 
@@ -60,25 +66,21 @@ class _SessionTimerBarState extends State<SessionTimerBar>
     return '$m:$r';
   }
 
-  void _changeDuration(int delta) {
-    setState(() {
-      _selectedIndex =
-          (_selectedIndex + delta).clamp(0, _durations.length - 1);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final service = context.watch<SessionTimerService>();
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
     final brand = theme.extension<AppBrandTheme>();
     final highContrast = MediaQuery.of(context).highContrast;
 
     return ValueListenableBuilder<Duration>(
-      valueListenable: _controller.remaining,
+      valueListenable: service.remaining,
       builder: (context, remaining, _) {
-        final progress =
-            1 - (remaining.inMilliseconds / _controller.total.inMilliseconds).clamp(0.0, 1.0);
+        final totalMillis = service.total.inMilliseconds;
+        final progress = totalMillis <= 0
+            ? 0.0
+            : 1 - (remaining.inMilliseconds / totalMillis).clamp(0.0, 1.0);
         Color? textColor = Color.lerp(
           theme.colorScheme.onSurface,
           theme.colorScheme.onPrimary,
@@ -146,27 +148,37 @@ class _SessionTimerBarState extends State<SessionTimerBar>
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        tooltip: loc.timerStart,
-                        icon: const Icon(Icons.play_arrow),
-                        onPressed: () => _controller.startWith(
-                            Duration(seconds: _durations[_selectedIndex])),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: service.running,
+                        builder: (context, running, _) {
+                          return IconButton(
+                            tooltip: running ? loc.timerStop : loc.timerStart,
+                            icon: Icon(running ? Icons.stop : Icons.play_arrow),
+                            onPressed: () {
+                              if (running) {
+                                service.stop();
+                              } else {
+                                service.startWith(service.selectedDuration);
+                              }
+                            },
+                          );
+                        },
                       ),
                       IconButton(
                         tooltip: loc.timerDecrease,
                         icon: const Icon(Icons.remove),
                         onPressed: () =>
-                            _changeDuration(-1),
+                            service.changeDuration(-1),
                       ),
                       Text(
-                        '${_durations[_selectedIndex]} ${loc.secondsAbbreviation}',
+                        '${service.selectedDuration.inSeconds} ${loc.secondsAbbreviation}',
                         style: theme.textTheme.titleMedium,
                       ),
                       IconButton(
                         tooltip: loc.timerIncrease,
                         icon: const Icon(Icons.add),
                         onPressed: () =>
-                            _changeDuration(1),
+                            service.changeDuration(1),
                       ),
                       Expanded(
                         child: Center(
