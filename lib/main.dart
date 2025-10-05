@@ -8,6 +8,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'features/avatars/domain/services/avatar_catalog.dart';
+import 'core/audio/timer_chime_player.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -196,6 +197,8 @@ void _handleMessage(RemoteMessage message) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await TimerChimePlayer.configureGlobalAudioContext();
 
   // .env laden (optional)
   await dotenv.load(fileName: '.env.dev').catchError((_) {});

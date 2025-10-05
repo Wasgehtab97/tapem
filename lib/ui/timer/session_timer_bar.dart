@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import 'timer_sound_player.dart';
+import '../../core/audio/timer_chime_player.dart';
+import 'session_timer_chime_coordinator.dart';
 import 'session_timer_service.dart';
 
 class SessionTimerBar extends StatefulWidget {
@@ -26,27 +27,25 @@ class SessionTimerBar extends StatefulWidget {
 }
 
 class _SessionTimerBarState extends State<SessionTimerBar> {
-  static const Duration _soundLeadTime = Duration(seconds: 3);
-
   late final ValueChanged<Duration> _tickListener;
   late final VoidCallback _doneListener;
-  late final TimerSoundPlayer _soundPlayer;
+  late final TimerChimePlayer _chimePlayer;
+  late final SessionTimerChimeCoordinator _chimeCoordinator;
   SessionTimerService? _service;
-  bool _hasQueuedSound = false;
+  bool _running = false;
 
   @override
   void initState() {
     super.initState();
-    _soundPlayer = TimerSoundPlayer();
+    _chimePlayer = TimerChimePlayer();
+    _chimeCoordinator = SessionTimerChimeCoordinator(player: _chimePlayer);
     _tickListener = (duration) {
-      _handleSoundScheduling(duration);
       widget.onTick?.call(duration);
     };
     _doneListener = () {
       SystemSound.play(SystemSoundType.click);
       HapticFeedback.mediumImpact();
-      _hasQueuedSound = false;
-      widget.onDone?.call();
+      unawaited(_handleTimerCompletion());
     };
   }
 
@@ -55,12 +54,18 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     super.didChangeDependencies();
     final nextService = context.read<SessionTimerService>();
     if (!identical(_service, nextService)) {
+      _chimeCoordinator.onTimerPauseOrStop();
       _service?.removeTickListener(_tickListener);
       _service?.removeDoneListener(_doneListener);
+      _service?.running.removeListener(_handleRunningChange);
       _service = nextService;
       _service!.addTickListener(_tickListener);
       _service!.addDoneListener(_doneListener);
       _service!.applyInitialDuration(widget.initialDuration);
+      _service!.running.addListener(_handleRunningChange);
+      final currentlyRunning = _service!.running.value;
+      _running = !currentlyRunning;
+      _handleRunningChange();
     }
   }
 
@@ -68,10 +73,36 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
   void dispose() {
     _service?.removeTickListener(_tickListener);
     _service?.removeDoneListener(_doneListener);
-    _hasQueuedSound = false;
-    unawaited(_soundPlayer.stop());
-    unawaited(_soundPlayer.dispose());
+    _service?.running.removeListener(_handleRunningChange);
+    _chimeCoordinator.onTimerPauseOrStop();
+    unawaited(_chimePlayer.dispose());
     super.dispose();
+  }
+
+  void _handleRunningChange() {
+    final service = _service;
+    if (service == null) return;
+    final isRunning = service.running.value;
+    if (isRunning == _running) return;
+    _running = isRunning;
+    if (isRunning) {
+      unawaited(
+        _chimeCoordinator.onTimerStart(
+          total: service.total,
+          remaining: service.remaining.value,
+        ),
+      );
+    } else {
+      if (service.remaining.value > Duration.zero) {
+        _chimeCoordinator.onTimerPauseOrStop();
+      }
+    }
+  }
+
+  Future<void> _handleTimerCompletion() async {
+    await _chimeCoordinator.onTimerEnd(onNavigate: () async {
+      widget.onDone?.call();
+    });
   }
 
   String _fmt(Duration d) {
@@ -79,27 +110,6 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     final m = (s ~/ 60).toString().padLeft(2, '0');
     final r = (s % 60).toString().padLeft(2, '0');
     return '$m:$r';
-  }
-
-  void _handleSoundScheduling(Duration remaining) {
-    if (remaining > _soundLeadTime) {
-      if (_hasQueuedSound) {
-        unawaited(_soundPlayer.stop());
-      }
-      _hasQueuedSound = false;
-      return;
-    }
-
-    if (_hasQueuedSound) {
-      return;
-    }
-
-    if (remaining <= Duration.zero) {
-      return;
-    }
-
-    _hasQueuedSound = true;
-    unawaited(_soundPlayer.play());
   }
 
   @override
@@ -193,11 +203,8 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
                             onPressed: () {
                               if (running) {
                                 service.stop();
-                                _hasQueuedSound = false;
-                                unawaited(_soundPlayer.stop());
+                                _chimeCoordinator.onTimerPauseOrStop();
                               } else {
-                                _hasQueuedSound = false;
-                                unawaited(_soundPlayer.stop());
                                 service.startWith(service.selectedDuration);
                               }
                             },

@@ -13,6 +13,7 @@ import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
+import 'debug/audio_smoke_test_page.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
@@ -73,6 +74,7 @@ class AppRouter {
   static const friendDetail = '/friend_detail';
   static const friendTrainingCalendar = '/friend_training_calendar';
   static const creatine = '/creatine';
+  static const audioSmokeTest = '/debug/audio_smoke_test';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -250,6 +252,9 @@ class AppRouter {
 
       case creatine:
         return MaterialPageRoute(builder: (_) => const CreatineScreen());
+
+      case audioSmokeTest:
+        return MaterialPageRoute(builder: (_) => const AudioSmokeTestPage());
 
       case powerlifting:
         return MaterialPageRoute(builder: (_) => const PowerliftingScreen());

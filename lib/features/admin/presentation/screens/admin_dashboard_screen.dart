@@ -261,6 +261,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       showChevron: false,
                       uiLogEvent: 'ADMIN_CARD_RENDER',
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    BrandActionTile(
+                      leadingIcon: Icons.graphic_eq,
+                      title: 'Audio Smoke Test',
+                      onTap: () {
+                        Navigator.of(context)
+                            .pushNamed(AppRouter.audioSmokeTest);
+                      },
+                      variant: BrandActionTileVariant.outlined,
+                      showChevron: false,
+                      uiLogEvent: 'ADMIN_CARD_RENDER',
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     Expanded(
                       child: ListView.separated(

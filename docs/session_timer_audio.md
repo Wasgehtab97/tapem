@@ -1,6 +1,6 @@
 # Session Timer Audio Setup
 
-The session timer uses the `TimerSoundPlayer` class to play a short chime when the countdown completes. The application code expects a WAV file at `assets/audio/session_timer_end.wav`, but the binary is not tracked in version control. Follow the checklist below to enable the sound in your build.
+The session timer uses the `TimerChimePlayer` service to play a short chime when the countdown completes. The application code expects a WAV file at `assets/audio/session_timer_end.wav`, but the binary is not tracked in version control. Follow the checklist below to enable the sound in your build.
 
 ## 1. Prepare the audio asset
 
@@ -33,4 +33,4 @@ flutter:
 1. Run `flutter pub get` to ensure the `audioplayers` dependency is installed.
 2. Rebuild the application. Three seconds before the session timer completes, you should now hear the audio cue alongside the existing haptic feedback and system click that trigger at completion.
 
-If the sound does not play, check the debug console for log statements from `TimerSoundPlayer`—they will indicate whether the asset is missing or if playback failed on the target platform.
+If the sound does not play, check the debug console for log statements from `TimerChimePlayer`—they will indicate whether the asset is missing or if playback failed on the target platform.
