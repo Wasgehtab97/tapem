@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
+import 'timer_sound_player.dart';
 import 'session_timer_service.dart';
 
 class SessionTimerBar extends StatefulWidget {
@@ -25,13 +28,16 @@ class SessionTimerBar extends StatefulWidget {
 class _SessionTimerBarState extends State<SessionTimerBar> {
   late final ValueChanged<Duration> _tickListener;
   late final VoidCallback _doneListener;
+  late final TimerSoundPlayer _soundPlayer;
   SessionTimerService? _service;
 
   @override
   void initState() {
     super.initState();
+    _soundPlayer = TimerSoundPlayer();
     _tickListener = (duration) => widget.onTick?.call(duration);
     _doneListener = () {
+      unawaited(_soundPlayer.play());
       SystemSound.play(SystemSoundType.click);
       HapticFeedback.mediumImpact();
       widget.onDone?.call();
