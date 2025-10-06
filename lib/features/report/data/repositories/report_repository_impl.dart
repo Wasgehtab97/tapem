@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/features/report/data/sources/firestore_report_source.dart';
+import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
 
 class ReportRepositoryImpl implements ReportRepository {
@@ -10,12 +11,15 @@ class ReportRepositoryImpl implements ReportRepository {
     : _source = source ?? FirestoreReportSource();
 
   @override
-  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId) async {
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId) async {
     final devices = await _source.fetchDevices(gymId);
-    final Map<String, int> counts = {};
+    final List<DeviceUsageStat> stats = [];
 
     for (final deviceDoc in devices) {
       final deviceId = deviceDoc.id;
+      final deviceData = deviceDoc.data();
+      final deviceName = (deviceData?['name'] as String?)?.trim();
+      final description = (deviceData?['description'] as String?)?.trim();
       final logs = await _source.fetchLogsForDevice(gymId, deviceId);
 
       // Einzigartige sessionId sammeln
@@ -27,10 +31,17 @@ class ReportRepositoryImpl implements ReportRepository {
       }
 
       // Anzahl der Sessions = Anzahl der eindeutigen sessionIds
-      counts[deviceId] = sessionIds.length;
+      stats.add(
+        DeviceUsageStat(
+          id: deviceId,
+          name: deviceName?.isNotEmpty == true ? deviceName! : deviceId,
+          description: description ?? '',
+          sessions: sessionIds.length,
+        ),
+      );
     }
 
-    return counts;
+    return stats;
   }
 
   @override

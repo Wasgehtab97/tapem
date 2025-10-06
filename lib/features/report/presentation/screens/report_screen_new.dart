@@ -21,7 +21,8 @@ class ReportScreenNew extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usageData = context.watch<ReportProvider>().usageCounts;
+    final reportProvider = context.watch<ReportProvider>();
+    final usageData = reportProvider.usageStats;
     final feedbackProvider = context.watch<FeedbackProvider>();
     final loc = AppLocalizations.of(context)!;
     if (!feedbackProvider.isLoading && feedbackProvider.entries.isEmpty) {
@@ -32,55 +33,60 @@ class ReportScreenNew extends StatelessWidget {
     final int openCount = feedbackProvider.openEntries.length;
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.reportTitle)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DeviceUsageChart(usageData: usageData),
-            const SizedBox(height: AppSpacing.md),
-            BrandActionTile(
-              leadingIcon: Icons.feedback_outlined,
-              title: loc.reportFeedbackCardTitle,
-              subtitle: openCount > 0
-                  ? loc.reportFeedbackOpenEntries(openCount)
-                  : loc.reportFeedbackNoOpenEntries,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FeedbackOverviewScreen(gymId: gymId),
-                  ),
-                );
-              },
-              variant: BrandActionTileVariant.outlined,
-              uiLogEvent: 'REPORT_CARD_RENDER',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            BrandActionTile(
-              leadingIcon: Icons.add_circle_outline,
-              title: loc.reportCreateSurveyTitle,
-              onTap: () => _showCreateSurveyDialog(context),
-              variant: BrandActionTileVariant.outlined,
-              uiLogEvent: 'REPORT_CARD_RENDER',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            BrandActionTile(
-              leadingIcon: Icons.poll,
-              title: loc.reportViewSurveysTitle,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SurveyOverviewScreen(gymId: gymId),
-                  ),
-                );
-              },
-              variant: BrandActionTileVariant.outlined,
-              uiLogEvent: 'REPORT_CARD_RENDER',
-            ),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DeviceUsageChart(
+                usageData: usageData,
+                state: reportProvider.state,
+                errorMessage: reportProvider.errorMessage,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              BrandActionTile(
+                leadingIcon: Icons.feedback_outlined,
+                title: loc.reportFeedbackCardTitle,
+                subtitle: openCount > 0
+                    ? loc.reportFeedbackOpenEntries(openCount)
+                    : loc.reportFeedbackNoOpenEntries,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FeedbackOverviewScreen(gymId: gymId),
+                    ),
+                  );
+                },
+                variant: BrandActionTileVariant.gradient,
+                uiLogEvent: 'REPORT_CARD_RENDER',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              BrandActionTile(
+                leadingIcon: Icons.add_circle_outline,
+                title: loc.reportCreateSurveyTitle,
+                onTap: () => _showCreateSurveyDialog(context),
+                variant: BrandActionTileVariant.gradient,
+                uiLogEvent: 'REPORT_CARD_RENDER',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              BrandActionTile(
+                leadingIcon: Icons.poll,
+                title: loc.reportViewSurveysTitle,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SurveyOverviewScreen(gymId: gymId),
+                    ),
+                  );
+                },
+                variant: BrandActionTileVariant.gradient,
+                uiLogEvent: 'REPORT_CARD_RENDER',
+              ),
+            ],
+          ),
         ),
       ),
     );

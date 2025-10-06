@@ -1072,8 +1072,14 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
-  ,"reportDeviceFilterHint": "Gerät filtern"
+  ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
+  ,"reportDeviceUsageEmpty": "Noch keine Nutzungsdaten vorhanden"
+  ,"@reportDeviceUsageEmpty": {"description": "Hinweis, wenn keine Nutzungsdaten vorliegen"}
+  ,"reportDeviceUsageNoMatches": "Keine Geräte entsprechen deiner Suche"
+  ,"@reportDeviceUsageNoMatches": {"description": "Hinweis, wenn keine Geräte zur Suche passen"}
+  ,"reportDeviceUsageError": "Die Nutzungsdaten konnten nicht geladen werden."
+  ,"@reportDeviceUsageError": {"description": "Hinweis, wenn das Laden der Nutzungsdaten fehlschlägt"}
   ,"reportDeviceUsageSessions": "{count} Sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip-Zeile mit der Anzahl an Sessions","placeholders": {"count": {"type": "int"}}}
   ,"exerciseDeleteTitle": "Übung löschen"
