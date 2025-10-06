@@ -6,7 +6,10 @@ class GetDeviceUsageStats {
   final ReportRepository _repo;
   GetDeviceUsageStats(this._repo);
 
-  Future<List<DeviceUsageStat>> execute(String gymId) {
-    return _repo.fetchDeviceUsageStats(gymId);
+  Future<List<DeviceUsageStat>> execute(
+    String gymId, {
+    DateTime? since,
+  }) {
+    return _repo.fetchDeviceUsageStats(gymId, since: since);
   }
 }

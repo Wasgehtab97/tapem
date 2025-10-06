@@ -1074,6 +1074,16 @@
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
+  ,"reportUsageRange7Days": "Letzte 7 Tage"
+  ,"@reportUsageRange7Days": {"description": "Filteroption für die letzten 7 Tage"}
+  ,"reportUsageRange30Days": "Letzte 30 Tage"
+  ,"@reportUsageRange30Days": {"description": "Filteroption für die letzten 30 Tage"}
+  ,"reportUsageRange90Days": "Letzte 90 Tage"
+  ,"@reportUsageRange90Days": {"description": "Filteroption für die letzten 90 Tage"}
+  ,"reportUsageRange365Days": "Letzte 365 Tage"
+  ,"@reportUsageRange365Days": {"description": "Filteroption für die letzten 365 Tage"}
+  ,"reportUsageRangeAll": "Gesamt"
+  ,"@reportUsageRangeAll": {"description": "Filteroption für den gesamten Zeitraum"}
   ,"reportDeviceUsageEmpty": "Noch keine Nutzungsdaten vorhanden"
   ,"@reportDeviceUsageEmpty": {"description": "Hinweis, wenn keine Nutzungsdaten vorliegen"}
   ,"reportDeviceUsageNoMatches": "Keine Geräte entsprechen deiner Suche"

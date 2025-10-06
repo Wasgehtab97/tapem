@@ -1046,6 +1046,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
+  String get reportUsageRange7Days => 'Letzte 7 Tage';
+  String get reportUsageRange30Days => 'Letzte 30 Tage';
+  String get reportUsageRange90Days => 'Letzte 90 Tage';
+  String get reportUsageRange365Days => 'Letzte 365 Tage';
+  String get reportUsageRangeAll => 'Gesamt';
 
   @override
   String get reportDeviceUsageEmpty =>

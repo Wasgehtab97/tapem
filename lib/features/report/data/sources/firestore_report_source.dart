@@ -22,15 +22,22 @@ class FirestoreReportSource {
   /// Für ein Gerät alle Log-Dokumente laden
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> fetchLogsForDevice(
     String gymId,
-    String deviceId,
-  ) {
-    return _fs
+    String deviceId, {
+    DateTime? since,
+  }) {
+    Query<Map<String, dynamic>> query = _fs
         .collection('gyms')
         .doc(gymId)
         .collection('devices')
         .doc(deviceId)
-        .collection('logs')
-        .get()
-        .then((snap) => snap.docs);
+        .collection('logs');
+
+    if (since != null) {
+      query = query
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+          .orderBy('timestamp', descending: true);
+    }
+
+    return query.get().then((snap) => snap.docs);
   }
 }

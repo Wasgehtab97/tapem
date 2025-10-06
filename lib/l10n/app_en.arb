@@ -1072,6 +1072,16 @@
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
+  ,"reportUsageRange7Days": "Last 7 days"
+  ,"@reportUsageRange7Days": {"description": "Filter option label for viewing usage data of the last 7 days"}
+  ,"reportUsageRange30Days": "Last 30 days"
+  ,"@reportUsageRange30Days": {"description": "Filter option label for viewing usage data of the last 30 days"}
+  ,"reportUsageRange90Days": "Last 90 days"
+  ,"@reportUsageRange90Days": {"description": "Filter option label for viewing usage data of the last 90 days"}
+  ,"reportUsageRange365Days": "Last 365 days"
+  ,"@reportUsageRange365Days": {"description": "Filter option label for viewing usage data of the last 365 days"}
+  ,"reportUsageRangeAll": "All time"
+  ,"@reportUsageRangeAll": {"description": "Filter option label for viewing usage data without a time restriction"}
   ,"reportDeviceUsageEmpty": "No usage data available yet"
   ,"@reportDeviceUsageEmpty": {"description": "Message shown when there is no usage data"}
   ,"reportDeviceUsageNoMatches": "No devices match your search"

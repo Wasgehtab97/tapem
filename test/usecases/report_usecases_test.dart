@@ -8,9 +8,15 @@ class FakeReportRepository implements ReportRepository {
   int usageCalls = 0;
   int timeCalls = 0;
 
+  DateTime? lastSince;
+
   @override
-  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId) async {
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
+    String gymId, {
+    DateTime? since,
+  }) async {
     usageCalls++;
+    lastSince = since;
     return const [
       DeviceUsageStat(id: 'd1', name: 'Device', sessions: 1),
     ];
@@ -28,9 +34,11 @@ void main() {
     test('GetDeviceUsageStats delegates to repository', () async {
       final repo = FakeReportRepository();
       final usecase = GetDeviceUsageStats(repo);
-      final result = await usecase.execute('g1');
+      final now = DateTime(2024, 01, 15);
+      final result = await usecase.execute('g1', since: now);
       expect(result.first.sessions, 1);
       expect(repo.usageCalls, 1);
+      expect(repo.lastSince, now);
     });
 
     test('GetAllLogTimestamps delegates to repository', () async {

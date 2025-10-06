@@ -12,12 +12,16 @@ class DeviceUsageChart extends StatefulWidget {
   final List<DeviceUsageStat> usageData;
   final ReportState state;
   final String? errorMessage;
+  final DeviceUsageRange usageRange;
+  final Future<void> Function(DeviceUsageRange range) onRangeSelected;
 
   const DeviceUsageChart({
     super.key,
     required this.usageData,
     required this.state,
     this.errorMessage,
+    required this.usageRange,
+    required this.onRangeSelected,
   });
 
   @override
@@ -53,9 +57,32 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       hasFilteredData,
     );
 
+    final rangeChips = DeviceUsageRange.values;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Row(
+            children: [
+              for (final range in rangeChips)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: ChoiceChip(
+                    label: Text(_labelForRange(loc, range)),
+                    selected: widget.usageRange == range,
+                    onSelected: (selected) {
+                      if (selected) {
+                        widget.onRangeSelected(range);
+                      }
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
         TextField(
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
@@ -80,6 +107,21 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     );
   }
 
+  String _labelForRange(AppLocalizations loc, DeviceUsageRange range) {
+    switch (range) {
+      case DeviceUsageRange.last7Days:
+        return loc.reportUsageRange7Days;
+      case DeviceUsageRange.last30Days:
+        return loc.reportUsageRange30Days;
+      case DeviceUsageRange.last90Days:
+        return loc.reportUsageRange90Days;
+      case DeviceUsageRange.last365Days:
+        return loc.reportUsageRange365Days;
+      case DeviceUsageRange.all:
+        return loc.reportUsageRangeAll;
+    }
+  }
+
   Widget _buildChartContent(
     BuildContext context,
     AppLocalizations loc,
@@ -90,8 +132,6 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
   ) {
     final textStyle = theme.textTheme.bodySmall ??
         const TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
-    final descriptionStyle = theme.textTheme.labelSmall ??
-        const TextStyle(fontSize: 11, fontWeight: FontWeight.w500);
     final valueStyle = theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
         ) ??
@@ -156,9 +196,9 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       maxValue: chartMax,
       ticks: ticks,
       nameStyle: textStyle,
-      descriptionStyle: descriptionStyle,
       valueStyle: valueStyle,
       valueFormatter: loc.reportDeviceUsageSessions,
+      onBarTap: _handleBarTap,
     );
   }
 
@@ -177,6 +217,47 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     final sorted = ticks.toList()..sort();
     return sorted;
   }
+
+  void _handleBarTap(DeviceUsageStat stat) {
+    if (!mounted) {
+      return;
+    }
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                stat.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                loc.reportDeviceUsageSessions(stat.sessions),
+                style: theme.textTheme.bodyMedium,
+              ),
+              if (stat.description.trim().isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  stat.description.trim(),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _UsageChartArea extends StatelessWidget {
@@ -185,18 +266,18 @@ class _UsageChartArea extends StatelessWidget {
     required this.maxValue,
     required this.ticks,
     required this.nameStyle,
-    required this.descriptionStyle,
     required this.valueStyle,
     required this.valueFormatter,
+    required this.onBarTap,
   });
 
   final List<DeviceUsageStat> stats;
   final double maxValue;
   final List<double> ticks;
   final TextStyle nameStyle;
-  final TextStyle descriptionStyle;
   final TextStyle valueStyle;
   final String Function(int) valueFormatter;
+  final void Function(DeviceUsageStat stat) onBarTap;
 
   static const double _axisWidth = 64;
   static const double _topPadding = 16;
@@ -211,13 +292,23 @@ class _UsageChartArea extends StatelessWidget {
     final axisLabelColor = theme.textTheme.labelSmall?.color ??
         theme.colorScheme.onSurface.withOpacity(0.72);
     final gridColor = axisLabelColor.withOpacity(0.25);
-    final descriptionColor = descriptionStyle.color ??
-        Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.8 : 0.7);
-
     final totalBarsWidth =
         stats.length * _barWidth + math.max(0, stats.length - 1) * _barSpacing;
     final contentWidth = totalBarsWidth + _horizontalPadding * 2;
     final chartHeight = 260 + _topPadding + _bottomPadding;
+
+    final safeMax = maxValue <= 0 ? 1.0 : maxValue;
+    final verticalChartHeight = chartHeight - _topPadding - _bottomPadding;
+    final barGeometries = <_BarGeometry>[
+      for (var i = 0; i < stats.length; i++)
+        _createGeometry(
+          stat: stats[i],
+          index: i,
+          safeMax: safeMax,
+          verticalChartHeight: verticalChartHeight,
+          chartHeight: chartHeight,
+        ),
+    ];
 
     return SizedBox(
       height: chartHeight,
@@ -234,10 +325,18 @@ class _UsageChartArea extends StatelessWidget {
                       final width = math.max(contentWidth, constraints.maxWidth);
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: CustomPaint(
-                          size: Size(width, chartHeight),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapUp: (details) {
+                            final stat = _hitTestBar(details.localPosition, barGeometries);
+                            if (stat != null) {
+                              onBarTap(stat);
+                            }
+                          },
+                          child: CustomPaint(
+                            size: Size(width, chartHeight),
                           painter: _UsageChartPainter(
-                            stats: stats,
+                            bars: barGeometries,
                             maxValue: maxValue,
                             ticks: ticks,
                             barWidth: _barWidth,
@@ -247,11 +346,10 @@ class _UsageChartArea extends StatelessWidget {
                             horizontalPadding: _horizontalPadding,
                             gradient: AppGradients.progress,
                             nameStyle: nameStyle,
-                            descriptionStyle:
-                                descriptionStyle.copyWith(color: descriptionColor),
                             valueStyle: valueStyle,
                             gridColor: gridColor,
                             valueFormatter: valueFormatter,
+                          ),
                           ),
                         ),
                       );
@@ -283,6 +381,35 @@ class _UsageChartArea extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  _BarGeometry _createGeometry({
+    required DeviceUsageStat stat,
+    required int index,
+    required double safeMax,
+    required double verticalChartHeight,
+    required double chartHeight,
+  }) {
+    final left = _horizontalPadding + index * (_barWidth + _barSpacing);
+    final clampedSessions = stat.sessions.toDouble().clamp(0, safeMax);
+    final normalized = safeMax == 0 ? 0 : clampedSessions / safeMax;
+    final barTop = _topPadding + (1 - normalized) * verticalChartHeight;
+    final barBottom = chartHeight - _bottomPadding;
+    final double barHeight = math.max(4.0, barBottom - barTop);
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, barBottom - barHeight, _barWidth, barHeight),
+      const Radius.circular(AppRadius.card),
+    );
+    return _BarGeometry(stat: stat, rect: rect);
+  }
+
+  DeviceUsageStat? _hitTestBar(Offset position, List<_BarGeometry> geometries) {
+    for (final bar in geometries) {
+      if (bar.rect.contains(position)) {
+        return bar.stat;
+      }
+    }
+    return null;
   }
 }
 
@@ -362,7 +489,7 @@ class _UsageAxisPainter extends CustomPainter {
 
 class _UsageChartPainter extends CustomPainter {
   _UsageChartPainter({
-    required this.stats,
+    required this.bars,
     required this.maxValue,
     required this.ticks,
     required this.barWidth,
@@ -372,13 +499,12 @@ class _UsageChartPainter extends CustomPainter {
     required this.horizontalPadding,
     required this.gradient,
     required this.nameStyle,
-    required this.descriptionStyle,
     required this.valueStyle,
     required this.gridColor,
     required this.valueFormatter,
   });
 
-  final List<DeviceUsageStat> stats;
+  final List<_BarGeometry> bars;
   final double maxValue;
   final List<double> ticks;
   final double barWidth;
@@ -388,7 +514,6 @@ class _UsageChartPainter extends CustomPainter {
   final double horizontalPadding;
   final LinearGradient gradient;
   final TextStyle nameStyle;
-  final TextStyle descriptionStyle;
   final TextStyle valueStyle;
   final Color gridColor;
   final String Function(int) valueFormatter;
@@ -423,21 +548,12 @@ class _UsageChartPainter extends CustomPainter {
       gridPaint,
     );
 
-    for (var i = 0; i < stats.length; i++) {
-      final stat = stats[i];
-      final left = horizontalPadding + i * (barWidth + barSpacing);
-      final barTop = _yForValue(
-        stat.sessions.toDouble(),
-        chartHeight: chartHeight,
-        safeMax: safeMax,
-        topPadding: topPadding,
-      );
-      final barBottom = size.height - bottomPadding;
-      final double barHeight = math.max(4.0, barBottom - barTop);
-      final barRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, barBottom - barHeight, barWidth, barHeight),
-        const Radius.circular(AppRadius.card),
-      );
+    for (final bar in bars) {
+      final stat = bar.stat;
+      final barRect = bar.rect;
+      final left = barRect.left;
+      final barBottom = barRect.bottom;
+      final barHeight = barRect.height;
       final paint = Paint()
         ..shader = gradient.createShader(barRect.outerRect);
       canvas.drawRRect(barRect, paint);
@@ -460,62 +576,47 @@ class _UsageChartPainter extends CustomPainter {
         Offset(left + (barWidth - valuePainter.width) / 2, valueTop),
       );
 
-      final namePainter = TextPainter(
-        text: TextSpan(text: stat.name, style: nameStyle.copyWith(color: Colors.black.withOpacity(0.85))),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-        maxLines: 2,
-        ellipsis: '…',
-      )..layout(maxWidth: barWidth - 16);
+      if (stat.sessions > 10) {
+        final namePainter = TextPainter(
+          text: TextSpan(
+            text: stat.name,
+            style: nameStyle.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+          maxLines: 2,
+          ellipsis: '…',
+        )..layout(maxWidth: barWidth - 24);
 
-      final descriptionPainter = stat.description.isEmpty
-          ? null
-          : (TextPainter(
-              text: TextSpan(
-                text: stat.description,
-                style: descriptionStyle,
-              ),
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.ltr,
-              maxLines: 2,
-              ellipsis: '…',
-            )..layout(maxWidth: barWidth - 16));
-
-      final combinedHeight = namePainter.height +
-          (descriptionPainter?.height ?? 0) +
-          (descriptionPainter != null ? 6 : 0);
-      final hasRoomInside = barHeight - 24 >= combinedHeight;
-
-      double textTop;
-      if (hasRoomInside) {
-        textTop = barRect.top + (barHeight - combinedHeight) / 2;
-      } else {
-        textTop = barRect.bottom + 8;
-      }
-
-      namePainter.paint(
-        canvas,
-        Offset(left + (barWidth - namePainter.width) / 2, textTop),
-      );
-
-      if (descriptionPainter != null) {
-        final descTop = textTop + namePainter.height + 6;
-        descriptionPainter.paint(
-          canvas,
-          Offset(left + (barWidth - descriptionPainter.width) / 2, descTop),
-        );
+        final availableHeight = barHeight - 20;
+        if (namePainter.height <= availableHeight) {
+          final labelTop = barRect.top + (barHeight - namePainter.height) / 2;
+          namePainter.paint(
+            canvas,
+            Offset(left + (barWidth - namePainter.width) / 2, labelTop),
+          );
+        }
       }
     }
   }
 
   @override
   bool shouldRepaint(covariant _UsageChartPainter oldDelegate) {
-    return stats != oldDelegate.stats ||
+    return bars != oldDelegate.bars ||
         maxValue != oldDelegate.maxValue ||
         nameStyle != oldDelegate.nameStyle ||
-        descriptionStyle != oldDelegate.descriptionStyle ||
         gridColor != oldDelegate.gridColor;
   }
+}
+
+class _BarGeometry {
+  const _BarGeometry({required this.stat, required this.rect});
+
+  final DeviceUsageStat stat;
+  final RRect rect;
 }
 
 double _yForValue(

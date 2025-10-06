@@ -2024,6 +2024,21 @@ abstract class AppLocalizations {
   /// No description provided for @reportDeviceFilterHint.
   String get reportDeviceFilterHint;
 
+  /// No description provided for @reportUsageRange7Days.
+  String get reportUsageRange7Days;
+
+  /// No description provided for @reportUsageRange30Days.
+  String get reportUsageRange30Days;
+
+  /// No description provided for @reportUsageRange90Days.
+  String get reportUsageRange90Days;
+
+  /// No description provided for @reportUsageRange365Days.
+  String get reportUsageRange365Days;
+
+  /// No description provided for @reportUsageRangeAll.
+  String get reportUsageRangeAll;
+
   /// No description provided for @reportDeviceUsageEmpty.
   String get reportDeviceUsageEmpty;
 
