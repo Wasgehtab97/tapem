@@ -90,7 +90,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       'triceps': valueFor(MuscleRegion.trizeps),
       'forearm': 0,
       'abs': valueFor(MuscleRegion.bauch),
-      'gluteus': 0,
+      'gluteus': valueFor(MuscleRegion.gluteus),
       'quadriceps': valueFor(MuscleRegion.quadrizeps),
       'hamstrings': valueFor(MuscleRegion.hamstrings),
       'adductors': 0,

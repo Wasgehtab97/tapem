@@ -19,6 +19,7 @@ Color colorForRegion(MuscleRegion region) {
       return Colors.purple;
     case MuscleRegion.quadrizeps:
     case MuscleRegion.hamstrings:
+    case MuscleRegion.gluteus:
     case MuscleRegion.waden:
       return Colors.brown;
   }

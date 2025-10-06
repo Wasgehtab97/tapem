@@ -10,6 +10,7 @@ enum MuscleRegion {
   bauch(MuscleCategory.core),
   quadrizeps(MuscleCategory.lower),
   hamstrings(MuscleCategory.lower),
+  gluteus(MuscleCategory.lower),
   waden(MuscleCategory.lower);
 
   final MuscleCategory category;

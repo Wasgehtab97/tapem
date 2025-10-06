@@ -18,6 +18,7 @@ const Map<String, List<String>> muscleCategoryMap = {
   'bauch': ['abs'],
   'quadrizeps': ['quadriceps', 'adductors'],
   'hamstrings': ['hamstrings', 'abductors'],
+  'gluteus': ['gluteus'],
   'waden': ['calves', 'feet'],
 };
 
@@ -81,7 +82,7 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
               'triceps': valueFor(MuscleRegion.trizeps),
               'forearm': 0,
               'abs': valueFor(MuscleRegion.bauch),
-              'gluteus': 0,
+              'gluteus': valueFor(MuscleRegion.gluteus),
               'quadriceps': valueFor(MuscleRegion.quadrizeps),
               'hamstrings': valueFor(MuscleRegion.hamstrings),
               'adductors': 0,

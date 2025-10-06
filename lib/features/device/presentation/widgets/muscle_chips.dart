@@ -31,6 +31,8 @@ class MuscleChips extends StatelessWidget {
         return 'Quadrizeps';
       case MuscleRegion.hamstrings:
         return 'Hamstrings';
+      case MuscleRegion.gluteus:
+        return 'Gluteus';
       case MuscleRegion.waden:
         return 'Waden';
     }
