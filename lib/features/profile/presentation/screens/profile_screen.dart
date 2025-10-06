@@ -590,7 +590,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _ProfileStatsLeadingIcon extends StatelessWidget {
-  const _ProfileStatsLeadingIcon({super.key});
+  const _ProfileStatsLeadingIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +617,7 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
 }
 
 class _ProfileSurveyLeadingIcon extends StatelessWidget {
-  const _ProfileSurveyLeadingIcon({super.key});
+  const _ProfileSurveyLeadingIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -644,7 +644,7 @@ class _ProfileSurveyLeadingIcon extends StatelessWidget {
 }
 
 class _ProfileStatsSparkline extends StatelessWidget {
-  const _ProfileStatsSparkline({super.key});
+  const _ProfileStatsSparkline();
 
   static const _bars = [10.0, 20.0, 14.0, 26.0, 18.0, 30.0];
 
