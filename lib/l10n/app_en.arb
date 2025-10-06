@@ -1114,7 +1114,7 @@
   ,"@commonNoAccess": {"description": "Message shown when the user has no access"}
   ,"xpDeviceTitle": "Device XP"
   ,"@xpDeviceTitle": {"description": "Title of the device XP screen"}
-  ,"xpOverviewTitle": "XP overview"
+  ,"xpOverviewTitle": "Muscle group XP overview"
   ,"@xpOverviewTitle": {"description": "AppBar title of the XP overview screen"}
   ,"xpOverviewPeriodLabel": "Time range:"
   ,"@xpOverviewPeriodLabel": {"description": "Label for the time range dropdown"}

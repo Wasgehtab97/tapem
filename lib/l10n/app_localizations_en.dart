@@ -1107,7 +1107,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get xpDeviceTitle => 'Device XP';
 
   @override
-  String get xpOverviewTitle => 'XP overview';
+  String get xpOverviewTitle => 'Muscle group XP overview';
 
   @override
   String get xpOverviewPeriodLabel => 'Time range:';
