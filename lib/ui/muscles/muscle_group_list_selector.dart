@@ -36,6 +36,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     MuscleRegion.bauch,
     MuscleRegion.quadrizeps,
     MuscleRegion.hamstrings,
+    MuscleRegion.gluteus,
     MuscleRegion.waden,
   ];
 
@@ -65,6 +66,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
         return _Category.core;
       case MuscleRegion.quadrizeps:
       case MuscleRegion.hamstrings:
+      case MuscleRegion.gluteus:
       case MuscleRegion.waden:
         return _Category.legs;
     }
@@ -121,6 +123,8 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
         return 'Quadrizeps';
       case MuscleRegion.hamstrings:
         return 'Hamstrings';
+      case MuscleRegion.gluteus:
+        return 'Gluteus';
       case MuscleRegion.waden:
         return 'Waden';
     }

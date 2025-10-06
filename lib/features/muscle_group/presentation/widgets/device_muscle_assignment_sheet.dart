@@ -68,6 +68,7 @@ class _DeviceMuscleAssignmentSheetState
     MuscleRegion.bauch,
     MuscleRegion.quadrizeps,
     MuscleRegion.hamstrings,
+    MuscleRegion.gluteus,
     MuscleRegion.waden,
   ];
 
@@ -92,6 +93,8 @@ class _DeviceMuscleAssignmentSheetState
         return 'Quadrizeps';
       case MuscleRegion.hamstrings:
         return 'Hamstrings';
+      case MuscleRegion.gluteus:
+        return 'Gluteus';
       case MuscleRegion.waden:
         return 'Waden';
     }
