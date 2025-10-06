@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 /// GitHub-Style Jahres-Heatmap.
 /// Klick‐Callback nur innerhalb des Popups aktiv.
@@ -38,9 +39,41 @@ class _CalendarState extends State<Calendar> {
   void _prevYear() => setState(() => _year--);
   void _nextYear() => setState(() => _year++);
 
+  bool _isNeutralScheme(ColorScheme scheme) {
+    return scheme.primary.value == Colors.white.value &&
+        scheme.secondary.value == Colors.white.value;
+  }
+
+  Color _resolveTrainingFillColor(
+    ThemeData theme,
+    AppBrandTheme? brandTheme,
+    bool isNeutralTheme,
+  ) {
+    final baseColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final opacity = isNeutralTheme ? 0.7 : 0.95;
+    return baseColor.withOpacity(opacity);
+  }
+
+  Color _resolveTrainingLabelColor(
+    ThemeData theme,
+    AppBrandTheme? brandTheme,
+    bool isNeutralTheme,
+  ) {
+    if (brandTheme != null && !isNeutralTheme) {
+      return brandTheme.onBrand.withOpacity(0.9);
+    }
+    return theme.colorScheme.onSecondary.withOpacity(0.9);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final isNeutralTheme = _isNeutralScheme(theme.colorScheme);
+    final trainingFillColor =
+        _resolveTrainingFillColor(theme, brandTheme, isNeutralTheme);
+    final trainingLabelColor =
+        _resolveTrainingLabelColor(theme, brandTheme, isNeutralTheme);
     final locale = Localizations.localeOf(context).toString();
     final today = DateTime.now();
 
@@ -135,14 +168,14 @@ class _CalendarState extends State<Calendar> {
                   final textStyle = theme.textTheme.labelSmall?.copyWith(
                         fontSize: 8,
                         color: isTrain
-                            ? theme.colorScheme.onSecondary.withOpacity(0.9)
+                            ? trainingLabelColor
                             : theme.textTheme.labelSmall?.color ??
                                 theme.colorScheme.onSurface.withOpacity(0.7),
                       ) ??
                       TextStyle(
                         fontSize: 8,
                         color: isTrain
-                            ? theme.colorScheme.onSecondary.withOpacity(0.9)
+                            ? trainingLabelColor
                             : theme.colorScheme.onSurface.withOpacity(0.7),
                       );
 
@@ -153,7 +186,7 @@ class _CalendarState extends State<Calendar> {
                     decoration: BoxDecoration(
                       color:
                           isTrain
-                              ? theme.colorScheme.secondary.withOpacity(0.6)
+                              ? trainingFillColor
                               : Colors.transparent,
                       border: Border.all(
                         color:
