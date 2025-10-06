@@ -11,7 +11,10 @@ class ReportRepositoryImpl implements ReportRepository {
     : _source = source ?? FirestoreReportSource();
 
   @override
-  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId) async {
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
+    String gymId, {
+    DateTime? since,
+  }) async {
     final devices = await _source.fetchDevices(gymId);
     final List<DeviceUsageStat> stats = [];
 
@@ -20,7 +23,11 @@ class ReportRepositoryImpl implements ReportRepository {
       final deviceData = deviceDoc.data();
       final deviceName = (deviceData?['name'] as String?)?.trim();
       final description = (deviceData?['description'] as String?)?.trim();
-      final logs = await _source.fetchLogsForDevice(gymId, deviceId);
+      final logs = await _source.fetchLogsForDevice(
+        gymId,
+        deviceId,
+        since: since,
+      );
 
       // Einzigartige sessionId sammeln
       final sessionIds = <String>{};

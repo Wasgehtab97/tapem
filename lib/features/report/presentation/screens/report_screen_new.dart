@@ -43,6 +43,8 @@ class ReportScreenNew extends StatelessWidget {
                 usageData: usageData,
                 state: reportProvider.state,
                 errorMessage: reportProvider.errorMessage,
+                usageRange: reportProvider.usageRange,
+                onRangeSelected: reportProvider.changeUsageRange,
               ),
               const SizedBox(height: AppSpacing.md),
               BrandActionTile(

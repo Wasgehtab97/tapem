@@ -21,7 +21,10 @@ class FakeReportRepository implements ReportRepository {
   final List<DeviceUsageStat> usage;
   final List<DateTime> times;
   @override
-  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId) async => usage;
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
+    String gymId, {
+    DateTime? since,
+  }) async => usage;
   @override
   Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;
 }
@@ -39,6 +42,8 @@ void main() {
       firestore: FakeFirebaseFirestore(),
       log: (_, [__]) {},
     );
+
+    await reportProvider.loadReport('g1');
 
     await tester.pumpWidget(
       MultiProvider(
@@ -71,6 +76,8 @@ void main() {
       firestore: FakeFirebaseFirestore(),
       log: (_, [__]) {},
     );
+
+    await reportProvider.loadReport('g1');
 
     await tester.pumpWidget(
       MultiProvider(
