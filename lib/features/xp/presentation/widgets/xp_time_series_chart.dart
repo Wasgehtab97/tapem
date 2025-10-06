@@ -116,7 +116,7 @@ class XpTimeSeriesChart extends StatelessWidget {
     }
 
     final maxY = math.max(
-      100,
+      100.0,
       ((maxDailyXp / 50).ceil() * 50).toDouble(),
     );
     final labelInterval = math.max(1, (dayCount / 5).ceil());
