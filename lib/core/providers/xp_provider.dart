@@ -18,6 +18,7 @@ class XpProvider extends ChangeNotifier {
   int _dayXp = 0;
   StreamSubscription<int>? _daySub;
   StreamSubscription<Map<String, int>>? _muscleSub;
+  StreamSubscription<Map<String, Map<String, int>>>? _muscleDailySub;
   Map<String, int> _dayListXp = {};
   final Map<String, int> _deviceXp = {};
   StreamSubscription<Map<String, int>>? _dayListSub;
@@ -26,6 +27,7 @@ class XpProvider extends ChangeNotifier {
   int _dailyLevel = 1;
   int _dailyLevelXp = 0;
   StreamSubscription<int>? _statsDailySub;
+  Map<String, Map<String, int>> _muscleDailyXp = {};
 
   Map<String, int> get muscleXp => _muscleXp;
   int get dayXp => _dayXp;
@@ -34,6 +36,7 @@ class XpProvider extends ChangeNotifier {
   int get statsDailyXp => _statsDailyXp;
   int get dailyLevel => _dailyLevel;
   int get dailyLevelXp => _dailyLevelXp;
+  Map<String, Map<String, int>> get muscleDailyXp => _muscleDailyXp;
   double get dailyProgress =>
       _dailyLevel >= LevelService.maxLevel
           ? 1
@@ -137,6 +140,18 @@ class XpProvider extends ChangeNotifier {
     });
   }
 
+  void watchMuscleDailyXp(String gymId, String userId) {
+    debugPrint('👀 provider watchMuscleDailyXp userId=$userId gymId=$gymId');
+    _muscleDailySub?.cancel();
+    _muscleDailySub = _repo
+        .watchMuscleXpHistory(gymId: gymId, userId: userId)
+        .listen((map) {
+      _muscleDailyXp = map;
+      debugPrint('🔄 provider muscleDailyXp=${map.length} days');
+      notifyListeners();
+    });
+  }
+
   void watchTrainingDays(String userId) {
     debugPrint('👀 provider watchTrainingDays userId=$userId');
     _dayListSub?.cancel();
@@ -210,6 +225,7 @@ class XpProvider extends ChangeNotifier {
   void dispose() {
     _daySub?.cancel();
     _muscleSub?.cancel();
+    _muscleDailySub?.cancel();
     _dayListSub?.cancel();
     _statsDailySub?.cancel();
     for (final sub in _deviceSubs.values) {

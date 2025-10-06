@@ -245,6 +245,11 @@ class FirestoreXpSource {
         updates['${key}XP'] = FieldValue.increment(-value);
       });
       await statsRef.set(updates, SetOptions(merge: true));
+      await _updateMuscleXpHistory(
+        statsRef: statsRef,
+        dayKey: dayKey,
+        delta: delta.map((key, value) => MapEntry(key, -value)),
+      );
       XpTrace.log('FS_MUSCLE_REMOVE', {
         'traceId': 'remove:$dayKey:$sessionId',
         'primary': primaryMuscleGroupIds.length,
@@ -319,12 +324,34 @@ class FirestoreXpSource {
       updates['${key}XP'] = FieldValue.increment(value);
     });
     await statsRef.set(updates, SetOptions(merge: true));
+    final dayKey = logicDayKey(DateTime.now().toUtc());
+    await _updateMuscleXpHistory(
+      statsRef: statsRef,
+      dayKey: dayKey,
+      delta: delta,
+    );
     XpTrace.log('FS_MUSCLE_APPLY', {
       'traceId': traceId,
       'primary': primaryMuscleGroupIds.length,
       'secondary': secondaryMuscleGroupIds.length,
       'delta': delta,
     });
+  }
+
+  Future<void> _updateMuscleXpHistory({
+    required DocumentReference<Map<String, dynamic>> statsRef,
+    required String dayKey,
+    required Map<String, int> delta,
+  }) async {
+    if (delta.isEmpty) return;
+    final historyDoc = statsRef.collection('muscleXpHistory').doc(dayKey);
+    final updates = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    delta.forEach((key, value) {
+      updates['${key}XP'] = FieldValue.increment(value);
+    });
+    await historyDoc.set(updates, SetOptions(merge: true));
   }
 
     Stream<int> watchDayXp({required String userId, required DateTime date}) {
@@ -365,6 +392,38 @@ class FirestoreXpSource {
         }
       }
       debugPrint('📥 muscleXp snapshot ${map.length} entries $map');
+      return map;
+    });
+  }
+
+  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+  }) {
+    final col = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats')
+        .collection('muscleXpHistory')
+        .orderBy(FieldPath.documentId);
+    debugPrint('👀 watchMuscleXpHistory userId=$userId gymId=$gymId');
+    return col.snapshots().map((snap) {
+      final map = <String, Map<String, int>>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final dayMap = <String, int>{};
+        data.forEach((key, value) {
+          if (key.endsWith('XP') && key != 'dailyXP') {
+            final group = key.substring(0, key.length - 2);
+            dayMap[group] = (value as num?)?.toInt() ?? 0;
+          }
+        });
+        map[doc.id] = dayMap;
+      }
+      debugPrint('📥 muscleXpHistory snapshot days=${map.length}');
       return map;
     });
   }

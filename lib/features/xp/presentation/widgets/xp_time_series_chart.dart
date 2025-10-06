@@ -1,93 +1,137 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Defines the selectable time periods for the XP time series chart.
 enum XpPeriod { last7Days, last30Days, total }
 
-/// A line chart that visualises the XP progression per session.
+/// Represents the XP earned for a muscle group on a specific day.
+class XpDailyEntry {
+  final DateTime date;
+  final int xp;
+
+  const XpDailyEntry({required this.date, required this.xp});
+}
+
+/// A line chart that visualises the XP progression per muscle group by day.
 ///
-/// The chart expects a chronological list of XP values where each entry
-/// represents the accumulated XP within the current level after completing a
-/// session. Level resets at 1000 XP are therefore reflected as drops back to
-/// 0. Tooltips show the session index and XP value for each point. Colours
-/// follow the mint→turquoise→amber gradient defined in the design guidelines.
+/// The chart receives daily XP values and renders one point per calendar day
+/// in the selected period. Dates without XP are rendered as 0 XP to maintain a
+/// continuous timeline. Tooltips show the formatted date and XP value for the
+/// touched point.
 class XpTimeSeriesChart extends StatelessWidget {
-  /// Ordered list of XP values per session. The first entry represents the
-  /// baseline (0 XP) and each following value reflects the XP after a session
-  /// has been completed, already applying the level reset at 1000 XP.
-  final List<int> xpHistory;
-
-  /// Total number of sessions completed for the respective muscle group.
-  final int totalSessions;
-
-  /// The selected time period for the chart. Determines how many points are
-  /// shown.
+  final List<XpDailyEntry> dailyXp;
   final XpPeriod period;
+  final DateFormat dateFormatter;
+  final DateTime referenceDate;
 
   const XpTimeSeriesChart({
-    Key? key,
-    required this.xpHistory,
-    required this.totalSessions,
+    super.key,
+    required this.dailyXp,
     required this.period,
-  }) : super(key: key);
+    required this.dateFormatter,
+    required this.referenceDate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (xpHistory.isEmpty) {
-      return const SizedBox(height: 200);
+    if (dailyXp.isEmpty) {
+      final theme = Theme.of(context);
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            'Noch keine XP',
+            style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ) ??
+                TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  fontSize: 12,
+                ),
+          ),
+        ),
+      );
     }
 
-    // Determine how many sessions should be displayed for the selected period.
-    int? sessionLimit;
+    final normalizedReference =
+        DateTime(referenceDate.year, referenceDate.month, referenceDate.day);
+    final sorted = dailyXp.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final aggregated = <DateTime, int>{};
+    for (final entry in sorted) {
+      final normalized =
+          DateTime(entry.date.year, entry.date.month, entry.date.day);
+      aggregated[normalized] = (aggregated[normalized] ?? 0) + entry.xp;
+    }
+    final earliest = DateTime(
+      sorted.first.date.year,
+      sorted.first.date.month,
+      sorted.first.date.day,
+    );
+    final latest = DateTime(
+      sorted.last.date.year,
+      sorted.last.date.month,
+      sorted.last.date.day,
+    );
+
+    DateTime endDate;
     switch (period) {
       case XpPeriod.last7Days:
-        sessionLimit = 7;
+        endDate = normalizedReference;
         break;
       case XpPeriod.last30Days:
-        sessionLimit = 30;
+        endDate = normalizedReference;
         break;
       case XpPeriod.total:
-        sessionLimit = null;
+        endDate = latest;
         break;
     }
 
-    final requiredLength = sessionLimit != null ? sessionLimit + 1 : xpHistory.length;
-    final startIndex = xpHistory.length > requiredLength
-        ? xpHistory.length - requiredLength
-        : 0;
-    final visibleHistory = xpHistory.sublist(startIndex);
-    final baseSessionIndex = totalSessions - (visibleHistory.length - 1);
+    DateTime startDate;
+    if (period == XpPeriod.total) {
+      startDate = earliest;
+    } else {
+      final days = period == XpPeriod.last7Days ? 6 : 29;
+      startDate = endDate.subtract(Duration(days: days));
+    }
+    if (startDate.isAfter(endDate)) {
+      startDate = endDate;
+    }
+
+    final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day);
+    final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+    final totalDays = normalizedEnd.difference(normalizedStart).inDays;
+    final dayCount = totalDays + 1;
 
     final spots = <FlSpot>[];
-    for (var i = 0; i < visibleHistory.length; i++) {
-      spots.add(FlSpot(i.toDouble(), visibleHistory[i].toDouble()));
+    var maxDailyXp = 0;
+    for (var i = 0; i < dayCount; i++) {
+      final day = normalizedStart.add(Duration(days: i));
+      final xp = aggregated[day] ?? 0;
+      maxDailyXp = math.max(maxDailyXp, xp);
+      spots.add(FlSpot(i.toDouble(), xp.toDouble()));
     }
 
-    String getFormattedLabel(int index) {
-      if (index < 0 || index >= visibleHistory.length) return '';
-      final sessionNumber = baseSessionIndex + index;
-      if (index == 0 && sessionNumber == 0) {
-        return 'S0';
-      }
-      return 'S$sessionNumber';
-    }
+    final maxY = math.max(
+      100,
+      ((maxDailyXp / 50).ceil() * 50).toDouble(),
+    );
+    final labelInterval = math.max(1, (dayCount / 5).ceil());
 
-    // Colour of the line: start with mint and end with amber.
     const mint = Color(0xFF00E676);
     const turquoise = Color(0xFF00BCD4);
     const amber = Color(0xFFFFC107);
     final gradientColors = [mint, turquoise, amber];
-
-    final maxY = LevelService.xpPerLevel.toDouble();
-    final lineMaxX = spots.length > 1 ? (spots.length - 1).toDouble() : 1.0;
 
     return SizedBox(
       height: 200,
       child: LineChart(
         LineChartData(
           minX: 0,
-          maxX: lineMaxX,
+          maxX: (dayCount - 1).toDouble(),
           minY: 0,
           maxY: maxY,
           lineTouchData: LineTouchData(
@@ -95,28 +139,27 @@ class XpTimeSeriesChart extends StatelessWidget {
             touchTooltipData: LineTouchTooltipData(
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
-                  final idx = spot.x.toInt();
-                  final xp = idx >= 0 && idx < visibleHistory.length
-                      ? visibleHistory[idx]
-                      : 0;
-                  final sessionNumber = baseSessionIndex + idx;
+                  final index = spot.x.round().clamp(0, dayCount - 1);
+                  final day = normalizedStart.add(Duration(days: index));
+                  final xp = aggregated[day] ?? 0;
                   return LineTooltipItem(
-                    'Session $sessionNumber\n$xp XP',
+                    '${dateFormatter.format(day)}\n$xp XP',
                     const TextStyle(color: Colors.white),
                   );
                 }).toList();
               },
             ),
           ),
-          gridData: FlGridData(show: true, horizontalInterval: 250),
+          gridData: FlGridData(show: true, horizontalInterval: 50),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 reservedSize: 40,
                 showTitles: true,
-                interval: 250,
+                interval: 50,
                 getTitlesWidget: (value, meta) {
-                  if (value.toInt() % 250 != 0) return const SizedBox.shrink();
+                  if (value < 0) return const SizedBox.shrink();
+                  if (value % 50 != 0) return const SizedBox.shrink();
                   return Text(
                     value.toInt().toString(),
                     style: const TextStyle(color: Colors.white70, fontSize: 10),
@@ -127,12 +170,22 @@ class XpTimeSeriesChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: 1,
                 getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  return Text(
-                    getFormattedLabel(index),
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                  final index = value.round();
+                  if (index < 0 || index >= dayCount) {
+                    return const SizedBox.shrink();
+                  }
+                  final isEdge = index == 0 || index == dayCount - 1;
+                  if (!isEdge && index % labelInterval != 0) {
+                    return const SizedBox.shrink();
+                  }
+                  final day = normalizedStart.add(Duration(days: index));
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      dateFormatter.format(day),
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    ),
                   );
                 },
               ),

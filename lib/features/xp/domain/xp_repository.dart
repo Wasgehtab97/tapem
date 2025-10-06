@@ -21,6 +21,11 @@ abstract class XpRepository {
     required String userId,
   });
 
+  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+  });
+
   Stream<Map<String, int>> watchTrainingDaysXp(String userId);
 
   Stream<int> watchDeviceXp({

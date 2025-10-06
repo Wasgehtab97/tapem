@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
@@ -46,6 +44,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     if (uid != null && gymId != null) {
       xpProv.watchDayXp(uid, DateTime.now());
       xpProv.watchMuscleXp(gymId, uid);
+      xpProv.watchMuscleDailyXp(gymId, uid);
       xpProv.watchTrainingDays(uid);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         muscleProv.loadGroups(context);
@@ -78,68 +77,97 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final highlightGradient = brandTheme?.gradient ?? AppGradients.brandGradient;
     final locale = Localizations.localeOf(context).toString();
     final numberFormatter = NumberFormat.decimalPattern(locale);
+    final dateFormatter = DateFormat.Md(locale);
+    final now = DateTime.now();
+    final referenceDate = DateTime(now.year, now.month, now.day);
+
+    DateTime? parseDayKey(String key) {
+      if (key.isEmpty) return null;
+      try {
+        final parts = key.split('-');
+        if (parts.length == 3) {
+          final year = int.parse(parts[0]);
+          final month = int.parse(parts[1]);
+          final day = int.parse(parts[2]);
+          return DateTime(year, month, day);
+        }
+        return DateTime.parse(key);
+      } catch (_) {
+        return null;
+      }
+    }
 
     // Map region→total XP by summing all muscle group entries and mapping to
     // their region via MuscleGroupProvider.
     final Map<MuscleRegion, int> regionXp = {
       for (final region in MuscleRegion.values) region: 0,
     };
+    final regionDailyXp = <MuscleRegion, Map<DateTime, int>>{
+      for (final region in MuscleRegion.values) region: <DateTime, int>{},
+    };
+
+    final muscleDailyXp = xpProv.muscleDailyXp;
+    final regionCache = <String, MuscleRegion?>{};
+
     for (final entry in xpProv.muscleXp.entries) {
-      MuscleRegion? region;
-      final group = muscleProv.groups.firstWhereOrNull(
-        (g) => g.id == entry.key,
-      );
-      if (group != null) {
-        region = group.region;
-      } else {
-        // Fallback: try to interpret the key as a region name.
-        region = MuscleRegion.values.firstWhereOrNull(
+      final region = regionCache.putIfAbsent(entry.key, () {
+        final group = muscleProv.groups.firstWhereOrNull(
+          (g) => g.id == entry.key,
+        );
+        if (group != null) {
+          return group.region;
+        }
+        return MuscleRegion.values.firstWhereOrNull(
           (r) => r.name == entry.key,
         );
-      }
+      });
       if (region != null) {
         regionXp[region] = (regionXp[region] ?? 0) + entry.value;
       }
     }
 
+    muscleDailyXp.forEach((dayKey, muscleMap) {
+      final parsed = parseDayKey(dayKey);
+      if (parsed == null) {
+        return;
+      }
+      final normalized = DateTime(parsed.year, parsed.month, parsed.day);
+      muscleMap.forEach((muscleId, value) {
+        if (value == 0) return;
+        final region = regionCache.putIfAbsent(muscleId, () {
+          final group = muscleProv.groups.firstWhereOrNull(
+            (g) => g.id == muscleId,
+          );
+          if (group != null) {
+            return group.region;
+          }
+          return MuscleRegion.values.firstWhereOrNull(
+            (r) => r.name == muscleId,
+          );
+        });
+        if (region != null) {
+          final map = regionDailyXp[region]!;
+          map[normalized] = (map[normalized] ?? 0) + value;
+        }
+      });
+    });
+
+    final regionDailyEntries = <MuscleRegion, List<XpDailyEntry>>{};
+    for (final region in MuscleRegion.values) {
+      final entries = regionDailyXp[region]!.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      regionDailyEntries[region] = [
+        for (final entry in entries)
+          XpDailyEntry(date: entry.key, xp: entry.value),
+      ];
+    }
+
     final regions = MuscleRegion.values.toList()
       ..sort((a, b) => (regionXp[b] ?? 0).compareTo(regionXp[a] ?? 0));
     const xpPerLevel = LevelService.xpPerLevel;
-    const xpPerSession = LevelService.xpPerSession;
-    final maxTotalXp = LevelService.maxLevel * xpPerLevel;
-
-    List<int> buildXpHistory(int totalXp) {
-      final cappedTotalXp = math.min(totalXp, maxTotalXp);
-      final history = <int>[0];
-      if (cappedTotalXp <= 0) {
-        return history;
-      }
-      final sessionCount = cappedTotalXp ~/ xpPerSession;
-      final remainder = cappedTotalXp % xpPerSession;
-      var xpInLevel = 0;
-      for (var i = 0; i < sessionCount; i++) {
-        xpInLevel += xpPerSession;
-        if (xpInLevel >= xpPerLevel) {
-          xpInLevel -= xpPerLevel;
-          history.add(0);
-        } else {
-          history.add(xpInLevel);
-        }
-      }
-      if (remainder > 0) {
-        xpInLevel += remainder;
-        if (xpInLevel >= xpPerLevel) {
-          xpInLevel -= xpPerLevel;
-        }
-        history.add(xpInLevel);
-      }
-      return history;
-    }
 
     final regionLevel = <MuscleRegion, int>{};
     final regionXpInLevel = <MuscleRegion, int>{};
-    final regionXpHistory = <MuscleRegion, List<int>>{};
-    final regionSessionCount = <MuscleRegion, int>{};
 
     for (final region in regions) {
       final total = regionXp[region] ?? 0;
@@ -153,9 +181,6 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       }
       regionLevel[region] = level;
       regionXpInLevel[region] = xpInLevel;
-      final history = buildXpHistory(total);
-      regionXpHistory[region] = history;
-      regionSessionCount[region] = history.length - 1;
     }
 
     void openLeaderboard(MuscleRegion region) {
@@ -305,9 +330,11 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       XpTimeSeriesChart(
-                        xpHistory: regionXpHistory[region] ?? const <int>[0],
-                        totalSessions: regionSessionCount[region] ?? 0,
+                        dailyXp: regionDailyEntries[region] ??
+                            const <XpDailyEntry>[],
                         period: _period,
+                        dateFormatter: dateFormatter,
+                        referenceDate: referenceDate,
                       ),
                       if (region != regions.last)
                         Padding(

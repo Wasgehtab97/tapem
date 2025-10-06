@@ -44,12 +44,10 @@ class FirestoreRankSource {
         try {
           final result = await _firestore.runTransaction<DeviceXpResult>((tx) async {
             final userSnap = await tx.get(lbUser);
-            final daySnap = await tx.get(lbDay);
             final sessSnap = await tx.get(lbSess);
             final exSnap = lbEx != null ? await tx.get(lbEx) : null;
             XpTrace.log('TXN_READ', {
               'existsSessionDoc': sessSnap.exists,
-              'existsDayDoc': daySnap.exists,
               'existsExerciseDoc': exSnap?.exists ?? false,
               'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
               'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
@@ -67,17 +65,15 @@ class FirestoreRankSource {
               return DeviceXpResult.idempotentHit;
             }
 
-            if (daySnap.exists || (exSnap?.exists ?? false)) {
+            if (exSnap?.exists ?? false) {
               XpTrace.log('TXN_DECISION', {
-                'result': daySnap.exists ? 'alreadyToday' : 'alreadyExercise',
+                'result': 'alreadyExercise',
                 'showInLeaderboard': showInLeaderboard,
                 'isMulti': isMulti,
                 'exerciseId': exerciseId ?? '',
                 'traceId': traceId,
               });
-              return daySnap.exists
-                  ? DeviceXpResult.alreadyToday
-                  : DeviceXpResult.idempotentHit;
+              return DeviceXpResult.idempotentHit;
             }
 
             const xpDelta = LevelService.xpPerSession;
@@ -104,7 +100,10 @@ class FirestoreRankSource {
               });
             }
 
-            tx.set(lbDay, {'creditedAt': FieldValue.serverTimestamp()});
+            tx.set(lbDay, {
+              'creditedAt': FieldValue.serverTimestamp(),
+              'sessionCount': FieldValue.increment(1),
+            }, SetOptions(merge: true));
             tx.set(lbSess, {
               'sessionId': sessionId,
               'creditedAt': FieldValue.serverTimestamp(),

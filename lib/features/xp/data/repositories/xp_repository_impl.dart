@@ -60,6 +60,14 @@ class XpRepositoryImpl implements XpRepository {
   }
 
   @override
+  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+  }) {
+    return _source.watchMuscleXpHistory(gymId: gymId, userId: userId);
+  }
+
+  @override
   Stream<Map<String, int>> watchTrainingDaysXp(String userId) {
     return _source.watchTrainingDaysXp(userId);
   }
