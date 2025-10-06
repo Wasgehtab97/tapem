@@ -48,6 +48,8 @@ class XpProvider extends ChangeNotifier {
       required bool isMulti,
       String? exerciseId,
       required String traceId,
+      List<String> primaryMuscleGroupIds = const [],
+      List<String> secondaryMuscleGroupIds = const [],
     }) async {
       assert(LevelService.xpPerSession == 50);
       XpTrace.log('PROVIDER_IN', {
@@ -77,6 +79,8 @@ class XpProvider extends ChangeNotifier {
           isMulti: isMulti,
           exerciseId: exerciseId,
           traceId: traceId,
+          primaryMuscleGroupIds: primaryMuscleGroupIds,
+          secondaryMuscleGroupIds: secondaryMuscleGroupIds,
         );
         XpTrace.log('PROVIDER_OUT', {
           'result': result.name,

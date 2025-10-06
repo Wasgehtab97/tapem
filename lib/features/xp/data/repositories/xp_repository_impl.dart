@@ -17,6 +17,8 @@ class XpRepositoryImpl implements XpRepository {
       required bool isMulti,
       String? exerciseId,
       required String traceId,
+      List<String> primaryMuscleGroupIds = const [],
+      List<String> secondaryMuscleGroupIds = const [],
     }) {
       return _source
           .addSessionXp(
@@ -28,6 +30,8 @@ class XpRepositoryImpl implements XpRepository {
         isMulti: isMulti,
         exerciseId: exerciseId,
         traceId: traceId,
+        primaryMuscleGroupIds: primaryMuscleGroupIds,
+        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
       )
           .then((result) {
         elogDeviceXp('REPO_RETURN', {

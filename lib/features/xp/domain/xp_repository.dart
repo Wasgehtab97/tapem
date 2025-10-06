@@ -10,6 +10,8 @@ abstract class XpRepository {
     required bool isMulti,
     String? exerciseId,
     required String traceId,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
   });
 
   Stream<int> watchDayXp({required String userId, required DateTime date});

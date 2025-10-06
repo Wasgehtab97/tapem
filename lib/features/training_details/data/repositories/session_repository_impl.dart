@@ -213,6 +213,8 @@ class SessionRepositoryImpl implements SessionRepository {
       sessionId: session.sessionId,
       dayKey: derivedDayKey,
       exerciseIds: exerciseIds,
+      primaryMuscleGroupIds: snapshot?.primaryMuscleGroupIds ?? const [],
+      secondaryMuscleGroupIds: snapshot?.secondaryMuscleGroupIds ?? const [],
     );
   }
 }

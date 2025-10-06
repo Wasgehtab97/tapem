@@ -26,6 +26,8 @@ class FirestoreXpSource {
         required bool isMulti,
         String? exerciseId,
         required String traceId,
+        List<String> primaryMuscleGroupIds = const [],
+        List<String> secondaryMuscleGroupIds = const [],
       }) async {
         final dayKey = logicDayKey(DateTime.now().toUtc());
         final dateStr = dayKey;
@@ -111,6 +113,14 @@ class FirestoreXpSource {
           exerciseId: exerciseId,
           traceId: traceId,
         );
+        if (result == DeviceXpResult.okAdded) {
+          await _applyMuscleXp(
+            statsRef: statsRef,
+            primaryMuscleGroupIds: primaryMuscleGroupIds,
+            secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+            traceId: traceId,
+          );
+        }
         XpTrace.log('FS_OUT', {
           'result': result.name,
           'traceId': traceId,
@@ -125,6 +135,8 @@ class FirestoreXpSource {
     required String sessionId,
     required String dayKey,
     Iterable<String> exerciseIds = const [],
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
   }) async {
     final uniqueExercises = exerciseIds.where((e) => e.isNotEmpty).toSet();
     final userRef = _firestore.collection('users').doc(userId);
@@ -221,6 +233,97 @@ class FirestoreXpSource {
       'deviceId': deviceId,
       'sessionId': sessionId,
       'dayKey': dayKey,
+    });
+
+    final delta = _buildMuscleXpDelta(
+      primaryMuscleGroupIds,
+      secondaryMuscleGroupIds,
+    );
+    if (delta.isNotEmpty) {
+      final updates = <String, dynamic>{};
+      delta.forEach((key, value) {
+        updates['${key}XP'] = FieldValue.increment(-value);
+      });
+      await statsRef.set(updates, SetOptions(merge: true));
+      XpTrace.log('FS_MUSCLE_REMOVE', {
+        'traceId': 'remove:$dayKey:$sessionId',
+        'primary': primaryMuscleGroupIds.length,
+        'secondary': secondaryMuscleGroupIds.length,
+        'delta': delta,
+      });
+    }
+  }
+
+  Map<String, int> _buildMuscleXpDelta(
+    List<String> primaryMuscleGroupIds,
+    List<String> secondaryMuscleGroupIds,
+  ) {
+    final order = <String>[];
+    final weights = <String, int>{};
+    final seenPrimary = <String>{};
+    final seenSecondary = <String>{};
+
+    void push(String id, int weight, Set<String> seen) {
+      if (id.isEmpty) return;
+      if (seen.add(id)) {
+        order.add(id);
+      }
+      weights[id] = (weights[id] ?? 0) + weight;
+    }
+
+    for (final id in primaryMuscleGroupIds) {
+      push(id, 2, seenPrimary);
+    }
+    for (final id in secondaryMuscleGroupIds) {
+      if (seenPrimary.contains(id)) {
+        continue;
+      }
+      push(id, 1, seenSecondary);
+    }
+
+    final totalWeight = weights.values.fold<int>(0, (sum, w) => sum + w);
+    if (totalWeight == 0) {
+      return const {};
+    }
+
+    final baseXp = LevelService.xpPerSession;
+    final xpPerWeight = baseXp ~/ totalWeight;
+    var remainder = baseXp % totalWeight;
+    final delta = <String, int>{};
+    for (final id in order) {
+      final weight = weights[id] ?? 0;
+      if (weight == 0) continue;
+      var value = weight * xpPerWeight;
+      if (remainder > 0) {
+        value += 1;
+        remainder -= 1;
+      }
+      delta[id] = value;
+    }
+    return delta;
+  }
+
+  Future<void> _applyMuscleXp({
+    required DocumentReference<Map<String, dynamic>> statsRef,
+    required List<String> primaryMuscleGroupIds,
+    required List<String> secondaryMuscleGroupIds,
+    required String traceId,
+  }) async {
+    final delta = _buildMuscleXpDelta(
+      primaryMuscleGroupIds,
+      secondaryMuscleGroupIds,
+    );
+    if (delta.isEmpty) return;
+    final updates = <String, dynamic>{};
+    delta.forEach((key, value) {
+      updates['${key}XP'] = FieldValue.increment(value);
+    });
+    await statsRef.set(updates, SetOptions(merge: true));
+    XpTrace.log('FS_MUSCLE_APPLY', {
+      'traceId': traceId,
+      'primary': primaryMuscleGroupIds.length,
+      'secondary': secondaryMuscleGroupIds.length,
+      'delta': delta,
     });
   }
 

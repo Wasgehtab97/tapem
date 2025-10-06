@@ -105,6 +105,8 @@ class _ExerciseSnapRepo implements DeviceRepository {
       required bool isMulti,
       String? exerciseId,
       required String traceId,
+      List<String> primaryMuscleGroupIds = const [],
+      List<String> secondaryMuscleGroupIds = const [],
     }) async {
       calls++;
       return DeviceXpResult.okAdded;
