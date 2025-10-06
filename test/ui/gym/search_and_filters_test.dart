@@ -166,8 +166,8 @@ class _HarnessState extends State<_Harness> {
 
 void main() {
   final groups = [
-    MuscleGroup(id: 'chest', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: 'legs', name: 'Quadriceps', region: MuscleRegion.quadriceps),
+    MuscleGroup(id: 'brust', name: 'Brust', region: MuscleRegion.brust),
+    MuscleGroup(id: 'beine', name: 'Quadrizeps', region: MuscleRegion.quadrizeps),
   ];
   testWidgets('muscle filter reduces list', (tester) async {
     await tester.pumpWidget(
@@ -186,7 +186,7 @@ void main() {
     expect(find.text('Beta'), findsOneWidget);
     await tester.tap(find.text('Muscle'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chest'));
+    await tester.tap(find.text('Brust'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(find.text('Alpha'), findsOneWidget);

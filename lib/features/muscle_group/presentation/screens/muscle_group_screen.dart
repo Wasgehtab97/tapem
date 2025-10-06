@@ -9,24 +9,16 @@ import '../widgets/mesh_3d_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
 
 const Map<String, List<String>> muscleCategoryMap = {
-  'chest': ['pectoral'],
-  'back': ['latissimus_dorsi', 'lower_back', 'rhomboids'],
-  'arms': ['biceps', 'triceps', 'forearm'],
-  'legs': [
-    'quadriceps',
-    'hamstrings',
-    'adductors',
-    'abductors',
-    'calves',
-    'feet',
-  ],
-  'core': ['abs'],
-  'shoulders': [
-    'anterior_deltoid',
-    'lateral_deltoid',
-    'posterior_deltoid',
-    'trapezius',
-  ],
+  'brust': ['pectoral'],
+  'ruecken': ['latissimus_dorsi', 'lower_back', 'rhomboids'],
+  'schulter': ['anterior_deltoid', 'lateral_deltoid', 'posterior_deltoid'],
+  'nacken': ['trapezius'],
+  'bizeps': ['biceps', 'forearm'],
+  'trizeps': ['triceps'],
+  'bauch': ['abs'],
+  'quadrizeps': ['quadriceps', 'adductors'],
+  'hamstrings': ['hamstrings', 'abductors'],
+  'waden': ['calves', 'feet'],
 };
 
 class MuscleGroupScreen extends StatefulWidget {
@@ -73,23 +65,29 @@ class _MuscleGroupScreenState extends State<MuscleGroupScreen> {
               regionXp[g.region] = (regionXp[g.region] ?? 0) + count.toDouble();
             }
 
+            double valueFor(MuscleRegion region) =>
+                regionXp[region]?.toDouble() ?? 0;
+
             final xpMap = <String, double>{
-              'head': 0,
-              'chest': regionXp[MuscleRegion.chest] ?? 0,
-              'core': (regionXp[MuscleRegion.rectusAbdominis] ?? 0) +
-                  (regionXp[MuscleRegion.obliques] ?? 0) +
-                  (regionXp[MuscleRegion.transversusAbdominis] ?? 0),
-              'pelvis': regionXp[MuscleRegion.glutes] ?? 0,
-              'upper_arm_left': regionXp[MuscleRegion.biceps] ?? 0,
-              'upper_arm_right': regionXp[MuscleRegion.triceps] ?? 0,
-              'forearm_left': regionXp[MuscleRegion.wristFlexors] ?? 0,
-              'forearm_right': regionXp[MuscleRegion.wristFlexors] ?? 0,
-              'thigh_left': regionXp[MuscleRegion.quadriceps] ?? 0,
-              'thigh_right': regionXp[MuscleRegion.hamstrings] ?? 0,
-              'calf_left': regionXp[MuscleRegion.calves] ?? 0,
-              'calf_right': regionXp[MuscleRegion.calves] ?? 0,
-              'foot_left': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
-              'foot_right': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
+              'trapezius': valueFor(MuscleRegion.nacken),
+              'anterior_deltoid': valueFor(MuscleRegion.schulter),
+              'lateral_deltoid': valueFor(MuscleRegion.schulter),
+              'posterior_deltoid': valueFor(MuscleRegion.schulter),
+              'pectoral': valueFor(MuscleRegion.brust),
+              'latissimus_dorsi': valueFor(MuscleRegion.ruecken),
+              'lower_back': valueFor(MuscleRegion.ruecken),
+              'rhomboids': valueFor(MuscleRegion.ruecken),
+              'biceps': valueFor(MuscleRegion.bizeps),
+              'triceps': valueFor(MuscleRegion.trizeps),
+              'forearm': 0,
+              'abs': valueFor(MuscleRegion.bauch),
+              'gluteus': 0,
+              'quadriceps': valueFor(MuscleRegion.quadrizeps),
+              'hamstrings': valueFor(MuscleRegion.hamstrings),
+              'adductors': 0,
+              'abductors': 0,
+              'calves': valueFor(MuscleRegion.waden),
+              'feet': valueFor(MuscleRegion.waden),
             };
 
             final values = xpMap.values;

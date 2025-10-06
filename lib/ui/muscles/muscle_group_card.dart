@@ -15,7 +15,7 @@ class MuscleGroupCard extends StatelessWidget {
     final prov = context.watch<MuscleGroupProvider>();
     final group = prov.groups.firstWhere(
       (g) => g.id == muscleGroupId,
-      orElse: () => MuscleGroup(id: '', name: '', region: MuscleRegion.rectusAbdominis),
+      orElse: () => MuscleGroup(id: '', name: '', region: MuscleRegion.bauch),
     );
     if (group.id.isEmpty) return const SizedBox.shrink();
     final loc = AppLocalizations.of(context)!;

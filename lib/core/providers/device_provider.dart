@@ -1374,9 +1374,9 @@ class DeviceProvider extends ChangeNotifier {
   }) {
     final ctx = navigatorKey.currentContext;
     final muscleProv =
-        ctx != null ? Provider.maybeOf<MuscleGroupProvider>(ctx, listen: false) : null;
+        ctx != null ? Provider.of<MuscleGroupProvider>(ctx, listen: false) : null;
     final exerciseProv =
-        ctx != null ? Provider.maybeOf<ExerciseProvider>(ctx, listen: false) : null;
+        ctx != null ? Provider.of<ExerciseProvider>(ctx, listen: false) : null;
 
     final groups = muscleProv?.groups ?? const [];
     final idLookup = {for (final g in groups) g.id: g.id};

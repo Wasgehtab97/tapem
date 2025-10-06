@@ -120,16 +120,16 @@ void main() {
     final groups = [
       MuscleGroup(
         id: 'm1',
-        name: 'Chest',
-        region: MuscleRegion.chest,
+        name: 'Brust',
+        region: MuscleRegion.brust,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
       ),
       MuscleGroup(
         id: 'm2',
-        name: 'Lats',
-        region: MuscleRegion.lats,
+        name: 'Rücken',
+        region: MuscleRegion.ruecken,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
@@ -161,7 +161,7 @@ void main() {
 
     await tester.tap(find.text('Muskel'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chest'));
+    await tester.tap(find.text('Brust'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
@@ -194,16 +194,16 @@ void main() {
     final groups = [
       MuscleGroup(
         id: 'm1',
-        name: 'Chest',
-        region: MuscleRegion.chest,
+        name: 'Brust',
+        region: MuscleRegion.brust,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
       ),
       MuscleGroup(
         id: 'm2',
-        name: 'Lats',
-        region: MuscleRegion.lats,
+        name: 'Rücken',
+        region: MuscleRegion.ruecken,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
@@ -236,7 +236,7 @@ void main() {
 
     await tester.tap(find.text('Muskel'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chest'));
+    await tester.tap(find.text('Brust'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(find.text('A'), findsOneWidget);
@@ -262,8 +262,8 @@ void main() {
     final groups = [
       MuscleGroup(
         id: 'm1',
-        name: 'Chest',
-        region: MuscleRegion.chest,
+        name: 'Brust',
+        region: MuscleRegion.brust,
         primaryDeviceIds: const [],
         secondaryDeviceIds: const [],
         exerciseIds: const [],
@@ -301,6 +301,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(deviceProv.devices.first.primaryMuscleGroups, isEmpty);
-    expect(find.text('Chest'), findsNothing);
+    expect(find.text('Brust'), findsNothing);
   });
 }

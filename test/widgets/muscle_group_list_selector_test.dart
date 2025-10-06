@@ -100,8 +100,8 @@ class _FakeMuscleGroupProvider extends MuscleGroupProvider {
 
 void main() {
   final groups = [
-    MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
+    MuscleGroup(id: '1', name: 'Brust', region: MuscleRegion.brust),
+    MuscleGroup(id: '2', name: 'Rücken', region: MuscleRegion.ruecken),
   ];
 
   testWidgets('tap on selected chip deselects', (tester) async {
@@ -127,10 +127,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats'));
+    await tester.tap(find.text('Rücken'));
     await tester.pumpAndSettle();
     expect(p, ['2']);
-    await tester.tap(find.text('Lats'));
+    await tester.tap(find.text('Rücken'));
     await tester.pumpAndSettle();
     expect(p, isEmpty);
     expect(s, isEmpty);
@@ -159,8 +159,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chest'));
-    await tester.tap(find.text('Lats'));
+    await tester.tap(find.text('Brust'));
+    await tester.tap(find.text('Rücken'));
     await tester.pump();
     expect(p, ['1']);
     expect(s, ['2']);
@@ -193,7 +193,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats'));
+    await tester.tap(find.text('Rücken'));
     await tester.pump();
     expect(p, ['2']);
     expect(s, isEmpty);

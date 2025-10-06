@@ -109,7 +109,7 @@ void main() {
       theme: theme,
       home: SessionExerciseCard(
         title: 'Bench',
-        subtitle: 'Chest',
+        subtitle: 'Brust',
         sets: [SessionSet(weight: 10, reps: 5, setNumber: 1)],
       ),
     ));

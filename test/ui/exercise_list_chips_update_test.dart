@@ -159,9 +159,9 @@ void main() {
       updateMuscles: UpdateExerciseMuscleGroupsUseCase(repo),
     );
     final muscleProv = _FakeMuscleGroupProvider([
-      MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
-      MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
-      MuscleGroup(id: '3', name: 'Biceps', region: MuscleRegion.biceps),
+      MuscleGroup(id: '1', name: 'Brust', region: MuscleRegion.brust),
+      MuscleGroup(id: '2', name: 'Rücken', region: MuscleRegion.ruecken),
+      MuscleGroup(id: '3', name: 'Bizeps', region: MuscleRegion.bizeps),
     ]);
     await tester.pumpWidget(
       MultiProvider(
@@ -178,11 +178,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Chest'), findsOneWidget);
-    expect(find.text('Lats'), findsOneWidget);
+    expect(find.text('Brust'), findsOneWidget);
+    expect(find.text('Rücken'), findsOneWidget);
     await exerciseProvider.updateMuscleGroups('g', 'd', 'e1', 'u1', ['3'], []);
     await tester.pumpAndSettle();
-    expect(find.text('Biceps'), findsOneWidget);
-    expect(find.text('Chest'), findsNothing);
+    expect(find.text('Bizeps'), findsOneWidget);
+    expect(find.text('Brust'), findsNothing);
   });
 }

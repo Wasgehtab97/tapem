@@ -144,7 +144,7 @@ void main() {
       id: 1,
       name: 'Bench',
       description: 'Eleiko',
-      primaryMuscleGroups: const ['chest'],
+      primaryMuscleGroups: const ['brust'],
       secondaryMuscleGroups: const ['back'],
     );
     await tester.pumpWidget(
@@ -184,8 +184,8 @@ void main() {
       id: 1,
       name: 'Bench',
       description: 'Eleiko',
-      primaryMuscleGroups: const ['chest'],
-      secondaryMuscleGroups: const ['back'],
+      primaryMuscleGroups: const ['brust'],
+      secondaryMuscleGroups: const ['ruecken'],
     );
     await tester.pumpWidget(
       _wrapWithMaterialApp(
@@ -198,9 +198,9 @@ void main() {
     final chips = tester.widgetList<Chip>(find.byType(Chip)).toList();
     final context = tester.element(find.byType(DeviceCard));
     final theme = Theme.of(context);
-    expect((chips[0].label as Text).data, 'Chest');
+    expect((chips[0].label as Text).data, 'Brust');
     expect(chips[0].backgroundColor, theme.colorScheme.primary);
-    expect((chips[1].label as Text).data, 'Back');
+    expect((chips[1].label as Text).data, 'Rücken');
     final shape = chips[1].shape as StadiumBorder;
     expect(shape.side.color, theme.colorScheme.tertiary);
   });

@@ -28,7 +28,7 @@ class MuscleGroupDto {
       name: data['name'] as String? ?? '',
       region: MuscleRegion.values.firstWhere(
         (r) => r.name == data['region'],
-        orElse: () => MuscleRegion.rectusAbdominis,
+        orElse: () => MuscleRegion.bauch,
       ),
       primaryDeviceIds:
           (data['primaryDeviceIds'] as List<dynamic>? ?? [])
