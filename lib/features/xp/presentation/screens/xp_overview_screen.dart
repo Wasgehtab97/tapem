@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
@@ -102,41 +104,58 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
 
     final regions = MuscleRegion.values.toList()
       ..sort((a, b) => (regionXp[b] ?? 0).compareTo(regionXp[a] ?? 0));
-    final totalXp = regionXp.values.fold<int>(0, (sum, xp) => sum + xp);
-    final Map<DateTime, int> dayXpData = {};
-    xpProv.dayListXp.forEach((key, value) {
-      try {
-        dayXpData[DateTime.parse(key)] = value;
-      } catch (_) {
-        // ignore parsing errors
+    const xpPerLevel = LevelService.xpPerLevel;
+    const xpPerSession = LevelService.xpPerSession;
+    final maxTotalXp = LevelService.maxLevel * xpPerLevel;
+
+    List<int> buildXpHistory(int totalXp) {
+      final cappedTotalXp = math.min(totalXp, maxTotalXp);
+      final history = <int>[0];
+      if (cappedTotalXp <= 0) {
+        return history;
       }
-    });
-    final sortedDayEntries = dayXpData.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    final regionSeries = {
-      for (final region in regions) region: <DateTime, int>{},
-    };
-    final regionsWithXp = regions.where((region) => (regionXp[region] ?? 0) > 0).toList();
-    if (sortedDayEntries.isNotEmpty && totalXp > 0 && regionsWithXp.isNotEmpty) {
-      for (final entry in sortedDayEntries) {
-        final date = entry.key;
-        final dayXp = entry.value;
-        var distributed = 0;
-        for (var i = 0; i < regionsWithXp.length; i++) {
-          final region = regionsWithXp[i];
-          final share = (regionXp[region] ?? 0) / totalXp;
-          var assignedXp =
-              i == regionsWithXp.length - 1 ? dayXp - distributed : (dayXp * share).round();
-          if (assignedXp < 0) {
-            assignedXp = 0;
-          }
-          if (distributed + assignedXp > dayXp) {
-            assignedXp = dayXp - distributed;
-          }
-          distributed += assignedXp;
-          regionSeries[region]![date] = assignedXp;
+      final sessionCount = cappedTotalXp ~/ xpPerSession;
+      final remainder = cappedTotalXp % xpPerSession;
+      var xpInLevel = 0;
+      for (var i = 0; i < sessionCount; i++) {
+        xpInLevel += xpPerSession;
+        if (xpInLevel >= xpPerLevel) {
+          xpInLevel -= xpPerLevel;
+          history.add(0);
+        } else {
+          history.add(xpInLevel);
         }
       }
+      if (remainder > 0) {
+        xpInLevel += remainder;
+        if (xpInLevel >= xpPerLevel) {
+          xpInLevel -= xpPerLevel;
+        }
+        history.add(xpInLevel);
+      }
+      return history;
+    }
+
+    final regionLevel = <MuscleRegion, int>{};
+    final regionXpInLevel = <MuscleRegion, int>{};
+    final regionXpHistory = <MuscleRegion, List<int>>{};
+    final regionSessionCount = <MuscleRegion, int>{};
+
+    for (final region in regions) {
+      final total = regionXp[region] ?? 0;
+      var level = (total ~/ xpPerLevel) + 1;
+      if (level > LevelService.maxLevel) {
+        level = LevelService.maxLevel;
+      }
+      var xpInLevel = total % xpPerLevel;
+      if (level >= LevelService.maxLevel) {
+        xpInLevel = 0;
+      }
+      regionLevel[region] = level;
+      regionXpInLevel[region] = xpInLevel;
+      final history = buildXpHistory(total);
+      regionXpHistory[region] = history;
+      regionSessionCount[region] = history.length - 1;
     }
 
     void openLeaderboard(MuscleRegion region) {
@@ -253,19 +272,31 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              _regionLabel(region, muscleProv),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                    color: theme.colorScheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _regionLabel(region, muscleProv),
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                        color: theme.colorScheme.onSurface,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Level ${regionLevel[region]}',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                        color: theme.colorScheme.onSurface.withOpacity(0.62),
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
                           Text(
-                            '${numberFormatter.format(regionXp[region] ?? 0)} ${loc.xpOverviewTableHeaderXp}',
+                            '${numberFormatter.format(regionXpInLevel[region] ?? 0)} ${loc.xpOverviewTableHeaderXp}',
                             style: theme.textTheme.labelMedium?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                                 ),
@@ -273,22 +304,11 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      if (regionSeries[region]?.isNotEmpty ?? false)
-                        XpTimeSeriesChart(
-                          data: regionSeries[region]!,
-                          period: _period,
-                        )
-                      else
-                        Container(
-                          height: 160,
-                          alignment: Alignment.center,
-                          child: Text(
-                            loc.reportDeviceUsageEmpty,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withOpacity(0.64),
-                                ),
-                          ),
-                        ),
+                      XpTimeSeriesChart(
+                        xpHistory: regionXpHistory[region] ?? const <int>[0],
+                        totalSessions: regionSessionCount[region] ?? 0,
+                        period: _period,
+                      ),
                       if (region != regions.last)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -332,8 +352,8 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                   children: [
                     for (final region in regions)
                       XpGauge(
-                        currentXp: regionXp[region] ?? 0,
-                        level: ((regionXp[region] ?? 0) / LevelService.xpPerLevel).floor(),
+                        currentXp: regionXpInLevel[region] ?? 0,
+                        level: regionLevel[region] ?? 1,
                         label: _regionLabel(region, muscleProv),
                         size: gaugeSize,
                         onTap: () => openLeaderboard(region),
@@ -373,7 +393,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                   ),
                 ),
                 Text(
-                  loc.xpOverviewTableHeaderXp,
+                  'Level / ${loc.xpOverviewTableHeaderXp}',
                   style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.64),
                         fontWeight: FontWeight.w600,
@@ -402,17 +422,18 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          numberFormatter.format(regionXp[region] ?? 0),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.9),
+                          'Level ${regionLevel[region]}',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.62),
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Lv. ${((regionXp[region] ?? 0) / LevelService.xpPerLevel).floor()}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          '${numberFormatter.format(regionXpInLevel[region] ?? 0)} ${loc.xpOverviewTableHeaderXp}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.72),
+                                fontWeight: FontWeight.w600,
                               ),
                         ),
                       ],
