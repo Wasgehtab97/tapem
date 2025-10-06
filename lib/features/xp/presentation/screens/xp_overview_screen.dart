@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -73,7 +74,6 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final borderColor =
         brandTheme?.outline.withOpacity(0.22) ?? theme.colorScheme.onSurface.withOpacity(0.12);
     final highlightGradient = brandTheme?.gradient ?? AppGradients.brandGradient;
-    final highlightForeground = brandTheme?.onBrand ?? Colors.white;
     final locale = Localizations.localeOf(context).toString();
     final numberFormatter = NumberFormat.decimalPattern(locale);
 
@@ -103,17 +103,41 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     final regions = MuscleRegion.values.toList()
       ..sort((a, b) => (regionXp[b] ?? 0).compareTo(regionXp[a] ?? 0));
     final totalXp = regionXp.values.fold<int>(0, (sum, xp) => sum + xp);
-    final topRegion = regions.isNotEmpty ? regions.first : null;
-    final topRegionLabel =
-        topRegion == null ? null : _regionLabel(topRegion, muscleProv);
-    final chartData = <DateTime, int>{};
+    final Map<DateTime, int> dayXpData = {};
     xpProv.dayListXp.forEach((key, value) {
       try {
-        chartData[DateTime.parse(key)] = value;
+        dayXpData[DateTime.parse(key)] = value;
       } catch (_) {
         // ignore parsing errors
       }
     });
+    final sortedDayEntries = dayXpData.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final regionSeries = {
+      for (final region in regions) region: <DateTime, int>{},
+    };
+    final regionsWithXp = regions.where((region) => (regionXp[region] ?? 0) > 0).toList();
+    if (sortedDayEntries.isNotEmpty && totalXp > 0 && regionsWithXp.isNotEmpty) {
+      for (final entry in sortedDayEntries) {
+        final date = entry.key;
+        final dayXp = entry.value;
+        var distributed = 0;
+        for (var i = 0; i < regionsWithXp.length; i++) {
+          final region = regionsWithXp[i];
+          final share = (regionXp[region] ?? 0) / totalXp;
+          var assignedXp =
+              i == regionsWithXp.length - 1 ? dayXp - distributed : (dayXp * share).round();
+          if (assignedXp < 0) {
+            assignedXp = 0;
+          }
+          if (distributed + assignedXp > dayXp) {
+            assignedXp = dayXp - distributed;
+          }
+          distributed += assignedXp;
+          regionSeries[region]![date] = assignedXp;
+        }
+      }
+    }
 
     void openLeaderboard(MuscleRegion region) {
       Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
@@ -152,79 +176,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       );
     }
 
-    Widget buildHighlightCard() {
-      return Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          gradient: highlightGradient,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.45),
-              blurRadius: 36,
-              offset: const Offset(0, 20),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${loc.xpOverviewTableHeaderXp} ${loc.xpOverviewPeriodTotal}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                    color: highlightForeground.withOpacity(0.9),
-                    fontWeight: FontWeight.w600,
-                  ) ??
-                  TextStyle(
-                    color: highlightForeground.withOpacity(0.9),
-                    fontWeight: FontWeight.w600,
-                    fontSize: AppFontSizes.title,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${numberFormatter.format(totalXp)} ${loc.xpOverviewTableHeaderXp}',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                    color: highlightForeground,
-                    fontWeight: FontWeight.w700,
-                  ) ??
-                  TextStyle(
-                    color: highlightForeground,
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppFontSizes.kpi,
-                  ),
-            ),
-            if (topRegion != null && topRegionLabel != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: highlightForeground.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppRadius.button),
-                ),
-                child: Text(
-                  '${loc.muscleGroupTitle}: $topRegionLabel',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                        color: highlightForeground,
-                        fontWeight: FontWeight.w600,
-                      ) ??
-                      TextStyle(
-                        color: highlightForeground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
-    Widget buildPeriodCard() {
+    Widget buildRegionChartsCard() {
       return buildSurfaceCard(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +201,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        loc.xpOverviewTitle,
+                        loc.muscleGroupTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.colorScheme.onSurface,
                               fontWeight: FontWeight.w600,
@@ -294,20 +246,60 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            if (chartData.isNotEmpty)
-              XpTimeSeriesChart(data: chartData, period: _period)
-            else
-              SizedBox(
-                height: 160,
-                child: Center(
-                  child: Text(
-                    loc.reportDeviceUsageEmpty,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.64),
+            Column(
+              children: [
+                for (final region in regions)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _regionLabel(region, muscleProv),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                    color: theme.colorScheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                          Text(
+                            '${numberFormatter.format(regionXp[region] ?? 0)} ${loc.xpOverviewTableHeaderXp}',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (regionSeries[region]?.isNotEmpty ?? false)
+                        XpTimeSeriesChart(
+                          data: regionSeries[region]!,
+                          period: _period,
+                        )
+                      else
+                        Container(
+                          height: 160,
+                          alignment: Alignment.center,
+                          child: Text(
+                            loc.reportDeviceUsageEmpty,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.64),
+                                ),
+                          ),
                         ),
+                      if (region != regions.last)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                          child: Divider(
+                            color: theme.dividerColor.withOpacity(0.3),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              ),
+              ],
+            ),
           ],
         ),
       );
@@ -438,8 +430,18 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.xpOverviewTitle),
         centerTitle: true,
+        title: BrandGradientText(
+          loc.xpOverviewTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ) ??
+              const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: AppFontSizes.title,
+              ),
+          textAlign: TextAlign.center,
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -450,10 +452,9 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
             AppSpacing.lg,
           ),
           children: [
-            buildHighlightCard(),
-            buildPeriodCard(),
             buildGaugeCard(),
             buildTableCard(),
+            buildRegionChartsCard(),
           ],
         ),
       ),

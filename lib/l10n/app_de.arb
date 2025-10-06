@@ -1116,7 +1116,7 @@
   ,"@commonNoAccess": {"description": "Hinweis wenn kein Zugriff besteht"}
   ,"xpDeviceTitle": "Geräte XP"
   ,"@xpDeviceTitle": {"description": "Titel des Geräte-XP-Screens"}
-  ,"xpOverviewTitle": "XP Übersicht"
+  ,"xpOverviewTitle": "XP Übersicht Muskelgruppen"
   ,"@xpOverviewTitle": {"description": "AppBar-Titel der XP-Übersicht"}
   ,"xpOverviewPeriodLabel": "Zeitraum:"
   ,"@xpOverviewPeriodLabel": {"description": "Label für die Zeitraum-Auswahl"}
