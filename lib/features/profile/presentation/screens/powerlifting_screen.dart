@@ -104,8 +104,9 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
     if (duplicateFailure) {
       messages.add(duplicateMessage);
     }
-    if (failureMessage != null) {
-      messages.add(failureMessage!);
+    final message = failureMessage;
+    if (message != null) {
+      messages.add(message);
     }
 
     if (messages.isEmpty) {
