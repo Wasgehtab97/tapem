@@ -59,8 +59,11 @@ class ReportProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      usageStats = await _fetchUsageStats(gymId);
-      heatmapDates = await _getTimestamps.execute(gymId);
+      final usageFuture = _fetchUsageStats(gymId);
+      final timestampsFuture = _getTimestamps.execute(gymId);
+
+      usageStats = await usageFuture;
+      heatmapDates = await timestampsFuture;
       state = ReportState.loaded;
     } catch (e) {
       errorMessage = e.toString();
