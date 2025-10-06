@@ -16,9 +16,7 @@ class ReportRepositoryImpl implements ReportRepository {
     DateTime? since,
   }) async {
     final devices = await _source.fetchDevices(gymId);
-    final List<DeviceUsageStat> stats = [];
-
-    for (final deviceDoc in devices) {
+    final stats = await Future.wait(devices.map((deviceDoc) async {
       final deviceId = deviceDoc.id;
       final deviceData = deviceDoc.data();
       final deviceName = (deviceData?['name'] as String?)?.trim();
@@ -38,15 +36,13 @@ class ReportRepositoryImpl implements ReportRepository {
       }
 
       // Anzahl der Sessions = Anzahl der eindeutigen sessionIds
-      stats.add(
-        DeviceUsageStat(
-          id: deviceId,
-          name: deviceName?.isNotEmpty == true ? deviceName! : deviceId,
-          description: description ?? '',
-          sessions: sessionIds.length,
-        ),
+      return DeviceUsageStat(
+        id: deviceId,
+        name: deviceName?.isNotEmpty == true ? deviceName! : deviceId,
+        description: description ?? '',
+        sessions: sessionIds.length,
       );
-    }
+    }));
 
     return stats;
   }
@@ -54,20 +50,20 @@ class ReportRepositoryImpl implements ReportRepository {
   @override
   Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async {
     final devices = await _source.fetchDevices(gymId);
-    final List<DateTime> allTimestamps = [];
-
-    for (final deviceDoc in devices) {
+    final allTimestamps = await Future.wait(devices.map((deviceDoc) async {
       final deviceId = deviceDoc.id;
       final logs = await _source.fetchLogsForDevice(gymId, deviceId);
+      final timestamps = <DateTime>[];
       for (final logDoc in logs) {
         final data = logDoc.data();
         final ts = data?['timestamp'];
         if (ts is Timestamp) {
-          allTimestamps.add(ts.toDate());
+          timestamps.add(ts.toDate());
         }
       }
-    }
+      return timestamps;
+    }));
 
-    return allTimestamps;
+    return allTimestamps.expand((timestamps) => timestamps).toList();
   }
 }
