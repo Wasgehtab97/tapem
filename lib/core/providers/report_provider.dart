@@ -1,6 +1,7 @@
 // lib/core/providers/report_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 
@@ -11,7 +12,7 @@ class ReportProvider extends ChangeNotifier {
   final GetAllLogTimestamps _getTimestamps;
 
   ReportState state = ReportState.initial;
-  Map<String, int> usageCounts = {};
+  List<DeviceUsageStat> usageStats = const [];
   List<DateTime> heatmapDates = [];
   String? errorMessage;
 
@@ -24,13 +25,17 @@ class ReportProvider extends ChangeNotifier {
   Future<void> loadReport(String gymId) async {
     if (gymId.isEmpty) {
       state = ReportState.initial;
+      usageStats = const [];
+      heatmapDates = [];
+      errorMessage = null;
       notifyListeners();
       return;
     }
     state = ReportState.loading;
+    errorMessage = null;
     notifyListeners();
     try {
-      usageCounts = await _getUsage.execute(gymId);
+      usageStats = await _getUsage.execute(gymId);
       heatmapDates = await _getTimestamps.execute(gymId);
       state = ReportState.loaded;
     } catch (e) {

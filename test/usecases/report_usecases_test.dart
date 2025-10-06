@@ -1,16 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
-import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
+import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
+import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
+import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 
 class FakeReportRepository implements ReportRepository {
   int usageCalls = 0;
   int timeCalls = 0;
 
   @override
-  Future<Map<String, int>> fetchUsageCountPerMachine(String gymId) async {
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId) async {
     usageCalls++;
-    return {'d1': 1};
+    return const [
+      DeviceUsageStat(id: 'd1', name: 'Device', sessions: 1),
+    ];
   }
 
   @override
@@ -26,7 +29,7 @@ void main() {
       final repo = FakeReportRepository();
       final usecase = GetDeviceUsageStats(repo);
       final result = await usecase.execute('g1');
-      expect(result, {'d1': 1});
+      expect(result.first.sessions, 1);
       expect(repo.usageCalls, 1);
     });
 

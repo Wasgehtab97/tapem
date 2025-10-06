@@ -1070,8 +1070,14 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
-  ,"reportDeviceFilterHint": "Filter devices"
+  ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
+  ,"reportDeviceUsageEmpty": "No usage data available yet"
+  ,"@reportDeviceUsageEmpty": {"description": "Message shown when there is no usage data"}
+  ,"reportDeviceUsageNoMatches": "No devices match your search"
+  ,"@reportDeviceUsageNoMatches": {"description": "Message shown when the device search has no matches"}
+  ,"reportDeviceUsageError": "We couldn't load the usage data."
+  ,"@reportDeviceUsageError": {"description": "Message shown when fetching usage data fails"}
   ,"reportDeviceUsageSessions": "{count} sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip line with the number of sessions","placeholders": {"count": {"type": "int"}}}
   ,"exerciseDeleteTitle": "Delete exercise"

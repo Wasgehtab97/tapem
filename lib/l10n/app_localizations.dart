@@ -2024,6 +2024,15 @@ abstract class AppLocalizations {
   /// No description provided for @reportDeviceFilterHint.
   String get reportDeviceFilterHint;
 
+  /// No description provided for @reportDeviceUsageEmpty.
+  String get reportDeviceUsageEmpty;
+
+  /// No description provided for @reportDeviceUsageNoMatches.
+  String get reportDeviceUsageNoMatches;
+
+  /// No description provided for @reportDeviceUsageError.
+  String get reportDeviceUsageError;
+
   /// No description provided for @reportDeviceUsageSessions.
   String reportDeviceUsageSessions(int count);
 

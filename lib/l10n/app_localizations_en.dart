@@ -1045,7 +1045,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportViewSurveysTitle => 'View surveys';
 
   @override
-  String get reportDeviceFilterHint => 'Filter devices';
+  String get reportDeviceFilterHint => 'Search devices or descriptions';
+
+  @override
+  String get reportDeviceUsageEmpty => 'No usage data available yet';
+
+  @override
+  String get reportDeviceUsageNoMatches =>
+      'No devices match your search';
+
+  @override
+  String get reportDeviceUsageError =>
+      "We couldn't load the usage data.";
 
   @override
   String reportDeviceUsageSessions(int count) {

@@ -1,11 +1,12 @@
 // lib/features/report/domain/usecases/get_device_usage_stats.dart
-import 'package:tapem/features/report/domain/repositories/report_repository.dart';
+import '../models/device_usage_stat.dart';
+import '../repositories/report_repository.dart';
 
 class GetDeviceUsageStats {
   final ReportRepository _repo;
   GetDeviceUsageStats(this._repo);
 
-  Future<Map<String, int>> execute(String gymId) {
-    return _repo.fetchUsageCountPerMachine(gymId);
+  Future<List<DeviceUsageStat>> execute(String gymId) {
+    return _repo.fetchDeviceUsageStats(gymId);
   }
 }

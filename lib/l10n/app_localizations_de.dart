@@ -1045,7 +1045,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportViewSurveysTitle => 'Umfragen ansehen';
 
   @override
-  String get reportDeviceFilterHint => 'Gerät filtern';
+  String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
+
+  @override
+  String get reportDeviceUsageEmpty =>
+      'Noch keine Nutzungsdaten vorhanden';
+
+  @override
+  String get reportDeviceUsageNoMatches =>
+      'Keine Geräte entsprechen deiner Suche';
+
+  @override
+  String get reportDeviceUsageError =>
+      'Die Nutzungsdaten konnten nicht geladen werden.';
 
   @override
   String reportDeviceUsageSessions(int count) {
