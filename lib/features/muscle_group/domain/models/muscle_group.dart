@@ -1,25 +1,16 @@
 enum MuscleCategory { upperFront, upperBack, core, lower }
 
 enum MuscleRegion {
-  chest(MuscleCategory.upperFront),
-  anteriorDeltoid(MuscleCategory.upperFront),
-  biceps(MuscleCategory.upperFront),
-  wristFlexors(MuscleCategory.upperFront),
-  lats(MuscleCategory.upperBack),
-  midBack(MuscleCategory.upperBack),
-  posteriorDeltoid(MuscleCategory.upperBack),
-  upperTrapezius(MuscleCategory.upperBack),
-  triceps(MuscleCategory.upperBack),
-  rectusAbdominis(MuscleCategory.core),
-  obliques(MuscleCategory.core),
-  transversusAbdominis(MuscleCategory.core),
-  quadriceps(MuscleCategory.lower),
+  brust(MuscleCategory.upperFront),
+  ruecken(MuscleCategory.upperBack),
+  schulter(MuscleCategory.upperFront),
+  nacken(MuscleCategory.upperBack),
+  bizeps(MuscleCategory.upperFront),
+  trizeps(MuscleCategory.upperBack),
+  bauch(MuscleCategory.core),
+  quadrizeps(MuscleCategory.lower),
   hamstrings(MuscleCategory.lower),
-  glutes(MuscleCategory.lower),
-  adductors(MuscleCategory.lower),
-  abductors(MuscleCategory.lower),
-  calves(MuscleCategory.lower),
-  tibialisAnterior(MuscleCategory.lower);
+  waden(MuscleCategory.lower);
 
   final MuscleCategory category;
   const MuscleRegion(this.category);
@@ -36,7 +27,7 @@ class MuscleGroup {
   MuscleGroup({
     required this.id,
     required this.name,
-    this.region = MuscleRegion.rectusAbdominis,
+    this.region = MuscleRegion.bauch,
     List<String>? primaryDeviceIds,
     List<String>? secondaryDeviceIds,
     List<String>? exerciseIds,
@@ -71,7 +62,7 @@ class MuscleGroup {
         name: json['name'] as String? ?? '',
         region: MuscleRegion.values.firstWhere(
           (r) => r.name == json['region'],
-          orElse: () => MuscleRegion.rectusAbdominis,
+          orElse: () => MuscleRegion.bauch,
         ),
         primaryDeviceIds:
             (json['primaryDeviceIds'] as List<dynamic>? ?? [])

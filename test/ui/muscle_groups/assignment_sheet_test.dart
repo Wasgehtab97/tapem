@@ -79,14 +79,14 @@ Future<void> _openSheet(WidgetTester tester, MuscleGroupProvider prov) async {
 void main() {
   testWidgets('tab counts update and exclusivity', (tester) async {
     final prov = FakeMuscleGroupProvider([
-      MuscleGroup(id: 'c1', name: 'Chest', region: MuscleRegion.chest),
-      MuscleGroup(id: 'c2', name: 'Pecs', region: MuscleRegion.chest),
-      MuscleGroup(id: 'b1', name: 'Lats', region: MuscleRegion.lats),
-      MuscleGroup(id: 'b2', name: 'Mid Back', region: MuscleRegion.midBack),
-      MuscleGroup(id: 's1', name: 'Anterior Deltoid', region: MuscleRegion.anteriorDeltoid),
-      MuscleGroup(id: 'l1', name: 'Quadriceps', region: MuscleRegion.quadriceps),
-      MuscleGroup(id: 'a1', name: 'Biceps', region: MuscleRegion.biceps),
-      MuscleGroup(id: 'co1', name: 'Rectus Abdominis', region: MuscleRegion.rectusAbdominis),
+      MuscleGroup(id: 'br1', name: 'Brust', region: MuscleRegion.brust),
+      MuscleGroup(id: 'br2', name: 'Chest', region: MuscleRegion.brust),
+      MuscleGroup(id: 'ru1', name: 'Rücken', region: MuscleRegion.ruecken),
+      MuscleGroup(id: 'na1', name: 'Nacken', region: MuscleRegion.nacken),
+      MuscleGroup(id: 'sc1', name: 'Schulter', region: MuscleRegion.schulter),
+      MuscleGroup(id: 'qu1', name: 'Quadrizeps', region: MuscleRegion.quadrizeps),
+      MuscleGroup(id: 'bi1', name: 'Bizeps', region: MuscleRegion.bizeps),
+      MuscleGroup(id: 'ba1', name: 'Bauch', region: MuscleRegion.bauch),
     ]);
 
     await _openSheet(tester, prov);
@@ -96,48 +96,48 @@ void main() {
     expect(find.text('Secondary (0)'), findsOneWidget);
 
     // select a primary
-    await tester.tap(find.text('Biceps').first);
+    await tester.tap(find.text('Bizeps').first);
     await tester.pump();
     expect(find.text('Primary (1)'), findsOneWidget);
 
     // switch to secondary tab and select two
     await tester.tap(find.text('Secondary (0)'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats').first);
+    await tester.tap(find.text('Rücken').first);
     await tester.pump();
-    await tester.tap(find.text('Mid Back').first);
+    await tester.tap(find.text('Nacken').first);
     await tester.pump();
     expect(find.text('Secondary (2)'), findsOneWidget);
 
     // selecting primary removes from secondary
     await tester.tap(find.text('Primary (1)'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lats').first);
+    await tester.tap(find.text('Rücken').first);
     await tester.pump();
     expect(find.text('Secondary (1)'), findsOneWidget);
   });
 
   testWidgets('saving creates missing region and assigns', (tester) async {
     final prov = FakeMuscleGroupProvider([
-      MuscleGroup(id: 'c1', name: 'Chest', region: MuscleRegion.chest),
+      MuscleGroup(id: 'br1', name: 'Brust', region: MuscleRegion.brust),
     ]);
 
     await _openSheet(tester, prov);
 
-    await tester.tap(find.text('Biceps').first);
+    await tester.tap(find.text('Bizeps').first);
     await tester.pump();
 
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    expect(prov.ensuredRegion, MuscleRegion.biceps);
-    expect(prov.lastPrimary, ['biceps-id']);
+    expect(prov.ensuredRegion, MuscleRegion.bizeps);
+    expect(prov.lastPrimary, ['bizeps-id']);
     expect(prov.lastSecondary, isEmpty);
   });
 
   testWidgets('reset clears assignments', (tester) async {
     final prov = FakeMuscleGroupProvider([
-      MuscleGroup(id: 'c1', name: 'Chest', region: MuscleRegion.chest),
+      MuscleGroup(id: 'br1', name: 'Brust', region: MuscleRegion.brust),
     ]);
 
     await _openSheet(tester, prov);

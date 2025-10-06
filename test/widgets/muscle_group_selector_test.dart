@@ -105,8 +105,8 @@ class FakeMuscleGroupProvider extends MuscleGroupProvider {
 
 void main() {
   final groups = [
-    MuscleGroup(id: '1', name: 'Chest', region: MuscleRegion.chest),
-    MuscleGroup(id: '2', name: 'Lats', region: MuscleRegion.lats),
+    MuscleGroup(id: '1', name: 'Brust', region: MuscleRegion.brust),
+    MuscleGroup(id: '2', name: 'Rücken', region: MuscleRegion.ruecken),
   ];
 
   testWidgets('MuscleGroupSelector shows names and toggles', (tester) async {
@@ -127,8 +127,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Chest'), findsOneWidget);
-    await tester.tap(find.text('Chest'));
+    expect(find.text('Brust'), findsOneWidget);
+    await tester.tap(find.text('Brust'));
     await tester.pumpAndSettle();
     expect(selected, ['1']);
   });
@@ -147,7 +147,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<TextButton>(find.text('Save')).onPressed, isNull);
     await tester.enterText(find.byType(TextField), 'Pushup');
-    await tester.tap(find.text('Chest'));
+    await tester.tap(find.text('Brust'));
     await tester.pump();
     expect(tester.widget<TextButton>(find.text('Save')).onPressed, isNotNull);
   });

@@ -13,44 +13,26 @@ class MuscleChips extends StatelessWidget {
 
   String _fallbackName(MuscleRegion region) {
     switch (region) {
-      case MuscleRegion.chest:
-        return 'Chest';
-      case MuscleRegion.anteriorDeltoid:
-        return 'Anterior Deltoid';
-      case MuscleRegion.biceps:
-        return 'Biceps';
-      case MuscleRegion.wristFlexors:
-        return 'Wrist Flexors';
-      case MuscleRegion.lats:
-        return 'Lats';
-      case MuscleRegion.midBack:
-        return 'Mid Back';
-      case MuscleRegion.posteriorDeltoid:
-        return 'Posterior Deltoid';
-      case MuscleRegion.upperTrapezius:
-        return 'Upper Trapezius';
-      case MuscleRegion.triceps:
-        return 'Triceps';
-      case MuscleRegion.rectusAbdominis:
-        return 'Rectus Abdominis';
-      case MuscleRegion.obliques:
-        return 'Obliques';
-      case MuscleRegion.transversusAbdominis:
-        return 'Transversus Abdominis';
-      case MuscleRegion.quadriceps:
-        return 'Quadriceps';
+      case MuscleRegion.brust:
+        return 'Brust';
+      case MuscleRegion.schulter:
+        return 'Schulter';
+      case MuscleRegion.nacken:
+        return 'Nacken';
+      case MuscleRegion.ruecken:
+        return 'Rücken';
+      case MuscleRegion.bizeps:
+        return 'Bizeps';
+      case MuscleRegion.trizeps:
+        return 'Trizeps';
+      case MuscleRegion.bauch:
+        return 'Bauch';
+      case MuscleRegion.quadrizeps:
+        return 'Quadrizeps';
       case MuscleRegion.hamstrings:
         return 'Hamstrings';
-      case MuscleRegion.glutes:
-        return 'Glutes';
-      case MuscleRegion.adductors:
-        return 'Adductors';
-      case MuscleRegion.abductors:
-        return 'Abductors';
-      case MuscleRegion.calves:
-        return 'Calves';
-      case MuscleRegion.tibialisAnterior:
-        return 'Tibialis Anterior';
+      case MuscleRegion.waden:
+        return 'Waden';
     }
   }
 
@@ -66,7 +48,7 @@ class MuscleChips extends StatelessWidget {
 
     MuscleRegion regionFor(String id, MuscleGroup? g) {
       if (g != null) return g.region;
-      return MuscleRegion.values.firstWhereOrNull((r) => r.name == id) ?? MuscleRegion.rectusAbdominis;
+      return MuscleRegion.values.firstWhereOrNull((r) => r.name == id) ?? MuscleRegion.bauch;
     }
 
     String nameFor(String id) {

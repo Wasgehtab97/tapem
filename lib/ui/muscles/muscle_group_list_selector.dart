@@ -27,63 +27,45 @@ class MuscleGroupListSelector extends StatefulWidget {
 
 class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   static const List<MuscleRegion> _ordered = [
-    MuscleRegion.chest,
-    MuscleRegion.anteriorDeltoid,
-    MuscleRegion.biceps,
-    MuscleRegion.wristFlexors,
-    MuscleRegion.lats,
-    MuscleRegion.midBack,
-    MuscleRegion.posteriorDeltoid,
-    MuscleRegion.upperTrapezius,
-    MuscleRegion.triceps,
-    MuscleRegion.rectusAbdominis,
-    MuscleRegion.obliques,
-    MuscleRegion.transversusAbdominis,
-    MuscleRegion.quadriceps,
+    MuscleRegion.brust,
+    MuscleRegion.schulter,
+    MuscleRegion.nacken,
+    MuscleRegion.ruecken,
+    MuscleRegion.bizeps,
+    MuscleRegion.trizeps,
+    MuscleRegion.bauch,
+    MuscleRegion.quadrizeps,
     MuscleRegion.hamstrings,
-    MuscleRegion.glutes,
-    MuscleRegion.adductors,
-    MuscleRegion.abductors,
-    MuscleRegion.calves,
-    MuscleRegion.tibialisAnterior,
+    MuscleRegion.waden,
   ];
 
   /// Display categories for grouping muscle regions.
   static const List<_Category> _categories = [
     _Category.chest,
     _Category.shoulders,
-    _Category.arms,
     _Category.back,
+    _Category.arms,
     _Category.core,
     _Category.legs,
   ];
 
   _Category _categoryFor(MuscleRegion r) {
     switch (r) {
-      case MuscleRegion.chest:
+      case MuscleRegion.brust:
         return _Category.chest;
-      case MuscleRegion.anteriorDeltoid:
-      case MuscleRegion.posteriorDeltoid:
-      case MuscleRegion.upperTrapezius:
+      case MuscleRegion.schulter:
         return _Category.shoulders;
-      case MuscleRegion.biceps:
-      case MuscleRegion.triceps:
-      case MuscleRegion.wristFlexors:
-        return _Category.arms;
-      case MuscleRegion.lats:
-      case MuscleRegion.midBack:
+      case MuscleRegion.ruecken:
+      case MuscleRegion.nacken:
         return _Category.back;
-      case MuscleRegion.rectusAbdominis:
-      case MuscleRegion.obliques:
-      case MuscleRegion.transversusAbdominis:
+      case MuscleRegion.bizeps:
+      case MuscleRegion.trizeps:
+        return _Category.arms;
+      case MuscleRegion.bauch:
         return _Category.core;
-      case MuscleRegion.quadriceps:
+      case MuscleRegion.quadrizeps:
       case MuscleRegion.hamstrings:
-      case MuscleRegion.glutes:
-      case MuscleRegion.adductors:
-      case MuscleRegion.abductors:
-      case MuscleRegion.calves:
-      case MuscleRegion.tibialisAnterior:
+      case MuscleRegion.waden:
         return _Category.legs;
     }
   }
@@ -121,44 +103,26 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
 
   String _regionFallbackName(MuscleRegion r) {
     switch (r) {
-      case MuscleRegion.chest:
-        return 'Chest';
-      case MuscleRegion.anteriorDeltoid:
-        return 'Anterior Deltoid';
-      case MuscleRegion.biceps:
-        return 'Biceps';
-      case MuscleRegion.wristFlexors:
-        return 'Wrist Flexors';
-      case MuscleRegion.lats:
-        return 'Lats';
-      case MuscleRegion.midBack:
-        return 'Mid Back';
-      case MuscleRegion.posteriorDeltoid:
-        return 'Posterior Deltoid';
-      case MuscleRegion.upperTrapezius:
-        return 'Upper Trapezius';
-      case MuscleRegion.triceps:
-        return 'Triceps';
-      case MuscleRegion.rectusAbdominis:
-        return 'Rectus Abdominis';
-      case MuscleRegion.obliques:
-        return 'Obliques';
-      case MuscleRegion.transversusAbdominis:
-        return 'Transversus Abdominis';
-      case MuscleRegion.quadriceps:
-        return 'Quadriceps';
+      case MuscleRegion.brust:
+        return 'Brust';
+      case MuscleRegion.schulter:
+        return 'Schulter';
+      case MuscleRegion.nacken:
+        return 'Nacken';
+      case MuscleRegion.ruecken:
+        return 'Rücken';
+      case MuscleRegion.bizeps:
+        return 'Bizeps';
+      case MuscleRegion.trizeps:
+        return 'Trizeps';
+      case MuscleRegion.bauch:
+        return 'Bauch';
+      case MuscleRegion.quadrizeps:
+        return 'Quadrizeps';
       case MuscleRegion.hamstrings:
         return 'Hamstrings';
-      case MuscleRegion.glutes:
-        return 'Glutes';
-      case MuscleRegion.adductors:
-        return 'Adductors';
-      case MuscleRegion.abductors:
-        return 'Abductors';
-      case MuscleRegion.calves:
-        return 'Calves';
-      case MuscleRegion.tibialisAnterior:
-        return 'Tibialis Anterior';
+      case MuscleRegion.waden:
+        return 'Waden';
     }
   }
 

@@ -114,7 +114,7 @@ class _FakeAuthProvider extends ChangeNotifier implements AuthProvider {
 
 void main() {
   final groups = [
-    MuscleGroup(id: '1', name: 'Latissimus dorsi', region: MuscleRegion.lats),
+    MuscleGroup(id: '1', name: 'Rücken', region: MuscleRegion.ruecken),
   ];
 
   testWidgets('preview updates when selecting muscle groups', (tester) async {
@@ -145,13 +145,13 @@ void main() {
     expect(find.text('No muscle groups available'), findsOneWidget);
     // Category heading should be visible
     expect(find.text('Back'), findsOneWidget);
-    await tester.tap(find.text('Latissimus dorsi'));
+    await tester.tap(find.text('Rücken'));
     await tester.pump();
     expect(find.text('Selected'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(MuscleChips),
-        matching: find.text('Latissimus dorsi'),
+        matching: find.text('Rücken'),
       ),
       findsOneWidget,
     );

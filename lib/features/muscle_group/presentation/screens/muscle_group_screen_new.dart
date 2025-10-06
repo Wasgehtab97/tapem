@@ -75,23 +75,28 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       }
     }
 
+    int valueFor(MuscleRegion region) => regionXp[region] ?? 0;
+
     final xpMap = <String, int>{
-      'head': 0,
-      'chest': regionXp[MuscleRegion.chest] ?? 0,
-      'core': (regionXp[MuscleRegion.rectusAbdominis] ?? 0) +
-          (regionXp[MuscleRegion.obliques] ?? 0) +
-          (regionXp[MuscleRegion.transversusAbdominis] ?? 0),
-      'pelvis': regionXp[MuscleRegion.glutes] ?? 0,
-      'upper_arm_left': regionXp[MuscleRegion.biceps] ?? 0,
-      'upper_arm_right': regionXp[MuscleRegion.triceps] ?? 0,
-      'forearm_left': regionXp[MuscleRegion.wristFlexors] ?? 0,
-      'forearm_right': regionXp[MuscleRegion.wristFlexors] ?? 0,
-      'thigh_left': regionXp[MuscleRegion.quadriceps] ?? 0,
-      'thigh_right': regionXp[MuscleRegion.hamstrings] ?? 0,
-      'calf_left': regionXp[MuscleRegion.calves] ?? 0,
-      'calf_right': regionXp[MuscleRegion.calves] ?? 0,
-      'foot_left': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
-      'foot_right': regionXp[MuscleRegion.tibialisAnterior] ?? 0,
+      'trapezius': valueFor(MuscleRegion.nacken),
+      'anterior_deltoid': valueFor(MuscleRegion.schulter),
+      'lateral_deltoid': valueFor(MuscleRegion.schulter),
+      'posterior_deltoid': valueFor(MuscleRegion.schulter),
+      'pectoral': valueFor(MuscleRegion.brust),
+      'latissimus_dorsi': valueFor(MuscleRegion.ruecken),
+      'lower_back': valueFor(MuscleRegion.ruecken),
+      'rhomboids': valueFor(MuscleRegion.ruecken),
+      'biceps': valueFor(MuscleRegion.bizeps),
+      'triceps': valueFor(MuscleRegion.trizeps),
+      'forearm': 0,
+      'abs': valueFor(MuscleRegion.bauch),
+      'gluteus': 0,
+      'quadriceps': valueFor(MuscleRegion.quadrizeps),
+      'hamstrings': valueFor(MuscleRegion.hamstrings),
+      'adductors': 0,
+      'abductors': 0,
+      'calves': valueFor(MuscleRegion.waden),
+      'feet': valueFor(MuscleRegion.waden),
     };
 
     final values = xpMap.values.map((e) => e.toDouble());
