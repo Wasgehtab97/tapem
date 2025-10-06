@@ -167,7 +167,8 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       return [0, maxValue];
     }
     final ticks = <double>{0, maxValue};
-    final step = interval.interval <= 0 ? 1 : interval.interval;
+    final double step =
+        interval.interval <= 0 ? 1.0 : interval.interval.toDouble();
     double current = step;
     while (current < maxValue) {
       ticks.add(double.parse(current.toStringAsFixed(2)));
@@ -305,7 +306,7 @@ class _UsageAxisPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final chartHeight = size.height - topPadding - bottomPadding;
-    final safeMax = maxValue <= 0 ? 1 : maxValue;
+    final double safeMax = maxValue <= 0 ? 1.0 : maxValue;
     final axisPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -395,7 +396,7 @@ class _UsageChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final chartHeight = size.height - topPadding - bottomPadding;
-    final safeMax = maxValue <= 0 ? 1 : maxValue;
+    final double safeMax = maxValue <= 0 ? 1.0 : maxValue;
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -432,7 +433,7 @@ class _UsageChartPainter extends CustomPainter {
         topPadding: topPadding,
       );
       final barBottom = size.height - bottomPadding;
-      final barHeight = math.max(4, barBottom - barTop);
+      final double barHeight = math.max(4.0, barBottom - barTop);
       final barRect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, barBottom - barHeight, barWidth, barHeight),
         const Radius.circular(AppRadius.card),
