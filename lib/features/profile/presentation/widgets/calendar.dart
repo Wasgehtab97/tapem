@@ -43,6 +43,7 @@ class _CalendarState extends State<Calendar> {
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
     final today = DateTime.now();
+    final trainingFillColor = _resolveTrainingDayFillColor(theme);
 
     final firstOfYear = DateTime(_year, 1, 1);
     final lastOfYear = DateTime(_year, 12, 31);
@@ -153,7 +154,7 @@ class _CalendarState extends State<Calendar> {
                     decoration: BoxDecoration(
                       color:
                           isTrain
-                              ? theme.colorScheme.secondary.withOpacity(0.6)
+                              ? trainingFillColor
                               : Colors.transparent,
                       border: Border.all(
                         color:
@@ -199,5 +200,24 @@ class _CalendarState extends State<Calendar> {
         );
       },
     );
+  }
+
+  Color _resolveTrainingDayFillColor(ThemeData theme) {
+    final base = theme.colorScheme.secondary;
+    final hslBase = HSLColor.fromColor(base);
+    final isMonochrome = hslBase.saturation <= 0.05;
+
+    if (isMonochrome) {
+      return base.withOpacity(0.85);
+    }
+
+    final saturated = hslBase.withSaturation(
+      (hslBase.saturation + 0.25).clamp(0.0, 1.0),
+    );
+    final darkened = saturated.withLightness(
+      (saturated.lightness * 0.75).clamp(0.0, 1.0),
+    );
+
+    return darkened.toColor().withOpacity(0.9);
   }
 }
