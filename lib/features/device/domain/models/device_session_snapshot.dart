@@ -13,6 +13,9 @@ class DeviceSessionSnapshot {
   final List<SetEntry> sets;
   final int renderVersion;
   final Map<String, dynamic>? uiHints;
+  final List<String> primaryMuscleGroupIds;
+  final List<String> secondaryMuscleGroupIds;
+  final int? muscleGroupRevision;
 
   const DeviceSessionSnapshot({
     required this.sessionId,
@@ -24,6 +27,9 @@ class DeviceSessionSnapshot {
     required this.sets,
     this.renderVersion = 1,
     this.uiHints,
+    this.primaryMuscleGroupIds = const [],
+    this.secondaryMuscleGroupIds = const [],
+    this.muscleGroupRevision,
   });
 
   factory DeviceSessionSnapshot.fromJson(Map<String, dynamic> j) {
@@ -39,6 +45,15 @@ class DeviceSessionSnapshot {
           .toList(),
       renderVersion: j['renderVersion'] as int? ?? 1,
       uiHints: j['uiHints'] as Map<String, dynamic>?,
+      primaryMuscleGroupIds:
+          (j['primaryMuscleGroupIds'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      secondaryMuscleGroupIds:
+          (j['secondaryMuscleGroupIds'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      muscleGroupRevision: (j['muscleGroupRevision'] as num?)?.toInt(),
     );
   }
 
@@ -52,6 +67,9 @@ class DeviceSessionSnapshot {
         'sets': sets.map((s) => s.toJson()).toList(),
         'renderVersion': renderVersion,
         'uiHints': uiHints,
+        'primaryMuscleGroupIds': primaryMuscleGroupIds,
+        'secondaryMuscleGroupIds': secondaryMuscleGroupIds,
+        'muscleGroupRevision': muscleGroupRevision,
       };
 }
 

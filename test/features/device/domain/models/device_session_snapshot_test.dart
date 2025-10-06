@@ -20,6 +20,9 @@ void main() {
         ),
         SetEntry(kg: 0, reps: 5, isBodyweight: true),
       ],
+      primaryMuscleGroupIds: const ['m1'],
+      secondaryMuscleGroupIds: const ['m2'],
+      muscleGroupRevision: 123,
     );
 
     final json = snapshot.toJson();
@@ -33,5 +36,8 @@ void main() {
     expect(decoded.sets.first.drops.first.kg, 10);
     expect(decoded.sets[1].isBodyweight, true);
     expect(decoded.sets[1].kg, 0);
+    expect(decoded.primaryMuscleGroupIds, ['m1']);
+    expect(decoded.secondaryMuscleGroupIds, ['m2']);
+    expect(decoded.muscleGroupRevision, 123);
   });
 }

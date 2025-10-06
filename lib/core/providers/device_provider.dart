@@ -7,7 +7,11 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -31,6 +35,7 @@ import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+import '../../main.dart';
 
 enum DeviceSetFieldFocus {
   weight,
@@ -135,6 +140,16 @@ String _setsBrief(List<Map<String, dynamic>> sets) {
 String? resolveDeviceId(DeviceSessionSnapshot snap) {
   if (snap.deviceId.isNotEmpty) return snap.deviceId;
   return null;
+}
+
+class _ResolvedMuscleAssignments {
+  final List<String> primary;
+  final List<String> secondary;
+
+  const _ResolvedMuscleAssignments({
+    required this.primary,
+    required this.secondary,
+  });
 }
 
 class DeviceProvider extends ChangeNotifier {
@@ -1145,11 +1160,18 @@ class DeviceProvider extends ChangeNotifier {
           .doc(userId);
       batch.set(noteRef, {'note': _note, 'updatedAt': ts});
 
+      final assignments = _resolveMuscleAssignments(
+        device: _device!,
+        exerciseId: _device!.isMulti ? _currentExerciseId : null,
+      );
+
       final snapshot = _buildSnapshot(
         sessionId: sessionId,
         device: _device!,
         exerciseId: _currentExerciseId,
         userId: userId,
+        primaryMuscleGroupIds: assignments.primary,
+        secondaryMuscleGroupIds: assignments.secondary,
       );
 
       await batch.commit();
@@ -1210,6 +1232,8 @@ class DeviceProvider extends ChangeNotifier {
             isMulti: _device!.isMulti,
             exerciseId: _currentExerciseId,
             traceId: traceId,
+            primaryMuscleGroupIds: assignments.primary,
+            secondaryMuscleGroupIds: assignments.secondary,
           );
           if (xpResult != null) {
             XpTrace.log('CALL_RESULT', {
@@ -1298,6 +1322,8 @@ class DeviceProvider extends ChangeNotifier {
     required Device device,
     String? exerciseId,
     required String userId,
+    required List<String> primaryMuscleGroupIds,
+    required List<String> secondaryMuscleGroupIds,
   }) {
     return DeviceSessionSnapshot(
       sessionId: sessionId,
@@ -1336,6 +1362,128 @@ class DeviceProvider extends ChangeNotifier {
           .toList(),
       renderVersion: 1,
       uiHints: {'plannedTableCollapsed': false},
+      primaryMuscleGroupIds: primaryMuscleGroupIds,
+      secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+      muscleGroupRevision: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  _ResolvedMuscleAssignments _resolveMuscleAssignments({
+    required Device device,
+    String? exerciseId,
+  }) {
+    final ctx = navigatorKey.currentContext;
+    final muscleProv =
+        ctx != null ? Provider.maybeOf<MuscleGroupProvider>(ctx, listen: false) : null;
+    final exerciseProv =
+        ctx != null ? Provider.maybeOf<ExerciseProvider>(ctx, listen: false) : null;
+
+    final groups = muscleProv?.groups ?? const [];
+    final idLookup = {for (final g in groups) g.id: g.id};
+    final regionLookup = {for (final g in groups) g.region.name: g.id};
+    final nameLookup = {for (final g in groups) g.name: g.id};
+
+    List<String> normalize(Iterable<String> raw) {
+      final normalized = <String>[];
+      final seen = <String>{};
+      for (final entry in raw) {
+        final value = entry.trim();
+        if (value.isEmpty) continue;
+        String candidate = value;
+        if (idLookup.containsKey(value)) {
+          candidate = value;
+        } else if (regionLookup.containsKey(value)) {
+          candidate = regionLookup[value]!;
+        } else if (nameLookup.containsKey(value)) {
+          candidate = nameLookup[value]!;
+        }
+        if (seen.add(candidate)) {
+          normalized.add(candidate);
+        }
+      }
+      return normalized;
+    }
+
+    void addAll(Iterable<String> source, List<String> target) {
+      for (final id in normalize(source)) {
+        if (!target.contains(id)) {
+          target.add(id);
+        }
+      }
+    }
+
+    final primary = <String>[];
+    final secondary = <String>[];
+
+    if (device.isMulti) {
+      if (exerciseId != null && exerciseId.isNotEmpty) {
+        final exercise = exerciseProv?.exercises.firstWhereOrNull(
+          (e) => e.id == exerciseId,
+        );
+        if (exercise != null) {
+          addAll(exercise.primaryMuscleGroupIds, primary);
+          addAll(exercise.secondaryMuscleGroupIds, secondary);
+        }
+        if (primary.isEmpty && secondary.isEmpty) {
+          addAll(device.primaryMuscleGroups, primary);
+          addAll(device.secondaryMuscleGroups, secondary);
+        }
+        if (primary.isEmpty && device.muscleGroupIds.isNotEmpty) {
+          addAll(device.muscleGroupIds, primary);
+        }
+        if (primary.isEmpty && muscleProv != null) {
+          final linked = muscleProv.groups
+              .where((g) => g.exerciseIds.contains(exerciseId))
+              .map((g) => g.id);
+          addAll(linked, primary);
+        }
+      }
+      if (primary.isEmpty && secondary.isEmpty) {
+        addAll(device.primaryMuscleGroups, primary);
+        addAll(device.secondaryMuscleGroups, secondary);
+        if (primary.isEmpty && device.muscleGroupIds.isNotEmpty) {
+          addAll(device.muscleGroupIds, primary);
+        }
+        if (primary.isEmpty && muscleProv != null) {
+          final linked = muscleProv.groups
+              .where((g) => g.deviceIds.contains(device.uid))
+              .map((g) => g.id);
+          addAll(linked, primary);
+        }
+      }
+    } else {
+      addAll(device.primaryMuscleGroups, primary);
+      addAll(device.secondaryMuscleGroups, secondary);
+      if (primary.isEmpty && device.muscleGroupIds.isNotEmpty) {
+        addAll(device.muscleGroupIds, primary);
+      }
+      if (muscleProv != null) {
+        if (primary.isEmpty) {
+          final linkedPrimary = muscleProv.groups
+              .where((g) => g.primaryDeviceIds.contains(device.uid))
+              .map((g) => g.id);
+          addAll(linkedPrimary, primary);
+        }
+        if (secondary.isEmpty) {
+          final linkedSecondary = muscleProv.groups
+              .where((g) => g.secondaryDeviceIds.contains(device.uid))
+              .map((g) => g.id);
+          addAll(linkedSecondary, secondary);
+        }
+      }
+    }
+
+    final primarySet = primary.toSet();
+    final filteredSecondary = <String>[];
+    for (final id in secondary) {
+      if (!primarySet.contains(id)) {
+        filteredSecondary.add(id);
+      }
+    }
+
+    return _ResolvedMuscleAssignments(
+      primary: List.unmodifiable(primary),
+      secondary: List.unmodifiable(filteredSecondary),
     );
   }
 
