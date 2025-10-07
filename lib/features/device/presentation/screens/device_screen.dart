@@ -60,6 +60,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
   final _pagerKey = GlobalKey<DevicePagerState>();
+  OverlayNumericKeypadController? _keypadController;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _keypadController ??= context.read<OverlayNumericKeypadController>();
+  }
 
   @override
   void initState() {
@@ -117,7 +124,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   void _closeKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
-    context.read<OverlayNumericKeypadController>().close();
+    (_keypadController ?? context.read<OverlayNumericKeypadController>()).close();
   }
 
   String? _resolveExerciseTitle(
@@ -487,7 +494,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   @override
   void dispose() {
-    _closeKeyboard();
+    FocusManager.instance.primaryFocus?.unfocus();
+    _keypadController?.close();
     _scrollController.dispose();
     super.dispose();
   }

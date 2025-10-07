@@ -1238,11 +1238,16 @@ class DeviceProvider extends ChangeNotifier {
           if (xpResult != null) {
             XpTrace.log('CALL_RESULT', {
               'result': xpResult.name,
-              'deltaXp': xpResult == DeviceXpResult.okAdded ? 50 : 0,
+              'deltaXp':
+                  xpResult == DeviceXpResult.okAdded ||
+                          xpResult == DeviceXpResult.okAddedNoLeaderboard
+                      ? 50
+                      : 0,
               'traceId': traceId,
             });
           }
-          if (xpResult == DeviceXpResult.okAdded) {
+          if (xpResult == DeviceXpResult.okAdded ||
+              xpResult == DeviceXpResult.okAddedNoLeaderboard) {
             final info = LevelService()
                 .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
             _level = info.level;

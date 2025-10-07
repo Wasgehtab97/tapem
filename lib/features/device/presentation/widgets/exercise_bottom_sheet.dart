@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -186,56 +187,73 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                   onPressed:
                       canSave
                           ? () async {
-                            final name = _nameCtr.text.trim();
-                            final exProv = context.read<ExerciseProvider>();
-                            final muscleProv =
-                                context.read<MuscleGroupProvider>();
-                            final normalizedPrimary =
-                                muscleProv.canonicalizeGroupIds(_primaryIds);
-                            final primaryIds = normalizedPrimary.isEmpty
-                                ? const <String>[]
-                                : [normalizedPrimary.first];
-                            final secondaryIds = muscleProv
-                                .canonicalizeGroupIds(_secondaryIds)
-                                .where((id) => !primaryIds.contains(id))
-                                .toList();
-                            Exercise ex;
-                            if (widget.exercise == null) {
-                              ex = await exProv.addExercise(
-                                widget.gymId,
-                                widget.deviceId,
-                                name,
-                                userId,
-                                primaryMuscleGroupIds: primaryIds,
-                                secondaryMuscleGroupIds: secondaryIds,
-                              );
-                            } else {
-                              await exProv.updateExercise(
-                                widget.gymId,
-                                widget.deviceId,
-                                widget.exercise!.id,
-                                name,
-                                userId,
-                                primaryMuscleGroupIds: primaryIds,
-                                secondaryMuscleGroupIds: secondaryIds,
-                              );
-                              ex = widget.exercise!.copyWith(
-                                name: name,
-                                primaryMuscleGroupIds: primaryIds,
-                                secondaryMuscleGroupIds: secondaryIds,
-                              );
-                            }
-                            await context
-                                .read<MuscleGroupProvider>()
-                                .updateExerciseAssignments(
-                                  context,
-                                  ex.id,
-                                  primaryIds,
-                                  secondaryIds,
+                              try {
+                                final name = _nameCtr.text.trim();
+                                final exProv = context.read<ExerciseProvider>();
+                                final muscleProv =
+                                    context.read<MuscleGroupProvider>();
+                                final normalizedPrimary =
+                                    muscleProv.canonicalizeGroupIds(_primaryIds);
+                                final primaryIds = normalizedPrimary.isEmpty
+                                    ? const <String>[]
+                                    : [normalizedPrimary.first];
+                                final secondaryIds = muscleProv
+                                    .canonicalizeGroupIds(_secondaryIds)
+                                    .where((id) => !primaryIds.contains(id))
+                                    .toList();
+                                Exercise ex;
+                                if (widget.exercise == null) {
+                                  ex = await exProv.addExercise(
+                                    widget.gymId,
+                                    widget.deviceId,
+                                    name,
+                                    userId,
+                                    primaryMuscleGroupIds: primaryIds,
+                                    secondaryMuscleGroupIds: secondaryIds,
+                                  );
+                                } else {
+                                  await exProv.updateExercise(
+                                    widget.gymId,
+                                    widget.deviceId,
+                                    widget.exercise!.id,
+                                    name,
+                                    userId,
+                                    primaryMuscleGroupIds: primaryIds,
+                                    secondaryMuscleGroupIds: secondaryIds,
+                                  );
+                                  ex = widget.exercise!.copyWith(
+                                    name: name,
+                                    primaryMuscleGroupIds: primaryIds,
+                                    secondaryMuscleGroupIds: secondaryIds,
+                                  );
+                                }
+                                await context
+                                    .read<MuscleGroupProvider>()
+                                    .updateExerciseAssignments(
+                                      context,
+                                      ex.id,
+                                      primaryIds,
+                                      secondaryIds,
+                                    );
+                                if (!mounted) return;
+                                Navigator.pop(context, ex);
+                              } on FirebaseException catch (e) {
+                                if (!mounted) return;
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final message = e.code == 'permission-denied'
+                                    ? loc.commonSaveError
+                                    : (e.message ?? loc.commonSaveError);
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text(message)),
                                 );
-                            if (!mounted) return;
-                            Navigator.pop(context, ex);
-                          }
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(loc.commonSaveError)),
+                                );
+                              }
+                            }
                           : null,
                   child: Text(loc.commonSave),
                 ),
