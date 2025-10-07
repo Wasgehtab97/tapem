@@ -199,7 +199,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     Widget buildContent() {
       if (isLoading) {
         return const Padding(
-          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Center(child: CircularProgressIndicator()),
         );
       }
@@ -208,7 +208,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ? loc.leaderboardEmptyGym
             : loc.leaderboardEmptyFriends;
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Center(
             child: Text(
               emptyText,
