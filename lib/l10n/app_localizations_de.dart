@@ -1016,6 +1016,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileChangeAvatar => 'Profilbild ändern';
 
   @override
+  String get profilePlayAvatarSound => 'Profil-Sound abspielen';
+
+  @override
   String get homeTabAdmin => 'Admin';
 
   @override
