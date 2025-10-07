@@ -73,8 +73,23 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     );
     _initialPrimary = List.of(_primaryIds);
     _initialSecondary = List.of(_secondaryIds);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MuscleGroupProvider>().loadGroups(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prov = context.read<MuscleGroupProvider>();
+      await prov.loadGroups(context);
+      if (!mounted) return;
+      final normalizedPrimary = prov.canonicalizeGroupIds(_primaryIds);
+      final normalizedSecondary = prov
+          .canonicalizeGroupIds(_secondaryIds)
+          .where((id) => !normalizedPrimary.contains(id))
+          .toList();
+      setState(() {
+        _primaryIds = normalizedPrimary.isEmpty
+            ? const []
+            : [normalizedPrimary.first];
+        _secondaryIds = normalizedSecondary;
+        _initialPrimary = List.of(_primaryIds);
+        _initialSecondary = List.of(_secondaryIds);
+      });
     });
   }
 
@@ -173,6 +188,17 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                           ? () async {
                             final name = _nameCtr.text.trim();
                             final exProv = context.read<ExerciseProvider>();
+                            final muscleProv =
+                                context.read<MuscleGroupProvider>();
+                            final normalizedPrimary =
+                                muscleProv.canonicalizeGroupIds(_primaryIds);
+                            final primaryIds = normalizedPrimary.isEmpty
+                                ? const <String>[]
+                                : [normalizedPrimary.first];
+                            final secondaryIds = muscleProv
+                                .canonicalizeGroupIds(_secondaryIds)
+                                .where((id) => !primaryIds.contains(id))
+                                .toList();
                             Exercise ex;
                             if (widget.exercise == null) {
                               ex = await exProv.addExercise(
@@ -180,8 +206,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                                 widget.deviceId,
                                 name,
                                 userId,
-                                primaryMuscleGroupIds: _primaryIds,
-                                secondaryMuscleGroupIds: _secondaryIds,
+                                primaryMuscleGroupIds: primaryIds,
+                                secondaryMuscleGroupIds: secondaryIds,
                               );
                             } else {
                               await exProv.updateExercise(
@@ -190,13 +216,13 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                                 widget.exercise!.id,
                                 name,
                                 userId,
-                                primaryMuscleGroupIds: _primaryIds,
-                                secondaryMuscleGroupIds: _secondaryIds,
+                                primaryMuscleGroupIds: primaryIds,
+                                secondaryMuscleGroupIds: secondaryIds,
                               );
                               ex = widget.exercise!.copyWith(
                                 name: name,
-                                primaryMuscleGroupIds: _primaryIds,
-                                secondaryMuscleGroupIds: _secondaryIds,
+                                primaryMuscleGroupIds: primaryIds,
+                                secondaryMuscleGroupIds: secondaryIds,
                               );
                             }
                             await context
@@ -204,8 +230,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                                 .updateExerciseAssignments(
                                   context,
                                   ex.id,
-                                  _primaryIds,
-                                  _secondaryIds,
+                                  primaryIds,
+                                  secondaryIds,
                                 );
                             if (!mounted) return;
                             Navigator.pop(context, ex);

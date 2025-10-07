@@ -73,10 +73,10 @@ class MuscleGroupProvider extends ChangeNotifier {
            ),
        _ensureRegionGroup =
            ensureRegionGroup ??
-          EnsureRegionGroup(
-            MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
-          ),
-        _membership = membership ?? FirestoreMembershipService();
+           EnsureRegionGroup(
+             MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
+           ),
+       _membership = membership ?? FirestoreMembershipService();
 
   bool _isLoading = false;
   String? _error;
@@ -136,6 +136,19 @@ class MuscleGroupProvider extends ChangeNotifier {
       _counts.clear();
       try {
         _groups = await _getGroups.execute(gymId);
+        bool createdCanonical = false;
+        for (final region in MuscleRegion.values) {
+          final hasCanonical = _groups.any(
+            (g) => g.region == region && _isCanonicalName(g),
+          );
+          if (!hasCanonical) {
+            await _ensureRegionGroup.execute(gymId, region);
+            createdCanonical = true;
+          }
+        }
+        if (createdCanonical) {
+          _groups = await _getGroups.execute(gymId);
+        }
       } on FirebaseException catch (e) {
         if (e.code == 'permission-denied') {
           debugPrint('RULES_DENIED path=gyms/$gymId/muscleGroups op=read');
@@ -231,8 +244,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     if (gymId == null) return;
+    final normalized = canonicalizeGroupIds(groupIds);
+
     for (final g in _groups) {
-      if (groupIds.contains(g.id) && !g.primaryDeviceIds.contains(deviceId)) {
+      if (normalized.contains(g.id) && !g.primaryDeviceIds.contains(deviceId)) {
         final updated = g.copyWith(
           primaryDeviceIds: [...g.primaryDeviceIds, deviceId],
         );
@@ -250,8 +265,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     if (gymId == null) return;
+    final normalized = canonicalizeGroupIds(groupIds);
+
     for (final g in _groups) {
-      if (groupIds.contains(g.id) && !g.exerciseIds.contains(exerciseId)) {
+      if (normalized.contains(g.id) && !g.exerciseIds.contains(exerciseId)) {
         final updated = g.copyWith(exerciseIds: [...g.exerciseIds, exerciseId]);
         await _saveGroup.execute(gymId, updated);
       }
@@ -268,9 +285,14 @@ class MuscleGroupProvider extends ChangeNotifier {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     if (gymId == null) return;
+    final normalizedPrimary = canonicalizeGroupIds(primaryGroupIds);
+    final normalizedSecondary = canonicalizeGroupIds(secondaryGroupIds)
+        .where((id) => !normalizedPrimary.contains(id))
+        .toList();
+
     final all = {
-      ...primaryGroupIds,
-      ...secondaryGroupIds,
+      ...normalizedPrimary,
+      ...normalizedSecondary,
     };
     for (final g in _groups) {
       final contains = all.contains(g.id);
@@ -296,12 +318,14 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
 
-    secondaryGroupIds =
-        secondaryGroupIds.where((id) => !primaryGroupIds.contains(id)).toList();
+    final normalizedPrimary = canonicalizeGroupIds(primaryGroupIds);
+    final normalizedSecondary = canonicalizeGroupIds(secondaryGroupIds)
+        .where((id) => !normalizedPrimary.contains(id))
+        .toList();
 
     for (final g in _groups) {
-      final isPrimary = primaryGroupIds.contains(g.id);
-      final isSecondary = secondaryGroupIds.contains(g.id);
+      final isPrimary = normalizedPrimary.contains(g.id);
+      final isSecondary = normalizedSecondary.contains(g.id);
 
       if (!isPrimary && !isSecondary) {
         if (!g.primaryDeviceIds.contains(deviceId) &&
@@ -327,16 +351,16 @@ class MuscleGroupProvider extends ChangeNotifier {
     await _setDeviceGroups.execute(
       gymId,
       deviceId,
-      primaryGroupIds,
-      secondaryGroupIds,
+      normalizedPrimary,
+      normalizedSecondary,
     );
 
     try {
       final deviceProv = Provider.of<DeviceProvider>(context, listen: false);
       deviceProv.applyMuscleAssignments(
         deviceId,
-        primaryGroupIds,
-        secondaryGroupIds,
+        normalizedPrimary,
+        normalizedSecondary,
       );
     } catch (_) {}
 
@@ -359,5 +383,51 @@ class MuscleGroupProvider extends ChangeNotifier {
       }
       _counts[group.id] = sum;
     }
+  }
+
+  List<String> canonicalizeGroupIds(Iterable<String> ids) {
+    final seen = <String>{};
+    if (_groups.isEmpty) {
+      final List<String> result = [];
+      for (final id in ids) {
+        if (seen.add(id)) result.add(id);
+      }
+      return result;
+    }
+
+    MuscleGroup? canonicalFor(MuscleRegion region) {
+      MuscleGroup? canonical;
+      for (final group in _groups.where((g) => g.region == region)) {
+        canonical ??= group;
+        if (_isCanonicalName(group)) {
+          canonical = group;
+          break;
+        }
+      }
+      return canonical;
+    }
+
+    final Map<String, MuscleGroup> byId = {
+      for (final g in _groups) g.id: g,
+    };
+
+    final Map<MuscleRegion, String> canonicalIds = {};
+    for (final region in MuscleRegion.values) {
+      final canonical = canonicalFor(region);
+      if (canonical != null) canonicalIds[region] = canonical.id;
+    }
+
+    final List<String> normalized = [];
+    for (final rawId in ids) {
+      final group = byId[rawId];
+      if (group == null) continue;
+      final canonicalId = canonicalIds[group.region] ?? rawId;
+      if (seen.add(canonicalId)) normalized.add(canonicalId);
+    }
+    return normalized;
+  }
+
+  bool _isCanonicalName(MuscleGroup group) {
+    return group.name.trim().toLowerCase() == group.region.name.toLowerCase();
   }
 }
