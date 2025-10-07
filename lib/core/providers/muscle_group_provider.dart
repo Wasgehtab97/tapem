@@ -82,6 +82,9 @@ class MuscleGroupProvider extends ChangeNotifier {
   String? _error;
   List<MuscleGroup> _groups = [];
   final Map<String, int> _counts = {};
+  String? _loadedGymId;
+  bool _hasLoadedSuccessfully = false;
+  Future<void>? _activeLoad;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -96,20 +99,41 @@ class MuscleGroupProvider extends ChangeNotifier {
     return _ensureRegionGroup.execute(gymId, region);
   }
 
-  Future<void> loadGroups(BuildContext context) async {
+  Future<void> loadGroups(BuildContext context, {bool force = false}) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final gymId = auth.gymCode;
+    final userId = auth.userId;
+    if (gymId == null || userId == null) {
+      _error = 'Benutzer nicht eingeloggt';
+      notifyListeners();
+      return;
+    }
+
+    if (!force &&
+        _hasLoadedSuccessfully &&
+        _loadedGymId == gymId &&
+        _activeLoad == null) {
+      return;
+    }
+
+    _activeLoad ??=
+        _performLoad(gymId: gymId, userId: userId).whenComplete(() {
+      _activeLoad = null;
+    });
+    return _activeLoad;
+  }
+
+  Future<void> _performLoad({
+    required String gymId,
+    required String userId,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final gymId = auth.gymCode;
-      final userId = auth.userId;
-      if (gymId == null || userId == null) {
-        throw Exception('Benutzer nicht eingeloggt');
-      }
-
       await _membership.ensureMembership(gymId, userId);
+      _counts.clear();
       try {
         _groups = await _getGroups.execute(gymId);
       } on FirebaseException catch (e) {
@@ -124,6 +148,8 @@ class MuscleGroupProvider extends ChangeNotifier {
         }
       }
       await _loadCounts(gymId, userId);
+      _loadedGymId = gymId;
+      _hasLoadedSuccessfully = true;
     } catch (e, st) {
       _error = e.toString();
       debugPrintStack(label: 'MuscleGroupProvider.loadGroups', stackTrace: st);
@@ -131,6 +157,10 @@ class MuscleGroupProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> ensureLoaded(BuildContext context, {bool force = false}) {
+    return loadGroups(context, force: force);
   }
 
   Future<void> saveGroup(BuildContext context, MuscleGroup group) async {
@@ -162,7 +192,7 @@ class MuscleGroupProvider extends ChangeNotifier {
       } catch (_) {}
     }
 
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<void> deleteGroup(BuildContext context, String groupId) async {
@@ -170,7 +200,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     final gymId = auth.gymCode;
     if (gymId == null) return;
     await _deleteGroup.execute(gymId, groupId);
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<MuscleGroup> getOrCreateByRegion(
@@ -189,7 +219,7 @@ class MuscleGroupProvider extends ChangeNotifier {
       exerciseIds: const [],
     );
     await saveGroup(ctx, g);
-    await loadGroups(ctx);
+    await loadGroups(ctx, force: true);
     return _groups.firstWhereOrNull((x) => x.id == g.id) ?? g;
   }
 
@@ -209,7 +239,7 @@ class MuscleGroupProvider extends ChangeNotifier {
         await _saveGroup.execute(gymId, updated);
       }
     }
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<void> assignExercise(
@@ -226,7 +256,7 @@ class MuscleGroupProvider extends ChangeNotifier {
         await _saveGroup.execute(gymId, updated);
       }
     }
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<void> updateExerciseAssignments(
@@ -253,7 +283,7 @@ class MuscleGroupProvider extends ChangeNotifier {
         await _saveGroup.execute(gymId, updated);
       }
     }
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<void> updateDeviceAssignments(
@@ -310,7 +340,7 @@ class MuscleGroupProvider extends ChangeNotifier {
       );
     } catch (_) {}
 
-    await loadGroups(context);
+    await loadGroups(context, force: true);
   }
 
   Future<void> _loadCounts(String gymId, String userId) async {
