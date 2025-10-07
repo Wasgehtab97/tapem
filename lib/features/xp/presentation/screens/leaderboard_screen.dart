@@ -41,6 +41,39 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   AuthProvider? _authProvider;
   FriendsProvider? _friendsProvider;
 
+  Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
+    if (gymIds.isEmpty) {
+      return 0;
+    }
+    final fs = FirebaseFirestore.instance;
+    final xpValues = await Future.wait(gymIds.map((gymId) async {
+      try {
+        final statsDoc = await fs
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(uid)
+            .collection('rank')
+            .doc('stats')
+            .get();
+        return statsDoc.data()?['dailyXP'] as int? ?? 0;
+      } on FirebaseException catch (error, stack) {
+        debugPrint(
+          'Failed to load rank stats for user=$uid gym=$gymId: ${error.message}',
+        );
+        debugPrint('$stack');
+        return 0;
+      } catch (error, stack) {
+        debugPrint(
+          'Unexpected error loading rank stats for user=$uid gym=$gymId: $error',
+        );
+        debugPrint('$stack');
+        return 0;
+      }
+    }));
+    return xpValues.fold<int>(0, (sum, value) => sum + value);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -152,19 +185,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           return null;
         }
         final profile = PublicProfile.fromMap(uid, userData);
-        final profileGym = profile.primaryGymCode ?? auth.gymCode;
-        if (profileGym == null || profileGym.isEmpty) {
-          return LeaderboardEntry(profile: profile, xp: 0);
+        final gymCodes = (userData['gymCodes'] as List<dynamic>? ?? const [])
+            .whereType<String>()
+            .where((code) => code.isNotEmpty);
+        final candidateGyms = <String>{
+          if ((profile.primaryGymCode ?? '').isNotEmpty) profile.primaryGymCode!,
+          ...gymCodes,
+        };
+        if (candidateGyms.isEmpty) {
+          final fallbackGym = auth.gymCode;
+          if (fallbackGym != null && fallbackGym.isNotEmpty) {
+            candidateGyms.add(fallbackGym);
+          }
         }
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(profileGym)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
-        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
+        final xp = await _loadDailyXpAcrossGyms(uid, candidateGyms);
         return LeaderboardEntry(profile: profile, xp: xp);
       });
       final entries = (await Future.wait(futures))

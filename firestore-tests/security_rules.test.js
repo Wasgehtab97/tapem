@@ -61,6 +61,8 @@ describe('Security Rules v1', function () {
         .set({ fromUserId: 'user1', toUserId: 'user2', status: 'pending' });
       await db.collection('users').doc('user1').collection('friends').doc('user2').set({});
       await db.collection('users').doc('user2').collection('friends').doc('user1').set({});
+      await db.collection('users').doc('user1').collection('friends').doc('user3').set({});
+      await db.collection('users').doc('user3').collection('friends').doc('user1').set({});
       await db.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').set({ month: '2024-01' });
       await db
         .collection('gyms')
@@ -126,6 +128,20 @@ describe('Security Rules v1', function () {
       await db.collection('users').doc('userB').set({});
       await db.collection('publicProfiles').doc('userA').set({ username: 'Alice' });
       await db.collection('publicProfiles').doc('userB').set({ username: 'Bob' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('users')
+        .doc('user3')
+        .set({ role: 'member' });
+      await db
+        .collection('gyms')
+        .doc('G2')
+        .collection('users')
+        .doc('user3')
+        .collection('rank')
+        .doc('stats')
+        .set({ dailyXP: 420 });
     });
   });
 
@@ -197,6 +213,30 @@ describe('Security Rules v1', function () {
         .collection('exercises')
         .doc('exFriend');
       await assertSucceeds(ref.get());
+    });
+
+    it('allows friend to read cross-gym rank stats', async () => {
+      const db = p1().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('users')
+        .doc('user3')
+        .collection('rank')
+        .doc('stats');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks non-friend from reading cross-gym rank stats', async () => {
+      const db = stranger().firestore();
+      const ref = db
+        .collection('gyms')
+        .doc('G2')
+        .collection('users')
+        .doc('user3')
+        .collection('rank')
+        .doc('stats');
+      await assertFails(ref.get());
     });
 
     it('allows public exercise read in same gym', async () => {
