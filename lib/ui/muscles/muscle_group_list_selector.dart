@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
@@ -103,6 +104,22 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     _initialSecondary = List.of(widget.initialSecondary);
   }
 
+  @override
+  void didUpdateWidget(covariant MuscleGroupListSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final initialPrimaryChanged =
+        !listEquals(widget.initialPrimary, oldWidget.initialPrimary);
+    final initialSecondaryChanged =
+        !listEquals(widget.initialSecondary, oldWidget.initialSecondary);
+    if (initialPrimaryChanged || initialSecondaryChanged) {
+      _selected = [...widget.initialPrimary, ...widget.initialSecondary];
+      _primaryId =
+          widget.initialPrimary.isNotEmpty ? widget.initialPrimary.first : null;
+      _initialPrimary = List.of(widget.initialPrimary);
+      _initialSecondary = List.of(widget.initialSecondary);
+    }
+  }
+
   String _regionFallbackName(MuscleRegion r) {
     switch (r) {
       case MuscleRegion.brust:
@@ -189,6 +206,10 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     _emit();
   }
 
+  bool _isCanonical(MuscleGroup group) {
+    return group.name.trim().toLowerCase() == group.region.name.toLowerCase();
+  }
+
   Map<MuscleRegion, MuscleGroup?> _buildCanonical(List<MuscleGroup> all) {
     final Map<MuscleRegion, MuscleGroup?> canonical = {
       for (final r in _ordered) r: null
@@ -198,7 +219,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       final current = canonical[g.region];
       if (current == null) {
         canonical[g.region] = g;
-      } else if (current.name.isEmpty && g.name.isNotEmpty) {
+      } else if (!_isCanonical(current) && _isCanonical(g)) {
+        canonical[g.region] = g;
+      } else if (!_isCanonical(current) && current.name.isEmpty && g.name.isNotEmpty) {
         canonical[g.region] = g;
       }
     }
