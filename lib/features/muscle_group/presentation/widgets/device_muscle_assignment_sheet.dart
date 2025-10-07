@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_color.dart';
+import 'package:tapem/ui/muscles/muscle_group_display.dart';
 
 /// Bottom sheet for assigning primary and secondary muscle groups to a device.
 class DeviceMuscleAssignmentSheet extends StatefulWidget {
@@ -73,31 +74,7 @@ class _DeviceMuscleAssignmentSheetState
   ];
 
   String _regionLabel(AppLocalizations loc, MuscleRegion region) {
-    // Using English fallback if not localized
-    switch (region) {
-      case MuscleRegion.brust:
-        return 'Brust';
-      case MuscleRegion.schulter:
-        return 'Schulter';
-      case MuscleRegion.nacken:
-        return 'Nacken';
-      case MuscleRegion.ruecken:
-        return 'Rücken';
-      case MuscleRegion.bizeps:
-        return 'Bizeps';
-      case MuscleRegion.trizeps:
-        return 'Trizeps';
-      case MuscleRegion.bauch:
-        return 'Bauch';
-      case MuscleRegion.quadrizeps:
-        return 'Quadrizeps';
-      case MuscleRegion.hamstrings:
-        return 'Hamstrings';
-      case MuscleRegion.gluteus:
-        return 'Gluteus';
-      case MuscleRegion.waden:
-        return 'Waden';
-    }
+    return fallbackLabelForRegion(region);
   }
 
   Map<MuscleRegion, MuscleGroup?> _canonical(List<MuscleGroup> groups) {
@@ -348,9 +325,7 @@ class _DeviceMuscleAssignmentSheetState
   Widget _buildPrimaryRow(AppLocalizations loc, ThemeData theme,
       MuscleRegion region, MuscleGroup? g) {
     final id = g?.id ?? region.name;
-    final name = (g?.name.trim().isNotEmpty ?? false)
-        ? g!.name
-        : _regionLabel(loc, region);
+    final name = displayNameForMuscleGroup(region, g);
     return Semantics(
       label: '$name, ${loc.muscleTabsPrimary}',
       child: InkWell(
@@ -396,9 +371,7 @@ class _DeviceMuscleAssignmentSheetState
   Widget _buildSecondaryRow(AppLocalizations loc, ThemeData theme,
       MuscleRegion region, MuscleGroup? g) {
     final id = g?.id ?? region.name;
-    final name = (g?.name.trim().isNotEmpty ?? false)
-        ? g!.name
-        : _regionLabel(loc, region);
+    final name = displayNameForMuscleGroup(region, g);
     final checked = _selectedSecondaryIds.contains(id);
     final disabled = _selectedPrimaryId == id;
     return Semantics(

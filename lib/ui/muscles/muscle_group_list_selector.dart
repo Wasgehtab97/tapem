@@ -6,6 +6,7 @@ import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'muscle_group_color.dart';
+import 'muscle_group_display.dart';
 
 class MuscleGroupListSelector extends StatefulWidget {
   final List<String> initialPrimary;
@@ -120,33 +121,6 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     }
   }
 
-  String _regionFallbackName(MuscleRegion r) {
-    switch (r) {
-      case MuscleRegion.brust:
-        return 'Brust';
-      case MuscleRegion.schulter:
-        return 'Schulter';
-      case MuscleRegion.nacken:
-        return 'Nacken';
-      case MuscleRegion.ruecken:
-        return 'Rücken';
-      case MuscleRegion.bizeps:
-        return 'Bizeps';
-      case MuscleRegion.trizeps:
-        return 'Trizeps';
-      case MuscleRegion.bauch:
-        return 'Bauch';
-      case MuscleRegion.quadrizeps:
-        return 'Quadrizeps';
-      case MuscleRegion.hamstrings:
-        return 'Hamstrings';
-      case MuscleRegion.gluteus:
-        return 'Gluteus';
-      case MuscleRegion.waden:
-        return 'Waden';
-    }
-  }
-
   Future<String> _ensureIdForRegion(
     MuscleRegion region,
     String idOrRegionKey,
@@ -158,7 +132,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     final g = await prov.getOrCreateByRegion(
       context,
       region,
-      defaultName: _regionFallbackName(region),
+      defaultName: fallbackLabelForRegion(region),
     );
     return g.id;
   }
@@ -207,7 +181,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   }
 
   bool _isCanonical(MuscleGroup group) {
-    return group.name.trim().toLowerCase() == group.region.name.toLowerCase();
+    return isCanonicalMuscleGroupName(group);
   }
 
   Map<MuscleRegion, MuscleGroup?> _buildCanonical(List<MuscleGroup> all) {
@@ -246,8 +220,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     };
     for (final r in _ordered) {
       final g = canonical[r];
-      final name =
-          g != null && g.name.isNotEmpty ? g.name : _regionFallbackName(r);
+      final name = displayNameForMuscleGroup(r, g);
       if (name.toLowerCase() == 'arms' && _categoryFor(r) == _Category.core) {
         continue;
       }
