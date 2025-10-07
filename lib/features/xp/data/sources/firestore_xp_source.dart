@@ -119,7 +119,8 @@ class FirestoreXpSource {
           exerciseId: exerciseId,
           traceId: traceId,
         );
-        if (result == DeviceXpResult.okAdded) {
+        if (result == DeviceXpResult.okAdded ||
+            result == DeviceXpResult.okAddedNoLeaderboard) {
           await _applyMuscleXp(
             statsRef: statsRef,
             primaryMuscleGroupIds: primaryMuscleGroupIds,

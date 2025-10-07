@@ -180,7 +180,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     if (gymId == null) return;
-    await _saveGroup.execute(gymId, group);
+    await _safeSaveGroup(gymId, group);
 
     final devices = Provider.of<GymProvider>(context, listen: false).devices;
     for (final dId in group.primaryDeviceIds) {
@@ -251,7 +251,7 @@ class MuscleGroupProvider extends ChangeNotifier {
         final updated = g.copyWith(
           primaryDeviceIds: [...g.primaryDeviceIds, deviceId],
         );
-        await _saveGroup.execute(gymId, updated);
+        await _safeSaveGroup(gymId, updated);
       }
     }
     await loadGroups(context, force: true);
@@ -270,7 +270,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     for (final g in _groups) {
       if (normalized.contains(g.id) && !g.exerciseIds.contains(exerciseId)) {
         final updated = g.copyWith(exerciseIds: [...g.exerciseIds, exerciseId]);
-        await _saveGroup.execute(gymId, updated);
+        await _safeSaveGroup(gymId, updated);
       }
     }
     await loadGroups(context, force: true);
@@ -298,11 +298,11 @@ class MuscleGroupProvider extends ChangeNotifier {
       final contains = all.contains(g.id);
       if (contains && !g.exerciseIds.contains(exerciseId)) {
         final updated = g.copyWith(exerciseIds: [...g.exerciseIds, exerciseId]);
-        await _saveGroup.execute(gymId, updated);
+        await _safeSaveGroup(gymId, updated);
       } else if (!contains && g.exerciseIds.contains(exerciseId)) {
         final newIds = List<String>.from(g.exerciseIds)..remove(exerciseId);
         final updated = g.copyWith(exerciseIds: newIds);
-        await _saveGroup.execute(gymId, updated);
+        await _safeSaveGroup(gymId, updated);
       }
     }
     await loadGroups(context, force: true);
@@ -345,7 +345,7 @@ class MuscleGroupProvider extends ChangeNotifier {
         primaryDeviceIds: newPrimary,
         secondaryDeviceIds: newSecondary,
       );
-      await _saveGroup.execute(gymId, updated);
+      await _safeSaveGroup(gymId, updated);
     }
 
     await _setDeviceGroups.execute(
@@ -365,6 +365,20 @@ class MuscleGroupProvider extends ChangeNotifier {
     } catch (_) {}
 
     await loadGroups(context, force: true);
+  }
+
+  Future<void> _safeSaveGroup(String gymId, MuscleGroup group) async {
+    try {
+      await _saveGroup.execute(gymId, group);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        debugPrint(
+          '[MuscleGroupProvider] permission denied saving group ${group.id} in gym $gymId',
+        );
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<void> _loadCounts(String gymId, String userId) async {

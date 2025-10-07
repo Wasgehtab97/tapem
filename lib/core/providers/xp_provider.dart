@@ -87,11 +87,17 @@ class XpProvider extends ChangeNotifier {
         );
         XpTrace.log('PROVIDER_OUT', {
           'result': result.name,
-          'deltaXp': result == DeviceXpResult.okAdded ? 50 : 0,
-          'updatedLocalCache': result == DeviceXpResult.okAdded,
+          'deltaXp':
+              result == DeviceXpResult.okAdded ||
+                      result == DeviceXpResult.okAddedNoLeaderboard
+                  ? 50
+                  : 0,
+          'updatedLocalCache': result == DeviceXpResult.okAdded ||
+              result == DeviceXpResult.okAddedNoLeaderboard,
           'traceId': traceId,
         });
-        if (result == DeviceXpResult.okAdded) {
+        if (result == DeviceXpResult.okAdded ||
+            result == DeviceXpResult.okAddedNoLeaderboard) {
           _deviceXp[deviceId] =
               (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
           XpTrace.log('CACHE_BUMP', {

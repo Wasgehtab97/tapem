@@ -126,6 +126,7 @@ class FirestoreRankSource {
               'uid': userId,
               'reason': 'rules-path',
             });
+            return DeviceXpResult.okAddedNoLeaderboard;
           }
           elogError('TXN_FIREBASE_ERROR', e, st, {
             'userPath': lbUser.path,
