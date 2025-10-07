@@ -38,12 +38,13 @@ class FirestoreRankSource {
         final lbSess = lbUser.collection('sessions').doc(sessionId);
         final lbDay = lbUser.collection('days').doc(dayKey);
         try {
-          final result = await _firestore.runTransaction<DeviceXpResult>((tx) async {
-            final userSnap = await tx.get(lbUser);
-            final sessSnap = await tx.get(lbSess);
-            XpTrace.log('TXN_READ', {
-              'existsSessionDoc': sessSnap.exists,
-              'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
+          final result = await _runTransactionWithRetry<DeviceXpResult>(
+            (tx) async {
+              final userSnap = await tx.get(lbUser);
+              final sessSnap = await tx.get(lbSess);
+              XpTrace.log('TXN_READ', {
+                'existsSessionDoc': sessSnap.exists,
+                'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
               'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
               'traceId': traceId,
             });
@@ -102,7 +103,9 @@ class FirestoreRankSource {
             });
 
             return DeviceXpResult.okAdded;
-          });
+            },
+            traceId: traceId,
+          );
 
           XpTrace.log('TXN_COMMIT', {
             'result': result.name,
@@ -131,6 +134,34 @@ class FirestoreRankSource {
           return DeviceXpResult.error;
         }
       }
+
+  Future<T> _runTransactionWithRetry<T>(
+    Future<T> Function(Transaction tx) body, {
+    required String traceId,
+    int maxRetries = 3,
+  }) async {
+    var delayMs = 200;
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await _firestore.runTransaction<T>(
+          (tx) => body(tx),
+          maxAttempts: 5,
+        );
+      } on FirebaseException catch (e) {
+        if (e.code != 'resource-exhausted' || attempt == maxRetries) {
+          rethrow;
+        }
+        XpTrace.log('TXN_RETRY', {
+          'traceId': traceId,
+          'attempt': attempt + 1,
+          'code': e.code,
+        });
+        await Future<void>.delayed(Duration(milliseconds: delayMs));
+        delayMs = delayMs >= 1600 ? 1600 : delayMs * 2;
+      }
+    }
+    throw StateError('Retry loop exited unexpectedly for $traceId');
+  }
 
   Stream<List<Map<String, dynamic>>> watchLeaderboard(
     String gymId,
