@@ -432,6 +432,12 @@ service cloud.firestore {
         allow update, delete: if isAdmin(gymId);
       }
 
+      match /users/{userId}/rank/{document=**} {
+        allow read: if ownerOrAdmin(gymId, userId) ||
+                     isFriend(userId, request.auth.uid);
+        allow write: if ownerOrAdmin(gymId, userId);
+      }
+
       match /users/{userId}/{doc=**} {
         allow read, write: if ownerOrAdmin(gymId, userId);
       }
