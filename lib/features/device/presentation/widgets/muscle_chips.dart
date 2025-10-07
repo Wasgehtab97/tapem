@@ -5,38 +5,12 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
+import 'package:tapem/ui/muscles/muscle_group_display.dart';
 
 class MuscleChips extends StatelessWidget {
   final List<String> primaryIds;
   final List<String> secondaryIds;
   const MuscleChips({super.key, required this.primaryIds, required this.secondaryIds});
-
-  String _fallbackName(MuscleRegion region) {
-    switch (region) {
-      case MuscleRegion.brust:
-        return 'Brust';
-      case MuscleRegion.schulter:
-        return 'Schulter';
-      case MuscleRegion.nacken:
-        return 'Nacken';
-      case MuscleRegion.ruecken:
-        return 'Rücken';
-      case MuscleRegion.bizeps:
-        return 'Bizeps';
-      case MuscleRegion.trizeps:
-        return 'Trizeps';
-      case MuscleRegion.bauch:
-        return 'Bauch';
-      case MuscleRegion.quadrizeps:
-        return 'Quadrizeps';
-      case MuscleRegion.hamstrings:
-        return 'Hamstrings';
-      case MuscleRegion.gluteus:
-        return 'Gluteus';
-      case MuscleRegion.waden:
-        return 'Waden';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +30,7 @@ class MuscleChips extends StatelessWidget {
     String nameFor(String id) {
       final g = groups.firstWhereOrNull((e) => e.id == id);
       final region = regionFor(id, g);
-      if (g != null && g.name.trim().isNotEmpty) return g.name;
-      return _fallbackName(region);
+      return displayNameForMuscleGroup(region, g);
     }
 
     Widget buildChip(String id, bool primary) {
