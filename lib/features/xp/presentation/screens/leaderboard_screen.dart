@@ -1,157 +1,420 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
-import '../widgets/xp_time_series_chart.dart';
+import 'package:tapem/features/friends/providers/friends_provider.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import '../../../../core/providers/auth_provider.dart';
 
-/// A simple model representing a single leaderboard entry. This now includes
-/// the user's public profile so that avatar and name can be displayed
-/// consistently with the friends page.
 class LeaderboardEntry {
   final PublicProfile profile;
   final int xp;
 
-  LeaderboardEntry({
+  const LeaderboardEntry({
     required this.profile,
     required this.xp,
   });
 }
 
-/// A configurable leaderboard screen modelled after e-sport ranking pages.
-///
-/// [fetchEntries] is a callback that returns a future list of entries for the
-/// given period. Only users with `showInLeaderboard` set to true should be
-/// returned by the callback.
-class LeaderboardScreen extends StatefulWidget {
-  final String title;
-  final Future<List<LeaderboardEntry>> Function(XpPeriod period) fetchEntries;
+enum _LeaderboardMode { gym, friends }
 
-  const LeaderboardScreen({
-    Key? key,
-    required this.title,
-    required this.fetchEntries,
-  }) : super(key: key);
+class LeaderboardScreen extends StatefulWidget {
+  const LeaderboardScreen({super.key, required this.title});
+
+  final String title;
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  XpPeriod _period = XpPeriod.last7Days;
-  List<LeaderboardEntry>? _entries;
-  bool _loading = false;
+  _LeaderboardMode _mode = _LeaderboardMode.gym;
+  List<LeaderboardEntry>? _gymEntries;
+  List<LeaderboardEntry>? _friendEntries;
+  bool _loadingGym = false;
+  bool _loadingFriends = false;
+  AuthProvider? _authProvider;
+  FriendsProvider? _friendsProvider;
 
   @override
   void initState() {
     super.initState();
-    _loadEntries();
-  }
-
-  Future<void> _loadEntries() async {
-    setState(() {
-      _loading = true;
-    });
-    final data = await widget.fetchEntries(_period);
-    data.sort((a, b) => b.xp.compareTo(a.xp));
-    setState(() {
-      _entries = data;
-      _loading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshGym();
+      _refreshFriends();
     });
   }
 
-  void _onPeriodChanged(XpPeriod? value) {
-    if (value != null && value != _period) {
-      setState(() {
-        _period = value;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthProvider>();
+    if (!identical(auth, _authProvider)) {
+      _authProvider?.removeListener(_handleAuthChanged);
+      _authProvider = auth;
+      _authProvider?.addListener(_handleAuthChanged);
+    }
+    final friends = context.read<FriendsProvider>();
+    if (!identical(friends, _friendsProvider)) {
+      _friendsProvider?.removeListener(_handleFriendsChanged);
+      _friendsProvider = friends;
+      _friendsProvider?.addListener(_handleFriendsChanged);
+    }
+  }
+
+  void _handleAuthChanged() {
+    _refreshGym();
+    _refreshFriends();
+  }
+
+  void _handleFriendsChanged() {
+    _refreshFriends();
+  }
+
+  Future<void> _refreshGym() async {
+    final auth = _authProvider ?? context.read<AuthProvider>();
+    final gymId = auth.gymCode ?? '';
+    if (gymId.isEmpty) {
+      if (!mounted) return;
+      setState(() => _gymEntries = const []);
+      return;
+    }
+    if (mounted) {
+      setState(() => _loadingGym = true);
+    }
+    try {
+      final fs = FirebaseFirestore.instance;
+      final snap = await fs.collection('gyms').doc(gymId).collection('users').get();
+      final futures = snap.docs.map((doc) async {
+        final uid = doc.id;
+        final userDoc = await fs.collection('users').doc(uid).get();
+        final userData = userDoc.data();
+        if (userData == null || !(userData['showInLeaderboard'] as bool? ?? true)) {
+          return null;
+        }
+        final profile = PublicProfile.fromMap(uid, userData);
+        final statsDoc = await fs
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(uid)
+            .collection('rank')
+            .doc('stats')
+            .get();
+        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
+        return LeaderboardEntry(profile: profile, xp: xp);
       });
-      _loadEntries();
+      final entries = (await Future.wait(futures))
+          .whereType<LeaderboardEntry>()
+          .toList()
+        ..sort((a, b) => b.xp.compareTo(a.xp));
+      if (!mounted) return;
+      setState(() => _gymEntries = entries.take(10).toList());
+    } catch (error, stack) {
+      debugPrint('Failed to load gym leaderboard: $error');
+      debugPrint('$stack');
+      if (!mounted) return;
+      setState(() => _gymEntries = const []);
+    } finally {
+      if (mounted) {
+        setState(() => _loadingGym = false);
+      }
+    }
+  }
+
+  Future<void> _refreshFriends() async {
+    final auth = _authProvider ?? context.read<AuthProvider>();
+    final friendsProv = _friendsProvider ?? context.read<FriendsProvider>();
+    final userId = auth.userId;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() => _friendEntries = const []);
+      return;
+    }
+    if (mounted) {
+      setState(() => _loadingFriends = true);
+    }
+    try {
+      final fs = FirebaseFirestore.instance;
+      final friendIds = {
+        for (final f in friendsProv.friends) f.friendUid,
+        userId,
+      };
+      final futures = friendIds.map((uid) async {
+        final userDoc = await fs.collection('users').doc(uid).get();
+        final userData = userDoc.data();
+        if (userData == null || !(userData['showInLeaderboard'] as bool? ?? true)) {
+          return null;
+        }
+        final profile = PublicProfile.fromMap(uid, userData);
+        final profileGym = profile.primaryGymCode ?? auth.gymCode;
+        if (profileGym == null || profileGym.isEmpty) {
+          return LeaderboardEntry(profile: profile, xp: 0);
+        }
+        final statsDoc = await fs
+            .collection('gyms')
+            .doc(profileGym)
+            .collection('users')
+            .doc(uid)
+            .collection('rank')
+            .doc('stats')
+            .get();
+        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
+        return LeaderboardEntry(profile: profile, xp: xp);
+      });
+      final entries = (await Future.wait(futures))
+          .whereType<LeaderboardEntry>()
+          .toList()
+        ..sort((a, b) => b.xp.compareTo(a.xp));
+      if (!mounted) return;
+      setState(() => _friendEntries = entries);
+    } catch (error, stack) {
+      debugPrint('Failed to load friends leaderboard: $error');
+      debugPrint('$stack');
+      if (!mounted) return;
+      setState(() => _friendEntries = const []);
+    } finally {
+      if (mounted) {
+        setState(() => _loadingFriends = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final progressColor =
+        brandTheme?.gradient.colors.first ?? theme.colorScheme.primary;
+    final isGym = _mode == _LeaderboardMode.gym;
+    final entries = isGym ? _gymEntries : _friendEntries;
+    final isLoading = isGym ? _loadingGym : _loadingFriends;
+
+    Widget buildContent() {
+      if (isLoading) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (entries == null || entries.isEmpty) {
+        final emptyText = isGym
+            ? loc.leaderboardEmptyGym
+            : loc.leaderboardEmptyFriends;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Center(
+            child: Text(
+              emptyText,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      }
+      return _LeaderboardList(
+        entries: entries,
+        progressColor: progressColor,
+        title: isGym ? loc.leaderboardGymCardTitle : loc.leaderboardFriendsCardTitle,
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Row(
-              children: [
-                const Text(
-                  'Zeitraum:',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(width: 8),
-                DropdownButton<XpPeriod>(
-                  value: _period,
-                  dropdownColor: const Color(0xFF1E1E1E),
-                  style: const TextStyle(color: Colors.white),
-                  underline: const SizedBox.shrink(),
-                  items: const [
-                    DropdownMenuItem(
-                      value: XpPeriod.last7Days,
-                      child: Text('7 Tage'),
-                    ),
-                    DropdownMenuItem(
-                      value: XpPeriod.last30Days,
-                      child: Text('30 Tage'),
-                    ),
-                    DropdownMenuItem(
-                      value: XpPeriod.total,
-                      child: Text('Gesamt'),
-                    ),
-                  ],
-                  onChanged: _onPeriodChanged,
-                ),
-              ],
-            ),
+      body: RefreshIndicator(
+        onRefresh: isGym ? _refreshGym : _refreshFriends,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.md,
           ),
-          Expanded(
-            child:
-                _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _entries == null
-                    ? const SizedBox.shrink()
-                    : ListView.builder(
-                        itemCount: _entries!.length,
-                        itemBuilder: (context, index) {
-                          final entry = _entries![index];
-                          final maxXp = _entries!.first.xp;
-                          final fraction = maxXp > 0 ? entry.xp / maxXp : 0.0;
-                          return Column(
-                            children: [
-                              FriendListTile(
-                                profile: entry.profile,
-                                subtitle: '#${index + 1}',
-                                trailing: Text('${entry.xp} XP'),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                ),
-                                child: LinearProgressIndicator(
-                                  value: fraction.clamp(0.0, 1.0),
-                                  minHeight: 6,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color.lerp(
-                                      const Color(0xFF00E676),
-                                      const Color(0xFFFFC107),
-                                      fraction,
-                                    )!,
-                                  ),
-                                  backgroundColor: Colors.grey.shade800,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-          ),
-        ],
+          children: [
+            Center(
+              child: ToggleButtons(
+                borderRadius: BorderRadius.circular(AppRadius.button),
+                onPressed: (index) {
+                  setState(() {
+                    _mode = index == 0
+                        ? _LeaderboardMode.gym
+                        : _LeaderboardMode.friends;
+                  });
+                },
+                isSelected: [isGym, !isGym],
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Text(loc.leaderboardGymTabLabel),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Text(loc.leaderboardFriendsTabLabel),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            buildContent(),
+          ],
+        ),
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _authProvider?.removeListener(_handleAuthChanged);
+    _friendsProvider?.removeListener(_handleFriendsChanged);
+    super.dispose();
+  }
+}
+
+class _LeaderboardList extends StatelessWidget {
+  const _LeaderboardList({
+    required this.entries,
+    required this.progressColor,
+    required this.title,
+  });
+
+  final List<LeaderboardEntry> entries;
+  final Color progressColor;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final xpPerLevel = LevelService.xpPerLevel;
+    final locale = Localizations.localeOf(context).toString();
+    final formatter = NumberFormat.decimalPattern(locale);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withOpacity(0.08),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ...entries.asMap().entries.map((entry) {
+              final rank = entry.key + 1;
+              final data = entry.value;
+              final progress = _resolveLevelProgress(data.xp);
+              final xpLabel =
+                  '${formatter.format(progress.xpInLevel)} / ${formatter.format(xpPerLevel)} XP';
+              final progressValue = progress.progress.clamp(0.0, 1.0);
+              final isLast = rank == entries.length;
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: isLast ? 0 : AppSpacing.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FriendListTile(
+                      profile: data.profile,
+                      subtitle: '#$rank',
+                      trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Level ${progress.level}',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            xpLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progressValue,
+                        minHeight: 4,
+                        backgroundColor:
+                            theme.colorScheme.onSurface.withOpacity(0.1),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(progressColor),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelProgress {
+  final int level;
+  final int xpInLevel;
+  final double progress;
+
+  const _LevelProgress({
+    required this.level,
+    required this.xpInLevel,
+    required this.progress,
+  });
+}
+
+_LevelProgress _resolveLevelProgress(int totalXp) {
+  final xpPerLevel = LevelService.xpPerLevel;
+  final maxLevel = LevelService.maxLevel;
+  var level = (totalXp ~/ xpPerLevel) + 1;
+  if (level > maxLevel) {
+    level = maxLevel;
+  }
+  var xpInLevel = totalXp % xpPerLevel;
+  if (level >= maxLevel) {
+    xpInLevel = 0;
+  }
+  final progress = level >= maxLevel ? 1.0 : xpInLevel / xpPerLevel;
+  return _LevelProgress(
+    level: level,
+    xpInLevel: xpInLevel,
+    progress: progress,
+  );
 }

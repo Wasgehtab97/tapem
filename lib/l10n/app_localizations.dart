@@ -293,6 +293,42 @@ abstract class AppLocalizations {
   /// **'Challenges'**
   String get leaderboardChallengesTab;
 
+  /// Toggle label for gym leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'Gym'**
+  String get leaderboardGymTabLabel;
+
+  /// Toggle label for friends leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get leaderboardFriendsTabLabel;
+
+  /// Title for the gym leaderboard card
+  ///
+  /// In en, this message translates to:
+  /// **'Top 10 in your gym'**
+  String get leaderboardGymCardTitle;
+
+  /// Title for the friends leaderboard card
+  ///
+  /// In en, this message translates to:
+  /// **'Friends leaderboard'**
+  String get leaderboardFriendsCardTitle;
+
+  /// Empty state for gym leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'No leaderboard data yet.'**
+  String get leaderboardEmptyGym;
+
+  /// Empty state for friends leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'No friends with XP yet.'**
+  String get leaderboardEmptyFriends;
+
   /// Tooltip for the XP info button
   ///
   /// In en, this message translates to:

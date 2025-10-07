@@ -184,15 +184,10 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
     }
 
     void openLeaderboard(MuscleRegion region) {
-      Future<List<LeaderboardEntry>> fetchEntries(XpPeriod period) async {
-        return [];
-      }
-
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => LeaderboardScreen(
             title: loc.xpOverviewLeaderboardTitle(_regionLabel(region, muscleProv)),
-            fetchEntries: fetchEntries,
           ),
         ),
       );

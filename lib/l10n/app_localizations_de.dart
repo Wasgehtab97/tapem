@@ -118,6 +118,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get leaderboardChallengesTab => 'Challenges';
 
   @override
+  String get leaderboardGymTabLabel => 'Studio';
+
+  @override
+  String get leaderboardFriendsTabLabel => 'Freunde';
+
+  @override
+  String get leaderboardGymCardTitle => 'Top 10 deines Studios';
+
+  @override
+  String get leaderboardFriendsCardTitle => 'Freundesrangliste';
+
+  @override
+  String get leaderboardEmptyGym => 'Noch keine Ranglisten-Daten.';
+
+  @override
+  String get leaderboardEmptyFriends => 'Noch keine Freunde mit XP.';
+
+  @override
   String get xpInfoTooltip => 'XP-Info';
 
   @override
