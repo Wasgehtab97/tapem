@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -67,33 +69,37 @@ class FirestoreXpSource {
         });
 
         try {
-          await _firestore.runTransaction((tx) async {
-            final daySnap = await tx.get(dayRef);
-            final statsSnap = await tx.get(statsRef);
-            final statsData = statsSnap.data() ?? {};
-            final updates = <String, dynamic>{};
+          await _runTransactionWithRetry<void>(
+            (tx) async {
+              final daySnap = await tx.get(dayRef);
+              final statsSnap = await tx.get(statsRef);
+              final statsData = statsSnap.data() ?? {};
+              final updates = <String, dynamic>{};
 
-            final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
-            final newDayXp = currentDayXp + LevelService.xpPerSession;
-            final dayData = {'xp': newDayXp};
-            if (daySnap.exists) {
-              tx.update(dayRef, dayData);
-            } else {
-              tx.set(dayRef, dayData);
-            }
-            if (currentDayXp == 0) {
-              updates['dailyXP'] =
-                  (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
-            }
-
-            if (updates.isNotEmpty) {
-              if (statsSnap.exists) {
-                tx.update(statsRef, updates);
+              final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
+              final newDayXp = currentDayXp + LevelService.xpPerSession;
+              final dayData = {'xp': newDayXp};
+              if (daySnap.exists) {
+                tx.update(dayRef, dayData);
               } else {
-                tx.set(statsRef, updates);
+                tx.set(dayRef, dayData);
               }
-            }
-          });
+              if (currentDayXp == 0) {
+                updates['dailyXP'] =
+                    (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
+              }
+
+              if (updates.isNotEmpty) {
+                if (statsSnap.exists) {
+                  tx.update(statsRef, updates);
+                } else {
+                  tx.set(statsRef, updates);
+                }
+              }
+            },
+            traceId: traceId,
+            logPrefix: 'FS',
+          );
         } catch (e) {
           XpTrace.log('FS_OUT', {
             'result': 'error',
@@ -338,6 +344,35 @@ class FirestoreXpSource {
       updates['${key}XP'] = FieldValue.increment(value);
     });
     await historyDoc.set(updates, SetOptions(merge: true));
+  }
+
+  Future<T> _runTransactionWithRetry<T>(
+    Future<T> Function(Transaction tx) body, {
+    required String traceId,
+    required String logPrefix,
+    int maxRetries = 3,
+  }) async {
+    var delayMs = 200;
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await _firestore.runTransaction<T>(
+          (tx) => body(tx),
+          maxAttempts: 5,
+        );
+      } on FirebaseException catch (e) {
+        if (e.code != 'resource-exhausted' || attempt == maxRetries) {
+          rethrow;
+        }
+        XpTrace.log('${logPrefix}_TX_RETRY', {
+          'traceId': traceId,
+          'attempt': attempt + 1,
+          'code': e.code,
+        });
+        await Future<void>.delayed(Duration(milliseconds: delayMs));
+        delayMs = delayMs >= 1600 ? 1600 : delayMs * 2;
+      }
+    }
+    throw StateError('Retry loop exited unexpectedly for $traceId');
   }
 
     Stream<int> watchDayXp({required String userId, required DateTime date}) {
