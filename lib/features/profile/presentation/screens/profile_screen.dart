@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -22,6 +23,9 @@ import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/features/friends/domain/models/public_profile.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/features/xp/presentation/widgets/daily_xp_card.dart';
 import '../widgets/daily_xp_avatar.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
@@ -144,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showAvatarSheet(AuthProvider auth) {
+  void _showInventorySheet(AuthProvider auth) {
     final loc = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
@@ -166,6 +170,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
           },
+        );
+      },
+    );
+  }
+
+  void _showProfileXpSheet(AuthProvider auth) {
+    final xpProv = context.read<XpProvider>();
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final loc = AppLocalizations.of(sheetContext)!;
+        final locale = Localizations.localeOf(sheetContext).toString();
+        final formatter = NumberFormat.decimalPattern(locale);
+        final profile = PublicProfile(
+          uid: auth.userId ?? '',
+          username: auth.userName ?? '',
+          avatarKey: auth.avatarKey,
+          primaryGymCode: auth.gymCode,
+        );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.lg,
+            ),
+            child: DailyXpCard(
+              profile: profile,
+              level: xpProv.dailyLevel,
+              xpInLevel: xpProv.dailyLevelXp,
+              totalXp: xpProv.statsDailyXp,
+              numberFormat: formatter,
+              xpPerLevel: LevelService.xpPerLevel,
+              maxLevel: LevelService.maxLevel,
+              margin: EdgeInsets.zero,
+              footer: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    _showInventorySheet(auth);
+                  },
+                  icon: const Icon(Icons.collections_bookmark_outlined, size: 18),
+                  label: Text(loc.inventory_section_title),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -446,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 button: true,
                 label: loc.profileChangeAvatar,
                 child: GestureDetector(
-                  onTap: () => _showAvatarSheet(auth),
+                  onTap: () => _showProfileXpSheet(auth),
                   child: Builder(builder: (context) {
                     final gymId = context.read<AuthProvider>().gymCode;
                     final path = AvatarCatalog.instance
