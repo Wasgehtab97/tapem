@@ -24,7 +24,6 @@ class DailyXpAvatar extends StatelessWidget {
     final progress = level >= LevelService.maxLevel
         ? 1.0
         : xp / LevelService.xpPerLevel;
-    final badgeText = _toRoman(level);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -44,61 +43,10 @@ class DailyXpAvatar extends StatelessWidget {
           radius: size / 2 - stroke / 2,
           backgroundImage: image,
         ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Semantics(
-            label: 'Level $level',
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                badgeText,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 10,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  String _toRoman(int number) {
-    const Map<int, String> romans = {
-      1000: 'M',
-      900: 'CM',
-      500: 'D',
-      400: 'CD',
-      100: 'C',
-      90: 'XC',
-      50: 'L',
-      40: 'XL',
-      10: 'X',
-      9: 'IX',
-      5: 'V',
-      4: 'IV',
-      1: 'I',
-    };
-    var result = '';
-    var remaining = number;
-    romans.forEach((value, numeral) {
-      while (remaining >= value) {
-        result += numeral;
-        remaining -= value;
-      }
-    });
-    return result;
-  }
 }
 
 class _RingPainter extends CustomPainter {
