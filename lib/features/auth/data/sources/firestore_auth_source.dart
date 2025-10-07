@@ -1,16 +1,29 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/services/username_service.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 
+typedef ChangeUsernameRunner = Future<void> Function({
+  required FirebaseFirestore firestore,
+  required String uid,
+  required String newUsername,
+});
+
 class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final ChangeUsernameRunner _changeUsername;
 
-  FirestoreAuthSource({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreAuthSource({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    ChangeUsernameRunner? changeUsername,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _changeUsername = changeUsername ?? changeUsernameTransaction;
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -85,18 +98,22 @@ class FirestoreAuthSource {
   }
 
   Future<void> setUsername(String userId, String username) async {
-    Future<void> run() => changeUsernameTransaction(
+    const retryable = {'aborted', 'resource-exhausted', 'unavailable'};
+    var attempts = 0;
+    while (true) {
+      try {
+        await _changeUsername(
           firestore: _firestore,
           uid: userId,
           newUsername: username,
         );
-    try {
-      await run();
-    } on FirebaseException catch (e) {
-      if (e.code == 'aborted') {
-        await run();
-      } else {
-        rethrow;
+        return;
+      } on FirebaseException catch (e) {
+        if (!retryable.contains(e.code) || attempts >= 2) {
+          rethrow;
+        }
+        attempts += 1;
+        await Future<void>.delayed(Duration(milliseconds: 100 * attempts));
       }
     }
   }
