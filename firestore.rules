@@ -204,16 +204,19 @@ service cloud.firestore {
       allow create: if isOwner(uid);
       allow read: if isAuthed();
       allow update: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly([
-          'username',
-          'usernameLower',
-          'showInLeaderboard',
-          'publicProfile',
-          'avatarUrl',
-          'avatarKey',
-          'avatarUpdatedAt',
-          'equippedAvatarRef'
-        ]);
+        request.resource.data
+            .diff(resource.data)
+            .changedKeys()
+            .hasOnly([
+              'username',
+              'usernameLower',
+              'showInLeaderboard',
+              'publicProfile',
+              'avatarUrl',
+              'avatarKey',
+              'avatarUpdatedAt',
+              'equippedAvatarRef'
+            ]);
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['avatarKey']) &&
         request.resource.data.avatarKey is string;
