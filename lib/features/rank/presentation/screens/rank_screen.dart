@@ -253,16 +253,29 @@ class _XpMonogram extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return BrandGradientText(
-      '𝑿𝑷',
-      style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1.2,
-          ) ??
-          const TextStyle(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1.2,
-          ),
+    final iconTheme = IconTheme.of(context);
+    final size = iconTheme.size ?? AppSpacing.xl;
+    final textStyle = theme.textTheme.titleMedium?.copyWith(
+          color: iconTheme.color,
+          fontSize: size * 0.6,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ) ??
+        TextStyle(
+          color: iconTheme.color,
+          fontSize: size * 0.6,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        );
+
+    return SizedBox.square(
+      dimension: size,
+      child: Center(
+        child: Text(
+          'XP',
+          style: textStyle,
+        ),
+      ),
     );
   }
 }
