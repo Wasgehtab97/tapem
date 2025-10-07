@@ -138,7 +138,6 @@ class FirestoreXpSource {
     List<String> primaryMuscleGroupIds = const [],
     List<String> secondaryMuscleGroupIds = const [],
   }) async {
-    final uniqueExercises = exerciseIds.where((e) => e.isNotEmpty).toSet();
     final userRef = _firestore.collection('users').doc(userId);
     final dayRef = userRef.collection('trainingDayXP').doc(dayKey);
     final statsRef = _firestore
@@ -157,10 +156,6 @@ class FirestoreXpSource {
         .doc(userId);
     final lbSess = lbUser.collection('sessions').doc(sessionId);
     final lbDay = lbUser.collection('days').doc(dayKey);
-    final exerciseRefs = [
-      for (final ex in uniqueExercises)
-        lbUser.collection('exercises').doc('$ex-$dayKey'),
-    ];
 
     XpTrace.log('FS_REMOVE_IN', {
       'gymId': gymId,
@@ -168,7 +163,7 @@ class FirestoreXpSource {
       'deviceId': deviceId,
       'sessionId': sessionId,
       'dayKey': dayKey,
-      'exerciseCount': uniqueExercises.length,
+      'exerciseCount': exerciseIds.where((e) => e.isNotEmpty).length,
     });
 
     await _firestore.runTransaction((tx) async {
@@ -177,10 +172,6 @@ class FirestoreXpSource {
       final lbUserSnap = await tx.get(lbUser);
       final lbSessSnap = await tx.get(lbSess);
       final lbDaySnap = await tx.get(lbDay);
-      final exerciseSnaps = <DocumentSnapshot<Map<String, dynamic>>>[];
-      for (final ref in exerciseRefs) {
-        exerciseSnaps.add(await tx.get(ref));
-      }
 
       const xpDelta = LevelService.xpPerSession;
       var adjustStats = false;
@@ -219,11 +210,6 @@ class FirestoreXpSource {
       }
       if (lbDaySnap.exists) {
         tx.delete(lbDay);
-      }
-      for (final snap in exerciseSnaps) {
-        if (snap.exists) {
-          tx.delete(snap.reference);
-        }
       }
     });
 

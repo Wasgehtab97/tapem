@@ -24,7 +24,7 @@ class FakeMuscleGroupProvider extends ChangeNotifier implements MuscleGroupProvi
   Map<String, int> get counts => {};
 
   @override
-  Future<void> loadGroups(BuildContext context) async {}
+  Future<void> loadGroups(BuildContext context, {bool force = false}) async {}
 
   @override
   Future<String?> ensureRegionGroup(BuildContext context, MuscleRegion region) async {

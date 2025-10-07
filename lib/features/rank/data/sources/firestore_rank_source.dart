@@ -37,18 +37,12 @@ class FirestoreRankSource {
             .doc(userId);
         final lbSess = lbUser.collection('sessions').doc(sessionId);
         final lbDay = lbUser.collection('days').doc(dayKey);
-        final lbEx = isMulti && exerciseId != null
-            ? lbUser.collection('exercises').doc('$exerciseId-$dayKey')
-            : null;
-
         try {
           final result = await _firestore.runTransaction<DeviceXpResult>((tx) async {
             final userSnap = await tx.get(lbUser);
             final sessSnap = await tx.get(lbSess);
-            final exSnap = lbEx != null ? await tx.get(lbEx) : null;
             XpTrace.log('TXN_READ', {
               'existsSessionDoc': sessSnap.exists,
-              'existsExerciseDoc': exSnap?.exists ?? false,
               'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
               'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
               'traceId': traceId,
@@ -57,17 +51,6 @@ class FirestoreRankSource {
             if (sessSnap.exists) {
               XpTrace.log('TXN_DECISION', {
                 'result': 'alreadySession',
-                'showInLeaderboard': showInLeaderboard,
-                'isMulti': isMulti,
-                'exerciseId': exerciseId ?? '',
-                'traceId': traceId,
-              });
-              return DeviceXpResult.idempotentHit;
-            }
-
-            if (exSnap?.exists ?? false) {
-              XpTrace.log('TXN_DECISION', {
-                'result': 'alreadyExercise',
                 'showInLeaderboard': showInLeaderboard,
                 'isMulti': isMulti,
                 'exerciseId': exerciseId ?? '',
@@ -108,11 +91,6 @@ class FirestoreRankSource {
               'sessionId': sessionId,
               'creditedAt': FieldValue.serverTimestamp(),
             });
-            bool wroteExercise = false;
-            if (lbEx != null) {
-              tx.set(lbEx, {'creditedAt': FieldValue.serverTimestamp()});
-              wroteExercise = true;
-            }
 
             XpTrace.log('TXN_WRITE', {
               'deltaXp': xpDelta,
@@ -120,7 +98,6 @@ class FirestoreRankSource {
               'newLevel': info.level,
               'wroteSessionMarker': true,
               'wroteDayMarker': true,
-              'wroteExerciseMarker': wroteExercise,
               'traceId': traceId,
             });
 

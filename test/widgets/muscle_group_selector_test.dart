@@ -100,7 +100,7 @@ class FakeMuscleGroupProvider extends MuscleGroupProvider {
   List<MuscleGroup> get groups => _groups;
 
   @override
-  Future<void> loadGroups(BuildContext context) async {}
+  Future<void> loadGroups(BuildContext context, {bool force = false}) async {}
 }
 
 void main() {

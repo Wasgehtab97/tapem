@@ -47,7 +47,7 @@ class _XpOverviewScreenState extends State<XpOverviewScreen> {
       xpProv.watchMuscleDailyXp(gymId, uid);
       xpProv.watchTrainingDays(uid);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        muscleProv.loadGroups(context);
+        muscleProv.ensureLoaded(context);
       });
     }
   }

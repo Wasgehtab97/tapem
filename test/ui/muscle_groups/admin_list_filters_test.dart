@@ -59,7 +59,7 @@ class FakeMuscleGroupProvider extends ChangeNotifier
   @override
   Map<String, int> get counts => {};
   @override
-  Future<void> loadGroups(BuildContext context) async {}
+  Future<void> loadGroups(BuildContext context, {bool force = false}) async {}
   @override
   Future<void> updateDeviceAssignments(BuildContext context, String deviceId,
           List<String> primaryGroupIds, List<String> secondaryGroupIds) async {}
