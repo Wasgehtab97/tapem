@@ -55,11 +55,38 @@ android {
                 val keystorePathRaw = props.getProperty("storeFile")?.trim()
                 if (!keystorePathRaw.isNullOrEmpty()) {
                     val normalizedPath = keystorePathRaw.replace("\\", "/")
-                    val keystoreFile = when {
-                        normalizedPath.startsWith("file:") -> File(URI(normalizedPath))
-                        File(normalizedPath).isAbsolute -> File(normalizedPath)
-                        else -> rootProject.file(normalizedPath)
+
+                    fun resolveKeystore(path: String): File {
+                        val unixLikePath = if (File.separatorChar == '/' && path.matches(Regex("^[A-Za-z]:/.*"))) {
+                            if (path.length > 3) "/" + path.substring(3) else "/"
+                        } else {
+                            path
+                        }
+
+                        val initialFile = when {
+                            unixLikePath.startsWith("file:") -> File(URI(unixLikePath))
+                            File(unixLikePath).isAbsolute -> File(unixLikePath)
+                            else -> rootProject.file(unixLikePath)
+                        }
+
+                        if (initialFile.exists()) {
+                            return initialFile
+                        }
+
+                        val androidMarker = "/android/"
+                        val markerIndex = unixLikePath.indexOf(androidMarker)
+                        if (markerIndex != -1) {
+                            val relativePart = unixLikePath.substring(markerIndex + androidMarker.length)
+                            val candidate = rootProject.file(relativePart)
+                            if (candidate.exists()) {
+                                return candidate
+                            }
+                        }
+
+                        return initialFile
                     }
+
+                    val keystoreFile = resolveKeystore(normalizedPath)
                     storeFile = keystoreFile
                     if (!keystoreFile.exists()) {
                         println("⚠️ Keystore-Datei nicht gefunden: ${keystoreFile.absolutePath}")
