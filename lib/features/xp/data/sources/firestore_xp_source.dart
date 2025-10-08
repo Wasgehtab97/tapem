@@ -9,6 +9,7 @@ import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
 class FirestoreXpSource {
@@ -228,7 +229,7 @@ class FirestoreXpSource {
       'dayKey': dayKey,
     });
 
-    final delta = _buildMuscleXpDelta(
+    final delta = MuscleXpCalculator.calculateDelta(
       primaryMuscleGroupIds,
       secondaryMuscleGroupIds,
     );
@@ -252,62 +253,13 @@ class FirestoreXpSource {
     }
   }
 
-  Map<String, int> _buildMuscleXpDelta(
-    List<String> primaryMuscleGroupIds,
-    List<String> secondaryMuscleGroupIds,
-  ) {
-    final order = <String>[];
-    final weights = <String, int>{};
-    final seenPrimary = <String>{};
-    final seenSecondary = <String>{};
-
-    void push(String id, int weight, Set<String> seen) {
-      if (id.isEmpty) return;
-      if (seen.add(id)) {
-        order.add(id);
-      }
-      weights[id] = (weights[id] ?? 0) + weight;
-    }
-
-    for (final id in primaryMuscleGroupIds) {
-      push(id, 2, seenPrimary);
-    }
-    for (final id in secondaryMuscleGroupIds) {
-      if (seenPrimary.contains(id)) {
-        continue;
-      }
-      push(id, 1, seenSecondary);
-    }
-
-    final totalWeight = weights.values.fold<int>(0, (sum, w) => sum + w);
-    if (totalWeight == 0) {
-      return const {};
-    }
-
-    final baseXp = LevelService.xpPerSession;
-    final xpPerWeight = baseXp ~/ totalWeight;
-    var remainder = baseXp % totalWeight;
-    final delta = <String, int>{};
-    for (final id in order) {
-      final weight = weights[id] ?? 0;
-      if (weight == 0) continue;
-      var value = weight * xpPerWeight;
-      if (remainder > 0) {
-        value += 1;
-        remainder -= 1;
-      }
-      delta[id] = value;
-    }
-    return delta;
-  }
-
   Future<void> _applyMuscleXp({
     required DocumentReference<Map<String, dynamic>> statsRef,
     required List<String> primaryMuscleGroupIds,
     required List<String> secondaryMuscleGroupIds,
     required String traceId,
   }) async {
-    final delta = _buildMuscleXpDelta(
+    final delta = MuscleXpCalculator.calculateDelta(
       primaryMuscleGroupIds,
       secondaryMuscleGroupIds,
     );
