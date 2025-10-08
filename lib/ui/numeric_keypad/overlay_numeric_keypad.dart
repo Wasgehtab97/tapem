@@ -685,7 +685,7 @@ class OverlayNumericKeypad extends StatelessWidget {
       selection: TextSelection.collapsed(offset: value.length),
     );
 
-    _haptic(context);
+    _navigateNext(context, controller);
   }
 
   static List<Map<String, String>> _dropMapsFromSet(Map<String, dynamic> set) {
