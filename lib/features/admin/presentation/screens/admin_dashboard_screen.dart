@@ -164,7 +164,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               }
               await _loadDevices();
             } catch (e, st) {
-              logError('ADMIN_CREATE_DEVICE_FAILED', e, stackTrace: st);
+              elogError('ADMIN_CREATE_DEVICE_FAILED', e, st);
               setSt(() => isSubmitting = false);
               ScaffoldMessenger.of(ctx2).showSnackBar(
                 SnackBar(content: Text(loc.commonSaveError)),
