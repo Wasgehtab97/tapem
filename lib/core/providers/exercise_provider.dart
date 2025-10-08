@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
+import 'package:tapem/features/device/domain/services/exercise_xp_reassignment_service.dart';
 import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
@@ -13,6 +14,7 @@ class ExerciseProvider extends ChangeNotifier {
   final DeleteExerciseUseCase _deleteEx;
   final UpdateExerciseUseCase _updateEx;
   final UpdateExerciseMuscleGroupsUseCase _updateMuscles;
+  final ExerciseXpReassignmentService _xpReassignment;
 
   ExerciseProvider({
     required GetExercisesForDevice getEx,
@@ -20,11 +22,13 @@ class ExerciseProvider extends ChangeNotifier {
     required DeleteExerciseUseCase deleteEx,
     required UpdateExerciseUseCase updateEx,
     required UpdateExerciseMuscleGroupsUseCase updateMuscles,
-  }) : _getEx = getEx,
-       _createEx = createEx,
-       _deleteEx = deleteEx,
-       _updateEx = updateEx,
-       _updateMuscles = updateMuscles;
+    ExerciseXpReassignmentService? xpReassignment,
+  })  : _getEx = getEx,
+        _createEx = createEx,
+        _deleteEx = deleteEx,
+        _updateEx = updateEx,
+        _updateMuscles = updateMuscles,
+        _xpReassignment = xpReassignment ?? ExerciseXpReassignmentService();
 
   List<Exercise> _exercises = [];
   bool _isLoading = false;
@@ -127,5 +131,23 @@ class ExerciseProvider extends ChangeNotifier {
     } else {
       await loadExercises(gymId, deviceId, userId);
     }
+  }
+
+  Future<void> reassignMuscleXp(
+    String gymId,
+    String deviceId,
+    String exerciseId,
+    String userId,
+    List<String> primaryIds,
+    List<String> secondaryIds,
+  ) {
+    return _xpReassignment.reassign(
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      userId: userId,
+      newPrimaryIds: primaryIds,
+      newSecondaryIds: secondaryIds,
+    );
   }
 }

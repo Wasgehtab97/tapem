@@ -83,6 +83,7 @@ import 'features/device/data/sources/firestore_exercise_source.dart';
 import 'features/device/data/repositories/exercise_repository_impl.dart';
 import 'features/device/domain/repositories/exercise_repository.dart';
 import 'features/device/domain/usecases/get_exercises_for_device.dart';
+import 'features/device/domain/services/exercise_xp_reassignment_service.dart';
 import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
@@ -471,6 +472,10 @@ Future<void> main() async {
           create: (c) =>
               MuscleGroupProvider(membership: c.read<MembershipService>()),
         ),
+        Provider(
+          create: (_) =>
+              ExerciseXpReassignmentService(firestore: FirebaseFirestore.instance),
+        ),
         ChangeNotifierProvider(
           create: (c) => ExerciseProvider(
             getEx: c.read<GetExercisesForDevice>(),
@@ -478,6 +483,7 @@ Future<void> main() async {
             deleteEx: c.read<DeleteExerciseUseCase>(),
             updateEx: c.read<UpdateExerciseUseCase>(),
             updateMuscles: c.read<UpdateExerciseMuscleGroupsUseCase>(),
+            xpReassignment: c.read<ExerciseXpReassignmentService>(),
           ),
         ),
         ChangeNotifierProvider(
