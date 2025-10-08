@@ -1,6 +1,8 @@
 // --- Kotlin DSL Imports ---
 import java.util.Properties
+import java.io.File
 import java.io.FileInputStream
+import java.net.URI
 
 plugins {
     id("com.android.application")
@@ -50,7 +52,21 @@ android {
             val propsFile = file("../key.properties")
             if (propsFile.exists()) {
                 val props = Properties().apply { FileInputStream(propsFile).use { load(it) } }
-                storeFile     = file(props.getProperty("storeFile"))
+                val keystorePathRaw = props.getProperty("storeFile")?.trim()
+                if (!keystorePathRaw.isNullOrEmpty()) {
+                    val normalizedPath = keystorePathRaw.replace("\\", "/")
+                    val keystoreFile = when {
+                        normalizedPath.startsWith("file:") -> File(URI(normalizedPath))
+                        File(normalizedPath).isAbsolute -> File(normalizedPath)
+                        else -> rootProject.file(normalizedPath)
+                    }
+                    storeFile = keystoreFile
+                    if (!keystoreFile.exists()) {
+                        println("⚠️ Keystore-Datei nicht gefunden: ${keystoreFile.absolutePath}")
+                    }
+                } else {
+                    println("⚠️ key.properties: 'storeFile' ist leer oder fehlt.")
+                }
                 storePassword = props.getProperty("storePassword")
                 keyAlias      = props.getProperty("keyAlias")
                 keyPassword   = props.getProperty("keyPassword")
