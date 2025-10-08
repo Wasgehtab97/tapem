@@ -192,6 +192,9 @@ class DeviceProvider extends ChangeNotifier {
   String? _currentGymId;
   String? _currentUserId;
   bool _showInLeaderboardPreference = true;
+  String? _loadedContextKey;
+  String? _pendingContextKey;
+  Future<void>? _inFlightLoad;
 
   // Snapshots (Historie zum Blättern)
   final List<DeviceSessionSnapshot> _sessionSnapshots = [];
@@ -376,6 +379,49 @@ class DeviceProvider extends ChangeNotifier {
     required String deviceId,
     required String exerciseId,
     required String userId,
+    bool forceRefresh = false,
+  }) {
+    final contextKey = _buildContextKey(
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      userId: userId,
+    );
+    if (!forceRefresh && _loadedContextKey == contextKey && _device != null) {
+      _log('🔁 [Provider] loadDevice reuse context=$contextKey');
+      return Future<void>.value();
+    }
+    if (_pendingContextKey == contextKey && _inFlightLoad != null) {
+      return _inFlightLoad!;
+    }
+    final future = _performDeviceLoad(
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      userId: userId,
+    );
+    _pendingContextKey = contextKey;
+    _inFlightLoad = future.whenComplete(() {
+      _pendingContextKey = null;
+      _inFlightLoad = null;
+    });
+    return _inFlightLoad!;
+  }
+
+  String _buildContextKey({
+    required String gymId,
+    required String deviceId,
+    required String exerciseId,
+    required String userId,
+  }) {
+    return '$gymId|$deviceId|$exerciseId|$userId';
+  }
+
+  Future<void> _performDeviceLoad({
+    required String gymId,
+    required String deviceId,
+    required String exerciseId,
+    required String userId,
   }) async {
     _setLoading(true);
     _error = null;
@@ -437,7 +483,7 @@ class DeviceProvider extends ChangeNotifier {
           'reps': '',
           'dropWeight': '',
           'dropReps': '',
-          'done': false, // bool statt String
+          'done': false,
           'isBodyweight': false,
         }),
       ];
@@ -456,13 +502,25 @@ class DeviceProvider extends ChangeNotifier {
 
       await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
 
-      if (FF.showLastSessionOnDevicePage ||
-          FF.runtimeShowLastSessionOnDevicePage) {
-        await _loadLastSession(gymId, deviceId, exerciseId, userId);
+      final lastSessionFuture =
+          (FF.showLastSessionOnDevicePage || FF.runtimeShowLastSessionOnDevicePage)
+              ? _loadLastSession(gymId, deviceId, exerciseId, userId)
+              : Future<bool>.value(false);
+      final changeFlags = await Future.wait<bool>([
+        lastSessionFuture,
+        _loadUserNote(gymId, deviceId, userId),
+        _loadUserXp(gymId, deviceId, userId),
+      ]);
+      final draftChanged = await _restoreDraft();
+      _loadedContextKey = _buildContextKey(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        userId: userId,
+      );
+      if (draftChanged || changeFlags.any((changed) => changed)) {
+        notifyListeners();
       }
-      await _loadUserNote(gymId, deviceId, userId);
-      await _loadUserXp(gymId, deviceId, userId);
-      await _restoreDraft();
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
@@ -960,20 +1018,20 @@ class DeviceProvider extends ChangeNotifier {
     _draftCreatedAt = draft.createdAt;
   }
 
-  Future<void> _restoreDraft() async {
+  Future<bool> _restoreDraft() async {
     final key = _draftKey;
-    if (key == null) return;
+    if (key == null) return false;
     final draft = await _draftRepo.get(key);
-    if (draft == null) return;
+    if (draft == null) return false;
     final now = DateTime.now().millisecondsSinceEpoch;
     final draftHasCompletedSets =
         draft.sets.any((set) => set.done == true);
     if (now - draft.updatedAt > draft.ttlMs && !draftHasCompletedSets) {
       await _draftRepo.delete(key);
-      return;
+      return false;
     }
     _draftCreatedAt = draft.createdAt;
-    _note = draft.note;
+    final newNote = draft.note;
     if (draft.gymId.isNotEmpty) {
       _currentGymId ??= draft.gymId;
     }
@@ -981,7 +1039,7 @@ class DeviceProvider extends ChangeNotifier {
       _currentUserId ??= draft.userId;
     }
     _showInLeaderboardPreference = draft.showInLeaderboard;
-    _sets = [
+    final newSets = [
       for (var i = 0; i < draft.sets.length; i++)
         _withNormalizedDrops({
           'number': '${i + 1}',
@@ -997,12 +1055,31 @@ class DeviceProvider extends ChangeNotifier {
           ],
         }),
     ];
+    final changed =
+        !_listEquals(newSets, _sets) ||
+        newNote != _note ||
+        _lastActivityMs != draft.updatedAt;
+    if (changed) {
+      _note = newNote;
+      _sets = newSets;
+    }
     _lastActivityMs = draft.updatedAt;
-    notifyListeners();
     _scheduleAutoFinalize();
     if (now - draft.updatedAt >= draft.ttlMs && _hasCompletedSets()) {
       unawaited(_handleAutoFinalizeTimer());
     }
+    return changed;
+  }
+
+  bool _listEquals(List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!const DeepCollectionEquality().equals(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void prefetchSnapshots({
@@ -1500,7 +1577,7 @@ class DeviceProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _loadLastSession(
+  Future<bool> _loadLastSession(
     String gymId,
     String deviceId,
     String exerciseId,
@@ -1519,7 +1596,19 @@ class DeviceProvider extends ChangeNotifier {
         .orderBy('timestamp', descending: true)
         .limit(1)
         .get();
-    if (lastSnap.docs.isEmpty) return;
+    if (lastSnap.docs.isEmpty) {
+      final hadData = _lastSessionSets.isNotEmpty ||
+          _lastSessionDate != null ||
+          _lastSessionNote.isNotEmpty;
+      if (hadData) {
+        _lastSessionSets = [];
+        _lastSessionDate = null;
+        _lastSessionNote = '';
+        _lastSessionId = null;
+        return true;
+      }
+      return false;
+    }
 
     final data = lastSnap.docs.first.data();
     final sid = data['sessionId'] as String;
@@ -1533,7 +1622,7 @@ class DeviceProvider extends ChangeNotifier {
         .orderBy('timestamp')
         .get();
 
-    _lastSessionSets = [
+    final newSets = [
       for (var entry in sessionDocs.docs.asMap().entries)
         () {
           final data = entry.value.data();
@@ -1568,16 +1657,23 @@ class DeviceProvider extends ChangeNotifier {
           });
         }(),
     ];
-    _lastSessionDate = ts;
-    _lastSessionNote = note;
-    _lastSessionId = sid;
-    _log(
-      '📜 [Provider] loaded last session id=$sid sets=${_lastSessionSets.length}',
-    );
-    notifyListeners();
+    final changed =
+        !const DeepCollectionEquality().equals(_lastSessionSets, newSets) ||
+        _lastSessionId != sid ||
+        _lastSessionNote != note;
+    if (changed) {
+      _lastSessionSets = newSets;
+      _lastSessionDate = ts;
+      _lastSessionNote = note;
+      _lastSessionId = sid;
+      _log(
+        '📜 [Provider] loaded last session id=$sid sets=${_lastSessionSets.length}',
+      );
+    }
+    return changed;
   }
 
-  Future<void> _loadUserNote(
+  Future<bool> _loadUserNote(
     String gymId,
     String deviceId,
     String userId,
@@ -1590,15 +1686,16 @@ class DeviceProvider extends ChangeNotifier {
         .collection('userNotes')
         .doc(userId)
         .get();
-    if (snap.exists) {
-      final data = snap.data()!;
-      _note = data['note'] as String? ?? '';
-      _log('📝 [Provider] loaded user note "${_note.replaceAll('\n', '\\n')}"');
-      notifyListeners();
+    final newNote = snap.exists ? snap.data()!['note'] as String? ?? '' : '';
+    if (newNote == _note) {
+      return false;
     }
+    _note = newNote;
+    _log('📝 [Provider] loaded user note "${_note.replaceAll('\n', '\\n')}"');
+    return true;
   }
 
-  Future<void> _loadUserXp(String gymId, String deviceId, String userId) async {
+  Future<bool> _loadUserXp(String gymId, String deviceId, String userId) async {
     final xpDoc = await _firestore
         .collection('gyms')
         .doc(gymId)
@@ -1607,16 +1704,20 @@ class DeviceProvider extends ChangeNotifier {
         .collection('leaderboard')
         .doc(userId)
         .get();
+    var newXp = 0;
+    var newLevel = 1;
     if (xpDoc.exists) {
       final data = xpDoc.data()!;
-      _xp = data['xp'] as int? ?? 0;
-      _level = data['level'] as int? ?? 1;
-    } else {
-      _xp = 0;
-      _level = 1;
+      newXp = data['xp'] as int? ?? 0;
+      newLevel = data['level'] as int? ?? 1;
     }
-    _log('⭐ [Provider] load XP level=$_level xp=$_xp');
-    notifyListeners();
+    final changed = newXp != _xp || newLevel != _level;
+    if (changed) {
+      _xp = newXp;
+      _level = newLevel;
+      _log('⭐ [Provider] load XP level=$_level xp=$_xp');
+    }
+    return changed;
   }
 
   void toggleBodyweightMode() {
