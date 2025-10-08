@@ -379,12 +379,19 @@ class DeviceProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _error = null;
-    _currentGymId = gymId;
-    _currentUserId = userId;
+    final hadDevice = _device != null;
+    final hasDraftKey = _draftKey != null;
+    final shouldPersistDraft =
+        hadDevice && hasDraftKey && !_isDraftEmpty();
     _draftSaveTimer?.cancel();
     _draftSaveTimer = null;
     _autoFinalizeTimer?.cancel();
     _autoFinalizeTimer = null;
+    if (shouldPersistDraft) {
+      await _saveDraftNow();
+    }
+    _currentGymId = gymId;
+    _currentUserId = userId;
     _lastActivityMs = null;
 
     try {
@@ -905,17 +912,18 @@ class DeviceProvider extends ChangeNotifier {
 
   Future<void> _saveDraftNow() async {
     final key = _draftKey;
-    if (key == null) return;
+    final device = _device;
+    if (key == null || device == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_isDraftEmpty()) {
       await _draftRepo.delete(key);
       return;
     }
     final draft = SessionDraft(
-      deviceId: _device!.uid,
+      deviceId: device.uid,
       gymId: _currentGymId ?? '',
       userId: _currentUserId ?? '',
-      exerciseId: _device!.isMulti ? _currentExerciseId : null,
+      exerciseId: device.isMulti ? _currentExerciseId : null,
       createdAt: _draftCreatedAt ?? now,
       updatedAt: now,
       note: _note,
