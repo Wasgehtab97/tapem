@@ -18,6 +18,10 @@ class ProfileProvider extends ChangeNotifier {
   double _avgTrainingDaysPerWeek = 0;
   String? _favoriteExerciseName;
   List<FavoriteExerciseUsage> _favoriteExerciseUsages = [];
+  String? _lastLoadedUserId;
+  String? _pendingTrainingUserId;
+  Future<void>? _inFlightTrainingLoad;
+  bool _hasLoadedTrainingDates = false;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -30,19 +34,51 @@ class ProfileProvider extends ChangeNotifier {
       List.unmodifiable(_favoriteExerciseUsages);
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
-  Future<void> loadTrainingDates(BuildContext context) async {
+  Future<void> loadTrainingDates(
+    BuildContext context, {
+    bool forceRefresh = false,
+  }) {
+    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProv.userId;
+
+    if (userId == null) {
+      _error = 'Kein Benutzer gefunden';
+      notifyListeners();
+      return Future<void>.value();
+    }
+
+    if (!forceRefresh &&
+        _hasLoadedTrainingDates &&
+        _lastLoadedUserId == userId) {
+      return Future<void>.value();
+    }
+
+    if (_inFlightTrainingLoad != null &&
+        _pendingTrainingUserId == userId) {
+      return _inFlightTrainingLoad!;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
+    final future = _fetchTrainingDates(
+      userId: userId,
+      createdAt: authProv.createdAt,
+    );
+    _pendingTrainingUserId = userId;
+    _inFlightTrainingLoad = future.whenComplete(() {
+      _pendingTrainingUserId = null;
+      _inFlightTrainingLoad = null;
+    });
+    return _inFlightTrainingLoad!;
+  }
+
+  Future<void> _fetchTrainingDates({
+    required String userId,
+    required DateTime? createdAt,
+  }) async {
     try {
-      final authProv = Provider.of<AuthProvider>(context, listen: false);
-      final userId = authProv.userId;
-
-      if (userId == null) {
-        throw Exception('Kein Benutzer gefunden');
-      }
-
       final snapshot = await FirebaseFirestore.instance
           .collectionGroup('logs')
           .where('userId', isEqualTo: userId)
@@ -91,10 +127,13 @@ class ProfileProvider extends ChangeNotifier {
           .toList();
       _totalTrainingDays = _trainingDates.length;
       _avgTrainingDaysPerWeek =
-          _calculateAverageTrainingDaysPerWeek(authProv.createdAt);
+          _calculateAverageTrainingDaysPerWeek(createdAt);
       await _resolveFavoriteExercises(sessionAggregates.values);
+      _hasLoadedTrainingDates = true;
+      _lastLoadedUserId = userId;
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
+      _hasLoadedTrainingDates = false;
       if (e is FirebaseException && e.code == 'failed-precondition') {
         elogError('FIRESTORE_FAILED_PRECONDITION', e.message ?? e.toString(), st);
       }
