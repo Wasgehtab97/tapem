@@ -107,60 +107,10 @@ class _PlanEditorScreenState extends State<PlanEditorScreen>
             for (var w in plan.weeks) _WeekView(week: w)
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () async {
-            final week = plan.weeks[_weekController.index].weekNumber;
-            final day = await _pickDay(
-              context,
-              plan.weeks[_weekController.index],
-            );
-            if (day == null) return;
-            final base = ExerciseEntry(
-              deviceId: '',
-              exerciseId: '',
-              exerciseName: '',
-              setType: '',
-              totalSets: 0,
-              workSets: 0,
-              reps: 0,
-              rir: 0,
-              restInSeconds: 0,
-            );
-            final entry = await showDeviceSelectionDialog(context, base);
-            if (entry != null) {
-              prov.addExercise(week, day, entry);
-            }
-          },
-          label: const Text('Übung hinzufügen'),
-          icon: const Icon(Icons.add),
-        ),
       ),
     );
 
     return scaffold;
-  }
-
-  Future<DateTime?> _pickDay(BuildContext context, WeekBlock week) async {
-    if (week.days.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte zuerst einen Tag hinzufügen')),
-      );
-      return null;
-    }
-    return showDialog<DateTime>(
-      context: context,
-      builder:
-          (_) => SimpleDialog(
-            title: const Text('Trainingstag wählen'),
-            children: [
-              for (var d in week.days)
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, d.date),
-                  child: Text(DateFormat.yMd().add_E().format(d.date)),
-                ),
-            ],
-          ),
-    );
   }
 }
 
@@ -180,7 +130,7 @@ class _DayRef {
 
 class _WeekViewState extends State<_WeekView>
     with SingleTickerProviderStateMixin {
-  late TabController _dayController;
+  TabController? _dayController;
 
   Future<_DayRef?> _pickSourceDay(BuildContext context) async {
     final plan = context.read<TrainingPlanProvider>().currentPlan!;
@@ -236,25 +186,34 @@ class _WeekViewState extends State<_WeekView>
     );
   }
 
+  void _initController() {
+    final length = widget.week.days.length;
+    if (length == 0) {
+      _dayController = null;
+      return;
+    }
+    _dayController = TabController(length: length, vsync: this);
+  }
+
   @override
   void initState() {
     super.initState();
-    _dayController = TabController(length: 7, vsync: this);
+    _initController();
   }
 
   @override
   void didUpdateWidget(covariant _WeekView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.week.days.length != widget.week.days.length) {
-      _dayController.dispose();
-      _dayController = TabController(length: 7, vsync: this);
+      _dayController?.dispose();
+      _initController();
       setState(() {});
     }
   }
 
   @override
   void dispose() {
-    _dayController.dispose();
+    _dayController?.dispose();
     super.dispose();
   }
 
@@ -279,31 +238,30 @@ class _WeekViewState extends State<_WeekView>
             ),
           ],
         ),
-        TabBar(
-          controller: _dayController,
-          tabs: const [
-            Tab(text: 'Mo'),
-            Tab(text: 'Di'),
-            Tab(text: 'Mi'),
-            Tab(text: 'Do'),
-            Tab(text: 'Fr'),
-            Tab(text: 'Sa'),
-            Tab(text: 'So'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
+        if (_dayController != null)
+          TabBar(
             controller: _dayController,
-            children: [
+            isScrollable: true,
+            tabs: [
               for (var i = 0; i < widget.week.days.length; i++)
-                _DayView(
-                  weekNumber: weekNumber,
-                  dayIndex: i,
-                  day: widget.week.days[i],
-                  pickSource: () => _pickSourceDay(context),
-                ),
+                Tab(text: 'Tag ${i + 1}')
             ],
           ),
+        Expanded(
+          child: _dayController == null
+              ? const Center(child: Text('Keine Trainingstage vorhanden'))
+              : TabBarView(
+                  controller: _dayController,
+                  children: [
+                    for (var i = 0; i < widget.week.days.length; i++)
+                      _DayView(
+                        weekNumber: weekNumber,
+                        dayIndex: i,
+                        day: widget.week.days[i],
+                        pickSource: () => _pickSourceDay(context),
+                      ),
+                  ],
+                ),
         ),
       ],
     );
@@ -327,11 +285,12 @@ class _DayView extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.read<TrainingPlanProvider>();
     return ListView.builder(
-      itemCount: day.exercises.length + 1,
+      itemCount: day.exercises.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
           return ListTile(
-            title: Text(DateFormat.yMd().add_E().format(day.date)),
+            title: Text('Tag ${dayIndex + 1}'),
+            subtitle: Text(DateFormat.yMd().add_E().format(day.date)),
             trailing: IconButton(
               icon: const Icon(Icons.copy),
               tooltip: 'Tag duplizieren',
@@ -341,6 +300,31 @@ class _DayView extends StatelessWidget {
                   prov.copyDayExercises(src.week, src.day, {
                     weekNumber: dayIndex,
                   });
+                }
+              },
+            ),
+          );
+        }
+        if (index == day.exercises.length + 1) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Übung hinzufügen'),
+              onPressed: () async {
+                final base = ExerciseEntry(
+                  deviceId: '',
+                  exerciseId: '',
+                  exerciseName: '',
+                  setType: '',
+                  totalSets: 0,
+                  workSets: 0,
+                  reps: 0,
+                  restInSeconds: 0,
+                );
+                final entry = await showDeviceSelectionDialog(context, base);
+                if (entry != null) {
+                  prov.addExercise(weekNumber, day.date, entry);
                 }
               },
             ),
@@ -389,21 +373,18 @@ class _PlanEntryEditor extends StatefulWidget {
 class _PlanEntryEditorState extends State<_PlanEntryEditor> {
   late TextEditingController _setsCtr;
   late TextEditingController _repsCtr;
-  late TextEditingController _rirCtr;
 
   @override
   void initState() {
     super.initState();
     _setsCtr = TextEditingController(text: widget.entry.workSets.toString());
     _repsCtr = TextEditingController(text: widget.entry.reps?.toString() ?? '');
-    _rirCtr = TextEditingController(text: widget.entry.rir.toString());
   }
 
   @override
   void dispose() {
     _setsCtr.dispose();
     _repsCtr.dispose();
-    _rirCtr.dispose();
     super.dispose();
   }
 
@@ -418,7 +399,6 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
         workSets: int.tryParse(_setsCtr.text) ?? 0,
         reps: int.tryParse(_repsCtr.text),
         weight: widget.entry.weight,
-        rir: int.tryParse(_rirCtr.text) ?? widget.entry.rir,
         restInSeconds: widget.entry.restInSeconds,
         notes: widget.entry.notes,
         sets: widget.entry.sets,
@@ -483,22 +463,6 @@ class _PlanEntryEditorState extends State<_PlanEntryEditor> {
                     onTap: () => context
                         .read<OverlayNumericKeypadController>()
                         .openFor(_repsCtr, allowDecimal: false),
-                    onChanged: (_) => _emitUpdate(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _rirCtr,
-                    decoration: const InputDecoration(
-                      labelText: 'RIR',
-                      isDense: true,
-                    ),
-                    readOnly: true,
-                    keyboardType: TextInputType.none,
-                    onTap: () => context
-                        .read<OverlayNumericKeypadController>()
-                        .openFor(_rirCtr, allowDecimal: false),
                     onChanged: (_) => _emitUpdate(),
                   ),
                 ),

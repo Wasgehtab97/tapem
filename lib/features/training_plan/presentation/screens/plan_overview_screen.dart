@@ -136,6 +136,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   cfg.name,
                   userId,
                   weeks: cfg.weeks,
+                  splitDays: cfg.splitDays,
                 );
                 Navigator.of(context)
                     .push(
@@ -163,6 +164,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
   Future<_PlanCfg?> _askConfig(BuildContext context) async {
     final nameCtr = TextEditingController();
     final weeksCtr = TextEditingController(text: '4');
+    final splitCtr = TextEditingController(text: '3');
 
     return showDialog<_PlanCfg>(
       context: context,
@@ -192,6 +194,18 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                               .read<OverlayNumericKeypadController>()
                               .openFor(weeksCtr, allowDecimal: false),
                         ),
+                        TextField(
+                          controller: splitCtr,
+                          decoration: const InputDecoration(
+                            labelText: 'Splittage',
+                          ),
+                          keyboardType: TextInputType.none,
+                          readOnly: true,
+                          autofocus: false,
+                          onTap: () => context
+                              .read<OverlayNumericKeypadController>()
+                              .openFor(splitCtr, allowDecimal: false),
+                        ),
                       ],
                     ),
                   ),
@@ -208,6 +222,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                           _PlanCfg(
                             nameCtr.text.trim(),
                             int.tryParse(weeksCtr.text) ?? 4,
+                            int.tryParse(splitCtr.text) ?? 1,
                           ),
                         );
                       },
@@ -276,6 +291,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
 class _PlanCfg {
   final String name;
   final int weeks;
+  final int splitDays;
 
-  _PlanCfg(this.name, this.weeks);
+  _PlanCfg(this.name, this.weeks, this.splitDays);
 }

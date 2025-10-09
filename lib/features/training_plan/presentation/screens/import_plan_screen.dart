@@ -103,7 +103,6 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       'art des satzes',
       'arbeitssätze',
       'reps',
-      'rir',
       'pausenzeit',
     ];
     final missing =
@@ -120,7 +119,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     final repsIdx = headerMap['reps']!;
     final prov = context.read<TrainingPlanProvider>();
     final userId = context.read<AuthProvider>().userId!;
-    prov.createNewPlan('Import', userId, weeks: 4);
+    prov.createNewPlan('Import', userId, weeks: 4, splitDays: 7);
     for (var row in data.skip(1)) {
       final week = int.tryParse(row[weekIdx].toString()) ?? 1;
       final dayRaw = row[dayIdx].toString();
@@ -132,6 +131,10 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
         } catch (_) {}
       }
       if (day == null) continue;
+      final rirIdx = headerMap['rir'];
+      final rirValue = rirIdx != null
+          ? int.tryParse(row[rirIdx].toString())
+          : null;
       final entry = ExerciseEntry(
         deviceId: '',
         exerciseId: row[headerMap['übung']!].toString(),
@@ -141,7 +144,6 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
             int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
         workSets: int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
         reps: int.tryParse(row[repsIdx].toString()) ?? 0,
-        rir: int.tryParse(row[headerMap['rir']!].toString()) ?? 0,
         restInSeconds:
             int.tryParse(row[headerMap['pausenzeit']!].toString()) ?? 0,
         notes:
@@ -161,7 +163,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                         0
                     : 0,
             reps: int.tryParse(row[repsIdx].toString()) ?? 0,
-            rir: int.tryParse(row[headerMap['rir']!].toString()),
+            rir: rirValue,
             note:
                 headerMap.containsKey('setnotiz')
                     ? row[headerMap['setnotiz']!].toString()
