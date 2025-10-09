@@ -8,14 +8,9 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
-import '../../../../core/providers/device_provider.dart';
-import '../../../../core/providers/exercise_provider.dart';
-import '../../../device/domain/models/device.dart';
-import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/planned_set.dart';
 import '../widgets/device_selection_dialog.dart';
-import 'package:intl/intl.dart';
 
 class ImportPlanScreen extends StatefulWidget {
   const ImportPlanScreen({super.key});
@@ -49,40 +44,39 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Plan importieren')),
       body: Consumer<TrainingPlanProvider>(
-        builder:
-            (context, prov, _) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickFile,
-                    child: const Text('CSV-Datei wählen'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _csvCtr,
-                    maxLines: 8,
-                    decoration: const InputDecoration(
-                      labelText: 'CSV-Daten einfügen',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (prov.isSaving)
-                    const CircularProgressIndicator()
-                  else
-                    ElevatedButton(
-                      onPressed: () {
-                        final csv = const CsvToListConverter(
-                          eol: '\n',
-                        ).convert(_csvCtr.text);
-                        _handleCsv(context, csv);
-                      },
-                      child: const Text('Importieren'),
-                    ),
-                ],
+        builder: (context, prov, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              ElevatedButton(
+                onPressed: _pickFile,
+                child: const Text('CSV-Datei wählen'),
               ),
-            ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _csvCtr,
+                maxLines: 8,
+                decoration: const InputDecoration(
+                  labelText: 'CSV-Daten einfügen',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (prov.isSaving)
+                const CircularProgressIndicator()
+              else
+                ElevatedButton(
+                  onPressed: () {
+                    final csv = const CsvToListConverter(
+                      eol: '\n',
+                    ).convert(_csvCtr.text);
+                    _handleCsv(context, csv);
+                  },
+                  child: const Text('Importieren'),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -97,7 +91,6 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     }
 
     final requiredCols = [
-      'woche',
       'tag',
       'übung',
       'art des satzes',
@@ -105,8 +98,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       'reps',
       'pausenzeit',
     ];
-    final missing =
-        requiredCols.where((c) => !headerMap.containsKey(c)).toList();
+    final missing = requiredCols.where((c) => !headerMap.containsKey(c)).toList();
     if (missing.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Spalten fehlen: ${missing.join(', ')}')),
@@ -114,23 +106,27 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       return;
     }
 
-    final weekIdx = headerMap['woche']!;
     final dayIdx = headerMap['tag']!;
     final repsIdx = headerMap['reps']!;
     final prov = context.read<TrainingPlanProvider>();
     final userId = context.read<AuthProvider>().userId!;
-    prov.createNewPlan('Import', userId, weeks: 4, splitDays: 7);
+
+    final dayNumbers = <int>{};
     for (var row in data.skip(1)) {
-      final week = int.tryParse(row[weekIdx].toString()) ?? 1;
-      final dayRaw = row[dayIdx].toString();
-      DateTime? day;
-      day = DateTime.tryParse(dayRaw);
-      if (day == null) {
-        try {
-          day = DateFormat('dd.MM.yyyy').parse(dayRaw);
-        } catch (_) {}
+      final dayNumber = int.tryParse(row[dayIdx].toString());
+      if (dayNumber != null && dayNumber > 0) {
+        dayNumbers.add(dayNumber);
       }
-      if (day == null) continue;
+    }
+    final splitDays = dayNumbers.isEmpty ? 1 : dayNumbers.reduce((a, b) => a > b ? a : b);
+
+    prov.createNewPlan('Import', userId, splitDays: splitDays);
+
+    for (var row in data.skip(1)) {
+      final dayNumber = int.tryParse(row[dayIdx].toString());
+      if (dayNumber == null || dayNumber <= 0) continue;
+      final targetIndex = dayNumber - 1;
+      if (targetIndex >= prov.currentPlan!.days.length) continue;
       final rirIdx = headerMap['rir'];
       final rirValue = rirIdx != null
           ? int.tryParse(row[rirIdx].toString())
@@ -140,38 +136,32 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
         exerciseId: row[headerMap['übung']!].toString(),
         exerciseName: row[headerMap['übung']!].toString(),
         setType: row[headerMap['art des satzes']!].toString(),
-        totalSets:
-            int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
+        totalSets: int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
         workSets: int.tryParse(row[headerMap['arbeitssätze']!].toString()) ?? 0,
         reps: int.tryParse(row[repsIdx].toString()) ?? 0,
-        restInSeconds:
-            int.tryParse(row[headerMap['pausenzeit']!].toString()) ?? 0,
-        notes:
-            headerMap.containsKey('notiz')
-                ? row[headerMap['notiz']!].toString()
-                : '',
+        restInSeconds: int.tryParse(row[headerMap['pausenzeit']!].toString()) ?? 0,
+        notes: headerMap.containsKey('notiz')
+            ? row[headerMap['notiz']!].toString()
+            : '',
         sets: [
           PlannedSet(
-            weight:
-                headerMap.containsKey('gewicht')
-                    ? double.tryParse(
-                          row[headerMap['gewicht']!].toString().replaceAll(
-                            ',',
-                            '.',
-                          ),
-                        ) ??
-                        0
-                    : 0,
+            weight: headerMap.containsKey('gewicht')
+                ? double.tryParse(
+                      row[headerMap['gewicht']!]
+                          .toString()
+                          .replaceAll(',', '.'),
+                    ) ??
+                    0
+                : 0,
             reps: int.tryParse(row[repsIdx].toString()) ?? 0,
             rir: rirValue,
-            note:
-                headerMap.containsKey('setnotiz')
-                    ? row[headerMap['setnotiz']!].toString()
-                    : null,
+            note: headerMap.containsKey('setnotiz')
+                ? row[headerMap['setnotiz']!].toString()
+                : null,
           ),
         ],
       );
-      prov.addExercise(week, day, entry);
+      prov.addExercise(targetIndex, entry);
     }
     _assignDevices(context).then((_) async {
       final gymId = context.read<AuthProvider>().gymCode!;
@@ -182,18 +172,15 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
 
   Future<void> _assignDevices(BuildContext context) async {
     final prov = context.read<TrainingPlanProvider>();
-    final plan = prov.currentPlan!;
-
-    for (var week in plan.weeks) {
-      for (var day in week.days) {
-        for (var i = 0; i < day.exercises.length; i++) {
-          final updated = await showDeviceSelectionDialog(
-            context,
-            day.exercises[i],
-          );
-          if (updated != null) {
-            day.exercises[i] = updated;
-          }
+    for (var dayIndex = 0; dayIndex < prov.currentPlan!.days.length; dayIndex++) {
+      final day = prov.currentPlan!.days[dayIndex];
+      for (var i = 0; i < day.exercises.length; i++) {
+        final updated = await showDeviceSelectionDialog(
+          context,
+          prov.currentPlan!.days[dayIndex].exercises[i],
+        );
+        if (updated != null) {
+          prov.updateExercise(dayIndex, i, updated);
         }
       }
     }

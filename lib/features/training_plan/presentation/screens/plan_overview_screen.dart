@@ -59,10 +59,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   ),
                   title: Text(
                     plan.name,
-                    style:
-                        prov.activePlanId == plan.id
-                            ? const TextStyle(fontWeight: FontWeight.bold)
-                            : null,
+                    style: prov.activePlanId == plan.id
+                        ? const TextStyle(fontWeight: FontWeight.bold)
+                        : null,
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
@@ -79,17 +78,16 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                         }
                       }
                     },
-                    itemBuilder:
-                        (_) => const [
-                          PopupMenuItem(
-                            value: 'rename',
-                            child: Text('Umbenennen'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Löschen'),
-                          ),
-                        ],
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'rename',
+                        child: Text('Umbenennen'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Löschen'),
+                      ),
+                    ],
                   ),
                   onTap: () async {
                     prov.currentPlan = plan;
@@ -133,11 +131,10 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
               if (cfg != null && context.mounted) {
                 final userId = context.read<AuthProvider>().userId!;
                 context.read<TrainingPlanProvider>().createNewPlan(
-                  cfg.name,
-                  userId,
-                  weeks: cfg.weeks,
-                  splitDays: cfg.splitDays,
-                );
+                      cfg.name,
+                      userId,
+                      splitDays: cfg.splitDays,
+                    );
                 Navigator.of(context)
                     .push(
                       MaterialPageRoute(
@@ -163,74 +160,58 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
 
   Future<_PlanCfg?> _askConfig(BuildContext context) async {
     final nameCtr = TextEditingController();
-    final weeksCtr = TextEditingController(text: '4');
     final splitCtr = TextEditingController(text: '3');
 
     return showDialog<_PlanCfg>(
       context: context,
       barrierDismissible: false,
-      builder:
-          (_) => StatefulBuilder(
-            builder:
-                (ctx, setState) => AlertDialog(
-                  title: const Text('Neuer Plan'),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: nameCtr,
-                          decoration: const InputDecoration(labelText: 'Name'),
-                        ),
-                        TextField(
-                          controller: weeksCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Wochen',
-                          ),
-                          keyboardType: TextInputType.none,
-                          readOnly: true,
-                          autofocus: false,
-                          onTap: () => context
-                              .read<OverlayNumericKeypadController>()
-                              .openFor(weeksCtr, allowDecimal: false),
-                        ),
-                        TextField(
-                          controller: splitCtr,
-                          decoration: const InputDecoration(
-                            labelText: 'Splittage',
-                          ),
-                          keyboardType: TextInputType.none,
-                          readOnly: true,
-                          autofocus: false,
-                          onTap: () => context
-                              .read<OverlayNumericKeypadController>()
-                              .openFor(splitCtr, allowDecimal: false),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Abbrechen'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (nameCtr.text.trim().isEmpty) return;
-                        Navigator.pop(
-                          context,
-                          _PlanCfg(
-                            nameCtr.text.trim(),
-                            int.tryParse(weeksCtr.text) ?? 4,
-                            int.tryParse(splitCtr.text) ?? 1,
-                          ),
-                        );
-                      },
-                      child: const Text('OK'),
-                    ),
-                  ],
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Neuer Plan'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtr,
+                  decoration: const InputDecoration(labelText: 'Name'),
                 ),
+                TextField(
+                  controller: splitCtr,
+                  decoration: const InputDecoration(
+                    labelText: 'Splittage',
+                  ),
+                  keyboardType: TextInputType.none,
+                  readOnly: true,
+                  autofocus: false,
+                  onTap: () => context
+                      .read<OverlayNumericKeypadController>()
+                      .openFor(splitCtr, allowDecimal: false),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameCtr.text.trim().isEmpty) return;
+                Navigator.pop(
+                  context,
+                  _PlanCfg(
+                    nameCtr.text.trim(),
+                    int.tryParse(splitCtr.text) ?? 1,
+                  ),
+                );
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -238,51 +219,48 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     final ctr = TextEditingController(text: current);
     return showDialog<String>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Plan umbenennen'),
-            content: TextField(
-              controller: ctr,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen'),
-              ),
-              ElevatedButton(
-                onPressed:
-                    () => Navigator.pop(
-                      context,
-                      ctr.text.trim().isEmpty ? null : ctr.text.trim(),
-                    ),
-                child: const Text('Speichern'),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text('Plan umbenennen'),
+        content: TextField(
+          controller: ctr,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen'),
           ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(
+              context,
+              ctr.text.trim().isEmpty ? null : ctr.text.trim(),
+            ),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
     );
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text('Plan löschen?'),
-                content: const Text(
-                  'Dieser Vorgang kann nicht rückgängig gemacht werden.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Abbrechen'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Löschen'),
-                  ),
-                ],
+          builder: (_) => AlertDialog(
+            title: const Text('Plan löschen?'),
+            content: const Text(
+              'Dieser Vorgang kann nicht rückgängig gemacht werden.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Abbrechen'),
               ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Löschen'),
+              ),
+            ],
+          ),
         ) ??
         false;
   }
@@ -290,8 +268,7 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
 
 class _PlanCfg {
   final String name;
-  final int weeks;
   final int splitDays;
 
-  _PlanCfg(this.name, this.weeks, this.splitDays);
+  _PlanCfg(this.name, this.splitDays);
 }
