@@ -12,6 +12,7 @@ class TrainingPlanDto {
   final String createdBy;
   final DateTime startDate;
   final List<WeekBlock> weeks;
+  final int splitDays;
 
   TrainingPlanDto({
     required this.id,
@@ -20,6 +21,7 @@ class TrainingPlanDto {
     required this.createdBy,
     required this.weeks,
     required this.startDate,
+    this.splitDays = 1,
   });
 
   factory TrainingPlanDto.fromDoc(
@@ -33,6 +35,7 @@ class TrainingPlanDto {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdBy: data['createdBy'] as String? ?? '',
       startDate: (data['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      splitDays: (data['splitDays'] as num?)?.toInt() ?? 1,
       weeks:
           weeks ??
           (data['weeks'] as List<dynamic>? ?? [])
@@ -46,6 +49,7 @@ class TrainingPlanDto {
     'createdAt': Timestamp.fromDate(createdAt),
     'createdBy': createdBy,
     'startDate': Timestamp.fromDate(startDate),
+    'splitDays': splitDays,
   };
 
   TrainingPlan toModel() => TrainingPlan(
@@ -55,6 +59,7 @@ class TrainingPlanDto {
     createdBy: createdBy,
     startDate: startDate,
     weeks: weeks,
+    splitDays: splitDays,
   );
 
   factory TrainingPlanDto.fromModel(TrainingPlan plan) => TrainingPlanDto(
@@ -64,5 +69,6 @@ class TrainingPlanDto {
     createdBy: plan.createdBy,
     startDate: plan.startDate,
     weeks: plan.weeks,
+    splitDays: plan.splitDays,
   );
 }

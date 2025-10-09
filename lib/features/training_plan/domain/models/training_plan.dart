@@ -9,6 +9,7 @@ class TrainingPlan {
   final String createdBy;
   final DateTime startDate;
   final List<WeekBlock> weeks;
+  final int splitDays;
 
   TrainingPlan({
     required this.id,
@@ -17,7 +18,9 @@ class TrainingPlan {
     required this.createdBy,
     required List<WeekBlock> weeks,
     required this.startDate,
-  }) : weeks = List.from(weeks);
+    this.splitDays = 1,
+  })  : weeks = List.from(weeks),
+        assert(splitDays >= 1, 'splitDays must be at least 1');
 
   TrainingPlan copyWith({
     String? id,
@@ -26,6 +29,7 @@ class TrainingPlan {
     String? createdBy,
     List<WeekBlock>? weeks,
     DateTime? startDate,
+    int? splitDays,
   }) {
     return TrainingPlan(
       id: id ?? this.id,
@@ -34,6 +38,7 @@ class TrainingPlan {
       createdBy: createdBy ?? this.createdBy,
       startDate: startDate ?? this.startDate,
       weeks: weeks ?? this.weeks,
+      splitDays: splitDays ?? this.splitDays,
     );
   }
 
@@ -44,6 +49,7 @@ class TrainingPlan {
         createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         createdBy: map['createdBy'] as String? ?? '',
         startDate: (map['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        splitDays: (map['splitDays'] as num?)?.toInt() ?? 1,
         weeks:
             (map['weeks'] as List<dynamic>? ?? [])
                 .map((e) => WeekBlock.fromMap(e as Map<String, dynamic>))
@@ -55,6 +61,7 @@ class TrainingPlan {
     'createdAt': Timestamp.fromDate(createdAt),
     'createdBy': createdBy,
     'startDate': Timestamp.fromDate(startDate),
+    'splitDays': splitDays,
     'weeks': weeks.map((w) => w.toMap()).toList(),
   };
 }

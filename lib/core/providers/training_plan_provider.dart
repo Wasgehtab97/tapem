@@ -55,8 +55,16 @@ class TrainingPlanProvider extends ChangeNotifier {
     }
   }
 
-  void createNewPlan(String name, String createdBy, {required int weeks}) {
-    debugPrint('➕ createNewPlan name=$name weeks=$weeks');
+  void createNewPlan(
+    String name,
+    String createdBy, {
+    required int weeks,
+    required int splitDays,
+  }) {
+    final normalizedSplitDays = splitDays < 1 ? 1 : splitDays;
+    debugPrint(
+      '➕ createNewPlan name=$name weeks=$weeks splitDays=$normalizedSplitDays',
+    );
     final now = DateTime.now();
     final monday = DateTime(
       now.year,
@@ -68,7 +76,7 @@ class TrainingPlanProvider extends ChangeNotifier {
         WeekBlock(
           weekNumber: i + 1,
           days: [
-            for (var d = 0; d < 7; d++)
+            for (var d = 0; d < normalizedSplitDays; d++)
               DayEntry(
                 date: monday.add(Duration(days: i * 7 + d)),
                 exercises: [],
@@ -84,6 +92,7 @@ class TrainingPlanProvider extends ChangeNotifier {
       createdBy: createdBy,
       startDate: monday,
       weeks: weekBlocks,
+      splitDays: normalizedSplitDays,
     );
     debugPrint('✅ Created plan ${currentPlan!.id}');
     notifyListeners();
