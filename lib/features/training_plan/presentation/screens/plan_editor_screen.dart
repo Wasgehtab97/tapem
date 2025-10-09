@@ -2,283 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/device_provider.dart';
-import '../../../../core/providers/exercise_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
-import '../../../device/domain/models/device.dart';
-import '../../../device/domain/models/exercise.dart';
-import 'package:intl/intl.dart';
 import '../../domain/models/exercise_entry.dart';
-import '../../domain/models/day_entry.dart';
-import '../../domain/models/week_block.dart';
+import '../../domain/models/split_day.dart';
 import '../widgets/device_selection_dialog.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
-class PlanEditorScreen extends StatefulWidget {
+class PlanEditorScreen extends StatelessWidget {
   const PlanEditorScreen({super.key});
-
-  @override
-  State<PlanEditorScreen> createState() => _PlanEditorScreenState();
-}
-
-class _PlanEditorScreenState extends State<PlanEditorScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _weekController;
-
-  @override
-  void initState() {
-    super.initState();
-    final plan = context.read<TrainingPlanProvider>().currentPlan!;
-    _weekController = TabController(length: plan.weeks.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _weekController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<TrainingPlanProvider>();
     final plan = prov.currentPlan!;
-    final scaffold = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(plan.name),
-          actions: [
-            IconButton(
-              icon:
-                  prov.isSaving
-                      ? const SizedBox(
+
+    return DefaultTabController(
+      length: plan.days.length,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(plan.name),
+            actions: [
+              IconButton(
+                icon: prov.isSaving
+                    ? const SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                      : const Icon(Icons.check),
-              tooltip: 'Speichern',
-              onPressed:
-                  prov.isSaving
-                      ? null
-                      : () async {
+                    : const Icon(Icons.check),
+                tooltip: 'Speichern',
+                onPressed: prov.isSaving
+                    ? null
+                    : () async {
                         final gymId = context.read<AuthProvider>().gymCode!;
                         await prov.saveCurrentPlan(gymId);
                         if (context.mounted) {
                           final msg = prov.error ?? 'Plan gespeichert';
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(msg)));
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(msg)));
                         }
                       },
+              ),
+            ],
+            bottom: TabBar(
+              isScrollable: true,
+              tabs: [
+                for (var day in plan.days)
+                  Tab(text: 'Tag ${day.index + 1}${day.name != null ? ' - ${day.name}' : ''}')
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: plan.startDate,
-                  firstDate: DateTime.now().subtract(
-                    const Duration(days: 365 * 5),
-                  ),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                );
-                if (picked != null) {
-                  final monday = picked.subtract(
-                    Duration(days: picked.weekday - 1),
-                  );
-                  prov.setStartDate(monday);
-                }
-              },
-            ),
-          ],
-          bottom: TabBar(
-            controller: _weekController,
-            isScrollable: true,
-            tabs: [
-              for (var w in plan.weeks) Tab(text: 'Woche ${w.weekNumber}'),
+          ),
+          body: TabBarView(
+            children: [
+              for (var i = 0; i < plan.days.length; i++)
+                _DayView(dayIndex: i, day: plan.days[i])
             ],
           ),
-        ),
-        body: TabBarView(
-          controller: _weekController,
-          children: [
-            for (var w in plan.weeks) _WeekView(week: w)
-          ],
         ),
       ),
-    );
-
-    return scaffold;
-  }
-}
-
-class _WeekView extends StatefulWidget {
-  final WeekBlock week;
-  const _WeekView({required this.week});
-
-  @override
-  State<_WeekView> createState() => _WeekViewState();
-}
-
-class _DayRef {
-  final int week;
-  final int day;
-  _DayRef(this.week, this.day);
-}
-
-class _WeekViewState extends State<_WeekView>
-    with SingleTickerProviderStateMixin {
-  TabController? _dayController;
-
-  Future<_DayRef?> _pickSourceDay(BuildContext context) async {
-    final plan = context.read<TrainingPlanProvider>().currentPlan!;
-    return showDialog<_DayRef>(
-      context: context,
-      builder:
-          (dialogContext) => SimpleDialog(
-            title: const Text('Quelle wählen'),
-            children: [
-              for (final w in plan.weeks) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    'Woche \${w.weekNumber}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                for (var i = 0; i < w.days.length; i++)
-                  SimpleDialogOption(
-                    onPressed:
-                        () => Navigator.pop(
-                          dialogContext,
-                          _DayRef(w.weekNumber, i),
-                        ),
-                    child: Text(
-                      DateFormat.yMd().add_E().format(w.days[i].date),
-                    ),
-                  ),
-              ],
-            ],
-          ),
-    );
-  }
-
-  Future<int?> _pickSourceWeek(BuildContext context) async {
-    final plan = context.read<TrainingPlanProvider>().currentPlan!;
-    return showDialog<int>(
-      context: context,
-      builder:
-          (dialogContext) => SimpleDialog(
-            title: const Text('Quelle wählen'),
-            children: [
-              for (final w in plan.weeks)
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(dialogContext, w.weekNumber),
-                  child: Text('Woche \${w.weekNumber}'),
-                ),
-            ],
-          ),
-    );
-  }
-
-  void _initController() {
-    final length = widget.week.days.length;
-    if (length == 0) {
-      _dayController = null;
-      return;
-    }
-    _dayController = TabController(length: length, vsync: this);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initController();
-  }
-
-  @override
-  void didUpdateWidget(covariant _WeekView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.week.days.length != widget.week.days.length) {
-      _dayController?.dispose();
-      _initController();
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    _dayController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final prov = context.read<TrainingPlanProvider>();
-    final weekNumber = widget.week.weekNumber;
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.copy),
-              tooltip: 'Woche duplizieren',
-              onPressed: () async {
-                final src = await _pickSourceWeek(context);
-                if (src != null && src != weekNumber) {
-                  prov.copyWeekExercises(src, [weekNumber]);
-                }
-              },
-            ),
-          ],
-        ),
-        if (_dayController != null)
-          TabBar(
-            controller: _dayController,
-            isScrollable: true,
-            tabs: [
-              for (var i = 0; i < widget.week.days.length; i++)
-                Tab(text: 'Tag ${i + 1}')
-            ],
-          ),
-        Expanded(
-          child: _dayController == null
-              ? const Center(child: Text('Keine Trainingstage vorhanden'))
-              : TabBarView(
-                  controller: _dayController,
-                  children: [
-                    for (var i = 0; i < widget.week.days.length; i++)
-                      _DayView(
-                        weekNumber: weekNumber,
-                        dayIndex: i,
-                        day: widget.week.days[i],
-                        pickSource: () => _pickSourceDay(context),
-                      ),
-                  ],
-                ),
-        ),
-      ],
     );
   }
 }
 
 class _DayView extends StatelessWidget {
-  final int weekNumber;
   final int dayIndex;
-  final DayEntry day;
-  final Future<_DayRef?> Function() pickSource;
+  final SplitDay day;
 
   const _DayView({
-    required this.weekNumber,
     required this.dayIndex,
     required this.day,
-    required this.pickSource,
   });
 
   @override
@@ -289,20 +84,7 @@ class _DayView extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index == 0) {
           return ListTile(
-            title: Text('Tag ${dayIndex + 1}'),
-            subtitle: Text(DateFormat.yMd().add_E().format(day.date)),
-            trailing: IconButton(
-              icon: const Icon(Icons.copy),
-              tooltip: 'Tag duplizieren',
-              onPressed: () async {
-                final src = await pickSource();
-                if (src != null) {
-                  prov.copyDayExercises(src.week, src.day, {
-                    weekNumber: dayIndex,
-                  });
-                }
-              },
-            ),
+            title: Text('Tag ${dayIndex + 1}${day.name != null ? ' - ${day.name}' : ''}'),
           );
         }
         if (index == day.exercises.length + 1) {
@@ -324,7 +106,7 @@ class _DayView extends StatelessWidget {
                 );
                 final entry = await showDeviceSelectionDialog(context, base);
                 if (entry != null) {
-                  prov.addExercise(weekNumber, day.date, entry);
+                  prov.addExercise(dayIndex, entry);
                 }
               },
             ),
@@ -333,19 +115,17 @@ class _DayView extends StatelessWidget {
         final ex = day.exercises[index - 1];
         final exIndex = index - 1;
         return Dismissible(
-          key: ValueKey('${day.date}-$exIndex'),
+          key: ValueKey('day-$dayIndex-$exIndex'),
           background: Container(color: Theme.of(context).colorScheme.error),
-          onDismissed:
-              (_) => prov.removeExercise(weekNumber, day.date, exIndex),
+          onDismissed: (_) => prov.removeExercise(dayIndex, exIndex),
           child: _PlanEntryEditor(
             entry: ex,
-            onChanged:
-                (updated) =>
-                    prov.updateExercise(weekNumber, day.date, exIndex, updated),
+            onChanged: (updated) =>
+                prov.updateExercise(dayIndex, exIndex, updated),
             onSelectDevice: () async {
               final updated = await showDeviceSelectionDialog(context, ex);
               if (updated != null) {
-                prov.updateExercise(weekNumber, day.date, exIndex, updated);
+                prov.updateExercise(dayIndex, exIndex, updated);
               }
             },
           ),

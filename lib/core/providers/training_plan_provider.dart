@@ -5,8 +5,7 @@ import 'package:tapem/features/training_plan/data/repositories/training_plan_rep
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
-import 'package:tapem/features/training_plan/domain/models/week_block.dart';
-import 'package:tapem/features/training_plan/domain/models/day_entry.dart';
+import 'package:tapem/features/training_plan/domain/models/split_day.dart';
 import 'package:tapem/features/training_plan/domain/repositories/training_plan_repository.dart';
 
 class TrainingPlanProvider extends ChangeNotifier {
@@ -20,8 +19,8 @@ class TrainingPlanProvider extends ChangeNotifier {
   String? error;
 
   TrainingPlanProvider({TrainingPlanRepository? repo})
-    : _repo =
-          repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
+      : _repo =
+            repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
     _loadActivePlanId();
   }
 
@@ -58,198 +57,68 @@ class TrainingPlanProvider extends ChangeNotifier {
   void createNewPlan(
     String name,
     String createdBy, {
-    required int weeks,
     required int splitDays,
   }) {
     final normalizedSplitDays = splitDays < 1 ? 1 : splitDays;
     debugPrint(
-      '➕ createNewPlan name=$name weeks=$weeks splitDays=$normalizedSplitDays',
+      '➕ createNewPlan name=$name splitDays=$normalizedSplitDays',
     );
-    final now = DateTime.now();
-    final monday = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-    final weekBlocks = [
-      for (var i = 0; i < weeks; i++)
-        WeekBlock(
-          weekNumber: i + 1,
-          days: [
-            for (var d = 0; d < normalizedSplitDays; d++)
-              DayEntry(
-                date: monday.add(Duration(days: i * 7 + d)),
-                exercises: [],
-              ),
-          ],
-        ),
-    ];
 
     currentPlan = TrainingPlan(
       id: _uuid.v4(),
       name: name,
       createdAt: DateTime.now(),
       createdBy: createdBy,
-      startDate: monday,
-      weeks: weekBlocks,
-      splitDays: normalizedSplitDays,
+      days: [
+        for (var i = 0; i < normalizedSplitDays; i++)
+          SplitDay(index: i, exercises: []),
+      ],
     );
     debugPrint('✅ Created plan ${currentPlan!.id}');
     notifyListeners();
   }
 
-  void setStartDate(DateTime monday) {
+  void addExercise(int dayIndex, ExerciseEntry entry) {
     final plan = currentPlan;
     if (plan == null) return;
-    debugPrint('🗓 setStartDate $monday for plan ${plan.id}');
-    for (final week in plan.weeks) {
-      for (var i = 0; i < week.days.length; i++) {
-        final day = week.days[i];
-        week.days[i] = DayEntry(
-          date: monday.add(Duration(days: (week.weekNumber - 1) * 7 + i)),
-          exercises: day.exercises,
-        );
-      }
-    }
-    currentPlan = plan.copyWith(startDate: monday);
-    notifyListeners();
-  }
-
-  void addDay(int week, DateTime date) {
-    debugPrint('➕ addDay week=$week date=$date');
-    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
-    if (w == null) return;
-    final exists = w.days.any(
-      (d) =>
-          d.date.year == date.year &&
-          d.date.month == date.month &&
-          d.date.day == date.day,
+    if (dayIndex < 0 || dayIndex >= plan.days.length) return;
+    final days = List<SplitDay>.from(plan.days);
+    final day = days[dayIndex];
+    days[dayIndex] = day.copyWith(
+      exercises: [
+        ...day.exercises,
+        entry,
+      ],
     );
-    if (exists) return;
-    w.days.add(DayEntry(date: date, exercises: []));
-    w.days.sort((a, b) => a.date.compareTo(b.date));
+    currentPlan = plan.copyWith(days: days);
     notifyListeners();
   }
 
-  void removeDay(int week, DateTime date) {
-    debugPrint('➖ removeDay week=$week date=$date');
-    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
-    if (w == null) return;
-    w.days.removeWhere(
-      (d) =>
-          d.date.year == date.year &&
-          d.date.month == date.month &&
-          d.date.day == date.day,
-    );
+  void updateExercise(int dayIndex, int index, ExerciseEntry entry) {
+    final plan = currentPlan;
+    if (plan == null) return;
+    if (dayIndex < 0 || dayIndex >= plan.days.length) return;
+    final day = plan.days[dayIndex];
+    if (index < 0 || index >= day.exercises.length) return;
+    final updatedExercises = List<ExerciseEntry>.from(day.exercises);
+    updatedExercises[index] = entry;
+    final days = List<SplitDay>.from(plan.days);
+    days[dayIndex] = day.copyWith(exercises: updatedExercises);
+    currentPlan = plan.copyWith(days: days);
     notifyListeners();
   }
 
-  void addExercise(int week, DateTime day, ExerciseEntry entry) {
-    debugPrint('➕ addExercise week=$week day=$day ex=${entry.exerciseName}');
-    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
-    if (w == null) return;
-    final d = w.days.firstWhere((e) => e.date == day);
-    d.exercises.add(entry);
-    notifyListeners();
-  }
-
-  void updateExercise(int week, DateTime day, int index, ExerciseEntry entry) {
-    debugPrint('✏️ updateExercise week=$week day=$day index=$index');
-    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
-    if (w == null) return;
-    final d = w.days.firstWhere((e) => e.date == day);
-    if (index < 0 || index >= d.exercises.length) return;
-    d.exercises[index] = entry;
-    notifyListeners();
-  }
-
-  void removeExercise(int week, DateTime day, int index) {
-    debugPrint('🗑 removeExercise week=$week day=$day index=$index');
-    final w = currentPlan?.weeks.firstWhere((e) => e.weekNumber == week);
-    if (w == null) return;
-    final d = w.days.firstWhere((e) => e.date == day);
-    if (index < 0 || index >= d.exercises.length) return;
-    d.exercises.removeAt(index);
-    notifyListeners();
-  }
-
-  void copyWeekExercises(int sourceWeek, List<int> targetWeeks) {
-    final src = currentPlan?.weeks.firstWhere(
-      (w) => w.weekNumber == sourceWeek,
-    );
-    if (src == null) return;
-    for (final weekNo in targetWeeks) {
-      final target = currentPlan?.weeks.firstWhere(
-        (w) => w.weekNumber == weekNo,
-      );
-      if (target == null) continue;
-      for (var i = 0; i < src.days.length && i < target.days.length; i++) {
-        final exercises = [
-          for (final ex in src.days[i].exercises)
-            ExerciseEntry.fromMap(ex.toMap()),
-        ];
-        target.days[i] = DayEntry(
-          date: target.days[i].date,
-          exercises: exercises,
-        );
-      }
-    }
-    notifyListeners();
-  }
-
-  /// Copies all exercises from a specific day to multiple other days.
-  ///
-  /// [sourceWeek] and [sourceDay] identify the day to copy from. The
-  /// [targets] map uses the week number as key and the day index within that
-  /// week (0 = Monday) as value.
-  void copyDayExercises(int sourceWeek, int sourceDay, Map<int, int> targets) {
-    final srcWeek = currentPlan?.weeks.firstWhere(
-      (w) => w.weekNumber == sourceWeek,
-    );
-    if (srcWeek == null || sourceDay < 0 || sourceDay >= srcWeek.days.length) {
-      return;
-    }
-    final srcDay = srcWeek.days[sourceDay];
-    final clone = [
-      for (final ex in srcDay.exercises) ExerciseEntry.fromMap(ex.toMap()),
-    ];
-
-    targets.forEach((weekNo, dayIdx) {
-      final targetWeek = currentPlan?.weeks.firstWhere(
-        (w) => w.weekNumber == weekNo,
-      );
-      if (targetWeek == null ||
-          dayIdx < 0 ||
-          dayIdx >= targetWeek.days.length) {
-        return;
-      }
-      final date = targetWeek.days[dayIdx].date;
-      targetWeek.days[dayIdx] = DayEntry(
-        date: date,
-        exercises: [for (final ex in clone) ExerciseEntry.fromMap(ex.toMap())],
-      );
-    });
-
-    notifyListeners();
-  }
-
-  void moveExercise(
-    int srcWeek,
-    DateTime srcDay,
-    int index,
-    int destWeek,
-    DateTime destDay,
-  ) {
-    final srcW = currentPlan?.weeks.firstWhere((w) => w.weekNumber == srcWeek);
-    final destW = currentPlan?.weeks.firstWhere(
-      (w) => w.weekNumber == destWeek,
-    );
-    if (srcW == null || destW == null) return;
-    final sDay = srcW.days.firstWhere((d) => d.date == srcDay);
-    final dDay = destW.days.firstWhere((d) => d.date == destDay);
-    if (index < 0 || index >= sDay.exercises.length) return;
-    final ex = sDay.exercises.removeAt(index);
-    dDay.exercises.add(ex);
+  void removeExercise(int dayIndex, int index) {
+    final plan = currentPlan;
+    if (plan == null) return;
+    if (dayIndex < 0 || dayIndex >= plan.days.length) return;
+    final day = plan.days[dayIndex];
+    if (index < 0 || index >= day.exercises.length) return;
+    final updatedExercises = List<ExerciseEntry>.from(day.exercises)
+      ..removeAt(index);
+    final days = List<SplitDay>.from(plan.days);
+    days[dayIndex] = day.copyWith(exercises: updatedExercises);
+    currentPlan = plan.copyWith(days: days);
     notifyListeners();
   }
 
@@ -271,18 +140,12 @@ class TrainingPlanProvider extends ChangeNotifier {
       plan = currentPlan;
     }
     if (plan == null) return null;
-    for (final week in plan.weeks) {
-      for (final day in week.days) {
-        final d = DateTime(day.date.year, day.date.month, day.date.day);
-        final target = DateTime(date.year, date.month, date.day);
-        if (d == target) {
-          try {
-            return day.exercises.firstWhere(
-              (e) => e.deviceId == deviceId && e.exerciseId == exerciseId,
-            );
-          } catch (_) {}
-        }
-      }
+    for (final day in plan.days) {
+      try {
+        return day.exercises.firstWhere(
+          (e) => e.deviceId == deviceId && e.exerciseId == exerciseId,
+        );
+      } catch (_) {}
     }
     return null;
   }
