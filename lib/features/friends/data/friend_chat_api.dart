@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/utils/friend_chat_id.dart';
 
@@ -29,12 +30,20 @@ class FriendChatApi {
         _firestore.collection('friendConversations').doc(conversationId);
     final members = [meUid, friendUid]..sort();
 
+    if (kDebugMode) {
+      final preview = trimmed.length > 120 ? '${trimmed.substring(0, 120)}…' : trimmed;
+      debugPrint(
+        '[FriendChatApi] send start me=$meUid friend=$friendUid conversation=$conversationId '
+        'len=${trimmed.length} preview="$preview"',
+      );
+    }
+
     try {
       await conversationRef.set({'members': members}, SetOptions(merge: true));
+      final messageRef = conversationRef.collection('messages').doc();
+      final messageId = messageRef.id;
       await _firestore.runTransaction((txn) async {
         final timestamp = FieldValue.serverTimestamp();
-        final messageRef =
-            conversationRef.collection('messages').doc();
         txn.set(messageRef, {
           'senderId': meUid,
           'text': trimmed,
@@ -76,9 +85,22 @@ class FriendChatApi {
           'updatedAt': timestamp,
         }, SetOptions(merge: true));
       });
+      if (kDebugMode) {
+        debugPrint(
+          '[FriendChatApi] send success me=$meUid friend=$friendUid conversation=$conversationId '
+          'messageId=$messageId',
+        );
+      }
     } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatApi] send firebase error code=${e.code} message=${e.message}');
+      }
       throw FriendChatApiException.fromCode(e.code, e.message);
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatApi] send unexpected error: $e');
+        debugPrintStack(stackTrace: st);
+      }
       throw FriendChatApiException(FriendChatApiError.unknown);
     }
   }
@@ -94,13 +116,23 @@ class FriendChatApi {
         .collection('friendChats')
         .doc(friendUid);
     try {
+      if (kDebugMode) {
+        debugPrint('[FriendChatApi] markRead me=$meUid friend=$friendUid');
+      }
       await summaryRef.set({
         'hasUnread': false,
         'lastReadAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatApi] markRead firebase error code=${e.code} message=${e.message}');
+      }
       throw FriendChatApiException.fromCode(e.code, e.message);
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatApi] markRead unexpected error: $e');
+        debugPrintStack(stackTrace: st);
+      }
       throw FriendChatApiException(FriendChatApiError.unknown);
     }
   }

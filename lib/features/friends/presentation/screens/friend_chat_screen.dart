@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -50,6 +51,13 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     if (text.isEmpty || _sending) {
       return;
     }
+    if (kDebugMode) {
+      final preview = text.length > 120 ? '${text.substring(0, 120)}…' : text;
+      debugPrint(
+        '[FriendChatScreen] sendMessage start friend=${widget.friendUid} '
+        'len=${text.length} preview="$preview" sending=$_sending',
+      );
+    }
     setState(() => _sending = true);
     try {
       await context.read<FriendChatApi>().sendMessage(widget.friendUid, text);
@@ -57,7 +65,14 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
       FocusScope.of(context).unfocus();
       await context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
       _scrollToBottom();
-    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatScreen] sendMessage success friend=${widget.friendUid}');
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[FriendChatScreen] sendMessage failed friend=${widget.friendUid}: $e');
+        debugPrintStack(stackTrace: st);
+      }
       final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(SnackBar(content: Text(loc.friend_chat_send_error)));
     } finally {
@@ -82,6 +97,13 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   void _handleMessagesUpdate(List<FriendMessage> messages, String meUid) {
     if (messages.isEmpty) return;
     final last = messages.last;
+    if (kDebugMode) {
+      debugPrint(
+        '[FriendChatScreen] messages update friend=${widget.friendUid} '
+        'count=${messages.length} lastSender=${last.senderId} '
+        'createdAt=${last.createdAt}',
+      );
+    }
     if (last.senderId != meUid) {
       context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
     }
