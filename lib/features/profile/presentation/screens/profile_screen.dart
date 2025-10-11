@@ -11,6 +11,7 @@ import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
+import 'package:tapem/features/friends/providers/friend_chat_summary_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
@@ -53,6 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
         context.read<FriendsProvider>().listen(uid);
+        context.read<FriendChatSummaryProvider>().listen(uid);
         context.read<SettingsProvider>().load(uid);
         final gymId = context.read<AuthProvider>().gymCode ?? '';
         context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
@@ -537,9 +539,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const SizedBox.shrink(),
         actions: [
           if (enableFriends)
-            Consumer<FriendsProvider>(
-              builder: (context, friends, _) {
-                final showBadge = friends.pendingCount > 0;
+            Consumer2<FriendsProvider, FriendChatSummaryProvider>(
+              builder: (context, friends, chats, _) {
+                final showBadge =
+                    friends.pendingCount > 0 || chats.unreadCount > 0;
                 return IconButton(
                   icon: Stack(
                     children: [

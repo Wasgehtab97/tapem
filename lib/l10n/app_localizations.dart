@@ -1745,6 +1745,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get friends_action_cancel;
 
+  /// No description provided for @friends_action_chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get friends_action_chat;
+
   /// No description provided for @friends_action_training_days.
   ///
   /// In en, this message translates to:
@@ -1876,6 +1882,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter at least 2 characters'**
   String get friends_search_min_chars;
+
+  /// No description provided for @friend_chat_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get friend_chat_empty;
+
+  /// No description provided for @friend_chat_input_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get friend_chat_input_hint;
+
+  /// No description provided for @friend_chat_send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get friend_chat_send;
+
+  /// No description provided for @friend_chat_send_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Message could not be sent.'**
+  String get friend_chat_send_error;
+
+  /// No description provided for @friend_chat_login_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to chat.'**
+  String get friend_chat_login_required;
 
   /// Label for bodyweight
   ///

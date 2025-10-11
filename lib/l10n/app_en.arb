@@ -996,6 +996,8 @@
   "friends_action_accept": "Accept",
   "friends_action_decline": "Decline",
   "friends_action_cancel": "Cancel",
+  "friends_action_chat": "Chat",
+  "@friends_action_chat": {"description": "Action to open a chat with a friend"},
   "friends_action_training_days": "Training days",
   "friends_action_open_profile": "Open profile",
   "friends_action_remove": "Remove",
@@ -1017,7 +1019,17 @@
   "friends_cta_friend": "Friend",
   "friends_cta_pending": "Pending",
   "friends_action_send": "Send request",
-  "friends_search_min_chars": "Enter at least 2 characters"
+  "friends_search_min_chars": "Enter at least 2 characters",
+  "friend_chat_empty": "No messages yet",
+  "@friend_chat_empty": {"description": "Empty state when a chat has no messages"},
+  "friend_chat_input_hint": "Write a message",
+  "@friend_chat_input_hint": {"description": "Hint text for the chat input field"},
+  "friend_chat_send": "Send message",
+  "@friend_chat_send": {"description": "Tooltip for sending a chat message"},
+  "friend_chat_send_error": "Message could not be sent.",
+  "@friend_chat_send_error": {"description": "Error message when sending a chat message fails"},
+  "friend_chat_login_required": "Please sign in to chat.",
+  "@friend_chat_login_required": {"description": "Shown when the user must sign in before chatting"}
   ,"bodyweight": "Bodyweight"
   ,"@bodyweight": {"description": "Label for bodyweight"}
   ,"bodyweightAbbrev": "BW"

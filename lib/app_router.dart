@@ -29,6 +29,7 @@ import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.da
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
+import 'package:tapem/features/friends/presentation/screens/friend_chat_screen.dart';
 import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
@@ -72,6 +73,7 @@ class AppRouter {
   static const friendsHome = '/friends';
   static const friendDetail = '/friend_detail';
   static const friendTrainingCalendar = '/friend_training_calendar';
+  static const friendChat = '/friend_chat';
   static const creatine = '/creatine';
 
   static const restrictedRoutesForMembers = {
@@ -246,6 +248,13 @@ class AppRouter {
             friendUid: args['uid'] ?? '',
             friendName: args['name'] ?? '',
           ),
+        );
+
+      case friendChat:
+        final args = settings.arguments as Map<String, String>? ?? const {};
+        return FriendChatScreen.route(
+          friendUid: args['uid'] ?? '',
+          friendName: args['name'] ?? '',
         );
 
       case creatine:
