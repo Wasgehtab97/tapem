@@ -998,6 +998,8 @@
   "friends_action_accept": "Annehmen",
   "friends_action_decline": "Ablehnen",
   "friends_action_cancel": "Abbrechen",
+  "friends_action_chat": "Chat",
+  "@friends_action_chat": {"description": "Aktion, um den Chat mit einem Freund zu öffnen"},
   "friends_action_training_days": "Trainingstage",
   "friends_action_open_profile": "Profil öffnen",
   "friends_action_remove": "Entfernen",
@@ -1019,7 +1021,17 @@
   "friends_cta_friend": "Freund",
   "friends_cta_pending": "Ausstehend",
   "friends_action_send": "Anfrage senden",
-  "friends_search_min_chars": "Mindestens 2 Zeichen eingeben"
+  "friends_search_min_chars": "Mindestens 2 Zeichen eingeben",
+  "friend_chat_empty": "Noch keine Nachrichten",
+  "@friend_chat_empty": {"description": "Leerzustand wenn ein Chat keine Nachrichten hat"},
+  "friend_chat_input_hint": "Schreibe eine Nachricht",
+  "@friend_chat_input_hint": {"description": "Hinweistext für das Chat-Eingabefeld"},
+  "friend_chat_send": "Nachricht senden",
+  "@friend_chat_send": {"description": "Tooltip zum Senden einer Chat-Nachricht"},
+  "friend_chat_send_error": "Nachricht konnte nicht gesendet werden.",
+  "@friend_chat_send_error": {"description": "Fehlermeldung, wenn das Senden einer Chat-Nachricht scheitert"},
+  "friend_chat_login_required": "Bitte melde dich an, um zu chatten.",
+  "@friend_chat_login_required": {"description": "Hinweis, wenn der Nutzer sich vor dem Chatten anmelden muss"}
   ,"bodyweight": "Körpergewicht"
   ,"@bodyweight": {"description": "Label für Körpergewicht"}
   ,"bodyweightAbbrev": "BW"

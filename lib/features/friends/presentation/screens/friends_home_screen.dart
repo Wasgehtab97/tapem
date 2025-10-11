@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/friend_search_provider.dart';
 import '../../providers/friend_presence_provider.dart';
+import '../../providers/friend_chat_summary_provider.dart';
 import '../../data/user_search_source.dart';
 import '../../domain/models/public_profile.dart';
 import '../widgets/friend_list_tile.dart';
@@ -38,6 +40,12 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
         context.read<FriendsProvider>().markIncomingSeen();
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uid = context.read<AuthProvider>().userId;
+      if (uid != null) {
+        context.read<FriendChatSummaryProvider>().listen(uid);
+      }
+    });
   }
 
   @override
@@ -51,6 +59,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
   Widget build(BuildContext context) {
     final prov = context.watch<FriendsProvider>();
     final searchProv = context.watch<FriendSearchProvider>();
+    final chatSummaries = context.watch<FriendChatSummaryProvider>();
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -67,7 +76,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _friendsTab(prov, loc),
+          _friendsTab(prov, chatSummaries, loc),
           _requestsTab(prov, loc),
           _searchTab(prov, searchProv, loc),
         ],
@@ -75,7 +84,8 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     );
   }
 
-  Widget _friendsTab(FriendsProvider prov, AppLocalizations loc) {
+  Widget _friendsTab(FriendsProvider prov, FriendChatSummaryProvider chats,
+      AppLocalizations loc) {
     if (prov.friends.isEmpty) {
       return Center(child: Text(loc.friends_empty_friends));
     }
@@ -91,10 +101,18 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
             if (profile == null) {
               return const ListTile(title: Text('...'));
             }
+            final summary = chats.summaryFor(f.friendUid);
+            final hasUnread = summary?.hasUnread ?? false;
             return FriendListTile(
               profile: profile,
               presence: presence.stateFor(f.friendUid),
               onTap: () => _showFriendActions(f.friendUid),
+              trailing: hasUnread
+                  ? Icon(
+                      Icons.mark_unread_chat_alt,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : null,
             );
           },
         );
@@ -208,6 +226,18 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   AppRouter.friendTrainingCalendar,
                   arguments: {'uid': uid, 'name': name},
                 );
+              },
+            ),
+            ListTile(
+              title: Text(loc.friends_action_chat),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  AppRouter.friendChat,
+                  arguments: {'uid': uid, 'name': name},
+                );
+                context.read<FriendChatSummaryProvider>().markRead(uid);
               },
             ),
             ListTile(

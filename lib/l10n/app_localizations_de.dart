@@ -875,6 +875,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get friends_action_cancel => 'Abbrechen';
 
   @override
+  String get friends_action_chat => 'Chat';
+
+  @override
   String get friends_action_training_days => 'Trainingstage';
 
   @override
@@ -941,6 +944,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get friends_search_min_chars => 'Mindestens 2 Zeichen eingeben';
+
+  @override
+  String get friend_chat_empty => 'Noch keine Nachrichten';
+
+  @override
+  String get friend_chat_input_hint => 'Schreibe eine Nachricht';
+
+  @override
+  String get friend_chat_send => 'Nachricht senden';
+
+  @override
+  String get friend_chat_send_error => 'Nachricht konnte nicht gesendet werden.';
+
+  @override
+  String get friend_chat_login_required => 'Bitte melde dich an, um zu chatten.';
 
   @override
   String get bodyweight => 'Körpergewicht';
