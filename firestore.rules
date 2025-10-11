@@ -344,7 +344,8 @@ service cloud.firestore {
 
       match /friendChats/{friendUid} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid) &&
+        allow create, update: if isAuthed() &&
+          (request.auth.uid == uid || request.auth.uid == friendUid) &&
           request.resource.data.keys().hasOnly([
             'conversationId',
             'hasUnread',
@@ -368,7 +369,8 @@ service cloud.firestore {
           (!('updatedAt' in request.resource.data) ||
             request.resource.data.updatedAt is timestamp) &&
           (!('lastReadAt' in request.resource.data) ||
-            request.resource.data.lastReadAt is timestamp);
+            (request.auth.uid == uid &&
+              request.resource.data.lastReadAt is timestamp));
         allow delete: if isOwner(uid);
       }
 

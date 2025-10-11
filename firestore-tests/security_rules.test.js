@@ -705,6 +705,55 @@ describe('Security Rules v1', function () {
     });
   });
 
+  describe('friend chat summaries rules', () => {
+    it('allows chat participant to update friend summary for other user', async () => {
+      const db = p1().firestore();
+      const ref = db.collection('users').doc('user2').collection('friendChats').doc('user1');
+      await assertSucceeds(
+        ref.set({
+          conversationId: 'user1_user2',
+          hasUnread: true,
+          lastMessage: 'Hallo',
+          lastMessageAt: FieldValue.serverTimestamp(),
+          lastMessageSenderId: 'user1',
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+      );
+    });
+
+    it('prevents non-owner participant from setting lastReadAt', async () => {
+      const db = p1().firestore();
+      const ref = db.collection('users').doc('user2').collection('friendChats').doc('user1');
+      await assertFails(
+        ref.set({
+          conversationId: 'user1_user2',
+          hasUnread: true,
+          lastMessage: 'Hallo',
+          lastMessageAt: FieldValue.serverTimestamp(),
+          lastMessageSenderId: 'user1',
+          updatedAt: FieldValue.serverTimestamp(),
+          lastReadAt: FieldValue.serverTimestamp(),
+        })
+      );
+    });
+
+    it('allows owner to set lastReadAt on own summary', async () => {
+      const db = p2().firestore();
+      const ref = db.collection('users').doc('user2').collection('friendChats').doc('user1');
+      await assertSucceeds(
+        ref.set({
+          conversationId: 'user1_user2',
+          hasUnread: false,
+          lastMessage: 'Hallo',
+          lastMessageAt: FieldValue.serverTimestamp(),
+          lastMessageSenderId: 'user1',
+          updatedAt: FieldValue.serverTimestamp(),
+          lastReadAt: FieldValue.serverTimestamp(),
+        })
+      );
+    });
+  });
+
   describe('leaderboard rules', () => {
     it('member can create and update own leaderboard entry', async () => {
       const db = userA().firestore();
