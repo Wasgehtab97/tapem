@@ -192,11 +192,13 @@ service cloud.firestore {
           request.resource.data.updatedAt is timestamp);
       allow update: if isChatParticipant(conversationId) &&
         request.resource.data.keys().hasOnly([
+          'members',
           'lastMessage',
           'lastMessageAt',
           'lastMessageSenderId',
           'updatedAt'
         ]) &&
+        request.resource.data.members == resource.data.members &&
         request.resource.data.lastMessage is string &&
         request.resource.data.lastMessage.size() > 0 &&
         request.resource.data.lastMessageAt is timestamp &&

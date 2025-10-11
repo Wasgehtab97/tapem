@@ -63,6 +63,10 @@ describe('Security Rules v1', function () {
       await db.collection('users').doc('user2').collection('friends').doc('user1').set({});
       await db.collection('users').doc('user1').collection('friends').doc('user3').set({});
       await db.collection('users').doc('user3').collection('friends').doc('user1').set({});
+      await db
+        .collection('friendConversations')
+        .doc('user1_user2')
+        .set({ members: ['user1', 'user2'] });
       await db.collection('users').doc('user1').collection('publicCalendar').doc('2024-01').set({ month: '2024-01' });
       await db
         .collection('gyms')
@@ -803,6 +807,41 @@ describe('Security Rules v1', function () {
         .collection('leaderboard')
         .doc('userA');
       await assertFails(ref.update({ xp: 5 }));
+    });
+
+    it('allows chat participant to update conversation metadata', async () => {
+      const db = p1().firestore();
+      const ref = db.collection('friendConversations').doc('user1_user2');
+      await assertSucceeds(
+        ref.update({
+          lastMessage: 'hello',
+          lastMessageAt: FieldValue.serverTimestamp(),
+          lastMessageSenderId: 'user1',
+          updatedAt: FieldValue.serverTimestamp(),
+        }),
+      );
+    });
+
+    it('prevents chat participant from changing conversation members', async () => {
+      const db = p1().firestore();
+      const ref = db.collection('friendConversations').doc('user1_user2');
+      await assertFails(ref.update({ members: ['user1', 'user3'] }));
+    });
+
+    it('allows chat participant to create message document', async () => {
+      const db = p1().firestore();
+      const ref = db
+        .collection('friendConversations')
+        .doc('user1_user2')
+        .collection('messages')
+        .doc();
+      await assertSucceeds(
+        ref.set({
+          senderId: 'user1',
+          text: 'hello',
+          createdAt: FieldValue.serverTimestamp(),
+        }),
+      );
     });
 
     it('member can create leaderboard doc with day and session markers in one tx', async () => {
