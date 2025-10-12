@@ -183,7 +183,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) {
-        final loc = AppLocalizations.of(sheetContext)!;
         final locale = Localizations.localeOf(sheetContext).toString();
         final formatter = NumberFormat.decimalPattern(locale);
         final profile = PublicProfile(
@@ -209,26 +208,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               xpPerLevel: LevelService.xpPerLevel,
               maxLevel: LevelService.maxLevel,
               margin: EdgeInsets.zero,
-              footer: Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    _showInventorySheet(auth);
-                  },
-                  icon: const Icon(Icons.collections_bookmark_outlined, size: 18),
-                  label: Text(loc.inventory_section_title),
-                ),
-              ),
+              onAvatarTap: () {
+                Navigator.pop(sheetContext);
+                _showInventorySheet(auth);
+              },
             ),
           ),
         );
