@@ -39,11 +39,27 @@ class FriendChatApi {
     }
 
     try {
-      await conversationRef.set({'members': members}, SetOptions(merge: true));
       final messageRef = conversationRef.collection('messages').doc();
       final messageId = messageRef.id;
       await _firestore.runTransaction((txn) async {
+        final snapshot = await txn.get(conversationRef);
         final timestamp = FieldValue.serverTimestamp();
+
+        if (!snapshot.exists) {
+          txn.set(conversationRef, {
+            'members': members,
+            'updatedAt': timestamp,
+          });
+        } else {
+          final data = snapshot.data();
+          final existingMembers = data?['members'];
+          if (existingMembers is! List ||
+              !existingMembers.contains(meUid) ||
+              !existingMembers.contains(friendUid)) {
+            throw FriendChatApiException(FriendChatApiError.permissionDenied);
+          }
+        }
+
         txn.set(messageRef, {
           'senderId': meUid,
           'text': trimmed,
@@ -96,6 +112,8 @@ class FriendChatApi {
         debugPrint('[FriendChatApi] send firebase error code=${e.code} message=${e.message}');
       }
       throw FriendChatApiException.fromCode(e.code, e.message);
+    } on FriendChatApiException {
+      rethrow;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[FriendChatApi] send unexpected error: $e');
