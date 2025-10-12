@@ -15,6 +15,7 @@ class FriendListTile extends StatelessWidget {
     this.gymId,
     this.subtitle,
     this.trailing,
+    this.onAvatarTap,
   });
 
   final PublicProfile profile;
@@ -23,6 +24,7 @@ class FriendListTile extends StatelessWidget {
   final String? gymId;
   final String? subtitle;
   final Widget? trailing;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +75,13 @@ class FriendListTile extends StatelessWidget {
             ),
           ),
         ],
+      );
+    }
+    if (onAvatarTap != null) {
+      leading = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onAvatarTap,
+        child: leading,
       );
     }
     return ListTile(

@@ -20,6 +20,7 @@ class DailyXpCard extends StatelessWidget {
     this.footer,
     this.xpPerLevel = LevelService.xpPerLevel,
     this.maxLevel = LevelService.maxLevel,
+    this.onAvatarTap,
   });
 
   final PublicProfile profile;
@@ -33,6 +34,7 @@ class DailyXpCard extends StatelessWidget {
   final Widget? footer;
   final int xpPerLevel;
   final int maxLevel;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +111,7 @@ class DailyXpCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                onAvatarTap: onAvatarTap,
               ),
               const SizedBox(height: AppSpacing.sm),
               ClipRRect(
