@@ -577,9 +577,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     );
   }
 
-  Future<void> save({DateTime? endTime, String? sessionId}) async {
+  Future<String?> save({DateTime? endTime, String? sessionId}) async {
     if (!_isRunning || _uid == null || _gymId == null || _startEpochMs == null) {
-      return;
+      return null;
     }
     debugPrint(
       '⏱️ [WorkoutTimer] save requested trainingSessionId=$_trainingSessionId firstSession=$_firstSessionId lastSession=$_lastSessionId endTimeProvided=${endTime != null}',
@@ -673,6 +673,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     );
 
     await _clearLocal();
+    return resolvedSessionId;
   }
 
   Future<void> discard() async {

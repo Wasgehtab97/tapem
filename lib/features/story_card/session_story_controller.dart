@@ -166,6 +166,19 @@ class SessionStoryController extends ChangeNotifier {
     return _repository.loadStory(userId: userId, sessionId: sessionId);
   }
 
+  void requestStory(String sessionId) {
+    if (sessionId.isEmpty) {
+      return;
+    }
+    if (_pendingStory?.sessionId == sessionId) {
+      return;
+    }
+    if (_inFlightSessions.contains(sessionId)) {
+      return;
+    }
+    _prepareStory(sessionId);
+  }
+
   Future<SharedPreferences> _ensurePrefs() async {
     return _prefs ??= await SharedPreferences.getInstance();
   }
