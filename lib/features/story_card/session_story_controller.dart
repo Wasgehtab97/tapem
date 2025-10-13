@@ -81,6 +81,7 @@ class SessionStoryController extends ChangeNotifier {
         continue;
       }
       final sessionId = doc.id;
+      debugPrint('📸 [StoryController] snapshot detected sessionId=$sessionId');
       if (sessionId == _lastSeenSessionId) {
         continue;
       }
@@ -90,6 +91,7 @@ class SessionStoryController extends ChangeNotifier {
       if (_inFlightSessions.contains(sessionId)) {
         continue;
       }
+      debugPrint('📸 [StoryController] queue story load for sessionId=$sessionId');
       _prepareStory(sessionId);
     }
   }
@@ -98,6 +100,7 @@ class SessionStoryController extends ChangeNotifier {
     final userId = _userId;
     if (userId == null) return;
     _inFlightSessions.add(sessionId);
+    debugPrint('📸 [StoryController] prepare story sessionId=$sessionId');
     unawaited(_loadAndQueue(sessionId));
   }
 
@@ -106,6 +109,9 @@ class SessionStoryController extends ChangeNotifier {
       final userId = _userId;
       if (userId == null) return;
       for (var attempt = 0; attempt < 5; attempt++) {
+        debugPrint(
+          '📸 [StoryController] load attempt ${attempt + 1} for sessionId=$sessionId',
+        );
         final story = await _repository.loadStory(
           userId: userId,
           sessionId: sessionId,
@@ -114,12 +120,16 @@ class SessionStoryController extends ChangeNotifier {
         if (ready) {
           _pendingStory = story;
           notifyListeners();
+          debugPrint(
+            '📸 [StoryController] story ready sessionId=${story.sessionId} xp=${story.xpTotal} badges=${story.badges.length}',
+          );
           return;
         }
         await Future<void>.delayed(Duration(seconds: attempt < 2 ? 3 : 5));
       }
     } catch (error, stack) {
       debugPrint('SessionStoryController load error: $error\n$stack');
+      debugPrint('❌ [StoryController] failed to load sessionId=$sessionId');
     } finally {
       _inFlightSessions.remove(sessionId);
     }
@@ -134,6 +144,9 @@ class SessionStoryController extends ChangeNotifier {
     if (markSeen) {
       unawaited(setSeen(story.sessionId));
     }
+    debugPrint(
+      '📸 [StoryController] consume story sessionId=${story.sessionId} markSeen=$markSeen',
+    );
     return story;
   }
 

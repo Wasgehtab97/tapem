@@ -581,6 +581,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     if (!_isRunning || _uid == null || _gymId == null || _startEpochMs == null) {
       return;
     }
+    debugPrint(
+      '⏱️ [WorkoutTimer] save requested trainingSessionId=$_trainingSessionId firstSession=$_firstSessionId lastSession=$_lastSessionId endTimeProvided=${endTime != null}',
+    );
     final uid = _uid!;
     final gymId = _gymId!;
     final start = DateTime.fromMillisecondsSinceEpoch(_startEpochMs!);
@@ -663,6 +666,10 @@ class WorkoutSessionDurationService extends ChangeNotifier {
       activityReference: lastActivity,
       resolvedEnd: resolvedEndAt,
       manual: manualClosure,
+    );
+
+    debugPrint(
+      '⏱️ [WorkoutTimer] save finalized sessionId=$resolvedSessionId manual=$manualClosure durationMs=$durationMs hasSets=$hasSets storyTrainingId=$_trainingSessionId',
     );
 
     await _clearLocal();
