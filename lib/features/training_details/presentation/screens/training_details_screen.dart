@@ -9,6 +9,8 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
+import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/session_story/providers/session_story_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
@@ -21,25 +23,50 @@ class TrainingDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gymId = context.read<BrandingProvider>().gymId!;
+    final dayKey = logicDayKey(date);
     return ChangeNotifierProvider<TrainingDetailsProvider>(
-      create: (_) {
+      create: (context) {
         final prov = TrainingDetailsProvider();
         prov.loadSessions(userId: userId, date: date, gymId: gymId);
+        Future.microtask(() {
+          final storyProv = context.read<SessionStoryProvider>();
+          storyProv.ensureStory(
+            gymId: gymId,
+            userId: userId,
+            dayKey: dayKey,
+          );
+        });
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(
         builder: (ctx, prov, _) {
           // Loading state
           if (prov.isLoading) {
-            return const Scaffold(
-              appBar: _AppBar(titleDate: null),
+            final storyProv = ctx.watch<SessionStoryProvider>();
+            final story = storyProv.getCachedStory(gymId, userId, dayKey);
+            return Scaffold(
+              appBar: _AppBar(
+                titleDate: null,
+                storyAvailable: story != null,
+                onShowStory: story != null
+                    ? () => storyProv.presentStory(story)
+                    : null,
+              ),
               body: Center(child: CircularProgressIndicator()),
             );
           }
           // Error state
           if (prov.error != null) {
+            final storyProv = ctx.watch<SessionStoryProvider>();
+            final story = storyProv.getCachedStory(gymId, userId, dayKey);
             return Scaffold(
-              appBar: _AppBar(titleDate: date),
+              appBar: _AppBar(
+                titleDate: date,
+                storyAvailable: story != null,
+                onShowStory: story != null
+                    ? () => storyProv.presentStory(story)
+                    : null,
+              ),
               body: Center(child: Text('Fehler: ${prov.error}')),
             );
           }
@@ -47,8 +74,16 @@ class TrainingDetailsScreen extends StatelessWidget {
           final sessions = prov.sessions;
           final duration = prov.dayDurationMs;
           final loc = AppLocalizations.of(ctx)!;
+          final storyProv = ctx.watch<SessionStoryProvider>();
+          final story = storyProv.getCachedStory(gymId, userId, dayKey);
           return Scaffold(
-            appBar: _AppBar(titleDate: date, durationMs: duration),
+            appBar: _AppBar(
+              titleDate: date,
+              durationMs: duration,
+              storyAvailable: story != null,
+              onShowStory:
+                  story != null ? () => storyProv.presentStory(story) : null,
+            ),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
                 : Scrollbar(
@@ -122,10 +157,18 @@ class TrainingDetailsScreen extends StatelessWidget {
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
   final int? durationMs;
-  const _AppBar({this.titleDate, this.durationMs});
+  final bool storyAvailable;
+  final VoidCallback? onShowStory;
+  const _AppBar({
+    this.titleDate,
+    this.durationMs,
+    this.storyAvailable = false,
+    this.onShowStory,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final title =
         titleDate != null
             ? DateFormat.yMMMMd(
@@ -157,7 +200,16 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       );
     }
-    return AppBar(title: titleWidget);
+    return AppBar(
+      title: titleWidget,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.auto_awesome),
+          tooltip: loc.sessionStoryOpenTooltip,
+          onPressed: storyAvailable ? onShowStory : null,
+        ),
+      ],
+    );
   }
 
   @override

@@ -1390,6 +1390,87 @@ class AppLocalizationsEn extends AppLocalizations {
   String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
 
   @override
+  String get sessionStoryTitle => 'Session Story';
+
+  @override
+  String sessionStorySubtitle(String date) => 'Highlights for $date';
+
+  @override
+  String get sessionStoryShareSubject => 'Tap’em training story';
+
+  @override
+  String get sessionStoryShareButton => 'Share';
+
+  @override
+  String sessionStoryDuration(String duration) => 'Total time: $duration';
+
+  @override
+  String get sessionStoryCloseButton => 'Close';
+
+  @override
+  String get sessionStoryHighlightsTitle => 'Highlights';
+
+  @override
+  String get sessionStoryHighlightsEmpty => 'No new highlights today – keep going!';
+
+  @override
+  String get sessionStoryXpTitle => 'Earned XP';
+
+  @override
+  String sessionStoryXpDailyLabel(int xp) => 'Daily total: $xp XP';
+
+  @override
+  String get sessionStoryXpDevicesTitle => 'Devices';
+
+  @override
+  String get sessionStoryXpMusclesTitle => 'Muscles';
+
+  @override
+  String sessionStoryHighlightFirstDeviceTitle(String device) => 'First time on $device';
+
+  @override
+  String get sessionStoryHighlightFirstDeviceSubtitle => 'New device unlocked';
+
+  @override
+  String sessionStoryHighlightFirstExerciseTitle(String exercise) => 'New exercise: $exercise';
+
+  @override
+  String sessionStoryHighlightE1rmTitle(String value) => 'E1RM PR: $value kg';
+
+  @override
+  String sessionStoryHighlightVolumeTitle(String value) => 'Volume PR: $value kg';
+
+  @override
+  String get sessionStoryOpenTooltip => 'Show session story';
+
+  @override
+  String sessionStoryShareTitle(String date) => 'My training on $date';
+
+  @override
+  String sessionStoryShareHighlightFirstDevice(String device) => 'First time on $device';
+
+  @override
+  String sessionStoryShareHighlightFirstExercise(String exercise) => 'New exercise $exercise';
+
+  @override
+  String sessionStoryShareHighlightE1rm(String value, String device) => 'E1RM $value kg on $device';
+
+  @override
+  String sessionStoryShareHighlightVolume(String value, String device) => 'Volume $value kg on $device';
+
+  @override
+  String sessionStoryShareHighlights(String highlights) => 'Highlights: $highlights';
+
+  @override
+  String sessionStoryShareDailyXp(int xp) => 'XP total: $xp';
+
+  @override
+  String sessionStoryShareDeviceXp(String devices) => 'Devices: $devices';
+
+  @override
+  String sessionStoryShareMuscleXp(String muscles) => 'Muscles: $muscles';
+
+  @override
   String get adminDeviceNfcWritten => 'NFC tag written';
 
   @override

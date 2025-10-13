@@ -11,9 +11,11 @@ void main() {
       deviceId: 'd1',
       deviceName: 'Device',
       deviceDescription: '',
+      canonicalDeviceName: 'Device',
       timestamp: DateTime.now(),
       note: '',
       sets: [SessionSet(weight: 10, reps: 5, setNumber: 1)],
+      isMultiDevice: false,
     );
 
     await tester.pumpWidget(MaterialApp(

@@ -92,6 +92,9 @@ import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
 
+import 'features/session_story/providers/session_story_provider.dart';
+import 'features/session_story/presentation/widgets/session_story_popup_listener.dart';
+
 import 'features/report/data/repositories/report_repository_impl.dart';
 import 'features/report/domain/usecases/get_device_usage_stats.dart';
 import 'features/report/domain/usecases/get_all_log_timestamps.dart';
@@ -427,6 +430,22 @@ Future<void> main() async {
             return svc;
           },
         ),
+        ChangeNotifierProxyProvider3<
+            AuthProvider,
+            BrandingProvider,
+            WorkoutSessionDurationService,
+            SessionStoryProvider>(
+          create: (_) => SessionStoryProvider(),
+          update: (_, auth, branding, duration, provider) {
+            final prov = provider ?? SessionStoryProvider();
+            prov.updateContext(
+              timerService: duration,
+              userId: auth.userId,
+              gymId: branding.gymId,
+            );
+            return prov;
+          },
+        ),
         ChangeNotifierProxyProvider4<
             MembershipService,
             XpProvider,
@@ -554,6 +573,7 @@ class MyApp extends StatelessWidget {
           app = GlobalNfcListener(child: app);
         }
         app = DynamicLinkListener(child: app);
+        app = SessionStoryPopupListener(child: app);
         return OverlayNumericKeypadHost(
           controller: keypad,
           outsideTapMode: OutsideTapMode.closeAfterTap,

@@ -4,9 +4,13 @@ class Session {
   final String deviceId;
   final String deviceName;
   final String deviceDescription; // neu!
+  final String canonicalDeviceName;
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
+  final String? exerciseId;
+  final String? exerciseName;
+  final bool isMultiDevice;
 
   /// Timestamp of when the session started, if known.
   final DateTime? startTime;
@@ -22,9 +26,13 @@ class Session {
     required this.deviceId,
     required this.deviceName,
     required this.deviceDescription, // neu!
+    required this.canonicalDeviceName,
     required this.timestamp,
     required this.note,
     required this.sets,
+    this.exerciseId,
+    this.exerciseName,
+    this.isMultiDevice = false,
     this.startTime,
     this.endTime,
     this.durationMs,
