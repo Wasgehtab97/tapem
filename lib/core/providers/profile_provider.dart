@@ -53,18 +53,34 @@ class ProfileProvider extends ChangeNotifier {
       return Future<void>.value();
     }
 
+    return refreshTrainingDates(
+      userId: userId,
+      createdAt: authProv.createdAt,
+      silent: false,
+    );
+  }
+
+  Future<void> refreshTrainingDates({
+    required String userId,
+    DateTime? createdAt,
+    bool silent = true,
+  }) {
     if (_inFlightTrainingLoad != null &&
         _pendingTrainingUserId == userId) {
       return _inFlightTrainingLoad!;
     }
 
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+    } else {
+      _error = null;
+    }
 
     final future = _fetchTrainingDates(
       userId: userId,
-      createdAt: authProv.createdAt,
+      createdAt: createdAt,
     );
     _pendingTrainingUserId = userId;
     _inFlightTrainingLoad = future.whenComplete(() {

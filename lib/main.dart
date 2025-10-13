@@ -416,6 +416,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => XpProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProxyProvider2<
             AuthProvider,
             BrandingProvider,
@@ -430,18 +431,21 @@ Future<void> main() async {
             return svc;
           },
         ),
-        ChangeNotifierProxyProvider3<
+        ChangeNotifierProxyProvider4<
             AuthProvider,
             BrandingProvider,
             WorkoutSessionDurationService,
+            ProfileProvider,
             SessionStoryProvider>(
           create: (_) => SessionStoryProvider(),
-          update: (_, auth, branding, duration, provider) {
+          update: (_, auth, branding, duration, profile, provider) {
             final prov = provider ?? SessionStoryProvider();
             prov.updateContext(
               timerService: duration,
               userId: auth.userId,
               gymId: branding.gymId,
+              profileProvider: profile,
+              userCreatedAt: auth.createdAt,
             );
             return prov;
           },
@@ -474,7 +478,6 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProxyProvider2<AuthProvider, GymProvider,
             PowerliftingProvider>(
           create: (c) => PowerliftingProvider(
