@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -24,17 +25,28 @@ class SessionStoryShareResult {
 }
 
 class SessionStoryShareService {
+  static const int _maxImageBytes = 6 * 1024 * 1024; // 6 MiB safety cap
+
   Future<Uint8List> captureImage(GlobalKey repaintKey) async {
     final boundary = repaintKey.currentContext?.findRenderObject() as ui.RenderRepaintBoundary?;
     if (boundary == null) {
       throw StateError('No render boundary found for story card');
     }
-    final image = await boundary.toImage(pixelRatio: 3.0);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    if (byteData == null) {
-      throw StateError('Unable to encode story card image');
+    if (boundary.debugNeedsPaint) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
     }
-    return byteData.buffer.asUint8List();
+
+    var pixelRatio = _resolvePixelRatio(boundary);
+    var bytes = await _renderBoundary(boundary, pixelRatio);
+    if (bytes.lengthInBytes > _maxImageBytes) {
+      pixelRatio = math.max(1.5, pixelRatio * 0.75);
+      bytes = await _renderBoundary(boundary, pixelRatio);
+    }
+    if (bytes.lengthInBytes > _maxImageBytes) {
+      pixelRatio = math.max(1.25, pixelRatio * 0.7);
+      bytes = await _renderBoundary(boundary, pixelRatio);
+    }
+    return bytes;
   }
 
   Future<String> saveImage({
@@ -69,52 +81,117 @@ class SessionStoryShareService {
   Future<String> _persistImage({
     required Uint8List bytes,
     required SessionStoryData data,
+    List<Directory>? overrideDirectories,
   }) async {
-    final directory = await _resolveStoryDirectory();
+    final candidates = overrideDirectories ?? await _resolveStoryDirectories();
     final fileName = _buildFileName(data);
-    final file = File(p.join(directory.path, fileName));
-    await file.create(recursive: true);
-    await file.writeAsBytes(bytes, flush: true);
-    return file.path;
+    final errors = <Object>[];
+    for (final directory in candidates) {
+      try {
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final file = File(p.join(directory.path, fileName));
+        await file.writeAsBytes(bytes, flush: true);
+        return file.path;
+      } catch (error, stack) {
+        debugPrint('SessionStoryShareService._persistImage error: $error\n$stack');
+        errors.add(error);
+      }
+    }
+    final message = errors.isNotEmpty ? errors.last.toString() : 'unknown';
+    throw FileSystemException('Unable to persist story image', message);
   }
 
-  Future<Directory> _resolveStoryDirectory() async {
+  Future<List<Directory>> _resolveStoryDirectories() async {
     if (kIsWeb) {
-      return Directory.systemTemp.createTemp('tapem-story');
+      final temp = await Directory.systemTemp.createTemp('tapem-story');
+      return [temp];
     }
-    if (Platform.isAndroid) {
-      final directories = await getExternalStorageDirectories(type: StorageDirectory.pictures);
-      final base = directories?.isNotEmpty == true
-          ? directories!.first
-          : await getExternalStorageDirectory();
-      if (base == null) {
-        return await getTemporaryDirectory();
-      }
-      final dir = Directory(p.join(base.path, 'Tapem', 'Stories'));
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-      return dir;
+
+    final directories = <Directory>[];
+    final preferred = await _resolvePreferredDirectory();
+    if (preferred != null) {
+      directories.add(preferred);
     }
-    if (Platform.isIOS) {
-      final docs = await getApplicationDocumentsDirectory();
-      final dir = Directory(p.join(docs.path, 'Tapem', 'Stories'));
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-      return dir;
-    }
+
     final temp = await getTemporaryDirectory();
-    final dir = Directory(p.join(temp.path, 'Tapem', 'Stories'));
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
+    if (!directories.any((dir) => dir.path == temp.path)) {
+      directories.add(temp);
     }
-    return dir;
+    return directories;
+  }
+
+  Future<Directory?> _resolvePreferredDirectory() async {
+    try {
+      if (Platform.isAndroid) {
+        final directories = await getExternalStorageDirectories(type: StorageDirectory.pictures);
+        final base = directories?.isNotEmpty == true ? directories!.first : await getExternalStorageDirectory();
+        if (base == null) {
+          return null;
+        }
+        return Directory(p.join(base.path, 'Tapem', 'Stories'));
+      }
+      if (Platform.isIOS) {
+        final docs = await getApplicationDocumentsDirectory();
+        return Directory(p.join(docs.path, 'Tapem', 'Stories'));
+      }
+      final temp = await getTemporaryDirectory();
+      return Directory(p.join(temp.path, 'Tapem', 'Stories'));
+    } catch (error, stack) {
+      debugPrint('SessionStoryShareService._resolvePreferredDirectory error: $error\n$stack');
+      return null;
+    }
+  }
+
+  Future<Uint8List> _renderBoundary(ui.RenderRepaintBoundary boundary, double pixelRatio) async {
+    final image = await boundary.toImage(pixelRatio: pixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      throw StateError('Unable to encode story card image');
+    }
+    return byteData.buffer.asUint8List();
+  }
+
+  double _resolvePixelRatio(ui.RenderRepaintBoundary boundary, {double targetMegaPixels = 5}) {
+    return _resolvePixelRatioForSize(boundary.size, targetMegaPixels: targetMegaPixels);
+  }
+
+  @visibleForTesting
+  double debugResolvePixelRatioForSize(ui.Size size, {double targetMegaPixels = 5}) {
+    return _resolvePixelRatioForSize(size, targetMegaPixels: targetMegaPixels);
+  }
+
+  double _resolvePixelRatioForSize(ui.Size size, {double targetMegaPixels = 5}) {
+    const double defaultRatio = 3.0;
+    if (size.isEmpty) {
+      return defaultRatio;
+    }
+    final pixelCount = size.width * size.height;
+    if (pixelCount <= 0) {
+      return defaultRatio;
+    }
+    final maxPixels = targetMegaPixels * 1000000;
+    final estimated = pixelCount * defaultRatio * defaultRatio;
+    if (estimated <= maxPixels) {
+      return defaultRatio;
+    }
+    final ratio = math.sqrt(maxPixels / pixelCount);
+    return ratio.clamp(1.5, defaultRatio);
   }
 
   String _buildFileName(SessionStoryData data) {
     final dateKey = DateFormat('yyyyMMdd').format(data.occurredAt.toLocal());
     return '${dateKey}_${data.sessionId}.png';
+  }
+
+  @visibleForTesting
+  Future<String> debugPersistImage({
+    required Uint8List bytes,
+    required SessionStoryData data,
+    required List<Directory> directories,
+  }) {
+    return _persistImage(bytes: bytes, data: data, overrideDirectories: directories);
   }
 
   String? _resolveShareTarget(ShareResult result) {

@@ -2405,6 +2405,78 @@ abstract class AppLocalizations {
   /// No description provided for @storycardHeaderTooltip.
   String get storycardHeaderTooltip;
 
+  /// No description provided for @storiesTitle.
+  String get storiesTitle;
+
+  /// No description provided for @storiesFilterPrType.
+  String get storiesFilterPrType;
+
+  /// No description provided for @storiesFilterRange.
+  String get storiesFilterRange;
+
+  /// No description provided for @storiesFilterGym.
+  String get storiesFilterGym;
+
+  /// No description provided for @storiesFilterPrAll.
+  String get storiesFilterPrAll;
+
+  /// No description provided for @storiesFilterPrOnly.
+  String get storiesFilterPrOnly;
+
+  /// No description provided for @storiesFilterPrFirsts.
+  String get storiesFilterPrFirsts;
+
+  /// No description provided for @storiesFilterPrStrength.
+  String get storiesFilterPrStrength;
+
+  /// No description provided for @storiesFilterPrVolume.
+  String get storiesFilterPrVolume;
+
+  /// No description provided for @storiesFilterRange30.
+  String get storiesFilterRange30;
+
+  /// No description provided for @storiesFilterRange90.
+  String get storiesFilterRange90;
+
+  /// No description provided for @storiesFilterRangeYear.
+  String get storiesFilterRangeYear;
+
+  /// No description provided for @storiesFilterRangeAll.
+  String get storiesFilterRangeAll;
+
+  /// No description provided for @storiesFilterGymAll.
+  String get storiesFilterGymAll;
+
+  /// No description provided for @storiesEmptyState.
+  String get storiesEmptyState;
+
+  /// No description provided for @storiesErrorState.
+  String get storiesErrorState;
+
+  /// No description provided for @storiesKpiShareRate.
+  String get storiesKpiShareRate;
+
+  /// No description provided for @storiesKpiPrRate.
+  String get storiesKpiPrRate;
+
+  /// No description provided for @storiesKpiAverageXp.
+  String get storiesKpiAverageXp;
+
+  /// No description provided for @storiesListPrCount.
+  String storiesListPrCount(Object count);
+
+  /// No description provided for @storiesListNoPrs.
+  String get storiesListNoPrs;
+
+  /// No description provided for @storiesListXp.
+  String storiesListXp(Object xp);
+
+  /// No description provided for @profileStoriesButtonTitle.
+  String get profileStoriesButtonTitle;
+
+  /// No description provided for @profileStoriesButtonSubtitle.
+  String get profileStoriesButtonSubtitle;
+
   /// No description provided for @sessionStopTitle.
   String get sessionStopTitle;
 

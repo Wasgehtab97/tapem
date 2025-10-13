@@ -137,6 +137,21 @@ describe('personal record detectors', () => {
     expect(sessionSnap.data().summary.prTypes).toEqual(['e1rm', 'first_device', 'first_exercise', 'volume']);
     expect(sessionSnap.data().summary.xpTotal).toBeCloseTo(result.xp.totalXp, 2);
 
+    const storyDoc = await db.collection('users').doc(userId).collection('stories').doc(sessionId).get();
+    expect(storyDoc.exists).toBe(true);
+    const storyData = storyDoc.data();
+    expect(storyData.sessionId).toBe(sessionId);
+    expect(storyData.prCount).toBe(4);
+    expect(Array.isArray(storyData.previewColors)).toBe(true);
+    expect(storyData.previewColors.length).toBeGreaterThanOrEqual(2);
+    expect(storyData.xpTotal).toBeCloseTo(result.xp.totalXp, 2);
+
+    const metricsDoc = await db.collection('users').doc(userId).collection('storyMetrics').doc('summary').get();
+    expect(metricsDoc.exists).toBe(true);
+    const metricsData = metricsDoc.data();
+    expect(metricsData.sessionCount).toBeGreaterThanOrEqual(1);
+    expect(metricsData.totalXp).toBeCloseTo(result.xp.totalXp, 2);
+
     const expectedBase = xpEngine.computeSetXp({ weight: 100, reps: 5, rir: null, isBodyweight: false });
     const expectedBonus = 10 + 5 + 3 + 3;
     const dayRef = xpEngine._test.getDayRef({ db, userId, dayKey: '20240101' });
@@ -153,5 +168,20 @@ describe('personal record detectors', () => {
     expect(rerun.created).toBe(0);
     expect(rerun.total).toBe(4);
     expect(rerun.xp.awarded).toBe(false);
+  });
+
+  test('withBackoff retries retryable errors', async () => {
+    let calls = 0;
+    const result = await prs._test.withBackoff(() => {
+      calls += 1;
+      if (calls < 3) {
+        const error = new Error('transient');
+        error.code = 'unavailable';
+        throw error;
+      }
+      return 'ok';
+    }, { maxAttempts: 3, initialDelayMs: 1, maxDelayMs: 2 });
+    expect(result).toBe('ok');
+    expect(calls).toBe(3);
   });
 });

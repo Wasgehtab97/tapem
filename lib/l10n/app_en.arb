@@ -1342,4 +1342,52 @@
   ,"@storycardMuscleXpValue": {"description": "XP suffix shown on muscle chips","placeholders": {"xp": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip for the header story button"}
+  ,"storiesTitle": "Stories"
+  ,"@storiesTitle": {"description": "Title of the story timeline screen"}
+  ,"storiesFilterPrType": "PR type"
+  ,"@storiesFilterPrType": {"description": "Label for the PR type filter"}
+  ,"storiesFilterRange": "Timeframe"
+  ,"@storiesFilterRange": {"description": "Label for the timeframe filter"}
+  ,"storiesFilterGym": "Gym"
+  ,"@storiesFilterGym": {"description": "Label for the gym filter"}
+  ,"storiesFilterPrAll": "All sessions"
+  ,"@storiesFilterPrAll": {"description": "Option label for showing all stories"}
+  ,"storiesFilterPrOnly": "With PRs"
+  ,"@storiesFilterPrOnly": {"description": "Option label for stories that contain PRs"}
+  ,"storiesFilterPrFirsts": "First times"
+  ,"@storiesFilterPrFirsts": {"description": "Option label for stories with first device/exercise PRs"}
+  ,"storiesFilterPrStrength": "1RM records"
+  ,"@storiesFilterPrStrength": {"description": "Option label for e1RM PRs"}
+  ,"storiesFilterPrVolume": "Volume records"
+  ,"@storiesFilterPrVolume": {"description": "Option label for volume PRs"}
+  ,"storiesFilterRange30": "Last 30 days"
+  ,"@storiesFilterRange30": {"description": "Time range option for last 30 days"}
+  ,"storiesFilterRange90": "Last 90 days"
+  ,"@storiesFilterRange90": {"description": "Time range option for last 90 days"}
+  ,"storiesFilterRangeYear": "This year"
+  ,"@storiesFilterRangeYear": {"description": "Time range option for the current year"}
+  ,"storiesFilterRangeAll": "All time"
+  ,"@storiesFilterRangeAll": {"description": "Time range option for all time"}
+  ,"storiesFilterGymAll": "All gyms"
+  ,"@storiesFilterGymAll": {"description": "Option label for all gyms"}
+  ,"storiesEmptyState": "No stories yet – finish a session to unlock your timeline."
+  ,"@storiesEmptyState": {"description": "Empty state message when no stories exist"}
+  ,"storiesErrorState": "Stories could not be loaded."
+  ,"@storiesErrorState": {"description": "Error state message when stories fail to load"}
+  ,"storiesKpiShareRate": "Share rate"
+  ,"@storiesKpiShareRate": {"description": "Label for the share rate KPI"}
+  ,"storiesKpiPrRate": "PR sessions"
+  ,"@storiesKpiPrRate": {"description": "Label for the PR sessions per 100 KPI"}
+  ,"storiesKpiAverageXp": "Average XP"
+  ,"@storiesKpiAverageXp": {"description": "Label for the average XP per session KPI"}
+  ,"storiesListPrCount": "{count} PRs"
+  ,"@storiesListPrCount": {"description": "Label for the number of PRs in a story list item","placeholders": {"count": {"type": "int"}}}
+  ,"storiesListNoPrs": "No PRs"
+  ,"@storiesListNoPrs": {"description": "Label when a story has no PRs"}
+  ,"storiesListXp": "{xp} XP"
+  ,"@storiesListXp": {"description": "Label for XP in the story timeline list","placeholders": {"xp": {}}}
+  ,"profileStoriesButtonTitle": "Stories"
+  ,"@profileStoriesButtonTitle": {"description": "Title of the profile card linking to the story timeline"}
+  ,"profileStoriesButtonSubtitle": "Timeline of your session highlights"
+  ,"@profileStoriesButtonSubtitle": {"description": "Subtitle for the profile card linking to the story timeline"}
 }

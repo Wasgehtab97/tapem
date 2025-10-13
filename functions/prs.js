@@ -4,6 +4,55 @@ const crypto = require('crypto');
 
 const xpEngine = require('./xp_engine');
 
+const gymNameCache = new Map();
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableError(error) {
+  if (!error) {
+    return false;
+  }
+  const code = error.code || error.status || error.message || '';
+  const normalized = typeof code === 'string' ? code.toLowerCase() : '';
+  return (
+    normalized.includes('aborted') ||
+    normalized.includes('deadline') ||
+    normalized.includes('unavailable') ||
+    normalized.includes('resource_exhausted') ||
+    normalized.includes('cancelled')
+  );
+}
+
+async function withBackoff(fn, options = {}) {
+  const { maxAttempts = 4, initialDelayMs = 500, maxDelayMs = 5000 } = options;
+  let attempt = 0;
+  let lastError;
+  while (attempt < maxAttempts) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      attempt += 1;
+      const shouldRetry = isRetryableError(error) && attempt < maxAttempts;
+      functions.logger.warn('pr_pipeline_retry', {
+        attempt,
+        maxAttempts,
+        retry: shouldRetry,
+        code: error?.code,
+        message: error?.message,
+      });
+      if (!shouldRetry) {
+        throw error;
+      }
+      const delay = Math.min(initialDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
+      await sleep(delay);
+    }
+  }
+  throw lastError;
+}
+
 function computeEpleyOneRepMax(weight, reps) {
   if (!Number.isFinite(weight) || weight <= 0) {
     return null;
@@ -174,6 +223,133 @@ function buildBaseEvent({ sessionId, occurredAt, type }) {
     type,
     confidence: 1,
   };
+}
+
+function pickPreviewColors({ xpTotal, prCount }) {
+  const basePalettes = [
+    { threshold: 900, colors: ['#0f2027', '#2c5364'] },
+    { threshold: 600, colors: ['#654ea3', '#eaafc8'] },
+    { threshold: 300, colors: ['#43cea2', '#185a9d'] },
+    { threshold: 0, colors: ['#36d1dc', '#5b86e5'] },
+  ];
+  const prPalettes = [
+    { threshold: 900, colors: ['#fc466b', '#3f5efb'] },
+    { threshold: 600, colors: ['#f83600', '#f9d423'] },
+    { threshold: 300, colors: ['#ff758c', '#ff7eb3'] },
+    { threshold: 0, colors: ['#fddb92', '#d1fdff'] },
+  ];
+  const source = prCount > 0 ? prPalettes : basePalettes;
+  let selected = source[source.length - 1].colors;
+  for (const palette of source) {
+    if (xpTotal >= palette.threshold) {
+      selected = palette.colors;
+      break;
+    }
+  }
+  return selected;
+}
+
+async function resolveGymName(db, gymId) {
+  if (!gymId) {
+    return null;
+  }
+  if (gymNameCache.has(gymId)) {
+    return gymNameCache.get(gymId);
+  }
+  try {
+    const doc = await db.collection('gyms').doc(gymId).get();
+    if (doc.exists) {
+      const name = doc.data()?.name;
+      if (typeof name === 'string' && name.trim() !== '') {
+        const trimmed = name.trim();
+        gymNameCache.set(gymId, trimmed);
+        return trimmed;
+      }
+    }
+  } catch (error) {
+    functions.logger.warn('pr_pipeline:gym_name_lookup_failed', { gymId, error: error?.message });
+  }
+  gymNameCache.set(gymId, null);
+  return null;
+}
+
+function buildStoryTitle({ occurredAt, gymName, gymId }) {
+  const date = occurredAt.toDate();
+  const iso = date.toISOString().slice(0, 10);
+  const gymLabel = gymName || gymId || 'Session';
+  return `${iso} • ${gymLabel}`;
+}
+
+async function upsertStoryDocument({
+  db,
+  userRef,
+  sessionId,
+  sessionData,
+  occurredAt,
+  prTypes,
+  prCount,
+  xpResult,
+}) {
+  const userId = userRef.id;
+  const gymId = typeof sessionData?.gymId === 'string' ? sessionData.gymId : null;
+  const summary = sessionData?.summary || {};
+  const xpTotal = Number.isFinite(xpResult?.totalXp) ? xpResult.totalXp : Number(summary.xpTotal) || 0;
+  const xpBase = Number.isFinite(xpResult?.baseXp) ? xpResult.baseXp : 0;
+  const xpBonus = Number.isFinite(xpResult?.bonusXp) ? xpResult.bonusXp : 0;
+  const setCount = Number.isFinite(summary.setCount) ? summary.setCount : 0;
+  const exerciseCount = Number.isFinite(summary.exerciseCount) ? summary.exerciseCount : 0;
+  const totalVolume = Number.isFinite(summary.totalVolume) ? summary.totalVolume : 0;
+  const durationMin = Number.isFinite(summary.durationMin) ? summary.durationMin : 0;
+
+  const gymName = await resolveGymName(db, gymId);
+  const storyDoc = {
+    userId,
+    sessionId,
+    gymId,
+    gymName: gymName || null,
+    createdAt: occurredAt,
+    occurredAt,
+    title: buildStoryTitle({ occurredAt, gymName, gymId }),
+    prTypes: Array.from(prTypes),
+    prCount,
+    xpTotal,
+    xpBase,
+    xpBonus,
+    previewColors: pickPreviewColors({ xpTotal, prCount }),
+    thumbnailUrl: null,
+    summary: {
+      setCount,
+      exerciseCount,
+      totalVolume,
+      durationMin,
+    },
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  const storyRef = userRef.collection('stories').doc(sessionId);
+  await storyRef.set(storyDoc, { merge: true });
+
+  const metricsRef = userRef.collection('storyMetrics').doc('summary');
+  await metricsRef.set(
+    {
+      sessionCount: admin.firestore.FieldValue.increment(1),
+      prSessionCount: admin.firestore.FieldValue.increment(prCount > 0 ? 1 : 0),
+      prEventCount: admin.firestore.FieldValue.increment(prCount),
+      totalXp: admin.firestore.FieldValue.increment(xpTotal),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  functions.logger.info('analytics_event', {
+    event: 'story_derivative_upserted',
+    userId,
+    sessionId,
+    prCount,
+    xpTotal,
+    xpBase,
+    xpBonus,
+  });
 }
 
 async function handleSessionClosed(message) {
@@ -400,6 +576,28 @@ async function handleSessionClosed(message) {
     prEvents: sessionEventsSnap.docs.map((doc) => doc.data() || {}),
   });
 
+  await upsertStoryDocument({
+    db,
+    userRef,
+    sessionId,
+    sessionData,
+    occurredAt,
+    prTypes,
+    prCount: sessionEventsSnap.size,
+    xpResult,
+  });
+
+  functions.logger.info('analytics_event', {
+    event: 'session_closed',
+    userId,
+    sessionId,
+    prCount: sessionEventsSnap.size,
+    prTypes: Array.from(prTypes),
+    xpTotal: xpResult.totalXp,
+    xpBase: xpResult.baseXp,
+    xpBonus: xpResult.bonusXp,
+  });
+
   return {
     created: createdEvents.length,
     total: sessionEventsSnap.size,
@@ -412,7 +610,7 @@ const onSessionClosed = functions.pubsub
   .onPublish(async (message) => {
     const payload = message?.json || {};
     try {
-      return await handleSessionClosed(payload);
+      return await withBackoff(() => handleSessionClosed(payload));
     } catch (err) {
       functions.logger.error('pr_pipeline_error', err, {
         userId: payload?.userId,
@@ -430,5 +628,10 @@ module.exports = {
     collectSessionMetrics,
     deterministicPrId,
     handleSessionClosed,
+    pickPreviewColors,
+    buildStoryTitle,
+    resolveGymName,
+    withBackoff,
+    isRetryableError,
   },
 };

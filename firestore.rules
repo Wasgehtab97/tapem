@@ -120,6 +120,27 @@ service cloud.firestore {
         (!('summary' in data) || sessionSummaryValid(data.summary));
     }
 
+    function storyMetricsValid(data) {
+      return data.keys().hasOnly([
+          'sessionCount',
+          'prSessionCount',
+          'prEventCount',
+          'shareCount',
+          'storyShownCount',
+          'timelineOpenCount',
+          'totalXp',
+          'updatedAt'
+        ]) &&
+        (!('sessionCount' in data) || data.sessionCount is number) &&
+        (!('prSessionCount' in data) || data.prSessionCount is number) &&
+        (!('prEventCount' in data) || data.prEventCount is number) &&
+        (!('shareCount' in data) || data.shareCount is number) &&
+        (!('storyShownCount' in data) || data.storyShownCount is number) &&
+        (!('timelineOpenCount' in data) || data.timelineOpenCount is number) &&
+        (!('totalXp' in data) || data.totalXp is number) &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
     function prEventValid(data) {
       return data.keys().hasOnly([
           'sessionId',
@@ -419,6 +440,18 @@ service cloud.firestore {
         allow create: if isOwner(uid) && prEventValid(request.resource.data);
         allow update: if isOwner(uid) && prEventValid(request.resource.data);
         allow delete: if isOwner(uid);
+      }
+
+      match /stories/{storyId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /storyMetrics/{docId} {
+        allow read: if isOwner(uid);
+        allow create: if false;
+        allow update: if isOwner(uid) && docId == 'summary' && storyMetricsValid(request.resource.data);
+        allow delete: if false;
       }
 
       match /friendChats/{friendUid} {

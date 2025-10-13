@@ -1496,4 +1496,80 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get storycardHeaderTooltip => 'Story';
+
+  @override
+  String get storiesTitle => 'Stories';
+
+  @override
+  String get storiesFilterPrType => 'PR-Typ';
+
+  @override
+  String get storiesFilterRange => 'Zeitraum';
+
+  @override
+  String get storiesFilterGym => 'Studio';
+
+  @override
+  String get storiesFilterPrAll => 'Alle Sessions';
+
+  @override
+  String get storiesFilterPrOnly => 'Mit PRs';
+
+  @override
+  String get storiesFilterPrFirsts => 'Erste Male';
+
+  @override
+  String get storiesFilterPrStrength => '1RM-Rekorde';
+
+  @override
+  String get storiesFilterPrVolume => 'Volumen-Rekorde';
+
+  @override
+  String get storiesFilterRange30 => 'Letzte 30 Tage';
+
+  @override
+  String get storiesFilterRange90 => 'Letzte 90 Tage';
+
+  @override
+  String get storiesFilterRangeYear => 'Dieses Jahr';
+
+  @override
+  String get storiesFilterRangeAll => 'Gesamter Zeitraum';
+
+  @override
+  String get storiesFilterGymAll => 'Alle Studios';
+
+  @override
+  String get storiesEmptyState => 'Noch keine Stories – schließe eine Session ab, um Highlights zu sehen.';
+
+  @override
+  String get storiesErrorState => 'Stories konnten nicht geladen werden.';
+
+  @override
+  String get storiesKpiShareRate => 'Share-Rate';
+
+  @override
+  String get storiesKpiPrRate => 'PR-Sessions';
+
+  @override
+  String get storiesKpiAverageXp => 'Ø XP';
+
+  @override
+  String storiesListPrCount(Object count) {
+    return '$count PRs';
+  }
+
+  @override
+  String get storiesListNoPrs => 'Keine PRs';
+
+  @override
+  String storiesListXp(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get profileStoriesButtonTitle => 'Stories';
+
+  @override
+  String get profileStoriesButtonSubtitle => 'Timeline deiner Session-Highlights';
 }
