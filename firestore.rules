@@ -90,11 +90,16 @@ service cloud.firestore {
     }
 
     function sessionSummaryValid(summary) {
-      return summary.keys().hasOnly(['setCount', 'exerciseCount', 'totalVolume', 'durationMin']) &&
+      return summary.keys().hasOnly(['setCount', 'exerciseCount', 'totalVolume', 'durationMin', 'prCount', 'prTypes']) &&
         summary.setCount is int &&
         summary.exerciseCount is int &&
         summary.totalVolume is number &&
-        summary.durationMin is number;
+        summary.durationMin is number &&
+        (!('prCount' in summary) || summary.prCount is int) &&
+        (!('prTypes' in summary) || (
+          summary.prTypes is list &&
+          summary.prTypes.hasOnly(['first_device', 'first_exercise', 'e1rm', 'volume'])
+        ));
     }
 
     function sessionDataValid(data) {
@@ -112,6 +117,29 @@ service cloud.firestore {
         (!('endAt' in data) || data.endAt is timestamp) &&
         (!('status' in data) || data.status in ['open', 'closed']) &&
         (!('summary' in data) || sessionSummaryValid(data.summary));
+    }
+
+    function prEventValid(data) {
+      return data.keys().hasOnly([
+          'sessionId',
+          'occurredAt',
+          'type',
+          'deviceId',
+          'exerciseId',
+          'value',
+          'previousBest',
+          'delta',
+          'unit',
+          'confidence'
+        ]) && data.sessionId is string && data.occurredAt is timestamp &&
+        data.type in ['first_device', 'first_exercise', 'e1rm', 'volume'] &&
+        (!('deviceId' in data) || data.deviceId is string) &&
+        (!('exerciseId' in data) || data.exerciseId is string) &&
+        (!('value' in data) || data.value is number) &&
+        (!('previousBest' in data) || data.previousBest is number) &&
+        (!('delta' in data) || data.delta is number) &&
+        (!('unit' in data) || data.unit is string) &&
+        (!('confidence' in data) || (data.confidence is number && data.confidence >= 0 && data.confidence <= 1));
     }
 
     function chatExists(conversationId) {
@@ -378,6 +406,13 @@ service cloud.firestore {
         allow create: if isOwner(uid) && sessionDataValid(request.resource.data);
         allow update: if isOwner(uid) && sessionDataValid(request.resource.data);
         allow delete: if false;
+      }
+
+      match /prEvents/{prId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && prEventValid(request.resource.data);
+        allow update: if isOwner(uid) && prEventValid(request.resource.data);
+        allow delete: if isOwner(uid);
       }
 
       match /friendChats/{friendUid} {
