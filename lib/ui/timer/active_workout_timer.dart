@@ -81,11 +81,13 @@ class ActiveWorkoutTimer extends StatelessWidget {
                       debugPrint('⏱️ [WorkoutTimer] triggering save from timer');
                       final savedSessionId = await service.save();
                       if (!context.mounted) return;
-                      final controller =
-                          Provider.maybeOf<SessionStoryController>(
-                        context,
-                        listen: false,
-                      );
+                      SessionStoryController? controller;
+                      try {
+                        controller =
+                            context.read<SessionStoryController>();
+                      } on ProviderNotFoundException {
+                        controller = null;
+                      }
                       if (savedSessionId != null && controller != null) {
                         controller.requestStory(savedSessionId);
                       }
