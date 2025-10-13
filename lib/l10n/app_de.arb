@@ -1300,4 +1300,58 @@
   ,"@numericKeypadSemanticsIncrease": {"description": "Semantik-Label für den Erhöhen-Button"}
   ,"numericKeypadSemanticsHideKeyboard": "Tastatur ausblenden"
   ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantik-Label für den Button zum Ausblenden der Tastatur"}
+  ,"sessionStoryTitle": "Session Story"
+  ,"@sessionStoryTitle": {"description": "Titel des Session-Story-Popups"}
+  ,"sessionStorySubtitle": "Highlights vom {date}"
+  ,"@sessionStorySubtitle": {"description": "Untertitel mit Datumsangabe","placeholders": {"date": {"type": "String"}}}
+  ,"sessionStoryShareSubject": "Tap’em Trainingsstory"
+  ,"@sessionStoryShareSubject": {"description": "Betreff für das Teilen"}
+  ,"sessionStoryShareButton": "Teilen"
+  ,"@sessionStoryShareButton": {"description": "Beschriftung des Teilen-Buttons"}
+  ,"sessionStoryDuration": "Gesamtzeit: {duration}"
+  ,"@sessionStoryDuration": {"description": "Angezeigte Gesamtzeit des Trainingstages","placeholders": {"duration": {"type": "String"}}}
+  ,"sessionStoryCloseButton": "Schließen"
+  ,"@sessionStoryCloseButton": {"description": "Beschriftung für den Schließen-Button"}
+  ,"sessionStoryHighlightsTitle": "Highlights"
+  ,"@sessionStoryHighlightsTitle": {"description": "Überschrift für die Highlights"}
+  ,"sessionStoryHighlightsEmpty": "Heute keine neuen Highlights – weiter so!"
+  ,"@sessionStoryHighlightsEmpty": {"description": "Text wenn keine Highlights vorhanden sind"}
+  ,"sessionStoryXpTitle": "Verdiente XP"
+  ,"@sessionStoryXpTitle": {"description": "Überschrift für den XP-Abschnitt"}
+  ,"sessionStoryXpDailyLabel": "Tagesgesamt: {xp} XP"
+  ,"@sessionStoryXpDailyLabel": {"description": "Label für Tages-XP","placeholders": {"xp": {"type": "int"}}}
+  ,"sessionStoryXpDevicesTitle": "Geräte"
+  ,"@sessionStoryXpDevicesTitle": {"description": "Überschrift Geräte-XP"}
+  ,"sessionStoryXpMusclesTitle": "Muskeln"
+  ,"@sessionStoryXpMusclesTitle": {"description": "Überschrift Muskel-XP"}
+  ,"sessionStoryHighlightFirstDeviceTitle": "Erstes Mal an {device}"
+  ,"@sessionStoryHighlightFirstDeviceTitle": {"description": "Titel für Geräte-Erstbenutzung","placeholders": {"device": {"type": "String"}}}
+  ,"sessionStoryHighlightFirstDeviceSubtitle": "Neues Gerät freigeschaltet"
+  ,"@sessionStoryHighlightFirstDeviceSubtitle": {"description": "Untertitel für Geräte-Erstbenutzung"}
+  ,"sessionStoryHighlightFirstExerciseTitle": "Neue Übung: {exercise}"
+  ,"@sessionStoryHighlightFirstExerciseTitle": {"description": "Titel für Übungs-Erstbenutzung","placeholders": {"exercise": {"type": "String"}}}
+  ,"sessionStoryHighlightE1rmTitle": "E1RM-Bestleistung: {value} kg"
+  ,"@sessionStoryHighlightE1rmTitle": {"description": "Titel für e1RM-Highlight","placeholders": {"value": {"type": "String"}}}
+  ,"sessionStoryHighlightVolumeTitle": "Volumen-Bestleistung: {value} kg"
+  ,"@sessionStoryHighlightVolumeTitle": {"description": "Titel für Volumen-Highlight","placeholders": {"value": {"type": "String"}}}
+  ,"sessionStoryOpenTooltip": "Session Story anzeigen"
+  ,"@sessionStoryOpenTooltip": {"description": "Tooltip für den Story-Button"}
+  ,"sessionStoryShareTitle": "Mein Training am {date}"
+  ,"@sessionStoryShareTitle": {"description": "Überschrift für geteilten Text","placeholders": {"date": {"type": "String"}}}
+  ,"sessionStoryShareHighlightFirstDevice": "Erstes Mal an {device}"
+  ,"@sessionStoryShareHighlightFirstDevice": {"description": "Textbaustein für erstes Gerät","placeholders": {"device": {"type": "String"}}}
+  ,"sessionStoryShareHighlightFirstExercise": "Neue Übung {exercise}"
+  ,"@sessionStoryShareHighlightFirstExercise": {"description": "Textbaustein für erste Übung","placeholders": {"exercise": {"type": "String"}}}
+  ,"sessionStoryShareHighlightE1rm": "E1RM {value} kg an {device}"
+  ,"@sessionStoryShareHighlightE1rm": {"description": "Textbaustein e1RM","placeholders": {"value": {"type": "String"},"device": {"type": "String"}}}
+  ,"sessionStoryShareHighlightVolume": "Volumen {value} kg an {device}"
+  ,"@sessionStoryShareHighlightVolume": {"description": "Textbaustein Volumen","placeholders": {"value": {"type": "String"},"device": {"type": "String"}}}
+  ,"sessionStoryShareHighlights": "Highlights: {highlights}"
+  ,"@sessionStoryShareHighlights": {"description": "Zusammenfassung der Highlights","placeholders": {"highlights": {"type": "String"}}}
+  ,"sessionStoryShareDailyXp": "XP gesamt: {xp}"
+  ,"@sessionStoryShareDailyXp": {"description": "Textbaustein Tages-XP","placeholders": {"xp": {"type": "int"}}}
+  ,"sessionStoryShareDeviceXp": "Geräte: {devices}"
+  ,"@sessionStoryShareDeviceXp": {"description": "Textbaustein Geräte-XP","placeholders": {"devices": {"type": "String"}}}
+  ,"sessionStoryShareMuscleXp": "Muskeln: {muscles}"
+  ,"@sessionStoryShareMuscleXp": {"description": "Textbaustein Muskel-XP","placeholders": {"muscles": {"type": "String"}}}
 }

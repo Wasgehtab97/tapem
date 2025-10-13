@@ -58,6 +58,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   json_annotation: ^4.9.0
   url_launcher: ^6.1.7
+  share_plus: ^7.2.2
 
   # Local Storage & Timezone
   shared_preferences: ^2.4.10

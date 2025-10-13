@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,6 +71,8 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   String? _firstSessionId;
   String? _lastSessionId;
   int? _lastActivityEpochMs;
+  final StreamController<SessionDayCompleted> _dayCompletedCtrl =
+      StreamController.broadcast();
 
   WorkoutSessionDurationService({
     FirebaseFirestore? firestore,
@@ -85,6 +88,8 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
   bool get isRunning => _isRunning;
   Stream<Duration> get tickStream => _tickCtrl.stream;
+  Stream<SessionDayCompleted> get dayCompletedStream =>
+      _dayCompletedCtrl.stream;
   Duration get elapsed =>
       _startEpochMs != null
           ? Duration(milliseconds:
@@ -369,7 +374,11 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     );
   }
 
-  Future<void> save({DateTime? endTime, String? sessionId}) async {
+  Future<void> save({
+    DateTime? endTime,
+    String? sessionId,
+    bool finalizeAutomatically = false,
+  }) async {
     if (!_isRunning || _uid == null || _gymId == null || _startEpochMs == null) {
       return;
     }
@@ -439,6 +448,19 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
     _telemetry?.timerStopSave(
         durationMs: durationMs, dayKey: dayKey, hasSets: hasSets);
+
+    _emitDayCompleted(
+      SessionDayCompleted(
+        uid: uid,
+        gymId: gymId,
+        dayKey: dayKey,
+        startedAt: start,
+        endedAt: end,
+        duration: Duration(milliseconds: durationMs),
+        sessionId: resolvedSessionId,
+        autoFinalized: finalizeAutomatically,
+      ),
+    );
 
     await _clearLocal();
   }
@@ -559,7 +581,11 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     }
     final end = DateTime.fromMillisecondsSinceEpoch(_lastActivityEpochMs!);
     final sid = _firstSessionId ?? _lastSessionId;
-    await save(endTime: end, sessionId: sid);
+    await save(
+      endTime: end,
+      sessionId: sid,
+      finalizeAutomatically: true,
+    );
   }
 
   @override
@@ -567,6 +593,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _ticker?.cancel();
     _autoStopTimer?.cancel();
     _tickCtrl.close();
+    _dayCompletedCtrl.close();
     super.dispose();
   }
 
@@ -624,6 +651,35 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     }
     await prefs.setStringList(_queueKey, remaining);
   }
+
+  void _emitDayCompleted(SessionDayCompleted event) {
+    if (!_dayCompletedCtrl.isClosed) {
+      _dayCompletedCtrl.add(event);
+    }
+  }
+}
+
+@immutable
+class SessionDayCompleted {
+  final String uid;
+  final String gymId;
+  final String dayKey;
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final Duration duration;
+  final String sessionId;
+  final bool autoFinalized;
+
+  const SessionDayCompleted({
+    required this.uid,
+    required this.gymId,
+    required this.dayKey,
+    required this.startedAt,
+    required this.endedAt,
+    required this.duration,
+    required this.sessionId,
+    required this.autoFinalized,
+  });
 }
 
 

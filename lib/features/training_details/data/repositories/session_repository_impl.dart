@@ -57,7 +57,9 @@ class SessionRepositoryImpl implements SessionRepository {
       final deviceRef = first.reference.parent.parent!;
       var deviceName = first.deviceId;
       var deviceDescription = '';
+      var canonicalDeviceName = deviceName;
       var isMulti = false;
+      String? exerciseName;
 
       DocumentSnapshot<Map<String, dynamic>>? deviceSnap =
           deviceCache[deviceRef.path];
@@ -75,6 +77,7 @@ class SessionRepositoryImpl implements SessionRepository {
         deviceName = (data['name'] as String?) ?? first.deviceId;
         deviceDescription = (data['description'] as String?) ?? '';
         isMulti = (data['isMulti'] as bool?) ?? false;
+        canonicalDeviceName = deviceName;
       }
 
       if (isMulti && first.exerciseId.isNotEmpty) {
@@ -91,7 +94,10 @@ class SessionRepositoryImpl implements SessionRepository {
         }
         if (exSnap != null && exSnap.exists) {
           final exName = (exSnap.data()?['name'] as String?) ?? '';
-          if (exName.isNotEmpty) deviceName = exName;
+          if (exName.isNotEmpty) {
+            exerciseName = exName;
+            deviceName = exName;
+          }
         }
       }
 
@@ -131,9 +137,13 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceId: first.deviceId,
           deviceName: deviceName,
           deviceDescription: deviceDescription,
+          canonicalDeviceName: canonicalDeviceName,
           timestamp: first.timestamp,
           note: first.note,
           sets: sets,
+          exerciseId: first.exerciseId.isEmpty ? null : first.exerciseId,
+          exerciseName: exerciseName,
+          isMultiDevice: isMulti,
           startTime: startTime,
           endTime: endTime,
           durationMs: durationMs,

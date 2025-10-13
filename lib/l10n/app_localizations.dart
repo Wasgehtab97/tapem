@@ -2378,6 +2378,87 @@ abstract class AppLocalizations {
   /// No description provided for @numericKeypadSemanticsHideKeyboard.
   String get numericKeypadSemanticsHideKeyboard;
 
+  /// No description provided for @sessionStoryTitle.
+  String get sessionStoryTitle;
+
+  /// No description provided for @sessionStorySubtitle.
+  String sessionStorySubtitle(String date);
+
+  /// No description provided for @sessionStoryShareSubject.
+  String get sessionStoryShareSubject;
+
+  /// No description provided for @sessionStoryShareButton.
+  String get sessionStoryShareButton;
+
+  /// No description provided for @sessionStoryDuration.
+  String sessionStoryDuration(String duration);
+
+  /// No description provided for @sessionStoryCloseButton.
+  String get sessionStoryCloseButton;
+
+  /// No description provided for @sessionStoryHighlightsTitle.
+  String get sessionStoryHighlightsTitle;
+
+  /// No description provided for @sessionStoryHighlightsEmpty.
+  String get sessionStoryHighlightsEmpty;
+
+  /// No description provided for @sessionStoryXpTitle.
+  String get sessionStoryXpTitle;
+
+  /// No description provided for @sessionStoryXpDailyLabel.
+  String sessionStoryXpDailyLabel(int xp);
+
+  /// No description provided for @sessionStoryXpDevicesTitle.
+  String get sessionStoryXpDevicesTitle;
+
+  /// No description provided for @sessionStoryXpMusclesTitle.
+  String get sessionStoryXpMusclesTitle;
+
+  /// No description provided for @sessionStoryHighlightFirstDeviceTitle.
+  String sessionStoryHighlightFirstDeviceTitle(String device);
+
+  /// No description provided for @sessionStoryHighlightFirstDeviceSubtitle.
+  String get sessionStoryHighlightFirstDeviceSubtitle;
+
+  /// No description provided for @sessionStoryHighlightFirstExerciseTitle.
+  String sessionStoryHighlightFirstExerciseTitle(String exercise);
+
+  /// No description provided for @sessionStoryHighlightE1rmTitle.
+  String sessionStoryHighlightE1rmTitle(String value);
+
+  /// No description provided for @sessionStoryHighlightVolumeTitle.
+  String sessionStoryHighlightVolumeTitle(String value);
+
+  /// No description provided for @sessionStoryOpenTooltip.
+  String get sessionStoryOpenTooltip;
+
+  /// No description provided for @sessionStoryShareTitle.
+  String sessionStoryShareTitle(String date);
+
+  /// No description provided for @sessionStoryShareHighlightFirstDevice.
+  String sessionStoryShareHighlightFirstDevice(String device);
+
+  /// No description provided for @sessionStoryShareHighlightFirstExercise.
+  String sessionStoryShareHighlightFirstExercise(String exercise);
+
+  /// No description provided for @sessionStoryShareHighlightE1rm.
+  String sessionStoryShareHighlightE1rm(String value, String device);
+
+  /// No description provided for @sessionStoryShareHighlightVolume.
+  String sessionStoryShareHighlightVolume(String value, String device);
+
+  /// No description provided for @sessionStoryShareHighlights.
+  String sessionStoryShareHighlights(String highlights);
+
+  /// No description provided for @sessionStoryShareDailyXp.
+  String sessionStoryShareDailyXp(int xp);
+
+  /// No description provided for @sessionStoryShareDeviceXp.
+  String sessionStoryShareDeviceXp(String devices);
+
+  /// No description provided for @sessionStoryShareMuscleXp.
+  String sessionStoryShareMuscleXp(String muscles);
+
   /// No description provided for @adminDeviceNfcWritten.
   String get adminDeviceNfcWritten;
 

@@ -133,4 +133,24 @@ void main() {
     expect(prefs.getString('workoutTimer:u1::g1'), isNotNull);
     expect(prefs.getString('workoutTimer:u1'), isNull);
   });
+
+  test('emits day completed event after manual save', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(firestore: firestore);
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'userA', gymId: 'gymA');
+    final events = <SessionDayCompleted>[];
+    final sub = service.dayCompletedStream.listen(events.add);
+    addTearDown(sub.cancel);
+
+    await service.save(endTime: DateTime.now(), sessionId: 'session-42');
+
+    expect(events, hasLength(1));
+    final event = events.single;
+    expect(event.uid, 'userA');
+    expect(event.gymId, 'gymA');
+    expect(event.sessionId, 'session-42');
+    expect(event.autoFinalized, isFalse);
+  });
 }
