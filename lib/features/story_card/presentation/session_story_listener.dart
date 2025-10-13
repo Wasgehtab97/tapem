@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/main.dart';
 import '../session_story_controller.dart';
 import '../session_story_share_service.dart';
 import '../story_link_builder.dart';
@@ -39,13 +40,20 @@ class _SessionStoryListenerState extends State<SessionStoryListener> {
 
   Future<void> _showPending(SessionStoryController controller) async {
     if (_isShowing) return;
+    final showContext = navigatorKey.currentContext;
+    if (showContext == null) {
+      debugPrint(
+        '📸 [StoryListener] navigator context unavailable; deferring story display',
+      );
+      return;
+    }
     final story = controller.consumePending();
     if (story == null) return;
     setState(() => _isShowing = true);
     debugPrint('📸 [StoryListener] presenting story sessionId=${story.sessionId}');
     final userId = context.read<AuthProvider?>()?.userId ?? '';
     await SessionStoryModal.show(
-      context: context,
+      context: showContext,
       story: story,
       shareService: _shareService,
       buildLink: () => _linkBuilder.build(story),
