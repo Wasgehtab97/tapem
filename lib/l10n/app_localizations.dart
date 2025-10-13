@@ -2339,6 +2339,72 @@ abstract class AppLocalizations {
   /// No description provided for @selectGymTitle.
   String get selectGymTitle;
 
+  /// No description provided for @commonClose.
+  String get commonClose;
+
+  /// No description provided for @storycardTitle.
+  String get storycardTitle;
+
+  /// No description provided for @storycardSaveButton.
+  String get storycardSaveButton;
+
+  /// No description provided for @storycardShareButton.
+  String get storycardShareButton;
+
+  /// No description provided for @storycardShareSuccess.
+  String get storycardShareSuccess;
+
+  /// No description provided for @storycardShareUnavailable.
+  String get storycardShareUnavailable;
+
+  /// No description provided for @storycardShareError.
+  String storycardShareError(Object error);
+
+  /// No description provided for @storycardSaveSuccess.
+  String storycardSaveSuccess(Object path);
+
+  /// No description provided for @storycardSaveError.
+  String storycardSaveError(Object error);
+
+  /// No description provided for @storycardLoadError.
+  String get storycardLoadError;
+
+  /// No description provided for @storycardXpTotal.
+  String storycardXpTotal(Object xp);
+
+  /// No description provided for @storycardXpBreakdown.
+  String storycardXpBreakdown(Object base, Object bonus);
+
+  /// No description provided for @storycardPrSectionTitle.
+  String get storycardPrSectionTitle;
+
+  /// No description provided for @storycardMuscleSectionTitle.
+  String get storycardMuscleSectionTitle;
+
+  /// No description provided for @storycardMuscleFallback.
+  String get storycardMuscleFallback;
+
+  /// No description provided for @storycardSetsLabel.
+  String get storycardSetsLabel;
+
+  /// No description provided for @storycardDurationLabel.
+  String get storycardDurationLabel;
+
+  /// No description provided for @storycardDurationValue.
+  String storycardDurationValue(Object minutes);
+
+  /// No description provided for @storycardVolumeLabel.
+  String get storycardVolumeLabel;
+
+  /// No description provided for @storycardVolumeValue.
+  String storycardVolumeValue(Object kilograms);
+
+  /// No description provided for @storycardMuscleXpValue.
+  String storycardMuscleXpValue(Object xp);
+
+  /// No description provided for @storycardHeaderTooltip.
+  String get storycardHeaderTooltip;
+
   /// No description provided for @sessionStopTitle.
   String get sessionStopTitle;
 

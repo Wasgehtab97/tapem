@@ -1414,4 +1414,86 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
+
+  @override
+  String get commonClose => 'Schließen';
+
+  @override
+  String get storycardTitle => 'Session-Story';
+
+  @override
+  String get storycardSaveButton => 'Speichern';
+
+  @override
+  String get storycardShareButton => 'Teilen';
+
+  @override
+  String get storycardShareSuccess => 'Story geteilt';
+
+  @override
+  String get storycardShareUnavailable => 'Teilen nicht verfügbar';
+
+  @override
+  String storycardShareError(Object error) {
+    return 'Teilen fehlgeschlagen: $error';
+  }
+
+  @override
+  String storycardSaveSuccess(Object path) {
+    return 'Gespeichert unter $path';
+  }
+
+  @override
+  String storycardSaveError(Object error) {
+    return 'Speichern fehlgeschlagen: $error';
+  }
+
+  @override
+  String get storycardLoadError => 'Story konnte nicht geladen werden.';
+
+  @override
+  String storycardXpTotal(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String storycardXpBreakdown(Object base, Object bonus) {
+    return 'Basis $base • Bonus $bonus';
+  }
+
+  @override
+  String get storycardPrSectionTitle => 'Neue PRs';
+
+  @override
+  String get storycardMuscleSectionTitle => 'Top-Muskeln';
+
+  @override
+  String get storycardMuscleFallback => 'Noch keine Muskeldaten – trainiere weiter!';
+
+  @override
+  String get storycardSetsLabel => 'Sätze';
+
+  @override
+  String get storycardDurationLabel => 'Dauer';
+
+  @override
+  String storycardDurationValue(Object minutes) {
+    return '$minutes Min';
+  }
+
+  @override
+  String get storycardVolumeLabel => 'Volumen';
+
+  @override
+  String storycardVolumeValue(Object kilograms) {
+    return '$kilograms kg';
+  }
+
+  @override
+  String storycardMuscleXpValue(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get storycardHeaderTooltip => 'Story';
 }
