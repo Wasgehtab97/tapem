@@ -1413,4 +1413,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceWriteNfcTooltip => 'Write NFC tag';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  String get storycardTitle => 'Session Story';
+
+  @override
+  String get storycardSaveButton => 'Save';
+
+  @override
+  String get storycardShareButton => 'Share';
+
+  @override
+  String get storycardShareSuccess => 'Story shared';
+
+  @override
+  String get storycardShareUnavailable => 'Share sheet unavailable';
+
+  @override
+  String storycardShareError(Object error) {
+    return 'Could not share: $error';
+  }
+
+  @override
+  String storycardSaveSuccess(Object path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String storycardSaveError(Object error) {
+    return 'Could not save: $error';
+  }
+
+  @override
+  String get storycardLoadError => 'Story could not be loaded.';
+
+  @override
+  String storycardXpTotal(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String storycardXpBreakdown(Object base, Object bonus) {
+    return 'Base $base • Bonus $bonus';
+  }
+
+  @override
+  String get storycardPrSectionTitle => 'Personal Records';
+
+  @override
+  String get storycardMuscleSectionTitle => 'Top Muscles';
+
+  @override
+  String get storycardMuscleFallback => 'No muscle data yet – keep training!';
+
+  @override
+  String get storycardSetsLabel => 'Sets';
+
+  @override
+  String get storycardDurationLabel => 'Duration';
+
+  @override
+  String storycardDurationValue(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get storycardVolumeLabel => 'Volume';
+
+  @override
+  String storycardVolumeValue(Object kilograms) {
+    return '$kilograms kg';
+  }
+
+  @override
+  String storycardMuscleXpValue(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get storycardHeaderTooltip => 'Story';
 }
