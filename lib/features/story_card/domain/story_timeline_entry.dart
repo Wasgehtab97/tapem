@@ -64,54 +64,6 @@ class StoryTimelineEntry {
     );
   }
 
-  static List<Color> _parseColors(dynamic value) {
-    if (value is List) {
-      final colors = <Color>[];
-      for (final entry in value) {
-        if (entry is String && entry.trim().isNotEmpty) {
-          colors.add(_colorFromHex(entry.trim()));
-        }
-      }
-      if (colors.isNotEmpty) {
-        return colors;
-      }
-    }
-    return const [Color(0xFF36D1DC), Color(0xFF5B86E5)];
-  }
-
-  static List<String> _parseStringList(dynamic value) {
-    if (value is Iterable) {
-      return value.whereType<String>().map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
-    }
-    return const [];
-  }
-
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.round();
-    if (value is String) {
-      final parsed = int.tryParse(value);
-      if (parsed != null) return parsed;
-    }
-    return 0;
-  }
-
-  static double _parseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final parsed = double.tryParse(value);
-      if (parsed != null) return parsed;
-    }
-    return 0;
-  }
-
-  static Color _colorFromHex(String hex) {
-    final buffer = StringBuffer();
-    if (hex.length == 6 || hex.length == 7) buffer.write('ff');
-    buffer.write(hex.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
 }
 
 @immutable
@@ -149,4 +101,53 @@ class StoryTimelineMetrics {
   double get prSessionsPerHundred => sessionCount == 0 ? 0 : (prSessionCount / sessionCount) * 100;
 
   double get averageXpPerSession => sessionCount == 0 ? 0 : totalXp / sessionCount;
+}
+
+List<Color> _parseColors(dynamic value) {
+  if (value is List) {
+    final colors = <Color>[];
+    for (final entry in value) {
+      if (entry is String && entry.trim().isNotEmpty) {
+        colors.add(_colorFromHex(entry.trim()));
+      }
+    }
+    if (colors.isNotEmpty) {
+      return colors;
+    }
+  }
+  return const [Color(0xFF36D1DC), Color(0xFF5B86E5)];
+}
+
+List<String> _parseStringList(dynamic value) {
+  if (value is Iterable) {
+    return value.whereType<String>().map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
+  }
+  return const [];
+}
+
+int _parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.round();
+  if (value is String) {
+    final parsed = int.tryParse(value);
+    if (parsed != null) return parsed;
+  }
+  return 0;
+}
+
+double _parseDouble(dynamic value) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    final parsed = double.tryParse(value);
+    if (parsed != null) return parsed;
+  }
+  return 0;
+}
+
+Color _colorFromHex(String hex) {
+  final buffer = StringBuffer();
+  if (hex.length == 6 || hex.length == 7) buffer.write('ff');
+  buffer.write(hex.replaceFirst('#', ''));
+  return Color(int.parse(buffer.toString(), radix: 16));
 }
