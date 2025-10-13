@@ -20,8 +20,9 @@ class SessionStoryCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).toString();
     final dateFormatter = DateFormat.yMMMMd(locale);
     final muscleProvider = context.watch<MuscleGroupProvider?>();
-    final muscleNames = {
-      for (final group in muscleProvider?.groups ?? const []) group.id: group.name,
+    final Map<String, String> muscleNames = {
+      for (final group in muscleProvider?.groups ?? const [])
+        group.id: group.name,
     };
     return Material(
       color: Colors.transparent,
@@ -369,7 +370,7 @@ class SessionStoryCard extends StatelessWidget {
   ) {
     switch (highlight.type) {
       case SessionStoryHighlightType.firstDevice:
-        return loc.sessionStoryHighlightFirstDeviceSubtitle(highlight.canonicalDeviceName);
+        return '${loc.sessionStoryHighlightFirstDeviceSubtitle}: ${highlight.canonicalDeviceName}';
       case SessionStoryHighlightType.firstExercise:
         return highlight.canonicalDeviceName;
       case SessionStoryHighlightType.e1rmPr:
