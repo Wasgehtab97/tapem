@@ -13,4 +13,6 @@
   {"name": "sprint:E", "color": "5319e7", "description": "Sprint E"},
   {"name": "sprint:F", "color": "5319e7", "description": "Sprint F"},
   {"name": "sprint:G", "color": "5319e7", "description": "Sprint G"}
+  ,{"name": "feature:gamification", "color": "5319e7", "description": "Gamification"}
+  ,{"name": "area:sessions", "color": "0e8a16", "description": "Session lifecycle"}
 ]

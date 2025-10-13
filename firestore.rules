@@ -89,6 +89,31 @@ service cloud.firestore {
          isFriend(resource.data[field], request.auth.uid));
     }
 
+    function sessionSummaryValid(summary) {
+      return summary.keys().hasOnly(['setCount', 'exerciseCount', 'totalVolume', 'durationMin']) &&
+        summary.setCount is int &&
+        summary.exerciseCount is int &&
+        summary.totalVolume is number &&
+        summary.durationMin is number;
+    }
+
+    function sessionDataValid(data) {
+      return data.keys().hasOnly([
+          'status',
+          'startedAt',
+          'lastActivityAt',
+          'endAt',
+          'gymId',
+          'note',
+          'summary',
+          'updatedAt'
+        ]) && data.gymId is string && data.startedAt is timestamp &&
+        (!('lastActivityAt' in data) || data.lastActivityAt is timestamp) &&
+        (!('endAt' in data) || data.endAt is timestamp) &&
+        (!('status' in data) || data.status in ['open', 'closed']) &&
+        (!('summary' in data) || sessionSummaryValid(data.summary));
+    }
+
     function chatExists(conversationId) {
       return exists(/databases/$(database)/documents/friendConversations/$(conversationId));
     }
@@ -346,6 +371,13 @@ service cloud.firestore {
       // Friend meta & push tokens are owner-managed
       match /friendMeta/{doc} {
         allow read, write: if isOwner(uid);
+      }
+
+      match /sessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && sessionDataValid(request.resource.data);
+        allow update: if isOwner(uid) && sessionDataValid(request.resource.data);
+        allow delete: if false;
       }
 
       match /friendChats/{friendUid} {
