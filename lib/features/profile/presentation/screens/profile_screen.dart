@@ -610,6 +610,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: _ProfileActionButton(
+                    title: loc.profileStoriesButtonTitle,
+                    subtitle: loc.profileStoriesButtonSubtitle,
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: Center(child: BrandGradientIcon(Icons.auto_stories)),
+                    ),
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRouter.stories);
+                    },
+                    uiLogEvent: 'PROFILE_STORIES_CARD_RENDER',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
+                  child: _ProfileActionButton(
                     title: loc.profileStatsButtonLabel,
                     subtitle: loc.profileStatsButtonSubtitle,
                     leading: const SizedBox.square(

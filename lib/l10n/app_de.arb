@@ -1344,4 +1344,52 @@
   ,"@storycardMuscleXpValue": {"description": "XP-Suffix auf den Muskel-Tags","placeholders": {"xp": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip für den Story-Button im Header"}
+  ,"storiesTitle": "Stories"
+  ,"@storiesTitle": {"description": "Titel der Story-Timeline-Seite"}
+  ,"storiesFilterPrType": "PR-Typ"
+  ,"@storiesFilterPrType": {"description": "Label für den PR-Typ-Filter"}
+  ,"storiesFilterRange": "Zeitraum"
+  ,"@storiesFilterRange": {"description": "Label für den Zeitraum-Filter"}
+  ,"storiesFilterGym": "Studio"
+  ,"@storiesFilterGym": {"description": "Label für den Studio-Filter"}
+  ,"storiesFilterPrAll": "Alle Sessions"
+  ,"@storiesFilterPrAll": {"description": "Option für alle Stories"}
+  ,"storiesFilterPrOnly": "Mit PRs"
+  ,"@storiesFilterPrOnly": {"description": "Option für Stories mit PRs"}
+  ,"storiesFilterPrFirsts": "Erste Male"
+  ,"@storiesFilterPrFirsts": {"description": "Option für First-Device/Exercise-PRs"}
+  ,"storiesFilterPrStrength": "1RM-Rekorde"
+  ,"@storiesFilterPrStrength": {"description": "Option für e1RM-PRs"}
+  ,"storiesFilterPrVolume": "Volumen-Rekorde"
+  ,"@storiesFilterPrVolume": {"description": "Option für Volumen-PRs"}
+  ,"storiesFilterRange30": "Letzte 30 Tage"
+  ,"@storiesFilterRange30": {"description": "Zeitraum-Option für 30 Tage"}
+  ,"storiesFilterRange90": "Letzte 90 Tage"
+  ,"@storiesFilterRange90": {"description": "Zeitraum-Option für 90 Tage"}
+  ,"storiesFilterRangeYear": "Dieses Jahr"
+  ,"@storiesFilterRangeYear": {"description": "Zeitraum-Option für das aktuelle Jahr"}
+  ,"storiesFilterRangeAll": "Gesamter Zeitraum"
+  ,"@storiesFilterRangeAll": {"description": "Zeitraum-Option für alle Stories"}
+  ,"storiesFilterGymAll": "Alle Studios"
+  ,"@storiesFilterGymAll": {"description": "Option für alle Studios"}
+  ,"storiesEmptyState": "Noch keine Stories – schließe eine Session ab, um Highlights zu sehen."
+  ,"@storiesEmptyState": {"description": "Empty-State für leere Story-Timeline"}
+  ,"storiesErrorState": "Stories konnten nicht geladen werden."
+  ,"@storiesErrorState": {"description": "Fehlermeldung bei Story-Ladefehlern"}
+  ,"storiesKpiShareRate": "Share-Rate"
+  ,"@storiesKpiShareRate": {"description": "Label für die Share-Rate"}
+  ,"storiesKpiPrRate": "PR-Sessions"
+  ,"@storiesKpiPrRate": {"description": "Label für PR-Sessions je 100"}
+  ,"storiesKpiAverageXp": "Ø XP"
+  ,"@storiesKpiAverageXp": {"description": "Label für durchschnittliche XP"}
+  ,"storiesListPrCount": "{count} PRs"
+  ,"@storiesListPrCount": {"description": "Label für die Anzahl PRs in der Liste","placeholders": {"count": {"type": "int"}}}
+  ,"storiesListNoPrs": "Keine PRs"
+  ,"@storiesListNoPrs": {"description": "Label wenn keine PRs vorhanden sind"}
+  ,"storiesListXp": "{xp} XP"
+  ,"@storiesListXp": {"description": "Label für XP in der Story-Liste","placeholders": {"xp": {}}}
+  ,"profileStoriesButtonTitle": "Stories"
+  ,"@profileStoriesButtonTitle": {"description": "Titel der Profilkarte zur Story-Timeline"}
+  ,"profileStoriesButtonSubtitle": "Timeline deiner Session-Highlights"
+  ,"@profileStoriesButtonSubtitle": {"description": "Untertitel der Profilkarte zur Story-Timeline"}
 }

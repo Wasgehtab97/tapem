@@ -19,6 +19,17 @@ Tap’em ist eine Flutter-App für Fitnessstudios. Sie setzt auf ein modulares K
 - **Offline-Support**: Firestore-Persistence für unterbrechungsfreie Datenerfassung
 - **CI/CD ready**: GitHub Actions für Analyse, Tests und Matrix-Builds von Flavors
 
+## PR Timeline & Storycards
+
+- **Datenfluss**:
+  - `session.closed` löst den Worker aus → PR- und XP-Pipeline aktualisiert Session-Summary.
+  - Die Cloud Function `functions/prs.js` materialisiert Story-Derivate unter `users/{uid}/stories/{storyId}` und aggregiert KPIs in `users/{uid}/storyMetrics/summary` (Share-Rate, PR-Rate/100 Sessions, Durchschnitts-XP).
+  - Listener & Controller publishen Analytics-Events (`session_closed` → `storycard_shown` → `storycard_shared`) und halten die Timeline im Cache synchron.
+- **Timeline-Screen**: filterbare Liste (PR-Typ, Zeitraum, Gym) mit KPI-Kacheln und Pagination via Firestore-`startAfter` + lokalem Cache für Offline-Szenarien.
+- **Story-Export**: Der Share-Service rendert PNGs crash-safe (Pixel-Ratio-Guard, Fallback-Speicherorte) und liefert Share-Ziele zur Telemetrie.
+- **Firestore-Indexe**: Für Timeline-Abfragen werden zusammengesetzte Indexe auf `stories(prCount, createdAt)`, `stories(prTypes[], createdAt)` und `stories(gymId, createdAt)` benötigt – via `firebase deploy --only firestore:indexes` ausspielen.
+- **Dokumentation**: Ergänzende Ablaufskizzen & Changelogs liegen unter `thesis/gamification/2025-10-13_pr5_timeline_hardening_docs.md`.
+
 ## Tests lokal & CI
 
 Die Avatars-V2 Rules- und Functions-Tests laufen komplett im Firebase Emulator. Lokal können sie mit folgendem Befehl gestartet werden:

@@ -9,8 +9,10 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/story_card/session_story_controller.dart';
+import 'package:tapem/features/story_card/data/story_analytics_service.dart';
 import 'package:tapem/features/story_card/session_story_share_service.dart';
 import 'package:tapem/features/story_card/presentation/widgets/session_story_modal.dart';
 import 'package:tapem/features/story_card/story_link_builder.dart';
@@ -200,6 +202,8 @@ Future<void> _openStory(
   final loc = AppLocalizations.of(context)!;
   final shareService = SessionStoryShareService();
   final linkBuilder = StoryLinkBuilder();
+  final analytics = StoryAnalyticsService();
+  final userId = context.read<AuthProvider?>()?.userId ?? '';
   try {
     final story = await controller.loadStoryById(session.sessionId);
     await SessionStoryModal.show(
@@ -214,15 +218,22 @@ Future<void> _openStory(
           'xpTotal': story.xpTotal,
           'prCount': story.badges.length,
         });
+        analytics.trackStoryViewed(userId: userId, sessionId: story.sessionId);
       },
       onShared: (target) {
         elogUi('storycard_shared', {
           'sessionId': story.sessionId,
           'target': target ?? 'system',
         });
+        analytics.trackStoryShared(
+          userId: userId,
+          sessionId: story.sessionId,
+          target: target,
+        );
       },
       onSaved: () {
         elogUi('storycard_saved', {'sessionId': story.sessionId});
+        analytics.trackStorySaved(userId: userId, sessionId: story.sessionId);
       },
     );
   } catch (_) {
