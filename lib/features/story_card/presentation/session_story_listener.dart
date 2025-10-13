@@ -42,6 +42,7 @@ class _SessionStoryListenerState extends State<SessionStoryListener> {
     final story = controller.consumePending();
     if (story == null) return;
     setState(() => _isShowing = true);
+    debugPrint('📸 [StoryListener] presenting story sessionId=${story.sessionId}');
     final userId = context.read<AuthProvider?>()?.userId ?? '';
     await SessionStoryModal.show(
       context: context,
@@ -62,6 +63,7 @@ class _SessionStoryListenerState extends State<SessionStoryListener> {
       onSaved: () {
         elogUi('storycard_saved', {'sessionId': story.sessionId});
         _analyticsService.trackStorySaved(userId: userId, sessionId: story.sessionId);
+        debugPrint('📸 [StoryListener] story saved sessionId=${story.sessionId}');
       },
       onViewed: () {
         elogUi('storycard_shown', {
@@ -71,10 +73,12 @@ class _SessionStoryListenerState extends State<SessionStoryListener> {
           'prCount': story.badges.length,
         });
         _analyticsService.trackStoryViewed(userId: userId, sessionId: story.sessionId);
+        debugPrint('📸 [StoryListener] story viewed sessionId=${story.sessionId}');
       },
     );
     if (mounted) {
       setState(() => _isShowing = false);
+      debugPrint('📸 [StoryListener] modal dismissed sessionId=${story.sessionId}');
     }
   }
 }

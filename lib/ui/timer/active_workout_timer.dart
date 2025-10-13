@@ -75,7 +75,9 @@ class ActiveWorkoutTimer extends StatelessWidget {
                   onTap: () async {
                     final dialogResult = await service.confirmStop(context);
                     if (!context.mounted) return;
+                    debugPrint('⏱️ [WorkoutTimer] stop dialog result=${dialogResult.result}');
                     if (dialogResult.result == StopResult.save) {
+                      debugPrint('⏱️ [WorkoutTimer] triggering save from timer');
                       await service.save();
                     } else if (dialogResult.result == StopResult.discard) {
                       await service.discard();

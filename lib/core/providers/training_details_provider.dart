@@ -20,11 +20,13 @@ class TrainingDetailsProvider extends ChangeNotifier {
   String? _error;
   List<Session> _sessions = [];
   int? _dayDurationMs;
+  String? _storySessionId;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<Session> get sessions => List.unmodifiable(_sessions);
   int? get dayDurationMs => _dayDurationMs;
+  String? get storySessionId => _storySessionId;
 
   TrainingDetailsProvider() {
     final repo = SessionRepositoryImpl(
@@ -45,6 +47,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
     _userId = userId;
     _gymId = gymId;
     _date = date;
+    _storySessionId = null;
     await _refreshSessions(showLoading: true);
   }
 
@@ -88,20 +91,34 @@ class TrainingDetailsProvider extends ChangeNotifier {
       notifyListeners();
     }
     _error = null;
+    _dayDurationMs = null;
+    _storySessionId = null;
 
     try {
       _sessions = await _getSessions.execute(userId: userId, date: date);
       debugPrint('✅ loaded ${_sessions.length} sessions');
-      if (_sessions.isNotEmpty) {
+      final dayKey = logicDayKey(date);
+      final meta = await _meta.getMetaByDayKey(
+        gymId: gymId,
+        uid: userId,
+        dayKey: dayKey,
+      );
+      _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+      final metaSessionId = (meta?['sessionId'] as String?)?.trim();
+      if (metaSessionId != null && metaSessionId.isNotEmpty) {
+        _storySessionId = metaSessionId;
+        debugPrint('📖 storySessionId resolved from meta: $_storySessionId');
+      }
+      if (_dayDurationMs == null && _sessions.isNotEmpty) {
         _dayDurationMs = _sessions.first.durationMs;
-      } else {
-        final dayKey = logicDayKey(date);
-        final meta = await _meta.getMetaByDayKey(
-          gymId: gymId,
-          uid: userId,
-          dayKey: dayKey,
-        );
-        _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+      }
+      if (_storySessionId == null && _sessions.isNotEmpty) {
+        // Fallback for legacy data without session meta linkage.
+        _storySessionId = _sessions.last.sessionId;
+        debugPrint('📖 storySessionId fallback to latest session: $_storySessionId');
+      }
+      if (_storySessionId == null) {
+        debugPrint('⚠️ No storySessionId available for $dayKey');
       }
     } catch (e) {
       _error = e.toString();

@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
-import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -55,13 +54,15 @@ class TrainingDetailsScreen extends StatelessWidget {
           final duration = prov.dayDurationMs;
           final loc = AppLocalizations.of(ctx)!;
           final storyController = ctx.read<SessionStoryController>();
+          final storySessionId = prov.storySessionId;
           return Scaffold(
             appBar: _AppBar(
               titleDate: date,
               durationMs: duration,
-              onShowStory: sessions.isEmpty
+              onShowStory: storySessionId == null
                   ? null
-                  : () => _openStory(context, storyController, sessions.last),
+                  : () =>
+                      _openStory(context, storyController, storySessionId),
             ),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
@@ -196,7 +197,7 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 Future<void> _openStory(
   BuildContext context,
   SessionStoryController controller,
-  Session session,
+  String sessionId,
 ) async {
   final messenger = ScaffoldMessenger.of(context);
   final loc = AppLocalizations.of(context)!;
@@ -204,8 +205,12 @@ Future<void> _openStory(
   final linkBuilder = StoryLinkBuilder();
   final analytics = StoryAnalyticsService();
   final userId = context.read<AuthProvider?>()?.userId ?? '';
+  debugPrint('📖 [TrainingDetails] open story request sessionId=$sessionId');
   try {
-    final story = await controller.loadStoryById(session.sessionId);
+    final story = await controller.loadStoryById(sessionId);
+    debugPrint(
+      '📖 [TrainingDetails] story loaded sessionId=${story.sessionId} xp=${story.xpTotal} badges=${story.badges.length}',
+    );
     await SessionStoryModal.show(
       context: context,
       story: story,
@@ -236,7 +241,10 @@ Future<void> _openStory(
         analytics.trackStorySaved(userId: userId, sessionId: story.sessionId);
       },
     );
-  } catch (_) {
+  } catch (error, stack) {
+    debugPrint(
+      '❌ [TrainingDetails] story load failed sessionId=$sessionId error=$error\n$stack',
+    );
     messenger.showSnackBar(
       SnackBar(content: Text(loc.storycardLoadError)),
     );
