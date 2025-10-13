@@ -80,7 +80,7 @@ class SessionXpCalculator {
         }
       }
       if (logXp <= 0 && deviceId != null) {
-        perDevice.putIfAbsent(deviceId, () => 0);
+        perDevice.putIfAbsent(deviceId, () => 0.0);
       }
     }
 
@@ -91,7 +91,7 @@ class SessionXpCalculator {
       final deviceId = event.deviceId;
       if (deviceId != null && deviceId.isNotEmpty) {
         perDevice.update(deviceId, (value) => value + bonus,
-            ifAbsent: () => bonus);
+            ifAbsent: () => bonus.toDouble());
       }
       final exerciseMuscles = event.exerciseId != null
           ? ExerciseMuscleMap.lookup(event.exerciseId!)

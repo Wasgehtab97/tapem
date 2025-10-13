@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -28,7 +29,7 @@ class SessionStoryShareService {
   static const int _maxImageBytes = 6 * 1024 * 1024; // 6 MiB safety cap
 
   Future<Uint8List> captureImage(GlobalKey repaintKey) async {
-    final boundary = repaintKey.currentContext?.findRenderObject() as ui.RenderRepaintBoundary?;
+    final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) {
       throw StateError('No render boundary found for story card');
     }
@@ -144,7 +145,7 @@ class SessionStoryShareService {
     }
   }
 
-  Future<Uint8List> _renderBoundary(ui.RenderRepaintBoundary boundary, double pixelRatio) async {
+  Future<Uint8List> _renderBoundary(RenderRepaintBoundary boundary, double pixelRatio) async {
     final image = await boundary.toImage(pixelRatio: pixelRatio);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) {
@@ -153,7 +154,7 @@ class SessionStoryShareService {
     return byteData.buffer.asUint8List();
   }
 
-  double _resolvePixelRatio(ui.RenderRepaintBoundary boundary, {double targetMegaPixels = 5}) {
+  double _resolvePixelRatio(RenderRepaintBoundary boundary, {double targetMegaPixels = 5}) {
     return _resolvePixelRatioForSize(boundary.size, targetMegaPixels: targetMegaPixels);
   }
 
