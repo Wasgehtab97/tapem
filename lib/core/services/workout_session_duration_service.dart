@@ -70,6 +70,12 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   String? _firstSessionId;
   String? _lastSessionId;
   int? _lastActivityEpochMs;
+  String? _trainingSessionId;
+  final Set<String> _exerciseIds = <String>{};
+  int _aggregatedSetCount = 0;
+  double _aggregatedVolume = 0;
+  String? _latestNote;
+  bool _reportedSessionOpened = false;
 
   WorkoutSessionDurationService({
     FirebaseFirestore? firestore,
@@ -119,7 +125,19 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _firstSessionId = null;
     _lastSessionId = null;
     _lastActivityEpochMs = null;
+    _trainingSessionId = null;
+    _exerciseIds.clear();
+    _aggregatedSetCount = 0;
+    _aggregatedVolume = 0;
+    _latestNote = null;
+    _reportedSessionOpened = false;
     _startEpochMs = null;
+    _trainingSessionId = null;
+    _exerciseIds.clear();
+    _aggregatedSetCount = 0;
+    _aggregatedVolume = 0;
+    _latestNote = null;
+    _reportedSessionOpened = false;
     var shouldNotify = false;
 
     if (newKey != null) {
@@ -130,6 +148,28 @@ class WorkoutSessionDurationService extends ChangeNotifier {
           _startEpochMs = data['startEpochMs'] as int?;
           _firstSessionId = data['firstSessionId'] as String?;
           _lastSessionId = data['lastSessionId'] as String?;
+          _trainingSessionId = data['trainingSessionId'] as String?;
+          _reportedSessionOpened = data['reportedSessionOpened'] == true;
+          final rawExercises = data['exerciseIds'];
+          _exerciseIds
+            ..clear()
+            ..addAll(rawExercises is Iterable
+                ? rawExercises.whereType<String>()
+                : const Iterable<String>.empty());
+          final setCount = data['aggregatedSetCount'];
+          if (setCount is int) {
+            _aggregatedSetCount = setCount;
+          } else if (setCount is num) {
+            _aggregatedSetCount = setCount.toInt();
+          }
+          final volume = data['aggregatedVolume'];
+          if (volume is num) {
+            _aggregatedVolume = volume.toDouble();
+          }
+          final latestNote = data['latestNote'];
+          if (latestNote is String && latestNote.isNotEmpty) {
+            _latestNote = latestNote;
+          }
           final lastMs =
               data['lastActivityEpochMs'] ?? data['lastSessionEpochMs'];
           if (lastMs is int) {
@@ -179,6 +219,12 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _firstSessionId = null;
     _lastSessionId = null;
     _lastActivityEpochMs = null;
+    _trainingSessionId = null;
+    _exerciseIds.clear();
+    _aggregatedSetCount = 0;
+    _aggregatedVolume = 0;
+    _latestNote = null;
+    _reportedSessionOpened = false;
     _autoStopTimer?.cancel();
     _isRunning = true;
     await _persistState();
@@ -190,12 +236,30 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   Future<void> registerSession({
     required String sessionId,
     required DateTime completedAt,
+    required int setCount,
+    required double totalVolume,
+    String? exerciseId,
+    String? note,
   }) async {
     if (!_isRunning || _startEpochMs == null) return;
     _firstSessionId ??= sessionId;
     _lastSessionId = sessionId;
+    _trainingSessionId ??= _firstSessionId ?? sessionId;
+    if (setCount > 0) {
+      _aggregatedSetCount += setCount;
+    }
+    if (totalVolume > 0) {
+      _aggregatedVolume += totalVolume;
+    }
+    if (exerciseId != null && exerciseId.isNotEmpty) {
+      _exerciseIds.add(exerciseId);
+    }
+    if (note != null && note.trim().isNotEmpty) {
+      _latestNote = note.trim();
+    }
     _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
     await _persistState();
+    await _syncOpenSession(activityTime: completedAt);
     _scheduleAutoStop();
   }
 
@@ -205,7 +269,151 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     if (!_isRunning || _startEpochMs == null) return;
     _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
     await _persistState();
+    await _syncOpenSession(activityTime: completedAt, activityOnly: true);
     _scheduleAutoStop();
+  }
+
+  Future<void> registerActivity({
+    required DateTime occurredAt,
+  }) async {
+    if (!_isRunning || _startEpochMs == null) return;
+    _lastActivityEpochMs = occurredAt.millisecondsSinceEpoch;
+    await _persistState();
+    await _syncOpenSession(activityTime: occurredAt, activityOnly: true);
+    _scheduleAutoStop();
+  }
+
+  double _durationMinutes(DateTime reference) {
+    if (_startEpochMs == null) {
+      return 0;
+    }
+    final start = DateTime.fromMillisecondsSinceEpoch(_startEpochMs!);
+    final diff = reference.difference(start);
+    if (diff.isNegative) {
+      return 0;
+    }
+    return diff.inSeconds / 60.0;
+  }
+
+  Map<String, dynamic> _summaryPayload(DateTime reference) {
+    return {
+      'setCount': _aggregatedSetCount,
+      'exerciseCount': _exerciseIds.length,
+      'totalVolume': _aggregatedVolume,
+      'durationMin': _durationMinutes(reference),
+    };
+  }
+
+  DocumentReference<Map<String, dynamic>>? _sessionDocRef() {
+    final uid = _uid;
+    final gymId = _gymId;
+    final sessionId = _trainingSessionId;
+    if (uid == null || gymId == null || sessionId == null) {
+      return null;
+    }
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('sessions')
+        .doc(sessionId);
+  }
+
+  Future<void> _syncOpenSession({
+    required DateTime activityTime,
+    bool activityOnly = false,
+  }) async {
+    if (!_isRunning || _startEpochMs == null) {
+      return;
+    }
+    _trainingSessionId ??= _firstSessionId ?? _lastSessionId;
+    final ref = _sessionDocRef();
+    if (ref == null) {
+      return;
+    }
+    final summary = _summaryPayload(activityTime);
+    final payload = <String, dynamic>{
+      'status': 'open',
+      'gymId': _gymId,
+      'startedAt': Timestamp.fromMillisecondsSinceEpoch(_startEpochMs!),
+      'lastActivityAt': Timestamp.fromDate(activityTime),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'summary': summary,
+    };
+    if (_latestNote != null && _latestNote!.isNotEmpty) {
+      payload['note'] = _latestNote;
+    }
+    try {
+      await ref.set(payload, SetOptions(merge: true));
+      if (!_reportedSessionOpened) {
+        _reportedSessionOpened = true;
+        _telemetry?.sessionOpened(
+          sessionId: ref.id,
+          gymId: _gymId!,
+        );
+      }
+      _telemetry?.sessionActivityLogged(
+        sessionId: ref.id,
+        gymId: _gymId!,
+        setCount: _aggregatedSetCount,
+        durationMin: summary['durationMin'] as double,
+      );
+    } on FirebaseException {
+      // fall back to local persistence only
+    }
+    if (!_reportedSessionOpened && !activityOnly) {
+      // ensure telemetry is reported even if Firestore write fails silently
+      _reportedSessionOpened = true;
+      _telemetry?.sessionOpened(
+        sessionId: ref.id,
+        gymId: _gymId!,
+      );
+    }
+  }
+
+  Future<void> _finalizeSessionDocument({
+    required DateTime activityReference,
+    required DateTime resolvedEnd,
+    required bool manual,
+  }) async {
+    final ref = _sessionDocRef();
+    if (ref == null || _startEpochMs == null) {
+      return;
+    }
+    final summary = _summaryPayload(resolvedEnd);
+    final payload = <String, dynamic>{
+      'status': 'closed',
+      'gymId': _gymId,
+      'startedAt': Timestamp.fromMillisecondsSinceEpoch(_startEpochMs!),
+      'lastActivityAt': Timestamp.fromDate(activityReference),
+      'endAt': Timestamp.fromDate(resolvedEnd),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'summary': summary,
+    };
+    if (_latestNote != null && _latestNote!.isNotEmpty) {
+      payload['note'] = _latestNote;
+    }
+    try {
+      await ref.set(payload, SetOptions(merge: true));
+    } on FirebaseException {
+      // ignore, rely on local persistence
+    }
+    final durationMin = summary['durationMin'] as double;
+    final setCount = summary['setCount'] as int;
+    if (manual) {
+      _telemetry?.sessionClosedManual(
+        sessionId: ref.id,
+        gymId: _gymId!,
+        setCount: setCount,
+        durationMin: durationMin,
+      );
+    } else {
+      _telemetry?.sessionClosedIdle(
+        sessionId: ref.id,
+        gymId: _gymId!,
+        setCount: setCount,
+        durationMin: durationMin,
+      );
+    }
   }
 
   /// Prompts the user whether to save or discard the current session.
@@ -409,6 +617,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     }
 
     resolvedSessionId ??= _uuid.v4();
+    _trainingSessionId ??= resolvedSessionId;
 
     final metaRef = _firestore
         .collection('gyms')
@@ -439,6 +648,22 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
     _telemetry?.timerStopSave(
         durationMs: durationMs, dayKey: dayKey, hasSets: hasSets);
+
+    final manualClosure = endTime == null;
+    final now = DateTime.now();
+    final lastActivity = _lastActivityEpochMs != null
+        ? DateTime.fromMillisecondsSinceEpoch(_lastActivityEpochMs!)
+        : end;
+    final idleWindow = _autoStopDelay;
+    final idleCandidate = lastActivity.add(idleWindow);
+    final resolvedEndAt = manualClosure
+        ? now
+        : (idleCandidate.isBefore(now) ? idleCandidate : now);
+    await _finalizeSessionDocument(
+      activityReference: lastActivity,
+      resolvedEnd: resolvedEndAt,
+      manual: manualClosure,
+    );
 
     await _clearLocal();
   }
@@ -517,6 +742,12 @@ class WorkoutSessionDurationService extends ChangeNotifier {
       'gymId': gymId,
       if (_firstSessionId != null) 'firstSessionId': _firstSessionId,
       if (_lastSessionId != null) 'lastSessionId': _lastSessionId,
+      if (_trainingSessionId != null) 'trainingSessionId': _trainingSessionId,
+      'aggregatedSetCount': _aggregatedSetCount,
+      'aggregatedVolume': _aggregatedVolume,
+      if (_exerciseIds.isNotEmpty) 'exerciseIds': _exerciseIds.toList(),
+      if (_latestNote != null) 'latestNote': _latestNote,
+      'reportedSessionOpened': _reportedSessionOpened,
       if (_lastActivityEpochMs != null) ...{
         'lastActivityEpochMs': _lastActivityEpochMs,
         'lastSessionEpochMs': _lastActivityEpochMs,

@@ -35,7 +35,14 @@ void main() {
 
     await service.start(uid: 'u1', gymId: 'g1');
     final endTime = DateTime.now().add(const Duration(minutes: 90));
-    await service.registerSession(sessionId: 'session-1', completedAt: endTime);
+    await service.registerSession(
+      sessionId: 'session-1',
+      completedAt: endTime,
+      setCount: 3,
+      totalVolume: 120,
+      exerciseId: 'ex-1',
+      note: 'session note',
+    );
 
     // wait for the auto stop timer to trigger
     await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -93,6 +100,112 @@ void main() {
     final expectedDuration = setCompletion.millisecondsSinceEpoch -
         startTs.toDate().millisecondsSinceEpoch;
     expect(data['durationMs'], expectedDuration);
+  });
+
+  test('session document reflects activity lifecycle', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(
+      firestore: firestore,
+      autoStopDelay: const Duration(milliseconds: 50),
+    );
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'u1', gymId: 'g1');
+    final completedAt = DateTime.now();
+    await service.registerSession(
+      sessionId: 'session-1',
+      completedAt: completedAt,
+      setCount: 5,
+      totalVolume: 180,
+      exerciseId: 'ex-1',
+      note: 'focus',
+    );
+
+    final doc = await firestore
+        .collection('users')
+        .doc('u1')
+        .collection('sessions')
+        .doc('session-1')
+        .get();
+
+    expect(doc.exists, isTrue);
+    final data = doc.data()!;
+    expect(data['status'], 'open');
+    expect(data['gymId'], 'g1');
+    final summary = data['summary'] as Map<String, dynamic>;
+    expect(summary['setCount'], 5);
+    expect(summary['exerciseCount'], 1);
+    expect((summary['totalVolume'] as num).toDouble(), 180);
+    final lastActivity = (data['lastActivityAt'] as Timestamp).toDate();
+    expect(lastActivity.difference(completedAt).inMilliseconds.abs(), lessThan(500));
+  });
+
+  test('manual save closes session with now endAt', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(
+      firestore: firestore,
+      autoStopDelay: const Duration(milliseconds: 50),
+    );
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'u1', gymId: 'g1');
+    final completedAt = DateTime.now();
+    await service.registerSession(
+      sessionId: 'session-1',
+      completedAt: completedAt,
+      setCount: 4,
+      totalVolume: 160,
+      exerciseId: 'ex-1',
+    );
+
+    final before = DateTime.now();
+    await service.save();
+    final after = DateTime.now();
+
+    final doc = await firestore
+        .collection('users')
+        .doc('u1')
+        .collection('sessions')
+        .doc('session-1')
+        .get();
+    final data = doc.data()!;
+    expect(data['status'], 'closed');
+    final endAt = (data['endAt'] as Timestamp).toDate();
+    expect(endAt.isAfter(before) || endAt.isAtSameMomentAs(before), isTrue);
+    expect(endAt.isBefore(after) || endAt.isAtSameMomentAs(after), isTrue);
+  });
+
+  test('idle auto close respects inactivity window', () async {
+    final firestore = FakeFirebaseFirestore();
+    final service = WorkoutSessionDurationService(
+      firestore: firestore,
+      autoStopDelay: const Duration(milliseconds: 50),
+    );
+    addTearDown(service.dispose);
+
+    await service.start(uid: 'u1', gymId: 'g1');
+    final completedAt = DateTime.now();
+    await service.registerSession(
+      sessionId: 'session-1',
+      completedAt: completedAt,
+      setCount: 2,
+      totalVolume: 40,
+      exerciseId: 'ex-1',
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    final doc = await firestore
+        .collection('users')
+        .doc('u1')
+        .collection('sessions')
+        .doc('session-1')
+        .get();
+    final data = doc.data()!;
+    expect(data['status'], 'closed');
+    final endAt = (data['endAt'] as Timestamp).toDate();
+    final expected = completedAt.add(const Duration(milliseconds: 50));
+    expect(endAt.difference(expected).inMilliseconds.abs(), lessThan(60));
   });
 
   test('setActiveContext isolates timers per user and gym', () async {

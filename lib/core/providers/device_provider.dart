@@ -524,6 +524,12 @@ class DeviceProvider extends ChangeNotifier {
       _log(
         '✅ [Provider] loadDevice done device=${_device!.name} exerciseId=$exerciseId',
       );
+      final durationService = _sessionDurationService;
+      if (durationService != null) {
+        unawaited(
+          durationService.registerActivity(occurredAt: DateTime.now()),
+        );
+      }
     } catch (e, st) {
       _error = e.toString();
       _log('❌ [Provider] loadDevice error: $e', st);
@@ -1196,12 +1202,17 @@ class DeviceProvider extends ChangeNotifier {
         tz = DateTime.now().timeZoneName;
       }
       final batch = _firestore.batch();
+      var totalVolume = 0.0;
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
         final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
         final weight = double.tryParse(weightStr) ?? 0;
         final isBw = set['isBodyweight'] == true;
+        final reps = int.parse(set['reps']!);
+        if (!isBw) {
+          totalVolume += weight * reps;
+        }
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
           'userId': userId,
@@ -1209,7 +1220,7 @@ class DeviceProvider extends ChangeNotifier {
           'sessionId': sessionId,
           'timestamp': ts,
           'weight': weight,
-          'reps': int.parse(set['reps']!),
+          'reps': reps,
           'setNumber': int.parse(set['number']),
           'note': _note,
           'tz': tz,
@@ -1224,6 +1235,7 @@ class DeviceProvider extends ChangeNotifier {
             final repsVal = int.tryParse(drop['reps']!);
             if (weight != null && repsVal != null) {
               dropEntriesForLog.add({'kg': weight, 'reps': repsVal});
+              totalVolume += weight * repsVal;
             }
           }
         }
@@ -1271,6 +1283,10 @@ class DeviceProvider extends ChangeNotifier {
       await durationService?.registerSession(
         sessionId: sessionId,
         completedAt: ts.toDate(),
+        setCount: savedSets.length,
+        totalVolume: totalVolume,
+        exerciseId: _device!.isMulti ? _currentExerciseId : _device!.uid,
+        note: _note,
       );
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
