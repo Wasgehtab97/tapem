@@ -2,6 +2,8 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 
+const xpEngine = require('./xp_engine');
+
 function computeEpleyOneRepMax(weight, reps) {
   if (!Number.isFinite(weight) || weight <= 0) {
     return null;
@@ -388,7 +390,21 @@ async function handleSessionClosed(message) {
     { merge: true }
   );
 
-  return { created: createdEvents.length, total: sessionEventsSnap.size };
+  const xpResult = await xpEngine.awardSessionXp({
+    db,
+    userId,
+    sessionId,
+    sessionRef,
+    sessionData,
+    logs: relevantLogs,
+    prEvents: sessionEventsSnap.docs.map((doc) => doc.data() || {}),
+  });
+
+  return {
+    created: createdEvents.length,
+    total: sessionEventsSnap.size,
+    xp: xpResult,
+  };
 }
 
 const onSessionClosed = functions.pubsub

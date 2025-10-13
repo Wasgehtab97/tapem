@@ -90,7 +90,7 @@ service cloud.firestore {
     }
 
     function sessionSummaryValid(summary) {
-      return summary.keys().hasOnly(['setCount', 'exerciseCount', 'totalVolume', 'durationMin', 'prCount', 'prTypes']) &&
+      return summary.keys().hasOnly(['setCount', 'exerciseCount', 'totalVolume', 'durationMin', 'prCount', 'prTypes', 'xpTotal']) &&
         summary.setCount is int &&
         summary.exerciseCount is int &&
         summary.totalVolume is number &&
@@ -99,7 +99,8 @@ service cloud.firestore {
         (!('prTypes' in summary) || (
           summary.prTypes is list &&
           summary.prTypes.hasOnly(['first_device', 'first_exercise', 'e1rm', 'volume'])
-        ));
+        )) &&
+        (!('xpTotal' in summary) || summary.xpTotal is number);
     }
 
     function sessionDataValid(data) {
@@ -406,6 +407,11 @@ service cloud.firestore {
         allow create: if isOwner(uid) && sessionDataValid(request.resource.data);
         allow update: if isOwner(uid) && sessionDataValid(request.resource.data);
         allow delete: if false;
+      }
+
+      match /xp/{scope}/days/{dayId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
       }
 
       match /prEvents/{prId} {
