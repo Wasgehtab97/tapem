@@ -3,6 +3,7 @@ process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 const fft = require('firebase-functions-test')({ projectId: 'demo-prs' });
 const admin = require('firebase-admin');
 const prs = require('../prs');
+const xpEngine = require('../xp_engine');
 
 describe('personal record detectors', () => {
   afterAll(() => {
@@ -115,6 +116,7 @@ describe('personal record detectors', () => {
     const result = await prs._test.handleSessionClosed({ userId, sessionId, gymId });
     expect(result.created).toBeGreaterThanOrEqual(4);
     expect(result.total).toBeGreaterThanOrEqual(4);
+    expect(result.xp.totalXp).toBeGreaterThan(0);
 
     const sessionEventsSnap = await eventsCol.where('sessionId', '==', sessionId).get();
     expect(sessionEventsSnap.size).toBe(4);
@@ -133,9 +135,23 @@ describe('personal record detectors', () => {
     const sessionSnap = await sessionRef.get();
     expect(sessionSnap.data().summary.prCount).toBe(4);
     expect(sessionSnap.data().summary.prTypes).toEqual(['e1rm', 'first_device', 'first_exercise', 'volume']);
+    expect(sessionSnap.data().summary.xpTotal).toBeCloseTo(result.xp.totalXp, 2);
+
+    const expectedBase = xpEngine.computeSetXp({ weight: 100, reps: 5, rir: null, isBodyweight: false });
+    const expectedBonus = 10 + 5 + 3 + 3;
+    const dayRef = xpEngine._test.getDayRef({ db, userId, dayKey: '20240101' });
+    const daySnap = await dayRef.get();
+    expect(daySnap.exists).toBe(true);
+    const dayData = daySnap.data();
+    expect(dayData.sessions).toContain(sessionId);
+    expect(dayData.total).toBeCloseTo(expectedBase + expectedBonus, 2);
+    expect(dayData.byDevice.dev-1).toBeCloseTo(expectedBase + expectedBonus, 2);
+    expect(dayData.byMuscle.pecs).toBeCloseTo((expectedBase + expectedBonus) / 2, 2);
+    expect(dayData.byMuscle.triceps).toBeCloseTo((expectedBase + expectedBonus) / 2, 2);
 
     const rerun = await prs._test.handleSessionClosed({ userId, sessionId, gymId });
     expect(rerun.created).toBe(0);
     expect(rerun.total).toBe(4);
+    expect(rerun.xp.awarded).toBe(false);
   });
 });
