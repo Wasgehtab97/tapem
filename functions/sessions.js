@@ -45,6 +45,10 @@ async function closeSessionDocument(docRef, data, options = {}) {
     exerciseCount: Number.isFinite(summary.exerciseCount) ? summary.exerciseCount : 0,
     totalVolume: Number.isFinite(summary.totalVolume) ? summary.totalVolume : 0,
     durationMin: computeDurationMinutes(startedAt, endAtDate),
+    prCount: Number.isFinite(summary.prCount) ? summary.prCount : 0,
+    prTypes: Array.isArray(summary.prTypes)
+      ? summary.prTypes.filter((item) => typeof item === 'string')
+      : [],
   };
 
   await docRef.set(

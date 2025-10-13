@@ -47,6 +47,8 @@ describe('session helpers', () => {
     const doc = await ref.get();
     expect(doc.data().status).toBe('closed');
     expect(doc.data().summary.setCount).toBe(3);
+    expect(doc.data().summary.prCount).toBe(0);
+    expect(doc.data().summary.prTypes).toEqual([]);
   });
 });
 
