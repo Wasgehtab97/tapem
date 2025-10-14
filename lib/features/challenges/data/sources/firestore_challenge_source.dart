@@ -122,37 +122,33 @@ class FirestoreChallengeSource {
       debugPrint('🔍 required sets for ${ch.id}: ${ch.minSets}');
       try {
         var logCount = 0;
-        if (ch.deviceIds.isEmpty) {
-          final snap =
-              await _firestore
-                  .collectionGroup('logs')
-                  .where('userId', isEqualTo: userId)
-                  .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                  .where('timestamp', isLessThanOrEqualTo: ch.end)
-                  .get();
-          logCount = snap.size;
-        } else {
-          // Firestore erlaubt maximal 10 IDs pro whereIn-Query.
-          final chunks = <List<String>>[];
-          for (var i = 0; i < ch.deviceIds.length; i += 10) {
-            chunks.add(
-              ch.deviceIds.sublist(
-                i,
-                i + 10 > ch.deviceIds.length ? ch.deviceIds.length : i + 10,
-              ),
+        try {
+          if (ch.deviceIds.isEmpty) {
+            logCount = await _countSetsViaSessions(
+              userId: userId,
+              start: ch.start,
+              end: ch.end,
             );
+          } else {
+            for (final ids in _chunkDeviceIds(ch.deviceIds)) {
+              logCount += await _countSetsViaSessions(
+                userId: userId,
+                start: ch.start,
+                end: ch.end,
+                deviceIds: ids,
+              );
+            }
           }
-
-          for (final ids in chunks) {
-            final snap =
-                await _firestore
-                    .collectionGroup('logs')
-                    .where('userId', isEqualTo: userId)
-                    .where('deviceId', whereIn: ids)
-                    .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                    .where('timestamp', isLessThanOrEqualTo: ch.end)
-                    .get();
-            logCount += snap.size;
+        } on FirebaseException catch (e) {
+          if (e.code == 'failed-precondition') {
+            logCount = await _countSetsViaLogs(
+              userId: userId,
+              start: ch.start,
+              end: ch.end,
+              deviceIds: ch.deviceIds.isEmpty ? null : ch.deviceIds,
+            );
+          } else {
+            rethrow;
           }
         }
         debugPrint(
@@ -234,6 +230,77 @@ class FirestoreChallengeSource {
       } on FirebaseException catch (e) {
         debugPrint('🔥 error checking challenge ${ch.id}: ${e.message}');
       }
+    }
+  }
+
+  Future<int> _countSetsViaSessions({
+    required String userId,
+    required DateTime start,
+    required DateTime end,
+    List<String>? deviceIds,
+  }) async {
+    final startTs = Timestamp.fromDate(start);
+    final endTs = Timestamp.fromDate(end);
+    Query<Map<String, dynamic>> query = _firestore
+        .collectionGroup('sessions')
+        .where('userId', isEqualTo: userId)
+        .where('createdAt', isGreaterThanOrEqualTo: startTs)
+        .where('createdAt', isLessThanOrEqualTo: endTs);
+    if (deviceIds != null && deviceIds.isNotEmpty) {
+      query = query.where('deviceId', whereIn: deviceIds);
+    }
+    final snap = await query.get();
+    var total = 0;
+    for (final doc in snap.docs) {
+      final sets = doc.data()['sets'] as List<dynamic>? ?? const [];
+      for (final raw in sets) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        if (map['done'] == true) {
+          total += 1;
+        }
+      }
+    }
+    return total;
+  }
+
+  Future<int> _countSetsViaLogs({
+    required String userId,
+    required DateTime start,
+    required DateTime end,
+    List<String>? deviceIds,
+  }) async {
+    final startTs = Timestamp.fromDate(start);
+    final endTs = Timestamp.fromDate(end);
+    if (deviceIds == null || deviceIds.isEmpty) {
+      final snap = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: startTs)
+          .where('timestamp', isLessThanOrEqualTo: endTs)
+          .get();
+      return snap.size;
+    }
+    var total = 0;
+    for (final ids in _chunkDeviceIds(deviceIds)) {
+      final snap = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .where('deviceId', whereIn: ids)
+          .where('timestamp', isGreaterThanOrEqualTo: startTs)
+          .where('timestamp', isLessThanOrEqualTo: endTs)
+          .get();
+      total += snap.size;
+    }
+    return total;
+  }
+
+  Iterable<List<String>> _chunkDeviceIds(List<String> ids, [int size = 10]) sync* {
+    if (ids.isEmpty) {
+      return;
+    }
+    for (var i = 0; i < ids.length; i += size) {
+      final end = (i + size) > ids.length ? ids.length : i + size;
+      yield ids.sublist(i, end);
     }
   }
 }
