@@ -377,6 +377,7 @@ class _DropdownField<T> extends StatelessWidget {
           value: value,
           items: items,
           onChanged: onChanged,
+          isExpanded: true,
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
