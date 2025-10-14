@@ -182,6 +182,10 @@ class ProfileProvider extends ChangeNotifier {
         elogError('PROFILE_SESSION_INDEX', e.message ?? e.toString(), st);
         return false;
       }
+      if (e.code == 'permission-denied') {
+        elogWarn('PROFILE_SESSION_PERMISSION', e.message ?? e.toString());
+        return false;
+      }
       rethrow;
     }
   }
