@@ -311,9 +311,15 @@ class ProfileProvider extends ChangeNotifier {
       );
 
     final usages = <FavoriteExerciseUsage>[];
+    final deviceNameCache = <String, String>{};
+    final exerciseNameCache = <String, String>{};
 
     for (final aggregate in sortedAggregates.take(5)) {
-      final name = await _resolveExerciseName(aggregate);
+      final name = await _resolveExerciseName(
+        aggregate,
+        deviceNameCache: deviceNameCache,
+        exerciseNameCache: exerciseNameCache,
+      );
       usages.add(
         FavoriteExerciseUsage(
           name: name,
@@ -327,41 +333,61 @@ class ProfileProvider extends ChangeNotifier {
         usages.isEmpty ? null : usages.first.name;
   }
 
-  Future<String> _resolveExerciseName(_ExerciseAggregate aggregate) async {
+  Future<String> _resolveExerciseName(
+    _ExerciseAggregate aggregate, {
+    required Map<String, String> deviceNameCache,
+    required Map<String, String> exerciseNameCache,
+  }) async {
     try {
       final deviceRef = FirebaseFirestore.instance
           .collection('gyms')
           .doc(aggregate.gymId)
           .collection('devices')
           .doc(aggregate.deviceId);
-      String deviceName = aggregate.deviceId;
-
-      final deviceSnap = await deviceRef.get();
-      if (deviceSnap.exists) {
-        final data = deviceSnap.data();
-        final name = data?['name'] as String?;
-        if (name != null && name.trim().isNotEmpty) {
-          deviceName = name.trim();
-        }
+      final deviceKey = '${aggregate.gymId}|${aggregate.deviceId}';
+      String deviceName = deviceNameCache[deviceKey] ?? aggregate.deviceId;
+      if (!deviceNameCache.containsKey(deviceKey)) {
+        try {
+          final deviceSnap = await deviceRef.get();
+          if (deviceSnap.exists) {
+            final data = deviceSnap.data();
+            final name = data?['name'] as String?;
+            if (name != null && name.trim().isNotEmpty) {
+              deviceName = name.trim();
+            }
+          }
+        } catch (_) {}
+        deviceNameCache[deviceKey] = deviceName;
       }
 
       final exerciseId = aggregate.exerciseId;
       if (exerciseId != null && exerciseId.isNotEmpty) {
-        try {
-          final exerciseSnap =
-              await deviceRef.collection('exercises').doc(exerciseId).get();
-          final exerciseName = exerciseSnap.data()?['name'] as String?;
-          if (exerciseName != null && exerciseName.trim().isNotEmpty) {
-            return exerciseName.trim();
+        final exerciseKey = '$deviceKey|$exerciseId';
+        String? exerciseName = exerciseNameCache[exerciseKey];
+        if (exerciseName == null) {
+          try {
+            final exerciseSnap =
+                await deviceRef.collection('exercises').doc(exerciseId).get();
+            final resolved = exerciseSnap.data()?['name'] as String?;
+            if (resolved != null && resolved.trim().isNotEmpty) {
+              exerciseName = resolved.trim();
+            }
+          } catch (_) {}
+          if (exerciseName != null) {
+            exerciseNameCache[exerciseKey] = exerciseName;
           }
-        } catch (_) {}
+        }
+        if (exerciseName != null && exerciseName.trim().isNotEmpty) {
+          return exerciseName;
+        }
       }
 
-      if (deviceName.trim().isEmpty) {
+      final normalizedName = deviceName.trim();
+      if (normalizedName.isEmpty) {
         return '—';
       }
 
-      return deviceName;
+      return normalizedName;
     } catch (e, st) {
       elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
       return '—';
