@@ -1330,6 +1330,10 @@
   ,"@storycardVolumeLabel": {"description": "Label für das Trainingsvolumen"}
   ,"storycardVolumeValue": "{kilograms} kg"
   ,"@storycardVolumeValue": {"description": "Formatierter Trainingsumfang in Kilogramm","placeholders": {"kilograms": {}}}
+  ,"storycardPrSetLabel": "{weight} {unit} × {reps} Wdh."
+  ,"@storycardPrSetLabel": {"description": "Formatierter Satz, der den PR ausgelöst hat","placeholders": {"weight": {}, "unit": {}, "reps": {}}}
+  ,"storycardPrSetLabelBodyweight": "Körpergewicht × {reps} Wdh."
+  ,"@storycardPrSetLabelBodyweight": {"description": "Formatierter PR-Satz für Eigengewichtsübungen","placeholders": {"reps": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip für den Story-Button im Header"}
   ,"storiesTitle": "Stories"

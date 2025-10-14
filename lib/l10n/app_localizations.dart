@@ -2384,6 +2384,12 @@ abstract class AppLocalizations {
   /// No description provided for @storycardVolumeValue.
   String storycardVolumeValue(Object kilograms);
 
+  /// No description provided for @storycardPrSetLabel.
+  String storycardPrSetLabel(Object weight, Object unit, Object reps);
+
+  /// No description provided for @storycardPrSetLabelBodyweight.
+  String storycardPrSetLabelBodyweight(Object reps);
+
   /// No description provided for @storycardHeaderTooltip.
   String get storycardHeaderTooltip;
 

@@ -45,6 +45,7 @@ class SessionStoryRepository {
       logs: logs,
       events: prEvents,
     );
+    final e1rmSetLookup = _resolveBestE1rmSets(logs);
 
     final setCount = (summary['setCount'] as num?)?.toInt() ?? 0;
     final xpTotal = _resolveDailyXp(
@@ -68,7 +69,11 @@ class SessionStoryRepository {
 
     final badges = <SessionStoryBadge>[];
     for (final event in prEvents) {
-      final badge = await _buildBadge(event, gymId: gymId);
+      final badge = await _buildBadge(
+        event,
+        gymId: gymId,
+        e1rmSets: e1rmSetLookup,
+      );
       if (badge != null) {
         badges.add(badge);
       }
@@ -213,8 +218,11 @@ class SessionStoryRepository {
     return null;
   }
 
-  Future<SessionStoryBadge?> _buildBadge(SessionStoryPrEvent event,
-      {required String gymId}) async {
+  Future<SessionStoryBadge?> _buildBadge(
+    SessionStoryPrEvent event, {
+    required String gymId,
+    required Map<String, _BestE1rmSet> e1rmSets,
+  }) async {
     switch (event.type) {
       case SessionStoryBadgeType.firstDevice:
         final resolved = await _resolveDeviceName(gymId, event.deviceId);
@@ -237,6 +245,8 @@ class SessionStoryRepository {
         final resolved = await _resolveExerciseName(gymId, event);
         final exerciseLabel = resolved ?? event.exerciseId ?? 'Exercise';
         final unit = event.unit ?? 'kg';
+        final setKey = _buildE1rmLookupKey(event.exerciseId, event.deviceId);
+        final bestSet = e1rmSets[setKey];
         return SessionStoryBadge(
           type: event.type,
           label: '$exerciseLabel • 1RM ${_formatNumber(value)} $unit',
@@ -245,6 +255,14 @@ class SessionStoryRepository {
           value: value,
           delta: event.delta,
           unit: unit,
+          set: bestSet == null
+              ? null
+              : SessionStoryBadgeSet(
+                  weight: bestSet.weight,
+                  reps: bestSet.reps,
+                  isBodyweight: bestSet.isBodyweight,
+                  unit: unit,
+                ),
         );
       case SessionStoryBadgeType.volume:
         final value = event.value;
@@ -358,4 +376,129 @@ class SessionStoryRepository {
     }
     return value.toStringAsFixed(1);
   }
+
+  Map<String, _BestE1rmSet> _resolveBestE1rmSets(List<SessionLogEntry> logs) {
+    final result = <String, _BestE1rmSet>{};
+    for (final log in logs) {
+      final exerciseId = log.exerciseId;
+      final deviceId = log.deviceId;
+      if (exerciseId == null && deviceId == null) {
+        continue;
+      }
+      final key = _buildE1rmLookupKey(exerciseId, deviceId);
+      final sets = _extractSets(log.data);
+      for (final set in sets) {
+        if (set.reps <= 0) continue;
+        if (set.isBodyweight || set.weight <= 0) continue;
+        final e1rm = _computeEpley(set.weight, set.reps);
+        if (e1rm == null) continue;
+        final candidate = _BestE1rmSet(
+          metric: e1rm,
+          weight: set.weight,
+          reps: set.reps,
+          isBodyweight: set.isBodyweight,
+        );
+        final existing = result[key];
+        if (existing == null || candidate.metric > existing.metric) {
+          result[key] = candidate;
+        }
+      }
+    }
+    return result;
+  }
+
+  List<_RawSet> _extractSets(Map<String, dynamic> payload) {
+    final sets = <_RawSet>[];
+
+    double? _toDouble(dynamic value) {
+      if (value is num && value.isFinite) {
+        return value.toDouble();
+      }
+      if (value is String && value.trim().isNotEmpty) {
+        final parsed = double.tryParse(value);
+        if (parsed != null && parsed.isFinite) {
+          return parsed;
+        }
+      }
+      return null;
+    }
+
+    int? _toInt(dynamic value) {
+      final numeric = _toDouble(value);
+      if (numeric == null) return null;
+      return numeric.round();
+    }
+
+    final isBodyweight = payload['isBodyweight'] == true ||
+        payload['loadType'] == 'bodyweight';
+    final mainWeight = _toDouble(
+      payload['weight'] ?? payload['weightKg'] ?? payload['loadKg'],
+    );
+    final mainReps = _toInt(
+      payload['reps'] ?? payload['repCount'] ?? payload['repetitions'],
+    );
+    if (mainReps != null && mainReps > 0) {
+      sets.add(_RawSet(
+        weight: mainWeight ?? 0,
+        reps: mainReps,
+        isBodyweight: isBodyweight,
+      ));
+    }
+
+    final drops = payload['drops'] ?? payload['dropSets'];
+    if (drops is Iterable) {
+      for (final entry in drops) {
+        if (entry is! Map) continue;
+        final dropReps = _toInt(entry['reps'] ?? entry['repCount']);
+        if (dropReps == null || dropReps <= 0) continue;
+        final dropWeight = _toDouble(
+          entry['weight'] ?? entry['weightKg'] ?? entry['loadKg'],
+        );
+        sets.add(_RawSet(
+          weight: dropWeight ?? 0,
+          reps: dropReps,
+          isBodyweight: isBodyweight,
+        ));
+      }
+    }
+
+    return sets;
+  }
+
+  double? _computeEpley(double weight, int reps) {
+    if (weight <= 0 || reps <= 0) return null;
+    final value = weight * (1 + reps / 30.0);
+    if (value.isNaN || value.isInfinite) return null;
+    return value;
+  }
+
+  String _buildE1rmLookupKey(String? exerciseId, String? deviceId) {
+    return '${exerciseId ?? ''}::${deviceId ?? ''}';
+  }
+}
+
+class _RawSet {
+  final double weight;
+  final int reps;
+  final bool isBodyweight;
+
+  const _RawSet({
+    required this.weight,
+    required this.reps,
+    required this.isBodyweight,
+  });
+}
+
+class _BestE1rmSet {
+  final double metric;
+  final double weight;
+  final int reps;
+  final bool isBodyweight;
+
+  const _BestE1rmSet({
+    required this.metric,
+    required this.weight,
+    required this.reps,
+    required this.isBodyweight,
+  });
 }
