@@ -11,6 +11,7 @@ import '../../domain/services/level_service.dart';
 
 class FirestoreRankSource {
   final FirebaseFirestore _firestore;
+  final Map<String, String?> _usernameCache = {};
 
   FirestoreRankSource({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -176,15 +177,34 @@ class FirestoreRankSource {
         .collection('leaderboard')
         .where('showInLeaderboard', isEqualTo: true)
         .orderBy('level', descending: true)
-        .orderBy('xp', descending: true);
+        .orderBy('xp', descending: true)
+        .limit(50);
 
     return query.snapshots().asyncMap((snap) async {
-      final futures = snap.docs.map((d) async {
-        final userSnap = await _firestore.collection('users').doc(d.id).get();
-        final username = userSnap.data()?['username'] as String?;
-        return {'userId': d.id, 'username': username, ...d.data()};
-      });
-      return Future.wait(futures);
+      final missing = <String>[];
+      for (final doc in snap.docs) {
+        if (!_usernameCache.containsKey(doc.id)) {
+          missing.add(doc.id);
+        }
+      }
+
+      for (final uid in missing) {
+        try {
+          final userSnap = await _firestore.collection('users').doc(uid).get();
+          _usernameCache[uid] = userSnap.data()?['username'] as String?;
+        } catch (_) {
+          _usernameCache[uid] = null;
+        }
+      }
+
+      return [
+        for (final doc in snap.docs)
+          {
+            'userId': doc.id,
+            'username': _usernameCache[doc.id],
+            ...doc.data(),
+          }
+      ];
     });
   }
 

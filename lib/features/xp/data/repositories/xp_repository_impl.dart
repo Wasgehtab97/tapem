@@ -47,38 +47,46 @@ class XpRepositoryImpl implements XpRepository {
     }
 
   @override
-  Stream<int> watchDayXp({required String userId, required DateTime date}) {
-    return _source.watchDayXp(userId: userId, date: date);
+  Future<int> fetchDayXp({required String userId, required DateTime date}) {
+    return _source.fetchDayXp(userId: userId, date: date);
   }
 
   @override
-  Stream<Map<String, int>> watchMuscleXp({
+  Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
   }) {
-    return _source.watchMuscleXp(gymId: gymId, userId: userId);
+    return _source.fetchMuscleXp(gymId: gymId, userId: userId);
   }
 
   @override
-  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
+    int limit = 30,
   }) {
-    return _source.watchMuscleXpHistory(gymId: gymId, userId: userId);
+    return _source.fetchMuscleXpHistory(
+      gymId: gymId,
+      userId: userId,
+      limit: limit,
+    );
   }
 
   @override
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) {
-    return _source.watchTrainingDaysXp(userId);
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = 30,
+  }) {
+    return _source.fetchTrainingDaysXp(userId, limit: limit);
   }
 
   @override
-  Stream<int> watchDeviceXp({
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
   }) {
-    return _source.watchDeviceXp(
+    return _source.fetchDeviceXp(
       gymId: gymId,
       deviceId: deviceId,
       userId: userId,
@@ -86,10 +94,10 @@ class XpRepositoryImpl implements XpRepository {
   }
 
   @override
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
   }) {
-    return _source.watchStatsDailyXp(gymId: gymId, userId: userId);
+    return _source.fetchStatsDailyXp(gymId: gymId, userId: userId);
   }
 }

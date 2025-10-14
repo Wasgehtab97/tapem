@@ -20,6 +20,9 @@ class FirestoreXpSource {
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
 
+  static const int _historyLimit = 30;
+  static const int _trainingDayLimit = 30;
+
       Future<DeviceXpResult> addSessionXp({
         required String gymId,
         required String userId,
@@ -328,25 +331,24 @@ class FirestoreXpSource {
     throw StateError('Retry loop exited unexpectedly for $traceId');
   }
 
-    Stream<int> watchDayXp({required String userId, required DateTime date}) {
-      final dateStr = logicDayKey(date.toUtc());
+  Future<int> fetchDayXp({required String userId, required DateTime date}) async {
+    final dateStr = logicDayKey(date.toUtc());
     final ref = _firestore
         .collection('users')
         .doc(userId)
         .collection('trainingDayXP')
         .doc(dateStr);
-    debugPrint('👀 watchDayXp userId=$userId date=$dateStr');
-    return ref.snapshots().map((snap) {
-      final xp = (snap.data()?['xp'] as int?) ?? 0;
-      debugPrint('📥 dayXp snapshot $xp');
-      return xp;
-    });
+    debugPrint('⬇️ fetchDayXp userId=$userId date=$dateStr');
+    final snap = await ref.get();
+    final xp = (snap.data()?['xp'] as int?) ?? 0;
+    debugPrint('✅ fetchDayXp -> $xp');
+    return xp;
   }
 
-  Stream<Map<String, int>> watchMuscleXp({
+  Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
-  }) {
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -354,26 +356,26 @@ class FirestoreXpSource {
         .doc(userId)
         .collection('rank')
         .doc('stats');
-    debugPrint('👀 watchMuscleXp userId=$userId gymId=$gymId');
-    return doc.snapshots().map((snap) {
-      final data = snap.data() ?? {};
-      final map = <String, int>{};
-      for (final entry in data.entries) {
-        final key = entry.key;
-        if (key.endsWith('XP') && key != 'dailyXP') {
-          final group = key.substring(0, key.length - 2);
-          map[group] = (entry.value as int? ?? 0);
-        }
+    debugPrint('⬇️ fetchMuscleXp userId=$userId gymId=$gymId');
+    final snap = await doc.get();
+    final data = snap.data() ?? <String, dynamic>{};
+    final map = <String, int>{};
+    for (final entry in data.entries) {
+      final key = entry.key;
+      if (key.endsWith('XP') && key != 'dailyXP') {
+        final group = key.substring(0, key.length - 2);
+        map[group] = (entry.value as num?)?.toInt() ?? 0;
       }
-      debugPrint('📥 muscleXp snapshot ${map.length} entries $map');
-      return map;
-    });
+    }
+    debugPrint('✅ fetchMuscleXp entries=${map.length}');
+    return map;
   }
 
-  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-  }) {
+    int limit = _historyLimit,
+  }) async {
     final col = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -382,47 +384,56 @@ class FirestoreXpSource {
         .collection('rank')
         .doc('stats')
         .collection('muscleXpHistory')
-        .orderBy(FieldPath.documentId);
-    debugPrint('👀 watchMuscleXpHistory userId=$userId gymId=$gymId');
-    return col.snapshots().map((snap) {
-      final map = <String, Map<String, int>>{};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final dayMap = <String, int>{};
-        data.forEach((key, value) {
-          if (key.endsWith('XP') && key != 'dailyXP') {
-            final group = key.substring(0, key.length - 2);
-            dayMap[group] = (value as num?)?.toInt() ?? 0;
-          }
-        });
-        map[doc.id] = dayMap;
-      }
-      debugPrint('📥 muscleXpHistory snapshot days=${map.length}');
-      return map;
-    });
+        .orderBy(FieldPath.documentId, descending: true)
+        .limit(limit);
+    debugPrint(
+        '⬇️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit');
+    final snap = await col.get();
+    final docs = snap.docs.toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+    final map = <String, Map<String, int>>{};
+    for (final docSnap in docs) {
+      final data = docSnap.data();
+      final dayMap = <String, int>{};
+      data.forEach((key, value) {
+        if (key.endsWith('XP') && key != 'dailyXP') {
+          final group = key.substring(0, key.length - 2);
+          dayMap[group] = (value as num?)?.toInt() ?? 0;
+        }
+      });
+      map[docSnap.id] = dayMap;
+    }
+    debugPrint('✅ fetchMuscleXpHistory days=${map.length}');
+    return map;
   }
 
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) {
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = _trainingDayLimit,
+  }) async {
     final col = _firestore
         .collection('users')
         .doc(userId)
-        .collection('trainingDayXP');
-    debugPrint('👀 watchTrainingDaysXp userId=$userId');
-    return col.snapshots().map((snap) {
-      final map = <String, int>{};
-      for (final doc in snap.docs) {
-        map[doc.id] = (doc.data()['xp'] as int? ?? 0);
-      }
-      debugPrint('📥 trainingDays snapshot ${map.length} days');
-      return map;
-    });
+        .collection('trainingDayXP')
+        .orderBy(FieldPath.documentId, descending: true)
+        .limit(limit);
+    debugPrint('⬇️ fetchTrainingDaysXp userId=$userId limit=$limit');
+    final snap = await col.get();
+    final docs = snap.docs.toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+    final map = <String, int>{};
+    for (final docSnap in docs) {
+      map[docSnap.id] = (docSnap.data()['xp'] as num?)?.toInt() ?? 0;
+    }
+    debugPrint('✅ fetchTrainingDaysXp days=${map.length}');
+    return map;
   }
 
-  Stream<int> watchDeviceXp({
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
-  }) {
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -431,19 +442,18 @@ class FirestoreXpSource {
         .collection('leaderboard')
         .doc(userId);
     debugPrint(
-      '👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
+      '⬇️ fetchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
     );
-    return doc.snapshots().map((snap) {
-      final xp = (snap.data()?['xp'] as int?) ?? 0;
-      debugPrint('📥 deviceXp snapshot $xp');
-      return xp;
-    });
+    final snap = await doc.get();
+    final xp = (snap.data()?['xp'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ fetchDeviceXp -> $xp');
+    return xp;
   }
 
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
-  }) {
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -451,11 +461,10 @@ class FirestoreXpSource {
         .doc(userId)
         .collection('rank')
         .doc('stats');
-    debugPrint('👀 watchStatsDailyXp gymId=$gymId userId=$userId');
-    return doc.snapshots().map((snap) {
-      final xp = (snap.data()?['dailyXP'] as int?) ?? 0;
-      debugPrint('📥 stats dailyXP snapshot $xp');
-      return xp;
-    });
+    debugPrint('⬇️ fetchStatsDailyXp gymId=$gymId userId=$userId');
+    final snap = await doc.get();
+    final xp = (snap.data()?['dailyXP'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ fetchStatsDailyXp -> $xp');
+    return xp;
   }
 }

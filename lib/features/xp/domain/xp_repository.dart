@@ -14,27 +14,28 @@ abstract class XpRepository {
     List<String> secondaryMuscleGroupIds = const [],
   });
 
-  Stream<int> watchDayXp({required String userId, required DateTime date});
+  Future<int> fetchDayXp({required String userId, required DateTime date});
 
-  Stream<Map<String, int>> watchMuscleXp({
+  Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
   });
 
-  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
+    int limit = 30,
   });
 
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId);
+  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30});
 
-  Stream<int> watchDeviceXp({
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
   });
 
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
   });
