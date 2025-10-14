@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 
 class ProfileProvider extends ChangeNotifier {
   ProfileProvider();
@@ -23,6 +24,8 @@ class ProfileProvider extends ChangeNotifier {
   String? _pendingTrainingUserId;
   Future<void>? _inFlightTrainingLoad;
   bool _hasLoadedTrainingDates = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _preferLegacyLogSource = false;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -126,90 +129,20 @@ class ProfileProvider extends ChangeNotifier {
     required DateTime? createdAt,
   }) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collectionGroup('logs')
-          .where('userId', isEqualTo: userId)
-          .get();
-
-      final dateSet = <DateTime>{};
-      _exerciseAggregates.clear();
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final timestamp = (data['timestamp'] as Timestamp).toDate();
-        final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
-        dateSet.add(day);
-
-        final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
-        if (sessionId.isEmpty) {
-          continue;
-        }
-
-        final deviceRef = doc.reference.parent.parent;
-        final deviceId = deviceRef?.id ?? '';
-        final gymRef = deviceRef?.parent.parent;
-        final gymId = gymRef?.id ?? '';
-        if (deviceId.isEmpty || gymId.isEmpty) {
-          continue;
-        }
-
-        final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
-        final weight = (data['weight'] as num?)?.toDouble();
-        final reps = (data['reps'] as num?)?.toInt() ?? 0;
-        final dropWeightKg = (data['dropWeightKg'] as num?)?.toDouble();
-        final dropReps = (data['dropReps'] as num?)?.toInt();
-        final isBodyweight = data['isBodyweight'] as bool? ?? false;
-
-        final deviceAggregate = _exerciseAggregates.putIfAbsent(
-          _aggregateKey(gymId, deviceId, null),
-          () => _ExerciseAggregate(
-            gymId: gymId,
-            deviceId: deviceId,
-            exerciseId: null,
-          ),
-        );
-        deviceAggregate.register(
-          sessionId: sessionId,
-          timestamp: timestamp,
-          weight: weight,
-          reps: reps,
-          dropWeightKg: dropWeightKg,
-          dropReps: dropReps,
-          isBodyweight: isBodyweight,
-        );
-
-        final normalizedExerciseId = exerciseId.isEmpty ? null : exerciseId;
-        if (normalizedExerciseId != null) {
-          final exerciseAggregate = _exerciseAggregates.putIfAbsent(
-            _aggregateKey(gymId, deviceId, normalizedExerciseId),
-            () => _ExerciseAggregate(
-              gymId: gymId,
-              deviceId: deviceId,
-              exerciseId: normalizedExerciseId,
-            ),
+      final loadedWithSessions = !_preferLegacyLogSource &&
+          await _loadTrainingDatesFromSessions(
+            userId: userId,
+            createdAt: createdAt,
           );
-          exerciseAggregate.register(
-            sessionId: sessionId,
-            timestamp: timestamp,
-            weight: weight,
-            reps: reps,
-            dropWeightKg: dropWeightKg,
-            dropReps: dropReps,
-            isBodyweight: isBodyweight,
-          );
-        }
+      if (!loadedWithSessions) {
+        await _loadTrainingDatesFromLegacyLogs(
+          userId: userId,
+          createdAt: createdAt,
+        );
+        _preferLegacyLogSource = true;
+      } else {
+        _preferLegacyLogSource = false;
       }
-
-      _trainingDayDates = dateSet.toList()
-        ..sort((a, b) => a.compareTo(b));
-      _trainingDates = _trainingDayDates
-          .map((dt) =>
-              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
-          .toList();
-      _totalTrainingDays = _trainingDates.length;
-      _avgTrainingDaysPerWeek =
-          _calculateAverageTrainingDaysPerWeek(createdAt);
-      await _resolveFavoriteExercises(_exerciseAggregates.values);
       _hasLoadedTrainingDates = true;
       _lastLoadedUserId = userId;
     } catch (e, st) {
@@ -226,6 +159,263 @@ class ProfileProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> _loadTrainingDatesFromSessions({
+    required String userId,
+    required DateTime? createdAt,
+  }) async {
+    try {
+      final snap = await _firestore
+          .collectionGroup('sessions')
+          .where('userId', isEqualTo: userId)
+          .get();
+      if (snap.docs.isEmpty) {
+        if (await _hasLegacyLogs(userId)) {
+          return false;
+        }
+      }
+      await _processSessionDocs(snap.docs, createdAt);
+      return true;
+    } on FirebaseException catch (e, st) {
+      if (e.code == 'failed-precondition') {
+        elogError('PROFILE_SESSION_INDEX', e.message ?? e.toString(), st);
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _loadTrainingDatesFromLegacyLogs({
+    required String userId,
+    required DateTime? createdAt,
+  }) async {
+    final snapshot = await _firestore
+        .collectionGroup('logs')
+        .where('userId', isEqualTo: userId)
+        .get();
+    await _processLegacyLogDocs(snapshot.docs, createdAt);
+  }
+
+  Future<bool> _hasLegacyLogs(String userId) async {
+    try {
+      final snap = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+      return snap.docs.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _processSessionDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    DateTime? createdAt,
+  ) async {
+    final dateSet = <DateTime>{};
+    _exerciseAggregates.clear();
+
+    for (final doc in docs) {
+      DeviceSessionSnapshot session;
+      try {
+        session = DeviceSessionSnapshot.fromJson(doc.data());
+      } catch (_) {
+        continue;
+      }
+      final timestamp = session.createdAt;
+      final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
+      dateSet.add(day);
+
+      final sessionId = session.sessionId.trim();
+      if (sessionId.isEmpty) {
+        continue;
+      }
+
+      final deviceRef = doc.reference.parent.parent;
+      final gymRef = deviceRef?.parent?.parent;
+      final deviceId = deviceRef?.id ?? '';
+      final gymId = gymRef?.id ?? '';
+      if (deviceId.isEmpty || gymId.isEmpty) {
+        continue;
+      }
+
+      final exerciseIdRaw = session.exerciseId?.trim();
+      final exerciseId =
+          (exerciseIdRaw == null || exerciseIdRaw.isEmpty) ? null : exerciseIdRaw;
+
+      _registerSessionSets(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        sessionId: sessionId,
+        timestamp: timestamp,
+        sets: session.sets,
+      );
+    }
+
+    _finalizeTrainingDates(dateSet, createdAt);
+    await _resolveFavoriteExercises(_exerciseAggregates.values);
+  }
+
+  void _registerSessionSets({
+    required String gymId,
+    required String deviceId,
+    required String? exerciseId,
+    required String sessionId,
+    required DateTime timestamp,
+    required List<SetEntry> sets,
+  }) {
+    for (final set in sets) {
+      if (!set.done) continue;
+      final drop = _firstValidDrop(set.drops);
+      _registerAggregateEntry(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        sessionId: sessionId,
+        timestamp: timestamp,
+        weight: set.kg.toDouble(),
+        reps: set.reps,
+        dropWeightKg: drop?.kg.toDouble(),
+        dropReps: drop?.reps,
+        isBodyweight: set.isBodyweight,
+      );
+    }
+  }
+
+  DropEntry? _firstValidDrop(List<DropEntry> drops) {
+    for (final drop in drops) {
+      final kg = drop.kg.toDouble();
+      final reps = drop.reps;
+      if (kg > 0 && reps > 0) {
+        return drop;
+      }
+    }
+    return null;
+  }
+
+  void _registerAggregateEntry({
+    required String gymId,
+    required String deviceId,
+    required String? exerciseId,
+    required String sessionId,
+    required DateTime timestamp,
+    required double? weight,
+    required int reps,
+    required double? dropWeightKg,
+    required int? dropReps,
+    required bool isBodyweight,
+  }) {
+    final deviceAggregate = _exerciseAggregates.putIfAbsent(
+      _aggregateKey(gymId, deviceId, null),
+      () => _ExerciseAggregate(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: null,
+      ),
+    );
+    deviceAggregate.register(
+      sessionId: sessionId,
+      timestamp: timestamp,
+      weight: weight,
+      reps: reps,
+      dropWeightKg: dropWeightKg,
+      dropReps: dropReps,
+      isBodyweight: isBodyweight,
+    );
+
+    if (exerciseId != null) {
+      final exerciseAggregate = _exerciseAggregates.putIfAbsent(
+        _aggregateKey(gymId, deviceId, exerciseId),
+        () => _ExerciseAggregate(
+          gymId: gymId,
+          deviceId: deviceId,
+          exerciseId: exerciseId,
+        ),
+      );
+      exerciseAggregate.register(
+        sessionId: sessionId,
+        timestamp: timestamp,
+        weight: weight,
+        reps: reps,
+        dropWeightKg: dropWeightKg,
+        dropReps: dropReps,
+        isBodyweight: isBodyweight,
+      );
+    }
+  }
+
+  Future<void> _processLegacyLogDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    DateTime? createdAt,
+  ) async {
+    final dateSet = <DateTime>{};
+    _exerciseAggregates.clear();
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final ts = data['timestamp'];
+      if (ts is! Timestamp) {
+        continue;
+      }
+      final timestamp = ts.toDate();
+      final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
+      dateSet.add(day);
+
+      final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
+      if (sessionId.isEmpty) {
+        continue;
+      }
+
+      final deviceRef = doc.reference.parent.parent;
+      final gymRef = deviceRef?.parent?.parent;
+      final deviceId = deviceRef?.id ?? '';
+      final gymId = gymRef?.id ?? '';
+      if (deviceId.isEmpty || gymId.isEmpty) {
+        continue;
+      }
+
+      final exerciseIdRaw = (data['exerciseId'] as String?)?.trim();
+      final exerciseId =
+          (exerciseIdRaw == null || exerciseIdRaw.isEmpty) ? null : exerciseIdRaw;
+      final weight = (data['weight'] as num?)?.toDouble();
+      final reps = (data['reps'] as num?)?.toInt() ?? 0;
+      final dropWeightKg = (data['dropWeightKg'] as num?)?.toDouble();
+      final dropReps = (data['dropReps'] as num?)?.toInt();
+      final isBodyweight = data['isBodyweight'] as bool? ?? false;
+
+      _registerAggregateEntry(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        sessionId: sessionId,
+        timestamp: timestamp,
+        weight: weight,
+        reps: reps,
+        dropWeightKg: dropWeightKg,
+        dropReps: dropReps,
+        isBodyweight: isBodyweight,
+      );
+    }
+
+    _finalizeTrainingDates(dateSet, createdAt);
+    await _resolveFavoriteExercises(_exerciseAggregates.values);
+  }
+
+  void _finalizeTrainingDates(Set<DateTime> dateSet, DateTime? createdAt) {
+    _trainingDayDates = dateSet.toList()
+      ..sort((a, b) => a.compareTo(b));
+    _trainingDates = _trainingDayDates
+        .map(
+          (dt) =>
+              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
+        )
+        .toList();
+    _totalTrainingDays = _trainingDates.length;
+    _avgTrainingDaysPerWeek =
+        _calculateAverageTrainingDaysPerWeek(createdAt);
   }
 
   double _calculateAverageTrainingDaysPerWeek(
