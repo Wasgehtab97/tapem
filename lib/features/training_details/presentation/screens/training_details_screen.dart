@@ -236,10 +236,6 @@ Future<void> _openStory(
           target: target,
         );
       },
-      onSaved: () {
-        elogUi('storycard_saved', {'sessionId': story.sessionId});
-        analytics.trackStorySaved(userId: userId, sessionId: story.sessionId);
-      },
     );
   } catch (error, stack) {
     debugPrint(

@@ -12,7 +12,6 @@ class SessionStoryModal extends StatefulWidget {
   final SessionStoryShareService shareService;
   final Future<Uri?> Function()? buildLink;
   final void Function(String? target)? onShared;
-  final VoidCallback? onSaved;
   final VoidCallback? onViewed;
 
   const SessionStoryModal({
@@ -21,7 +20,6 @@ class SessionStoryModal extends StatefulWidget {
     required this.shareService,
     this.buildLink,
     this.onShared,
-    this.onSaved,
     this.onViewed,
   });
 
@@ -31,7 +29,6 @@ class SessionStoryModal extends StatefulWidget {
     required SessionStoryShareService shareService,
     Future<Uri?> Function()? buildLink,
     void Function(String? target)? onShared,
-    VoidCallback? onSaved,
     VoidCallback? onViewed,
   }) async {
     await showModalBottomSheet(
@@ -48,7 +45,6 @@ class SessionStoryModal extends StatefulWidget {
           shareService: shareService,
           buildLink: buildLink,
           onShared: onShared,
-          onSaved: onSaved,
           onViewed: onViewed,
         ),
       ),
@@ -63,7 +59,6 @@ class _SessionStoryModalState extends State<SessionStoryModal> {
   final GlobalKey _repaintKey = GlobalKey();
   late final ConfettiController _confettiController;
   bool _isSharing = false;
-  bool _isSaving = false;
 
   @override
   void initState() {
@@ -130,20 +125,6 @@ class _SessionStoryModalState extends State<SessionStoryModal> {
                     const SizedBox(height: 24),
                     Row(
                       children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.download),
-                            label: Text(loc.storycardSaveButton),
-                            onPressed: _isSaving ? null : _handleSave,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton.icon(
                             icon: _isSharing
@@ -228,31 +209,4 @@ class _SessionStoryModalState extends State<SessionStoryModal> {
     }
   }
 
-  Future<void> _handleSave() async {
-    setState(() {
-      _isSaving = true;
-    });
-    final messenger = ScaffoldMessenger.of(context);
-    final loc = AppLocalizations.of(context)!;
-    try {
-      final path = await widget.shareService.saveImage(
-        repaintKey: _repaintKey,
-        data: widget.story,
-      );
-      widget.onSaved?.call();
-      messenger.showSnackBar(
-        SnackBar(content: Text(loc.storycardSaveSuccess(path))),
-      );
-    } catch (error) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(loc.storycardSaveError(error.toString()))),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
-  }
 }

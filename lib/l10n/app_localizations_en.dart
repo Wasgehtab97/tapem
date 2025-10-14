@@ -1421,9 +1421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storycardTitle => 'Session Story';
 
   @override
-  String get storycardSaveButton => 'Save';
-
-  @override
   String get storycardShareButton => 'Share';
 
   @override
@@ -1438,36 +1435,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String storycardSaveSuccess(Object path) {
-    return 'Saved to $path';
-  }
-
-  @override
-  String storycardSaveError(Object error) {
-    return 'Could not save: $error';
-  }
-
-  @override
   String get storycardLoadError => 'Story could not be loaded.';
 
   @override
-  String storycardXpTotal(Object xp) {
-    return '$xp XP';
+  String storycardDailyXp(Object xp) {
+    return '+$xp Daily XP';
   }
 
   @override
-  String storycardXpBreakdown(Object base, Object bonus) {
-    return 'Base $base • Bonus $bonus';
-  }
+  String get storycardDailyXpDescription => "Awarded for completing today's training session.";
 
   @override
   String get storycardPrSectionTitle => 'Personal Records';
-
-  @override
-  String get storycardMuscleSectionTitle => 'Top Muscles';
-
-  @override
-  String get storycardMuscleFallback => 'No muscle data yet – keep training!';
 
   @override
   String get storycardSetsLabel => 'Sets';
@@ -1486,11 +1465,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String storycardVolumeValue(Object kilograms) {
     return '$kilograms kg';
-  }
-
-  @override
-  String storycardMuscleXpValue(Object xp) {
-    return '$xp XP';
   }
 
   @override

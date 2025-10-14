@@ -23,11 +23,9 @@ class SessionStoryCard extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final dateFormat = DateFormat.yMMMMd(localeName);
     final headline = '${dateFormat.format(data.occurredAt)} • ${data.gymName ?? data.gymId}';
-    final baseLabel = NumberFormat.decimalPattern(localeName).format(data.baseXp.round());
-    final bonusLabel = NumberFormat.decimalPattern(localeName).format(data.bonusXp.round());
     final xpLabel = NumberFormat.decimalPattern(localeName).format(data.xpTotal.round());
-    final xpTotalText = loc.storycardXpTotal(xpLabel);
-    final xpBreakdownText = loc.storycardXpBreakdown(baseLabel, bonusLabel);
+    final xpTotalText = loc.storycardDailyXp(xpLabel);
+    final xpDescription = loc.storycardDailyXpDescription;
 
     return RepaintBoundary(
       key: repaintKey,
@@ -55,7 +53,7 @@ class SessionStoryCard extends StatelessWidget {
               const SizedBox(height: 16),
               _XpSummary(
                 xpLabel: xpTotalText,
-                breakdownLabel: xpBreakdownText,
+                description: xpDescription,
               ),
               const SizedBox(height: 20),
               _SessionStats(data: data),
@@ -77,27 +75,6 @@ class SessionStoryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
               ],
-              Text(
-                loc.storycardMuscleSectionTitle,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(color: colorScheme.onPrimaryContainer),
-              ),
-              const SizedBox(height: 12),
-              if (data.hasMuscles)
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final muscle in data.muscles)
-                      _MuscleChip(muscle: muscle),
-                  ],
-                )
-              else
-                Text(
-                  loc.storycardMuscleFallback,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: colorScheme.onPrimaryContainer.withOpacity(0.8)),
-                ),
             ],
           ),
         ),
@@ -136,11 +113,11 @@ class _Headline extends StatelessWidget {
 
 class _XpSummary extends StatelessWidget {
   final String xpLabel;
-  final String breakdownLabel;
+  final String description;
 
   const _XpSummary({
     required this.xpLabel,
-    required this.breakdownLabel,
+    required this.description,
   });
 
   @override
@@ -162,7 +139,7 @@ class _XpSummary extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                breakdownLabel,
+                description,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onPrimaryContainer.withOpacity(0.8),
                 ),
@@ -300,51 +277,6 @@ class _PrBadgeChip extends StatelessWidget {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MuscleChip extends StatelessWidget {
-  final SessionStoryMuscle muscle;
-
-  const _MuscleChip({required this.muscle});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final loc = AppLocalizations.of(context)!;
-    final localeName = Localizations.localeOf(context).toString();
-    final xpLabel = loc.storycardMuscleXpValue(
-      NumberFormat('#,##0.0', localeName).format(muscle.xp),
-    );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.onPrimary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.whatshot, size: 18, color: colorScheme.onPrimaryContainer),
-          const SizedBox(width: 6),
-          Text(
-            muscle.displayName,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            xpLabel,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onPrimaryContainer.withOpacity(0.75),
-            ),
-          ),
         ],
       ),
     );

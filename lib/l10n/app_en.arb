@@ -1302,8 +1302,6 @@
   ,"@commonClose": {"description": "Tooltip label for closing overlays"}
   ,"storycardTitle": "Session Story"
   ,"@storycardTitle": {"description": "Title shown on the session story modal"}
-  ,"storycardSaveButton": "Save"
-  ,"@storycardSaveButton": {"description": "Button label to save the story card image"}
   ,"storycardShareButton": "Share"
   ,"@storycardShareButton": {"description": "Button label to share the story card"}
   ,"storycardShareSuccess": "Story shared"
@@ -1312,22 +1310,14 @@
   ,"@storycardShareUnavailable": {"description": "Snack bar when the platform cannot share"}
   ,"storycardShareError": "Could not share: {error}"
   ,"@storycardShareError": {"description": "Snack bar when sharing fails","placeholders": {"error": {}}}
-  ,"storycardSaveSuccess": "Saved to {path}"
-  ,"@storycardSaveSuccess": {"description": "Snack bar when saving succeeds","placeholders": {"path": {}}}
-  ,"storycardSaveError": "Could not save: {error}"
-  ,"@storycardSaveError": {"description": "Snack bar when saving fails","placeholders": {"error": {}}}
   ,"storycardLoadError": "Story could not be loaded."
   ,"@storycardLoadError": {"description": "Snack bar when the story fails to load"}
-  ,"storycardXpTotal": "{xp} XP"
-  ,"@storycardXpTotal": {"description": "Label for the total XP value","placeholders": {"xp": {}}}
-  ,"storycardXpBreakdown": "Base {base} • Bonus {bonus}"
-  ,"@storycardXpBreakdown": {"description": "Breakdown of base and bonus XP","placeholders": {"base": {},"bonus": {}}}
+  ,"storycardDailyXp": "+{xp} Daily XP"
+  ,"@storycardDailyXp": {"description": "Headline showing the daily XP earned","placeholders": {"xp": {}}}
+  ,"storycardDailyXpDescription": "Awarded for completing today's training session."
+  ,"@storycardDailyXpDescription": {"description": "Subtitle explaining the daily XP"}
   ,"storycardPrSectionTitle": "Personal Records"
   ,"@storycardPrSectionTitle": {"description": "Section title above the PR badges"}
-  ,"storycardMuscleSectionTitle": "Top Muscles"
-  ,"@storycardMuscleSectionTitle": {"description": "Section title above the top muscles chips"}
-  ,"storycardMuscleFallback": "No muscle data yet – keep training!"
-  ,"@storycardMuscleFallback": {"description": "Fallback copy when no muscle stats are available"}
   ,"storycardSetsLabel": "Sets"
   ,"@storycardSetsLabel": {"description": "Label for the set count tile"}
   ,"storycardDurationLabel": "Duration"
@@ -1338,8 +1328,6 @@
   ,"@storycardVolumeLabel": {"description": "Label for the total volume tile"}
   ,"storycardVolumeValue": "{kilograms} kg"
   ,"@storycardVolumeValue": {"description": "Formatted training volume in kilograms","placeholders": {"kilograms": {}}}
-  ,"storycardMuscleXpValue": "{xp} XP"
-  ,"@storycardMuscleXpValue": {"description": "XP suffix shown on muscle chips","placeholders": {"xp": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip for the header story button"}
   ,"storiesTitle": "Stories"

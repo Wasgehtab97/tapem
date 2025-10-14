@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import 'package:tapem/features/rank/domain/services/level_service.dart';
+
 import '../domain/session_story_data.dart';
 import '../domain/session_xp_calculator.dart';
 
@@ -44,11 +46,13 @@ class SessionStoryRepository {
       events: prEvents,
     );
 
-    final xpTotal = summary['xpTotal'] is num
-        ? (summary['xpTotal'] as num).toDouble()
-        : xpBreakdown.totalXp;
-    final baseXp = xpBreakdown.baseXp;
-    final bonusXp = xpBreakdown.bonusXp;
+    final setCount = (summary['setCount'] as num?)?.toInt() ?? 0;
+    final xpTotal = _resolveDailyXp(
+      summary: summary,
+      hasCompletedSets: setCount > 0,
+    );
+    final baseXp = xpTotal;
+    const bonusXp = 0.0;
 
     final topMuscles = xpBreakdown.perMuscle.entries
         .toList()
@@ -81,13 +85,46 @@ class SessionStoryRepository {
       xpTotal: xpTotal,
       baseXp: baseXp,
       bonusXp: bonusXp,
-      setCount: (summary['setCount'] as num?)?.toInt() ?? 0,
+      setCount: setCount,
       exerciseCount: (summary['exerciseCount'] as num?)?.toInt() ?? 0,
       totalVolume: (summary['totalVolume'] as num?)?.toDouble() ?? 0,
       durationMinutes: (summary['durationMin'] as num?)?.toDouble() ?? 0,
       badges: badges,
       muscles: muscles,
     );
+  }
+
+  double _resolveDailyXp({
+    required Map<String, dynamic> summary,
+    required bool hasCompletedSets,
+  }) {
+    num? _firstNumber(Iterable<dynamic> values) {
+      for (final value in values) {
+        if (value is num) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final xpMap = summary['xp'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(summary['xp'] as Map)
+        : const <String, dynamic>{};
+    final candidate = _firstNumber([
+      summary['dailyXp'],
+      summary['xpDaily'],
+      summary['xpPerSession'],
+      summary['xp_total_daily'],
+      xpMap['daily'],
+      xpMap['session'],
+    ]);
+    if (candidate != null && candidate > 0) {
+      return candidate.toDouble();
+    }
+    if (hasCompletedSets) {
+      return LevelService.xpPerSession.toDouble();
+    }
+    return 0;
   }
 
   Future<List<SessionStoryPrEvent>> _fetchPrEvents({
@@ -197,14 +234,17 @@ class SessionStoryRepository {
         );
       case SessionStoryBadgeType.estimatedOneRepMax:
         final value = event.value;
+        final resolved = await _resolveExerciseName(gymId, event);
+        final exerciseLabel = resolved ?? event.exerciseId ?? 'Exercise';
+        final unit = event.unit ?? 'kg';
         return SessionStoryBadge(
           type: event.type,
-          label: '1RM ${_formatNumber(value)}',
-          deltaLabel: _formatDelta(event.delta, event.unit ?? 'kg'),
+          label: '$exerciseLabel • 1RM ${_formatNumber(value)} $unit',
+          deltaLabel: _formatDelta(event.delta, unit),
           icon: Icons.military_tech,
           value: value,
           delta: event.delta,
-          unit: event.unit,
+          unit: unit,
         );
       case SessionStoryBadgeType.volume:
         final value = event.value;
