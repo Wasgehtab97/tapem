@@ -350,6 +350,16 @@
     "description": "Kurze Überschrift für den Trainingskalender im Profil"
   },
 
+  "profileStoryButtonTitle": "Story",
+  "@profileStoryButtonTitle": {
+    "description": "Titel für die Story-Aktion auf der Profilseite"
+  },
+
+  "profileStoryButtonSubtitle": "Erlebe deinen Trainingstag",
+  "@profileStoryButtonSubtitle": {
+    "description": "Untertitel für die Story-Aktion auf der Profilseite"
+  },
+
   "profileStatsButtonLabel": "Statistiken",
   "@profileStatsButtonLabel": {
     "description": "Button auf der Profilseite für die Statistik-Ansicht"
@@ -358,6 +368,71 @@
   "profileStatsButtonSubtitle": "Entdecke deine Fortschritte",
   "@profileStatsButtonSubtitle": {
     "description": "Untertitel für den Statistik-Button auf der Profilseite"
+  },
+
+  "sessionStoryTitle": "Session-Story",
+  "@sessionStoryTitle": {
+    "description": "Titel des Session-Story-Overlays"
+  },
+
+  "sessionStoryDailyXpLabel": "Tägliche XP",
+  "@sessionStoryDailyXpLabel": {
+    "description": "Beschriftung für das tägliche XP-Highlight"
+  },
+
+  "sessionStoryBadgesLabel": "Highlights",
+  "@sessionStoryBadgesLabel": {
+    "description": "Überschrift der Session-Story-Badges"
+  },
+
+  "sessionStorySetsLabel": "Sätze",
+  "@sessionStorySetsLabel": {
+    "description": "Beschriftung für die gesamte Satzzahl"
+  },
+
+  "sessionStoryDurationLabel": "Dauer",
+  "@sessionStoryDurationLabel": {
+    "description": "Beschriftung für die Trainingsdauer"
+  },
+
+  "sessionStoryVolumeLabel": "Volumen",
+  "@sessionStoryVolumeLabel": {
+    "description": "Beschriftung für das bewegte Gesamtvolumen"
+  },
+
+  "sessionStoryNoBadges": "Noch keine Highlights",
+  "@sessionStoryNoBadges": {
+    "description": "Platzhaltertext, wenn keine Story-Badges vorhanden sind"
+  },
+
+  "sessionStoryEmptyState": "Für heute liegen keine Trainingsdaten vor.",
+  "@sessionStoryEmptyState": {
+    "description": "Hinweis, wenn für die Story keine Daten existieren"
+  },
+
+  "sessionStoryErrorTitle": "Story konnte nicht geladen werden",
+  "@sessionStoryErrorTitle": {
+    "description": "Titel für den Fehlerzustand der Session-Story"
+  },
+
+  "sessionStoryCloseButton": "Schließen",
+  "@sessionStoryCloseButton": {
+    "description": "Beschriftung für den Schließen-Button der Session-Story"
+  },
+
+  "sessionStoryBadgeFirstDevice": "Erstes Mal an diesem Gerät",
+  "@sessionStoryBadgeFirstDevice": {
+    "description": "Badge-Text für die erste Gerätenutzung"
+  },
+
+  "sessionStoryBadgeFirstExercise": "Erstes Mal in dieser Übung",
+  "@sessionStoryBadgeFirstExercise": {
+    "description": "Badge-Text für die erste Übungsnutzung"
+  },
+
+  "sessionStoryBadgeRecord": "Neuer 1RM-Rekord",
+  "@sessionStoryBadgeRecord": {
+    "description": "Badge-Text für einen neuen geschätzten 1RM-Rekord"
   },
 
   "profileStatsTitle": "Statistiken",

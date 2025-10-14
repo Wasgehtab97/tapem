@@ -350,6 +350,16 @@
     "description": "Short heading for the training days calendar on the profile"
   },
 
+  "profileStoryButtonTitle": "Story",
+  "@profileStoryButtonTitle": {
+    "description": "Title for the story action on the profile screen"
+  },
+
+  "profileStoryButtonSubtitle": "Relive your training day",
+  "@profileStoryButtonSubtitle": {
+    "description": "Subtitle for the story action on the profile screen"
+  },
+
   "profileStatsButtonLabel": "Statistics",
   "@profileStatsButtonLabel": {
     "description": "Button label on profile screen to open the statistics page"
@@ -358,6 +368,71 @@
   "profileStatsButtonSubtitle": "Dive into your progress highlights",
   "@profileStatsButtonSubtitle": {
     "description": "Subtitle for the statistics call-to-action on the profile screen"
+  },
+
+  "sessionStoryTitle": "Session Story",
+  "@sessionStoryTitle": {
+    "description": "Title for the session story overlay"
+  },
+
+  "sessionStoryDailyXpLabel": "Daily XP",
+  "@sessionStoryDailyXpLabel": {
+    "description": "Label for the daily XP highlight"
+  },
+
+  "sessionStoryBadgesLabel": "Highlights",
+  "@sessionStoryBadgesLabel": {
+    "description": "Heading for the session story badges"
+  },
+
+  "sessionStorySetsLabel": "Sets",
+  "@sessionStorySetsLabel": {
+    "description": "Label for total sets statistic"
+  },
+
+  "sessionStoryDurationLabel": "Duration",
+  "@sessionStoryDurationLabel": {
+    "description": "Label for total duration statistic"
+  },
+
+  "sessionStoryVolumeLabel": "Volume",
+  "@sessionStoryVolumeLabel": {
+    "description": "Label for total volume statistic"
+  },
+
+  "sessionStoryNoBadges": "No highlights yet",
+  "@sessionStoryNoBadges": {
+    "description": "Placeholder text when there are no story badges"
+  },
+
+  "sessionStoryEmptyState": "No training data available for today.",
+  "@sessionStoryEmptyState": {
+    "description": "Message when the story overlay has no data"
+  },
+
+  "sessionStoryErrorTitle": "Couldn't load story",
+  "@sessionStoryErrorTitle": {
+    "description": "Title for error state of session story"
+  },
+
+  "sessionStoryCloseButton": "Close",
+  "@sessionStoryCloseButton": {
+    "description": "Label for closing the session story dialog"
+  },
+
+  "sessionStoryBadgeFirstDevice": "First time on this machine",
+  "@sessionStoryBadgeFirstDevice": {
+    "description": "Badge label for first device usage"
+  },
+
+  "sessionStoryBadgeFirstExercise": "First time on this exercise",
+  "@sessionStoryBadgeFirstExercise": {
+    "description": "Badge label for first exercise usage"
+  },
+
+  "sessionStoryBadgeRecord": "New 1RM record",
+  "@sessionStoryBadgeRecord": {
+    "description": "Badge label for a new estimated 1RM personal record"
   },
 
   "profileStatsTitle": "Statistics",

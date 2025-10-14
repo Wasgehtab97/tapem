@@ -35,6 +35,7 @@ import 'package:tapem/features/friends/presentation/screens/friends_home_screen.
 import '../widgets/change_username_sheet.dart';
 import 'package:tapem/app_router.dart';
 import 'profile_stats_screen.dart';
+import '../widgets/session_story_dialog.dart';
 
 const bool enableFriends = true;
 
@@ -429,6 +430,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openStoryCard() {
+    final auth = context.read<AuthProvider>();
+    final userId = auth.userId;
+    final gymId = auth.gymCode;
+    if (userId == null || gymId == null || userId.isEmpty || gymId.isEmpty) {
+      return;
+    }
+    final profile = context.read<ProfileProvider>();
+    final gymName = context.read<GymProvider>().gym?.name;
+    showSessionStoryDialog(
+      context: context,
+      date: DateTime.now(),
+      userId: userId,
+      gymId: gymId,
+      profileProvider: profile,
+      gymName: gymName,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
@@ -584,6 +604,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: _ProfileActionButton(
+                    title: loc.profileStoryButtonTitle,
+                    subtitle: loc.profileStoryButtonSubtitle,
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: _ProfileStoryLeadingIcon(),
+                    ),
+                    onTap: _openStoryCard,
+                    uiLogEvent: 'PROFILE_STORY_CARD_RENDER',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
+                  child: _ProfileActionButton(
                     title: loc.surveyListTitle,
                     subtitle: loc.reportViewSurveysTitle,
                     leading: const SizedBox.square(
@@ -633,6 +667,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileStoryLeadingIcon extends StatelessWidget {
+  const _ProfileStoryLeadingIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        border: Border.all(color: borderColor),
+      ),
+      child: Icon(
+        Icons.auto_awesome,
+        size: 28,
+        color: brandColor,
       ),
     );
   }

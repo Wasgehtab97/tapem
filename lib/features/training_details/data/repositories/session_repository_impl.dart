@@ -131,6 +131,7 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceId: first.deviceId,
           deviceName: deviceName,
           deviceDescription: deviceDescription,
+          exerciseId: first.exerciseId.isEmpty ? null : first.exerciseId,
           timestamp: first.timestamp,
           note: first.note,
           sets: sets,
