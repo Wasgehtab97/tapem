@@ -146,6 +146,32 @@ describe('Security Rules v1', function () {
         .collection('rank')
         .doc('stats')
         .set({ dailyXP: 420 });
+
+      await db
+        .collection('users')
+        .doc('userA')
+        .collection('xp')
+        .doc('daily')
+        .collection('days')
+        .doc('20240101')
+        .set({
+          total: 120,
+          byDevice: { D1: 120 },
+          byMuscle: { chest: 80 },
+          sessions: ['sA1'],
+        });
+
+      await db
+        .collection('users')
+        .doc('userB')
+        .collection('xp')
+        .doc('daily')
+        .collection('days')
+        .doc('20240101')
+        .set({
+          total: 45,
+          sessions: ['sB1'],
+        });
     });
   });
 
@@ -301,6 +327,42 @@ describe('Security Rules v1', function () {
         .collection('sessions')
         .doc('newSession');
       await assertFails(ref.set({ userId: 'user2' }));
+    });
+
+    it('allows owner to read xp day aggregate', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('xp')
+        .doc('daily')
+        .collection('days')
+        .doc('20240101');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks other users from reading xp day aggregate', async () => {
+      const db = userB().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('xp')
+        .doc('daily')
+        .collection('days')
+        .doc('20240101');
+      await assertFails(ref.get());
+    });
+
+    it('blocks direct client writes to xp day aggregate', async () => {
+      const db = userA().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('xp')
+        .doc('daily')
+        .collection('days')
+        .doc('20240101');
+      await assertFails(ref.set({ total: 9999 }));
     });
 
     it('allows user to create own membership', async () => {

@@ -1298,4 +1298,96 @@
   ,"@numericKeypadSemanticsIncrease": {"description": "Semantics label for the increase button"}
   ,"numericKeypadSemanticsHideKeyboard": "Hide keyboard"
   ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantics label for the hide keyboard button"}
+  ,"commonClose": "Close"
+  ,"@commonClose": {"description": "Tooltip label for closing overlays"}
+  ,"storycardTitle": "Session Story"
+  ,"@storycardTitle": {"description": "Title shown on the session story modal"}
+  ,"storycardSaveButton": "Save"
+  ,"@storycardSaveButton": {"description": "Button label to save the story card image"}
+  ,"storycardShareButton": "Share"
+  ,"@storycardShareButton": {"description": "Button label to share the story card"}
+  ,"storycardShareSuccess": "Story shared"
+  ,"@storycardShareSuccess": {"description": "Snack bar after a successful share"}
+  ,"storycardShareUnavailable": "Share sheet unavailable"
+  ,"@storycardShareUnavailable": {"description": "Snack bar when the platform cannot share"}
+  ,"storycardShareError": "Could not share: {error}"
+  ,"@storycardShareError": {"description": "Snack bar when sharing fails","placeholders": {"error": {}}}
+  ,"storycardSaveSuccess": "Saved to {path}"
+  ,"@storycardSaveSuccess": {"description": "Snack bar when saving succeeds","placeholders": {"path": {}}}
+  ,"storycardSaveError": "Could not save: {error}"
+  ,"@storycardSaveError": {"description": "Snack bar when saving fails","placeholders": {"error": {}}}
+  ,"storycardLoadError": "Story could not be loaded."
+  ,"@storycardLoadError": {"description": "Snack bar when the story fails to load"}
+  ,"storycardXpTotal": "{xp} XP"
+  ,"@storycardXpTotal": {"description": "Label for the total XP value","placeholders": {"xp": {}}}
+  ,"storycardXpBreakdown": "Base {base} • Bonus {bonus}"
+  ,"@storycardXpBreakdown": {"description": "Breakdown of base and bonus XP","placeholders": {"base": {},"bonus": {}}}
+  ,"storycardPrSectionTitle": "Personal Records"
+  ,"@storycardPrSectionTitle": {"description": "Section title above the PR badges"}
+  ,"storycardMuscleSectionTitle": "Top Muscles"
+  ,"@storycardMuscleSectionTitle": {"description": "Section title above the top muscles chips"}
+  ,"storycardMuscleFallback": "No muscle data yet – keep training!"
+  ,"@storycardMuscleFallback": {"description": "Fallback copy when no muscle stats are available"}
+  ,"storycardSetsLabel": "Sets"
+  ,"@storycardSetsLabel": {"description": "Label for the set count tile"}
+  ,"storycardDurationLabel": "Duration"
+  ,"@storycardDurationLabel": {"description": "Label for the workout duration tile"}
+  ,"storycardDurationValue": "{minutes} min"
+  ,"@storycardDurationValue": {"description": "Formatted duration in minutes","placeholders": {"minutes": {}}}
+  ,"storycardVolumeLabel": "Volume"
+  ,"@storycardVolumeLabel": {"description": "Label for the total volume tile"}
+  ,"storycardVolumeValue": "{kilograms} kg"
+  ,"@storycardVolumeValue": {"description": "Formatted training volume in kilograms","placeholders": {"kilograms": {}}}
+  ,"storycardMuscleXpValue": "{xp} XP"
+  ,"@storycardMuscleXpValue": {"description": "XP suffix shown on muscle chips","placeholders": {"xp": {}}}
+  ,"storycardHeaderTooltip": "Story"
+  ,"@storycardHeaderTooltip": {"description": "Tooltip for the header story button"}
+  ,"storiesTitle": "Stories"
+  ,"@storiesTitle": {"description": "Title of the story timeline screen"}
+  ,"storiesFilterPrType": "PR type"
+  ,"@storiesFilterPrType": {"description": "Label for the PR type filter"}
+  ,"storiesFilterRange": "Timeframe"
+  ,"@storiesFilterRange": {"description": "Label for the timeframe filter"}
+  ,"storiesFilterGym": "Gym"
+  ,"@storiesFilterGym": {"description": "Label for the gym filter"}
+  ,"storiesFilterPrAll": "All sessions"
+  ,"@storiesFilterPrAll": {"description": "Option label for showing all stories"}
+  ,"storiesFilterPrOnly": "With PRs"
+  ,"@storiesFilterPrOnly": {"description": "Option label for stories that contain PRs"}
+  ,"storiesFilterPrFirsts": "First times"
+  ,"@storiesFilterPrFirsts": {"description": "Option label for stories with first device/exercise PRs"}
+  ,"storiesFilterPrStrength": "1RM records"
+  ,"@storiesFilterPrStrength": {"description": "Option label for e1RM PRs"}
+  ,"storiesFilterPrVolume": "Volume records"
+  ,"@storiesFilterPrVolume": {"description": "Option label for volume PRs"}
+  ,"storiesFilterRange30": "Last 30 days"
+  ,"@storiesFilterRange30": {"description": "Time range option for last 30 days"}
+  ,"storiesFilterRange90": "Last 90 days"
+  ,"@storiesFilterRange90": {"description": "Time range option for last 90 days"}
+  ,"storiesFilterRangeYear": "This year"
+  ,"@storiesFilterRangeYear": {"description": "Time range option for the current year"}
+  ,"storiesFilterRangeAll": "All time"
+  ,"@storiesFilterRangeAll": {"description": "Time range option for all time"}
+  ,"storiesFilterGymAll": "All gyms"
+  ,"@storiesFilterGymAll": {"description": "Option label for all gyms"}
+  ,"storiesEmptyState": "No stories yet – finish a session to unlock your timeline."
+  ,"@storiesEmptyState": {"description": "Empty state message when no stories exist"}
+  ,"storiesErrorState": "Stories could not be loaded."
+  ,"@storiesErrorState": {"description": "Error state message when stories fail to load"}
+  ,"storiesKpiShareRate": "Share rate"
+  ,"@storiesKpiShareRate": {"description": "Label for the share rate KPI"}
+  ,"storiesKpiPrRate": "PR sessions"
+  ,"@storiesKpiPrRate": {"description": "Label for the PR sessions per 100 KPI"}
+  ,"storiesKpiAverageXp": "Average XP"
+  ,"@storiesKpiAverageXp": {"description": "Label for the average XP per session KPI"}
+  ,"storiesListPrCount": "{count} PRs"
+  ,"@storiesListPrCount": {"description": "Label for the number of PRs in a story list item","placeholders": {"count": {"type": "int"}}}
+  ,"storiesListNoPrs": "No PRs"
+  ,"@storiesListNoPrs": {"description": "Label when a story has no PRs"}
+  ,"storiesListXp": "{xp} XP"
+  ,"@storiesListXp": {"description": "Label for XP in the story timeline list","placeholders": {"xp": {}}}
+  ,"profileStoriesButtonTitle": "Stories"
+  ,"@profileStoriesButtonTitle": {"description": "Title of the profile card linking to the story timeline"}
+  ,"profileStoriesButtonSubtitle": "Timeline of your session highlights"
+  ,"@profileStoriesButtonSubtitle": {"description": "Subtitle for the profile card linking to the story timeline"}
 }

@@ -1414,4 +1414,162 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
+
+  @override
+  String get commonClose => 'Schließen';
+
+  @override
+  String get storycardTitle => 'Session-Story';
+
+  @override
+  String get storycardSaveButton => 'Speichern';
+
+  @override
+  String get storycardShareButton => 'Teilen';
+
+  @override
+  String get storycardShareSuccess => 'Story geteilt';
+
+  @override
+  String get storycardShareUnavailable => 'Teilen nicht verfügbar';
+
+  @override
+  String storycardShareError(Object error) {
+    return 'Teilen fehlgeschlagen: $error';
+  }
+
+  @override
+  String storycardSaveSuccess(Object path) {
+    return 'Gespeichert unter $path';
+  }
+
+  @override
+  String storycardSaveError(Object error) {
+    return 'Speichern fehlgeschlagen: $error';
+  }
+
+  @override
+  String get storycardLoadError => 'Story konnte nicht geladen werden.';
+
+  @override
+  String storycardXpTotal(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String storycardXpBreakdown(Object base, Object bonus) {
+    return 'Basis $base • Bonus $bonus';
+  }
+
+  @override
+  String get storycardPrSectionTitle => 'Neue PRs';
+
+  @override
+  String get storycardMuscleSectionTitle => 'Top-Muskeln';
+
+  @override
+  String get storycardMuscleFallback => 'Noch keine Muskeldaten – trainiere weiter!';
+
+  @override
+  String get storycardSetsLabel => 'Sätze';
+
+  @override
+  String get storycardDurationLabel => 'Dauer';
+
+  @override
+  String storycardDurationValue(Object minutes) {
+    return '$minutes Min';
+  }
+
+  @override
+  String get storycardVolumeLabel => 'Volumen';
+
+  @override
+  String storycardVolumeValue(Object kilograms) {
+    return '$kilograms kg';
+  }
+
+  @override
+  String storycardMuscleXpValue(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get storycardHeaderTooltip => 'Story';
+
+  @override
+  String get storiesTitle => 'Stories';
+
+  @override
+  String get storiesFilterPrType => 'PR-Typ';
+
+  @override
+  String get storiesFilterRange => 'Zeitraum';
+
+  @override
+  String get storiesFilterGym => 'Studio';
+
+  @override
+  String get storiesFilterPrAll => 'Alle Sessions';
+
+  @override
+  String get storiesFilterPrOnly => 'Mit PRs';
+
+  @override
+  String get storiesFilterPrFirsts => 'Erste Male';
+
+  @override
+  String get storiesFilterPrStrength => '1RM-Rekorde';
+
+  @override
+  String get storiesFilterPrVolume => 'Volumen-Rekorde';
+
+  @override
+  String get storiesFilterRange30 => 'Letzte 30 Tage';
+
+  @override
+  String get storiesFilterRange90 => 'Letzte 90 Tage';
+
+  @override
+  String get storiesFilterRangeYear => 'Dieses Jahr';
+
+  @override
+  String get storiesFilterRangeAll => 'Gesamter Zeitraum';
+
+  @override
+  String get storiesFilterGymAll => 'Alle Studios';
+
+  @override
+  String get storiesEmptyState => 'Noch keine Stories – schließe eine Session ab, um Highlights zu sehen.';
+
+  @override
+  String get storiesErrorState => 'Stories konnten nicht geladen werden.';
+
+  @override
+  String get storiesKpiShareRate => 'Share-Rate';
+
+  @override
+  String get storiesKpiPrRate => 'PR-Sessions';
+
+  @override
+  String get storiesKpiAverageXp => 'Ø XP';
+
+  @override
+  String storiesListPrCount(Object count) {
+    return '$count PRs';
+  }
+
+  @override
+  String get storiesListNoPrs => 'Keine PRs';
+
+  @override
+  String storiesListXp(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get profileStoriesButtonTitle => 'Stories';
+
+  @override
+  String get profileStoriesButtonSubtitle => 'Timeline deiner Session-Highlights';
 }
