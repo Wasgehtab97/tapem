@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:tapem/core/logging/firestore_read_logger.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
@@ -120,11 +121,23 @@ class PowerliftingProvider extends ChangeNotifier {
 
     try {
       await _membership.ensureMembership(gymId, uid);
-      final snapshot = await _firestore
+      final assignmentsQuery = _firestore
           .collection('users')
           .doc(uid)
-          .collection(_assignmentCollection)
-          .get();
+          .collection(_assignmentCollection);
+      FirestoreReadLogger.logStart(
+        scope: 'profile.powerlifting',
+        path: 'users/$uid/$_assignmentCollection',
+        operation: 'get',
+        reason: 'loadAssignments',
+      );
+      final snapshot = await assignmentsQuery.get();
+      FirestoreReadLogger.logResult(
+        scope: 'profile.powerlifting',
+        path: 'users/$uid/$_assignmentCollection',
+        count: snapshot.size,
+        fromCache: snapshot.metadata.isFromCache,
+      );
 
       _resetAssignmentsAndRecords();
 
@@ -318,7 +331,19 @@ class PowerliftingProvider extends ChangeNotifier {
           .collection('users')
           .doc(uid)
           .collection(_assignmentCollection);
+      FirestoreReadLogger.logStart(
+        scope: 'profile.powerlifting',
+        path: collection.path,
+        operation: 'get',
+        reason: 'clearAssignments',
+      );
       final snapshot = await collection.get();
+      FirestoreReadLogger.logResult(
+        scope: 'profile.powerlifting',
+        path: collection.path,
+        count: snapshot.size,
+        fromCache: snapshot.metadata.isFromCache,
+      );
 
       if (snapshot.docs.isNotEmpty) {
         final batch = _firestore.batch();
@@ -444,8 +469,22 @@ class PowerliftingProvider extends ChangeNotifier {
 
     Future<void> collect(
       Query<Map<String, dynamic>> query,
+      String label,
     ) async {
+      final logPath = '${logsCollection.path}::$label';
+      FirestoreReadLogger.logStart(
+        scope: 'profile.powerlifting',
+        path: logPath,
+        operation: 'get',
+        reason: 'loadRecordsPaged:${discipline.id}',
+      );
       final snapshot = await query.get();
+      FirestoreReadLogger.logResult(
+        scope: 'profile.powerlifting',
+        path: logPath,
+        count: snapshot.size,
+        fromCache: snapshot.metadata.isFromCache,
+      );
       for (final doc in snapshot.docs) {
         docs[doc.id] = doc;
       }
@@ -457,6 +496,7 @@ class PowerliftingProvider extends ChangeNotifier {
             .orderBy('weight', descending: true)
             .orderBy('timestamp', descending: true)
             .limit(_logsLimitPerSource),
+        'weightFirst',
       );
     } on FirebaseException catch (error) {
       if (error.code != 'failed-precondition') rethrow;
@@ -466,6 +506,7 @@ class PowerliftingProvider extends ChangeNotifier {
       baseQuery.orderBy('timestamp', descending: true).limit(
             _logsLimitPerSource,
           ),
+      'timestampOnly',
     );
 
     if (docs.isEmpty) {

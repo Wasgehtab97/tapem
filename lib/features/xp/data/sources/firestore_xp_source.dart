@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/firestore_read_logger.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
@@ -80,7 +81,20 @@ class FirestoreXpSource {
                 'context': 'addSessionXp.day',
                 'traceId': traceId,
               });
+              FirestoreReadLogger.logStart(
+                scope: 'xp.addSession',
+                path: dayRef.path,
+                operation: 'tx.get',
+                traceId: traceId,
+              );
               final daySnap = await tx.get(dayRef);
+              FirestoreReadLogger.logResult(
+                scope: 'xp.addSession',
+                path: dayRef.path,
+                exists: daySnap.exists,
+                fromCache: daySnap.metadata.isFromCache,
+                traceId: traceId,
+              );
               XpTrace.log('FS_READ_RESULT', {
                 'path': dayRef.path,
                 'exists': daySnap.exists,
@@ -91,7 +105,20 @@ class FirestoreXpSource {
                 'context': 'addSessionXp.stats',
                 'traceId': traceId,
               });
+              FirestoreReadLogger.logStart(
+                scope: 'xp.addSession',
+                path: statsRef.path,
+                operation: 'tx.get',
+                traceId: traceId,
+              );
               final statsSnap = await tx.get(statsRef);
+              FirestoreReadLogger.logResult(
+                scope: 'xp.addSession',
+                path: statsRef.path,
+                exists: statsSnap.exists,
+                fromCache: statsSnap.metadata.isFromCache,
+                traceId: traceId,
+              );
               XpTrace.log('FS_READ_RESULT', {
                 'path': statsRef.path,
                 'exists': statsSnap.exists,
