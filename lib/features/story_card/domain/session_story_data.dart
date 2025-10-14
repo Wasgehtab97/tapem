@@ -48,6 +48,8 @@ class SessionStoryBadge {
   final double? delta;
   final double? value;
   final String? unit;
+  final double? setWeight;
+  final int? setReps;
 
   const SessionStoryBadge({
     required this.type,
@@ -57,6 +59,8 @@ class SessionStoryBadge {
     this.delta,
     this.value,
     this.unit,
+    this.setWeight,
+    this.setReps,
   });
 }
 
@@ -90,6 +94,8 @@ class SessionStoryPrEvent {
   final double? previousBest;
   final double? delta;
   final String? unit;
+  final double? bestSetWeight;
+  final int? bestSetReps;
 
   const SessionStoryPrEvent({
     required this.id,
@@ -100,5 +106,7 @@ class SessionStoryPrEvent {
     this.previousBest,
     this.delta,
     this.unit,
+    this.bestSetWeight,
+    this.bestSetReps,
   });
 }

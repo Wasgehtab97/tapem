@@ -155,6 +155,8 @@ class SessionStoryRepository {
       previousBest: (data['previousBest'] as num?)?.toDouble(),
       delta: (data['delta'] as num?)?.toDouble(),
       unit: data['unit'] as String?,
+      bestSetWeight: (data['bestSetWeight'] as num?)?.toDouble(),
+      bestSetReps: (data['bestSetReps'] as num?)?.toInt(),
     );
   }
 
@@ -237,14 +239,36 @@ class SessionStoryRepository {
         final resolved = await _resolveExerciseName(gymId, event);
         final exerciseLabel = resolved ?? event.exerciseId ?? 'Exercise';
         final unit = event.unit ?? 'kg';
+        final setWeight =
+            (event.bestSetWeight != null && event.bestSetWeight! > 0)
+                ? event.bestSetWeight
+                : null;
+        final setReps =
+            (event.bestSetReps != null && event.bestSetReps! > 0)
+                ? event.bestSetReps
+                : null;
+        final hasSet = setWeight != null && setReps != null;
+        final deltaBase = value != null
+            ? '1RM ${_formatNumber(value)} $unit'
+            : null;
+        final deltaFormatted = _formatDelta(event.delta, unit);
+        final deltaLabel = deltaBase == null
+            ? deltaFormatted
+            : deltaFormatted == null
+                ? deltaBase
+                : '$deltaBase (${deltaFormatted})';
         return SessionStoryBadge(
           type: event.type,
-          label: '$exerciseLabel • 1RM ${_formatNumber(value)} $unit',
-          deltaLabel: _formatDelta(event.delta, unit),
+          label: hasSet
+              ? exerciseLabel
+              : '$exerciseLabel • 1RM ${_formatNumber(value)} $unit',
+          deltaLabel: deltaLabel,
           icon: Icons.military_tech,
           value: value,
           delta: event.delta,
           unit: unit,
+          setWeight: setWeight,
+          setReps: setReps,
         );
       case SessionStoryBadgeType.volume:
         final value = event.value;

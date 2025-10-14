@@ -126,6 +126,8 @@ describe('personal record detectors', () => {
     expect(e1rmEvent.data().value).toBeCloseTo(116.67, 2);
     expect(e1rmEvent.data().previousBest).toBeCloseTo(110, 2);
     expect(e1rmEvent.data().delta).toBeCloseTo(6.67, 2);
+    expect(e1rmEvent.data().bestSetWeight).toBeCloseTo(100, 2);
+    expect(e1rmEvent.data().bestSetReps).toBe(5);
 
     const volumeEvent = sessionEventsSnap.docs.find((doc) => doc.data().type === 'volume');
     expect(volumeEvent.data().value).toBeCloseTo(500, 2);

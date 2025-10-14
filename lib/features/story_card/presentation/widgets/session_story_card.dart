@@ -249,6 +249,8 @@ class _PrBadgeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final loc = AppLocalizations.of(context)!;
+    final labelText = _buildLabelText(loc);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -262,7 +264,7 @@ class _PrBadgeChip extends StatelessWidget {
           Icon(badge.icon, size: 20, color: colorScheme.onPrimaryContainer),
           const SizedBox(width: 8),
           Text(
-            badge.label,
+            labelText,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: colorScheme.onPrimaryContainer,
@@ -280,5 +282,26 @@ class _PrBadgeChip extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _buildLabelText(AppLocalizations loc) {
+    final setWeight = badge.setWeight;
+    final setReps = badge.setReps;
+    if (setWeight != null && setWeight > 0 && setReps != null && setReps > 0) {
+      final unit = badge.unit ?? 'kg';
+      final weightLabel = _formatNumber(setWeight);
+      final repsValue = setReps;
+      final repsLabel = loc.tableHeaderReps;
+      return '${badge.label} • $weightLabel $unit × $repsValue $repsLabel';
+    }
+    return badge.label;
+  }
+
+  String _formatNumber(num value) {
+    final absValue = value.abs();
+    if (absValue >= 100) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
   }
 }

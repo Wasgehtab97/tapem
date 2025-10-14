@@ -112,11 +112,13 @@ function normalizeLogEntry(data) {
   }
   let sessionVolume = 0;
   let sessionBestE1rm = 0;
+  let sessionBestE1rmSet = null;
   for (const set of setEntries) {
     sessionVolume += set.weight * set.reps;
     const est = computeEpleyOneRepMax(set.weight, set.reps);
     if (est && est > sessionBestE1rm) {
       sessionBestE1rm = est;
+      sessionBestE1rmSet = { weight: set.weight, reps: set.reps };
     }
   }
 
@@ -126,6 +128,7 @@ function normalizeLogEntry(data) {
     hasMainSet: Boolean(weight && weight > 0 && reps && reps > 0 && !isBodyweight),
     sessionVolume,
     sessionBestE1rm,
+    sessionBestE1rmSet,
   };
 }
 
@@ -139,7 +142,7 @@ function collectSessionMetrics(logDocs) {
     if (!normalized) {
       continue;
     }
-    const { deviceId, exerciseId, sessionVolume, sessionBestE1rm } = normalized;
+    const { deviceId, exerciseId, sessionVolume, sessionBestE1rm, sessionBestE1rmSet } = normalized;
     if (deviceId) {
       deviceIds.add(deviceId);
     }
@@ -155,12 +158,14 @@ function collectSessionMetrics(logDocs) {
       exerciseId: exerciseId || null,
       volume: 0,
       bestE1rm: 0,
+      bestE1rmSet: null,
     };
     existing.deviceId = existing.deviceId || deviceId || null;
     existing.exerciseId = existing.exerciseId || exerciseId || null;
     existing.volume += sessionVolume;
     if (sessionBestE1rm > existing.bestE1rm) {
       existing.bestE1rm = sessionBestE1rm;
+      existing.bestE1rmSet = sessionBestE1rmSet || existing.bestE1rmSet || null;
     }
     perExercise.set(key, existing);
   }
@@ -485,6 +490,15 @@ async function handleSessionClosed(message) {
             event.delta = Math.round((stat.bestE1rm - previousBest) * 100) / 100;
           }
           event.unit = 'kg';
+          if (stat.bestE1rmSet) {
+            const { weight, reps } = stat.bestE1rmSet;
+            if (typeof weight === 'number' && Number.isFinite(weight)) {
+              event.bestSetWeight = Math.round(weight * 100) / 100;
+            }
+            if (typeof reps === 'number' && Number.isFinite(reps)) {
+              event.bestSetReps = reps;
+            }
+          }
           batch.set(eventRef, event, { merge: true });
           createdEvents.push({ id: prId, type: 'e1rm', exerciseId: stat.exerciseId || null, deviceId: stat.deviceId || null });
           functions.logger.info('pr_detected', {
