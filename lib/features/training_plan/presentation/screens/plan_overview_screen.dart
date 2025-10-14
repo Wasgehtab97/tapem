@@ -33,7 +33,9 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     final gymId = context.read<AuthProvider>().gymCode;
     final userId = context.read<AuthProvider>().userId;
     if (gymId != null && userId != null) {
-      await context.read<TrainingPlanProvider>().loadPlans(gymId, userId);
+      await context
+          .read<TrainingPlanProvider>()
+          .loadPlans(gymId, userId, forceRefresh: true);
     }
   }
 
