@@ -1413,4 +1413,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceWriteNfcTooltip => 'Write NFC tag';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  String get storycardTitle => 'Session Story';
+
+  @override
+  String get storycardShareButton => 'Share';
+
+  @override
+  String get storycardShareSuccess => 'Story shared';
+
+  @override
+  String get storycardShareUnavailable => 'Share sheet unavailable';
+
+  @override
+  String storycardShareError(Object error) {
+    return 'Could not share: $error';
+  }
+
+  @override
+  String get storycardLoadError => 'Story could not be loaded.';
+
+  @override
+  String storycardDailyXp(Object xp) {
+    return '+$xp Daily XP';
+  }
+
+  @override
+  String get storycardDailyXpDescription => "Awarded for completing today's training session.";
+
+  @override
+  String get storycardPrSectionTitle => 'Personal Records';
+
+  @override
+  String get storycardSetsLabel => 'Sets';
+
+  @override
+  String get storycardDurationLabel => 'Duration';
+
+  @override
+  String storycardDurationValue(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get storycardVolumeLabel => 'Volume';
+
+  @override
+  String storycardVolumeValue(Object kilograms) {
+    return '$kilograms kg';
+  }
+
+  @override
+  String get storycardHeaderTooltip => 'Story';
+
+  @override
+  String get storiesTitle => 'Stories';
+
+  @override
+  String get storiesFilterPrType => 'PR type';
+
+  @override
+  String get storiesFilterRange => 'Timeframe';
+
+  @override
+  String get storiesFilterGym => 'Gym';
+
+  @override
+  String get storiesFilterPrAll => 'All sessions';
+
+  @override
+  String get storiesFilterPrOnly => 'With PRs';
+
+  @override
+  String get storiesFilterPrFirsts => 'First times';
+
+  @override
+  String get storiesFilterPrStrength => '1RM records';
+
+  @override
+  String get storiesFilterPrVolume => 'Volume records';
+
+  @override
+  String get storiesFilterRange30 => 'Last 30 days';
+
+  @override
+  String get storiesFilterRange90 => 'Last 90 days';
+
+  @override
+  String get storiesFilterRangeYear => 'This year';
+
+  @override
+  String get storiesFilterRangeAll => 'All time';
+
+  @override
+  String get storiesFilterGymAll => 'All gyms';
+
+  @override
+  String get storiesEmptyState => 'No stories yet – finish a session to unlock your timeline.';
+
+  @override
+  String get storiesErrorState => 'Stories could not be loaded.';
+
+  @override
+  String get storiesKpiShareRate => 'Share rate';
+
+  @override
+  String get storiesKpiPrRate => 'PR sessions';
+
+  @override
+  String get storiesKpiAverageXp => 'Average XP';
+
+  @override
+  String storiesListPrCount(Object count) {
+    return '$count PRs';
+  }
+
+  @override
+  String get storiesListNoPrs => 'No PRs';
+
+  @override
+  String storiesListXp(Object xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get profileStoriesButtonTitle => 'Stories';
+
+  @override
+  String get profileStoriesButtonSubtitle => 'Timeline of your session highlights';
 }

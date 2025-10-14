@@ -11,3 +11,7 @@
 - [ ] flutter analyze läuft fehlerfrei
 - [ ] flutter test ist erfolgreich
 - [ ] Keine sensiblen Daten in Commits
+
+## Labels
+- [ ] feature:gamification
+- [ ] area:sessions

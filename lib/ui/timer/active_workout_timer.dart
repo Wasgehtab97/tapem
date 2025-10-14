@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/features/story_card/session_story_controller.dart';
 
 class ActiveWorkoutTimer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
@@ -75,8 +76,21 @@ class ActiveWorkoutTimer extends StatelessWidget {
                   onTap: () async {
                     final dialogResult = await service.confirmStop(context);
                     if (!context.mounted) return;
+                    debugPrint('⏱️ [WorkoutTimer] stop dialog result=${dialogResult.result}');
                     if (dialogResult.result == StopResult.save) {
-                      await service.save();
+                      debugPrint('⏱️ [WorkoutTimer] triggering save from timer');
+                      final savedSessionId = await service.save();
+                      if (!context.mounted) return;
+                      SessionStoryController? controller;
+                      try {
+                        controller =
+                            context.read<SessionStoryController>();
+                      } on ProviderNotFoundException {
+                        controller = null;
+                      }
+                      if (savedSessionId != null && controller != null) {
+                        controller.requestStory(savedSessionId);
+                      }
                     } else if (dialogResult.result == StopResult.discard) {
                       await service.discard();
                     } else if (dialogResult.result == StopResult.resume &&

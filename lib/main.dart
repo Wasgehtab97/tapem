@@ -97,6 +97,8 @@ import 'features/report/domain/usecases/get_device_usage_stats.dart';
 import 'features/report/domain/usecases/get_all_log_timestamps.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
+import 'features/story_card/session_story_controller.dart';
+import 'features/story_card/presentation/session_story_listener.dart';
 
 /// ─────────────────────────────────────────────────────────────
 /// Globales Setup
@@ -427,6 +429,22 @@ Future<void> main() async {
             return svc;
           },
         ),
+        ChangeNotifierProxyProvider2<
+            AuthProvider,
+            BrandingProvider,
+            SessionStoryController>(
+          create: (_) => SessionStoryController(
+            firestore: FirebaseFirestore.instance,
+          ),
+          update: (_, auth, branding, controller) {
+            final ctrl = controller ??
+                SessionStoryController(
+                  firestore: FirebaseFirestore.instance,
+                );
+            ctrl.updateContext(userId: auth.userId, gymId: branding.gymId);
+            return ctrl;
+          },
+        ),
         ChangeNotifierProxyProvider4<
             MembershipService,
             XpProvider,
@@ -554,6 +572,7 @@ class MyApp extends StatelessWidget {
           app = GlobalNfcListener(child: app);
         }
         app = DynamicLinkListener(child: app);
+        app = SessionStoryListener(child: app);
         return OverlayNumericKeypadHost(
           controller: keypad,
           outsideTapMode: OutsideTapMode.closeAfterTap,

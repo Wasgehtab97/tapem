@@ -267,6 +267,72 @@ describe('Training details rules', () => {
     await assertSucceeds(ref.delete());
   });
 
+  it('allows owner to read story timeline derivative', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db
+        .collection('users')
+        .doc('owner')
+        .collection('stories')
+        .doc('session-story')
+        .set({
+          sessionId: 'session-story',
+          createdAt: new Date(),
+          prCount: 1,
+          prTypes: ['volume'],
+          xpTotal: 42,
+          previewColors: ['#000000', '#ffffff'],
+        });
+    });
+
+    const db = ownerCtx().firestore();
+    const ref = db.collection('users').doc('owner').collection('stories').doc('session-story');
+    await assertSucceeds(ref.get());
+  });
+
+  it('denies friend reading owner story timeline derivative', async () => {
+    const db = friendCtx().firestore();
+    const ref = db.collection('users').doc('owner').collection('stories').doc('session-story');
+    await assertFails(ref.get());
+  });
+
+  it('allows owner to update story metrics summary with allowed fields', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db
+        .collection('users')
+        .doc('owner')
+        .collection('storyMetrics')
+        .doc('summary')
+        .set({
+          sessionCount: 1,
+          prSessionCount: 1,
+          prEventCount: 1,
+          totalXp: 100,
+          shareCount: 0,
+          storyShownCount: 0,
+          timelineOpenCount: 0,
+          updatedAt: new Date(),
+        });
+    });
+
+    const db = ownerCtx().firestore();
+    const ref = db.collection('users').doc('owner').collection('storyMetrics').doc('summary');
+    await assertSucceeds(
+      ref.set({
+        shareCount: 2,
+        storyShownCount: 3,
+        updatedAt: new Date(),
+      }, { merge: true })
+    );
+  });
+
+  it('rejects unknown fields on story metrics summary', async () => {
+    const db = ownerCtx().firestore();
+    const ref = db.collection('users').doc('owner').collection('storyMetrics').doc('summary');
+    await assertFails(ref.set({ invalid: 1 }, { merge: true }));
+  });
+
   it('denies friend from deleting owners session snapshot', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();

@@ -6,10 +6,16 @@ import 'package:intl/intl.dart';
 
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
-import 'package:tapem/features/training_details/domain/models/session.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/story_card/session_story_controller.dart';
+import 'package:tapem/features/story_card/data/story_analytics_service.dart';
+import 'package:tapem/features/story_card/session_story_share_service.dart';
+import 'package:tapem/features/story_card/presentation/widgets/session_story_modal.dart';
+import 'package:tapem/features/story_card/story_link_builder.dart';
+import 'package:tapem/core/logging/elog.dart';
 
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
@@ -47,8 +53,17 @@ class TrainingDetailsScreen extends StatelessWidget {
           final sessions = prov.sessions;
           final duration = prov.dayDurationMs;
           final loc = AppLocalizations.of(ctx)!;
+          final storyController = ctx.read<SessionStoryController>();
+          final storySessionId = prov.storySessionId;
           return Scaffold(
-            appBar: _AppBar(titleDate: date, durationMs: duration),
+            appBar: _AppBar(
+              titleDate: date,
+              durationMs: duration,
+              onShowStory: storySessionId == null
+                  ? null
+                  : () =>
+                      _openStory(context, storyController, storySessionId),
+            ),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
                 : Scrollbar(
@@ -122,7 +137,8 @@ class TrainingDetailsScreen extends StatelessWidget {
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
   final int? durationMs;
-  const _AppBar({this.titleDate, this.durationMs});
+  final VoidCallback? onShowStory;
+  const _AppBar({this.titleDate, this.durationMs, this.onShowStory});
 
   @override
   Widget build(BuildContext context) {
@@ -157,9 +173,76 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       );
     }
-    return AppBar(title: titleWidget);
+    return AppBar(
+      title: titleWidget,
+      actions: [
+        Builder(
+          builder: (context) {
+            final loc = AppLocalizations.of(context)!;
+            return IconButton(
+              tooltip: loc.storycardHeaderTooltip,
+              icon: const Icon(Icons.auto_awesome),
+              onPressed: onShowStory,
+            );
+          },
+        ),
+      ],
+    );
   }
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+Future<void> _openStory(
+  BuildContext context,
+  SessionStoryController controller,
+  String sessionId,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final loc = AppLocalizations.of(context)!;
+  final shareService = SessionStoryShareService();
+  final linkBuilder = StoryLinkBuilder();
+  final analytics = StoryAnalyticsService();
+  final userId = context.read<AuthProvider?>()?.userId ?? '';
+  debugPrint('📖 [TrainingDetails] open story request sessionId=$sessionId');
+  try {
+    final story = await controller.loadStoryById(sessionId);
+    debugPrint(
+      '📖 [TrainingDetails] story loaded sessionId=${story.sessionId} xp=${story.xpTotal} badges=${story.badges.length}',
+    );
+    await SessionStoryModal.show(
+      context: context,
+      story: story,
+      shareService: shareService,
+      buildLink: () => linkBuilder.build(story),
+      onViewed: () {
+        elogUi('storycard_shown', {
+          'sessionId': story.sessionId,
+          'origin': 'header',
+          'xpTotal': story.xpTotal,
+          'prCount': story.badges.length,
+        });
+        analytics.trackStoryViewed(userId: userId, sessionId: story.sessionId);
+      },
+      onShared: (target) {
+        elogUi('storycard_shared', {
+          'sessionId': story.sessionId,
+          'target': target ?? 'system',
+        });
+        analytics.trackStoryShared(
+          userId: userId,
+          sessionId: story.sessionId,
+          target: target,
+        );
+      },
+    );
+  } catch (error, stack) {
+    debugPrint(
+      '❌ [TrainingDetails] story load failed sessionId=$sessionId error=$error\n$stack',
+    );
+    messenger.showSnackBar(
+      SnackBar(content: Text(loc.storycardLoadError)),
+    );
+  }
 }

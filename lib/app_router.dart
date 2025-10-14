@@ -33,6 +33,7 @@ import 'package:tapem/features/friends/presentation/screens/friend_chat_screen.d
 import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
+import 'package:tapem/features/story_card/presentation/screens/story_timeline_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -75,6 +76,7 @@ class AppRouter {
   static const friendTrainingCalendar = '/friend_training_calendar';
   static const friendChat = '/friend_chat';
   static const creatine = '/creatine';
+  static const stories = '/stories';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -259,6 +261,17 @@ class AppRouter {
 
       case creatine:
         return MaterialPageRoute(builder: (_) => const CreatineScreen());
+
+      case stories:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final userId = args?['userId'] as String?;
+        final gymIds = (args?['gymIds'] as List?)?.whereType<String>().toList();
+        return MaterialPageRoute(
+          builder: (_) => StoryTimelineScreen(
+            userIdOverride: userId,
+            gymIds: gymIds,
+          ),
+        );
 
       case powerlifting:
         return MaterialPageRoute(builder: (_) => const PowerliftingScreen());
