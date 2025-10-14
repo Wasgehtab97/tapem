@@ -194,10 +194,21 @@ class XpProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final unchanged =
+        _dayWatchUserId == userId && _dayWatchDate == normalizedDate;
+
     _dayWatchUserId = userId;
-    _dayWatchDate = DateTime(date.year, date.month, date.day);
+    _dayWatchDate = normalizedDate;
     _ensurePolling();
-    unawaited(_loadDayXp(force: true));
+
+    if (unchanged && _isFresh(_lastDayFetch)) {
+      debugPrint(
+          '🔁 provider watchDayXp reuse userId=$userId date=$normalizedDate');
+      return;
+    }
+
+    unawaited(_loadDayXp(force: !unchanged));
   }
 
   void watchMuscleXp(String gymId, String userId) {
@@ -210,10 +221,21 @@ class XpProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+
+    final unchanged =
+        _muscleGymId == gymId && _muscleUserId == userId;
+
     _muscleGymId = gymId;
     _muscleUserId = userId;
     _ensurePolling();
-    unawaited(_loadMuscleXp(force: true));
+
+    if (unchanged && _isFresh(_lastMuscleFetch)) {
+      debugPrint(
+          '🔁 provider watchMuscleXp reuse userId=$userId gymId=$gymId');
+      return;
+    }
+
+    unawaited(_loadMuscleXp(force: !unchanged));
   }
 
   void watchMuscleDailyXp(String gymId, String userId) {
@@ -226,10 +248,21 @@ class XpProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+
+    final unchanged =
+        _muscleHistoryGymId == gymId && _muscleHistoryUserId == userId;
+
     _muscleHistoryGymId = gymId;
     _muscleHistoryUserId = userId;
     _ensurePolling();
-    unawaited(_loadMuscleHistory(force: true));
+
+    if (unchanged && _isFresh(_lastMuscleHistoryFetch)) {
+      debugPrint(
+          '🔁 provider watchMuscleDailyXp reuse userId=$userId gymId=$gymId');
+      return;
+    }
+
+    unawaited(_loadMuscleHistory(force: !unchanged));
   }
 
   void watchTrainingDays(String userId) {
@@ -241,14 +274,22 @@ class XpProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (_trainingDaysUserId == userId && _isFresh(_lastTrainingDaysFetch)) {
+
+    final unchanged = _trainingDaysUserId == userId;
+
+    if (!unchanged) {
+      debugPrint('👀 provider watchTrainingDays userId=$userId');
+    }
+
+    _trainingDaysUserId = userId;
+    _ensurePolling();
+
+    if (unchanged && _isFresh(_lastTrainingDaysFetch)) {
       debugPrint('🔁 provider watchTrainingDays reuse userId=$userId');
       return;
     }
-    debugPrint('👀 provider watchTrainingDays userId=$userId');
-    _trainingDaysUserId = userId;
-    _ensurePolling();
-    unawaited(_loadTrainingDays(force: true));
+
+    unawaited(_loadTrainingDays(force: !unchanged));
   }
 
   void watchDeviceXp(String gymId, String userId, List<String> deviceIds) {
@@ -276,6 +317,7 @@ class XpProvider extends ChangeNotifier {
       return;
     }
 
+    final previousIds = _deviceIds.toSet();
     final removed = _deviceIds.where((id) => !normalized.contains(id)).toList();
     for (final id in removed) {
       _deviceXp.remove(id);
@@ -289,7 +331,20 @@ class XpProvider extends ChangeNotifier {
     _ensurePolling();
 
     for (final id in _deviceIds) {
-      unawaited(_loadDeviceXp(id, force: true));
+      final isNew = !previousIds.contains(id);
+      final lastFetch = _deviceLastFetch[id];
+      final fresh = _isFresh(lastFetch);
+
+      if (isNew) {
+        unawaited(_loadDeviceXp(id, force: true));
+      } else if (!fresh) {
+        unawaited(_loadDeviceXp(id));
+      } else {
+        XpTrace.log('WATCH_SKIP', {
+          'deviceId': id,
+          'reason': 'fresh',
+        });
+      }
     }
     notifyListeners();
   }
@@ -307,18 +362,25 @@ class XpProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (_statsDailyGymId == gymId &&
-        _statsDailyUserId == userId &&
-        _isFresh(_lastStatsFetch)) {
+
+    final unchanged =
+        _statsDailyGymId == gymId && _statsDailyUserId == userId;
+
+    if (!unchanged) {
+      debugPrint('👀 provider watchStatsDailyXp gymId=$gymId userId=$userId');
+    }
+
+    _statsDailyGymId = gymId;
+    _statsDailyUserId = userId;
+    _ensurePolling();
+
+    if (unchanged && _isFresh(_lastStatsFetch)) {
       debugPrint(
           '🔁 provider watchStatsDailyXp reuse gymId=$gymId userId=$userId');
       return;
     }
-    debugPrint('👀 provider watchStatsDailyXp gymId=$gymId userId=$userId');
-    _statsDailyGymId = gymId;
-    _statsDailyUserId = userId;
-    _ensurePolling();
-    unawaited(_loadStatsDailyXp(force: true));
+
+    unawaited(_loadStatsDailyXp(force: !unchanged));
   }
 
   Future<void> refreshAll({bool includeDevices = true}) async {
