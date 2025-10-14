@@ -18,6 +18,7 @@ class ProfileProvider extends ChangeNotifier {
   double _avgTrainingDaysPerWeek = 0;
   String? _favoriteExerciseName;
   List<FavoriteExerciseUsage> _favoriteExerciseUsages = [];
+  final Map<String, _ExerciseAggregate> _exerciseAggregates = {};
   String? _lastLoadedUserId;
   String? _pendingTrainingUserId;
   Future<void>? _inFlightTrainingLoad;
@@ -32,6 +33,39 @@ class ProfileProvider extends ChangeNotifier {
   String? get favoriteExerciseName => _favoriteExerciseName;
   List<FavoriteExerciseUsage> get favoriteExerciseUsages =>
       List.unmodifiable(_favoriteExerciseUsages);
+
+  DateTime? firstUsageForDevice(String gymId, String deviceId) {
+    return _exerciseAggregates[_aggregateKey(gymId, deviceId, null)]?.firstTimestamp;
+  }
+
+  DateTime? firstUsageForExercise(
+    String gymId,
+    String deviceId,
+    String? exerciseId,
+  ) {
+    return _exerciseAggregates[_aggregateKey(gymId, deviceId, exerciseId)]
+        ?.firstTimestamp;
+  }
+
+  double? bestE1rmBefore(
+    String gymId,
+    String deviceId,
+    String? exerciseId,
+    DateTime day,
+  ) {
+    final key = _aggregateKey(gymId, deviceId, exerciseId);
+    return _exerciseAggregates[key]?.bestE1rmBefore(_formatDayKey(day));
+  }
+
+  double? bestE1rmOn(
+    String gymId,
+    String deviceId,
+    String? exerciseId,
+    DateTime day,
+  ) {
+    final key = _aggregateKey(gymId, deviceId, exerciseId);
+    return _exerciseAggregates[key]?.bestE1rmOn(_formatDayKey(day));
+  }
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(
@@ -74,6 +108,19 @@ class ProfileProvider extends ChangeNotifier {
     return _inFlightTrainingLoad!;
   }
 
+  String _aggregateKey(String gymId, String deviceId, String? exerciseId) {
+    final trimmed = exerciseId?.trim();
+    final normalized = (trimmed == null || trimmed.isEmpty) ? '' : trimmed;
+    return '$gymId|$deviceId|$normalized';
+  }
+
+  String _formatDayKey(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final month = normalized.month.toString().padLeft(2, '0');
+    final day = normalized.day.toString().padLeft(2, '0');
+    return '${normalized.year}-$month-$day';
+  }
+
   Future<void> _fetchTrainingDates({
     required String userId,
     required DateTime? createdAt,
@@ -85,7 +132,7 @@ class ProfileProvider extends ChangeNotifier {
           .get();
 
       final dateSet = <DateTime>{};
-      final sessionAggregates = <String, _ExerciseAggregate>{};
+      _exerciseAggregates.clear();
 
       for (final doc in snapshot.docs) {
         final data = doc.data();
@@ -107,16 +154,50 @@ class ProfileProvider extends ChangeNotifier {
         }
 
         final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
-        final key = '$gymId|$deviceId|$exerciseId';
-        final aggregate = sessionAggregates.putIfAbsent(
-          key,
+        final weight = (data['weight'] as num?)?.toDouble();
+        final reps = (data['reps'] as num?)?.toInt() ?? 0;
+        final dropWeightKg = (data['dropWeightKg'] as num?)?.toDouble();
+        final dropReps = (data['dropReps'] as num?)?.toInt();
+        final isBodyweight = data['isBodyweight'] as bool? ?? false;
+
+        final deviceAggregate = _exerciseAggregates.putIfAbsent(
+          _aggregateKey(gymId, deviceId, null),
           () => _ExerciseAggregate(
             gymId: gymId,
             deviceId: deviceId,
-            exerciseId: exerciseId,
+            exerciseId: null,
           ),
         );
-        aggregate.sessionIds.add(sessionId);
+        deviceAggregate.register(
+          sessionId: sessionId,
+          timestamp: timestamp,
+          weight: weight,
+          reps: reps,
+          dropWeightKg: dropWeightKg,
+          dropReps: dropReps,
+          isBodyweight: isBodyweight,
+        );
+
+        final normalizedExerciseId = exerciseId.isEmpty ? null : exerciseId;
+        if (normalizedExerciseId != null) {
+          final exerciseAggregate = _exerciseAggregates.putIfAbsent(
+            _aggregateKey(gymId, deviceId, normalizedExerciseId),
+            () => _ExerciseAggregate(
+              gymId: gymId,
+              deviceId: deviceId,
+              exerciseId: normalizedExerciseId,
+            ),
+          );
+          exerciseAggregate.register(
+            sessionId: sessionId,
+            timestamp: timestamp,
+            weight: weight,
+            reps: reps,
+            dropWeightKg: dropWeightKg,
+            dropReps: dropReps,
+            isBodyweight: isBodyweight,
+          );
+        }
       }
 
       _trainingDayDates = dateSet.toList()
@@ -128,7 +209,7 @@ class ProfileProvider extends ChangeNotifier {
       _totalTrainingDays = _trainingDates.length;
       _avgTrainingDaysPerWeek =
           _calculateAverageTrainingDaysPerWeek(createdAt);
-      await _resolveFavoriteExercises(sessionAggregates.values);
+      await _resolveFavoriteExercises(_exerciseAggregates.values);
       _hasLoadedTrainingDates = true;
       _lastLoadedUserId = userId;
     } catch (e, st) {
@@ -299,6 +380,74 @@ class _ExerciseAggregate {
   final String deviceId;
   final String? exerciseId;
   final Set<String> sessionIds = <String>{};
+  DateTime? firstTimestamp;
+  DateTime? lastTimestamp;
+  final Map<String, double> bestE1rmByDay = <String, double>{};
+
+  void register({
+    required String sessionId,
+    required DateTime timestamp,
+    double? weight,
+    required int reps,
+    double? dropWeightKg,
+    int? dropReps,
+    required bool isBodyweight,
+  }) {
+    sessionIds.add(sessionId);
+    if (firstTimestamp == null || timestamp.isBefore(firstTimestamp!)) {
+      firstTimestamp = timestamp;
+    }
+    if (lastTimestamp == null || timestamp.isAfter(lastTimestamp!)) {
+      lastTimestamp = timestamp;
+    }
+    _updateE1rm(timestamp, _computeE1rm(weight, reps, isBodyweight));
+    if (dropWeightKg != null && dropReps != null && dropReps > 0) {
+      _updateE1rm(timestamp, _computeE1rm(dropWeightKg, dropReps, false));
+    }
+  }
+
+  void _updateE1rm(DateTime timestamp, double? value) {
+    if (value == null || value.isNaN || value.isInfinite || value <= 0) {
+      return;
+    }
+    final key = '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-'
+        '${timestamp.day.toString().padLeft(2, '0')}';
+    final current = bestE1rmByDay[key];
+    if (current == null || value > current) {
+      bestE1rmByDay[key] = value;
+    }
+  }
+
+  double? bestE1rmBefore(String dayKey) {
+    double? best;
+    for (final entry in bestE1rmByDay.entries) {
+      if (entry.key.compareTo(dayKey) < 0) {
+        if (best == null || entry.value > best) {
+          best = entry.value;
+        }
+      }
+    }
+    return best;
+  }
+
+  double? bestE1rmOn(String dayKey) => bestE1rmByDay[dayKey];
+
+  double? _computeE1rm(double? weight, int reps, bool isBodyweight) {
+    if (weight == null) {
+      return null;
+    }
+    if (isBodyweight) {
+      // Bodyweight Bewegungen ohne zusätzliches Gewicht lassen sich nicht
+      // zuverlässig als 1RM schätzen.
+      if (weight.abs() < 0.01 || reps <= 0) {
+        return null;
+      }
+    }
+    if (reps <= 0 || weight <= 0) {
+      return null;
+    }
+    return weight * (1 + reps / 30.0);
+  }
 }
 
 class FavoriteExerciseUsage {

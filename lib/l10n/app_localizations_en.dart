@@ -289,10 +289,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTrainingDaysHeading => 'Training days';
 
   @override
+  String get profileStoryButtonTitle => 'Story';
+
+  @override
+  String get profileStoryButtonSubtitle => 'Relive your training day';
+
+  @override
   String get profileStatsButtonLabel => 'Statistics';
 
   @override
   String get profileStatsButtonSubtitle => 'Dive into your progress highlights';
+
+  @override
+  String get sessionStoryTitle => 'Session Story';
+
+  @override
+  String get sessionStoryDailyXpLabel => 'Daily XP';
+
+  @override
+  String get sessionStoryBadgesLabel => 'Highlights';
+
+  @override
+  String get sessionStorySetsLabel => 'Sets';
+
+  @override
+  String get sessionStoryDurationLabel => 'Duration';
+
+  @override
+  String get sessionStoryVolumeLabel => 'Volume';
+
+  @override
+  String get sessionStoryNoBadges => 'No highlights yet';
+
+  @override
+  String get sessionStoryEmptyState => 'No training data available for today.';
+
+  @override
+  String get sessionStoryErrorTitle => "Couldn't load story";
+
+  @override
+  String get sessionStoryCloseButton => 'Close';
+
+  @override
+  String get sessionStoryBadgeFirstDevice => 'First time on this machine';
+
+  @override
+  String get sessionStoryBadgeFirstExercise => 'First time on this exercise';
+
+  @override
+  String get sessionStoryBadgeRecord => 'New 1RM record';
 
   @override
   String get profileStatsTitle => 'Statistics';

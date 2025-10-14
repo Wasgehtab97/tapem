@@ -611,6 +611,18 @@ abstract class AppLocalizations {
   /// **'Training days'**
   String get profileTrainingDaysHeading;
 
+  /// Title for the story action on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Story'**
+  String get profileStoryButtonTitle;
+
+  /// Subtitle for the story action on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Relive your training day'**
+  String get profileStoryButtonSubtitle;
+
   /// Button label on profile screen to open the statistics page
   ///
   /// In en, this message translates to:
@@ -622,6 +634,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dive into your progress highlights'**
   String get profileStatsButtonSubtitle;
+
+  /// Title for the session story overlay
+  ///
+  /// In en, this message translates to:
+  /// **'Session Story'**
+  String get sessionStoryTitle;
+
+  /// Label for the daily XP highlight
+  ///
+  /// In en, this message translates to:
+  /// **'Daily XP'**
+  String get sessionStoryDailyXpLabel;
+
+  /// Heading for the session story badges
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights'**
+  String get sessionStoryBadgesLabel;
+
+  /// Label for total sets statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get sessionStorySetsLabel;
+
+  /// Label for total duration statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get sessionStoryDurationLabel;
+
+  /// Label for total volume statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get sessionStoryVolumeLabel;
+
+  /// Placeholder text when there are no story badges
+  ///
+  /// In en, this message translates to:
+  /// **'No highlights yet'**
+  String get sessionStoryNoBadges;
+
+  /// Message when the story overlay has no data
+  ///
+  /// In en, this message translates to:
+  /// **'No training data available for today.'**
+  String get sessionStoryEmptyState;
+
+  /// Title for error state of session story
+  ///
+  /// In en, this message translates to:
+  /// **"Couldn't load story"**
+  String get sessionStoryErrorTitle;
+
+  /// Label for closing the session story dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get sessionStoryCloseButton;
+
+  /// Badge label for first device usage
+  ///
+  /// In en, this message translates to:
+  /// **'First time on this machine'**
+  String get sessionStoryBadgeFirstDevice;
+
+  /// Badge label for first exercise usage
+  ///
+  /// In en, this message translates to:
+  /// **'First time on this exercise'**
+  String get sessionStoryBadgeFirstExercise;
+
+  /// Badge label for a new estimated 1RM personal record
+  ///
+  /// In en, this message translates to:
+  /// **'New 1RM record'**
+  String get sessionStoryBadgeRecord;
 
   /// Title of the profile statistics page
   ///
