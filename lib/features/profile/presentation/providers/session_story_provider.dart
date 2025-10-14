@@ -90,9 +90,9 @@ class SessionStoryProvider extends ChangeNotifier {
 
     for (final session in sessions) {
       final start = session.startTime ?? session.timestamp;
-      DateTime? end;
+      late final DateTime end;
       if (session.endTime != null) {
-        end = session.endTime;
+        end = session.endTime!;
       } else if (session.startTime != null && session.durationMs != null) {
         end = session.startTime!.add(Duration(milliseconds: session.durationMs!));
       } else if (session.durationMs != null) {

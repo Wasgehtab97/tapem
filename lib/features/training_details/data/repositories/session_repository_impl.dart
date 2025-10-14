@@ -36,6 +36,10 @@ class SessionRepositoryImpl implements SessionRepository {
     }
 
     final List<Session> sessions = [];
+    final normalizedDay = DateTime(date.year, date.month, date.day);
+    final dayKey = logicDayKey(normalizedDay);
+    final metaCache = <String, Map<String, Map<String, dynamic>>>{};
+    final failedBatchLookups = <String>{};
 
     // 2) Für jede Gruppe: sortieren, Sets mappen, Namen+Description holen
     final deviceCache =
@@ -58,6 +62,9 @@ class SessionRepositoryImpl implements SessionRepository {
       var deviceName = first.deviceId;
       var deviceDescription = '';
       var isMulti = false;
+      final devicesCol = deviceRef.parent;
+      final gymRef = devicesCol?.parent;
+      final gymId = gymRef?.id ?? '';
 
       DocumentSnapshot<Map<String, dynamic>>? deviceSnap =
           deviceCache[deviceRef.path];
@@ -106,24 +113,49 @@ class SessionRepositoryImpl implements SessionRepository {
               ))
           .toList();
 
-      final gymId = deviceRef.parent.parent!.id;
       DateTime? startTime;
       DateTime? endTime;
       int? durationMs;
-      try {
-        final meta = await _meta.getMetaBySessionId(
-          gymId: gymId,
-          uid: first.userId,
-          sessionId: first.sessionId,
-        );
-        if (meta != null) {
-          final startTs = meta['startTime'];
-          final endTs = meta['endTime'];
-          if (startTs is Timestamp) startTime = startTs.toDate();
-          if (endTs is Timestamp) endTime = endTs.toDate();
-          durationMs = (meta['durationMs'] as num?)?.toInt();
+      Map<String, dynamic>? meta;
+      if (gymId.isNotEmpty) {
+        var gymMeta = metaCache[gymId];
+        if (gymMeta == null && !failedBatchLookups.contains(gymId)) {
+          try {
+            gymMeta = await _meta.getMetaForDay(
+              gymId: gymId,
+              uid: first.userId,
+              dayKey: dayKey,
+            );
+            metaCache[gymId] = gymMeta;
+          } catch (_) {
+            failedBatchLookups.add(gymId);
+            gymMeta = <String, Map<String, dynamic>>{};
+            metaCache[gymId] = gymMeta;
+          }
         }
-      } catch (_) {}
+        meta = metaCache[gymId]?[entry.key];
+      }
+      if (meta == null && gymId.isNotEmpty) {
+        try {
+          meta = await _meta.getMetaBySessionId(
+            gymId: gymId,
+            uid: first.userId,
+            sessionId: first.sessionId,
+          );
+          if (meta != null) {
+            metaCache
+                .putIfAbsent(gymId, () => <String, Map<String, dynamic>>{})
+                [entry.key] = meta;
+          }
+        } catch (_) {}
+      }
+      if (meta != null) {
+        final startTs = meta['startTime'];
+        final endTs = meta['endTime'];
+        if (startTs is Timestamp) startTime = startTs.toDate();
+        if (endTs is Timestamp) endTime = endTs.toDate();
+        durationMs = (meta['durationMs'] as num?)?.toInt();
+      }
 
       sessions.add(
         Session(
