@@ -22,11 +22,14 @@ class XpProvider extends ChangeNotifier {
   Map<String, int> _dayListXp = {};
   final Map<String, int> _deviceXp = {};
   StreamSubscription<Map<String, int>>? _dayListSub;
+  String? _trainingDaysUserId;
   final Map<String, StreamSubscription<int>> _deviceSubs = {};
   int _statsDailyXp = 0;
   int _dailyLevel = 1;
   int _dailyLevelXp = 0;
   StreamSubscription<int>? _statsDailySub;
+  String? _statsDailyGymId;
+  String? _statsDailyUserId;
   Map<String, Map<String, int>> _muscleDailyXp = {};
 
   Map<String, int> get muscleXp => _muscleXp;
@@ -159,7 +162,21 @@ class XpProvider extends ChangeNotifier {
   }
 
   void watchTrainingDays(String userId) {
+    if (userId.isEmpty) {
+      debugPrint('⚠️ provider watchTrainingDays skipped (empty userId)');
+      _dayListSub?.cancel();
+      _dayListSub = null;
+      _dayListXp = {};
+      _trainingDaysUserId = null;
+      notifyListeners();
+      return;
+    }
+    if (_trainingDaysUserId == userId && _dayListSub != null) {
+      debugPrint('🔁 provider watchTrainingDays reuse userId=$userId');
+      return;
+    }
     debugPrint('👀 provider watchTrainingDays userId=$userId');
+    _trainingDaysUserId = userId;
     _dayListSub?.cancel();
     _dayListSub = _repo.watchTrainingDaysXp(userId).listen((map) {
       _dayListXp = map;
@@ -209,7 +226,29 @@ class XpProvider extends ChangeNotifier {
   }
 
   void watchStatsDailyXp(String gymId, String userId) {
+    if (gymId.isEmpty || userId.isEmpty) {
+      debugPrint(
+          '⚠️ provider watchStatsDailyXp skipped (gymId="$gymId" userId="$userId")');
+      _statsDailySub?.cancel();
+      _statsDailySub = null;
+      _statsDailyGymId = null;
+      _statsDailyUserId = null;
+      _statsDailyXp = 0;
+      _dailyLevel = 1;
+      _dailyLevelXp = 0;
+      notifyListeners();
+      return;
+    }
+    if (_statsDailySub != null &&
+        _statsDailyGymId == gymId &&
+        _statsDailyUserId == userId) {
+      debugPrint(
+          '🔁 provider watchStatsDailyXp reuse gymId=$gymId userId=$userId');
+      return;
+    }
     debugPrint('👀 provider watchStatsDailyXp gymId=$gymId userId=$userId');
+    _statsDailyGymId = gymId;
+    _statsDailyUserId = userId;
     _statsDailySub?.cancel();
     _statsDailySub = _repo
         .watchStatsDailyXp(gymId: gymId, userId: userId)
@@ -229,6 +268,9 @@ class XpProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _statsDailyGymId = null;
+    _statsDailyUserId = null;
+    _trainingDaysUserId = null;
     _daySub?.cancel();
     _muscleSub?.cancel();
     _muscleDailySub?.cancel();
