@@ -249,6 +249,29 @@ class _PrBadgeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localeName = Localizations.localeOf(context).toString();
+    final loc = AppLocalizations.of(context)!;
+
+    final detailTexts = <String>[];
+    final setDetail = badge.set;
+    if (setDetail != null) {
+      final repsFormatter = NumberFormat.decimalPattern(localeName);
+      final repsLabel = repsFormatter.format(setDetail.reps);
+      if (setDetail.isBodyweight || setDetail.weight <= 0) {
+        detailTexts.add(loc.storycardPrSetLabelBodyweight(repsLabel));
+      } else {
+        final weightFormatter = NumberFormat('#,##0.##', localeName);
+        final weightLabel = weightFormatter.format(setDetail.weight);
+        final unitLabel = setDetail.unit ?? 'kg';
+        detailTexts
+            .add(loc.storycardPrSetLabel(weightLabel, unitLabel, repsLabel));
+      }
+    }
+    if (badge.deltaLabel != null && badge.deltaLabel!.isNotEmpty) {
+      detailTexts.add(badge.deltaLabel!);
+    }
+    final details = detailTexts.isEmpty ? null : detailTexts.join(' • ');
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -258,25 +281,34 @@ class _PrBadgeChip extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(badge.icon, size: 20, color: colorScheme.onPrimaryContainer),
           const SizedBox(width: 8),
-          Text(
-            badge.label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onPrimaryContainer,
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  badge.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                if (details != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    details,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (badge.deltaLabel != null) ...[
-            const SizedBox(width: 6),
-            Text(
-              badge.deltaLabel!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer.withOpacity(0.8),
-              ),
-            ),
-          ],
         ],
       ),
     );

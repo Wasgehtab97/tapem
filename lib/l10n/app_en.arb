@@ -1328,6 +1328,10 @@
   ,"@storycardVolumeLabel": {"description": "Label for the total volume tile"}
   ,"storycardVolumeValue": "{kilograms} kg"
   ,"@storycardVolumeValue": {"description": "Formatted training volume in kilograms","placeholders": {"kilograms": {}}}
+  ,"storycardPrSetLabel": "{weight} {unit} × {reps} reps"
+  ,"@storycardPrSetLabel": {"description": "Formatted set that unlocked the PR","placeholders": {"weight": {}, "unit": {}, "reps": {}}}
+  ,"storycardPrSetLabelBodyweight": "Bodyweight × {reps} reps"
+  ,"@storycardPrSetLabelBodyweight": {"description": "Formatted PR set label for bodyweight movements","placeholders": {"reps": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip for the header story button"}
   ,"storiesTitle": "Stories"

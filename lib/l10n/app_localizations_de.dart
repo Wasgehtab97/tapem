@@ -1469,6 +1469,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String storycardPrSetLabel(Object weight, Object unit, Object reps) {
+    return '$weight $unit × $reps Wdh.';
+  }
+
+  @override
+  String storycardPrSetLabelBodyweight(Object reps) {
+    return 'Körpergewicht × $reps Wdh.';
+  }
+
+  @override
   String get storycardHeaderTooltip => 'Story';
 
   @override

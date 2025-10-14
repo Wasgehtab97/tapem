@@ -48,6 +48,7 @@ class SessionStoryBadge {
   final double? delta;
   final double? value;
   final String? unit;
+  final SessionStoryBadgeSet? set;
 
   const SessionStoryBadge({
     required this.type,
@@ -57,6 +58,7 @@ class SessionStoryBadge {
     this.delta,
     this.value,
     this.unit,
+    this.set,
   });
 }
 
@@ -65,6 +67,21 @@ enum SessionStoryBadgeType {
   firstExercise,
   estimatedOneRepMax,
   volume,
+}
+
+@immutable
+class SessionStoryBadgeSet {
+  final double weight;
+  final int reps;
+  final bool isBodyweight;
+  final String? unit;
+
+  const SessionStoryBadgeSet({
+    required this.weight,
+    required this.reps,
+    this.isBodyweight = false,
+    this.unit,
+  });
 }
 
 @immutable
