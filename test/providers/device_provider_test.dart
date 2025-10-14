@@ -153,12 +153,15 @@ class FakeChallengeRepository implements ChallengeRepository {
   }
 
   @override
-  Stream<List<Challenge>> watchActiveChallenges(String gymId) => const Stream.empty();
+  Future<List<Challenge>> fetchActiveChallenges(String gymId) async => const [];
   @override
-  Stream<List<Badge>> watchBadges(String userId) =>
-      const Stream<List<Badge>>.empty();
+  Future<List<Badge>> fetchBadges(String userId) async => const [];
   @override
-  Stream<List<CompletedChallenge>> watchCompletedChallenges(String gymId, String userId) => const Stream.empty();
+  Future<List<CompletedChallenge>> fetchCompletedChallenges(
+    String gymId,
+    String userId,
+  ) async =>
+      const [];
 }
 
 void main() {

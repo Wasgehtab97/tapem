@@ -75,8 +75,28 @@ class FirestoreXpSource {
         try {
           await _runTransactionWithRetry<void>(
             (tx) async {
+              XpTrace.log('FS_READ', {
+                'path': dayRef.path,
+                'context': 'addSessionXp.day',
+                'traceId': traceId,
+              });
               final daySnap = await tx.get(dayRef);
+              XpTrace.log('FS_READ_RESULT', {
+                'path': dayRef.path,
+                'exists': daySnap.exists,
+                'traceId': traceId,
+              });
+              XpTrace.log('FS_READ', {
+                'path': statsRef.path,
+                'context': 'addSessionXp.stats',
+                'traceId': traceId,
+              });
               final statsSnap = await tx.get(statsRef);
+              XpTrace.log('FS_READ_RESULT', {
+                'path': statsRef.path,
+                'exists': statsSnap.exists,
+                'traceId': traceId,
+              });
               final statsData = statsSnap.data() ?? {};
               final updates = <String, dynamic>{};
 
@@ -178,10 +198,30 @@ class FirestoreXpSource {
     });
 
     await _firestore.runTransaction((tx) async {
+      XpTrace.log('FS_READ', {
+        'path': dayRef.path,
+        'context': 'removeSessionXp.day',
+      });
       final daySnap = await tx.get(dayRef);
+      XpTrace.log('FS_READ', {
+        'path': statsRef.path,
+        'context': 'removeSessionXp.stats',
+      });
       final statsSnap = await tx.get(statsRef);
+      XpTrace.log('FS_READ', {
+        'path': lbUser.path,
+        'context': 'removeSessionXp.lbUser',
+      });
       final lbUserSnap = await tx.get(lbUser);
+      XpTrace.log('FS_READ', {
+        'path': lbSess.path,
+        'context': 'removeSessionXp.lbSess',
+      });
       final lbSessSnap = await tx.get(lbSess);
+      XpTrace.log('FS_READ', {
+        'path': lbDay.path,
+        'context': 'removeSessionXp.lbDay',
+      });
       final lbDaySnap = await tx.get(lbDay);
 
       const xpDelta = LevelService.xpPerSession;

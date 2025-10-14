@@ -41,7 +41,22 @@ class FirestoreRankSource {
         try {
           final result = await _runTransactionWithRetry<DeviceXpResult>(
             (tx) async {
+              XpTrace.log('TXN_READ', {
+                'path': lbUser.path,
+                'context': 'rank.addXp.user',
+                'traceId': traceId,
+              });
               final userSnap = await tx.get(lbUser);
+              XpTrace.log('TXN_READ_RESULT', {
+                'path': lbUser.path,
+                'exists': userSnap.exists,
+                'traceId': traceId,
+              });
+              XpTrace.log('TXN_READ', {
+                'path': lbSess.path,
+                'context': 'rank.addXp.session',
+                'traceId': traceId,
+              });
               final sessSnap = await tx.get(lbSess);
               XpTrace.log('TXN_READ', {
                 'existsSessionDoc': sessSnap.exists,
@@ -165,10 +180,10 @@ class FirestoreRankSource {
     throw StateError('Retry loop exited unexpectedly for $traceId');
   }
 
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+  Future<List<Map<String, dynamic>>> fetchLeaderboard(
     String gymId,
     String deviceId,
-  ) {
+  ) async {
     final query = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -179,33 +194,51 @@ class FirestoreRankSource {
         .orderBy('level', descending: true)
         .orderBy('xp', descending: true)
         .limit(50);
+    debugPrint('⬇️ fetchLeaderboard gym=$gymId device=$deviceId');
+    final snap = await query.get();
+    debugPrint('✅ fetchLeaderboard entries=${snap.size}');
 
-    return query.snapshots().asyncMap((snap) async {
-      final missing = <String>[];
-      for (final doc in snap.docs) {
-        if (!_usernameCache.containsKey(doc.id)) {
-          missing.add(doc.id);
+    final missing = <String>[];
+    for (final doc in snap.docs) {
+      if (!_usernameCache.containsKey(doc.id)) {
+        missing.add(doc.id);
+      }
+    }
+    if (missing.isNotEmpty) {
+      await _warmUsernames(missing);
+    }
+
+    return [
+      for (final doc in snap.docs)
+        {
+          'userId': doc.id,
+          'username': _usernameCache[doc.id],
+          ...doc.data(),
+        }
+    ];
+  }
+
+  Future<void> _warmUsernames(List<String> uids) async {
+    const chunkSize = 10;
+    for (var i = 0; i < uids.length; i += chunkSize) {
+      final chunk = uids.sublist(i, i + chunkSize > uids.length ? uids.length : i + chunkSize);
+      try {
+        final snap = await _firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        for (final doc in snap.docs) {
+          _usernameCache[doc.id] = doc.data()['username'] as String?;
+        }
+        for (final uid in chunk) {
+          _usernameCache.putIfAbsent(uid, () => null);
+        }
+      } catch (_) {
+        for (final uid in chunk) {
+          _usernameCache[uid] ??= null;
         }
       }
-
-      for (final uid in missing) {
-        try {
-          final userSnap = await _firestore.collection('users').doc(uid).get();
-          _usernameCache[uid] = userSnap.data()?['username'] as String?;
-        } catch (_) {
-          _usernameCache[uid] = null;
-        }
-      }
-
-      return [
-        for (final doc in snap.docs)
-          {
-            'userId': doc.id,
-            'username': _usernameCache[doc.id],
-            ...doc.data(),
-          }
-      ];
-    });
+    }
   }
 
   // Removed weekly and monthly leaderboard watchers
