@@ -476,7 +476,7 @@ class PowerliftingProvider extends ChangeNotifier {
         scope: 'profile.powerlifting',
         path: logPath,
         operation: 'get',
-        reason: 'loadRecordsPaged:${discipline.id}',
+        reason: 'loadRecordsPaged:${assignment.discipline.id}',
       );
       final snapshot = await query.get();
       FirestoreReadLogger.logResult(
