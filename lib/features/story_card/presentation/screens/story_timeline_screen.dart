@@ -157,10 +157,6 @@ class _StoryTimelineViewState extends State<_StoryTimelineView> {
           });
           _analytics.trackStoryShared(userId: userId, sessionId: story.sessionId, target: target);
         },
-        onSaved: () {
-          elogUi('storycard_saved', {'sessionId': story.sessionId});
-          _analytics.trackStorySaved(userId: userId, sessionId: story.sessionId);
-        },
       );
     } catch (_) {
       messenger.showSnackBar(

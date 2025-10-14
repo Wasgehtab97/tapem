@@ -1304,8 +1304,6 @@
   ,"@commonClose": {"description": "Tooltip zum Schließen von Overlays"}
   ,"storycardTitle": "Session-Story"
   ,"@storycardTitle": {"description": "Titel des Story-Overlays"}
-  ,"storycardSaveButton": "Speichern"
-  ,"@storycardSaveButton": {"description": "Button zum Speichern des Story-Bildes"}
   ,"storycardShareButton": "Teilen"
   ,"@storycardShareButton": {"description": "Button zum Teilen der Story"}
   ,"storycardShareSuccess": "Story geteilt"
@@ -1314,22 +1312,14 @@
   ,"@storycardShareUnavailable": {"description": "Snackbar wenn kein Teilen möglich ist"}
   ,"storycardShareError": "Teilen fehlgeschlagen: {error}"
   ,"@storycardShareError": {"description": "Snackbar bei Fehlern","placeholders": {"error": {}}}
-  ,"storycardSaveSuccess": "Gespeichert unter {path}"
-  ,"@storycardSaveSuccess": {"description": "Snackbar nach erfolgreichem Speichern","placeholders": {"path": {}}}
-  ,"storycardSaveError": "Speichern fehlgeschlagen: {error}"
-  ,"@storycardSaveError": {"description": "Snackbar bei Speicherfehlern","placeholders": {"error": {}}}
   ,"storycardLoadError": "Story konnte nicht geladen werden."
   ,"@storycardLoadError": {"description": "Snackbar wenn die Story nicht geladen werden kann"}
-  ,"storycardXpTotal": "{xp} XP"
-  ,"@storycardXpTotal": {"description": "Label für die gesamten XP","placeholders": {"xp": {}}}
-  ,"storycardXpBreakdown": "Basis {base} • Bonus {bonus}"
-  ,"@storycardXpBreakdown": {"description": "Aufschlüsselung von Basis- und Bonus-XP","placeholders": {"base": {},"bonus": {}}}
+  ,"storycardDailyXp": "+{xp} tägliche XP"
+  ,"@storycardDailyXp": {"description": "Überschrift für die erhaltenen täglichen XP","placeholders": {"xp": {}}}
+  ,"storycardDailyXpDescription": "Belohnung für dein heutiges Training."
+  ,"@storycardDailyXpDescription": {"description": "Unterzeile zur Erklärung der täglichen XP"}
   ,"storycardPrSectionTitle": "Neue PRs"
   ,"@storycardPrSectionTitle": {"description": "Abschnittsüberschrift über den PR-Badges"}
-  ,"storycardMuscleSectionTitle": "Top-Muskeln"
-  ,"@storycardMuscleSectionTitle": {"description": "Abschnittsüberschrift über den Muskel-Tags"}
-  ,"storycardMuscleFallback": "Noch keine Muskeldaten – trainiere weiter!"
-  ,"@storycardMuscleFallback": {"description": "Fallback-Text wenn keine Muskelwerte vorhanden sind"}
   ,"storycardSetsLabel": "Sätze"
   ,"@storycardSetsLabel": {"description": "Label für die Anzahl der Sätze"}
   ,"storycardDurationLabel": "Dauer"
@@ -1340,8 +1330,6 @@
   ,"@storycardVolumeLabel": {"description": "Label für das Trainingsvolumen"}
   ,"storycardVolumeValue": "{kilograms} kg"
   ,"@storycardVolumeValue": {"description": "Formatierter Trainingsumfang in Kilogramm","placeholders": {"kilograms": {}}}
-  ,"storycardMuscleXpValue": "{xp} XP"
-  ,"@storycardMuscleXpValue": {"description": "XP-Suffix auf den Muskel-Tags","placeholders": {"xp": {}}}
   ,"storycardHeaderTooltip": "Story"
   ,"@storycardHeaderTooltip": {"description": "Tooltip für den Story-Button im Header"}
   ,"storiesTitle": "Stories"

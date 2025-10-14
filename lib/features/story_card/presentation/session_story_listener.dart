@@ -68,11 +68,6 @@ class _SessionStoryListenerState extends State<SessionStoryListener> {
           target: target,
         );
       },
-      onSaved: () {
-        elogUi('storycard_saved', {'sessionId': story.sessionId});
-        _analyticsService.trackStorySaved(userId: userId, sessionId: story.sessionId);
-        debugPrint('📸 [StoryListener] story saved sessionId=${story.sessionId}');
-      },
       onViewed: () {
         elogUi('storycard_shown', {
           'sessionId': story.sessionId,

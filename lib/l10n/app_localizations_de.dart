@@ -1422,9 +1422,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storycardTitle => 'Session-Story';
 
   @override
-  String get storycardSaveButton => 'Speichern';
-
-  @override
   String get storycardShareButton => 'Teilen';
 
   @override
@@ -1439,36 +1436,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String storycardSaveSuccess(Object path) {
-    return 'Gespeichert unter $path';
-  }
-
-  @override
-  String storycardSaveError(Object error) {
-    return 'Speichern fehlgeschlagen: $error';
-  }
-
-  @override
   String get storycardLoadError => 'Story konnte nicht geladen werden.';
 
   @override
-  String storycardXpTotal(Object xp) {
-    return '$xp XP';
+  String storycardDailyXp(Object xp) {
+    return '+$xp tägliche XP';
   }
 
   @override
-  String storycardXpBreakdown(Object base, Object bonus) {
-    return 'Basis $base • Bonus $bonus';
-  }
+  String get storycardDailyXpDescription => 'Belohnung für dein heutiges Training.';
 
   @override
   String get storycardPrSectionTitle => 'Neue PRs';
-
-  @override
-  String get storycardMuscleSectionTitle => 'Top-Muskeln';
-
-  @override
-  String get storycardMuscleFallback => 'Noch keine Muskeldaten – trainiere weiter!';
 
   @override
   String get storycardSetsLabel => 'Sätze';
@@ -1487,11 +1466,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String storycardVolumeValue(Object kilograms) {
     return '$kilograms kg';
-  }
-
-  @override
-  String storycardMuscleXpValue(Object xp) {
-    return '$xp XP';
   }
 
   @override
