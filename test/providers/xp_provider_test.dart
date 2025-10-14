@@ -1,73 +1,78 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 
 class FakeXpRepository implements XpRepository {
-  final dayCtrl = StreamController<int>.broadcast();
-  final muscleCtrl = StreamController<Map<String, int>>.broadcast();
-  final deviceCtrls = <String, StreamController<int>>{};
-  final statsDailyCtrl = StreamController<int>.broadcast();
   int addCalls = 0;
-
-    @override
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-      String? exerciseId,
-      required String traceId,
-      List<String> primaryMuscleGroupIds = const [],
-      List<String> secondaryMuscleGroupIds = const [],
-    }) async {
-      addCalls++;
-      return DeviceXpResult.okAdded;
-    }
+  int dayXp = 0;
+  Map<String, int> muscleXp = {};
+  Map<String, Map<String, int>> muscleHistory = {};
+  Map<String, int> trainingDays = {};
+  final Map<String, int> deviceXp = {};
+  int statsDailyXp = 0;
+  final List<String> requestedDevices = [];
 
   @override
-  Stream<int> watchDayXp({required String userId, required DateTime date}) =>
-      dayCtrl.stream;
-
-  @override
-  Stream<Map<String, int>> watchMuscleXp({
+  Future<DeviceXpResult> addSessionXp({
     required String gymId,
     required String userId,
-  }) =>
-      muscleCtrl.stream;
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) async {
+    addCalls++;
+    return DeviceXpResult.okAdded;
+  }
 
   @override
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) =>
-      const Stream.empty();
+  Future<int> fetchDayXp({required String userId, required DateTime date}) async {
+    return dayXp;
+  }
 
   @override
-  Stream<int> watchDeviceXp({
+  Future<Map<String, int>> fetchMuscleXp({
+    required String gymId,
+    required String userId,
+  }) async {
+    return muscleXp;
+  }
+
+  @override
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+    int limit = 30,
+  }) async {
+    return muscleHistory;
+  }
+
+  @override
+  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30}) async {
+    return trainingDays;
+  }
+
+  @override
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
-  }) =>
-      deviceCtrls
-          .putIfAbsent(deviceId, () => StreamController<int>.broadcast())
-          .stream;
+  }) async {
+    requestedDevices.add(deviceId);
+    return deviceXp[deviceId] ?? 0;
+  }
 
   @override
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
-  }) =>
-      statsDailyCtrl.stream;
-
-  void dispose() {
-    dayCtrl.close();
-    muscleCtrl.close();
-    statsDailyCtrl.close();
-    for (final c in deviceCtrls.values) {
-      c.close();
-    }
+  }) async {
+    return statsDailyXp;
   }
 }
 
@@ -78,8 +83,8 @@ void main() {
     test('addSessionXp delegates to repository', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
-        await provider.addSessionXp(
-          gymId: 'g1',
+      await provider.addSessionXp(
+        gymId: 'g1',
           userId: 'u1',
           deviceId: 'd1',
           sessionId: 's1',
@@ -88,53 +93,49 @@ void main() {
           traceId: 't',
         );
       expect(repo.addCalls, 1);
-      repo.dispose();
     });
 
     test('watchDayXp updates dayXp', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
+      repo.dayXp = 15;
       provider.watchDayXp('u1', DateTime(2024, 1, 1));
-      repo.dayCtrl.add(15);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 20));
       expect(provider.dayXp, 15);
       provider.dispose();
-      repo.dispose();
     });
 
     test('watchMuscleXp updates muscleXp', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
+      repo.muscleXp = {'m1': 5};
       provider.watchMuscleXp('g1', 'u1');
-      repo.muscleCtrl.add({'m1': 5});
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 20));
       expect(provider.muscleXp, {'m1': 5});
       provider.dispose();
-      repo.dispose();
     });
 
     test('watchDeviceXp tracks multiple devices', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
+      repo.deviceXp['d1'] = 7;
+      repo.deviceXp['d2'] = 3;
       provider.watchDeviceXp('g1', 'u1', ['d1', 'd2']);
-      repo.deviceCtrls['d1']!.add(7);
-      repo.deviceCtrls['d2']!.add(3);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 50));
       expect(provider.deviceXp, {'d1': 7, 'd2': 3});
+      expect(repo.requestedDevices, containsAll(['d1', 'd2']));
       provider.dispose();
-      repo.dispose();
     });
 
     test('watchStatsDailyXp computes level', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
+      repo.statsDailyXp = 1950; // level 2, xp 950
       provider.watchStatsDailyXp('g1', 'u1');
-      repo.statsDailyCtrl.add(1950); // level 2, xp 950
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 20));
       expect(provider.dailyLevel, 2);
       expect(provider.dailyLevelXp, 950);
       provider.dispose();
-      repo.dispose();
     });
   });
 }

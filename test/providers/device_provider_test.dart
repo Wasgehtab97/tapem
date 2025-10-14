@@ -113,15 +113,36 @@ class _ExerciseSnapRepo implements DeviceRepository {
     }
 
   @override
-  Stream<int> watchDayXp({required String userId, required DateTime date}) => const Stream.empty();
+  Future<int> fetchDayXp({required String userId, required DateTime date}) async => 0;
+
   @override
-  Stream<Map<String, int>> watchMuscleXp({required String gymId, required String userId}) => const Stream.empty();
+  Future<Map<String, int>> fetchMuscleXp({
+    required String gymId,
+    required String userId,
+  }) async => <String, int>{};
+
   @override
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) => const Stream.empty();
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+    int limit = 30,
+  }) async => <String, Map<String, int>>{};
+
   @override
-  Stream<int> watchDeviceXp({required String gymId, required String deviceId, required String userId}) => const Stream.empty();
+  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30}) async => <String, int>{};
+
   @override
-  Stream<int> watchStatsDailyXp({required String gymId, required String userId}) => const Stream.empty();
+  Future<int> fetchDeviceXp({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+  }) async => 0;
+
+  @override
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) async => 0;
 }
 
 class FakeChallengeRepository implements ChallengeRepository {
