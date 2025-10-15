@@ -1,5 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const String _rangeKey7Days = 'last7Days';
+const String _rangeKey30Days = 'last30Days';
+const String _rangeKey90Days = 'last90Days';
+const String _rangeKey365Days = 'last365Days';
+const String _rangeKeyAll = 'all';
+
 class DeviceUsageSummaryEntry {
   DeviceUsageSummaryEntry({
     required this.deviceId,
@@ -49,12 +55,6 @@ class DeviceUsageSummaryService {
   final void Function()? _onRead;
   final Map<String, _DeviceSummaryCache> _cache =
       <String, _DeviceSummaryCache>{};
-
-  static const String _rangeKey7Days = 'last7Days';
-  static const String _rangeKey30Days = 'last30Days';
-  static const String _rangeKey90Days = 'last90Days';
-  static const String _rangeKey365Days = 'last365Days';
-  static const String _rangeKeyAll = 'all';
 
   Future<DeviceUsageSummaryState> loadSummaries(
     String gymId, {
