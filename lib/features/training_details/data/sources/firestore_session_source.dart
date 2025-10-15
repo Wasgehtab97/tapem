@@ -13,37 +13,64 @@ class FirestoreSessionSource {
     required String userId,
     required DateTime date,
   }) async {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start
-        .add(const Duration(days: 1))
-        .subtract(const Duration(milliseconds: 1));
-
-    debugPrint('FirestoreSessionSource: read path=collectionGroup/logs owner=' +
-        userId +
-        ' start=' +
-        start.toString() +
-        ' end=' +
-        end.toString());
+    final dayKey = _formatDayKey(date);
+    final summaryRef = _firestore
+        .collection('trainingSummary')
+        .doc(userId)
+        .collection('daily')
+        .doc(dayKey);
 
     try {
-      final snap = await _firestore
-          .collectionGroup('logs')
-          .where('userId', isEqualTo: userId)
-          .where(
-            'timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-          )
-          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
-          .get();
+      final summarySnap = await summaryRef.get();
+      if (!summarySnap.exists) {
+        return const <SessionDto>[];
+      }
+      final summary = summarySnap.data();
+      final sessionCounts = summary?['sessionCounts'];
+      if (sessionCounts is! Map<String, dynamic> || sessionCounts.isEmpty) {
+        return const <SessionDto>[];
+      }
 
-      debugPrint('FirestoreSessionSource: success path=collectionGroup/logs owner=' +
-          userId +
-          ' docs=' +
-          snap.docs.length.toString());
+      final targets = <_SessionTarget>[];
+      sessionCounts.forEach((sessionId, raw) {
+        if (sessionId.isEmpty) {
+          return;
+        }
+        if (raw is Map<String, dynamic>) {
+          final count = (raw['count'] as num?)?.toInt() ?? 0;
+          if (count <= 0) {
+            return;
+          }
+          final gymId = raw['gymId'] as String?;
+          final deviceId = raw['deviceId'] as String?;
+          if (gymId != null && gymId.isNotEmpty && deviceId != null && deviceId.isNotEmpty) {
+            targets.add(_SessionTarget(sessionId: sessionId, gymId: gymId, deviceId: deviceId));
+          }
+        }
+      });
 
-      return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
+      if (targets.isEmpty) {
+        return const <SessionDto>[];
+      }
+
+      final results = <SessionDto>[];
+      for (final target in targets) {
+        final query = _firestore
+            .collection('gyms')
+            .doc(target.gymId)
+            .collection('devices')
+            .doc(target.deviceId)
+            .collection('logs')
+            .where('sessionId', isEqualTo: target.sessionId)
+            .where('userId', isEqualTo: userId)
+            .orderBy('timestamp', descending: false)
+            .limit(500);
+        final snap = await query.get();
+        results.addAll(snap.docs.map(SessionDto.fromFirestore));
+      }
+      return results;
     } on FirebaseException catch (e) {
-      debugPrint('FirestoreSessionSource: failure path=collectionGroup/logs owner=' +
+      debugPrint('FirestoreSessionSource: failure path=trainingSummary owner=' +
           userId +
           ' code=' +
           e.code);
@@ -95,4 +122,20 @@ class FirestoreSessionSource {
       index += chunkSize;
     }
   }
+}
+
+String _formatDayKey(DateTime date) {
+  return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
+
+class _SessionTarget {
+  _SessionTarget({
+    required this.sessionId,
+    required this.gymId,
+    required this.deviceId,
+  });
+
+  final String sessionId;
+  final String gymId;
+  final String deviceId;
 }

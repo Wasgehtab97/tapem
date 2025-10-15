@@ -130,37 +130,27 @@ class FirestoreChallengeSource {
       debugPrint('🔍 required sets for ${ch.id}: ${ch.minSets}');
       try {
         var logCount = 0;
-        if (ch.deviceIds.isEmpty) {
-          final snap =
-              await _firestore
-                  .collectionGroup('logs')
-                  .where('userId', isEqualTo: userId)
-                  .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                  .where('timestamp', isLessThanOrEqualTo: ch.end)
-                  .get();
-          logCount = snap.size;
-        } else {
-          // Firestore erlaubt maximal 10 IDs pro whereIn-Query.
-          final chunks = <List<String>>[];
-          for (var i = 0; i < ch.deviceIds.length; i += 10) {
-            chunks.add(
-              ch.deviceIds.sublist(
-                i,
-                i + 10 > ch.deviceIds.length ? ch.deviceIds.length : i + 10,
-              ),
-            );
-          }
-
-          for (final ids in chunks) {
-            final snap =
-                await _firestore
-                    .collectionGroup('logs')
-                    .where('userId', isEqualTo: userId)
-                    .where('deviceId', whereIn: ids)
-                    .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                    .where('timestamp', isLessThanOrEqualTo: ch.end)
-                    .get();
-            logCount += snap.size;
+        final summarySnap = await _firestore
+            .collection('trainingSummary')
+            .doc(userId)
+            .collection('daily')
+            .where('date', isGreaterThanOrEqualTo: ch.start)
+            .where('date', isLessThanOrEqualTo: ch.end)
+            .get();
+        for (final doc in summarySnap.docs) {
+          final data = doc.data();
+          if (ch.deviceIds.isEmpty) {
+            logCount += (data['logCount'] as num?)?.toInt() ?? 0;
+          } else {
+            final deviceCounts = data['deviceCounts'];
+            if (deviceCounts is Map<String, dynamic>) {
+              for (final id in ch.deviceIds) {
+                final entry = deviceCounts[id];
+                if (entry is Map<String, dynamic>) {
+                  logCount += (entry['count'] as num?)?.toInt() ?? 0;
+                }
+              }
+            }
           }
         }
         debugPrint(

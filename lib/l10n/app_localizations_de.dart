@@ -317,6 +317,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
+  String get profileLoadMoreButton => 'Mehr Tage laden';
+
+  @override
   String get repsRequired => 'Wdh?';
 
   @override

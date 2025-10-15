@@ -91,6 +91,22 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
               _powerliftingButton(context, loc),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          if (prov.hasMoreSummaries)
+            OutlinedButton.icon(
+              icon: const Icon(Icons.expand_more_rounded),
+              label: Text(loc.profileLoadMoreButton),
+              onPressed: prov.isLoadingMore
+                  ? null
+                  : () {
+                      prov.loadMoreTrainingSummaries(context);
+                    },
+            ),
+          if (prov.isLoadingMore)
+            const Padding(
+              padding: EdgeInsets.only(top: AppSpacing.sm),
+              child: CircularProgressIndicator(),
+            ),
         ],
       );
     }

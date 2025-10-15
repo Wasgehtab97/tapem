@@ -64,17 +64,18 @@ async function markPresenceTrue(db, userId, timestamp, logId) {
 
 async function maybeMarkPresenceFalse(db, userId, timestamp) {
   const dateKey = toDateKey(timestamp);
-  const start = startOfUtcDay(timestamp);
-  const end = endOfUtcDay(timestamp);
-  const remaining = await db
-    .collectionGroup('logs')
-    .where('userId', '==', userId)
-    .where('timestamp', '>=', start)
-    .where('timestamp', '<', end)
-    .limit(1)
-    .get();
-  if (remaining.size > 0) {
-    return null;
+  const summaryRef = db
+    .collection('trainingSummary')
+    .doc(userId)
+    .collection('daily')
+    .doc(dateKey);
+  const summarySnap = await summaryRef.get();
+  if (summarySnap.exists) {
+    const summaryData = summarySnap.data() || {};
+    const logCount = Number(summaryData.logCount || 0);
+    if (logCount > 0) {
+      return null;
+    }
   }
   const ref = db
     .collection(PRESENCE_ROOT)
