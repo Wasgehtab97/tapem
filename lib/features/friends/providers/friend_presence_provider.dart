@@ -16,8 +16,10 @@ class FriendPresenceProvider extends ChangeNotifier {
   final Set<String> _trackedUids = {};
   final Map<String, DateTime> _lastFetch = {};
   final Set<String> _loading = {};
-  final Duration _pollInterval = const Duration(minutes: 1);
-  final Duration _cacheTtl = const Duration(minutes: 1);
+  // Presence updates are not critical in sub-minute resolution; keeping the
+  // polling cadence at two minutes prevents hot restarts from spamming reads.
+  final Duration _pollInterval = const Duration(minutes: 2);
+  final Duration _cacheTtl = const Duration(minutes: 2);
 
   Timer? _midnightTimer;
   Timer? _pollTimer;

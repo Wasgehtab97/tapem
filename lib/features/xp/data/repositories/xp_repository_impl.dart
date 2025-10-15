@@ -4,6 +4,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/time/logic_day.dart';
 
 import '../../domain/device_xp_result.dart';
+import '../../domain/xp_paged_result.dart';
 import '../../domain/xp_repository.dart';
 import '../sources/firestore_xp_source.dart';
 
@@ -14,10 +15,11 @@ class XpRepositoryImpl implements XpRepository {
   final Duration _cacheTtl = const Duration(minutes: 2);
 
   final Map<String, _CacheEntry<Map<String, dynamic>>> _rankStatsCache = {};
-  final Map<String, _CacheEntry<Map<String, int>>> _trainingDaysCache = {};
+  final Map<String, _CacheEntry<XpPagedResult<Map<String, int>>>>
+      _trainingDaysCache = {};
   final Map<String, _CacheEntry<int>> _dayCache = {};
   final Map<String, _CacheEntry<int>> _deviceCache = {};
-  final Map<String, _CacheEntry<Map<String, Map<String, int>>>>
+  final Map<String, _CacheEntry<XpPagedResult<Map<String, Map<String, int>>>>>
       _muscleHistoryCache = {};
 
   @override
@@ -79,7 +81,7 @@ class XpRepositoryImpl implements XpRepository {
       _purgeExpired(_trainingDaysCache);
       for (final entry in _trainingDaysCache.entries) {
         if (!entry.key.startsWith('$userId::')) continue;
-        final xp = entry.value.value[dayKey];
+        final xp = entry.value.value.items[dayKey];
         if (xp != null) {
           _dayCache[cacheKey] = _CacheEntry(xp, entry.value.timestamp);
           debugPrint('♻️ fetchDayXp userId=$userId day=$dayKey (cache:trainingDays)');
@@ -121,62 +123,67 @@ class XpRepositoryImpl implements XpRepository {
   }
 
   @override
-  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+  Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 30,
+    int limit = 10,
+    String? startAfter,
     bool forceRemote = false,
   }) async {
-    final cacheKey = '$gymId::$userId::$limit';
+    final cacheKey = '$gymId::$userId::$limit::${startAfter ?? ''}';
     _purgeExpired(_muscleHistoryCache);
     if (!forceRemote) {
       final cached = _muscleHistoryCache[cacheKey];
       if (cached != null) {
         debugPrint(
-            '♻️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit (cache)');
-        return _cloneHistory(cached.value);
+            '♻️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit startAfter=${startAfter ?? ''} (cache)');
+        return _cloneHistoryResult(cached.value);
       }
     }
 
-    final map = await _source.fetchMuscleXpHistory(
+    final result = await _source.fetchMuscleXpHistory(
       gymId: gymId,
       userId: userId,
       limit: limit,
+      startAfter: startAfter,
     );
     final now = DateTime.now();
-    final mutable = {
-      for (final entry in map.entries)
-        entry.key: Map<String, int>.from(entry.value),
-    };
-    _muscleHistoryCache[cacheKey] = _CacheEntry(mutable, now);
-    return _cloneHistory(mutable);
+    final cloned = _cloneHistoryResult(result);
+    _muscleHistoryCache[cacheKey] = _CacheEntry(cloned, now);
+    return _cloneHistoryResult(cloned);
   }
 
   @override
-  Future<Map<String, int>> fetchTrainingDaysXp(
+  Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 30,
+    int limit = 10,
+    String? startAfter,
     bool forceRemote = false,
   }) async {
-    final cacheKey = '$userId::$limit';
+    final cacheKey = '$userId::$limit::${startAfter ?? ''}';
     _purgeExpired(_trainingDaysCache);
     _purgeExpired(_dayCache);
     if (!forceRemote) {
       final cached = _trainingDaysCache[cacheKey];
       if (cached != null) {
-        debugPrint('♻️ fetchTrainingDaysXp userId=$userId limit=$limit (cache)');
-        return Map<String, int>.unmodifiable(Map<String, int>.from(cached.value));
+        debugPrint(
+            '♻️ fetchTrainingDaysXp userId=$userId limit=$limit startAfter=${startAfter ?? ''} (cache)');
+        return _cloneTrainingDaysResult(cached.value);
       }
     }
 
-    final map = await _source.fetchTrainingDaysXp(userId, limit: limit);
+    final result = await _source.fetchTrainingDaysXp(
+      userId,
+      limit: limit,
+      startAfter: startAfter,
+    );
     final now = DateTime.now();
-    final mutable = Map<String, int>.from(map);
-    _trainingDaysCache[cacheKey] = _CacheEntry(mutable, now);
-    for (final entry in mutable.entries) {
+    final cloned = _cloneTrainingDaysResult(result);
+    _trainingDaysCache[cacheKey] = _CacheEntry(cloned, now);
+    for (final entry in cloned.items.entries) {
       _dayCache[_dayCacheKey(userId, entry.key)] = _CacheEntry(entry.value, now);
     }
-    return Map<String, int>.unmodifiable(Map<String, int>.from(mutable));
+    return _cloneTrainingDaysResult(cloned);
   }
 
   @override
@@ -266,21 +273,48 @@ class XpRepositoryImpl implements XpRepository {
   ) {
     for (final entryKey in _trainingDaysCache.keys.toList()) {
       if (!entryKey.startsWith('$userId::')) continue;
+      final parts = entryKey.split('::');
+      if (parts.length >= 3 && parts[2].isNotEmpty) {
+        // Skip cached pages that represent older history to avoid mutating
+        // archived snapshots.
+        continue;
+      }
       final existing = _trainingDaysCache[entryKey];
       if (existing == null) continue;
-      final updated = Map<String, int>.from(existing.value);
-      updated[dayKey] = xp;
+      final items = Map<String, int>.from(existing.value.items);
+      items[dayKey] = xp;
+      final updated = XpPagedResult<Map<String, int>>(
+        items: items,
+        hasMore: existing.value.hasMore,
+        nextCursor: existing.value.nextCursor,
+      );
       _trainingDaysCache[entryKey] = _CacheEntry(updated, timestamp);
     }
   }
 
-  Map<String, Map<String, int>> _cloneHistory(
-      Map<String, Map<String, int>> source) {
-    return Map<String, Map<String, int>>.unmodifiable({
-      for (final entry in source.entries)
-        entry.key:
-            Map<String, int>.unmodifiable(Map<String, int>.from(entry.value)),
+  XpPagedResult<Map<String, Map<String, int>>> _cloneHistoryResult(
+    XpPagedResult<Map<String, Map<String, int>>> source,
+  ) {
+    final items = <String, Map<String, int>>{};
+    source.items.forEach((key, value) {
+      items[key] = Map<String, int>.from(value);
     });
+    return XpPagedResult(
+      items: items,
+      hasMore: source.hasMore,
+      nextCursor: source.nextCursor,
+    );
+  }
+
+  XpPagedResult<Map<String, int>> _cloneTrainingDaysResult(
+    XpPagedResult<Map<String, int>> source,
+  ) {
+    final items = Map<String, int>.from(source.items);
+    return XpPagedResult(
+      items: items,
+      hasMore: source.hasMore,
+      nextCursor: source.nextCursor,
+    );
   }
 }
 
