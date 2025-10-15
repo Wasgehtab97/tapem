@@ -14,29 +14,41 @@ abstract class XpRepository {
     List<String> secondaryMuscleGroupIds = const [],
   });
 
-  Future<int> fetchDayXp({required String userId, required DateTime date});
+  Future<int> fetchDayXp({
+    required String userId,
+    required DateTime date,
+    bool forceRemote = false,
+  });
 
   Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   });
 
   Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
     int limit = 30,
+    bool forceRemote = false,
   });
 
-  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30});
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = 30,
+    bool forceRemote = false,
+  });
 
   Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
+    bool forceRemote = false,
   });
 
   Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   });
 }

@@ -406,6 +406,7 @@ class XpProvider extends ChangeNotifier {
       final xp = await _repo.fetchDayXp(
         userId: _dayWatchUserId!,
         date: _dayWatchDate!,
+        forceRemote: force,
       );
       _lastDayFetch = DateTime.now();
       if (_dayXp != xp) {
@@ -433,6 +434,7 @@ class XpProvider extends ChangeNotifier {
       final map = await _repo.fetchMuscleXp(
         gymId: _muscleGymId!,
         userId: _muscleUserId!,
+        forceRemote: force,
       );
       _lastMuscleFetch = DateTime.now();
       if (!mapEquals(_muscleXp, map)) {
@@ -463,6 +465,7 @@ class XpProvider extends ChangeNotifier {
         gymId: _muscleHistoryGymId!,
         userId: _muscleHistoryUserId!,
         limit: 30,
+        forceRemote: force,
       );
       _lastMuscleHistoryFetch = DateTime.now();
       if (!mapEquals(_muscleDailyXp, map)) {
@@ -489,7 +492,11 @@ class XpProvider extends ChangeNotifier {
     }
     _loadingTrainingDays = true;
     try {
-      final map = await _repo.fetchTrainingDaysXp(uid, limit: 30);
+      final map = await _repo.fetchTrainingDaysXp(
+        uid,
+        limit: 30,
+        forceRemote: force,
+      );
       _lastTrainingDaysFetch = DateTime.now();
       if (!mapEquals(_dayListXp, map)) {
         _dayListXp = map;
@@ -516,6 +523,7 @@ class XpProvider extends ChangeNotifier {
       final xp = await _repo.fetchStatsDailyXp(
         gymId: _statsDailyGymId!,
         userId: _statsDailyUserId!,
+        forceRemote: force,
       );
       _lastStatsFetch = DateTime.now();
       if (_statsDailyXp != xp) {
@@ -565,6 +573,7 @@ class XpProvider extends ChangeNotifier {
         gymId: _deviceGymId!,
         deviceId: deviceId,
         userId: _deviceUserId!,
+        forceRemote: force,
       );
       _deviceLastFetch[deviceId] = DateTime.now();
       final previous = _deviceXp[deviceId];

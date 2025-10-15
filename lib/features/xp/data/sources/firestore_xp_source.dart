@@ -416,16 +416,8 @@ class FirestoreXpSource {
     required String gymId,
     required String userId,
   }) async {
-    final doc = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('users')
-        .doc(userId)
-        .collection('rank')
-        .doc('stats');
     debugPrint('⬇️ fetchMuscleXp userId=$userId gymId=$gymId');
-    final snap = await doc.get();
-    final data = snap.data() ?? <String, dynamic>{};
+    final data = await fetchRankStats(gymId: gymId, userId: userId);
     final map = <String, int>{};
     for (final entry in data.entries) {
       final key = entry.key;
@@ -521,6 +513,17 @@ class FirestoreXpSource {
     required String gymId,
     required String userId,
   }) async {
+    debugPrint('⬇️ fetchStatsDailyXp gymId=$gymId userId=$userId');
+    final data = await fetchRankStats(gymId: gymId, userId: userId);
+    final xp = (data['dailyXP'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ fetchStatsDailyXp -> $xp');
+    return xp;
+  }
+
+  Future<Map<String, dynamic>> fetchRankStats({
+    required String gymId,
+    required String userId,
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -528,10 +531,10 @@ class FirestoreXpSource {
         .doc(userId)
         .collection('rank')
         .doc('stats');
-    debugPrint('⬇️ fetchStatsDailyXp gymId=$gymId userId=$userId');
+    debugPrint('⬇️ fetchRankStats gymId=$gymId userId=$userId');
     final snap = await doc.get();
-    final xp = (snap.data()?['dailyXP'] as num?)?.toInt() ?? 0;
-    debugPrint('✅ fetchStatsDailyXp -> $xp');
-    return xp;
+    final data = snap.data() ?? <String, dynamic>{};
+    debugPrint('✅ fetchRankStats fields=${data.length}');
+    return data;
   }
 }

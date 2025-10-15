@@ -113,12 +113,17 @@ class _ExerciseSnapRepo implements DeviceRepository {
     }
 
   @override
-  Future<int> fetchDayXp({required String userId, required DateTime date}) async => 0;
+  Future<int> fetchDayXp({
+    required String userId,
+    required DateTime date,
+    bool forceRemote = false,
+  }) async => 0;
 
   @override
   Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   }) async => <String, int>{};
 
   @override
@@ -126,22 +131,29 @@ class _ExerciseSnapRepo implements DeviceRepository {
     required String gymId,
     required String userId,
     int limit = 30,
+    bool forceRemote = false,
   }) async => <String, Map<String, int>>{};
 
   @override
-  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30}) async => <String, int>{};
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = 30,
+    bool forceRemote = false,
+  }) async => <String, int>{};
 
   @override
   Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
+    bool forceRemote = false,
   }) async => 0;
 
   @override
   Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   }) async => 0;
 }
 
