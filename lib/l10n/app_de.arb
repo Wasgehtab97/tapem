@@ -395,6 +395,11 @@
     "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
   },
 
+  "profileLoadMoreButton": "Mehr Tage laden",
+  "@profileLoadMoreButton": {
+    "description": "Button, der zusätzliche Trainingszusammenfassungen lädt"
+  },
+
   "repsRequired": "Wdh?",
   "@repsRequired": {
     "description": "Validierungsmeldung, wenn Wiederholungen fehlen"

@@ -43,6 +43,9 @@ jobs:
       - name: Analyze code
         run: flutter analyze
 
+      - name: Audit Firestore queries
+        run: ./tool/firestore_query_audit.sh
+
   test:
     name: Unit & Widget Tests
     needs: lint

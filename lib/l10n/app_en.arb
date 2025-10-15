@@ -395,6 +395,11 @@
     "description": "Button label that opens the powerlifting overview"
   },
 
+  "profileLoadMoreButton": "Load more days",
+  "@profileLoadMoreButton": {
+    "description": "Button that loads additional training summaries"
+  },
+
   "repsRequired": "reps?",
   "@repsRequired": {
     "description": "Validation when reps are missing"

@@ -665,6 +665,9 @@ abstract class AppLocalizations {
   /// **'Powerlifting'**
   String get profileStatsPowerliftingButton;
 
+  /// Label for the button that loads additional training summaries.
+  String get profileLoadMoreButton;
+
   /// Validation when reps are missing
   ///
   /// In en, this message translates to:
