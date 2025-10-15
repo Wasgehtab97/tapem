@@ -17,6 +17,8 @@ exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
 exports.mirrorLogPresence = presence.mirrorLogPresence;
 exports.mirrorTrainingSummary = trainingSummary.mirrorTrainingSummary;
+exports.backfillTrainingSummaries = trainingSummary.backfillTrainingSummaries;
+exports.backfillDeviceUsageSummaries = trainingSummary.backfillDeviceUsageSummaries;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')

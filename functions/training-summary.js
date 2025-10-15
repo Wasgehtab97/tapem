@@ -204,6 +204,345 @@ function computeAverageTrainingDaysPerWeek(globalData) {
   return totalDays / completedWeeks;
 }
 
+function requireAdminContext(context) {
+  const isAdmin = Boolean(context.auth?.token?.admin);
+  if (!isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Admin privileges required');
+  }
+}
+
+async function iterateLogs(processLog, batchSize = 500) {
+  const db = admin.firestore();
+  let lastDoc = null;
+  let hasMore = true;
+  while (hasMore) {
+    let query = db.collectionGroup('logs').orderBy('timestamp', 'asc').limit(batchSize);
+    if (lastDoc) {
+      query = query.startAfter(lastDoc);
+    }
+    const snapshot = await query.get();
+    if (snapshot.empty) {
+      hasMore = false;
+      break;
+    }
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    for (const doc of snapshot.docs) {
+      await processLog(doc);
+    }
+    hasMore = snapshot.docs.length === batchSize;
+  }
+}
+
+function ensureDailyAccumulator(map, userId, payload) {
+  const key = `${userId}::${payload.dateKey}`;
+  if (!map.has(key)) {
+    map.set(key, {
+      userId,
+      dateKey: payload.dateKey,
+      date: payload.dayTimestamp,
+      logCount: 0,
+      sessionCounts: {},
+      exerciseCounts: {},
+      muscleGroupCounts: {},
+      deviceCounts: {},
+      favoriteExercises: [],
+      muscleGroups: [],
+      totalSessions: 0,
+    });
+  }
+  return map.get(key);
+}
+
+function ensureAggregateAccumulator(map, userId) {
+  if (!map.has(userId)) {
+    map.set(userId, {
+      userId,
+      totalLogCount: 0,
+      trainingDayCount: 0,
+      activeDayKeys: {},
+      weeklyDayCounts: {},
+      exerciseCounts: {},
+      muscleGroupCounts: {},
+      deviceCounts: {},
+      favoriteExercises: [],
+      muscleGroups: [],
+      totalSessions: 0,
+      firstWorkoutDate: null,
+      lastWorkoutDate: null,
+      userCreatedAt: null,
+      averageTrainingDaysPerWeek: 0,
+      sessionIds: new Set(),
+    });
+  }
+  return map.get(userId);
+}
+
+function computeDailyDerivedFields(daily) {
+  daily.favoriteExercises = computeAggregateFavorites(daily.exerciseCounts);
+  daily.muscleGroups = computeAggregateMuscleGroups(daily.muscleGroupCounts);
+  daily.totalSessions = Object.values(daily.sessionCounts || {})
+    .filter((entry) => entry && typeof entry.count === 'number' && entry.count > 0)
+    .length;
+  return daily;
+}
+
+function computeAggregateDerivedFields(aggregate) {
+  aggregate.favoriteExercises = computeAggregateFavorites(aggregate.exerciseCounts);
+  aggregate.muscleGroups = computeAggregateMuscleGroups(aggregate.muscleGroupCounts);
+  aggregate.totalSessions = aggregate.sessionIds ? aggregate.sessionIds.size : 0;
+  delete aggregate.sessionIds;
+  aggregate.averageTrainingDaysPerWeek = computeAverageTrainingDaysPerWeek(aggregate);
+  return aggregate;
+}
+
+function extractGymAndDevice(doc) {
+  const logsCollection = doc.ref.parent;
+  if (!logsCollection) {
+    return { gymId: null, deviceId: null };
+  }
+  const deviceDoc = logsCollection.parent;
+  const devicesCollection = deviceDoc?.parent;
+  const gymDoc = devicesCollection?.parent;
+  return {
+    gymId: gymDoc?.id || null,
+    deviceId: deviceDoc?.id || null,
+  };
+}
+
+function ensureDeviceAccumulator(map, gymId, deviceId) {
+  const key = `${gymId}::${deviceId}`;
+  if (!map.has(key)) {
+    map.set(key, {
+      gymId,
+      deviceId,
+      sessionTimestamps: new Map(),
+      lastActive: null,
+    });
+  }
+  return map.get(key);
+}
+
+function computeDeviceSummaryPayload(record) {
+  const sessions = Array.from(record.sessionTimestamps.entries());
+  sessions.sort((a, b) => b[1] - a[1]);
+  const recentDates = sessions.slice(0, 10).map(([_, millis]) => new Date(millis));
+  const now = Date.now();
+  const msInDay = 24 * 60 * 60 * 1000;
+  const thresholds = {
+    last7Days: now - 7 * msInDay,
+    last30Days: now - 30 * msInDay,
+    last90Days: now - 90 * msInDay,
+    last365Days: now - 365 * msInDay,
+  };
+  const counts = {
+    last7Days: 0,
+    last30Days: 0,
+    last90Days: 0,
+    last365Days: 0,
+    all: sessions.length,
+  };
+  sessions.forEach(([, millis]) => {
+    if (millis >= thresholds.last7Days) {
+      counts.last7Days += 1;
+    }
+    if (millis >= thresholds.last30Days) {
+      counts.last30Days += 1;
+    }
+    if (millis >= thresholds.last90Days) {
+      counts.last90Days += 1;
+    }
+    if (millis >= thresholds.last365Days) {
+      counts.last365Days += 1;
+    }
+  });
+
+  return {
+    sessionCount: sessions.length,
+    rollingSessions: counts,
+    recentDates,
+    lastActive: record.lastActive ? new Date(record.lastActive) : null,
+  };
+}
+
+async function backfillTrainingSummariesHandler(data, context) {
+  requireAdminContext(context);
+  const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
+  const dailyMap = new Map();
+  const aggregateMap = new Map();
+
+  await iterateLogs(async (doc) => {
+    const payload = extractLogPayload(doc.data() || {});
+    if (!payload) {
+      return;
+    }
+    const { gymId } = extractGymAndDevice(doc);
+    const daily = ensureDailyAccumulator(dailyMap, payload.userId, payload);
+    daily.logCount += 1;
+    if (payload.sessionId) {
+      incrementObjectEntry(daily.sessionCounts, payload.sessionId, 1, {
+        id: payload.sessionId,
+        gymId: gymId || null,
+        deviceId: payload.deviceId || null,
+      });
+    }
+    if (payload.exerciseId || payload.exerciseName) {
+      const key = payload.exerciseId || payload.exerciseName;
+      incrementObjectEntry(daily.exerciseCounts, key, 1, {
+        id: payload.exerciseId || null,
+        name: payload.exerciseName || payload.exerciseId || null,
+      });
+    }
+    if (payload.deviceId) {
+      incrementObjectEntry(daily.deviceCounts, payload.deviceId, 1, {
+        id: payload.deviceId,
+        name: payload.deviceId,
+      });
+    }
+    payload.muscleGroups.forEach((group) => {
+      incrementObjectEntry(daily.muscleGroupCounts, group, 1, {
+        id: group,
+        name: group,
+      });
+    });
+
+    const aggregate = ensureAggregateAccumulator(aggregateMap, payload.userId);
+    aggregate.totalLogCount += 1;
+    if (payload.sessionId) {
+      aggregate.sessionIds.add(payload.sessionId);
+    }
+    let addedDay = false;
+    if (!aggregate.activeDayKeys[payload.dateKey]) {
+      aggregate.activeDayKeys[payload.dateKey] = true;
+      aggregate.trainingDayCount += 1;
+      addedDay = true;
+    }
+    incrementObjectEntry(aggregate.exerciseCounts, payload.exerciseId || payload.exerciseName, 1, {
+      id: payload.exerciseId || null,
+      name: payload.exerciseName || payload.exerciseId || null,
+    });
+    payload.muscleGroups.forEach((group) => {
+      incrementObjectEntry(aggregate.muscleGroupCounts, group, 1, {
+        id: group,
+        name: group,
+      });
+    });
+    if (payload.deviceId) {
+      incrementObjectEntry(aggregate.deviceCounts, payload.deviceId, 1, {
+        id: payload.deviceId,
+        name: payload.deviceId,
+      });
+    }
+
+    const weekKey = toWeekKey(payload.dayTimestamp);
+    const weekStart = weekStartOf(payload.dayTimestamp).toDate();
+    const weekStartKey = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, '0')}-${String(weekStart.getUTCDate()).padStart(2, '0')}`;
+    if (addedDay) {
+      const weekEntry = aggregate.weeklyDayCounts[weekKey] || { count: 0, startDate: weekStartKey };
+      weekEntry.count = Math.max(0, Number(weekEntry.count || 0) + 1);
+      weekEntry.startDate = weekStartKey;
+      aggregate.weeklyDayCounts[weekKey] = weekEntry;
+
+      const millis = payload.dayTimestamp.toMillis();
+      if (!aggregate.firstWorkoutDate || aggregate.firstWorkoutDate.toMillis() > millis) {
+        aggregate.firstWorkoutDate = payload.dayTimestamp;
+      }
+      if (!aggregate.lastWorkoutDate || aggregate.lastWorkoutDate.toMillis() < millis) {
+        aggregate.lastWorkoutDate = payload.dayTimestamp;
+      }
+    } else if (aggregate.lastWorkoutDate && aggregate.lastWorkoutDate.toMillis() < payload.dayTimestamp.toMillis()) {
+      aggregate.lastWorkoutDate = payload.dayTimestamp;
+    }
+  });
+
+  const db = admin.firestore();
+  const writer = db.bulkWriter();
+
+  dailyMap.forEach((daily) => {
+    computeDailyDerivedFields(daily);
+    const { userId, ...rest } = daily;
+    const dailyRef = db
+      .collection(SUMMARY_ROOT)
+      .doc(userId)
+      .collection(DAILY_COLLECTION)
+      .doc(daily.dateKey);
+    writer.set(dailyRef, {
+      ...rest,
+      updatedAt: serverTimestamp,
+    });
+  });
+
+  aggregateMap.forEach((aggregate, userId) => {
+    computeAggregateDerivedFields(aggregate);
+    const aggregateRef = db
+      .collection(SUMMARY_ROOT)
+      .doc(userId)
+      .collection(AGGREGATE_COLLECTION)
+      .doc(AGGREGATE_OVERVIEW_DOC);
+    writer.set(aggregateRef, {
+      ...aggregate,
+      updatedAt: serverTimestamp,
+    });
+  });
+
+  await writer.close();
+
+  return {
+    dailyCount: dailyMap.size,
+    aggregateCount: aggregateMap.size,
+  };
+}
+
+async function backfillDeviceUsageSummariesHandler(data, context) {
+  requireAdminContext(context);
+  const deviceMap = new Map();
+
+  await iterateLogs(async (doc) => {
+    const payload = extractLogPayload(doc.data() || {});
+    if (!payload) {
+      return;
+    }
+    const { gymId, deviceId } = extractGymAndDevice(doc);
+    if (!gymId || !deviceId || !payload.sessionId) {
+      return;
+    }
+    const accumulator = ensureDeviceAccumulator(deviceMap, gymId, deviceId);
+    const millis = payload.timestamp.toMillis();
+    const existing = accumulator.sessionTimestamps.get(payload.sessionId) || 0;
+    if (millis > existing) {
+      accumulator.sessionTimestamps.set(payload.sessionId, millis);
+    }
+    if (!accumulator.lastActive || accumulator.lastActive < millis) {
+      accumulator.lastActive = millis;
+    }
+  });
+
+  const db = admin.firestore();
+  const writer = db.bulkWriter();
+  const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
+
+  deviceMap.forEach((record) => {
+    const summary = computeDeviceSummaryPayload(record);
+    const ref = db
+      .collection('deviceUsageSummary')
+      .doc(record.gymId)
+      .collection('devices')
+      .doc(record.deviceId);
+    writer.set(ref, {
+      sessionCount: summary.sessionCount,
+      rollingSessions: summary.rollingSessions,
+      recentDates: summary.recentDates.map((date) => admin.firestore.Timestamp.fromDate(date)),
+      lastActive: summary.lastActive ? admin.firestore.Timestamp.fromDate(summary.lastActive) : null,
+      updatedAt: serverTimestamp,
+    }, { merge: true });
+  });
+
+  await writer.close();
+
+  return {
+    deviceCount: deviceMap.size,
+  };
+}
+
 async function updateTrainingSummary(change, context) {
   const afterData = change.after.exists ? change.after.data() : null;
   const beforeData = change.before.exists ? change.before.data() : null;
@@ -414,6 +753,18 @@ const mirrorTrainingSummary = functions.firestore
   .document('gyms/{gymId}/devices/{deviceId}/logs/{logId}')
   .onWrite(updateTrainingSummary);
 
+const backfillTrainingSummaries = functions.runWith({
+  timeoutSeconds: 540,
+  memory: '1GB',
+}).https.onCall(backfillTrainingSummariesHandler);
+
+const backfillDeviceUsageSummaries = functions.runWith({
+  timeoutSeconds: 540,
+  memory: '1GB',
+}).https.onCall(backfillDeviceUsageSummariesHandler);
+
 module.exports = {
   mirrorTrainingSummary,
+  backfillTrainingSummaries,
+  backfillDeviceUsageSummaries,
 };
