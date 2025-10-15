@@ -395,24 +395,29 @@
     "description": "Button label that opens the powerlifting overview"
   },
 
-  "profileStatsNoSummaries": "No statistics available yet.",
+  "profileStatsNoSummaries": "Statistics are being prepared",
   "@profileStatsNoSummaries": {
-    "description": "Shown when no training summary data exists"
+    "description": "Headline shown when no summaries are available yet"
   },
 
-  "profileStatsLegacyImportInfo": "Import your older training sessions to populate these insights.",
-  "@profileStatsLegacyImportInfo": {
-    "description": "Helper text explaining the legacy import"
+  "profileStatsSummariesPending": "Statistics are being prepared – please try again later.",
+  "@profileStatsSummariesPending": {
+    "description": "Detail text displayed while summaries are still processing"
   },
 
-  "profileStatsLegacyImportCta": "Import now",
-  "@profileStatsLegacyImportCta": {
-    "description": "Button label to trigger the legacy statistics import"
+  "profileStatsRefreshSummaries": "Check again",
+  "@profileStatsRefreshSummaries": {
+    "description": "Button label to refresh the summaries manually"
   },
 
-  "profileStatsLegacyImportInProgress": "Importing…",
-  "@profileStatsLegacyImportInProgress": {
-    "description": "Status label displayed while the legacy import runs"
+  "profileStatsError": "Unable to load statistics.",
+  "@profileStatsError": {
+    "description": "Error message when the statistics request fails"
+  },
+
+  "profileStatsRetry": "Try again",
+  "@profileStatsRetry": {
+    "description": "Retry button label for the profile statistics"
   },
 
   "profileLoadMoreButton": "Load more days",

@@ -1,6 +1,5 @@
 // lib/core/providers/profile_provider.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -32,9 +31,8 @@ class ProfileProvider extends ChangeNotifier {
   bool _hasLoadedTrainingDates = false;
   bool _hasMoreSummaries = true;
   List<TrainingSummary> _summaries = [];
-  bool _needsLegacyImport = false;
-  bool _isLegacyImporting = false;
-  bool _legacyImportAttempted = false;
+  bool _hasSummaries = false;
+  bool _lastLoadFromCache = false;
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -48,9 +46,8 @@ class ProfileProvider extends ChangeNotifier {
       List.unmodifiable(_favoriteExerciseUsages);
   bool get hasMoreSummaries => _hasMoreSummaries;
   List<TrainingSummary> get summaries => List.unmodifiable(_summaries);
-  bool get needsLegacyImport => _needsLegacyImport;
-  bool get isLegacyImporting => _isLegacyImporting;
-  bool get hasLegacyImportAttempted => _legacyImportAttempted;
+  bool get hasSummaries => _hasSummaries;
+  bool get lastLoadFromCache => _lastLoadFromCache;
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(
@@ -64,6 +61,10 @@ class ProfileProvider extends ChangeNotifier {
       _error = 'Kein Benutzer gefunden';
       notifyListeners();
       return Future<void>.value();
+    }
+
+    if (_lastLoadedUserId != null && _lastLoadedUserId != userId) {
+      _resetState();
     }
 
     if (!forceRefresh &&
@@ -118,6 +119,39 @@ class ProfileProvider extends ChangeNotifier {
     });
   }
 
+  void _resetState() {
+    _trainingDates = [];
+    _trainingDayDates = [];
+    _totalTrainingDays = 0;
+    _avgTrainingDaysPerWeek = 0;
+    _favoriteExerciseName = null;
+    _favoriteExerciseUsages = [];
+    _summaries = [];
+    _hasMoreSummaries = true;
+    _hasSummaries = false;
+    _lastLoadFromCache = false;
+    _hasLoadedTrainingDates = false;
+  }
+
+  Future<void> refreshSummaries(
+    BuildContext context, {
+    bool forceRemote = false,
+  }) {
+    return loadTrainingDates(
+      context,
+      forceRefresh: forceRemote,
+    );
+  }
+
+  TrainingSummary? summaryForDateKey(String dateKey) {
+    for (final summary in _summaries) {
+      if (summary.dateKey == dateKey) {
+        return summary;
+      }
+    }
+    return null;
+  }
+
   Future<void> _fetchTrainingSummaries({
     required String userId,
     required DateTime? createdAt,
@@ -132,6 +166,7 @@ class ProfileProvider extends ChangeNotifier {
       );
 
       _summaries = state.entries;
+      _lastLoadFromCache = state.fromCache;
       _trainingDayDates = _summaries
           .map((summary) =>
               DateTime(summary.date.year, summary.date.month, summary.date.day))
@@ -152,13 +187,13 @@ class ProfileProvider extends ChangeNotifier {
       _hasLoadedTrainingDates = true;
       _lastLoadedUserId = userId;
       _hasMoreSummaries = state.hasMore;
-      _needsLegacyImport =
-          !loadMore && state.entries.isEmpty && state.aggregate.trainingDayCount == 0;
+      _hasSummaries =
+          state.entries.isNotEmpty || state.aggregate.trainingDayCount > 0;
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
       _hasLoadedTrainingDates = false;
       _hasMoreSummaries = false;
-      _needsLegacyImport = false;
+      _hasSummaries = false;
       elogError('PROFILE_PROVIDER_TRAINING_SUMMARY', e.toString(), st);
       debugPrintStack(
         label: 'ProfileProvider.loadTrainingSummaries',
@@ -168,140 +203,6 @@ class ProfileProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  static const int _legacyImportPageSize = 200;
-
-  Future<void> importLegacyTrainingData(BuildContext context) async {
-    final authProv = Provider.of<AuthProvider>(context, listen: false);
-    final userId = authProv.userId;
-    if (userId == null) {
-      _error = 'Kein Benutzer gefunden';
-      notifyListeners();
-      return;
-    }
-
-    if (_isLegacyImporting) {
-      return;
-    }
-
-    _isLegacyImporting = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final result = await _loadLegacyLogs(userId);
-      _applyLegacyImport(
-        result,
-        createdAt: authProv.createdAt,
-        userId: userId,
-      );
-      _needsLegacyImport = false;
-    } catch (e, st) {
-      _error = 'Fehler beim Importieren alter Trainingsdaten: ${e.toString()}';
-      debugPrintStack(
-        label: 'ProfileProvider.importLegacyTrainingData',
-        stackTrace: st,
-      );
-    } finally {
-      _isLegacyImporting = false;
-      _legacyImportAttempted = true;
-      notifyListeners();
-    }
-  }
-
-  Future<_LegacyImportResult> _loadLegacyLogs(String userId) async {
-    final firestore = FirebaseFirestore.instance;
-    Query<Map<String, dynamic>> baseQuery = firestore
-        .collectionGroup('logs')
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true);
-
-    Query<Map<String, dynamic>> query = baseQuery.limit(_legacyImportPageSize);
-    QueryDocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    final Set<DateTime> trainingDays = <DateTime>{};
-    final Map<String, int> exerciseCounts = <String, int>{};
-    final Set<String> sessionIds = <String>{};
-    DateTime? firstWorkout;
-    DateTime? lastWorkout;
-
-    while (true) {
-      final snap = await query.get();
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final ts = data['timestamp'];
-        if (ts is! Timestamp) {
-          continue;
-        }
-        final date = ts.toDate();
-        final normalized = DateTime(date.year, date.month, date.day);
-        trainingDays.add(normalized);
-        firstWorkout = firstWorkout == null || date.isBefore(firstWorkout!)
-            ? date
-            : firstWorkout;
-        lastWorkout = lastWorkout == null || date.isAfter(lastWorkout!) ? date : lastWorkout;
-
-        final sessionId = (data['sessionId'] as String?)?.trim();
-        if (sessionId != null && sessionId.isNotEmpty) {
-          sessionIds.add(sessionId);
-        }
-
-        final exerciseName = (data['exerciseName'] as String?)?.trim();
-        if (exerciseName != null && exerciseName.isNotEmpty) {
-          exerciseCounts[exerciseName] = (exerciseCounts[exerciseName] ?? 0) + 1;
-        }
-      }
-
-      if (snap.docs.length < _legacyImportPageSize) {
-        break;
-      }
-
-      lastDoc = snap.docs.last;
-      query = baseQuery.startAfterDocument(lastDoc).limit(_legacyImportPageSize);
-    }
-
-    return _LegacyImportResult(
-      trainingDays: trainingDays,
-      exerciseCounts: exerciseCounts,
-      sessionCount: sessionIds.length,
-      firstWorkout: firstWorkout,
-      lastWorkout: lastWorkout,
-    );
-  }
-
-  void _applyLegacyImport(
-    _LegacyImportResult result, {
-    required DateTime? createdAt,
-    required String userId,
-  }) {
-    final sortedDays = result.trainingDays.toList()
-      ..sort((a, b) => a.compareTo(b));
-    _trainingDayDates = sortedDays;
-    _trainingDates = sortedDays
-        .map((dt) =>
-            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
-        .toList();
-    _totalTrainingDays = sortedDays.length;
-    _avgTrainingDaysPerWeek =
-        _calculateAverageTrainingDaysPerWeek(createdAt, nowProvider: () => DateTime.now());
-
-    final favoriteEntries = result.exerciseCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    _favoriteExerciseUsages = favoriteEntries
-        .take(5)
-        .map(
-          (entry) => FavoriteExerciseUsage(
-            name: entry.key,
-            sessionCount: entry.value,
-          ),
-        )
-        .toList();
-    _favoriteExerciseName =
-        _favoriteExerciseUsages.isEmpty ? null : _favoriteExerciseUsages.first.name;
-    _summaries = <TrainingSummary>[];
-    _hasMoreSummaries = false;
-    _hasLoadedTrainingDates = true;
-    _lastLoadedUserId = userId;
   }
 
   double _calculateAverageTrainingDaysPerWeek(

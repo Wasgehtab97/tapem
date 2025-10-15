@@ -395,24 +395,29 @@
     "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
   },
 
-  "profileStatsNoSummaries": "Es sind noch keine Statistiken vorhanden.",
+  "profileStatsNoSummaries": "Statistiken werden vorbereitet",
   "@profileStatsNoSummaries": {
-    "description": "Hinweis, wenn keine Trainingszusammenfassungen existieren"
+    "description": "Titeltext, wenn noch keine Summaries verfügbar sind"
   },
 
-  "profileStatsLegacyImportInfo": "Importiere deine älteren Trainings, um Statistiken zu sehen.",
-  "@profileStatsLegacyImportInfo": {
-    "description": "Hilfetext zum manuellen Import von alten Logs"
+  "profileStatsSummariesPending": "Statistiken werden erstellt – bitte später erneut versuchen.",
+  "@profileStatsSummariesPending": {
+    "description": "Detailtext für das Summaries-Hinweis-Banner"
   },
 
-  "profileStatsLegacyImportCta": "Jetzt importieren",
-  "@profileStatsLegacyImportCta": {
-    "description": "Schaltfläche zum Starten des Legacy-Imports"
+  "profileStatsRefreshSummaries": "Erneut prüfen",
+  "@profileStatsRefreshSummaries": {
+    "description": "Button-Beschriftung zum manuellen Aktualisieren der Statistiken"
   },
 
-  "profileStatsLegacyImportInProgress": "Import wird ausgeführt …",
-  "@profileStatsLegacyImportInProgress": {
-    "description": "Statusanzeige während des Imports"
+  "profileStatsError": "Statistiken konnten nicht geladen werden.",
+  "@profileStatsError": {
+    "description": "Fehlermeldung, wenn das Laden der Statistiken scheitert"
+  },
+
+  "profileStatsRetry": "Erneut versuchen",
+  "@profileStatsRetry": {
+    "description": "Button-Text zum erneuten Laden nach einem Fehler"
   },
 
   "profileLoadMoreButton": "Mehr Tage laden",

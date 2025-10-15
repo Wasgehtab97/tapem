@@ -13,6 +13,7 @@ import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
 import '../../../../core/logging/elog.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class ReportScreenNew extends StatefulWidget {
   final String gymId;
@@ -51,7 +52,10 @@ class _ReportScreenNewState extends State<ReportScreenNew> {
     _requestedInitialLoad = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ReportProvider>().loadReport(widget.gymId);
+      final auth = context.read<AuthProvider>();
+      context
+          .read<ReportProvider>()
+          .loadReport(widget.gymId, userId: auth.userId);
       final feedback = context.read<FeedbackProvider>();
       if (!feedback.isLoading && feedback.entries.isEmpty) {
         feedback.loadFeedback(widget.gymId);

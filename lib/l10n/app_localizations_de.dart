@@ -317,18 +317,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
-  String get profileStatsNoSummaries =>
-      'Es sind noch keine Statistiken vorhanden.';
+  String get profileStatsNoSummaries => 'Statistiken werden vorbereitet';
 
   @override
-  String get profileStatsLegacyImportInfo =>
-      'Importiere deine älteren Trainings, um Statistiken zu sehen.';
+  String get profileStatsSummariesPending =>
+      'Statistiken werden erstellt – bitte später erneut versuchen.';
 
   @override
-  String get profileStatsLegacyImportCta => 'Jetzt importieren';
+  String get profileStatsRefreshSummaries => 'Erneut prüfen';
 
   @override
-  String get profileStatsLegacyImportInProgress => 'Import wird ausgeführt …';
+  String get profileStatsError => 'Statistiken konnten nicht geladen werden.';
+
+  @override
+  String get profileStatsRetry => 'Erneut versuchen';
 
   @override
   String get profileLoadMoreButton => 'Mehr Tage laden';
