@@ -112,7 +112,11 @@ class MuscleGroupProvider extends ChangeNotifier {
     }
 
     _activeLoad ??=
-        _performLoad(gymId: gymId, userId: userId).whenComplete(() {
+        _performLoad(
+          gymId: gymId,
+          userId: userId,
+          forceRefresh: force,
+        ).whenComplete(() {
       _activeLoad = null;
     });
     return _activeLoad;
@@ -121,6 +125,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   Future<void> _performLoad({
     required String gymId,
     required String userId,
+    bool forceRefresh = false,
   }) async {
     _isLoading = true;
     _error = null;
@@ -155,7 +160,11 @@ class MuscleGroupProvider extends ChangeNotifier {
           rethrow;
         }
       }
-      await _loadCounts(gymId, userId);
+      await _loadCounts(
+        gymId,
+        userId,
+        forceRefresh: forceRefresh,
+      );
       _loadedGymId = gymId;
       _hasLoadedSuccessfully = true;
     } catch (e, st) {
@@ -376,11 +385,16 @@ class MuscleGroupProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadCounts(String gymId, String userId) async {
+  Future<void> _loadCounts(
+    String gymId,
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
     try {
       final groupCounts = await _summaryService.fetchGroupUsageCounts(
         gymId: gymId,
         userId: userId,
+        forceRefresh: forceRefresh,
       );
       _counts
         ..clear()
