@@ -46,15 +46,13 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   final Object _chatSummaryVisibilityToken = Object();
-  ModalRoute<dynamic>? _route;
+  ModalRoute<dynamic>? _modalRoute;
 
-  void _handleRouteChange() {
-    final route = _route;
-    if (route == null) return;
+  void _updateVisibility(bool isActive) {
     final provider = context.read<FriendChatSummaryProvider>();
-    provider.setVisibility(_chatSummaryVisibilityToken, route.isCurrent);
+    provider.setVisibility(_chatSummaryVisibilityToken, isActive);
   }
 
   @override
@@ -78,10 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    context
-        .read<FriendChatSummaryProvider>()
-        .setVisibility(_chatSummaryVisibilityToken, false);
-    _route?.removeListener(_handleRouteChange);
+    _updateVisibility(false);
+    if (_modalRoute != null) {
+      routeObserver.unsubscribe(this);
+    }
     super.dispose();
   }
 
@@ -454,6 +452,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (route != null && _modalRoute != route) {
+      if (_modalRoute != null) {
+        routeObserver.unsubscribe(this);
+      }
+      _modalRoute = route;
+      routeObserver.subscribe(this, route);
+      _updateVisibility(route.isCurrent);
+    }
     final prov = context.watch<ProfileProvider>();
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
@@ -834,6 +841,26 @@ class _ProfileActionButton extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void didPush() {
+    _updateVisibility(true);
+  }
+
+  @override
+  void didPopNext() {
+    _updateVisibility(true);
+  }
+
+  @override
+  void didPushNext() {
+    _updateVisibility(false);
+  }
+
+  @override
+  void didPop() {
+    _updateVisibility(false);
+  }
 }
 
 
@@ -873,13 +900,6 @@ class _AvatarPickerState extends State<AvatarPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final route = ModalRoute.of(context);
-    if (_route != route) {
-      _route?.removeListener(_handleRouteChange);
-      _route = route;
-      _route?.addListener(_handleRouteChange);
-      _handleRouteChange();
-    }
     final auth = context.watch<AuthProvider>();
     final inventory = context.watch<AvatarInventoryProvider>();
     final theme = Theme.of(context);

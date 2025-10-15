@@ -541,6 +541,7 @@ class MyApp extends StatelessWidget {
       title: dotenv.env['APP_NAME'] ?? 'Tap’em',
       debugShowCheckedModeBanner: false,
       theme: theme,
+      navigatorObservers: [routeObserver],
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

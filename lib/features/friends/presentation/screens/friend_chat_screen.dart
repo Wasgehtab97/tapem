@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import '../../data/friend_chat_api.dart';
 import '../../data/friend_chat_source.dart';
@@ -29,13 +30,14 @@ class FriendChatScreen extends StatefulWidget {
   State<FriendChatScreen> createState() => _FriendChatScreenState();
 }
 
-class _FriendChatScreenState extends State<FriendChatScreen> {
+class _FriendChatScreenState extends State<FriendChatScreen> with RouteAware {
   final _messageCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _sending = false;
   FriendChatMessagesProvider? _messagesProvider;
   String? _lastHandledMessageId;
-  ModalRoute<dynamic>? _route;
+  ModalRoute<dynamic>? _modalRoute;
+  bool _isRouteCurrent = true;
 
   @override
   void initState() {
@@ -50,10 +52,13 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
-    if (_route != route) {
-      _route?.removeListener(_onRouteChanged);
-      _route = route;
-      _route?.addListener(_onRouteChanged);
+    if (route != null && _modalRoute != route) {
+      if (_modalRoute != null) {
+        routeObserver.unsubscribe(this);
+      }
+      _modalRoute = route;
+      routeObserver.subscribe(this, route);
+      _updateRouteVisibility(route.isCurrent);
     }
     _messagesProvider ??=
         FriendChatMessagesProvider(context.read<FriendChatSource>());
@@ -72,19 +77,18 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     _scrollCtrl.removeListener(_onScroll);
     _messageCtrl.dispose();
     _scrollCtrl.dispose();
-    _route?.removeListener(_onRouteChanged);
+    if (_modalRoute != null) {
+      routeObserver.unsubscribe(this);
+    }
     _messagesProvider?.setVisibility(false);
     _messagesProvider?.dispose();
     super.dispose();
   }
 
-  void _onRouteChanged() {
+  void _updateRouteVisibility(bool isActive) {
+    _isRouteCurrent = isActive;
     final provider = _messagesProvider;
-    if (provider == null) {
-      return;
-    }
-    final isActive = _route?.isCurrent ?? false;
-    provider.setVisibility(isActive);
+    provider?.setVisibility(isActive);
   }
 
   Future<void> _sendMessage(AppLocalizations loc) async {
@@ -177,11 +181,10 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
         body: Center(child: Text(loc.friend_chat_login_required)),
       );
     }
-    final isVisible = _route?.isCurrent ?? true;
     provider.listen(
       meUid: meUid,
       friendUid: widget.friendUid,
-      isVisible: isVisible,
+      isVisible: _isRouteCurrent,
     );
     return ChangeNotifierProvider<FriendChatMessagesProvider>.value(
       value: provider,
@@ -275,6 +278,26 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void didPush() {
+    _updateRouteVisibility(true);
+  }
+
+  @override
+  void didPopNext() {
+    _updateRouteVisibility(true);
+  }
+
+  @override
+  void didPushNext() {
+    _updateRouteVisibility(false);
+  }
+
+  @override
+  void didPop() {
+    _updateRouteVisibility(false);
   }
 }
 
