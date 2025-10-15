@@ -158,7 +158,9 @@ class FakeAvatarInventoryProvider extends AvatarInventoryProvider {
       _keys;
 
   @override
-  Future<Set<String>> getOwnedAvatarIds() async => _keys.toSet();
+  Future<Set<String>> getOwnedAvatarIds(String uid,
+          {bool forceRefresh = false}) async =>
+      _keys.toSet();
 
   @override
   bool isOwned(String avatarId) => _keys.contains(avatarId);

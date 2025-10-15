@@ -12,9 +12,14 @@ class FriendChatSummaryProvider extends ChangeNotifier {
   final FriendChatSource _source;
   final FriendChatApi _api;
 
-  StreamSubscription<List<FriendChatSummary>>? _sub;
+  final Duration _cacheTtl = const Duration(minutes: 2);
+  final Duration _pollInterval = const Duration(seconds: 45);
+
   Map<String, FriendChatSummary> _summaries = {};
   String? _selfUid;
+  Timer? _pollTimer;
+  DateTime? _lastFetch;
+  bool _loading = false;
 
   Map<String, FriendChatSummary> get summaries => Map.unmodifiable(_summaries);
 
@@ -22,15 +27,29 @@ class FriendChatSummaryProvider extends ChangeNotifier {
       _summaries.values.where((element) => element.hasUnread).length;
 
   void listen(String uid) {
-    if (_selfUid == uid && _sub != null) {
+    if (uid.isEmpty) {
+      _selfUid = null;
+      _summaries = {};
+      _stopPolling();
+      notifyListeners();
       return;
     }
-    _sub?.cancel();
+    final changed = _selfUid != uid;
     _selfUid = uid;
-    _sub = _source.watchSummaries(uid).listen((event) {
-      _summaries = {for (final s in event) s.friendUid: s};
+    final cached = _source.getCachedSummaries(uid);
+    if (cached.isNotEmpty) {
+      _summaries = {for (final s in cached) s.friendUid: s};
       notifyListeners();
-    });
+    } else if (changed) {
+      _summaries = {};
+      notifyListeners();
+    }
+    unawaited(_load(force: changed));
+    _ensurePolling();
+  }
+
+  Future<void> refresh() async {
+    await _load(force: true);
   }
 
   FriendChatSummary? summaryFor(String friendUid) => _summaries[friendUid];
@@ -56,9 +75,53 @@ class FriendChatSummaryProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _load({bool force = false}) async {
+    final uid = _selfUid;
+    if (uid == null || uid.isEmpty) return;
+    if (_loading) return;
+    if (!force && _lastFetch != null) {
+      final delta = DateTime.now().difference(_lastFetch!);
+      if (delta < _cacheTtl) {
+        final cached = _source.getCachedSummaries(uid);
+        if (cached.isNotEmpty) {
+          _summaries = {for (final s in cached) s.friendUid: s};
+          notifyListeners();
+        }
+        return;
+      }
+    }
+    _loading = true;
+    try {
+      final summaries = await _source.fetchSummaries(
+        uid,
+        forceRefresh: force,
+      );
+      _summaries = {for (final s in summaries) s.friendUid: s};
+      _lastFetch = DateTime.now();
+      notifyListeners();
+    } finally {
+      _loading = false;
+    }
+  }
+
+  void _ensurePolling() {
+    if (_selfUid == null) {
+      _stopPolling();
+      return;
+    }
+    _pollTimer ??= Timer.periodic(_pollInterval, (_) {
+      unawaited(_load());
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
   @override
   void dispose() {
-    _sub?.cancel();
+    _stopPolling();
     super.dispose();
   }
 }

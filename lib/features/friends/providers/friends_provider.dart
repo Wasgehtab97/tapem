@@ -16,7 +16,7 @@ class FriendsProvider extends ChangeNotifier {
   final FriendsSource _source;
   final FriendsApi _api;
 
-  final Duration _cacheTtl = const Duration(minutes: 5);
+  final Duration _cacheTtl = const Duration(minutes: 2);
   final Duration _pollInterval = const Duration(minutes: 5);
 
   List<Friend> friends = [];
@@ -135,34 +135,47 @@ class FriendsProvider extends ChangeNotifier {
     var shouldNotify = false;
     try {
       if (forceRefresh || !_isFresh(_lastFriendsFetch)) {
-        final data = await _source.fetchFriends(uid);
-        friends = data;
-        friendsUids = data.map((e) => e.friendUid).toSet();
+        final page = await _source.fetchFriends(
+          uid,
+          forceRefresh: forceRefresh,
+        );
+        friends = page.items;
+        friendsUids = page.items.map((e) => e.friendUid).toSet();
         _lastFriendsFetch = DateTime.now();
         shouldNotify = true;
       }
 
       if (forceRefresh || !_isFresh(_lastIncomingFetch)) {
-        final data = await _source.fetchIncomingPending(uid);
-        incomingPending = data;
-        incomingPendingUids = data.map((e) => e.fromUserId).toSet();
-        pendingCount = data.length;
+        final page = await _source.fetchIncomingPending(
+          uid,
+          forceRefresh: forceRefresh,
+        );
+        incomingPending = page.items;
+        incomingPendingUids =
+            page.items.map((e) => e.fromUserId).toSet();
+        pendingCount = page.items.length;
         _lastIncomingFetch = DateTime.now();
         shouldNotify = true;
       }
 
       if (forceRefresh || !_isFresh(_lastOutgoingFetch)) {
-        final data = await _source.fetchOutgoingPending(uid);
-        outgoingPending = data;
-        outgoingPendingUids = data.map((e) => e.toUserId).toSet();
+        final page = await _source.fetchOutgoingPending(
+          uid,
+          forceRefresh: forceRefresh,
+        );
+        outgoingPending = page.items;
+        outgoingPendingUids = page.items.map((e) => e.toUserId).toSet();
         _lastOutgoingFetch = DateTime.now();
         shouldNotify = true;
       }
 
       if (forceRefresh || !_isFresh(_lastOutgoingAcceptedFetch)) {
-        final accepted = await _source.fetchOutgoingAccepted(uid);
+        final accepted = await _source.fetchOutgoingAccepted(
+          uid,
+          forceRefresh: forceRefresh,
+        );
         _lastOutgoingAcceptedFetch = DateTime.now();
-        for (final req in accepted) {
+        for (final req in accepted.items) {
           if (_processedAcceptedRequestIds.contains(req.requestId)) {
             continue;
           }
