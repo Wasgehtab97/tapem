@@ -257,15 +257,36 @@ class AvatarInventoryProvider extends ChangeNotifier {
   // Legacy API used by existing code
   // ---------------------------------------------------------------------------
 
-  Future<Set<String>> getOwnedAvatarIds() async {
-    final uid = _auth?.currentUser?.uid;
-    if (uid == null) return <String>{};
-    final cached = _ownedCache[uid];
-    if (cached != null && cached.isNotEmpty) {
-      return cached;
+  Future<Set<String>> getOwnedAvatarIds(
+    String uid, {
+    bool forceRefresh = false,
+  }) async {
+    if (uid.isEmpty) return <String>{};
+    if (!forceRefresh) {
+      final cached = _ownedCache[uid];
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
+      }
+    } else {
+      _inventoryCache.remove(uid);
+      _ownedCache.remove(uid);
     }
     await fetchInventory(uid, forceRefresh: true);
     return _ownedCache[uid] ?? <String>{};
+  }
+
+  Future<Set<String>> refreshOwnedAvatars(String uid) async {
+    if (uid.isEmpty) return <String>{};
+    _inventoryCache.remove(uid);
+    _ownedCache.remove(uid);
+    return getOwnedAvatarIds(uid, forceRefresh: true);
+  }
+
+  @Deprecated('Use getOwnedAvatarIds(uid)')
+  Future<Set<String>> getOwnedAvatarIdsForCurrentUser() async {
+    final uid = _auth?.currentUser?.uid;
+    if (uid == null) return <String>{};
+    return getOwnedAvatarIds(uid);
   }
 
   bool isOwned(String avatarId) {

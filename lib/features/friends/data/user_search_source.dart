@@ -7,7 +7,7 @@ class UserSearchSource {
   UserSearchSource(this._firestore);
 
   final FirebaseFirestore _firestore;
-  final Duration _cacheTtl = const Duration(minutes: 5);
+  final Duration _cacheTtl = const Duration(minutes: 2);
   final Map<String, _CachedProfiles> _cache = <String, _CachedProfiles>{};
 
   Future<PublicProfile> getProfile(String uid) async {
@@ -79,6 +79,10 @@ class UserSearchSource {
       timestamp: DateTime.now(),
     );
     return results;
+  }
+
+  void clearCache() {
+    _cache.clear();
   }
 
   bool _isFresh(DateTime timestamp) {
