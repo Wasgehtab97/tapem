@@ -211,26 +211,187 @@ function requireAdminContext(context) {
   }
 }
 
-async function iterateLogs(processLog, batchSize = 500) {
-  const db = admin.firestore();
-  let lastDoc = null;
-  let hasMore = true;
-  while (hasMore) {
-    let query = db.collectionGroup('logs').orderBy('timestamp', 'asc').limit(batchSize);
-    if (lastDoc) {
-      query = query.startAfter(lastDoc);
+function parseBackfillOptions(raw) {
+  const options = raw && typeof raw === 'object' ? raw : {};
+  const dryRun = Boolean(options.dryRun);
+  const batchSize = Number.isFinite(options.batchSize)
+    ? Math.min(Math.max(Math.floor(options.batchSize), 1), 2000)
+    : 500;
+  const resumeToken = typeof options.resumeToken === 'string' ? options.resumeToken : null;
+  return { dryRun, batchSize, resumeToken };
+}
+
+function encodeResumeToken(cursor) {
+  if (
+    !cursor ||
+    typeof cursor.lastTimestampMillis !== 'number' ||
+    !Number.isFinite(cursor.lastTimestampMillis) ||
+    typeof cursor.lastDocumentPath !== 'string' ||
+    cursor.lastDocumentPath.length === 0
+  ) {
+    return null;
+  }
+  const payload = {
+    lastTimestampMillis: cursor.lastTimestampMillis,
+    lastDocumentPath: cursor.lastDocumentPath,
+  };
+  return Buffer.from(JSON.stringify(payload)).toString('base64');
+}
+
+function decodeResumeToken(token) {
+  if (!token) {
+    return null;
+  }
+  try {
+    const json = Buffer.from(token, 'base64').toString('utf8');
+    const data = JSON.parse(json);
+    if (
+      data &&
+      Number.isFinite(data.lastTimestampMillis) &&
+      typeof data.lastDocumentPath === 'string' &&
+      data.lastDocumentPath.length > 0
+    ) {
+      return {
+        lastTimestampMillis: Number(data.lastTimestampMillis),
+        lastDocumentPath: data.lastDocumentPath,
+      };
     }
+  } catch (error) {
+    console.warn('Failed to decode resume token', error);
+  }
+  return null;
+}
+
+const BACKFILL_ADMIN_COLLECTION = 'admin';
+const BACKFILL_ADMIN_DOC = 'backfillState';
+const BACKFILL_STATE_DOC = 'state';
+
+function getBackfillStateRef(job) {
+  return admin
+    .firestore()
+    .collection(BACKFILL_ADMIN_COLLECTION)
+    .doc(BACKFILL_ADMIN_DOC)
+    .collection(job)
+    .doc(BACKFILL_STATE_DOC);
+}
+
+function createBulkWriter(db) {
+  const writer = db.bulkWriter();
+  writer.onWriteError((error) => {
+    console.error('BulkWriter error', error);
+    if (error.failedAttempts < 5) {
+      console.warn(
+        `Retrying write for ${error.documentRef?.path || 'unknown'} (attempt ${error.failedAttempts + 1})`
+      );
+      return true;
+    }
+    return false;
+  });
+  return writer;
+}
+
+async function readStoredResumeToken(job, explicitToken) {
+  if (explicitToken) {
+    return decodeResumeToken(explicitToken);
+  }
+  const snapshot = await getBackfillStateRef(job).get();
+  if (!snapshot.exists) {
+    return null;
+  }
+  const data = snapshot.data() || {};
+  if (typeof data.resumeToken === 'string') {
+    const decoded = decodeResumeToken(data.resumeToken);
+    if (decoded) {
+      return decoded;
+    }
+  }
+  if (Number.isFinite(data.lastTimestampMillis) && typeof data.lastDocumentPath === 'string') {
+    return {
+      lastTimestampMillis: data.lastTimestampMillis,
+      lastDocumentPath: data.lastDocumentPath,
+    };
+  }
+  return null;
+}
+
+async function writeStoredResumeToken(job, cursor, metrics) {
+  const ref = getBackfillStateRef(job);
+  if (!cursor) {
+    await ref.delete().catch((error) => {
+      if (error.code !== 5 && error.code !== 'not-found') {
+        throw error;
+      }
+    });
+    return 0;
+  }
+  const payload = {
+    lastTimestampMillis: cursor.lastTimestampMillis,
+    lastDocumentPath: cursor.lastDocumentPath,
+    resumeToken: encodeResumeToken(cursor),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (metrics && typeof metrics === 'object') {
+    payload.metrics = metrics;
+  }
+  await ref.set(payload, { merge: true });
+  return 1;
+}
+
+async function iterateLogs(processLog, options = {}) {
+  const db = admin.firestore();
+  const { batchSize = 500, resumeCursor = null } = options;
+  const baseQuery = db
+    .collectionGroup('logs')
+    .orderBy('timestamp', 'asc')
+    .orderBy(admin.firestore.FieldPath.documentId(), 'asc')
+    .limit(batchSize);
+
+  let nextCursor = resumeCursor ? { ...resumeCursor } : null;
+  let lastCursor = resumeCursor ? { ...resumeCursor } : null;
+  let processed = 0;
+  let readCount = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = baseQuery;
+    if (nextCursor) {
+      const startTimestamp = admin.firestore.Timestamp.fromMillis(nextCursor.lastTimestampMillis);
+      query = query.startAfter(startTimestamp, nextCursor.lastDocumentPath);
+    }
+
     const snapshot = await query.get();
     if (snapshot.empty) {
       hasMore = false;
       break;
     }
-    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+    readCount += snapshot.size;
+
     for (const doc of snapshot.docs) {
-      await processLog(doc);
+      const timestamp = doc.get('timestamp');
+      if (!(timestamp instanceof admin.firestore.Timestamp)) {
+        console.warn(`Skipping log without timestamp: ${doc.ref.path}`);
+        continue;
+      }
+      await processLog(doc, timestamp);
+      processed += 1;
+      lastCursor = {
+        lastTimestampMillis: timestamp.toMillis(),
+        lastDocumentPath: doc.ref.path,
+      };
+      if (processed % 10000 === 0) {
+        console.log(`Processed ${processed} logs so far...`);
+      }
     }
-    hasMore = snapshot.docs.length === batchSize;
+
+    if (snapshot.size < batchSize) {
+      hasMore = false;
+    } else {
+      nextCursor = lastCursor;
+    }
   }
+
+  return { processed, readCount, lastCursor, hasMore };
 }
 
 function ensureDailyAccumulator(map, userId, payload) {
@@ -366,96 +527,119 @@ function computeDeviceSummaryPayload(record) {
 
 async function backfillTrainingSummariesHandler(data, context) {
   requireAdminContext(context);
+  const { dryRun, batchSize, resumeToken } = parseBackfillOptions(data);
+  const resumeCursor = await readStoredResumeToken('training', resumeToken);
+
   const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
   const dailyMap = new Map();
   const aggregateMap = new Map();
 
-  await iterateLogs(async (doc) => {
-    const payload = extractLogPayload(doc.data() || {});
-    if (!payload) {
-      return;
-    }
-    const { gymId } = extractGymAndDevice(doc);
-    const daily = ensureDailyAccumulator(dailyMap, payload.userId, payload);
-    daily.logCount += 1;
-    if (payload.sessionId) {
-      incrementObjectEntry(daily.sessionCounts, payload.sessionId, 1, {
-        id: payload.sessionId,
-        gymId: gymId || null,
-        deviceId: payload.deviceId || null,
+  const iteration = await iterateLogs(
+    async (doc) => {
+      const payload = extractLogPayload(doc.data() || {});
+      if (!payload) {
+        return;
+      }
+      const { gymId } = extractGymAndDevice(doc);
+      const daily = ensureDailyAccumulator(dailyMap, payload.userId, payload);
+      daily.logCount += 1;
+      if (payload.sessionId) {
+        incrementObjectEntry(daily.sessionCounts, payload.sessionId, 1, {
+          id: payload.sessionId,
+          gymId: gymId || null,
+          deviceId: payload.deviceId || null,
+        });
+      }
+      if (payload.exerciseId || payload.exerciseName) {
+        const key = payload.exerciseId || payload.exerciseName;
+        incrementObjectEntry(daily.exerciseCounts, key, 1, {
+          id: payload.exerciseId || null,
+          name: payload.exerciseName || payload.exerciseId || null,
+        });
+      }
+      if (payload.deviceId) {
+        incrementObjectEntry(daily.deviceCounts, payload.deviceId, 1, {
+          id: payload.deviceId,
+          name: payload.deviceId,
+        });
+      }
+      payload.muscleGroups.forEach((group) => {
+        incrementObjectEntry(daily.muscleGroupCounts, group, 1, {
+          id: group,
+          name: group,
+        });
       });
-    }
-    if (payload.exerciseId || payload.exerciseName) {
-      const key = payload.exerciseId || payload.exerciseName;
-      incrementObjectEntry(daily.exerciseCounts, key, 1, {
+
+      const aggregate = ensureAggregateAccumulator(aggregateMap, payload.userId);
+      aggregate.totalLogCount += 1;
+      if (payload.sessionId) {
+        aggregate.sessionIds.add(payload.sessionId);
+      }
+      let addedDay = false;
+      if (!aggregate.activeDayKeys[payload.dateKey]) {
+        aggregate.activeDayKeys[payload.dateKey] = true;
+        aggregate.trainingDayCount += 1;
+        addedDay = true;
+      }
+      incrementObjectEntry(aggregate.exerciseCounts, payload.exerciseId || payload.exerciseName, 1, {
         id: payload.exerciseId || null,
         name: payload.exerciseName || payload.exerciseId || null,
       });
-    }
-    if (payload.deviceId) {
-      incrementObjectEntry(daily.deviceCounts, payload.deviceId, 1, {
-        id: payload.deviceId,
-        name: payload.deviceId,
+      payload.muscleGroups.forEach((group) => {
+        incrementObjectEntry(aggregate.muscleGroupCounts, group, 1, {
+          id: group,
+          name: group,
+        });
       });
-    }
-    payload.muscleGroups.forEach((group) => {
-      incrementObjectEntry(daily.muscleGroupCounts, group, 1, {
-        id: group,
-        name: group,
-      });
-    });
-
-    const aggregate = ensureAggregateAccumulator(aggregateMap, payload.userId);
-    aggregate.totalLogCount += 1;
-    if (payload.sessionId) {
-      aggregate.sessionIds.add(payload.sessionId);
-    }
-    let addedDay = false;
-    if (!aggregate.activeDayKeys[payload.dateKey]) {
-      aggregate.activeDayKeys[payload.dateKey] = true;
-      aggregate.trainingDayCount += 1;
-      addedDay = true;
-    }
-    incrementObjectEntry(aggregate.exerciseCounts, payload.exerciseId || payload.exerciseName, 1, {
-      id: payload.exerciseId || null,
-      name: payload.exerciseName || payload.exerciseId || null,
-    });
-    payload.muscleGroups.forEach((group) => {
-      incrementObjectEntry(aggregate.muscleGroupCounts, group, 1, {
-        id: group,
-        name: group,
-      });
-    });
-    if (payload.deviceId) {
-      incrementObjectEntry(aggregate.deviceCounts, payload.deviceId, 1, {
-        id: payload.deviceId,
-        name: payload.deviceId,
-      });
-    }
-
-    const weekKey = toWeekKey(payload.dayTimestamp);
-    const weekStart = weekStartOf(payload.dayTimestamp).toDate();
-    const weekStartKey = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, '0')}-${String(weekStart.getUTCDate()).padStart(2, '0')}`;
-    if (addedDay) {
-      const weekEntry = aggregate.weeklyDayCounts[weekKey] || { count: 0, startDate: weekStartKey };
-      weekEntry.count = Math.max(0, Number(weekEntry.count || 0) + 1);
-      weekEntry.startDate = weekStartKey;
-      aggregate.weeklyDayCounts[weekKey] = weekEntry;
-
-      const millis = payload.dayTimestamp.toMillis();
-      if (!aggregate.firstWorkoutDate || aggregate.firstWorkoutDate.toMillis() > millis) {
-        aggregate.firstWorkoutDate = payload.dayTimestamp;
+      if (payload.deviceId) {
+        incrementObjectEntry(aggregate.deviceCounts, payload.deviceId, 1, {
+          id: payload.deviceId,
+          name: payload.deviceId,
+        });
       }
-      if (!aggregate.lastWorkoutDate || aggregate.lastWorkoutDate.toMillis() < millis) {
+
+      const weekKey = toWeekKey(payload.dayTimestamp);
+      const weekStart = weekStartOf(payload.dayTimestamp).toDate();
+      const weekStartKey = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, '0')}-${String(weekStart.getUTCDate()).padStart(2, '0')}`;
+      if (addedDay) {
+        const weekEntry = aggregate.weeklyDayCounts[weekKey] || { count: 0, startDate: weekStartKey };
+        weekEntry.count = Math.max(0, Number(weekEntry.count || 0) + 1);
+        weekEntry.startDate = weekStartKey;
+        aggregate.weeklyDayCounts[weekKey] = weekEntry;
+
+        const millis = payload.dayTimestamp.toMillis();
+        if (!aggregate.firstWorkoutDate || aggregate.firstWorkoutDate.toMillis() > millis) {
+          aggregate.firstWorkoutDate = payload.dayTimestamp;
+        }
+        if (!aggregate.lastWorkoutDate || aggregate.lastWorkoutDate.toMillis() < millis) {
+          aggregate.lastWorkoutDate = payload.dayTimestamp;
+        }
+      } else if (aggregate.lastWorkoutDate && aggregate.lastWorkoutDate.toMillis() < payload.dayTimestamp.toMillis()) {
         aggregate.lastWorkoutDate = payload.dayTimestamp;
       }
-    } else if (aggregate.lastWorkoutDate && aggregate.lastWorkoutDate.toMillis() < payload.dayTimestamp.toMillis()) {
-      aggregate.lastWorkoutDate = payload.dayTimestamp;
-    }
-  });
+    },
+    { batchSize, resumeCursor }
+  );
+
+  const resumeInfo = iteration.hasMore ? iteration.lastCursor : null;
+  const exposedResumeToken = iteration.lastCursor ? encodeResumeToken(iteration.lastCursor) : null;
+  const result = {
+    dryRun,
+    logsProcessed: iteration.processed,
+    estimatedReads: iteration.readCount,
+    estimatedWrites: 0,
+    hasMore: iteration.hasMore,
+    resumeToken: exposedResumeToken,
+    dailyCount: dailyMap.size,
+    aggregateCount: aggregateMap.size,
+  };
+
+  if (dryRun) {
+    return result;
+  }
 
   const db = admin.firestore();
-  const writer = db.bulkWriter();
+  const writer = createBulkWriter(db);
 
   dailyMap.forEach((daily) => {
     computeDailyDerivedFields(daily);
@@ -465,10 +649,14 @@ async function backfillTrainingSummariesHandler(data, context) {
       .doc(userId)
       .collection(DAILY_COLLECTION)
       .doc(daily.dateKey);
-    writer.set(dailyRef, {
-      ...rest,
-      updatedAt: serverTimestamp,
-    });
+    writer.set(
+      dailyRef,
+      {
+        ...rest,
+        updatedAt: serverTimestamp,
+      },
+      { merge: false }
+    );
   });
 
   aggregateMap.forEach((aggregate, userId) => {
@@ -478,46 +666,76 @@ async function backfillTrainingSummariesHandler(data, context) {
       .doc(userId)
       .collection(AGGREGATE_COLLECTION)
       .doc(AGGREGATE_OVERVIEW_DOC);
-    writer.set(aggregateRef, {
-      ...aggregate,
-      updatedAt: serverTimestamp,
-    });
+    writer.set(
+      aggregateRef,
+      {
+        ...aggregate,
+        updatedAt: serverTimestamp,
+      },
+      { merge: false }
+    );
   });
 
   await writer.close();
 
-  return {
-    dailyCount: dailyMap.size,
-    aggregateCount: aggregateMap.size,
-  };
+  result.estimatedWrites = dailyMap.size + aggregateMap.size;
+  const stateWrites = await writeStoredResumeToken('training', resumeInfo, {
+    logsProcessed: iteration.processed,
+    estimatedReads: iteration.readCount,
+  });
+  result.estimatedWrites += stateWrites;
+
+  return result;
 }
 
 async function backfillDeviceUsageSummariesHandler(data, context) {
   requireAdminContext(context);
+  const { dryRun, batchSize, resumeToken } = parseBackfillOptions(data);
+  const resumeCursor = await readStoredResumeToken('device', resumeToken);
+
   const deviceMap = new Map();
 
-  await iterateLogs(async (doc) => {
-    const payload = extractLogPayload(doc.data() || {});
-    if (!payload) {
-      return;
-    }
-    const { gymId, deviceId } = extractGymAndDevice(doc);
-    if (!gymId || !deviceId || !payload.sessionId) {
-      return;
-    }
-    const accumulator = ensureDeviceAccumulator(deviceMap, gymId, deviceId);
-    const millis = payload.timestamp.toMillis();
-    const existing = accumulator.sessionTimestamps.get(payload.sessionId) || 0;
-    if (millis > existing) {
-      accumulator.sessionTimestamps.set(payload.sessionId, millis);
-    }
-    if (!accumulator.lastActive || accumulator.lastActive < millis) {
-      accumulator.lastActive = millis;
-    }
-  });
+  const iteration = await iterateLogs(
+    async (doc) => {
+      const payload = extractLogPayload(doc.data() || {});
+      if (!payload) {
+        return;
+      }
+      const { gymId, deviceId } = extractGymAndDevice(doc);
+      if (!gymId || !deviceId || !payload.sessionId) {
+        return;
+      }
+      const accumulator = ensureDeviceAccumulator(deviceMap, gymId, deviceId);
+      const millis = payload.timestamp.toMillis();
+      const existing = accumulator.sessionTimestamps.get(payload.sessionId) || 0;
+      if (millis > existing) {
+        accumulator.sessionTimestamps.set(payload.sessionId, millis);
+      }
+      if (!accumulator.lastActive || accumulator.lastActive < millis) {
+        accumulator.lastActive = millis;
+      }
+    },
+    { batchSize, resumeCursor }
+  );
+
+  const resumeInfo = iteration.hasMore ? iteration.lastCursor : null;
+  const exposedResumeToken = iteration.lastCursor ? encodeResumeToken(iteration.lastCursor) : null;
+  const result = {
+    dryRun,
+    logsProcessed: iteration.processed,
+    estimatedReads: iteration.readCount,
+    estimatedWrites: 0,
+    hasMore: iteration.hasMore,
+    resumeToken: exposedResumeToken,
+    deviceCount: deviceMap.size,
+  };
+
+  if (dryRun) {
+    return result;
+  }
 
   const db = admin.firestore();
-  const writer = db.bulkWriter();
+  const writer = createBulkWriter(db);
   const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
 
   deviceMap.forEach((record) => {
@@ -527,20 +745,29 @@ async function backfillDeviceUsageSummariesHandler(data, context) {
       .doc(record.gymId)
       .collection('devices')
       .doc(record.deviceId);
-    writer.set(ref, {
-      sessionCount: summary.sessionCount,
-      rollingSessions: summary.rollingSessions,
-      recentDates: summary.recentDates.map((date) => admin.firestore.Timestamp.fromDate(date)),
-      lastActive: summary.lastActive ? admin.firestore.Timestamp.fromDate(summary.lastActive) : null,
-      updatedAt: serverTimestamp,
-    }, { merge: true });
+    writer.set(
+      ref,
+      {
+        sessionCount: summary.sessionCount,
+        rollingSessions: summary.rollingSessions,
+        recentDates: summary.recentDates.map((date) => admin.firestore.Timestamp.fromDate(date)),
+        lastActive: summary.lastActive ? admin.firestore.Timestamp.fromDate(summary.lastActive) : null,
+        updatedAt: serverTimestamp,
+      },
+      { merge: true }
+    );
   });
 
   await writer.close();
 
-  return {
-    deviceCount: deviceMap.size,
-  };
+  result.estimatedWrites = deviceMap.size;
+  const stateWrites = await writeStoredResumeToken('device', resumeInfo, {
+    logsProcessed: iteration.processed,
+    estimatedReads: iteration.readCount,
+  });
+  result.estimatedWrites += stateWrites;
+
+  return result;
 }
 
 async function updateTrainingSummary(change, context) {
