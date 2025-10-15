@@ -20,12 +20,12 @@ class FriendsHomeScreen extends StatefulWidget {
 }
 
 class _FriendsHomeScreenState extends State<FriendsHomeScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
   final Map<String, Future<PublicProfile?>> _profileCache = {};
   final Object _chatSummaryVisibilityToken = Object();
-  ModalRoute<dynamic>? _route;
+  ModalRoute<dynamic>? _modalRoute;
 
   Future<PublicProfile?> _fetchProfile(String uid) {
     return _profileCache[uid] ??=
@@ -33,12 +33,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
             ((value) => value, onError: (_, __) => null);
   }
 
-  void _handleRouteChange() {
-    final route = _route;
-    if (route == null) {
-      return;
-    }
-    final isActive = route.isCurrent;
+  void _updateVisibility(bool isActive) {
     final provider = context.read<FriendChatSummaryProvider>();
     provider.setVisibility(_chatSummaryVisibilityToken, isActive);
   }
@@ -65,10 +60,10 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   @override
   void dispose() {
-    context
-        .read<FriendChatSummaryProvider>()
-        .setVisibility(_chatSummaryVisibilityToken, false);
-    _route?.removeListener(_handleRouteChange);
+    _updateVisibility(false);
+    if (_modalRoute != null) {
+      routeObserver.unsubscribe(this);
+    }
     _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -77,11 +72,13 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
   @override
   Widget build(BuildContext context) {
     final route = ModalRoute.of(context);
-    if (_route != route) {
-      _route?.removeListener(_handleRouteChange);
-      _route = route;
-      _route?.addListener(_handleRouteChange);
-      _handleRouteChange();
+    if (route != null && _modalRoute != route) {
+      if (_modalRoute != null) {
+        routeObserver.unsubscribe(this);
+      }
+      _modalRoute = route;
+      routeObserver.subscribe(this, route);
+      _updateVisibility(route.isCurrent);
     }
     final prov = context.watch<FriendsProvider>();
     final searchProv = context.watch<FriendSearchProvider>();
@@ -108,6 +105,26 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
         ],
       ),
     );
+  }
+
+  @override
+  void didPush() {
+    _updateVisibility(true);
+  }
+
+  @override
+  void didPopNext() {
+    _updateVisibility(true);
+  }
+
+  @override
+  void didPushNext() {
+    _updateVisibility(false);
+  }
+
+  @override
+  void didPop() {
+    _updateVisibility(false);
   }
 
   Widget _friendsTab(FriendsProvider prov, FriendChatSummaryProvider chats,
