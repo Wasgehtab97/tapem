@@ -130,14 +130,14 @@ class _ExerciseSnapRepo implements DeviceRepository {
   Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 30,
+    int limit = 10,
     bool forceRemote = false,
   }) async => <String, Map<String, int>>{};
 
   @override
   Future<Map<String, int>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 30,
+    int limit = 10,
     bool forceRemote = false,
   }) async => <String, int>{};
 

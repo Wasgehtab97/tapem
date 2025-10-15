@@ -6,6 +6,7 @@ import 'package:tapem/core/time/logic_day.dart';
 import '../../domain/device_xp_result.dart';
 import '../../domain/xp_paged_result.dart';
 import '../../domain/xp_repository.dart';
+import '../../domain/xp_limits.dart';
 import '../sources/firestore_xp_source.dart';
 
 class XpRepositoryImpl implements XpRepository {
@@ -126,7 +127,7 @@ class XpRepositoryImpl implements XpRepository {
   Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 10,
+    int limit = kXpHistoryPageLimit,
     String? startAfter,
     bool forceRemote = false,
   }) async {
@@ -156,7 +157,7 @@ class XpRepositoryImpl implements XpRepository {
   @override
   Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 10,
+    int limit = kXpTrainingDayPageLimit,
     String? startAfter,
     bool forceRemote = false,
   }) async {

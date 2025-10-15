@@ -24,11 +24,23 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
   final Map<String, Future<PublicProfile?>> _profileCache = {};
+  final Object _chatSummaryVisibilityToken = Object();
+  ModalRoute<dynamic>? _route;
 
   Future<PublicProfile?> _fetchProfile(String uid) {
     return _profileCache[uid] ??=
         context.read<UserSearchSource>().getProfile(uid).then<PublicProfile?>
             ((value) => value, onError: (_, __) => null);
+  }
+
+  void _handleRouteChange() {
+    final route = _route;
+    if (route == null) {
+      return;
+    }
+    final isActive = route.isCurrent;
+    final provider = context.read<FriendChatSummaryProvider>();
+    provider.setVisibility(_chatSummaryVisibilityToken, isActive);
   }
 
   @override
@@ -44,12 +56,19 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
         context.read<FriendChatSummaryProvider>().listen(uid);
+        context
+            .read<FriendChatSummaryProvider>()
+            .setVisibility(_chatSummaryVisibilityToken, true);
       }
     });
   }
 
   @override
   void dispose() {
+    context
+        .read<FriendChatSummaryProvider>()
+        .setVisibility(_chatSummaryVisibilityToken, false);
+    _route?.removeListener(_handleRouteChange);
     _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -57,6 +76,13 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (_route != route) {
+      _route?.removeListener(_handleRouteChange);
+      _route = route;
+      _route?.addListener(_handleRouteChange);
+      _handleRouteChange();
+    }
     final prov = context.watch<FriendsProvider>();
     final searchProv = context.watch<FriendSearchProvider>();
     final chatSummaries = context.watch<FriendChatSummaryProvider>();

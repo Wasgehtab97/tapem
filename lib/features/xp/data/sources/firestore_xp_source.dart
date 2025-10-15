@@ -13,6 +13,7 @@ import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_paged_result.dart';
+import 'package:tapem/features/xp/domain/xp_limits.dart';
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -22,8 +23,8 @@ class FirestoreXpSource {
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
 
-  static const int _historyLimit = 30;
-  static const int _trainingDayLimit = 30;
+  static const int _historyLimit = kXpHistoryPageLimit;
+  static const int _trainingDayLimit = kXpTrainingDayPageLimit;
 
       Future<DeviceXpResult> addSessionXp({
         required String gymId,

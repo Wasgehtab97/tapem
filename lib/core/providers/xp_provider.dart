@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/xp_limits.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
@@ -29,7 +30,7 @@ class XpProvider extends ChangeNotifier {
   bool _loadingMuscleHistory = false;
   // Loading only ten history entries per request keeps Firestore reads stable
   // even when the provider is re-created during hot restarts.
-  final int _muscleHistoryPageSize = 10;
+  final int _muscleHistoryPageSize = kXpHistoryPageLimit;
   String? _muscleHistoryCursor;
   bool _muscleHistoryHasMore = true;
 
@@ -44,7 +45,7 @@ class XpProvider extends ChangeNotifier {
   bool _loadingTrainingDays = false;
   // Cap training-day history to ten results by default; older entries can be
   // fetched on demand via [loadMoreTrainingDays].
-  final int _trainingDaysPageSize = 10;
+  final int _trainingDaysPageSize = kXpTrainingDayPageLimit;
   String? _trainingDaysCursor;
   bool _trainingDaysHasMore = true;
 

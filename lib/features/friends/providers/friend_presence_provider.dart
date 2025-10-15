@@ -16,10 +16,11 @@ class FriendPresenceProvider extends ChangeNotifier {
   final Set<String> _trackedUids = {};
   final Map<String, DateTime> _lastFetch = {};
   final Set<String> _loading = {};
-  // Presence updates are not critical in sub-minute resolution; keeping the
-  // polling cadence at two minutes prevents hot restarts from spamming reads.
-  final Duration _pollInterval = const Duration(minutes: 2);
-  final Duration _cacheTtl = const Duration(minutes: 2);
+  // Presence updates are informational only. Polling every ten minutes keeps
+  // Firestore reads low even after hot restarts, while still giving users an
+  // up-to-date view whenever they open the friends screen.
+  final Duration _pollInterval = const Duration(minutes: 10);
+  final Duration _cacheTtl = const Duration(minutes: 10);
 
   Timer? _midnightTimer;
   Timer? _pollTimer;
@@ -69,9 +70,26 @@ class FriendPresenceProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> _poll() async {
+  Future<void> refresh() async {
+    await _poll(force: true);
+  }
+
+  void overridePresence(String uid, PresenceState state) {
+    final previous = _states[uid];
+    if (previous == state) {
+      final last = _lastFetch[uid];
+      if (last != null && DateTime.now().difference(last) < _cacheTtl) {
+        return;
+      }
+    }
+    _states[uid] = state;
+    _lastFetch[uid] = DateTime.now();
+    notifyListeners();
+  }
+
+  Future<void> _poll({bool force = false}) async {
     for (final uid in _trackedUids) {
-      await _loadPresence(uid);
+      await _loadPresence(uid, force: force);
     }
   }
 
@@ -83,34 +101,22 @@ class FriendPresenceProvider extends ChangeNotifier {
     if (!force && last != null && DateTime.now().difference(last) < _cacheTtl) {
       return;
     }
-
     _loading.add(uid);
     try {
-      final statsRef = _firestore
-          .collection('stats')
+      final presenceRef = _firestore
+          .collection('dailyPresence')
           .doc(_todayKey())
           .collection('users')
           .doc(uid);
-      final statsSnap = await statsRef.get();
+      final snap = await presenceRef.get();
       PresenceState newState;
-      if (statsSnap.exists) {
-        final has = statsSnap.data()?['hasWorkout'] == true;
-        newState = has
+      if (snap.exists) {
+        final workedOut = snap.data()?['workedOut'] == true;
+        newState = workedOut
             ? PresenceState.workedOutToday
             : PresenceState.notWorkedOutToday;
       } else {
-        final start = _todayStart();
-        final end = start.add(const Duration(days: 1));
-        final logSnap = await _firestore
-            .collectionGroup('logs')
-            .where('userId', isEqualTo: uid)
-            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-            .where('timestamp', isLessThan: Timestamp.fromDate(end))
-            .limit(1)
-            .get();
-        newState = logSnap.docs.isNotEmpty
-            ? PresenceState.workedOutToday
-            : PresenceState.notWorkedOutToday;
+        newState = PresenceState.notWorkedOutToday;
       }
 
       _states[uid] = newState;

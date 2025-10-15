@@ -47,6 +47,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final Object _chatSummaryVisibilityToken = Object();
+  ModalRoute<dynamic>? _route;
+
+  void _handleRouteChange() {
+    final route = _route;
+    if (route == null) return;
+    final provider = context.read<FriendChatSummaryProvider>();
+    provider.setVisibility(_chatSummaryVisibilityToken, route.isCurrent);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,11 +66,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (uid != null) {
         context.read<FriendsProvider>().listen(uid);
         context.read<FriendChatSummaryProvider>().listen(uid);
+        context
+            .read<FriendChatSummaryProvider>()
+            .setVisibility(_chatSummaryVisibilityToken, true);
         context.read<SettingsProvider>().load(uid);
         final gymId = context.read<AuthProvider>().gymCode ?? '';
         context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    context
+        .read<FriendChatSummaryProvider>()
+        .setVisibility(_chatSummaryVisibilityToken, false);
+    _route?.removeListener(_handleRouteChange);
+    super.dispose();
   }
 
   void _showLanguageDialog() {
@@ -851,6 +873,13 @@ class _AvatarPickerState extends State<AvatarPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (_route != route) {
+      _route?.removeListener(_handleRouteChange);
+      _route = route;
+      _route?.addListener(_handleRouteChange);
+      _handleRouteChange();
+    }
     final auth = context.watch<AuthProvider>();
     final inventory = context.watch<AvatarInventoryProvider>();
     final theme = Theme.of(context);
