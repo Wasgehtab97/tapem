@@ -31,7 +31,11 @@ class FakeXpRepository implements XpRepository {
   }
 
   @override
-  Future<int> fetchDayXp({required String userId, required DateTime date}) async {
+  Future<int> fetchDayXp({
+    required String userId,
+    required DateTime date,
+    bool forceRemote = false,
+  }) async {
     return dayXp;
   }
 
@@ -39,6 +43,7 @@ class FakeXpRepository implements XpRepository {
   Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   }) async {
     return muscleXp;
   }
@@ -48,12 +53,17 @@ class FakeXpRepository implements XpRepository {
     required String gymId,
     required String userId,
     int limit = 30,
+    bool forceRemote = false,
   }) async {
     return muscleHistory;
   }
 
   @override
-  Future<Map<String, int>> fetchTrainingDaysXp(String userId, {int limit = 30}) async {
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = 30,
+    bool forceRemote = false,
+  }) async {
     return trainingDays;
   }
 
@@ -62,6 +72,7 @@ class FakeXpRepository implements XpRepository {
     required String gymId,
     required String deviceId,
     required String userId,
+    bool forceRemote = false,
   }) async {
     requestedDevices.add(deviceId);
     return deviceXp[deviceId] ?? 0;
@@ -71,6 +82,7 @@ class FakeXpRepository implements XpRepository {
   Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   }) async {
     return statsDailyXp;
   }
