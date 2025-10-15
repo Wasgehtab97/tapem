@@ -842,25 +842,6 @@ class _ProfileActionButton extends StatelessWidget {
     );
   }
 
-  @override
-  void didPush() {
-    _updateVisibility(true);
-  }
-
-  @override
-  void didPopNext() {
-    _updateVisibility(true);
-  }
-
-  @override
-  void didPushNext() {
-    _updateVisibility(false);
-  }
-
-  @override
-  void didPop() {
-    _updateVisibility(false);
-  }
 }
 
 
