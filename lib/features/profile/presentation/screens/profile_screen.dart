@@ -813,7 +813,8 @@ class _ProfileActionButton extends StatelessWidget {
   }
 }
 
-class AvatarPicker extends StatelessWidget {
+
+class AvatarPicker extends StatefulWidget {
   const AvatarPicker({
     super.key,
     required this.currentKey,
@@ -824,50 +825,47 @@ class AvatarPicker extends StatelessWidget {
   final ValueChanged<String> onSelect;
 
   @override
+  State<AvatarPicker> createState() => _AvatarPickerState();
+}
+
+class _AvatarPickerState extends State<AvatarPicker> {
+  Future<List<AvatarInventoryEntry>>? _loadFuture;
+  String _lastUid = '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = context.read<AuthProvider>().userId ?? '';
+    if (_lastUid != uid) {
+      _lastUid = uid;
+      if (uid.isEmpty) {
+        _loadFuture = Future.value(const <AvatarInventoryEntry>[]);
+      } else {
+        _loadFuture = context
+            .read<AvatarInventoryProvider>()
+            .fetchInventory(uid);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final inventory = context.watch<AvatarInventoryProvider>();
     final theme = Theme.of(context);
-    return StreamBuilder<List<AvatarInventoryEntry>>(
-      stream: inventory.inventory(auth.userId ?? ''),
+    final uid = auth.userId ?? '';
+    final currentGym = auth.gymCode;
+
+    final cached = inventory.getCachedInventory(uid);
+    final cachedKeys = _buildKeys(cached, currentGym);
+
+    return FutureBuilder<List<AvatarInventoryEntry>>(
+      future: _loadFuture,
       builder: (context, snapshot) {
         final items = snapshot.data ?? const <AvatarInventoryEntry>[];
-        final currentGym = auth.gymCode;
-        final Map<String, AvatarInventoryEntry> map = {};
-        for (final item in items) {
-          final norm = AvatarAssets.normalizeKey(
-            item.key,
-            currentGymId: currentGym,
-          );
-          map[norm] = AvatarInventoryEntry(
-            key: norm,
-            source: item.source,
-            createdAt: item.createdAt,
-          );
-        }
-        for (final d in [
-          AvatarInventoryEntry(
-              key: AvatarKeys.globalDefault, source: 'global_default'),
-          AvatarInventoryEntry(
-              key: AvatarKeys.globalDefault2, source: 'global_default'),
-        ]) {
-          map.putIfAbsent(d.key, () => d);
-        }
-        final entries = map.values.toList()
-          ..sort((a, b) {
-            if (a.source == 'global_default' &&
-                b.source != 'global_default') {
-              return -1;
-            }
-            if (a.source != 'global_default' &&
-                b.source == 'global_default') {
-              return 1;
-            }
-            final aTime = a.createdAt?.toDate() ?? DateTime(1970);
-            final bTime = b.createdAt?.toDate() ?? DateTime(1970);
-            return bTime.compareTo(aTime);
-          });
-        final keys = entries.map((e) => e.key).toList();
+        final keys = items.isNotEmpty
+            ? _buildKeys(items, currentGym)
+            : cachedKeys;
         return SafeArea(
           child: GridView.builder(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -879,7 +877,7 @@ class AvatarPicker extends StatelessWidget {
             itemCount: keys.length,
             itemBuilder: (context, index) {
               final key = keys[index];
-              final selected = key == currentKey;
+              final selected = key == widget.currentKey;
               final label = 'Avatar ${index + 1}';
               final avatar = Stack(
                 clipBehavior: Clip.none,
@@ -933,7 +931,7 @@ class AvatarPicker extends StatelessWidget {
                   button: true,
                   selected: selected,
                   child: GestureDetector(
-                    onTap: () => onSelect(key),
+                    onTap: () => widget.onSelect(key),
                     child: child,
                   ),
                 ),
@@ -944,4 +942,50 @@ class AvatarPicker extends StatelessWidget {
       },
     );
   }
+
+  List<String> _buildKeys(
+    List<AvatarInventoryEntry> items,
+    String? currentGym,
+  ) {
+    final map = <String, AvatarInventoryEntry>{};
+    for (final item in items) {
+      final norm = AvatarAssets.normalizeKey(
+        item.key,
+        currentGymId: currentGym,
+      );
+      final existing = map[norm];
+      if (existing == null ||
+          (existing.createdAt?.compareTo(item.createdAt ?? Timestamp(0, 0)) ??
+                  -1) <
+              0) {
+        map[norm] = AvatarInventoryEntry(
+          key: norm,
+          source: item.source,
+          createdAt: item.createdAt,
+        );
+      }
+    }
+    for (final d in [
+      AvatarInventoryEntry(
+          key: AvatarKeys.globalDefault, source: 'global_default'),
+      AvatarInventoryEntry(
+          key: AvatarKeys.globalDefault2, source: 'global_default'),
+    ]) {
+      map.putIfAbsent(d.key, () => d);
+    }
+    final entries = map.values.toList()
+      ..sort((a, b) {
+        if (a.source == 'global_default' && b.source != 'global_default') {
+          return -1;
+        }
+        if (a.source != 'global_default' && b.source == 'global_default') {
+          return 1;
+        }
+        final aTime = a.createdAt?.toDate() ?? DateTime(1970);
+        final bTime = b.createdAt?.toDate() ?? DateTime(1970);
+        return bTime.compareTo(aTime);
+      });
+    return entries.map((e) => e.key).toList();
+  }
 }
+

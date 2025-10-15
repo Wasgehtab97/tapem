@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+
 import '../data/user_search_source.dart';
 import '../domain/models/public_profile.dart';
 import 'friends_provider.dart';
@@ -15,7 +17,7 @@ class FriendSearchProvider extends ChangeNotifier {
   String? error;
 
   Timer? _debounce;
-  StreamSubscription? _sub;
+  int _requestId = 0;
 
   void updateQuery(String value) {
     query = value;
@@ -24,7 +26,6 @@ class FriendSearchProvider extends ChangeNotifier {
   }
 
   void _startSearch() {
-    _sub?.cancel();
     final q = query.trim().toLowerCase();
     if (kDebugMode) {
       debugPrint('[FriendSearch] search start "$q"');
@@ -39,18 +40,27 @@ class FriendSearchProvider extends ChangeNotifier {
     loading = true;
     error = null;
     notifyListeners();
-    _sub = _source.streamByUsernamePrefix(q).listen((res) {
+
+    final currentRequest = ++_requestId;
+    unawaited(_runSearch(q, currentRequest));
+  }
+
+  Future<void> _runSearch(String q, int requestId) async {
+    try {
+      final res = await _source.searchByUsernamePrefix(q);
+      if (requestId != _requestId) return;
       results = res;
       loading = false;
       notifyListeners();
-    }, onError: (e) {
+    } catch (e) {
+      if (requestId != _requestId) return;
       error = e.toString();
       if (kDebugMode) {
         debugPrint('[FriendSearch] error $e');
       }
       loading = false;
       notifyListeners();
-    });
+    }
   }
 
   FriendSearchCta ctaFor(String uid, FriendsProvider friends) {
@@ -68,7 +78,6 @@ class FriendSearchProvider extends ChangeNotifier {
   @override
   void dispose() {
     _debounce?.cancel();
-    _sub?.cancel();
     super.dispose();
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+
 import '../data/friends_source.dart';
 import '../data/friends_api.dart';
 import '../domain/models/friend.dart';
@@ -14,6 +16,9 @@ class FriendsProvider extends ChangeNotifier {
   final FriendsSource _source;
   final FriendsApi _api;
 
+  final Duration _cacheTtl = const Duration(minutes: 5);
+  final Duration _pollInterval = const Duration(minutes: 5);
+
   List<Friend> friends = [];
   List<FriendRequest> incomingPending = [];
   List<FriendRequest> outgoingPending = [];
@@ -21,46 +26,44 @@ class FriendsProvider extends ChangeNotifier {
   bool isBusy = false;
   String? error;
 
-  StreamSubscription? _friendsSub;
-  StreamSubscription? _incomingSub;
-  StreamSubscription? _outgoingSub;
-  StreamSubscription? _outgoingAcceptedSub;
+  DateTime? _lastFriendsFetch;
+  DateTime? _lastIncomingFetch;
+  DateTime? _lastOutgoingFetch;
+  DateTime? _lastOutgoingAcceptedFetch;
+  final Set<String> _processedAcceptedRequestIds = <String>{};
+
+  Timer? _pollTimer;
+  bool _loading = false;
 
   void listen(String meUid) {
-    _friendsSub?.cancel();
-    _incomingSub?.cancel();
-    _outgoingSub?.cancel();
-    _outgoingAcceptedSub?.cancel();
+    if (meUid.isEmpty) {
+      _stopPolling();
+      selfUid = null;
+      _resetState();
+      return;
+    }
 
+    final uidChanged = selfUid != meUid;
     selfUid = meUid;
-    _friendsSub = _source.watchFriends(meUid).listen((f) {
-      friends = f;
-      friendsUids = f.map((e) => e.friendUid).toSet();
+    if (uidChanged) {
+      _stopPolling();
+      friends = [];
+      incomingPending = [];
+      outgoingPending = [];
+      friendsUids.clear();
+      incomingPendingUids.clear();
+      outgoingPendingUids.clear();
+      pendingCount = 0;
+      _lastFriendsFetch = null;
+      _lastIncomingFetch = null;
+      _lastOutgoingFetch = null;
+      _lastOutgoingAcceptedFetch = null;
+      _processedAcceptedRequestIds.clear();
       notifyListeners();
-    });
-    _incomingSub = _source.watchIncoming(meUid).listen((r) {
-      incomingPending = r;
-      incomingPendingUids = r.map((e) => e.fromUserId).toSet();
-      pendingCount = r.length;
-      notifyListeners();
-    });
-    _outgoingSub = _source.watchOutgoing(meUid).listen((r) {
-      outgoingPending = r;
-      outgoingPendingUids = r.map((e) => e.toUserId).toSet();
-      notifyListeners();
-    });
-    _outgoingAcceptedSub =
-        _source.watchOutgoingAccepted(meUid).listen((r) async {
-      for (final req in r) {
-        if (!friendsUids.contains(req.toUserId)) {
-          try {
-            await _api.ensureFriendEdge(req.toUserId);
-          } catch (_) {
-            // ignore errors; sync will retry on next event
-          }
-        }
-      }
-    });
+    }
+
+    unawaited(_loadAll(forceRefresh: uidChanged));
+    _ensurePolling();
   }
 
   Future<void> sendRequest(String toUid, {String? message}) async {
@@ -118,6 +121,101 @@ class FriendsProvider extends ChangeNotifier {
   bool hasOutgoingPending(String uid) => outgoingPendingUids.contains(uid);
   bool hasIncomingPending(String uid) => incomingPendingUids.contains(uid);
 
+  bool _isFresh(DateTime? timestamp) {
+    if (timestamp == null) return false;
+    return DateTime.now().difference(timestamp) < _cacheTtl;
+  }
+
+  Future<void> _loadAll({bool forceRefresh = false}) async {
+    if (_loading) return;
+    final uid = selfUid;
+    if (uid == null || uid.isEmpty) return;
+
+    _loading = true;
+    var shouldNotify = false;
+    try {
+      if (forceRefresh || !_isFresh(_lastFriendsFetch)) {
+        final data = await _source.fetchFriends(uid);
+        friends = data;
+        friendsUids = data.map((e) => e.friendUid).toSet();
+        _lastFriendsFetch = DateTime.now();
+        shouldNotify = true;
+      }
+
+      if (forceRefresh || !_isFresh(_lastIncomingFetch)) {
+        final data = await _source.fetchIncomingPending(uid);
+        incomingPending = data;
+        incomingPendingUids = data.map((e) => e.fromUserId).toSet();
+        pendingCount = data.length;
+        _lastIncomingFetch = DateTime.now();
+        shouldNotify = true;
+      }
+
+      if (forceRefresh || !_isFresh(_lastOutgoingFetch)) {
+        final data = await _source.fetchOutgoingPending(uid);
+        outgoingPending = data;
+        outgoingPendingUids = data.map((e) => e.toUserId).toSet();
+        _lastOutgoingFetch = DateTime.now();
+        shouldNotify = true;
+      }
+
+      if (forceRefresh || !_isFresh(_lastOutgoingAcceptedFetch)) {
+        final accepted = await _source.fetchOutgoingAccepted(uid);
+        _lastOutgoingAcceptedFetch = DateTime.now();
+        for (final req in accepted) {
+          if (_processedAcceptedRequestIds.contains(req.requestId)) {
+            continue;
+          }
+          if (friendsUids.contains(req.toUserId)) {
+            _processedAcceptedRequestIds.add(req.requestId);
+            continue;
+          }
+          try {
+            await _api.ensureFriendEdge(req.toUserId);
+            _processedAcceptedRequestIds.add(req.requestId);
+          } catch (_) {
+            // ignore errors; sync will retry on next poll
+          }
+        }
+      }
+    } finally {
+      _loading = false;
+      if (shouldNotify) notifyListeners();
+    }
+  }
+
+  void refresh() {
+    unawaited(_loadAll(forceRefresh: true));
+  }
+
+  void _ensurePolling() {
+    if (_pollTimer != null) return;
+    _pollTimer = Timer.periodic(_pollInterval, (_) {
+      unawaited(_loadAll());
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  void _resetState() {
+    friends = [];
+    incomingPending = [];
+    outgoingPending = [];
+    friendsUids.clear();
+    incomingPendingUids.clear();
+    outgoingPendingUids.clear();
+    pendingCount = 0;
+    _lastFriendsFetch = null;
+    _lastIncomingFetch = null;
+    _lastOutgoingFetch = null;
+    _lastOutgoingAcceptedFetch = null;
+    _processedAcceptedRequestIds.clear();
+    notifyListeners();
+  }
+
   Future<void> _guard(Future<void> Function() action) async {
     isBusy = true;
     error = null;
@@ -139,10 +237,7 @@ class FriendsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _friendsSub?.cancel();
-    _incomingSub?.cancel();
-    _outgoingSub?.cancel();
-    _outgoingAcceptedSub?.cancel();
+    _stopPolling();
     super.dispose();
   }
 }

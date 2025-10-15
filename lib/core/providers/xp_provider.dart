@@ -53,7 +53,7 @@ class XpProvider extends ChangeNotifier {
   bool _loadingStats = false;
 
   Timer? _pollTimer;
-  final Duration _pollInterval = const Duration(minutes: 2);
+  final Duration _pollInterval = const Duration(minutes: 5);
   final Duration _cacheTtl = const Duration(minutes: 2);
 
   Map<String, int> get muscleXp => _muscleXp;

@@ -55,9 +55,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     _permitted = context.read<AuthProvider>().isAdmin;
     if (_permitted) {
       try {
-        final inv = await _inventory
-            .inventoryKeys(widget.uid, currentGymId: _gymId)
-            .first;
+        final inv = await _inventory.fetchInventoryKeys(
+          widget.uid,
+          currentGymId: _gymId,
+        );
         _keys = inv.toSet();
       } catch (e) {
         debugPrint('[UserSymbols] inventory error: $e');
@@ -87,7 +88,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         await _inventory.addKeys(widget.uid, [key],
             source: source, gymId: _gymId);
       }
-      await _inventory.refresh();
+      await _inventory.refresh(uid: widget.uid);
     } on FirebaseException catch (e) {
       setState(() {
         if (has) {

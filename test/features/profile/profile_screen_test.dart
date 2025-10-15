@@ -56,17 +56,23 @@ class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
 
 class FakeFriendsSource implements FriendsSource {
   @override
-  Stream<List<Friend>> watchFriends(String meUid) => const Stream.empty();
+  Future<List<Friend>> fetchFriends(String meUid, {int limit = 150}) async =>
+      const [];
 
   @override
-  Stream<List<FriendRequest>> watchIncoming(String meUid) => const Stream.empty();
+  Future<List<FriendRequest>> fetchIncomingPending(String meUid,
+          {int limit = 100}) async =>
+      const [];
 
   @override
-  Stream<List<FriendRequest>> watchOutgoing(String meUid) => const Stream.empty();
+  Future<List<FriendRequest>> fetchOutgoingPending(String meUid,
+          {int limit = 100}) async =>
+      const [];
 
   @override
-  Stream<List<FriendRequest>> watchOutgoingAccepted(String meUid) =>
-      const Stream.empty();
+  Future<List<FriendRequest>> fetchOutgoingAccepted(String meUid,
+          {int limit = 100}) async =>
+      const [];
 }
 
 class FakeFriendsApi implements FriendsApi {
@@ -102,9 +108,9 @@ class FakeUserSearchSource implements UserSearchSource {
       PublicProfile(uid: uid, username: '', avatarKey: 'default');
 
   @override
-  Stream<List<PublicProfile>> streamByUsernamePrefix(String q,
-          {int limit = 20}) =>
-      const Stream.empty();
+  Future<List<PublicProfile>> searchByUsernamePrefix(String q,
+          {int limit = 20, bool forceRefresh = false}) async =>
+      const [];
 }
 
 class FakeFriendPresenceProvider extends ChangeNotifier
@@ -126,9 +132,30 @@ class FakeAvatarInventoryProvider extends AvatarInventoryProvider {
 
   final List<String> _keys;
 
+  List<AvatarInventoryEntry> _entries(String? currentGymId) => _keys
+      .map((k) => AvatarInventoryEntry(
+            key: AvatarAssets.normalizeKey(k, currentGymId: currentGymId),
+            source: 'test',
+            documentId: k.replaceAll('/', '__'),
+          ))
+      .toList();
+
   @override
-  Stream<List<String>> inventoryKeys(String uid, {String? currentGymId}) =>
-      Stream.value(_keys);
+  Future<List<AvatarInventoryEntry>> fetchInventory(String uid,
+          {bool forceRefresh = false}) async =>
+      _entries(null);
+
+  @override
+  List<AvatarInventoryEntry> getCachedInventory(String uid) => _entries(null);
+
+  @override
+  Future<List<String>> fetchInventoryKeys(String uid,
+          {String? currentGymId, bool forceRefresh = false}) async =>
+      _keys;
+
+  @override
+  List<String> getCachedInventoryKeys(String uid, {String? currentGymId}) =>
+      _keys;
 
   @override
   Future<Set<String>> getOwnedAvatarIds() async => _keys.toSet();
