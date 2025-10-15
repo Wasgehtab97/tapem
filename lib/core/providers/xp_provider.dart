@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -26,6 +27,11 @@ class XpProvider extends ChangeNotifier {
   String? _muscleHistoryUserId;
   DateTime? _lastMuscleHistoryFetch;
   bool _loadingMuscleHistory = false;
+  // Loading only ten history entries per request keeps Firestore reads stable
+  // even when the provider is re-created during hot restarts.
+  final int _muscleHistoryPageSize = 10;
+  String? _muscleHistoryCursor;
+  bool _muscleHistoryHasMore = true;
 
   String? _muscleGymId;
   String? _muscleUserId;
@@ -36,6 +42,11 @@ class XpProvider extends ChangeNotifier {
   String? _trainingDaysUserId;
   DateTime? _lastTrainingDaysFetch;
   bool _loadingTrainingDays = false;
+  // Cap training-day history to ten results by default; older entries can be
+  // fetched on demand via [loadMoreTrainingDays].
+  final int _trainingDaysPageSize = 10;
+  String? _trainingDaysCursor;
+  bool _trainingDaysHasMore = true;
 
   final Map<String, int> _deviceXp = {};
   final Map<String, DateTime> _deviceLastFetch = {};
@@ -68,10 +79,39 @@ class XpProvider extends ChangeNotifier {
       _dailyLevel >= LevelService.maxLevel
           ? 1
           : _dailyLevelXp / LevelService.xpPerLevel;
+  bool get muscleHistoryHasMore => _muscleHistoryHasMore;
+  bool get trainingDaysHasMore => _trainingDaysHasMore;
+
+  Future<void> loadMoreMuscleHistory() async {
+    await _loadMuscleHistory(force: true, loadMore: true);
+  }
+
+  Future<void> loadMoreTrainingDays() async {
+    await _loadTrainingDays(force: true, loadMore: true);
+  }
 
   bool _isFresh(DateTime? timestamp) {
     if (timestamp == null) return false;
     return DateTime.now().difference(timestamp) < _cacheTtl;
+  }
+
+  bool _historyEquals(
+    Map<String, Map<String, int>> a,
+    Map<String, Map<String, int>> b,
+  ) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      if (other == null || !mapEquals(entry.value, other)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool get _hasActiveWatch =>
@@ -244,6 +284,8 @@ class XpProvider extends ChangeNotifier {
       _muscleHistoryGymId = null;
       _muscleHistoryUserId = null;
       _muscleDailyXp = {};
+      _muscleHistoryCursor = null;
+      _muscleHistoryHasMore = true;
       _ensurePolling();
       notifyListeners();
       return;
@@ -254,6 +296,11 @@ class XpProvider extends ChangeNotifier {
 
     _muscleHistoryGymId = gymId;
     _muscleHistoryUserId = userId;
+    if (!unchanged) {
+      _muscleDailyXp = {};
+      _muscleHistoryCursor = null;
+      _muscleHistoryHasMore = true;
+    }
     _ensurePolling();
 
     if (unchanged && _isFresh(_lastMuscleHistoryFetch)) {
@@ -270,6 +317,8 @@ class XpProvider extends ChangeNotifier {
       debugPrint('⚠️ provider watchTrainingDays skipped (empty userId)');
       _trainingDaysUserId = null;
       _dayListXp = {};
+      _trainingDaysCursor = null;
+      _trainingDaysHasMore = true;
       _ensurePolling();
       notifyListeners();
       return;
@@ -282,6 +331,11 @@ class XpProvider extends ChangeNotifier {
     }
 
     _trainingDaysUserId = userId;
+    if (!unchanged) {
+      _dayListXp = {};
+      _trainingDaysCursor = null;
+      _trainingDaysHasMore = true;
+    }
     _ensurePolling();
 
     if (unchanged && _isFresh(_lastTrainingDaysFetch)) {
@@ -451,25 +505,56 @@ class XpProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadMuscleHistory({bool force = false}) async {
+  Future<void> _loadMuscleHistory({bool force = false, bool loadMore = false}) async {
     if (_muscleHistoryGymId == null || _muscleHistoryUserId == null) {
       return;
     }
-    if (_loadingMuscleHistory ||
-        (!force && _isFresh(_lastMuscleHistoryFetch))) {
+    if (_loadingMuscleHistory) {
+      return;
+    }
+    if (loadMore) {
+      if (!_muscleHistoryHasMore) {
+        return;
+      }
+    } else if (!force && _isFresh(_lastMuscleHistoryFetch)) {
       return;
     }
     _loadingMuscleHistory = true;
     try {
-      final map = await _repo.fetchMuscleXpHistory(
+      final page = await _repo.fetchMuscleXpHistory(
         gymId: _muscleHistoryGymId!,
         userId: _muscleHistoryUserId!,
-        limit: 30,
-        forceRemote: force,
+        limit: _muscleHistoryPageSize,
+        startAfter: loadMore ? _muscleHistoryCursor : null,
+        forceRemote: force && !loadMore,
       );
       _lastMuscleHistoryFetch = DateTime.now();
-      if (!mapEquals(_muscleDailyXp, map)) {
-        _muscleDailyXp = map;
+      final updated = LinkedHashMap<String, Map<String, int>>();
+      if (loadMore) {
+        for (final entry in page.items.entries) {
+          if (!_muscleDailyXp.containsKey(entry.key)) {
+            updated[entry.key] = Map<String, int>.from(entry.value);
+          }
+        }
+        for (final entry in _muscleDailyXp.entries) {
+          updated.putIfAbsent(
+              entry.key, () => Map<String, int>.from(entry.value));
+        }
+      } else {
+        for (final entry in page.items.entries) {
+          updated[entry.key] = Map<String, int>.from(entry.value);
+        }
+      }
+      final changed = !_historyEquals(_muscleDailyXp, updated);
+      final previousCursor = _muscleHistoryCursor;
+      final previousHasMore = _muscleHistoryHasMore;
+      _muscleDailyXp = updated;
+      _muscleHistoryCursor = page.nextCursor;
+      _muscleHistoryHasMore = page.hasMore;
+      if (changed ||
+          previousCursor != _muscleHistoryCursor ||
+          previousHasMore != _muscleHistoryHasMore ||
+          (loadMore && page.items.isNotEmpty)) {
         notifyListeners();
       }
     } catch (e, st) {
@@ -482,24 +567,55 @@ class XpProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadTrainingDays({bool force = false}) async {
+  Future<void> _loadTrainingDays({bool force = false, bool loadMore = false}) async {
     final uid = _trainingDaysUserId;
     if (uid == null) {
       return;
     }
-    if (_loadingTrainingDays || (!force && _isFresh(_lastTrainingDaysFetch))) {
+    if (_loadingTrainingDays) {
+      return;
+    }
+    if (loadMore) {
+      if (!_trainingDaysHasMore) {
+        return;
+      }
+    } else if (!force && _isFresh(_lastTrainingDaysFetch)) {
       return;
     }
     _loadingTrainingDays = true;
     try {
-      final map = await _repo.fetchTrainingDaysXp(
+      final page = await _repo.fetchTrainingDaysXp(
         uid,
-        limit: 30,
-        forceRemote: force,
+        limit: _trainingDaysPageSize,
+        startAfter: loadMore ? _trainingDaysCursor : null,
+        forceRemote: force && !loadMore,
       );
       _lastTrainingDaysFetch = DateTime.now();
-      if (!mapEquals(_dayListXp, map)) {
-        _dayListXp = map;
+      final updated = LinkedHashMap<String, int>();
+      if (loadMore) {
+        for (final entry in page.items.entries) {
+          if (!_dayListXp.containsKey(entry.key)) {
+            updated[entry.key] = entry.value;
+          }
+        }
+        for (final entry in _dayListXp.entries) {
+          updated.putIfAbsent(entry.key, () => entry.value);
+        }
+      } else {
+        for (final entry in page.items.entries) {
+          updated[entry.key] = entry.value;
+        }
+      }
+      final changed = !mapEquals(_dayListXp, updated);
+      final previousCursor = _trainingDaysCursor;
+      final previousHasMore = _trainingDaysHasMore;
+      _dayListXp = updated;
+      _trainingDaysCursor = page.nextCursor;
+      _trainingDaysHasMore = page.hasMore;
+      if (changed ||
+          previousCursor != _trainingDaysCursor ||
+          previousHasMore != _trainingDaysHasMore ||
+          (loadMore && page.items.isNotEmpty)) {
         notifyListeners();
       }
     } catch (e, st) {

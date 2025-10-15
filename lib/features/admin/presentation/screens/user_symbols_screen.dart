@@ -28,6 +28,11 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   bool _permitted = false;
   bool _loading = true;
   Set<String> _keys = <String>{};
+  String? _userDisplayName;
+  bool _loadingUser = false;
+  String? _userLoadError;
+  DateTime? _lastUserFetch;
+  final Duration _userCacheTtl = const Duration(minutes: 10);
 
   @override
   void initState() {
@@ -66,6 +71,61 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     }
     if (mounted) {
       setState(() => _loading = false);
+    }
+    unawaited(_loadUserName(force: true));
+  }
+
+  Future<void> _loadUserName({bool force = false}) async {
+    if (_loadingUser) {
+      return;
+    }
+    final last = _lastUserFetch;
+    if (!force && last != null && DateTime.now().difference(last) < _userCacheTtl) {
+      return;
+    }
+    setState(() {
+      _loadingUser = true;
+      if (force) {
+        _userLoadError = null;
+      }
+    });
+    String? fetchedName;
+    String? error;
+    try {
+      final snap = await _fs.collection('users').doc(widget.uid).get();
+      fetchedName = (snap.data()?['username'] as String?)?.trim();
+    } catch (e) {
+      error = e.toString();
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _loadingUser = false;
+      _userLoadError = error;
+      _lastUserFetch = DateTime.now();
+      if (fetchedName != null && fetchedName!.isNotEmpty) {
+        _userDisplayName = fetchedName;
+      }
+    });
+  }
+
+  Future<void> _refreshAll() async {
+    await _loadUserName(force: true);
+    if (_permitted) {
+      try {
+        final inv = await _inventory.fetchInventoryKeys(
+          widget.uid,
+          currentGymId: _gymId,
+        );
+        if (mounted) {
+          setState(() {
+            _keys = inv.toSet();
+          });
+        }
+      } catch (e) {
+        debugPrint('[UserSymbols] refresh inventory error: $e');
+      }
     }
   }
 
@@ -330,6 +390,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         .map((k) => (key: k, path: catalog.resolvePathOrFallback(k)))
         .toList()
       ..sort((a, b) => a.key.compareTo(b.key));
+    final displayName =
+        (_userDisplayName != null && _userDisplayName!.isNotEmpty)
+            ? _userDisplayName!
+            : widget.uid;
 
     Widget buildSection(String title, List<({String key, String path})> items,
         {bool allowRemove = false}) {
@@ -405,30 +469,43 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         ],
       );
     }
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _fs.collection('users').doc(widget.uid).snapshots(),
-      builder: (context, snap) {
-        final name = snap.data?.data()?['username'] as String? ?? widget.uid;
-        return Scaffold(
-          appBar: AppBar(title: Text(loc.user_symbols_title(name))),
-          floatingActionButton: _permitted && _gymId.isNotEmpty
-              ? FloatingActionButton(
-                  onPressed: _openAddDialog,
-                  tooltip: 'Symbole hinzufügen',
-                  child: const Icon(Icons.add),
-                )
-              : null,
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                buildSection('Inventar von $name', inventoryItems,
-                    allowRemove: true),
-              ],
-            ),
+    final children = <Widget>[
+      if (_loadingUser)
+        const LinearProgressIndicator(minHeight: 2),
+      if (_userLoadError != null)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            _userLoadError!,
+            style: const TextStyle(color: Colors.redAccent),
           ),
-        );
-      },
+        ),
+      if (inventoryItems.isNotEmpty)
+        buildSection('Inventar von $displayName', inventoryItems,
+            allowRemove: true),
+      if (inventoryItems.isEmpty)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(loc.adminSymbolsNoAssetsForTitle(displayName)),
+        ),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: Text(loc.user_symbols_title(displayName))),
+      floatingActionButton: _permitted && _gymId.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: _openAddDialog,
+              tooltip: 'Symbole hinzufügen',
+              child: const Icon(Icons.add),
+            )
+          : null,
+      body: RefreshIndicator(
+        onRefresh: _refreshAll,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: children,
+        ),
+      ),
     );
   }
 }

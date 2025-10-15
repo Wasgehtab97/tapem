@@ -1,4 +1,5 @@
 import 'device_xp_result.dart';
+import 'xp_paged_result.dart';
 
 abstract class XpRepository {
   Future<DeviceXpResult> addSessionXp({
@@ -26,16 +27,18 @@ abstract class XpRepository {
     bool forceRemote = false,
   });
 
-  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+  Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 30,
+    int limit = 10,
+    String? startAfter,
     bool forceRemote = false,
   });
 
-  Future<Map<String, int>> fetchTrainingDaysXp(
+  Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 30,
+    int limit = 10,
+    String? startAfter,
     bool forceRemote = false,
   });
 

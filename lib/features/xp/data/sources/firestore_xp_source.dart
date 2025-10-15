@@ -12,6 +12,7 @@ import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/xp_paged_result.dart';
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -430,12 +431,13 @@ class FirestoreXpSource {
     return map;
   }
 
-  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+  Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
     int limit = _historyLimit,
+    String? startAfter,
   }) async {
-    final col = _firestore
+    var col = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('users')
@@ -445,11 +447,17 @@ class FirestoreXpSource {
         .collection('muscleXpHistory')
         .orderBy(FieldPath.documentId, descending: true)
         .limit(limit);
+    if (startAfter != null && startAfter.isNotEmpty) {
+      col = col.startAfter([startAfter]);
+    }
     debugPrint(
-        '⬇️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit');
+      '⬇️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit startAfter=${startAfter ?? ''}',
+    );
     final snap = await col.get();
-    final docs = snap.docs.toList()
-      ..sort((a, b) => a.id.compareTo(b.id));
+    final docs = snap.docs.toList();
+    final hasMore = docs.length == limit;
+    final nextCursor = hasMore && docs.isNotEmpty ? docs.last.id : null;
+    docs.sort((a, b) => a.id.compareTo(b.id));
     final map = <String, Map<String, int>>{};
     for (final docSnap in docs) {
       final data = docSnap.data();
@@ -462,30 +470,46 @@ class FirestoreXpSource {
       });
       map[docSnap.id] = dayMap;
     }
-    debugPrint('✅ fetchMuscleXpHistory days=${map.length}');
-    return map;
+    debugPrint('✅ fetchMuscleXpHistory days=${map.length} hasMore=$hasMore');
+    return XpPagedResult(
+      items: map,
+      hasMore: hasMore,
+      nextCursor: nextCursor,
+    );
   }
 
-  Future<Map<String, int>> fetchTrainingDaysXp(
+  Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
     String userId, {
     int limit = _trainingDayLimit,
+    String? startAfter,
   }) async {
-    final col = _firestore
+    var col = _firestore
         .collection('users')
         .doc(userId)
         .collection('trainingDayXP')
         .orderBy(FieldPath.documentId, descending: true)
         .limit(limit);
-    debugPrint('⬇️ fetchTrainingDaysXp userId=$userId limit=$limit');
+    if (startAfter != null && startAfter.isNotEmpty) {
+      col = col.startAfter([startAfter]);
+    }
+    debugPrint(
+      '⬇️ fetchTrainingDaysXp userId=$userId limit=$limit startAfter=${startAfter ?? ''}',
+    );
     final snap = await col.get();
-    final docs = snap.docs.toList()
-      ..sort((a, b) => a.id.compareTo(b.id));
+    final docs = snap.docs.toList();
+    final hasMore = docs.length == limit;
+    final nextCursor = hasMore && docs.isNotEmpty ? docs.last.id : null;
+    docs.sort((a, b) => a.id.compareTo(b.id));
     final map = <String, int>{};
     for (final docSnap in docs) {
       map[docSnap.id] = (docSnap.data()['xp'] as num?)?.toInt() ?? 0;
     }
-    debugPrint('✅ fetchTrainingDaysXp days=${map.length}');
-    return map;
+    debugPrint('✅ fetchTrainingDaysXp days=${map.length} hasMore=$hasMore');
+    return XpPagedResult(
+      items: map,
+      hasMore: hasMore,
+      nextCursor: nextCursor,
+    );
   }
 
   Future<int> fetchDeviceXp({

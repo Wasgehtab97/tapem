@@ -930,6 +930,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get friends_privacy_no_access => 'Dieser Nutzer teilt seinen Kalender nicht.';
 
+  String get friends_calendar_initial_hint =>
+      'Trainingstage werden bei Bedarf geladen. Nutze "Aktualisieren", um die neuesten 30 Tage zu holen, und "Ältere Tage laden" für weitere Historie.';
+
+  String get friends_calendar_refresh => 'Aktualisieren';
+
+  String get friends_calendar_load_more_days => 'Ältere Tage laden';
+
   @override
   String get friends_cta_self => 'Du selbst';
 
