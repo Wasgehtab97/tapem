@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 
 const String _rangeKey7Days = 'last7Days';
 const String _rangeKey30Days = 'last30Days';
@@ -44,17 +45,21 @@ class DeviceUsageSummaryState {
 class DeviceUsageSummaryService {
   DeviceUsageSummaryService({
     FirebaseFirestore? firestore,
-    Duration ttl = const Duration(minutes: 5),
+    Duration ttl = const Duration(hours: 24),
     void Function()? onRead,
+    HiveInterface? hive,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _ttl = ttl,
-        _onRead = onRead;
+        _onRead = onRead,
+        _hive = hive ?? Hive;
 
   final FirebaseFirestore _firestore;
   final Duration _ttl;
   final void Function()? _onRead;
   final Map<String, _DeviceSummaryCache> _cache =
       <String, _DeviceSummaryCache>{};
+  final HiveInterface _hive;
+  final Map<String, Future<Box<dynamic>>> _boxCache = <String, Future<Box<dynamic>>>{};
 
   Future<DeviceUsageSummaryState> loadSummaries(
     String gymId, {
@@ -65,12 +70,30 @@ class DeviceUsageSummaryService {
       () => _DeviceSummaryCache.empty(),
     );
 
-    if (!forceRefresh && !_isExpired(cache.fetchedAt) &&
-        cache.entries.isNotEmpty) {
+    if (forceRefresh) {
+      await _clearPersisted(gymId);
+      cache.clear();
+    }
+
+    if (!forceRefresh && cache.entries.isNotEmpty && !_isExpired(cache.fetchedAt)) {
       return DeviceUsageSummaryState(
         entries: List<DeviceUsageSummaryEntry>.from(cache.entries),
         fromCache: true,
       );
+    }
+
+    if (!forceRefresh) {
+      final persisted = await _readPersisted(gymId);
+      if (persisted != null && !_isExpired(persisted.fetchedAt)) {
+        cache.entries
+          ..clear()
+          ..addAll(persisted.entries);
+        cache.fetchedAt = persisted.fetchedAt;
+        return DeviceUsageSummaryState(
+          entries: List<DeviceUsageSummaryEntry>.from(cache.entries),
+          fromCache: true,
+        );
+      }
     }
 
     final snapshot = await _firestore
@@ -85,6 +108,8 @@ class DeviceUsageSummaryService {
       ..clear()
       ..addAll(entries);
     cache.fetchedAt = DateTime.now();
+
+    await _writePersisted(gymId, cache.entries, cache.fetchedAt!);
 
     return DeviceUsageSummaryState(
       entries: List<DeviceUsageSummaryEntry>.from(entries),
@@ -176,6 +201,100 @@ class DeviceUsageSummaryService {
     }
     return DateTime.now().difference(timestamp) > _ttl;
   }
+
+  Future<Box<dynamic>> _openBox(String gymId) {
+    final name = 'device_usage_${_sanitizeId(gymId)}';
+    return _boxCache.putIfAbsent(name, () => _hive.openBox<dynamic>(name));
+  }
+
+  Future<void> _writePersisted(
+    String gymId,
+    List<DeviceUsageSummaryEntry> entries,
+    DateTime fetchedAt,
+  ) async {
+    final box = await _openBox(gymId);
+    await box.put(
+      'state',
+      <String, dynamic>{
+        'fetchedAt': fetchedAt.toIso8601String(),
+        'entries': entries.map(_serializeEntry).toList(growable: false),
+      },
+    );
+  }
+
+  Future<_PersistedDeviceState?> _readPersisted(String gymId) async {
+    final box = await _openBox(gymId);
+    final raw = box.get('state');
+    if (raw is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(raw as Map);
+    final fetchedAtIso = map['fetchedAt'] as String?;
+    if (fetchedAtIso == null) {
+      return null;
+    }
+    final fetchedAt = DateTime.tryParse(fetchedAtIso);
+    if (fetchedAt == null) {
+      return null;
+    }
+    final entriesRaw = map['entries'];
+    if (entriesRaw is! List) {
+      return null;
+    }
+    final entries = entriesRaw
+        .whereType<Map>()
+        .map((entry) => _deserializeEntry(Map<String, dynamic>.from(entry)))
+        .toList(growable: false);
+    return _PersistedDeviceState(entries: entries, fetchedAt: fetchedAt);
+  }
+
+  Future<void> _clearPersisted(String gymId) async {
+    final box = await _openBox(gymId);
+    await box.delete('state');
+  }
+
+  Map<String, dynamic> _serializeEntry(DeviceUsageSummaryEntry entry) {
+    return <String, dynamic>{
+      'deviceId': entry.deviceId,
+      'name': entry.name,
+      'description': entry.description,
+      'totalSessions': entry.totalSessions,
+      'rangeCounts': Map<String, int>.from(entry.rangeCounts),
+      'lastActive': entry.lastActive?.toIso8601String(),
+      'recentDates': entry.recentDates.map((date) => date.toIso8601String()).toList(),
+    };
+  }
+
+  DeviceUsageSummaryEntry _deserializeEntry(Map<String, dynamic> raw) {
+    final rangeCountsRaw = raw['rangeCounts'];
+    final recentDatesRaw = raw['recentDates'];
+    return DeviceUsageSummaryEntry(
+      deviceId: raw['deviceId'] as String? ?? '',
+      name: raw['name'] as String? ?? '',
+      description: raw['description'] as String? ?? '',
+      totalSessions: (raw['totalSessions'] as num?)?.toInt() ?? 0,
+      rangeCounts: rangeCountsRaw is Map
+          ? Map<String, int>.from(
+              Map<String, dynamic>.from(rangeCountsRaw as Map).map(
+                (key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0),
+              ),
+            )
+          : <String, int>{},
+      lastActive: (raw['lastActive'] as String?) != null
+          ? DateTime.tryParse(raw['lastActive'] as String)
+          : null,
+      recentDates: recentDatesRaw is List
+          ? recentDatesRaw
+              .map((value) => value is String ? DateTime.tryParse(value) : null)
+              .whereType<DateTime>()
+              .toList()
+          : const <DateTime>[],
+    );
+  }
+
+  String _sanitizeId(String value) {
+    return value.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+  }
 }
 
 class _DeviceSummaryCache {
@@ -190,4 +309,19 @@ class _DeviceSummaryCache {
   factory _DeviceSummaryCache.empty() {
     return _DeviceSummaryCache(entries: <DeviceUsageSummaryEntry>[]);
   }
+
+  void clear() {
+    entries.clear();
+    fetchedAt = null;
+  }
+}
+
+class _PersistedDeviceState {
+  const _PersistedDeviceState({
+    required this.entries,
+    required this.fetchedAt,
+  });
+
+  final List<DeviceUsageSummaryEntry> entries;
+  final DateTime fetchedAt;
 }

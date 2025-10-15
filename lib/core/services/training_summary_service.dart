@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 import 'package:tapem/core/models/favorite_exercise_usage.dart';
 
 class TrainingSummary {
@@ -11,7 +12,7 @@ class TrainingSummary {
     required this.muscleGroups,
     required this.sessionCounts,
     required this.deviceCounts,
-    required this.snapshot,
+    this.snapshot,
   });
 
   final String dateKey;
@@ -22,7 +23,7 @@ class TrainingSummary {
   final List<MuscleGroupUsage> muscleGroups;
   final Map<String, SessionCountInfo> sessionCounts;
   final Map<String, int> deviceCounts;
-  final QueryDocumentSnapshot<Map<String, dynamic>> snapshot;
+  final QueryDocumentSnapshot<Map<String, dynamic>>? snapshot;
 
   Set<String> get sessionIds => sessionCounts.entries
       .where((entry) => entry.value.count > 0)
@@ -91,20 +92,24 @@ class TrainingSummaryState {
 class TrainingSummaryService {
   TrainingSummaryService({
     FirebaseFirestore? firestore,
-    Duration ttl = const Duration(minutes: 10),
+    Duration ttl = const Duration(hours: 24),
     int pageSize = 30,
     void Function()? onRead,
+    HiveInterface? hive,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _ttl = ttl,
         _pageSize = pageSize,
-        _onRead = onRead;
+        _onRead = onRead,
+        _hive = hive ?? Hive;
 
   final FirebaseFirestore _firestore;
   final Duration _ttl;
   final int _pageSize;
   final void Function()? _onRead;
+  final HiveInterface _hive;
   final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   final Map<String, _GroupCacheEntry> _groupCache = <String, _GroupCacheEntry>{};
+  final Map<String, Future<Box<dynamic>>> _boxCache = <String, Future<Box<dynamic>>>{};
 
   Future<TrainingSummaryState> loadSummaries({
     required String userId,
@@ -113,9 +118,12 @@ class TrainingSummaryService {
   }) async {
     final cache = _cache.putIfAbsent(userId, () => _CacheEntry.empty());
     if (forceRefresh) {
+      await _clearPersistedDaily(userId);
+      await _clearPersistedAggregate(userId);
       cache.clear();
     }
-    if (!loadMore && !_isExpired(cache.fetchedAt) && cache.entries.isNotEmpty) {
+
+    if (!loadMore && cache.entries.isNotEmpty && !_isExpired(cache.fetchedAt)) {
       final aggregate = await _ensureAggregate(userId, cache);
       return TrainingSummaryState(
         entries: List<TrainingSummary>.from(cache.entries),
@@ -123,6 +131,27 @@ class TrainingSummaryService {
         hasMore: cache.hasMore,
         fromCache: true,
       );
+    }
+
+    if (!loadMore) {
+      final persisted = await _readPersistedDaily(userId);
+      if (persisted != null && !_isExpired(persisted.fetchedAt)) {
+        cache.entries
+          ..clear()
+          ..addAll(persisted.entries);
+        cache.hasMore = persisted.hasMore;
+        cache.fetchedAt = persisted.fetchedAt;
+        cache.lastDocument = null;
+        cache.lastDocumentId = persisted.lastDocumentId;
+        cache.lastDocumentDate = persisted.lastDocumentDate;
+        final aggregate = await _ensureAggregate(userId, cache);
+        return TrainingSummaryState(
+          entries: List<TrainingSummary>.from(cache.entries),
+          aggregate: aggregate,
+          hasMore: cache.hasMore,
+          fromCache: true,
+        );
+      }
     }
 
     if (loadMore && cache.entries.isEmpty) {
@@ -133,6 +162,18 @@ class TrainingSummaryService {
     if (loadMore && _isExpired(cache.fetchedAt)) {
       cache.clear();
       loadMore = false;
+    }
+
+    if (loadMore && cache.lastDocument == null && cache.lastDocumentId != null) {
+      final doc = await _firestore
+          .collection('trainingSummary')
+          .doc(userId)
+          .collection('daily')
+          .doc(cache.lastDocumentId!)
+          .get();
+      if (doc.exists) {
+        cache.lastDocument = doc;
+      }
     }
 
     final query = _baseQuery(userId, cache.lastDocument, loadMore);
@@ -149,10 +190,29 @@ class TrainingSummaryService {
         ..addAll(newEntries);
     }
     cache.lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : cache.lastDocument;
+    cache.lastDocumentId = cache.lastDocument?.id ?? cache.lastDocumentId;
+    cache.lastDocumentDate = snapshot.docs.isNotEmpty
+        ? _timestampToDate(snapshot.docs.last.data()['date']) ?? cache.lastDocumentDate
+        : cache.lastDocumentDate;
     cache.fetchedAt = DateTime.now();
     cache.hasMore = snapshot.docs.length >= _pageSize;
 
-    final aggregate = await _ensureAggregate(userId, cache, refresh: forceRefresh || cache.aggregate == null);
+    final aggregate = await _ensureAggregate(
+      userId,
+      cache,
+      refresh: forceRefresh || cache.aggregate == null,
+    );
+
+    if (!loadMore) {
+      await _writePersistedDaily(
+        userId,
+        cache.entries,
+        cache.hasMore,
+        cache.fetchedAt!,
+        cache.lastDocumentId,
+        cache.lastDocumentDate,
+      );
+    }
 
     return TrainingSummaryState(
       entries: List<TrainingSummary>.from(cache.entries),
@@ -162,8 +222,10 @@ class TrainingSummaryService {
     );
   }
 
-  void clearCache(String userId) {
+  Future<void> clearCache(String userId) async {
     _cache.remove(userId);
+    await _clearPersistedDaily(userId);
+    await _clearPersistedAggregate(userId);
   }
 
   Future<Map<String, int>> fetchGroupUsageCounts({
@@ -218,7 +280,7 @@ class TrainingSummaryService {
 
   Query<Map<String, dynamic>> _baseQuery(
     String userId,
-    QueryDocumentSnapshot<Map<String, dynamic>>? lastDocument,
+    DocumentSnapshot<Map<String, dynamic>>? lastDocument,
     bool loadMore,
   ) {
     var query = _firestore
@@ -241,6 +303,16 @@ class TrainingSummaryService {
     if (!refresh && cache.aggregate != null && !_isExpired(cache.aggregateFetchedAt)) {
       return cache.aggregate!;
     }
+
+    if (!refresh) {
+      final persisted = await _readPersistedAggregate(userId);
+      if (persisted != null && !_isExpired(persisted.fetchedAt)) {
+        cache.aggregate = persisted.aggregate;
+        cache.aggregateFetchedAt = persisted.fetchedAt;
+        return persisted.aggregate;
+      }
+    }
+
     final doc = await _firestore
         .collection('trainingSummary')
         .doc(userId)
@@ -251,6 +323,7 @@ class TrainingSummaryService {
     final aggregate = _mapAggregate(doc);
     cache.aggregate = aggregate;
     cache.aggregateFetchedAt = DateTime.now();
+    await _writePersistedAggregate(userId, aggregate, cache.aggregateFetchedAt!);
     return aggregate;
   }
 
@@ -417,6 +490,267 @@ class TrainingSummaryService {
     }
     return null;
   }
+
+  Future<Box<dynamic>> _openBox(String name) {
+    return _boxCache.putIfAbsent(name, () => _hive.openBox<dynamic>(name));
+  }
+
+  Future<void> _writePersistedDaily(
+    String userId,
+    List<TrainingSummary> entries,
+    bool hasMore,
+    DateTime fetchedAt,
+    String? lastDocumentId,
+    DateTime? lastDocumentDate,
+  ) async {
+    final box = await _openBox(_dailyBoxName(userId));
+    box.put(
+      'state',
+      <String, dynamic>{
+        'fetchedAt': fetchedAt.toIso8601String(),
+        'hasMore': hasMore,
+        'lastDocumentId': lastDocumentId,
+        'lastDocumentDate': lastDocumentDate?.toIso8601String(),
+        'entries': entries.map(_serializeSummary).toList(growable: false),
+      },
+    );
+  }
+
+  Future<_PersistedDailyState?> _readPersistedDaily(String userId) async {
+    final box = await _openBox(_dailyBoxName(userId));
+    final raw = box.get('state');
+    if (raw is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(raw as Map);
+    final fetchedAtIso = map['fetchedAt'] as String?;
+    if (fetchedAtIso == null) {
+      return null;
+    }
+    final fetchedAt = DateTime.tryParse(fetchedAtIso);
+    if (fetchedAt == null) {
+      return null;
+    }
+    final entriesRaw = map['entries'];
+    if (entriesRaw is! List) {
+      return null;
+    }
+    final entries = entriesRaw
+        .whereType<Map>()
+        .map((entry) => _deserializeSummary(Map<String, dynamic>.from(entry)))
+        .toList(growable: false);
+    final hasMore = map['hasMore'] as bool? ?? false;
+    final lastDocumentId = map['lastDocumentId'] as String?;
+    final lastDocumentDateIso = map['lastDocumentDate'] as String?;
+    final lastDocumentDate =
+        lastDocumentDateIso != null ? DateTime.tryParse(lastDocumentDateIso) : null;
+    return _PersistedDailyState(
+      entries: entries,
+      hasMore: hasMore,
+      fetchedAt: fetchedAt,
+      lastDocumentId: lastDocumentId,
+      lastDocumentDate: lastDocumentDate,
+    );
+  }
+
+  Future<void> _clearPersistedDaily(String userId) async {
+    final box = await _openBox(_dailyBoxName(userId));
+    await box.delete('state');
+  }
+
+  Future<void> _writePersistedAggregate(
+    String userId,
+    TrainingSummaryAggregate aggregate,
+    DateTime fetchedAt,
+  ) async {
+    final box = await _openBox(_aggregateBoxName(userId));
+    await box.put(
+      'aggregate',
+      <String, dynamic>{
+        'fetchedAt': fetchedAt.toIso8601String(),
+        'value': _serializeAggregate(aggregate),
+      },
+    );
+  }
+
+  Future<_PersistedAggregate?> _readPersistedAggregate(String userId) async {
+    final box = await _openBox(_aggregateBoxName(userId));
+    final raw = box.get('aggregate');
+    if (raw is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(raw as Map);
+    final fetchedAtIso = map['fetchedAt'] as String?;
+    final fetchedAt = fetchedAtIso != null ? DateTime.tryParse(fetchedAtIso) : null;
+    final value = map['value'];
+    if (fetchedAt == null || value is! Map) {
+      return null;
+    }
+    final aggregate =
+        _deserializeAggregate(Map<String, dynamic>.from(value as Map));
+    return _PersistedAggregate(aggregate: aggregate, fetchedAt: fetchedAt);
+  }
+
+  Future<void> _clearPersistedAggregate(String userId) async {
+    final box = await _openBox(_aggregateBoxName(userId));
+    await box.delete('aggregate');
+  }
+
+  Map<String, dynamic> _serializeSummary(TrainingSummary summary) {
+    return <String, dynamic>{
+      'dateKey': summary.dateKey,
+      'date': summary.date.toIso8601String(),
+      'logCount': summary.logCount,
+      'totalSessions': summary.totalSessions,
+      'favoriteExercises': summary.favoriteExercises
+          .map((usage) => <String, dynamic>{
+                'name': usage.name,
+                'sessionCount': usage.sessionCount,
+              })
+          .toList(growable: false),
+      'muscleGroups': summary.muscleGroups
+          .map((usage) => <String, dynamic>{
+                'name': usage.name,
+                'sessionCount': usage.sessionCount,
+              })
+          .toList(growable: false),
+      'sessionCounts': summary.sessionCounts.map((key, value) => MapEntry(
+            key,
+            <String, dynamic>{
+              'count': value.count,
+              'gymId': value.gymId,
+              'deviceId': value.deviceId,
+            },
+          )),
+      'deviceCounts': Map<String, int>.from(summary.deviceCounts),
+    };
+  }
+
+  TrainingSummary _deserializeSummary(Map<String, dynamic> raw) {
+    final dateIso = raw['date'] as String?;
+    final date = dateIso != null ? DateTime.tryParse(dateIso) ?? DateTime.now() : DateTime.now();
+    final sessionCountsRaw = raw['sessionCounts'];
+    return TrainingSummary(
+      dateKey: raw['dateKey'] as String? ?? '',
+      date: date,
+      logCount: (raw['logCount'] as num?)?.toInt() ?? 0,
+      totalSessions: (raw['totalSessions'] as num?)?.toInt() ?? 0,
+      favoriteExercises:
+          _deserializeFavoriteExercises(raw['favoriteExercises']) ?? const <FavoriteExerciseUsage>[],
+      muscleGroups: _deserializeMuscleGroups(raw['muscleGroups']) ?? const <MuscleGroupUsage>[],
+      sessionCounts: _deserializeSessionCounts(sessionCountsRaw),
+      deviceCounts: _deserializeDeviceCounts(raw['deviceCounts']),
+    );
+  }
+
+  Map<String, SessionCountInfo> _deserializeSessionCounts(dynamic raw) {
+    if (raw is! Map) {
+      return <String, SessionCountInfo>{};
+    }
+    final result = <String, SessionCountInfo>{};
+    raw.forEach((key, value) {
+      if (value is Map) {
+        final data = Map<String, dynamic>.from(value as Map);
+        result[key as String] = SessionCountInfo(
+          count: (data['count'] as num?)?.toInt() ?? 0,
+          gymId: data['gymId'] as String?,
+          deviceId: data['deviceId'] as String?,
+        );
+      }
+    });
+    return result;
+  }
+
+  Map<String, int> _deserializeDeviceCounts(dynamic raw) {
+    if (raw is! Map) {
+      return <String, int>{};
+    }
+    final map = Map<String, dynamic>.from(raw as Map);
+    return map.map((key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0));
+  }
+
+  List<FavoriteExerciseUsage>? _deserializeFavoriteExercises(dynamic raw) {
+    if (raw is! List) {
+      return null;
+    }
+    return raw
+        .whereType<Map>()
+        .map((entry) {
+          final data = Map<String, dynamic>.from(entry);
+          return FavoriteExerciseUsage(
+            name: (data['name'] as String?) ?? '—',
+            sessionCount: (data['sessionCount'] as num?)?.toInt() ?? 0,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  List<MuscleGroupUsage>? _deserializeMuscleGroups(dynamic raw) {
+    if (raw is! List) {
+      return null;
+    }
+    return raw
+        .whereType<Map>()
+        .map((entry) {
+          final data = Map<String, dynamic>.from(entry);
+          return MuscleGroupUsage(
+            name: (data['name'] as String?) ?? '—',
+            sessionCount: (data['sessionCount'] as num?)?.toInt() ?? 0,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  Map<String, dynamic> _serializeAggregate(TrainingSummaryAggregate aggregate) {
+    return <String, dynamic>{
+      'trainingDayCount': aggregate.trainingDayCount,
+      'averageTrainingDaysPerWeek': aggregate.averageTrainingDaysPerWeek,
+      'favoriteExercises': aggregate.favoriteExercises
+          .map((usage) => <String, dynamic>{
+                'name': usage.name,
+                'sessionCount': usage.sessionCount,
+              })
+          .toList(growable: false),
+      'muscleGroups': aggregate.muscleGroups
+          .map((usage) => <String, dynamic>{
+                'name': usage.name,
+                'sessionCount': usage.sessionCount,
+              })
+          .toList(growable: false),
+      'totalSessions': aggregate.totalSessions,
+      'firstWorkoutDate': aggregate.firstWorkoutDate?.toIso8601String(),
+      'lastWorkoutDate': aggregate.lastWorkoutDate?.toIso8601String(),
+      'deviceCounts': Map<String, int>.from(aggregate.deviceCounts),
+    };
+  }
+
+  TrainingSummaryAggregate _deserializeAggregate(Map<String, dynamic> raw) {
+    final favoriteExercises = _deserializeFavoriteExercises(raw['favoriteExercises']) ??
+        const <FavoriteExerciseUsage>[];
+    final muscleGroups =
+        _deserializeMuscleGroups(raw['muscleGroups']) ?? const <MuscleGroupUsage>[];
+    final firstWorkoutIso = raw['firstWorkoutDate'] as String?;
+    final lastWorkoutIso = raw['lastWorkoutDate'] as String?;
+    return TrainingSummaryAggregate(
+      trainingDayCount: (raw['trainingDayCount'] as num?)?.toInt() ?? 0,
+      averageTrainingDaysPerWeek: (raw['averageTrainingDaysPerWeek'] as num?)?.toDouble() ?? 0,
+      favoriteExercises: favoriteExercises,
+      muscleGroups: muscleGroups,
+      totalSessions: (raw['totalSessions'] as num?)?.toInt() ?? 0,
+      firstWorkoutDate:
+          firstWorkoutIso != null ? DateTime.tryParse(firstWorkoutIso) : null,
+      lastWorkoutDate: lastWorkoutIso != null ? DateTime.tryParse(lastWorkoutIso) : null,
+      deviceCounts: _deserializeDeviceCounts(raw['deviceCounts']),
+    );
+  }
+
+  String _dailyBoxName(String userId) => 'summary_daily_${_sanitizeId(userId)}';
+
+  String _aggregateBoxName(String userId) => 'summary_agg_${_sanitizeId(userId)}';
+
+  String _sanitizeId(String value) {
+    return value.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+  }
 }
 
 class _CacheEntry {
@@ -427,14 +761,18 @@ class _CacheEntry {
     this.aggregateFetchedAt,
     this.hasMore = true,
     this.fetchedAt,
+    this.lastDocumentId,
+    this.lastDocumentDate,
   });
 
   final List<TrainingSummary> entries;
-  QueryDocumentSnapshot<Map<String, dynamic>>? lastDocument;
+  DocumentSnapshot<Map<String, dynamic>>? lastDocument;
   TrainingSummaryAggregate? aggregate;
   DateTime? aggregateFetchedAt;
   bool hasMore;
   DateTime? fetchedAt;
+  String? lastDocumentId;
+  DateTime? lastDocumentDate;
 
   factory _CacheEntry.empty() {
     return _CacheEntry(entries: <TrainingSummary>[]);
@@ -447,6 +785,8 @@ class _CacheEntry {
     aggregateFetchedAt = null;
     hasMore = true;
     fetchedAt = null;
+    lastDocumentId = null;
+    lastDocumentDate = null;
   }
 }
 
@@ -457,5 +797,31 @@ class _GroupCacheEntry {
   });
 
   final Map<String, List<String>> deviceIdsByGroup;
+  final DateTime fetchedAt;
+}
+
+class _PersistedDailyState {
+  const _PersistedDailyState({
+    required this.entries,
+    required this.hasMore,
+    required this.fetchedAt,
+    required this.lastDocumentId,
+    required this.lastDocumentDate,
+  });
+
+  final List<TrainingSummary> entries;
+  final bool hasMore;
+  final DateTime fetchedAt;
+  final String? lastDocumentId;
+  final DateTime? lastDocumentDate;
+}
+
+class _PersistedAggregate {
+  const _PersistedAggregate({
+    required this.aggregate,
+    required this.fetchedAt,
+  });
+
+  final TrainingSummaryAggregate aggregate;
   final DateTime fetchedAt;
 }
