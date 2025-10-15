@@ -22,4 +22,18 @@ rg --no-heading --line-number "collectionGroup\('" lib | while read -r line; do
   fi
 done
 
+echo "\n🔎 Searching for Query.get() calls that miss a limit()"
+rg --no-heading --line-number "\.get\(" lib | while read -r line; do
+  file="${line%%:*}"
+  rest="${line#*:}"
+  lineno="${rest%%:*}"
+  snippet="$(sed -n "$((lineno-5)),$((lineno+1))p" "$file" | tr '\n' ' ')"
+  if [[ "$snippet" =~ \.doc\([^)]*\)\s*\.get\( ]]; then
+    continue
+  fi
+  if [[ "$snippet" =~ \.collection(Group)?\( ]] && [[ ! "$snippet" =~ \.limit\( ]]; then
+    printf '%s\n' "$line"
+  fi
+done
+
 echo "\nℹ️  Review the output above and ensure new queries keep limits and caches in place."

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
@@ -8,22 +9,26 @@ class FakeReportRepository implements ReportRepository {
   int usageCalls = 0;
   int timeCalls = 0;
 
-  DateTime? lastSince;
+  DeviceUsageRange? lastRange;
 
   @override
   Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
-    String gymId, {
-    DateTime? since,
+    String gymId,
+    DeviceUsageRange range, {
+    bool forceRefresh = false,
   }) async {
     usageCalls++;
-    lastSince = since;
+    lastRange = range;
     return const [
       DeviceUsageStat(id: 'd1', name: 'Device', sessions: 1),
     ];
   }
 
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async {
+  Future<List<DateTime>> fetchRecentLogTimestamps(
+    String gymId, {
+    bool forceRefresh = false,
+  }) async {
     timeCalls++;
     return [DateTime(2024)];
   }
@@ -34,11 +39,13 @@ void main() {
     test('GetDeviceUsageStats delegates to repository', () async {
       final repo = FakeReportRepository();
       final usecase = GetDeviceUsageStats(repo);
-      final now = DateTime(2024, 01, 15);
-      final result = await usecase.execute('g1', since: now);
+      final result = await usecase.execute(
+        'g1',
+        range: DeviceUsageRange.last30Days,
+      );
       expect(result.first.sessions, 1);
       expect(repo.usageCalls, 1);
-      expect(repo.lastSince, now);
+      expect(repo.lastRange, DeviceUsageRange.last30Days);
     });
 
     test('GetAllLogTimestamps delegates to repository', () async {

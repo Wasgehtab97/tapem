@@ -6,11 +6,15 @@ class DeviceUsageStat {
   final String name;
   final String description;
   final int sessions;
+  final int totalSessions;
+  final DateTime? lastActive;
 
   const DeviceUsageStat({
     required this.id,
     required this.name,
     this.description = '',
     required this.sessions,
+    this.totalSessions = 0,
+    this.lastActive,
   });
 }

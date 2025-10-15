@@ -395,6 +395,26 @@
     "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
   },
 
+  "profileStatsNoSummaries": "Es sind noch keine Statistiken vorhanden.",
+  "@profileStatsNoSummaries": {
+    "description": "Hinweis, wenn keine Trainingszusammenfassungen existieren"
+  },
+
+  "profileStatsLegacyImportInfo": "Importiere deine älteren Trainings, um Statistiken zu sehen.",
+  "@profileStatsLegacyImportInfo": {
+    "description": "Hilfetext zum manuellen Import von alten Logs"
+  },
+
+  "profileStatsLegacyImportCta": "Jetzt importieren",
+  "@profileStatsLegacyImportCta": {
+    "description": "Schaltfläche zum Starten des Legacy-Imports"
+  },
+
+  "profileStatsLegacyImportInProgress": "Import wird ausgeführt …",
+  "@profileStatsLegacyImportInProgress": {
+    "description": "Statusanzeige während des Imports"
+  },
+
   "profileLoadMoreButton": "Mehr Tage laden",
   "@profileLoadMoreButton": {
     "description": "Button, der zusätzliche Trainingszusammenfassungen lädt"
@@ -1104,6 +1124,8 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportRefreshButton": "Aktualisieren"
+  ,"@reportRefreshButton": {"description": "Button zum manuellen Aktualisieren des Reports"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
   ,"reportUsageRange7Days": "Letzte 7 Tage"

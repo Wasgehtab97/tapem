@@ -2,29 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 
 enum ReportState { initial, loading, loaded, error }
-
-enum DeviceUsageRange { last7Days, last30Days, last90Days, last365Days, all }
-
-extension DeviceUsageRangeX on DeviceUsageRange {
-  DateTime? resolveSince(DateTime now) {
-    switch (this) {
-      case DeviceUsageRange.last7Days:
-        return now.subtract(const Duration(days: 7));
-      case DeviceUsageRange.last30Days:
-        return now.subtract(const Duration(days: 30));
-      case DeviceUsageRange.last90Days:
-        return now.subtract(const Duration(days: 90));
-      case DeviceUsageRange.last365Days:
-        return now.subtract(const Duration(days: 365));
-      case DeviceUsageRange.all:
-        return null;
-    }
-  }
-}
 
 class ReportProvider extends ChangeNotifier {
   final GetDeviceUsageStats _getUsage;
@@ -37,6 +19,9 @@ class ReportProvider extends ChangeNotifier {
   DeviceUsageRange usageRange = DeviceUsageRange.last30Days;
 
   String? _currentGymId;
+  DateTime? _lastFetch;
+  Future<void>? _activeLoad;
+  static const Duration _cacheTtl = Duration(minutes: 5);
 
   ReportProvider({
     required GetDeviceUsageStats getUsageStats,
@@ -44,32 +29,40 @@ class ReportProvider extends ChangeNotifier {
   }) : _getUsage = getUsageStats,
        _getTimestamps = getLogTimestamps;
 
-  Future<void> loadReport(String gymId) async {
+  Future<void> loadReport(String gymId, {bool forceRefresh = false}) async {
     if (gymId.isEmpty) {
       state = ReportState.initial;
       usageStats = const [];
       heatmapDates = [];
       errorMessage = null;
       _currentGymId = null;
+      _lastFetch = null;
       notifyListeners();
       return;
     }
-    _currentGymId = gymId;
+    final now = DateTime.now();
+    final withinCache =
+        !forceRefresh && _currentGymId == gymId && _lastFetch != null &&
+        now.difference(_lastFetch!) < _cacheTtl && state == ReportState.loaded;
+    if (withinCache) {
+      return;
+    }
+
+    if (_activeLoad != null) {
+      return _activeLoad!;
+    }
+
     state = ReportState.loading;
     errorMessage = null;
+    _currentGymId = gymId;
     notifyListeners();
-    try {
-      final usageFuture = _fetchUsageStats(gymId);
-      final timestampsFuture = _getTimestamps.execute(gymId);
 
-      usageStats = await usageFuture;
-      heatmapDates = await timestampsFuture;
-      state = ReportState.loaded;
-    } catch (e) {
-      errorMessage = e.toString();
-      state = ReportState.error;
-    }
-    notifyListeners();
+    final future = _loadData(gymId, forceRefresh: forceRefresh)
+        .whenComplete(() {
+      _activeLoad = null;
+    });
+    _activeLoad = future;
+    return future;
   }
 
   Future<void> changeUsageRange(DeviceUsageRange range) async {
@@ -85,7 +78,10 @@ class ReportProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      usageStats = await _fetchUsageStats(_currentGymId!);
+      usageStats = await _getUsage.execute(
+        _currentGymId!,
+        range: usageRange,
+      );
       state = ReportState.loaded;
     } catch (e) {
       errorMessage = e.toString();
@@ -94,9 +90,34 @@ class ReportProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<DeviceUsageStat>> _fetchUsageStats(String gymId) {
-    final now = DateTime.now();
-    final since = usageRange.resolveSince(now);
-    return _getUsage.execute(gymId, since: since);
+  Future<void> refresh() {
+    final gymId = _currentGymId;
+    if (gymId == null || gymId.isEmpty) {
+      return Future<void>.value();
+    }
+    return loadReport(gymId, forceRefresh: true);
+  }
+
+  Future<void> _loadData(String gymId, {required bool forceRefresh}) async {
+    try {
+      final usageFuture = _getUsage.execute(
+        gymId,
+        range: usageRange,
+        forceRefresh: forceRefresh,
+      );
+      final timestampsFuture = _getTimestamps.execute(
+        gymId,
+        forceRefresh: forceRefresh,
+      );
+
+      usageStats = await usageFuture;
+      heatmapDates = await timestampsFuture;
+      state = ReportState.loaded;
+      _lastFetch = DateTime.now();
+    } catch (e) {
+      errorMessage = e.toString();
+      state = ReportState.error;
+    }
+    notifyListeners();
   }
 }

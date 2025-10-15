@@ -317,6 +317,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
+  String get profileStatsNoSummaries => 'No statistics available yet.';
+
+  @override
+  String get profileStatsLegacyImportInfo =>
+      'Import your older training sessions to populate these insights.';
+
+  @override
+  String get profileStatsLegacyImportCta => 'Import now';
+
+  @override
+  String get profileStatsLegacyImportInProgress => 'Importing…';
+
+  @override
   String get profileLoadMoreButton => 'Load more days';
 
   @override
@@ -1089,6 +1102,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportViewSurveysTitle => 'View surveys';
+
+  @override
+  String get reportRefreshButton => 'Refresh';
 
   @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';

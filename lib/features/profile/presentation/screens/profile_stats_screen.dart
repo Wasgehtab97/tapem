@@ -57,6 +57,10 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
         return const Center(child: CircularProgressIndicator());
       }
 
+      if (!prov.isLoading && prov.trainingDates.isEmpty) {
+        return _buildEmptyState(context, loc, prov);
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -126,6 +130,56 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyState(
+    BuildContext context,
+    AppLocalizations loc,
+    ProfileProvider prov,
+  ) {
+    final theme = Theme.of(context);
+    final children = <Widget>[
+      Text(
+        loc.profileStatsNoSummaries,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.titleMedium,
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        loc.profileStatsLegacyImportInfo,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium,
+      ),
+      const SizedBox(height: AppSpacing.md),
+    ];
+
+    if (prov.isLegacyImporting) {
+      children.addAll([
+        const CircularProgressIndicator(),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          loc.profileStatsLegacyImportInProgress,
+          style: theme.textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+      ]);
+    } else if (prov.needsLegacyImport || prov.hasLegacyImportAttempted) {
+      children.add(
+        ElevatedButton.icon(
+          onPressed: () => prov.importLegacyTrainingData(context),
+          icon: const Icon(Icons.cloud_download_outlined),
+          label: Text(loc.profileStatsLegacyImportCta),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        ...children,
+      ],
     );
   }
 

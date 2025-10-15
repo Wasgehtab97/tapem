@@ -61,6 +61,7 @@ class TrainingSummaryAggregate {
     required this.totalSessions,
     required this.firstWorkoutDate,
     required this.lastWorkoutDate,
+    required this.deviceCounts,
   });
 
   final int trainingDayCount;
@@ -70,6 +71,7 @@ class TrainingSummaryAggregate {
   final int totalSessions;
   final DateTime? firstWorkoutDate;
   final DateTime? lastWorkoutDate;
+  final Map<String, int> deviceCounts;
 }
 
 class TrainingSummaryState {
@@ -102,6 +104,7 @@ class TrainingSummaryService {
   final int _pageSize;
   final void Function()? _onRead;
   final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
+  final Map<String, _GroupCacheEntry> _groupCache = <String, _GroupCacheEntry>{};
 
   Future<TrainingSummaryState> loadSummaries({
     required String userId,
@@ -163,6 +166,56 @@ class TrainingSummaryService {
     _cache.remove(userId);
   }
 
+  Future<Map<String, int>> fetchGroupUsageCounts({
+    required String gymId,
+    required String userId,
+    bool forceRefresh = false,
+  }) async {
+    final cache = _cache.putIfAbsent(userId, () => _CacheEntry.empty());
+    final aggregate = await _ensureAggregate(
+      userId,
+      cache,
+      refresh: forceRefresh,
+    );
+
+    if (aggregate.deviceCounts.isEmpty) {
+      return const <String, int>{};
+    }
+
+    final groupCache = _groupCache[gymId];
+    if (!forceRefresh && groupCache != null && !_isExpired(groupCache.fetchedAt)) {
+      return _mapDeviceCountsToGroups(
+        aggregate.deviceCounts,
+        groupCache.deviceIdsByGroup,
+      );
+    }
+
+    final snap = await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('muscleGroups')
+        .get();
+    _onRead?.call();
+
+    final deviceIdsByGroup = <String, List<String>>{};
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final primary = _extractIdList(data['primaryDeviceIds']);
+      final secondary = _extractIdList(data['secondaryDeviceIds']);
+      deviceIdsByGroup[doc.id] = [...primary, ...secondary];
+    }
+
+    _groupCache[gymId] = _GroupCacheEntry(
+      deviceIdsByGroup: deviceIdsByGroup,
+      fetchedAt: DateTime.now(),
+    );
+
+    return _mapDeviceCountsToGroups(
+      aggregate.deviceCounts,
+      deviceIdsByGroup,
+    );
+  }
+
   Query<Map<String, dynamic>> _baseQuery(
     String userId,
     QueryDocumentSnapshot<Map<String, dynamic>>? lastDocument,
@@ -199,6 +252,28 @@ class TrainingSummaryService {
     cache.aggregate = aggregate;
     cache.aggregateFetchedAt = DateTime.now();
     return aggregate;
+  }
+
+  Map<String, int> _mapDeviceCountsToGroups(
+    Map<String, int> deviceCounts,
+    Map<String, List<String>> deviceIdsByGroup,
+  ) {
+    final result = <String, int>{};
+    deviceIdsByGroup.forEach((groupId, deviceIds) {
+      var sum = 0;
+      for (final deviceId in deviceIds) {
+        sum += deviceCounts[deviceId] ?? 0;
+      }
+      result[groupId] = sum;
+    });
+    return result;
+  }
+
+  List<String> _extractIdList(dynamic raw) {
+    if (raw is Iterable) {
+      return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
+    return const <String>[];
   }
 
   bool _isExpired(DateTime? timestamp) {
@@ -240,12 +315,14 @@ class TrainingSummaryService {
         totalSessions: 0,
         firstWorkoutDate: null,
         lastWorkoutDate: null,
+        deviceCounts: <String, int>{},
       );
     }
     final favoriteExercises = _mapFavoriteExercises(data['favoriteExercises']);
     final muscleGroups = _mapMuscleGroups(data['muscleGroups']);
     final firstWorkoutDate = _timestampToDate(data['firstWorkoutDate']);
     final lastWorkoutDate = _timestampToDate(data['lastWorkoutDate']);
+    final deviceCounts = _mapCountMap(data['deviceCounts']);
     return TrainingSummaryAggregate(
       trainingDayCount: (data['trainingDayCount'] as num?)?.toInt() ?? 0,
       averageTrainingDaysPerWeek: (data['averageTrainingDaysPerWeek'] as num?)?.toDouble() ?? 0,
@@ -254,6 +331,7 @@ class TrainingSummaryService {
       totalSessions: (data['totalSessions'] as num?)?.toInt() ?? 0,
       firstWorkoutDate: firstWorkoutDate,
       lastWorkoutDate: lastWorkoutDate,
+      deviceCounts: deviceCounts,
     );
   }
 
@@ -370,4 +448,14 @@ class _CacheEntry {
     hasMore = true;
     fetchedAt = null;
   }
+}
+
+class _GroupCacheEntry {
+  _GroupCacheEntry({
+    required this.deviceIdsByGroup,
+    required this.fetchedAt,
+  });
+
+  final Map<String, List<String>> deviceIdsByGroup;
+  final DateTime fetchedAt;
 }
