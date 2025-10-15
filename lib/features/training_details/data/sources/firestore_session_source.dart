@@ -55,18 +55,13 @@ class FirestoreSessionSource {
 
       final results = <SessionDto>[];
       for (final target in targets) {
-        final query = _firestore
-            .collection('gyms')
-            .doc(target.gymId)
-            .collection('devices')
-            .doc(target.deviceId)
-            .collection('logs')
-            .where('sessionId', isEqualTo: target.sessionId)
-            .where('userId', isEqualTo: userId)
-            .orderBy('timestamp', descending: false)
-            .limit(500);
-        final snap = await query.get();
-        results.addAll(snap.docs.map(SessionDto.fromFirestore));
+        final entries = await _fetchSessionLogs(
+          gymId: target.gymId,
+          deviceId: target.deviceId,
+          sessionId: target.sessionId,
+          userId: userId,
+        );
+        results.addAll(entries);
       }
       return results;
     } on FirebaseException catch (e) {
@@ -95,17 +90,12 @@ class FirestoreSessionSource {
     required String sessionId,
     required String userId,
   }) async {
-    final collection = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('devices')
-        .doc(deviceId)
-        .collection('logs');
-    final snap = await collection
-        .where('sessionId', isEqualTo: sessionId)
-        .where('userId', isEqualTo: userId)
-        .get();
-    return snap.docs.map(SessionDto.fromFirestore).toList();
+    return _fetchSessionLogs(
+      gymId: gymId,
+      deviceId: deviceId,
+      sessionId: sessionId,
+      userId: userId,
+    );
   }
 
   Future<void> deleteSessionEntries(List<SessionDto> entries) async {
@@ -121,6 +111,47 @@ class FirestoreSessionSource {
       await batch.commit();
       index += chunkSize;
     }
+  }
+}
+
+const int _kLogPageSize = 50;
+
+extension on FirestoreSessionSource {
+  Future<List<SessionDto>> _fetchSessionLogs({
+    required String gymId,
+    required String deviceId,
+    required String sessionId,
+    required String userId,
+  }) async {
+    final collection = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('logs');
+
+    final results = <SessionDto>[];
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+    while (true) {
+      var query = collection
+          .where('sessionId', isEqualTo: sessionId)
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: false)
+          .limit(_kLogPageSize);
+      if (lastDoc != null) {
+        query = query.startAfterDocument(lastDoc);
+      }
+      final snap = await query.get();
+      if (snap.docs.isEmpty) {
+        break;
+      }
+      results.addAll(snap.docs.map(SessionDto.fromFirestore));
+      if (snap.docs.length < _kLogPageSize) {
+        break;
+      }
+      lastDoc = snap.docs.last;
+    }
+    return results;
   }
 }
 
