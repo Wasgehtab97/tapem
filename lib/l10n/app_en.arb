@@ -395,6 +395,26 @@
     "description": "Button label that opens the powerlifting overview"
   },
 
+  "profileStatsNoSummaries": "No statistics available yet.",
+  "@profileStatsNoSummaries": {
+    "description": "Shown when no training summary data exists"
+  },
+
+  "profileStatsLegacyImportInfo": "Import your older training sessions to populate these insights.",
+  "@profileStatsLegacyImportInfo": {
+    "description": "Helper text explaining the legacy import"
+  },
+
+  "profileStatsLegacyImportCta": "Import now",
+  "@profileStatsLegacyImportCta": {
+    "description": "Button label to trigger the legacy statistics import"
+  },
+
+  "profileStatsLegacyImportInProgress": "Importing…",
+  "@profileStatsLegacyImportInProgress": {
+    "description": "Status label displayed while the legacy import runs"
+  },
+
   "profileLoadMoreButton": "Load more days",
   "@profileLoadMoreButton": {
     "description": "Button that loads additional training summaries"
@@ -1102,6 +1122,8 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportRefreshButton": "Refresh"
+  ,"@reportRefreshButton": {"description": "Button label for manually refreshing the report"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"

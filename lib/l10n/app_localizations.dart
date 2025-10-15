@@ -665,6 +665,14 @@ abstract class AppLocalizations {
   /// **'Powerlifting'**
   String get profileStatsPowerliftingButton;
 
+  String get profileStatsNoSummaries;
+
+  String get profileStatsLegacyImportInfo;
+
+  String get profileStatsLegacyImportCta;
+
+  String get profileStatsLegacyImportInProgress;
+
   /// Label for the button that loads additional training summaries.
   String get profileLoadMoreButton;
 
@@ -2095,6 +2103,8 @@ abstract class AppLocalizations {
 
   /// No description provided for @reportViewSurveysTitle.
   String get reportViewSurveysTitle;
+
+  String get reportRefreshButton;
 
   /// No description provided for @reportDeviceFilterHint.
   String get reportDeviceFilterHint;

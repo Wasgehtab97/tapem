@@ -317,6 +317,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
+  String get profileStatsNoSummaries =>
+      'Es sind noch keine Statistiken vorhanden.';
+
+  @override
+  String get profileStatsLegacyImportInfo =>
+      'Importiere deine älteren Trainings, um Statistiken zu sehen.';
+
+  @override
+  String get profileStatsLegacyImportCta => 'Jetzt importieren';
+
+  @override
+  String get profileStatsLegacyImportInProgress => 'Import wird ausgeführt …';
+
+  @override
   String get profileLoadMoreButton => 'Mehr Tage laden';
 
   @override
@@ -1089,6 +1103,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportViewSurveysTitle => 'Umfragen ansehen';
+
+  @override
+  String get reportRefreshButton => 'Aktualisieren';
 
   @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
