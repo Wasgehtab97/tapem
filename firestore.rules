@@ -112,6 +112,23 @@ service cloud.firestore {
     }
 
     // ─────────────────────────
+    // Training summaries (owner-only read access)
+    // ─────────────────────────
+    match /trainingSummary/{userId} {
+      allow read, write: if false;
+
+      match /daily/{summaryId} {
+        allow read: if isOwner(userId) || isGlobalAdmin();
+        allow write: if false;
+      }
+
+      match /aggregate/{docId} {
+        allow read: if isOwner(userId) || isGlobalAdmin();
+        allow write: if false;
+      }
+    }
+
+    // ─────────────────────────
     // Activity stream (server only)
     // ─────────────────────────
     match /gyms/{gymId}/activity/{eventId} {
