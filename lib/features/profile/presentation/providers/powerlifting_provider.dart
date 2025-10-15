@@ -258,8 +258,8 @@ class PowerliftingProvider extends ChangeNotifier {
       ]
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-      await _loadRecordsForDiscipline(discipline);
-      _ensureLogSubscription(assignment);
+      await _reloadAssignmentAggregate(assignment);
+      await _composeRecordsFromAggregates();
       return true;
     } catch (e) {
       _error = e.toString();
@@ -453,6 +453,58 @@ class PowerliftingProvider extends ChangeNotifier {
         PowerliftingMetric.e1rm: e1rm,
       };
     }
+  }
+
+  Future<void> _reloadAssignmentAggregate(
+    PowerliftingAssignment assignment,
+  ) async {
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) {
+      return;
+    }
+
+    final ref = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection(_assignmentCollection)
+        .doc(assignment.id);
+
+    FirestoreReadLogger.logStart(
+      scope: 'profile.powerlifting',
+      path: ref.path,
+      operation: 'get',
+      reason: 'reloadAssignmentAggregate',
+    );
+    final snapshot = await ref.get();
+    FirestoreReadLogger.logResult(
+      scope: 'profile.powerlifting',
+      path: ref.path,
+      exists: snapshot.exists,
+      fromCache: snapshot.metadata.isFromCache,
+    );
+
+    if (!snapshot.exists) {
+      return;
+    }
+
+    final data = snapshot.data() ?? <String, dynamic>{};
+    final updated = PowerliftingAssignment.fromMap(snapshot.id, {
+      ...data,
+      'createdAt': (data['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+    });
+
+    final entries = _assignments[assignment.discipline];
+    if (entries == null) {
+      return;
+    }
+
+    final index = entries.indexWhere((a) => a.id == assignment.id);
+    if (index < 0) {
+      return;
+    }
+
+    entries[index] = updated;
   }
 
   Map<PowerliftingMetric, List<PowerliftingRecord>> _createEmptyRecordMap() => {

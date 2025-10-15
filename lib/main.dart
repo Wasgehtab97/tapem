@@ -341,14 +341,20 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (c) => FriendSearchProvider(c.read<UserSearchSource>()),
         ),
-        ChangeNotifierProvider(
-          create: (_) => FriendCalendarProvider(),
-        ),
         ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
           create: (_) => FriendPresenceProvider(),
           update: (_, friends, prov) {
             prov ??= FriendPresenceProvider();
             prov.updateUids(friends.friends.map((e) => e.friendUid).toList());
+            return prov;
+          },
+        ),
+        ChangeNotifierProxyProvider<FriendPresenceProvider,
+            FriendCalendarProvider>(
+          create: (_) => FriendCalendarProvider(),
+          update: (_, presence, prov) {
+            prov ??= FriendCalendarProvider();
+            prov.setPresenceProvider(presence);
             return prov;
           },
         ),

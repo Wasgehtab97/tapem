@@ -1,4 +1,5 @@
 import 'device_xp_result.dart';
+import 'xp_limits.dart';
 import 'xp_paged_result.dart';
 
 abstract class XpRepository {
@@ -30,14 +31,14 @@ abstract class XpRepository {
   Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 10,
+    int limit = kXpHistoryPageLimit,
     String? startAfter,
     bool forceRemote = false,
   });
 
   Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 10,
+    int limit = kXpTrainingDayPageLimit,
     String? startAfter,
     bool forceRemote = false,
   });

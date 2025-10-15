@@ -52,7 +52,7 @@ class FakeXpRepository implements XpRepository {
   Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-    int limit = 30,
+    int limit = 10,
     bool forceRemote = false,
   }) async {
     return muscleHistory;
@@ -61,7 +61,7 @@ class FakeXpRepository implements XpRepository {
   @override
   Future<Map<String, int>> fetchTrainingDaysXp(
     String userId, {
-    int limit = 30,
+    int limit = 10,
     bool forceRemote = false,
   }) async {
     return trainingDays;

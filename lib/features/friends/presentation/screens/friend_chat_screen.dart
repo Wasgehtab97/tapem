@@ -35,6 +35,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   bool _sending = false;
   FriendChatMessagesProvider? _messagesProvider;
   String? _lastHandledMessageId;
+  ModalRoute<dynamic>? _route;
 
   @override
   void initState() {
@@ -48,6 +49,12 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (_route != route) {
+      _route?.removeListener(_onRouteChanged);
+      _route = route;
+      _route?.addListener(_onRouteChanged);
+    }
     _messagesProvider ??=
         FriendChatMessagesProvider(context.read<FriendChatSource>());
   }
@@ -65,8 +72,19 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     _scrollCtrl.removeListener(_onScroll);
     _messageCtrl.dispose();
     _scrollCtrl.dispose();
+    _route?.removeListener(_onRouteChanged);
+    _messagesProvider?.setVisibility(false);
     _messagesProvider?.dispose();
     super.dispose();
+  }
+
+  void _onRouteChanged() {
+    final provider = _messagesProvider;
+    if (provider == null) {
+      return;
+    }
+    final isActive = _route?.isCurrent ?? false;
+    provider.setVisibility(isActive);
   }
 
   Future<void> _sendMessage(AppLocalizations loc) async {
@@ -159,7 +177,12 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
         body: Center(child: Text(loc.friend_chat_login_required)),
       );
     }
-    provider.listen(meUid: meUid, friendUid: widget.friendUid);
+    final isVisible = _route?.isCurrent ?? true;
+    provider.listen(
+      meUid: meUid,
+      friendUid: widget.friendUid,
+      isVisible: isVisible,
+    );
     return ChangeNotifierProvider<FriendChatMessagesProvider>.value(
       value: provider,
       child: Scaffold(

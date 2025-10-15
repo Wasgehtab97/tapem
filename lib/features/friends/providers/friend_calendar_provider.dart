@@ -3,6 +3,8 @@ import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'friend_presence_provider.dart';
+
 /// Provides a lazily loaded view of a friend's workout activity.
 ///
 /// The previous implementation queried the raw `logs` collection group for an
@@ -16,10 +18,12 @@ class FriendCalendarProvider extends ChangeNotifier {
     Duration cacheTtl = const Duration(minutes: 5),
     int initialRangeDays = 30,
     int pageSize = 30,
+    FriendPresenceProvider? presence,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _cacheTtl = cacheTtl,
         _initialRangeDays = initialRangeDays,
-        _pageSize = pageSize;
+        _pageSize = pageSize,
+        _presence = presence;
 
   static const String _summaryRoot = 'logSummary';
   static const String _summaryCollection = 'days';
@@ -28,6 +32,7 @@ class FriendCalendarProvider extends ChangeNotifier {
   final Duration _cacheTtl;
   final int _initialRangeDays;
   final int _pageSize;
+  FriendPresenceProvider? _presence;
 
   String? _activeFriendUid;
   final SplayTreeSet<DateTime> _trainingDaySet =
@@ -99,6 +104,13 @@ class FriendCalendarProvider extends ChangeNotifier {
     _lastFetch = null;
   }
 
+  void setPresenceProvider(FriendPresenceProvider presence) {
+    if (identical(_presence, presence)) {
+      return;
+    }
+    _presence = presence;
+  }
+
   Future<void> _loadPage({
     required int limit,
     required bool reset,
@@ -160,6 +172,7 @@ class FriendCalendarProvider extends ChangeNotifier {
       _hasMore = snapshot.docs.length >= limit;
       _hasLoaded = true;
       _lastFetch = DateTime.now();
+      _propagatePresence(uid);
     } catch (e) {
       if (_activeFriendUid == uid) {
         _error = e.toString();
@@ -190,6 +203,20 @@ class FriendCalendarProvider extends ChangeNotifier {
       return DateTime(year, month, day);
     } catch (_) {
       return null;
+    }
+  }
+
+  void _propagatePresence(String uid) {
+    final presence = _presence;
+    if (presence == null) {
+      return;
+    }
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    if (_trainingDaySet.contains(todayDate)) {
+      presence.overridePresence(uid, PresenceState.workedOutToday);
+    } else if (presence.stateFor(uid) == PresenceState.unknown) {
+      presence.overridePresence(uid, PresenceState.notWorkedOutToday);
     }
   }
 }

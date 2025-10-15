@@ -12,7 +12,9 @@ class FriendChatMessagesProvider extends ChangeNotifier {
   final FriendChatSource _source;
 
   final Duration _cacheTtl = const Duration(minutes: 2);
-  final Duration _pollInterval = const Duration(seconds: 30);
+  // Poll at a relaxed cadence; users can always trigger [refresh] manually from
+  // the chat screen. Two to three minutes keeps background reads negligible.
+  final Duration _pollInterval = const Duration(minutes: 3);
 
   List<FriendMessage> _messages = const <FriendMessage>[];
   bool _loading = false;
@@ -23,13 +25,18 @@ class FriendChatMessagesProvider extends ChangeNotifier {
   String? _friendUid;
   DateTime? _lastFetch;
   Timer? _pollTimer;
+  bool _isActive = false;
 
   List<FriendMessage> get messages => List.unmodifiable(_messages);
   bool get isLoading => _loading;
   bool get isLoadingMore => _loadingMore;
   bool get hasMore => _hasMore;
 
-  void listen({required String meUid, required String friendUid}) {
+  void listen({
+    required String meUid,
+    required String friendUid,
+    bool isVisible = true,
+  }) {
     if (meUid.isEmpty || friendUid.isEmpty) {
       detach();
       return;
@@ -37,6 +44,7 @@ class FriendChatMessagesProvider extends ChangeNotifier {
     final changed = _meUid != meUid || _friendUid != friendUid;
     _meUid = meUid;
     _friendUid = friendUid;
+    _isActive = isVisible;
     if (changed) {
       final cached = _source.getCachedMessages(meUid, friendUid);
       if (cached.messages.isNotEmpty) {
@@ -52,7 +60,9 @@ class FriendChatMessagesProvider extends ChangeNotifier {
       }
       _lastFetch = null;
     }
-    unawaited(_load(force: changed));
+    if (_isActive) {
+      unawaited(_load(force: changed));
+    }
     _ensurePolling();
   }
 
@@ -71,6 +81,7 @@ class FriendChatMessagesProvider extends ChangeNotifier {
     _cursor = null;
     _hasMore = true;
     _lastFetch = null;
+    _isActive = false;
     _stopPolling();
     notifyListeners();
   }
@@ -79,6 +90,10 @@ class FriendChatMessagesProvider extends ChangeNotifier {
     final uid = _meUid;
     final friend = _friendUid;
     if (uid == null || friend == null) {
+      return;
+    }
+
+    if (!_isActive && !force) {
       return;
     }
 
@@ -140,13 +155,26 @@ class FriendChatMessagesProvider extends ChangeNotifier {
   }
 
   void _ensurePolling() {
-    if (_meUid == null || _friendUid == null) {
+    if (_meUid == null || _friendUid == null || !_isActive) {
       _stopPolling();
       return;
     }
     _pollTimer ??= Timer.periodic(_pollInterval, (_) {
       unawaited(_load());
     });
+  }
+
+  void setVisibility(bool isVisible) {
+    if (_isActive == isVisible) {
+      return;
+    }
+    _isActive = isVisible;
+    if (_isActive) {
+      unawaited(_load(force: true));
+    } else {
+      _stopPolling();
+    }
+    _ensurePolling();
   }
 
   void _stopPolling() {
