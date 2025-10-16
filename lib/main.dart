@@ -54,6 +54,7 @@ import 'package:tapem/features/friends/data/friend_chat_api.dart';
 import 'package:tapem/features/friends/data/friend_chat_source.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
 import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
+import 'package:tapem/features/friends/providers/friend_alerts_provider.dart';
 import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
 import 'package:tapem/features/friends/providers/friend_chat_summary_provider.dart';
 import 'package:tapem/features/creatine/data/creatine_repository.dart';
@@ -313,6 +314,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => FriendAlertsProvider()),
 
         // Friends feature
         Provider<FriendsApi>(create: (_) => FriendsApi()),
