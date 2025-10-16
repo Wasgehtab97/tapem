@@ -1,16 +1,23 @@
 // lib/core/providers/profile_provider.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/models/favorite_exercise_usage.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/services/training_summary_service.dart';
 
 class ProfileProvider extends ChangeNotifier {
-  ProfileProvider();
+  ProfileProvider({TrainingSummaryService? summaryService})
+      : _summaryService = summaryService ?? TrainingSummaryService();
 
+  final TrainingSummaryService _summaryService;
+  // Cached summary snapshots ensure that hot restarts do not trigger expensive
+  // collectionGroup reads. The service enforces a 10-minute TTL so the data
+  // stays reasonably fresh without hammering Firestore.
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
   List<String> _trainingDates = [];
   List<DateTime> _trainingDayDates = [];
@@ -22,8 +29,13 @@ class ProfileProvider extends ChangeNotifier {
   String? _pendingTrainingUserId;
   Future<void>? _inFlightTrainingLoad;
   bool _hasLoadedTrainingDates = false;
+  bool _hasMoreSummaries = true;
+  List<TrainingSummary> _summaries = [];
+  bool _hasSummaries = false;
+  bool _lastLoadFromCache = false;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
   List<String> get trainingDates => List.unmodifiable(_trainingDates);
   List<DateTime> get trainingDayDates => List.unmodifiable(_trainingDayDates);
@@ -32,6 +44,10 @@ class ProfileProvider extends ChangeNotifier {
   String? get favoriteExerciseName => _favoriteExerciseName;
   List<FavoriteExerciseUsage> get favoriteExerciseUsages =>
       List.unmodifiable(_favoriteExerciseUsages);
+  bool get hasMoreSummaries => _hasMoreSummaries;
+  List<TrainingSummary> get summaries => List.unmodifiable(_summaries);
+  bool get hasSummaries => _hasSummaries;
+  bool get lastLoadFromCache => _lastLoadFromCache;
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(
@@ -45,6 +61,10 @@ class ProfileProvider extends ChangeNotifier {
       _error = 'Kein Benutzer gefunden';
       notifyListeners();
       return Future<void>.value();
+    }
+
+    if (_lastLoadedUserId != null && _lastLoadedUserId != userId) {
+      _resetState();
     }
 
     if (!forceRefresh &&
@@ -62,9 +82,11 @@ class ProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final future = _fetchTrainingDates(
+    final future = _fetchTrainingSummaries(
       userId: userId,
       createdAt: authProv.createdAt,
+      forceRefresh: forceRefresh,
+      loadMore: false,
     );
     _pendingTrainingUserId = userId;
     _inFlightTrainingLoad = future.whenComplete(() {
@@ -74,71 +96,107 @@ class ProfileProvider extends ChangeNotifier {
     return _inFlightTrainingLoad!;
   }
 
-  Future<void> _fetchTrainingDates({
+  Future<void> loadMoreTrainingSummaries(BuildContext context) {
+    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProv.userId;
+    if (userId == null || !_hasMoreSummaries || _isLoadingMore) {
+      return Future<void>.value();
+    }
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    final future = _fetchTrainingSummaries(
+      userId: userId,
+      createdAt: authProv.createdAt,
+      forceRefresh: false,
+      loadMore: true,
+    );
+
+    return future.whenComplete(() {
+      _isLoadingMore = false;
+      notifyListeners();
+    });
+  }
+
+  void _resetState() {
+    _trainingDates = [];
+    _trainingDayDates = [];
+    _totalTrainingDays = 0;
+    _avgTrainingDaysPerWeek = 0;
+    _favoriteExerciseName = null;
+    _favoriteExerciseUsages = [];
+    _summaries = [];
+    _hasMoreSummaries = true;
+    _hasSummaries = false;
+    _lastLoadFromCache = false;
+    _hasLoadedTrainingDates = false;
+  }
+
+  Future<void> refreshSummaries(
+    BuildContext context, {
+    bool forceRemote = false,
+  }) {
+    return loadTrainingDates(
+      context,
+      forceRefresh: forceRemote,
+    );
+  }
+
+  TrainingSummary? summaryForDateKey(String dateKey) {
+    for (final summary in _summaries) {
+      if (summary.dateKey == dateKey) {
+        return summary;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _fetchTrainingSummaries({
     required String userId,
     required DateTime? createdAt,
+    required bool forceRefresh,
+    required bool loadMore,
   }) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collectionGroup('logs')
-          .where('userId', isEqualTo: userId)
-          .get();
+      final state = await _summaryService.loadSummaries(
+        userId: userId,
+        forceRefresh: forceRefresh,
+        loadMore: loadMore,
+      );
 
-      final dateSet = <DateTime>{};
-      final sessionAggregates = <String, _ExerciseAggregate>{};
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final timestamp = (data['timestamp'] as Timestamp).toDate();
-        final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
-        dateSet.add(day);
-
-        final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
-        if (sessionId.isEmpty) {
-          continue;
-        }
-
-        final deviceRef = doc.reference.parent.parent;
-        final deviceId = deviceRef?.id ?? '';
-        final gymRef = deviceRef?.parent.parent;
-        final gymId = gymRef?.id ?? '';
-        if (deviceId.isEmpty || gymId.isEmpty) {
-          continue;
-        }
-
-        final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
-        final key = '$gymId|$deviceId|$exerciseId';
-        final aggregate = sessionAggregates.putIfAbsent(
-          key,
-          () => _ExerciseAggregate(
-            gymId: gymId,
-            deviceId: deviceId,
-            exerciseId: exerciseId,
-          ),
-        );
-        aggregate.sessionIds.add(sessionId);
-      }
-
-      _trainingDayDates = dateSet.toList()
+      _summaries = state.entries;
+      _lastLoadFromCache = state.fromCache;
+      _trainingDayDates = _summaries
+          .map((summary) =>
+              DateTime(summary.date.year, summary.date.month, summary.date.day))
+          .toSet()
+          .toList()
         ..sort((a, b) => a.compareTo(b));
       _trainingDates = _trainingDayDates
           .map((dt) =>
               '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
           .toList();
-      _totalTrainingDays = _trainingDates.length;
-      _avgTrainingDaysPerWeek =
-          _calculateAverageTrainingDaysPerWeek(createdAt);
-      await _resolveFavoriteExercises(sessionAggregates.values);
+      _totalTrainingDays = state.aggregate.trainingDayCount;
+      _avgTrainingDaysPerWeek = state.aggregate.averageTrainingDaysPerWeek > 0
+          ? state.aggregate.averageTrainingDaysPerWeek
+          : _calculateAverageTrainingDaysPerWeek(createdAt);
+      _favoriteExerciseUsages = state.aggregate.favoriteExercises;
+      _favoriteExerciseName =
+          _favoriteExerciseUsages.isEmpty ? null : _favoriteExerciseUsages.first.name;
       _hasLoadedTrainingDates = true;
       _lastLoadedUserId = userId;
+      _hasMoreSummaries = state.hasMore;
+      _hasSummaries =
+          state.entries.isNotEmpty || state.aggregate.trainingDayCount > 0;
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
       _hasLoadedTrainingDates = false;
-      if (e is FirebaseException && e.code == 'failed-precondition') {
-        elogError('FIRESTORE_FAILED_PRECONDITION', e.message ?? e.toString(), st);
-      }
+      _hasMoreSummaries = false;
+      _hasSummaries = false;
+      elogError('PROFILE_PROVIDER_TRAINING_SUMMARY', e.toString(), st);
       debugPrintStack(
-        label: 'ProfileProvider.loadTrainingDates',
+        label: 'ProfileProvider.loadTrainingSummaries',
         stackTrace: st,
       );
     } finally {
@@ -211,102 +269,20 @@ class ProfileProvider extends ChangeNotifier {
     final daysToAdd = offset == 0 ? 7 : offset;
     return normalized.add(Duration(days: daysToAdd));
   }
-
-  Future<void> _resolveFavoriteExercises(
-    Iterable<_ExerciseAggregate> aggregates,
-  ) async {
-    if (aggregates.isEmpty) {
-      _favoriteExerciseUsages = [];
-      _favoriteExerciseName = null;
-      return;
-    }
-
-    final sortedAggregates = aggregates
-        .where((aggregate) => aggregate.sessionIds.isNotEmpty)
-        .toList()
-      ..sort(
-        (a, b) =>
-            b.sessionIds.length.compareTo(a.sessionIds.length),
-      );
-
-    final usages = <FavoriteExerciseUsage>[];
-
-    for (final aggregate in sortedAggregates.take(5)) {
-      final name = await _resolveExerciseName(aggregate);
-      usages.add(
-        FavoriteExerciseUsage(
-          name: name,
-          sessionCount: aggregate.sessionIds.length,
-        ),
-      );
-    }
-
-    _favoriteExerciseUsages = usages;
-    _favoriteExerciseName =
-        usages.isEmpty ? null : usages.first.name;
-  }
-
-  Future<String> _resolveExerciseName(_ExerciseAggregate aggregate) async {
-    try {
-      final deviceRef = FirebaseFirestore.instance
-          .collection('gyms')
-          .doc(aggregate.gymId)
-          .collection('devices')
-          .doc(aggregate.deviceId);
-      String deviceName = aggregate.deviceId;
-
-      final deviceSnap = await deviceRef.get();
-      if (deviceSnap.exists) {
-        final data = deviceSnap.data();
-        final name = data?['name'] as String?;
-        if (name != null && name.trim().isNotEmpty) {
-          deviceName = name.trim();
-        }
-      }
-
-      final exerciseId = aggregate.exerciseId;
-      if (exerciseId != null && exerciseId.isNotEmpty) {
-        try {
-          final exerciseSnap =
-              await deviceRef.collection('exercises').doc(exerciseId).get();
-          final exerciseName = exerciseSnap.data()?['name'] as String?;
-          if (exerciseName != null && exerciseName.trim().isNotEmpty) {
-            return exerciseName.trim();
-          }
-        } catch (_) {}
-      }
-
-      if (deviceName.trim().isEmpty) {
-        return '—';
-      }
-
-      return deviceName;
-    } catch (e, st) {
-      elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
-      return '—';
-    }
-  }
 }
 
-class _ExerciseAggregate {
-  _ExerciseAggregate({
-    required this.gymId,
-    required this.deviceId,
-    required this.exerciseId,
-  });
-
-  final String gymId;
-  final String deviceId;
-  final String? exerciseId;
-  final Set<String> sessionIds = <String>{};
-}
-
-class FavoriteExerciseUsage {
-  FavoriteExerciseUsage({
-    required this.name,
+class _LegacyImportResult {
+  const _LegacyImportResult({
+    required this.trainingDays,
+    required this.exerciseCounts,
     required this.sessionCount,
+    required this.firstWorkout,
+    required this.lastWorkout,
   });
 
-  final String name;
+  final Set<DateTime> trainingDays;
+  final Map<String, int> exerciseCounts;
   final int sessionCount;
+  final DateTime? firstWorkout;
+  final DateTime? lastWorkout;
 }

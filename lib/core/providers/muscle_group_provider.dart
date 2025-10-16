@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 
-import "../../main.dart";
 import '../providers/auth_provider.dart';
 import '../providers/gym_provider.dart';
 import '../../features/muscle_group/data/repositories/muscle_group_repository_impl.dart';
@@ -18,31 +17,29 @@ import '../../features/device/domain/usecases/update_device_muscle_groups_usecas
 import '../../features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../../features/device/data/repositories/device_repository_impl.dart';
 import '../../features/device/data/sources/firestore_device_source.dart';
-import '../../features/history/data/sources/firestore_history_source.dart';
-import '../../features/history/data/repositories/history_repository_impl.dart';
-import '../../features/history/domain/usecases/get_history_for_device.dart';
 import '../../services/membership_service.dart';
+import '../services/training_summary_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MuscleGroupProvider extends ChangeNotifier {
   final GetMuscleGroupsForGym _getGroups;
   final SaveMuscleGroup _saveGroup;
   final DeleteMuscleGroup _deleteGroup;
-  final GetHistoryForDevice _getHistory;
   final UpdateDeviceMuscleGroupsUseCase _updateDeviceGroups;
   final SetDeviceMuscleGroupsUseCase _setDeviceGroups;
   final EnsureRegionGroup _ensureRegionGroup;
   final MembershipService _membership;
+  final TrainingSummaryService _summaryService;
 
   MuscleGroupProvider({
     GetMuscleGroupsForGym? getGroups,
     SaveMuscleGroup? saveGroup,
     DeleteMuscleGroup? deleteGroup,
-    GetHistoryForDevice? getHistory,
     UpdateDeviceMuscleGroupsUseCase? updateDeviceGroups,
     SetDeviceMuscleGroupsUseCase? setDeviceGroups,
     EnsureRegionGroup? ensureRegionGroup,
     MembershipService? membership,
+    TrainingSummaryService? summaryService,
   })  : _getGroups =
            getGroups ??
            GetMuscleGroupsForGym(
@@ -58,9 +55,6 @@ class MuscleGroupProvider extends ChangeNotifier {
            DeleteMuscleGroup(
              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
            ),
-       _getHistory =
-           getHistory ??
-           GetHistoryForDevice(HistoryRepositoryImpl(FirestoreHistorySource())),
        _updateDeviceGroups =
            updateDeviceGroups ??
            UpdateDeviceMuscleGroupsUseCase(
@@ -76,7 +70,8 @@ class MuscleGroupProvider extends ChangeNotifier {
            EnsureRegionGroup(
              MuscleGroupRepositoryImpl(FirestoreMuscleGroupSource()),
            ),
-       _membership = membership ?? FirestoreMembershipService();
+       _membership = membership ?? FirestoreMembershipService(),
+       _summaryService = summaryService ?? TrainingSummaryService();
 
   bool _isLoading = false;
   String? _error;
@@ -117,7 +112,11 @@ class MuscleGroupProvider extends ChangeNotifier {
     }
 
     _activeLoad ??=
-        _performLoad(gymId: gymId, userId: userId).whenComplete(() {
+        _performLoad(
+          gymId: gymId,
+          userId: userId,
+          forceRefresh: force,
+        ).whenComplete(() {
       _activeLoad = null;
     });
     return _activeLoad;
@@ -126,6 +125,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   Future<void> _performLoad({
     required String gymId,
     required String userId,
+    bool forceRefresh = false,
   }) async {
     _isLoading = true;
     _error = null;
@@ -160,7 +160,11 @@ class MuscleGroupProvider extends ChangeNotifier {
           rethrow;
         }
       }
-      await _loadCounts(gymId, userId);
+      await _loadCounts(
+        gymId,
+        userId,
+        forceRefresh: forceRefresh,
+      );
       _loadedGymId = gymId;
       _hasLoadedSuccessfully = true;
     } catch (e, st) {
@@ -381,21 +385,27 @@ class MuscleGroupProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadCounts(String gymId, String userId) async {
-    final ctx = navigatorKey.currentContext;
-    if (ctx == null) return;
-    _counts.clear();
-    for (final group in _groups) {
-      int sum = 0;
-      for (final dId in group.deviceIds) {
-        final logs = await _getHistory.execute(
-          gymId: gymId,
-          deviceId: dId,
-          userId: userId,
+  Future<void> _loadCounts(
+    String gymId,
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final groupCounts = await _summaryService.fetchGroupUsageCounts(
+        gymId: gymId,
+        userId: userId,
+        forceRefresh: forceRefresh,
+      );
+      _counts
+        ..clear()
+        ..addEntries(
+          _groups.map((group) => MapEntry(group.id, groupCounts[group.id] ?? 0)),
         );
-        sum += logs.length;
-      }
-      _counts[group.id] = sum;
+    } catch (e, st) {
+      debugPrintStack(
+        label: 'MuscleGroupProvider._loadCounts',
+        stackTrace: st,
+      );
     }
   }
 

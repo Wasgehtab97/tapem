@@ -18,6 +18,7 @@ import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -201,6 +202,8 @@ void _handleMessage(RemoteMessage message) {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Hive.initFlutter();
+
   // .env laden (optional)
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
@@ -341,14 +344,20 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (c) => FriendSearchProvider(c.read<UserSearchSource>()),
         ),
-        ChangeNotifierProvider(
-          create: (_) => FriendCalendarProvider(),
-        ),
         ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
           create: (_) => FriendPresenceProvider(),
           update: (_, friends, prov) {
             prov ??= FriendPresenceProvider();
             prov.updateUids(friends.friends.map((e) => e.friendUid).toList());
+            return prov;
+          },
+        ),
+        ChangeNotifierProxyProvider<FriendPresenceProvider,
+            FriendCalendarProvider>(
+          create: (_) => FriendCalendarProvider(),
+          update: (_, presence, prov) {
+            prov ??= FriendCalendarProvider();
+            prov.setPresenceProvider(presence);
             return prov;
           },
         ),
@@ -535,6 +544,7 @@ class MyApp extends StatelessWidget {
       title: dotenv.env['APP_NAME'] ?? 'Tap’em',
       debugShowCheckedModeBanner: false,
       theme: theme,
+      navigatorObservers: [routeObserver],
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

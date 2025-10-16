@@ -5,6 +5,8 @@ admin.initializeApp();
 const avatars = require('./avatars');
 const xp = require('./xp');
 const activity = require('./activity');
+const presence = require('./presence');
+const trainingSummary = require('./training-summary');
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
 exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
@@ -13,6 +15,10 @@ exports.onChallengeState = avatars.onChallengeState;
 exports.onEventParticipation = avatars.onEventParticipation;
 exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
+exports.mirrorLogPresence = presence.mirrorLogPresence;
+exports.mirrorTrainingSummary = trainingSummary.mirrorTrainingSummary;
+exports.backfillTrainingSummaries = trainingSummary.backfillTrainingSummaries;
+exports.backfillDeviceUsageSummaries = trainingSummary.backfillDeviceUsageSummaries;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')
@@ -111,29 +117,25 @@ exports.checkChallengesOnLog = functions.firestore
       console.log(`🔍 checking challenge ${doc.id}, minSets=${ch.minSets || 0}`);
 
       let logCount = 0;
-      if (devices.length === 0) {
-        const snap = await db
-          .collectionGroup('logs')
-          .where('userId', '==', userId)
-          .where('timestamp', '>=', ch.start)
-          .where('timestamp', '<=', ch.end)
-          .get();
-        logCount = snap.size;
-      } else {
-        const chunks = [];
-        for (let i = 0; i < devices.length; i += 10) {
-          chunks.push(devices.slice(i, i + 10 > devices.length ? devices.length : i + 10));
+      const summarySnap = await db
+        .collection('trainingSummary')
+        .doc(userId)
+        .collection('daily')
+        .where('date', '>=', ch.start)
+        .where('date', '<=', ch.end)
+        .get();
+      for (const summary of summarySnap.docs) {
+        const data = summary.data() || {};
+        if (devices.length === 0) {
+          logCount += Number(data.logCount || 0);
+          continue;
         }
-
-        for (const ids of chunks) {
-          const snap = await db
-            .collectionGroup('logs')
-            .where('userId', '==', userId)
-            .where('deviceId', 'in', ids)
-            .where('timestamp', '>=', ch.start)
-            .where('timestamp', '<=', ch.end)
-            .get();
-          logCount += snap.size;
+        const deviceCounts = data.deviceCounts || {};
+        for (const deviceId of devices) {
+          const entry = deviceCounts[deviceId];
+          if (entry && typeof entry.count === 'number') {
+            logCount += entry.count;
+          }
         }
       }
 

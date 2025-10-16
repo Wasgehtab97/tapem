@@ -317,6 +317,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
+  String get profileStatsNoSummaries => 'Statistiken werden vorbereitet';
+
+  @override
+  String get profileStatsSummariesPending =>
+      'Statistiken werden erstellt – bitte später erneut versuchen.';
+
+  @override
+  String get profileStatsRefreshSummaries => 'Erneut prüfen';
+
+  @override
+  String get profileStatsError => 'Statistiken konnten nicht geladen werden.';
+
+  @override
+  String get profileStatsRetry => 'Erneut versuchen';
+
+  @override
+  String get profileLoadMoreButton => 'Mehr Tage laden';
+
+  @override
   String get repsRequired => 'Wdh?';
 
   @override
@@ -930,6 +949,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get friends_privacy_no_access => 'Dieser Nutzer teilt seinen Kalender nicht.';
 
+  String get friends_calendar_initial_hint =>
+      'Trainingstage werden bei Bedarf geladen. Nutze "Aktualisieren", um die neuesten 30 Tage zu holen, und "Ältere Tage laden" für weitere Historie.';
+
+  String get friends_calendar_refresh => 'Aktualisieren';
+
+  String get friends_calendar_load_more_days => 'Ältere Tage laden';
+
   @override
   String get friends_cta_self => 'Du selbst';
 
@@ -1079,6 +1105,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportViewSurveysTitle => 'Umfragen ansehen';
+
+  @override
+  String get reportRefreshButton => 'Aktualisieren';
 
   @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';

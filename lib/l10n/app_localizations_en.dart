@@ -317,6 +317,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsPowerliftingButton => 'Powerlifting';
 
   @override
+  String get profileStatsNoSummaries => 'Statistics are being prepared';
+
+  @override
+  String get profileStatsSummariesPending =>
+      'Statistics are being prepared – please try again later.';
+
+  @override
+  String get profileStatsRefreshSummaries => 'Check again';
+
+  @override
+  String get profileStatsError => 'Unable to load statistics.';
+
+  @override
+  String get profileStatsRetry => 'Try again';
+
+  @override
+  String get profileLoadMoreButton => 'Load more days';
+
+  @override
   String get repsRequired => 'reps?';
 
   @override
@@ -930,6 +949,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friends_privacy_no_access => 'This user does not share their calendar';
 
+  String get friends_calendar_initial_hint =>
+      'Training days are loaded on demand. Use Refresh to fetch the latest 30 days and "Load older days" for more history.';
+
+  String get friends_calendar_refresh => 'Refresh calendar';
+
+  String get friends_calendar_load_more_days => 'Load older days';
+
   @override
   String get friends_cta_self => 'You';
 
@@ -1079,6 +1105,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportViewSurveysTitle => 'View surveys';
+
+  @override
+  String get reportRefreshButton => 'Refresh';
 
   @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';

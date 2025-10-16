@@ -60,7 +60,7 @@ class AvatarEquipService {
         throw EquipAvatarException('invalid_ref');
       }
 
-      final owned = await _inventory.getOwnedAvatarIds();
+      final owned = await _inventory.getOwnedAvatarIds(uid);
       if (!owned.contains(avatarId)) {
         throw EquipAvatarException('not_owned');
       }

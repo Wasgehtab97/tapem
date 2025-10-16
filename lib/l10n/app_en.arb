@@ -395,6 +395,36 @@
     "description": "Button label that opens the powerlifting overview"
   },
 
+  "profileStatsNoSummaries": "Statistics are being prepared",
+  "@profileStatsNoSummaries": {
+    "description": "Headline shown when no summaries are available yet"
+  },
+
+  "profileStatsSummariesPending": "Statistics are being prepared – please try again later.",
+  "@profileStatsSummariesPending": {
+    "description": "Detail text displayed while summaries are still processing"
+  },
+
+  "profileStatsRefreshSummaries": "Check again",
+  "@profileStatsRefreshSummaries": {
+    "description": "Button label to refresh the summaries manually"
+  },
+
+  "profileStatsError": "Unable to load statistics.",
+  "@profileStatsError": {
+    "description": "Error message when the statistics request fails"
+  },
+
+  "profileStatsRetry": "Try again",
+  "@profileStatsRetry": {
+    "description": "Retry button label for the profile statistics"
+  },
+
+  "profileLoadMoreButton": "Load more days",
+  "@profileLoadMoreButton": {
+    "description": "Button that loads additional training summaries"
+  },
+
   "repsRequired": "reps?",
   "@repsRequired": {
     "description": "Validation when reps are missing"
@@ -1015,6 +1045,9 @@
   "friends_empty_friends": "No friends yet",
   "friends_empty_search": "No users found",
   "friends_privacy_no_access": "This user does not share their calendar",
+  "friends_calendar_initial_hint": "Training days are loaded on demand. Use Refresh to fetch the latest 30 days and \"Load older days\" for more history.",
+  "friends_calendar_refresh": "Refresh calendar",
+  "friends_calendar_load_more_days": "Load older days",
   "friends_cta_self": "You",
   "friends_cta_friend": "Friend",
   "friends_cta_pending": "Pending",
@@ -1094,6 +1127,8 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportRefreshButton": "Refresh"
+  ,"@reportRefreshButton": {"description": "Button label for manually refreshing the report"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"

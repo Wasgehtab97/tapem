@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen_new.dart';
@@ -22,11 +23,15 @@ class FakeReportRepository implements ReportRepository {
   final List<DateTime> times;
   @override
   Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
-    String gymId, {
-    DateTime? since,
+    String gymId,
+    DeviceUsageRange range, {
+    bool forceRefresh = false,
   }) async => usage;
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;
+  Future<List<DateTime>> fetchRecentLogTimestamps(
+    String gymId, {
+    bool forceRefresh = false,
+  }) async => times;
 }
 
 void main() {

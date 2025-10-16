@@ -1,29 +1,30 @@
+import '../../domain/models/badge.dart';
+import '../../domain/models/challenge.dart';
+import '../../domain/models/completed_challenge.dart';
 import '../../domain/repositories/challenge_repository.dart';
 import '../sources/firestore_challenge_source.dart';
-import '../../domain/models/challenge.dart';
-import '../../domain/models/badge.dart';
-import '../../domain/models/completed_challenge.dart';
 
 class ChallengeRepositoryImpl implements ChallengeRepository {
-  final FirestoreChallengeSource _source;
   ChallengeRepositoryImpl(this._source);
 
+  final FirestoreChallengeSource _source;
+
   @override
-  Stream<List<Challenge>> watchActiveChallenges(String gymId) {
-    return _source.watchActiveChallenges(gymId);
+  Future<List<Challenge>> fetchActiveChallenges(String gymId) {
+    return _source.fetchActiveChallenges(gymId);
   }
 
   @override
-  Stream<List<Badge>> watchBadges(String userId) {
-    return _source.watchBadges(userId);
+  Future<List<Badge>> fetchBadges(String userId) {
+    return _source.fetchBadges(userId);
   }
 
   @override
-  Stream<List<CompletedChallenge>> watchCompletedChallenges(
+  Future<List<CompletedChallenge>> fetchCompletedChallenges(
     String gymId,
     String userId,
   ) {
-    return _source.watchCompletedChallenges(gymId, userId);
+    return _source.fetchCompletedChallenges(gymId, userId);
   }
 
   @override

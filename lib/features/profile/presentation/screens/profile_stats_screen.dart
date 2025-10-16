@@ -16,16 +16,63 @@ class ProfileStatsScreen extends StatefulWidget {
   State<ProfileStatsScreen> createState() => _ProfileStatsScreenState();
 }
 
-class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
+class _ProfileStatsScreenState extends State<ProfileStatsScreen> with RouteAware {
+  ModalRoute<dynamic>? _route;
+  bool _hasRequestedInitialLoad = false;
+
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final prov = context.read<ProfileProvider>();
-      if (!prov.isLoading && prov.trainingDates.isEmpty) {
-        prov.loadTrainingDates(context);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route != route) {
+      if (_route != null) {
+        routeObserver.unsubscribe(this);
       }
-    });
+      _route = route;
+      routeObserver.subscribe(this, route);
+      if (route.isCurrent) {
+        _ensureInitialLoad();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_route != null) {
+      routeObserver.unsubscribe(this);
+    }
+    super.dispose();
+  }
+
+  void _ensureInitialLoad() {
+    if (_hasRequestedInitialLoad) {
+      return;
+    }
+    _hasRequestedInitialLoad = true;
+    _loadSummaries();
+  }
+
+  void _loadSummaries({bool forceRemote = false}) {
+    if (!mounted) {
+      return;
+    }
+    context
+        .read<ProfileProvider>()
+        .loadTrainingDates(context, forceRefresh: forceRemote);
+  }
+
+  void _refreshSummaries() {
+    _loadSummaries(forceRemote: true);
+  }
+
+  @override
+  void didPush() {
+    _ensureInitialLoad();
+  }
+
+  @override
+  void didPopNext() {
+    _loadSummaries();
   }
 
   @override
@@ -52,49 +99,6 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
       return numberFormat.format(value);
     }
 
-    Widget buildContent() {
-      if (prov.isLoading && totalTrainingDays == 0) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            loc.historyOverviewTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _kpiRing(
-                context,
-                loc.profileStatsTotalTrainingDays,
-                totalTrainingDays.toString(),
-              ),
-              _kpiRing(
-                context,
-                loc.profileStatsAverageTrainingDaysPerWeek,
-                formatAverage(avgTrainingDays),
-              ),
-              _kpiRing(
-                context,
-                loc.profileStatsFavoriteExercise,
-                favoriteExercise,
-                onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
-              ),
-              _powerliftingButton(context, loc),
-            ],
-          ),
-        ],
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.profileStatsTitle),
@@ -106,10 +110,184 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: buildContent(),
+            child: _buildBody(
+              context,
+              loc,
+              prov,
+              totalTrainingDays,
+              avgTrainingDays,
+              favoriteExercise,
+              formatAverage,
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    AppLocalizations loc,
+    ProfileProvider prov,
+    int totalTrainingDays,
+    double avgTrainingDays,
+    String favoriteExercise,
+    String Function(double value) formatAverage,
+  ) {
+    final theme = Theme.of(context);
+    if (prov.error != null) {
+      return _buildErrorState(context, loc, prov);
+    }
+
+    if (prov.isLoading && !prov.hasSummaries) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!prov.hasSummaries) {
+      return _buildEmptyState(context, loc, prov);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          loc.historyOverviewTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _kpiRing(
+              context,
+              loc.profileStatsTotalTrainingDays,
+              totalTrainingDays.toString(),
+            ),
+            _kpiRing(
+              context,
+              loc.profileStatsAverageTrainingDaysPerWeek,
+              formatAverage(avgTrainingDays),
+            ),
+            _kpiRing(
+              context,
+              loc.profileStatsFavoriteExercise,
+              favoriteExercise,
+              onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
+            ),
+            _powerliftingButton(context, loc),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (prov.hasMoreSummaries)
+          OutlinedButton.icon(
+            icon: const Icon(Icons.expand_more_rounded),
+            label: Text(loc.profileLoadMoreButton),
+            onPressed: prov.isLoadingMore
+                ? null
+                : () {
+                    prov.loadMoreTrainingSummaries(context);
+                  },
+          ),
+        if (prov.isLoadingMore)
+          const Padding(
+            padding: EdgeInsets.only(top: AppSpacing.sm),
+            child: CircularProgressIndicator(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(
+    BuildContext context,
+    AppLocalizations loc,
+    ProfileProvider prov,
+  ) {
+    final theme = Theme.of(context);
+    final surfaceVariant = theme.colorScheme.surfaceVariant.withOpacity(
+      theme.brightness == Brightness.dark ? 0.35 : 0.6,
+    );
+
+    return Card(
+      color: surfaceVariant,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_graph_outlined,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    loc.profileStatsNoSummaries,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              loc.profileStatsSummariesPending,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: prov.isLoading ? null : _refreshSummaries,
+                icon: const Icon(Icons.refresh),
+                label: Text(loc.profileStatsRefreshSummaries),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(
+    BuildContext context,
+    AppLocalizations loc,
+    ProfileProvider prov,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Icon(
+          Icons.error_outline,
+          color: theme.colorScheme.error,
+          size: 48,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          loc.profileStatsError,
+          style: theme.textTheme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          prov.error ?? '',
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OutlinedButton.icon(
+          onPressed: prov.isLoading ? null : _loadSummaries,
+          icon: const Icon(Icons.refresh),
+          label: Text(loc.profileStatsRetry),
+        ),
+      ],
     );
   }
 

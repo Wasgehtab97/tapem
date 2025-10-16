@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+
 import 'survey.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
@@ -15,63 +17,145 @@ void _defaultLog(String message, [StackTrace? stack]) {
 }
 
 class SurveyProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
-  final LogFn _log;
-  StreamSubscription<List<Survey>>? _openSub;
-  StreamSubscription<List<Survey>>? _closedSub;
-
-  List<Survey> openSurveys = [];
-  List<Survey> closedSurveys = [];
-  String? _error;
-  final bool _isLoading = false;
-
-  String? get error => _error;
-  bool get isLoading => _isLoading;
-
   SurveyProvider({required FirebaseFirestore firestore, LogFn? log})
       : _firestore = firestore,
         _log = log ?? _defaultLog;
 
+  final FirebaseFirestore _firestore;
+  final LogFn _log;
+
+  final Duration _cacheTtl = const Duration(minutes: 10);
+  final Duration _pollInterval = const Duration(minutes: 10);
+
+  List<Survey> openSurveys = [];
+  List<Survey> closedSurveys = [];
+  String? _error;
+  bool _isLoading = false;
+
+  String? _gymId;
+  DateTime? _lastOpenFetch;
+  DateTime? _lastClosedFetch;
+  bool _loadingOpen = false;
+  bool _loadingClosed = false;
+  Timer? _pollTimer;
+
+  String? get error => _error;
+  bool get isLoading => _isLoading;
+
   void listen(String gymId) {
-    _openSub?.cancel();
-    _closedSub?.cancel();
-
-    _openSub = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('surveys')
-        .where('status', isEqualTo: 'open')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList(),
-        )
-        .listen((surveys) {
-          openSurveys = surveys;
-          notifyListeners();
-        });
-
-    _closedSub = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('surveys')
-        .where('status', isEqualTo: 'abgeschlossen')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList(),
-        )
-        .listen((surveys) {
-          closedSurveys = surveys;
-          notifyListeners();
-        });
+    _gymId = gymId.isEmpty ? null : gymId;
+    _ensurePolling();
+    if (_gymId == null) {
+      openSurveys = [];
+      closedSurveys = [];
+      notifyListeners();
+      return;
+    }
+    unawaited(_loadOpen(force: true));
+    unawaited(_loadClosed(force: true));
   }
 
   void cancel() {
-    _openSub?.cancel();
-    _closedSub?.cancel();
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _loadingOpen = false;
+    _loadingClosed = false;
+    _gymId = null;
+  }
+
+  Future<void> refresh() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await Future.wait([
+        _loadOpen(force: true),
+        _loadClosed(force: true),
+      ]);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  bool _isFresh(DateTime? ts) {
+    if (ts == null) return false;
+    return DateTime.now().difference(ts) < _cacheTtl;
+  }
+
+  void _ensurePolling() {
+    if (_gymId == null) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      return;
+    }
+    _pollTimer ??= Timer.periodic(_pollInterval, (_) {
+      unawaited(_poll());
+    });
+  }
+
+  Future<void> _poll() async {
+    await _loadOpen();
+    await _loadClosed();
+  }
+
+  Future<void> _loadOpen({bool force = false}) async {
+    if (_gymId == null || _loadingOpen) {
+      return;
+    }
+    if (!force && _isFresh(_lastOpenFetch)) {
+      return;
+    }
+    _loadingOpen = true;
+    try {
+      _error = null;
+      final snap = await _firestore
+          .collection('gyms')
+          .doc(_gymId)
+          .collection('surveys')
+          .where('status', isEqualTo: 'open')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      openSurveys =
+          snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList();
+      _lastOpenFetch = DateTime.now();
+      notifyListeners();
+    } catch (e, st) {
+      _log('SurveyProvider._loadOpen error: $e', st);
+      _error = e.toString();
+    } finally {
+      _loadingOpen = false;
+    }
+  }
+
+  Future<void> _loadClosed({bool force = false}) async {
+    if (_gymId == null || _loadingClosed) {
+      return;
+    }
+    if (!force && _isFresh(_lastClosedFetch)) {
+      return;
+    }
+    _loadingClosed = true;
+    try {
+      _error = null;
+      final snap = await _firestore
+          .collection('gyms')
+          .doc(_gymId)
+          .collection('surveys')
+          .where('status', isEqualTo: 'abgeschlossen')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      closedSurveys =
+          snap.docs.map((d) => Survey.fromMap(d.id, d.data())).toList();
+      _lastClosedFetch = DateTime.now();
+      notifyListeners();
+    } catch (e, st) {
+      _log('SurveyProvider._loadClosed error: $e', st);
+      _error = e.toString();
+    } finally {
+      _loadingClosed = false;
+    }
   }
 
   Future<void> createSurvey({

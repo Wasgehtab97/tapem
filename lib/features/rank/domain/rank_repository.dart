@@ -7,7 +7,7 @@ abstract class RankRepository {
     bool showInLeaderboard,
   );
 
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+  Future<List<Map<String, dynamic>>> fetchLeaderboard(
     String gymId,
     String deviceId,
   );

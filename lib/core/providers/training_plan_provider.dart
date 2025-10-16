@@ -17,6 +17,8 @@ class TrainingPlanProvider extends ChangeNotifier {
   bool isLoading = false;
   bool isSaving = false;
   String? error;
+  String? _lastLoadContextKey;
+  DateTime? _lastLoadAt;
 
   TrainingPlanProvider({TrainingPlanRepository? repo})
       : _repo =
@@ -37,7 +39,18 @@ class TrainingPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadPlans(String gymId, String userId) async {
+  Future<void> loadPlans(String gymId, String userId,
+      {bool forceRefresh = false}) async {
+    final contextKey = '$gymId|$userId';
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _lastLoadContextKey == contextKey &&
+        _lastLoadAt != null &&
+        now.difference(_lastLoadAt!) < const Duration(minutes: 1)) {
+      debugPrint(
+          '🔁 TrainingPlanProvider.loadPlans reuse gymId=$gymId userId=$userId');
+      return;
+    }
     debugPrint('📥 TrainingPlanProvider.loadPlans gymId=$gymId userId=$userId');
     isLoading = true;
     error = null;
@@ -45,6 +58,8 @@ class TrainingPlanProvider extends ChangeNotifier {
     try {
       plans = await _repo.getPlans(gymId, userId);
       debugPrint('ℹ️ Loaded ${plans.length} plans');
+      _lastLoadContextKey = contextKey;
+      _lastLoadAt = now;
     } catch (e, st) {
       error = e.toString();
       debugPrintStack(label: 'loadPlans failed', stackTrace: st);

@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import '../../data/friend_chat_api.dart';
 import '../../data/friend_chat_source.dart';
 import '../../domain/models/friend_message.dart';
 import '../../providers/friend_chat_summary_provider.dart';
+import '../../providers/friend_chat_messages_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class FriendChatScreen extends StatefulWidget {
@@ -26,24 +30,65 @@ class FriendChatScreen extends StatefulWidget {
   State<FriendChatScreen> createState() => _FriendChatScreenState();
 }
 
-class _FriendChatScreenState extends State<FriendChatScreen> {
+class _FriendChatScreenState extends State<FriendChatScreen> with RouteAware {
   final _messageCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _sending = false;
+  FriendChatMessagesProvider? _messagesProvider;
+  String? _lastHandledMessageId;
+  ModalRoute<dynamic>? _modalRoute;
+  bool _isRouteCurrent = true;
 
   @override
   void initState() {
     super.initState();
+    _scrollCtrl.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _modalRoute != route) {
+      if (_modalRoute != null) {
+        routeObserver.unsubscribe(this);
+      }
+      _modalRoute = route;
+      routeObserver.subscribe(this, route);
+      _updateRouteVisibility(route.isCurrent);
+    }
+    _messagesProvider ??=
+        FriendChatMessagesProvider(context.read<FriendChatSource>());
+  }
+
+  @override
+  void didUpdateWidget(covariant FriendChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.friendUid != widget.friendUid) {
+      _lastHandledMessageId = null;
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollCtrl.removeListener(_onScroll);
     _messageCtrl.dispose();
     _scrollCtrl.dispose();
+    if (_modalRoute != null) {
+      routeObserver.unsubscribe(this);
+    }
+    _messagesProvider?.setVisibility(false);
+    _messagesProvider?.dispose();
     super.dispose();
+  }
+
+  void _updateRouteVisibility(bool isActive) {
+    _isRouteCurrent = isActive;
+    final provider = _messagesProvider;
+    provider?.setVisibility(isActive);
   }
 
   Future<void> _sendMessage(AppLocalizations loc) async {
@@ -64,6 +109,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
       _messageCtrl.clear();
       FocusScope.of(context).unfocus();
       await context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
+      await _messagesProvider?.refresh();
       _scrollToBottom();
       if (kDebugMode) {
         debugPrint('[FriendChatScreen] sendMessage success friend=${widget.friendUid}');
@@ -94,6 +140,17 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     });
   }
 
+  void _onScroll() {
+    final provider = _messagesProvider;
+    if (provider == null) return;
+    if (!_scrollCtrl.hasClients) return;
+    if (_scrollCtrl.position.pixels <= 120) {
+      if (provider.hasMore && !provider.isLoadingMore && !provider.isLoading) {
+        unawaited(provider.loadMore());
+      }
+    }
+  }
+
   void _handleMessagesUpdate(List<FriendMessage> messages, String meUid) {
     if (messages.isEmpty) return;
     final last = messages.last;
@@ -107,6 +164,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     if (last.senderId != meUid) {
       context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
     }
+    _lastHandledMessageId = last.id;
     _scrollToBottom();
   }
 
@@ -115,78 +173,131 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
     final meUid = auth.userId;
-    if (meUid == null) {
+    final provider = _messagesProvider;
+    if (meUid == null || provider == null) {
+      _messagesProvider?.detach();
       return Scaffold(
         appBar: AppBar(title: Text(widget.friendName)),
         body: Center(child: Text(loc.friend_chat_login_required)),
       );
     }
-    final stream =
-        context.watch<FriendChatSource>().watchMessages(meUid, widget.friendUid);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.friendName),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<List<FriendMessage>>(
-              stream: stream,
-              builder: (context, snapshot) {
-                final messages = snapshot.data ?? const <FriendMessage>[];
-                if (snapshot.hasData) {
-                  _handleMessagesUpdate(messages, meUid);
-                }
-                if (messages.isEmpty) {
-                  return Center(child: Text(loc.friend_chat_empty));
-                }
-                return ListView.builder(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == meUid;
-                    return _MessageBubble(message: message, isMe: isMe);
-                  },
-                );
-              },
-            ),
-          ),
-          const Divider(height: 1),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageCtrl,
-                      minLines: 1,
-                      maxLines: 5,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(loc),
-                      decoration: InputDecoration(
-                        hintText: loc.friend_chat_input_hint,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    tooltip: loc.friend_chat_send,
-                    onPressed: _sending ? null : () => _sendMessage(loc),
-                  ),
-                ],
+    provider.listen(
+      meUid: meUid,
+      friendUid: widget.friendUid,
+      isVisible: _isRouteCurrent,
+    );
+    return ChangeNotifierProvider<FriendChatMessagesProvider>.value(
+      value: provider,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.friendName),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: Consumer<FriendChatMessagesProvider>(
+                builder: (context, messagesProv, _) {
+                  final messages = messagesProv.messages;
+                  if (messagesProv.isLoading && messages.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (messages.isNotEmpty) {
+                    final lastId = messages.last.id;
+                    if (_lastHandledMessageId != lastId) {
+                      _handleMessagesUpdate(messages, meUid);
+                    }
+                  }
+                  if (messages.isEmpty) {
+                    return Center(child: Text(loc.friend_chat_empty));
+                  }
+                  final showLoader = messagesProv.hasMore;
+                  final itemCount = messages.length + (showLoader ? 1 : 0);
+                  return ListView.builder(
+                    controller: _scrollCtrl,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    itemCount: itemCount,
+                    itemBuilder: (context, index) {
+                      if (showLoader && index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Center(
+                            child: messagesProv.isLoadingMore
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        );
+                      }
+                      final message = messages[showLoader ? index - 1 : index];
+                      final isMe = message.senderId == meUid;
+                      return _MessageBubble(message: message, isMe: isMe);
+                    },
+                  );
+                },
               ),
             ),
-          ),
-        ],
+            const Divider(height: 1),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageCtrl,
+                        minLines: 1,
+                        maxLines: 5,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(loc),
+                        decoration: InputDecoration(
+                          hintText: loc.friend_chat_input_hint,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      tooltip: loc.friend_chat_send,
+                      onPressed: _sending ? null : () => _sendMessage(loc),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  @override
+  void didPush() {
+    _updateRouteVisibility(true);
+  }
+
+  @override
+  void didPopNext() {
+    _updateRouteVisibility(true);
+  }
+
+  @override
+  void didPushNext() {
+    _updateRouteVisibility(false);
+  }
+
+  @override
+  void didPop() {
+    _updateRouteVisibility(false);
   }
 }
 

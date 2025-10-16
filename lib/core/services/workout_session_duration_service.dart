@@ -390,18 +390,28 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
     if (!hasSets) {
       try {
-        final startDay = DateTime(start.year, start.month, start.day);
-        final endDay = startDay.add(const Duration(days: 1));
-        final snap = await _firestore
-            .collectionGroup('logs')
-            .where('userId', isEqualTo: uid)
-            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDay))
-            .where('timestamp', isLessThan: Timestamp.fromDate(endDay))
-            .limit(1)
-            .get();
-        if (snap.docs.isNotEmpty) {
-          resolvedSessionId = snap.docs.first.data()['sessionId'] as String?;
-          hasSets = resolvedSessionId != null;
+        final summaryRef = _firestore
+            .collection('trainingSummary')
+            .doc(uid)
+            .collection('daily')
+            .doc(logicDayKey(start));
+        final summarySnap = await summaryRef.get();
+        if (summarySnap.exists) {
+          final data = summarySnap.data();
+          final sessionCounts = data?['sessionCounts'];
+          if (sessionCounts is Map<String, dynamic>) {
+            for (final entry in sessionCounts.entries) {
+              final value = entry.value;
+              final count = value is Map<String, dynamic>
+                  ? (value['count'] as num?)?.toInt() ?? 0
+                  : (value as num?)?.toInt() ?? 0;
+              if (count > 0) {
+                resolvedSessionId = entry.key;
+                hasSets = true;
+                break;
+              }
+            }
+          }
         }
       } catch (_) {
         // ignore lookup failures

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:tapem/core/logging/firestore_read_logger.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
@@ -35,7 +36,9 @@ class PowerliftingProvider extends ChangeNotifier {
   final MembershipService _membership;
 
   static const _assignmentCollection = 'powerlifting_sources';
-  static const _logsLimitPerSource = 25;
+  /// Assignments rarely change; reuse results for a short time window to avoid
+  /// repeatedly fetching the same aggregates during hot restarts.
+  final Duration _assignmentCacheTtl = const Duration(minutes: 5);
 
   String? _userId;
   String? _activeGymId;
@@ -43,6 +46,7 @@ class PowerliftingProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSaving = false;
   String? _error;
+  DateTime? _lastAssignmentsFetch;
 
   final Map<PowerliftingDiscipline, List<PowerliftingAssignment>> _assignments = {
     for (final d in PowerliftingDiscipline.values) d: <PowerliftingAssignment>[],
@@ -60,10 +64,6 @@ class PowerliftingProvider extends ChangeNotifier {
   final Map<String, Device> _deviceCache = <String, Device>{};
   final Map<String, List<Exercise>> _exerciseCache = <String, List<Exercise>>{};
   final Set<String> _loadingExercises = <String>{};
-  final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
-      _logSubscriptions =
-          <String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>{};
-
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get error => _error;
@@ -82,7 +82,6 @@ class PowerliftingProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _disposeLogSubscriptions();
     super.dispose();
   }
 
@@ -106,7 +105,7 @@ class PowerliftingProvider extends ChangeNotifier {
     await loadAssignments();
   }
 
-  Future<void> loadAssignments() async {
+  Future<void> loadAssignments({bool force = false}) async {
     final uid = _userId;
     final gymId = _activeGymId;
     if (uid == null || uid.isEmpty || gymId == null || gymId.isEmpty) {
@@ -120,11 +119,35 @@ class PowerliftingProvider extends ChangeNotifier {
 
     try {
       await _membership.ensureMembership(gymId, uid);
-      final snapshot = await _firestore
+      // Avoid hammering Firestore with identical reads during quick rebuilds –
+      // the aggregated per-assignment documents update at most a few times per
+      // session, so a short cache window is sufficient.
+      if (!force &&
+          _lastAssignmentsFetch != null &&
+          DateTime.now().difference(_lastAssignmentsFetch!) <
+              _assignmentCacheTtl &&
+          hasAssignments) {
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+      final assignmentsQuery = _firestore
           .collection('users')
           .doc(uid)
-          .collection(_assignmentCollection)
-          .get();
+          .collection(_assignmentCollection);
+      FirestoreReadLogger.logStart(
+        scope: 'profile.powerlifting',
+        path: 'users/$uid/$_assignmentCollection',
+        operation: 'get',
+        reason: 'loadAssignments',
+      );
+      final snapshot = await assignmentsQuery.get();
+      FirestoreReadLogger.logResult(
+        scope: 'profile.powerlifting',
+        path: 'users/$uid/$_assignmentCollection',
+        count: snapshot.size,
+        fromCache: snapshot.metadata.isFromCache,
+      );
 
       _resetAssignmentsAndRecords();
 
@@ -145,8 +168,11 @@ class PowerliftingProvider extends ChangeNotifier {
         entries.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       }
 
-      await _loadRecordsForAllDisciplines();
-      _setupLogSubscriptions();
+      // Aggregated Cloud Function snapshots contain the user's best lifts per
+      // assignment, so we can populate the provider without opening dozens of
+      // log streams.
+      await _composeRecordsFromAggregates();
+      _lastAssignmentsFetch = DateTime.now();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -157,7 +183,7 @@ class PowerliftingProvider extends ChangeNotifier {
 
   Future<void> refresh() async {
     if (_userId == null || _activeGymId == null) return;
-    await loadAssignments();
+    await loadAssignments(force: true);
   }
 
   Future<bool> addAssignment({
@@ -232,8 +258,8 @@ class PowerliftingProvider extends ChangeNotifier {
       ]
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-      await _loadRecordsForDiscipline(discipline);
-      _ensureLogSubscription(assignment);
+      await _reloadAssignmentAggregate(assignment);
+      await _composeRecordsFromAggregates();
       return true;
     } catch (e) {
       _error = e.toString();
@@ -318,7 +344,19 @@ class PowerliftingProvider extends ChangeNotifier {
           .collection('users')
           .doc(uid)
           .collection(_assignmentCollection);
+      FirestoreReadLogger.logStart(
+        scope: 'profile.powerlifting',
+        path: collection.path,
+        operation: 'get',
+        reason: 'clearAssignments',
+      );
       final snapshot = await collection.get();
+      FirestoreReadLogger.logResult(
+        scope: 'profile.powerlifting',
+        path: collection.path,
+        count: snapshot.size,
+        fromCache: snapshot.metadata.isFromCache,
+      );
 
       if (snapshot.docs.isNotEmpty) {
         final batch = _firestore.batch();
@@ -341,159 +379,152 @@ class PowerliftingProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadRecordsForAllDisciplines() async {
+  Future<void> _composeRecordsFromAggregates() async {
     for (final discipline in PowerliftingDiscipline.values) {
-      await _loadRecordsForDiscipline(discipline);
+      final assignments = _assignments[discipline]!;
+      if (assignments.isEmpty) {
+        _records[discipline] = _createEmptyRecordMap();
+        continue;
+      }
+
+      final heaviest = <PowerliftingRecord>[];
+      final e1rm = <PowerliftingRecord>[];
+      final seenHeaviest = <String>{};
+      final seenE1rm = <String>{};
+
+      for (final assignment in assignments) {
+        final summary = assignment.latestRecords;
+        if (summary == null) {
+          continue;
+        }
+
+        final labels = await _resolveLabels(
+          assignment.gymId,
+          assignment.deviceId,
+          assignment.exerciseId,
+        );
+
+        for (final entry in summary.heaviest) {
+          if (entry.weightKg <= 0 || seenHeaviest.contains(entry.logId)) {
+            continue;
+          }
+          final record = _snapshotToRecord(
+            assignment: assignment,
+            labels: labels,
+            snapshot: entry,
+          );
+          heaviest.add(record);
+          seenHeaviest.add(entry.logId);
+        }
+
+        for (final entry in summary.e1rm) {
+          if (entry.weightKg <= 0 || seenE1rm.contains(entry.logId)) {
+            continue;
+          }
+          final record = _snapshotToRecord(
+            assignment: assignment,
+            labels: labels,
+            snapshot: entry,
+          );
+          e1rm.add(record);
+          seenE1rm.add(entry.logId);
+        }
+      }
+
+      if (heaviest.isEmpty && e1rm.isEmpty) {
+        _records[discipline] = _createEmptyRecordMap();
+        continue;
+      }
+
+      heaviest.sort((a, b) {
+        final weightCompare = b.weightKg.compareTo(a.weightKg);
+        if (weightCompare != 0) return weightCompare;
+        return b.performedAt.compareTo(a.performedAt);
+      });
+
+      e1rm.sort((a, b) {
+        final e1rmCompare = b.e1rm.compareTo(a.e1rm);
+        if (e1rmCompare != 0) return e1rmCompare;
+        return b.performedAt.compareTo(a.performedAt);
+      });
+
+      _records[discipline] = {
+        PowerliftingMetric.heaviest: heaviest,
+        PowerliftingMetric.e1rm: e1rm,
+      };
     }
+  }
+
+  Future<void> _reloadAssignmentAggregate(
+    PowerliftingAssignment assignment,
+  ) async {
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) {
+      return;
+    }
+
+    final ref = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection(_assignmentCollection)
+        .doc(assignment.id);
+
+    FirestoreReadLogger.logStart(
+      scope: 'profile.powerlifting',
+      path: ref.path,
+      operation: 'get',
+      reason: 'reloadAssignmentAggregate',
+    );
+    final snapshot = await ref.get();
+    FirestoreReadLogger.logResult(
+      scope: 'profile.powerlifting',
+      path: ref.path,
+      exists: snapshot.exists,
+      fromCache: snapshot.metadata.isFromCache,
+    );
+
+    if (!snapshot.exists) {
+      return;
+    }
+
+    final data = snapshot.data() ?? <String, dynamic>{};
+    final updated = PowerliftingAssignment.fromMap(snapshot.id, {
+      ...data,
+      'createdAt': (data['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+    });
+
+    final entries = _assignments[assignment.discipline];
+    if (entries == null) {
+      return;
+    }
+
+    final index = entries.indexWhere((a) => a.id == assignment.id);
+    if (index < 0) {
+      return;
+    }
+
+    entries[index] = updated;
   }
 
   Map<PowerliftingMetric, List<PowerliftingRecord>> _createEmptyRecordMap() => {
         for (final metric in PowerliftingMetric.values) metric: <PowerliftingRecord>[],
       };
 
-  Future<void> _reloadDisciplineRecords(
-    PowerliftingDiscipline discipline,
-  ) async {
-    await _loadRecordsForDiscipline(discipline);
-    notifyListeners();
-  }
-
-  Future<void> _loadRecordsForDiscipline(
-    PowerliftingDiscipline discipline,
-  ) async {
-    final entries = _assignments[discipline]!;
-    if (entries.isEmpty) {
-      _records[discipline] = _createEmptyRecordMap();
-      return;
-    }
-
-    final futures = entries.map(_fetchRecordsForAssignment);
-    final results = await Future.wait(futures);
-    final combined = results.expand((element) => element).toList();
-    combined.removeWhere((record) => record.weightKg <= 0);
-    if (combined.isEmpty) {
-      _records[discipline] = _createEmptyRecordMap();
-      return;
-    }
-
-    final sortedByDate = List<PowerliftingRecord>.from(combined)
-      ..sort((a, b) => a.performedAt.compareTo(b.performedAt));
-
-    final heaviest = <PowerliftingRecord>[];
-    final e1rm = <PowerliftingRecord>[];
-    var bestWeight = -double.infinity;
-    var bestE1rm = -double.infinity;
-    for (final record in sortedByDate) {
-      if (record.weightKg > bestWeight) {
-        heaviest.add(record);
-        bestWeight = record.weightKg;
-      }
-
-      final recordE1rm = record.e1rm;
-      if (recordE1rm > bestE1rm) {
-        e1rm.add(record);
-        bestE1rm = recordE1rm;
-      }
-    }
-
-    heaviest.sort((a, b) {
-      final weightCompare = b.weightKg.compareTo(a.weightKg);
-      if (weightCompare != 0) return weightCompare;
-      return b.performedAt.compareTo(a.performedAt);
-    });
-
-    e1rm.sort((a, b) {
-      final e1rmCompare = b.e1rm.compareTo(a.e1rm);
-      if (e1rmCompare != 0) return e1rmCompare;
-      return b.performedAt.compareTo(a.performedAt);
-    });
-
-    _records[discipline] = {
-      PowerliftingMetric.heaviest: heaviest,
-      PowerliftingMetric.e1rm: e1rm,
-    };
-  }
-
-  Future<List<PowerliftingRecord>> _fetchRecordsForAssignment(
-    PowerliftingAssignment assignment,
-  ) async {
-    final uid = _userId;
-    if (uid == null || uid.isEmpty) {
-      return <PowerliftingRecord>[];
-    }
-
-    final labels = await _resolveLabels(
-      assignment.gymId,
-      assignment.deviceId,
-      assignment.exerciseId,
+  PowerliftingRecord _snapshotToRecord({
+    required PowerliftingAssignment assignment,
+    required _PowerliftingLabels labels,
+    required PowerliftingLogSnapshot snapshot,
+  }) {
+    return PowerliftingRecord(
+      id: snapshot.logId,
+      discipline: assignment.discipline,
+      weightKg: snapshot.weightKg,
+      reps: snapshot.reps,
+      performedAt: snapshot.performedAt,
+      deviceName: labels.deviceName,
+      exerciseName: labels.exerciseName,
     );
-
-    final logsCollection = _firestore
-        .collection('gyms')
-        .doc(assignment.gymId)
-        .collection('devices')
-        .doc(assignment.deviceId)
-        .collection('logs');
-
-    final baseQuery = logsCollection
-        .where('userId', isEqualTo: uid)
-        .where('exerciseId', isEqualTo: assignment.exerciseId);
-
-    final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>> docs =
-        <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
-
-    Future<void> collect(
-      Query<Map<String, dynamic>> query,
-    ) async {
-      final snapshot = await query.get();
-      for (final doc in snapshot.docs) {
-        docs[doc.id] = doc;
-      }
-    }
-
-    try {
-      await collect(
-        baseQuery
-            .orderBy('weight', descending: true)
-            .orderBy('timestamp', descending: true)
-            .limit(_logsLimitPerSource),
-      );
-    } on FirebaseException catch (error) {
-      if (error.code != 'failed-precondition') rethrow;
-    }
-
-    await collect(
-      baseQuery.orderBy('timestamp', descending: true).limit(
-            _logsLimitPerSource,
-          ),
-    );
-
-    if (docs.isEmpty) {
-      return <PowerliftingRecord>[];
-    }
-
-    final records = <PowerliftingRecord>[];
-    for (final doc in docs.values) {
-      final data = doc.data();
-      final weight = (data['weight'] as num?)?.toDouble() ?? 0;
-      final reps = (data['reps'] as num?)?.toInt() ?? 0;
-      final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      final record = PowerliftingRecord(
-        id: doc.id,
-        discipline: assignment.discipline,
-        weightKg: weight,
-        reps: reps,
-        performedAt: timestamp,
-        deviceName: labels.deviceName,
-        exerciseName: labels.exerciseName,
-      );
-
-      records.add(record);
-    }
-
-    return records;
   }
 
   Future<_PowerliftingLabels> _resolveLabels(
@@ -534,84 +565,11 @@ class PowerliftingProvider extends ChangeNotifier {
   }
 
   void _resetAssignmentsAndRecords() {
-    _disposeLogSubscriptions();
     for (final discipline in PowerliftingDiscipline.values) {
       _assignments[discipline] = <PowerliftingAssignment>[];
       _records[discipline] = _createEmptyRecordMap();
     }
-  }
-
-  void _setupLogSubscriptions() {
-    for (final discipline in PowerliftingDiscipline.values) {
-      for (final assignment in _assignments[discipline]!) {
-        _ensureLogSubscription(assignment);
-      }
-    }
-  }
-
-  void _ensureLogSubscription(PowerliftingAssignment assignment) {
-    final uid = _userId;
-    if (uid == null || uid.isEmpty) {
-      return;
-    }
-
-    if (_logSubscriptions.containsKey(assignment.id)) {
-      return;
-    }
-
-    final logsCollection = _firestore
-        .collection('gyms')
-        .doc(assignment.gymId)
-        .collection('devices')
-        .doc(assignment.deviceId)
-        .collection('logs');
-
-    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? subscription;
-
-    void listenTo(
-      Query<Map<String, dynamic>> query, {
-      required bool allowFallback,
-    }) {
-      final currentSubscription = query.snapshots().listen(
-        (_) => unawaited(_reloadDisciplineRecords(assignment.discipline)),
-        onError: (Object error, StackTrace stackTrace) {
-          if (allowFallback && error is FirebaseException) {
-            final previous = subscription;
-            subscription = null;
-            unawaited(previous?.cancel());
-            final fallbackQuery = logsCollection
-                .where('userId', isEqualTo: uid)
-                .where('exerciseId', isEqualTo: assignment.exerciseId)
-                .orderBy('timestamp', descending: true)
-                .limit(_logsLimitPerSource);
-            listenTo(fallbackQuery, allowFallback: false);
-          } else if (!allowFallback && error is FirebaseException) {
-            final previous = subscription;
-            subscription = null;
-            unawaited(previous?.cancel());
-            _logSubscriptions.remove(assignment.id);
-          }
-        },
-      );
-      subscription = currentSubscription;
-      _logSubscriptions[assignment.id] = currentSubscription;
-    }
-
-    final primaryQuery = logsCollection
-        .where('userId', isEqualTo: uid)
-        .where('exerciseId', isEqualTo: assignment.exerciseId)
-        .orderBy('weight', descending: true)
-        .orderBy('timestamp', descending: true)
-        .limit(1);
-
-    listenTo(primaryQuery, allowFallback: true);
-  }
-
-  void _disposeLogSubscriptions() {
-    for (final entry in _logSubscriptions.values) {
-      unawaited(entry.cancel());
-    }
-    _logSubscriptions.clear();
+    _lastAssignmentsFetch = null;
   }
 }
 

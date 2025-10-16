@@ -113,15 +113,48 @@ class _ExerciseSnapRepo implements DeviceRepository {
     }
 
   @override
-  Stream<int> watchDayXp({required String userId, required DateTime date}) => const Stream.empty();
+  Future<int> fetchDayXp({
+    required String userId,
+    required DateTime date,
+    bool forceRemote = false,
+  }) async => 0;
+
   @override
-  Stream<Map<String, int>> watchMuscleXp({required String gymId, required String userId}) => const Stream.empty();
+  Future<Map<String, int>> fetchMuscleXp({
+    required String gymId,
+    required String userId,
+    bool forceRemote = false,
+  }) async => <String, int>{};
+
   @override
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) => const Stream.empty();
+  Future<Map<String, Map<String, int>>> fetchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+    int limit = 10,
+    bool forceRemote = false,
+  }) async => <String, Map<String, int>>{};
+
   @override
-  Stream<int> watchDeviceXp({required String gymId, required String deviceId, required String userId}) => const Stream.empty();
+  Future<Map<String, int>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = 10,
+    bool forceRemote = false,
+  }) async => <String, int>{};
+
   @override
-  Stream<int> watchStatsDailyXp({required String gymId, required String userId}) => const Stream.empty();
+  Future<int> fetchDeviceXp({
+    required String gymId,
+    required String deviceId,
+    required String userId,
+    bool forceRemote = false,
+  }) async => 0;
+
+  @override
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+    bool forceRemote = false,
+  }) async => 0;
 }
 
 class FakeChallengeRepository implements ChallengeRepository {
@@ -132,12 +165,15 @@ class FakeChallengeRepository implements ChallengeRepository {
   }
 
   @override
-  Stream<List<Challenge>> watchActiveChallenges(String gymId) => const Stream.empty();
+  Future<List<Challenge>> fetchActiveChallenges(String gymId) async => const [];
   @override
-  Stream<List<Badge>> watchBadges(String userId) =>
-      const Stream<List<Badge>>.empty();
+  Future<List<Badge>> fetchBadges(String userId) async => const [];
   @override
-  Stream<List<CompletedChallenge>> watchCompletedChallenges(String gymId, String userId) => const Stream.empty();
+  Future<List<CompletedChallenge>> fetchCompletedChallenges(
+    String gymId,
+    String userId,
+  ) async =>
+      const [];
 }
 
 void main() {

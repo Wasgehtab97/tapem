@@ -665,6 +665,39 @@ abstract class AppLocalizations {
   /// **'Powerlifting'**
   String get profileStatsPowerliftingButton;
 
+  /// Headline shown when no summaries are available yet
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics are being prepared'**
+  String get profileStatsNoSummaries;
+
+  /// Detail text displayed while summaries are still processing
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics are being prepared – please try again later.'**
+  String get profileStatsSummariesPending;
+
+  /// Button label to refresh the summaries manually
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get profileStatsRefreshSummaries;
+
+  /// Error message when the statistics request fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load statistics.'**
+  String get profileStatsError;
+
+  /// Retry button label for the profile statistics
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get profileStatsRetry;
+
+  /// Label for the button that loads additional training summaries.
+  String get profileLoadMoreButton;
+
   /// Validation when reps are missing
   ///
   /// In en, this message translates to:
@@ -2092,6 +2125,8 @@ abstract class AppLocalizations {
 
   /// No description provided for @reportViewSurveysTitle.
   String get reportViewSurveysTitle;
+
+  String get reportRefreshButton;
 
   /// No description provided for @reportDeviceFilterHint.
   String get reportDeviceFilterHint;

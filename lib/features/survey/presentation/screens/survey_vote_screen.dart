@@ -16,6 +16,14 @@ class SurveyVoteScreen extends StatefulWidget {
 }
 
 class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
+  SurveyProvider? _surveyProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _surveyProvider ??= context.read<SurveyProvider>();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -26,7 +34,7 @@ class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
 
   @override
   void dispose() {
-    context.read<SurveyProvider>().cancel();
+    _surveyProvider?.cancel();
     super.dispose();
   }
 

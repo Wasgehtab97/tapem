@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/firestore_read_logger.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
@@ -11,6 +12,8 @@ import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/xp_paged_result.dart';
+import 'package:tapem/features/xp/domain/xp_limits.dart';
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -19,6 +22,9 @@ class FirestoreXpSource {
   FirestoreXpSource({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
+
+  static const int _historyLimit = kXpHistoryPageLimit;
+  static const int _trainingDayLimit = kXpTrainingDayPageLimit;
 
       Future<DeviceXpResult> addSessionXp({
         required String gymId,
@@ -72,8 +78,54 @@ class FirestoreXpSource {
         try {
           await _runTransactionWithRetry<void>(
             (tx) async {
+              XpTrace.log('FS_READ', {
+                'path': dayRef.path,
+                'context': 'addSessionXp.day',
+                'traceId': traceId,
+              });
+              FirestoreReadLogger.logStart(
+                scope: 'xp.addSession',
+                path: dayRef.path,
+                operation: 'tx.get',
+                traceId: traceId,
+              );
               final daySnap = await tx.get(dayRef);
+              FirestoreReadLogger.logResult(
+                scope: 'xp.addSession',
+                path: dayRef.path,
+                exists: daySnap.exists,
+                fromCache: daySnap.metadata.isFromCache,
+                traceId: traceId,
+              );
+              XpTrace.log('FS_READ_RESULT', {
+                'path': dayRef.path,
+                'exists': daySnap.exists,
+                'traceId': traceId,
+              });
+              XpTrace.log('FS_READ', {
+                'path': statsRef.path,
+                'context': 'addSessionXp.stats',
+                'traceId': traceId,
+              });
+              FirestoreReadLogger.logStart(
+                scope: 'xp.addSession',
+                path: statsRef.path,
+                operation: 'tx.get',
+                traceId: traceId,
+              );
               final statsSnap = await tx.get(statsRef);
+              FirestoreReadLogger.logResult(
+                scope: 'xp.addSession',
+                path: statsRef.path,
+                exists: statsSnap.exists,
+                fromCache: statsSnap.metadata.isFromCache,
+                traceId: traceId,
+              );
+              XpTrace.log('FS_READ_RESULT', {
+                'path': statsRef.path,
+                'exists': statsSnap.exists,
+                'traceId': traceId,
+              });
               final statsData = statsSnap.data() ?? {};
               final updates = <String, dynamic>{};
 
@@ -175,10 +227,30 @@ class FirestoreXpSource {
     });
 
     await _firestore.runTransaction((tx) async {
+      XpTrace.log('FS_READ', {
+        'path': dayRef.path,
+        'context': 'removeSessionXp.day',
+      });
       final daySnap = await tx.get(dayRef);
+      XpTrace.log('FS_READ', {
+        'path': statsRef.path,
+        'context': 'removeSessionXp.stats',
+      });
       final statsSnap = await tx.get(statsRef);
+      XpTrace.log('FS_READ', {
+        'path': lbUser.path,
+        'context': 'removeSessionXp.lbUser',
+      });
       final lbUserSnap = await tx.get(lbUser);
+      XpTrace.log('FS_READ', {
+        'path': lbSess.path,
+        'context': 'removeSessionXp.lbSess',
+      });
       final lbSessSnap = await tx.get(lbSess);
+      XpTrace.log('FS_READ', {
+        'path': lbDay.path,
+        'context': 'removeSessionXp.lbDay',
+      });
       final lbDaySnap = await tx.get(lbDay);
 
       const xpDelta = LevelService.xpPerSession;
@@ -328,53 +400,45 @@ class FirestoreXpSource {
     throw StateError('Retry loop exited unexpectedly for $traceId');
   }
 
-    Stream<int> watchDayXp({required String userId, required DateTime date}) {
-      final dateStr = logicDayKey(date.toUtc());
+  Future<int> fetchDayXp({required String userId, required DateTime date}) async {
+    final dateStr = logicDayKey(date.toUtc());
     final ref = _firestore
         .collection('users')
         .doc(userId)
         .collection('trainingDayXP')
         .doc(dateStr);
-    debugPrint('👀 watchDayXp userId=$userId date=$dateStr');
-    return ref.snapshots().map((snap) {
-      final xp = (snap.data()?['xp'] as int?) ?? 0;
-      debugPrint('📥 dayXp snapshot $xp');
-      return xp;
-    });
+    debugPrint('⬇️ fetchDayXp userId=$userId date=$dateStr');
+    final snap = await ref.get();
+    final xp = (snap.data()?['xp'] as int?) ?? 0;
+    debugPrint('✅ fetchDayXp -> $xp');
+    return xp;
   }
 
-  Stream<Map<String, int>> watchMuscleXp({
+  Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
-  }) {
-    final doc = _firestore
-        .collection('gyms')
-        .doc(gymId)
-        .collection('users')
-        .doc(userId)
-        .collection('rank')
-        .doc('stats');
-    debugPrint('👀 watchMuscleXp userId=$userId gymId=$gymId');
-    return doc.snapshots().map((snap) {
-      final data = snap.data() ?? {};
-      final map = <String, int>{};
-      for (final entry in data.entries) {
-        final key = entry.key;
-        if (key.endsWith('XP') && key != 'dailyXP') {
-          final group = key.substring(0, key.length - 2);
-          map[group] = (entry.value as int? ?? 0);
-        }
+  }) async {
+    debugPrint('⬇️ fetchMuscleXp userId=$userId gymId=$gymId');
+    final data = await fetchRankStats(gymId: gymId, userId: userId);
+    final map = <String, int>{};
+    for (final entry in data.entries) {
+      final key = entry.key;
+      if (key.endsWith('XP') && key != 'dailyXP') {
+        final group = key.substring(0, key.length - 2);
+        map[group] = (entry.value as num?)?.toInt() ?? 0;
       }
-      debugPrint('📥 muscleXp snapshot ${map.length} entries $map');
-      return map;
-    });
+    }
+    debugPrint('✅ fetchMuscleXp entries=${map.length}');
+    return map;
   }
 
-  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+  Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
     required String gymId,
     required String userId,
-  }) {
-    final col = _firestore
+    int limit = _historyLimit,
+    String? startAfter,
+  }) async {
+    var col = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('users')
@@ -382,47 +446,78 @@ class FirestoreXpSource {
         .collection('rank')
         .doc('stats')
         .collection('muscleXpHistory')
-        .orderBy(FieldPath.documentId);
-    debugPrint('👀 watchMuscleXpHistory userId=$userId gymId=$gymId');
-    return col.snapshots().map((snap) {
-      final map = <String, Map<String, int>>{};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final dayMap = <String, int>{};
-        data.forEach((key, value) {
-          if (key.endsWith('XP') && key != 'dailyXP') {
-            final group = key.substring(0, key.length - 2);
-            dayMap[group] = (value as num?)?.toInt() ?? 0;
-          }
-        });
-        map[doc.id] = dayMap;
-      }
-      debugPrint('📥 muscleXpHistory snapshot days=${map.length}');
-      return map;
-    });
+        .orderBy(FieldPath.documentId, descending: true)
+        .limit(limit);
+    if (startAfter != null && startAfter.isNotEmpty) {
+      col = col.startAfter([startAfter]);
+    }
+    debugPrint(
+      '⬇️ fetchMuscleXpHistory userId=$userId gymId=$gymId limit=$limit startAfter=${startAfter ?? ''}',
+    );
+    final snap = await col.get();
+    final docs = snap.docs.toList();
+    final hasMore = docs.length == limit;
+    final nextCursor = hasMore && docs.isNotEmpty ? docs.last.id : null;
+    docs.sort((a, b) => a.id.compareTo(b.id));
+    final map = <String, Map<String, int>>{};
+    for (final docSnap in docs) {
+      final data = docSnap.data();
+      final dayMap = <String, int>{};
+      data.forEach((key, value) {
+        if (key.endsWith('XP') && key != 'dailyXP') {
+          final group = key.substring(0, key.length - 2);
+          dayMap[group] = (value as num?)?.toInt() ?? 0;
+        }
+      });
+      map[docSnap.id] = dayMap;
+    }
+    debugPrint('✅ fetchMuscleXpHistory days=${map.length} hasMore=$hasMore');
+    return XpPagedResult(
+      items: map,
+      hasMore: hasMore,
+      nextCursor: nextCursor,
+    );
   }
 
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId) {
-    final col = _firestore
+  Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = _trainingDayLimit,
+    String? startAfter,
+  }) async {
+    var col = _firestore
         .collection('users')
         .doc(userId)
-        .collection('trainingDayXP');
-    debugPrint('👀 watchTrainingDaysXp userId=$userId');
-    return col.snapshots().map((snap) {
-      final map = <String, int>{};
-      for (final doc in snap.docs) {
-        map[doc.id] = (doc.data()['xp'] as int? ?? 0);
-      }
-      debugPrint('📥 trainingDays snapshot ${map.length} days');
-      return map;
-    });
+        .collection('trainingDayXP')
+        .orderBy(FieldPath.documentId, descending: true)
+        .limit(limit);
+    if (startAfter != null && startAfter.isNotEmpty) {
+      col = col.startAfter([startAfter]);
+    }
+    debugPrint(
+      '⬇️ fetchTrainingDaysXp userId=$userId limit=$limit startAfter=${startAfter ?? ''}',
+    );
+    final snap = await col.get();
+    final docs = snap.docs.toList();
+    final hasMore = docs.length == limit;
+    final nextCursor = hasMore && docs.isNotEmpty ? docs.last.id : null;
+    docs.sort((a, b) => a.id.compareTo(b.id));
+    final map = <String, int>{};
+    for (final docSnap in docs) {
+      map[docSnap.id] = (docSnap.data()['xp'] as num?)?.toInt() ?? 0;
+    }
+    debugPrint('✅ fetchTrainingDaysXp days=${map.length} hasMore=$hasMore');
+    return XpPagedResult(
+      items: map,
+      hasMore: hasMore,
+      nextCursor: nextCursor,
+    );
   }
 
-  Stream<int> watchDeviceXp({
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
-  }) {
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -431,19 +526,29 @@ class FirestoreXpSource {
         .collection('leaderboard')
         .doc(userId);
     debugPrint(
-      '👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
+      '⬇️ fetchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
     );
-    return doc.snapshots().map((snap) {
-      final xp = (snap.data()?['xp'] as int?) ?? 0;
-      debugPrint('📥 deviceXp snapshot $xp');
-      return xp;
-    });
+    final snap = await doc.get();
+    final xp = (snap.data()?['xp'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ fetchDeviceXp -> $xp');
+    return xp;
   }
 
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
-  }) {
+  }) async {
+    debugPrint('⬇️ fetchStatsDailyXp gymId=$gymId userId=$userId');
+    final data = await fetchRankStats(gymId: gymId, userId: userId);
+    final xp = (data['dailyXP'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ fetchStatsDailyXp -> $xp');
+    return xp;
+  }
+
+  Future<Map<String, dynamic>> fetchRankStats({
+    required String gymId,
+    required String userId,
+  }) async {
     final doc = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -451,11 +556,10 @@ class FirestoreXpSource {
         .doc(userId)
         .collection('rank')
         .doc('stats');
-    debugPrint('👀 watchStatsDailyXp gymId=$gymId userId=$userId');
-    return doc.snapshots().map((snap) {
-      final xp = (snap.data()?['dailyXP'] as int?) ?? 0;
-      debugPrint('📥 stats dailyXP snapshot $xp');
-      return xp;
-    });
+    debugPrint('⬇️ fetchRankStats gymId=$gymId userId=$userId');
+    final snap = await doc.get();
+    final data = snap.data() ?? <String, dynamic>{};
+    debugPrint('✅ fetchRankStats fields=${data.length}');
+    return data;
   }
 }
