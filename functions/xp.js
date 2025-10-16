@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
 function applyXp({ xp, level, add, maxLevel = 30, threshold = 1000 }) {
