@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runBackfillVerify = exports.runBackfill = exports.backfillVerifyCallable = exports.backfillRunCallable = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const runtime_1 = require("./runtime");
 function parseBackfillRunParams(data) {
     const params = {};

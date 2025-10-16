@@ -16,3 +16,8 @@
    - Kopiere `.env.example` zu `.env.dev` oder `.env.prod`
 4. **Dateien bleiben lokal**
    Diese Dateien sind in `.gitignore` gelistet und dürfen nicht committet werden.
+5. **Firebase Functions deployen (Spark-Plan)**
+   - Bleibe beim kostenlosen Spark-Plan, indem du die 1st-gen-Laufzeit `"node": "16"` in `functions/package.json` verwendest und in den Functions-Dateien `require('firebase-functions/v1')` einsetzt.
+   - Ergänze in `firebase.json` die Felder `"runtime": "nodejs16"` und `"platform": "gcfv1"`, damit die CLI beim Deploy explizit die 1st-gen-Plattform nutzt und keine Blaze-spezifischen APIs wie Artifact Registry aktiviert.
+   - Vermeide das Aktivieren von `cloudbuild.googleapis.com` oder `artifactregistry.googleapis.com`, da diese APIs einen Wechsel auf den Blaze-Plan auslösen würden.
+   - Führe anschließend `firebase deploy --only functions:mirrorTrainingSummary,functions:backfillTrainingSummaries,functions:backfillDeviceUsageSummaries` aus.
