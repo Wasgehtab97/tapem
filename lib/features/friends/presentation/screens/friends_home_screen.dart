@@ -4,6 +4,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import '../../providers/friends_provider.dart';
+import '../../providers/friend_alerts_provider.dart';
 import '../../providers/friend_search_provider.dart';
 import '../../providers/friend_presence_provider.dart';
 import '../../providers/friend_chat_summary_provider.dart';
@@ -43,7 +44,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
+        context.read<FriendsProvider>().listen(uid);
         context.read<FriendChatSummaryProvider>().listen(uid);
+        context.read<FriendAlertsProvider>().listen(uid);
       }
     });
   }

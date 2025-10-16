@@ -14,6 +14,7 @@ import 'package:tapem/features/friends/data/user_search_source.dart';
 import 'package:tapem/features/friends/domain/models/friend.dart';
 import 'package:tapem/features/friends/domain/models/friend_request.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
+import 'package:tapem/features/friends/providers/friend_alerts_provider.dart';
 import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
 import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/friends/providers/friends_provider.dart';
@@ -96,6 +97,29 @@ class FakeFriendsProvider extends FriendsProvider {
   void listen(String meUid) {}
 }
 
+class FakeFriendAlertsProvider extends ChangeNotifier
+    implements FriendAlertsProvider {
+  bool _showBadge = false;
+
+  set showBadge(bool value) {
+    if (_showBadge == value) return;
+    _showBadge = value;
+    notifyListeners();
+  }
+
+  @override
+  bool get hasPendingRequests => _showBadge;
+
+  @override
+  bool get hasUnreadMessages => _showBadge;
+
+  @override
+  bool get showBadge => _showBadge;
+
+  @override
+  void listen(String uid) {}
+}
+
 class FakeUserSearchSource implements UserSearchSource {
   @override
   Future<PublicProfile> getProfile(String uid) async =>
@@ -154,6 +178,8 @@ Future<void> pumpProfileScreen(
             create: (_) => FakeProfileProvider()),
         ChangeNotifierProvider<FriendsProvider>(
             create: (_) => FakeFriendsProvider()),
+        ChangeNotifierProvider<FriendAlertsProvider>(
+            create: (_) => FakeFriendAlertsProvider()),
         ChangeNotifierProvider<SettingsProvider>(
             create: (_) => FakeSettingsProvider()),
         ChangeNotifierProvider<GymProvider>(create: (_) => GymProvider()),
