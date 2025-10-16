@@ -1,4 +1,5 @@
 // lib/features/report/domain/usecases/get_device_usage_stats.dart
+import '../models/device_usage_range.dart';
 import '../models/device_usage_stat.dart';
 import '../repositories/report_repository.dart';
 
@@ -8,8 +9,11 @@ class GetDeviceUsageStats {
 
   Future<List<DeviceUsageStat>> execute(
     String gymId, {
-    DateTime? since,
+    required DeviceUsageRange range,
   }) {
-    return _repo.fetchDeviceUsageStats(gymId, since: since);
+    return _repo.fetchDeviceUsageStats(
+      gymId,
+      range: range,
+    );
   }
 }

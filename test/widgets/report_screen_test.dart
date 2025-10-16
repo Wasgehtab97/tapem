@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
@@ -23,7 +24,7 @@ class FakeReportRepository implements ReportRepository {
   @override
   Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
     String gymId, {
-    DateTime? since,
+    required DeviceUsageRange range,
   }) async => usage;
   @override
   Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;

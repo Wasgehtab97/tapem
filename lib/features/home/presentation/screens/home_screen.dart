@@ -110,13 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final authProv = context.read<AuthProvider>();
       debugPrint('[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}');
       final gymProv = context.read<GymProvider>();
-      final reportProv = context.read<ReportProvider>();
       final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
-        gymProv.loadGymData(code).then((_) {
-          final id = gymProv.currentGymId;
-          reportProv.loadReport(id);
-        });
+        gymProv.loadGymData(code);
       }
       if (authProv.userName == null || authProv.userName!.isEmpty) {
         showUsernameDialog(context);
@@ -136,6 +132,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final currentTab = tabs[_currentIndex];
     final currentLabel = currentTab.item.label ?? '';
+    final reportIndex = tabs.indexWhere((t) => t.page is ReportScreen);
+
+    if (reportIndex != -1 && _currentIndex == reportIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final gymProv = context.read<GymProvider>();
+        final reportProv = context.read<ReportProvider>();
+        reportProv.loadReport(gymProv.currentGymId);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(

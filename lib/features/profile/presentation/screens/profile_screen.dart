@@ -49,7 +49,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileProvider>().loadTrainingDates(context);
+      final gymId = context.read<GymProvider>().currentGymId;
+      context
+          .read<ProfileProvider>()
+          .loadTrainingDates(context, gymId: gymId);
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
         context.read<FriendAlertsProvider>().listen(uid);

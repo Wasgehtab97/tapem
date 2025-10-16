@@ -40,4 +40,29 @@ class FirestoreReportSource {
 
     return query.get().then((snap) => snap.docs);
   }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> fetchDeviceUsageSummary(
+    String gymId,
+    String deviceId,
+  ) {
+    return _fs
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('stats')
+        .doc('usage')
+        .get();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> fetchGymUsageSummary(
+    String gymId,
+  ) {
+    return _fs
+        .collection('gyms')
+        .doc(gymId)
+        .collection('stats')
+        .doc('usage')
+        .get();
+  }
 }

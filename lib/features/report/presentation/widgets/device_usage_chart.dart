@@ -2,11 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/utils/chart_interval.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../domain/models/device_usage_range.dart';
 import '../../domain/models/device_usage_stat.dart';
+import '../../../../core/providers/report_provider.dart';
 
 class DeviceUsageChart extends StatefulWidget {
   final List<DeviceUsageStat> usageData;

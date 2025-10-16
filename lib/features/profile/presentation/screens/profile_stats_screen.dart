@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -23,7 +24,8 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final prov = context.read<ProfileProvider>();
       if (!prov.isLoading && prov.trainingDates.isEmpty) {
-        prov.loadTrainingDates(context);
+        final gymId = context.read<GymProvider>().currentGymId;
+        prov.loadTrainingDates(context, gymId: gymId);
       }
     });
   }

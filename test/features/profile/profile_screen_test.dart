@@ -30,7 +30,11 @@ class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 class FakeProfileProvider extends ProfileProvider {
   @override
-  Future<void> loadTrainingDates(BuildContext context) async {}
+  Future<void> loadTrainingDates(
+    BuildContext context, {
+    bool forceRefresh = false,
+    String? gymId,
+  }) async {}
 }
 
 class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
