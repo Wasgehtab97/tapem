@@ -9,11 +9,20 @@
     "firebase-functions": "^4.4.1"
   },
   "devDependencies": {
+    "@types/node": "^20.11.30",
     "firebase-functions-test": "^0.3.3",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
   },
   "scripts": {
-    "test": "firebase emulators:exec --only firestore,functions \"jest --runInBand --coverage\""
+    "build": "tsc -p tsconfig.json",
+    "test": "firebase emulators:exec --only firestore,functions \"jest --runInBand --coverage\"",
+    "test:backfill": "firebase emulators:exec --only firestore \"node --test dist/__tests__/backfill.test.js\"",
+    "backfill:dry": "firebase functions:call backfillRun --data '{\"apply\":false}'",
+    "backfill:gym": "firebase functions:call backfillRun --data '{\"gymId\":\"g1\",\"apply\":true}'",
+    "backfill:user": "firebase functions:call backfillRun --data '{\"userId\":\"<UID>\",\"apply\":true}'",
+    "verify:user": "firebase functions:call backfillVerify --data '{\"userId\":\"<UID>\"}'"
   },
   "jest": {
     "coverageThreshold": {

@@ -7,6 +7,12 @@ const xp = require('./xp');
 const activity = require('./activity');
 const presence = require('./presence');
 const trainingSummary = require('./training-summary');
+let backfill;
+try {
+  backfill = require('./dist/backfill');
+} catch (error) {
+  console.warn('⚠️ backfill module not built yet', error.message || error);
+}
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
 exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
@@ -19,6 +25,10 @@ exports.mirrorLogPresence = presence.mirrorLogPresence;
 exports.mirrorTrainingSummary = trainingSummary.mirrorTrainingSummary;
 exports.backfillTrainingSummaries = trainingSummary.backfillTrainingSummaries;
 exports.backfillDeviceUsageSummaries = trainingSummary.backfillDeviceUsageSummaries;
+if (backfill) {
+  exports.backfillRun = backfill.backfillRunCallable;
+  exports.backfillVerify = backfill.backfillVerifyCallable;
+}
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')
