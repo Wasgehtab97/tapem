@@ -15,15 +15,19 @@ class ProfileProvider extends ChangeNotifier {
     ProfileCacheStore? cache,
     DateTime Function()? nowProvider,
     Duration? cacheTtl,
+    Duration? favoriteExercisesLookback,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _cache = cache ?? const ProfileCacheStore(),
         _nowProvider = nowProvider ?? DateTime.now,
-        _cacheTtl = cacheTtl ?? const Duration(hours: 24);
+        _cacheTtl = cacheTtl ?? const Duration(hours: 24),
+        _favoriteExercisesLookback =
+            favoriteExercisesLookback ?? const Duration(days: 180);
 
   final FirebaseFirestore _firestore;
   final ProfileCacheStore _cache;
   final DateTime Function() _nowProvider;
   final Duration _cacheTtl;
+  final Duration _favoriteExercisesLookback;
 
   bool _isLoading = false;
   String? _error;
@@ -37,6 +41,11 @@ class ProfileProvider extends ChangeNotifier {
   String? _pendingTrainingUserId;
   Future<void>? _inFlightTrainingLoad;
   bool _hasLoadedTrainingDates = false;
+  bool _isFavoriteExercisesLoading = false;
+  bool _hasLoadedFavoriteExercises = false;
+  String? _favoriteExercisesError;
+  String? _pendingFavoriteExercisesUserId;
+  Future<void>? _inFlightFavoriteExercisesLoad;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -47,6 +56,9 @@ class ProfileProvider extends ChangeNotifier {
   String? get favoriteExerciseName => _favoriteExerciseName;
   List<FavoriteExerciseUsage> get favoriteExerciseUsages =>
       List.unmodifiable(_favoriteExerciseUsages);
+  bool get isFavoriteExercisesLoading => _isFavoriteExercisesLoading;
+  String? get favoriteExercisesError => _favoriteExercisesError;
+  bool get hasLoadedFavoriteExercises => _hasLoadedFavoriteExercises;
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(
@@ -118,14 +130,14 @@ class ProfileProvider extends ChangeNotifier {
     required DateTime? createdAt,
   }) async {
     try {
-      final entry = await _fetchTrainingDates(
+      final entry = await _fetchTrainingOverview(
         userId: userId,
         createdAt: createdAt,
         now: _nowProvider(),
       );
       _assignEntry(entry, userId);
       _error = null;
-      await _cache.write(userId, entry);
+      await _cache.write(userId, _buildCacheEntry(entry.cachedAt));
       _isLoading = false;
       notifyListeners();
     } catch (e, st) {
@@ -143,53 +155,27 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<ProfileCacheEntry> _fetchTrainingDates({
+  Future<ProfileCacheEntry> _fetchTrainingOverview({
     required String userId,
     required DateTime? createdAt,
     required DateTime now,
   }) async {
-    final snapshot = await _firestore
-        .collectionGroup('logs')
-        .where('userId', isEqualTo: userId)
-        .get();
+    final collection = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('trainingDayXP')
+        .orderBy(FieldPath.documentId);
 
-    final dateSet = <DateTime>{};
-    final sessionAggregates = <String, _ExerciseAggregate>{};
+    final snapshot = await collection.get();
 
+    final trainingDayDates = <DateTime>[];
     for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final timestamp = (data['timestamp'] as Timestamp).toDate();
-      final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
-      dateSet.add(day);
-
-      final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
-      if (sessionId.isEmpty) {
-        continue;
+      final parsed = DateTime.tryParse(doc.id);
+      if (parsed != null) {
+        trainingDayDates.add(DateTime(parsed.year, parsed.month, parsed.day));
       }
-
-      final deviceRef = doc.reference.parent.parent;
-      final deviceId = deviceRef?.id ?? '';
-      final gymRef = deviceRef?.parent.parent;
-      final gymId = gymRef?.id ?? '';
-      if (deviceId.isEmpty || gymId.isEmpty) {
-        continue;
-      }
-
-      final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
-      final key = '$gymId|$deviceId|$exerciseId';
-      final aggregate = sessionAggregates.putIfAbsent(
-        key,
-        () => _ExerciseAggregate(
-          gymId: gymId,
-          deviceId: deviceId,
-          exerciseId: exerciseId,
-        ),
-      );
-      aggregate.sessionIds.add(sessionId);
     }
-
-    final trainingDayDates = dateSet.toList()
-      ..sort((a, b) => a.compareTo(b));
+    trainingDayDates.sort((a, b) => a.compareTo(b));
     final trainingDates = trainingDayDates
         .map((dt) =>
             '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
@@ -200,17 +186,19 @@ class ProfileProvider extends ChangeNotifier {
       createdAt,
       nowProvider: () => now,
     );
-    final favoriteExercises = await _resolveFavoriteExercises(
-      sessionAggregates.values,
-    );
+
+    final keepFavorites =
+        _lastLoadedUserId == userId && _hasLoadedFavoriteExercises;
 
     return ProfileCacheEntry(
       trainingDates: trainingDates,
       trainingDayDates: trainingDayDates,
       totalTrainingDays: totalTrainingDays,
       averageTrainingDaysPerWeek: avgTrainingDaysPerWeek,
-      favoriteExerciseName: favoriteExercises.favoriteExerciseName,
-      favoriteExerciseUsages: favoriteExercises.usages,
+      favoriteExerciseName: keepFavorites ? _favoriteExerciseName : null,
+      favoriteExerciseUsages: keepFavorites
+          ? List<FavoriteExerciseUsage>.from(_favoriteExerciseUsages)
+          : const <FavoriteExerciseUsage>[],
       cachedAt: now,
     );
   }
@@ -226,6 +214,139 @@ class ProfileProvider extends ChangeNotifier {
         List<FavoriteExerciseUsage>.from(entry.favoriteExerciseUsages);
     _hasLoadedTrainingDates = true;
     _lastLoadedUserId = userId;
+    _hasLoadedFavoriteExercises =
+        _favoriteExerciseName != null || _favoriteExerciseUsages.isNotEmpty;
+    _favoriteExercisesError = null;
+  }
+
+  ProfileCacheEntry _buildCacheEntry(DateTime now) {
+    return ProfileCacheEntry(
+      trainingDates: List<String>.from(_trainingDates),
+      trainingDayDates: List<DateTime>.from(_trainingDayDates),
+      totalTrainingDays: _totalTrainingDays,
+      averageTrainingDaysPerWeek: _avgTrainingDaysPerWeek,
+      favoriteExerciseName: _favoriteExerciseName,
+      favoriteExerciseUsages:
+          List<FavoriteExerciseUsage>.from(_favoriteExerciseUsages),
+      cachedAt: now,
+    );
+  }
+
+  Future<void> ensureFavoriteExercisesLoaded(
+    BuildContext context, {
+    bool forceRefresh = false,
+  }) async {
+    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProv.userId;
+
+    if (userId == null) {
+      _favoriteExercisesError = 'Kein Benutzer gefunden';
+      notifyListeners();
+      return;
+    }
+
+    if (!forceRefresh && _hasLoadedFavoriteExercises &&
+        _lastLoadedUserId == userId) {
+      return;
+    }
+
+    if (_inFlightFavoriteExercisesLoad != null &&
+        _pendingFavoriteExercisesUserId == userId) {
+      await _inFlightFavoriteExercisesLoad;
+      return;
+    }
+
+    _isFavoriteExercisesLoading = true;
+    _favoriteExercisesError = null;
+    notifyListeners();
+
+    final future = _loadFavoriteExercisesFromFirestore(
+      userId: userId,
+      createdAt: authProv.createdAt,
+    );
+    _pendingFavoriteExercisesUserId = userId;
+    _inFlightFavoriteExercisesLoad = future.whenComplete(() {
+      _pendingFavoriteExercisesUserId = null;
+      _inFlightFavoriteExercisesLoad = null;
+    });
+    await _inFlightFavoriteExercisesLoad;
+  }
+
+  Future<void> _loadFavoriteExercisesFromFirestore({
+    required String userId,
+    required DateTime? createdAt,
+  }) async {
+    try {
+      final now = _nowProvider();
+      var since = now.subtract(_favoriteExercisesLookback);
+      if (createdAt != null && createdAt.isAfter(since)) {
+        since = createdAt;
+      }
+      final normalizedSince = DateTime(since.year, since.month, since.day);
+
+      final snapshot = await _firestore
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId)
+          .where(
+            'timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(normalizedSince.toUtc()),
+          )
+          .get();
+
+      final sessionAggregates = <String, _ExerciseAggregate>{};
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
+        if (sessionId.isEmpty) {
+          continue;
+        }
+
+        final deviceRef = doc.reference.parent.parent;
+        final deviceId = deviceRef?.id ?? '';
+        final gymRef = deviceRef?.parent.parent;
+        final gymId = gymRef?.id ?? '';
+        if (deviceId.isEmpty || gymId.isEmpty) {
+          continue;
+        }
+
+        final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
+        final key = '$gymId|$deviceId|$exerciseId';
+        final aggregate = sessionAggregates.putIfAbsent(
+          key,
+          () => _ExerciseAggregate(
+            gymId: gymId,
+            deviceId: deviceId,
+            exerciseId: exerciseId,
+          ),
+        );
+        aggregate.sessionIds.add(sessionId);
+      }
+
+      final favoriteExercises = await _resolveFavoriteExercises(
+        sessionAggregates.values,
+      );
+
+      _favoriteExerciseName = favoriteExercises.favoriteExerciseName;
+      _favoriteExerciseUsages = favoriteExercises.usages;
+      _hasLoadedFavoriteExercises = true;
+      _favoriteExercisesError = null;
+      _isFavoriteExercisesLoading = false;
+      await _cache.write(userId, _buildCacheEntry(now));
+      notifyListeners();
+    } catch (e, st) {
+      _favoriteExercisesError =
+          'Fehler beim Laden der Lieblingsübungen: ${e.toString()}';
+      _isFavoriteExercisesLoading = false;
+      if (e is FirebaseException && e.code == 'failed-precondition') {
+        elogError('FIRESTORE_FAILED_PRECONDITION', e.message ?? e.toString(), st);
+      }
+      debugPrintStack(
+        label: 'ProfileProvider.ensureFavoriteExercisesLoaded',
+        stackTrace: st,
+      );
+      notifyListeners();
+    }
   }
 
   double _calculateAverageTrainingDaysPerWeek(
