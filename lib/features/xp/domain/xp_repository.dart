@@ -1,4 +1,6 @@
 import 'device_xp_result.dart';
+import 'xp_limits.dart';
+import 'xp_paged_result.dart';
 
 abstract class XpRepository {
   Future<DeviceXpResult> addSessionXp({
@@ -14,28 +16,43 @@ abstract class XpRepository {
     List<String> secondaryMuscleGroupIds = const [],
   });
 
-  Stream<int> watchDayXp({required String userId, required DateTime date});
-
-  Stream<Map<String, int>> watchMuscleXp({
-    required String gymId,
+  Future<int> fetchDayXp({
     required String userId,
+    required DateTime date,
+    bool forceRemote = false,
   });
 
-  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+  Future<Map<String, int>> fetchMuscleXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   });
 
-  Stream<Map<String, int>> watchTrainingDaysXp(String userId);
+  Future<XpPagedResult<Map<String, Map<String, int>>>> fetchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+    int limit = kXpHistoryPageLimit,
+    String? startAfter,
+    bool forceRemote = false,
+  });
 
-  Stream<int> watchDeviceXp({
+  Future<XpPagedResult<Map<String, int>>> fetchTrainingDaysXp(
+    String userId, {
+    int limit = kXpTrainingDayPageLimit,
+    String? startAfter,
+    bool forceRemote = false,
+  });
+
+  Future<int> fetchDeviceXp({
     required String gymId,
     required String deviceId,
     required String userId,
+    bool forceRemote = false,
   });
 
-  Stream<int> watchStatsDailyXp({
+  Future<int> fetchStatsDailyXp({
     required String gymId,
     required String userId,
+    bool forceRemote = false,
   });
 }

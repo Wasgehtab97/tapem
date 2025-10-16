@@ -1,75 +1,86 @@
 // lib/core/providers/report_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:tapem/core/services/device_usage_summary_service.dart';
+import 'package:tapem/core/services/training_summary_service.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
-import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
-import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 
 enum ReportState { initial, loading, loaded, error }
 
-enum DeviceUsageRange { last7Days, last30Days, last90Days, last365Days, all }
-
-extension DeviceUsageRangeX on DeviceUsageRange {
-  DateTime? resolveSince(DateTime now) {
-    switch (this) {
-      case DeviceUsageRange.last7Days:
-        return now.subtract(const Duration(days: 7));
-      case DeviceUsageRange.last30Days:
-        return now.subtract(const Duration(days: 30));
-      case DeviceUsageRange.last90Days:
-        return now.subtract(const Duration(days: 90));
-      case DeviceUsageRange.last365Days:
-        return now.subtract(const Duration(days: 365));
-      case DeviceUsageRange.all:
-        return null;
-    }
-  }
-}
-
 class ReportProvider extends ChangeNotifier {
-  final GetDeviceUsageStats _getUsage;
-  final GetAllLogTimestamps _getTimestamps;
+  ReportProvider({
+    DeviceUsageSummaryService? deviceSummaryService,
+    TrainingSummaryService? trainingSummaryService,
+  })  : _deviceSummaryService =
+            deviceSummaryService ?? DeviceUsageSummaryService(),
+        _trainingSummaryService =
+            trainingSummaryService ?? TrainingSummaryService();
 
+  final DeviceUsageSummaryService _deviceSummaryService;
+  final TrainingSummaryService _trainingSummaryService;
+  List<DeviceUsageSummaryEntry> _deviceEntries = const [];
+  Map<String, int> _groupUsageCounts = const {};
   ReportState state = ReportState.initial;
   List<DeviceUsageStat> usageStats = const [];
   List<DateTime> heatmapDates = [];
+  Map<String, int> get groupUsageCounts => Map.unmodifiable(_groupUsageCounts);
   String? errorMessage;
   DeviceUsageRange usageRange = DeviceUsageRange.last30Days;
 
   String? _currentGymId;
+  String? _currentUserId;
+  DateTime? _lastFetch;
+  Future<void>? _activeLoad;
+  static const Duration _cacheTtl = Duration(minutes: 5);
 
-  ReportProvider({
-    required GetDeviceUsageStats getUsageStats,
-    required GetAllLogTimestamps getLogTimestamps,
-  }) : _getUsage = getUsageStats,
-       _getTimestamps = getLogTimestamps;
-
-  Future<void> loadReport(String gymId) async {
+  Future<void> loadReport(
+    String gymId, {
+    bool forceRefresh = false,
+    String? userId,
+  }) async {
     if (gymId.isEmpty) {
       state = ReportState.initial;
       usageStats = const [];
       heatmapDates = [];
       errorMessage = null;
       _currentGymId = null;
+      _lastFetch = null;
+      _currentUserId = null;
+      _groupUsageCounts = const {};
       notifyListeners();
       return;
     }
-    _currentGymId = gymId;
+    _currentUserId = userId ?? _currentUserId;
+    final now = DateTime.now();
+    final withinCache =
+        !forceRefresh &&
+            _currentGymId == gymId &&
+            _lastFetch != null &&
+            now.difference(_lastFetch!) < _cacheTtl &&
+            state == ReportState.loaded;
+    if (withinCache) {
+      return;
+    }
+
+    if (_activeLoad != null) {
+      return _activeLoad!;
+    }
+
     state = ReportState.loading;
     errorMessage = null;
+    _currentGymId = gymId;
     notifyListeners();
-    try {
-      final usageFuture = _fetchUsageStats(gymId);
-      final timestampsFuture = _getTimestamps.execute(gymId);
 
-      usageStats = await usageFuture;
-      heatmapDates = await timestampsFuture;
-      state = ReportState.loaded;
-    } catch (e) {
-      errorMessage = e.toString();
-      state = ReportState.error;
-    }
-    notifyListeners();
+    final future = _loadData(
+      gymId: gymId,
+      userId: _currentUserId,
+      forceRefresh: forceRefresh,
+    ).whenComplete(() {
+      _activeLoad = null;
+    });
+    _activeLoad = future;
+    return future;
   }
 
   Future<void> changeUsageRange(DeviceUsageRange range) async {
@@ -77,16 +88,49 @@ class ReportProvider extends ChangeNotifier {
       return;
     }
     usageRange = range;
-    if (_currentGymId == null || _currentGymId!.isEmpty) {
-      notifyListeners();
-      return;
-    }
-    state = ReportState.loading;
-    errorMessage = null;
+    _rebuildUsageStats();
     notifyListeners();
+  }
+
+  Future<void> refresh() {
+    final gymId = _currentGymId;
+    if (gymId == null || gymId.isEmpty) {
+      return Future<void>.value();
+    }
+    return loadReport(
+      gymId,
+      forceRefresh: true,
+      userId: _currentUserId,
+    );
+  }
+
+  Future<void> _loadData({
+    required String gymId,
+    required bool forceRefresh,
+    String? userId,
+  }) async {
     try {
-      usageStats = await _fetchUsageStats(_currentGymId!);
+      final deviceState = await _deviceSummaryService.loadSummaries(
+        gymId,
+        forceRefresh: forceRefresh,
+      );
+
+      _deviceEntries = deviceState.entries;
+      _rebuildUsageStats();
+      heatmapDates = _collectHeatmapDates(_deviceEntries);
+
+      if (userId != null && userId.isNotEmpty) {
+        _groupUsageCounts = await _trainingSummaryService.fetchGroupUsageCounts(
+          gymId: gymId,
+          userId: userId,
+          forceRefresh: forceRefresh,
+        );
+      } else {
+        _groupUsageCounts = const {};
+      }
+
       state = ReportState.loaded;
+      _lastFetch = DateTime.now();
     } catch (e) {
       errorMessage = e.toString();
       state = ReportState.error;
@@ -94,9 +138,30 @@ class ReportProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<DeviceUsageStat>> _fetchUsageStats(String gymId) {
-    final now = DateTime.now();
-    final since = usageRange.resolveSince(now);
-    return _getUsage.execute(gymId, since: since);
+  void _rebuildUsageStats() {
+    usageStats = _deviceEntries
+        .map(
+          (entry) => DeviceUsageStat(
+            id: entry.deviceId,
+            name: entry.name,
+            description: entry.description,
+            sessions: entry.countForRangeKey(usageRange.rangeKey),
+            totalSessions: entry.totalSessions,
+            lastActive: entry.lastActive,
+          ),
+        )
+        .toList();
+  }
+
+  List<DateTime> _collectHeatmapDates(List<DeviceUsageSummaryEntry> entries) {
+    final uniqueDays = <DateTime>{};
+    for (final entry in entries) {
+      for (final date in entry.recentDates) {
+        uniqueDays.add(DateTime(date.year, date.month, date.day));
+      }
+    }
+    final list = uniqueDays.toList()
+      ..sort((a, b) => a.compareTo(b));
+    return list;
   }
 }

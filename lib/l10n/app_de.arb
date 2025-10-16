@@ -395,6 +395,36 @@
     "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
   },
 
+  "profileStatsNoSummaries": "Statistiken werden vorbereitet",
+  "@profileStatsNoSummaries": {
+    "description": "Titeltext, wenn noch keine Summaries verfügbar sind"
+  },
+
+  "profileStatsSummariesPending": "Statistiken werden erstellt – bitte später erneut versuchen.",
+  "@profileStatsSummariesPending": {
+    "description": "Detailtext für das Summaries-Hinweis-Banner"
+  },
+
+  "profileStatsRefreshSummaries": "Erneut prüfen",
+  "@profileStatsRefreshSummaries": {
+    "description": "Button-Beschriftung zum manuellen Aktualisieren der Statistiken"
+  },
+
+  "profileStatsError": "Statistiken konnten nicht geladen werden.",
+  "@profileStatsError": {
+    "description": "Fehlermeldung, wenn das Laden der Statistiken scheitert"
+  },
+
+  "profileStatsRetry": "Erneut versuchen",
+  "@profileStatsRetry": {
+    "description": "Button-Text zum erneuten Laden nach einem Fehler"
+  },
+
+  "profileLoadMoreButton": "Mehr Tage laden",
+  "@profileLoadMoreButton": {
+    "description": "Button, der zusätzliche Trainingszusammenfassungen lädt"
+  },
+
   "repsRequired": "Wdh?",
   "@repsRequired": {
     "description": "Validierungsmeldung, wenn Wiederholungen fehlen"
@@ -1017,6 +1047,9 @@
   "friends_empty_friends": "Noch keine Freunde",
   "friends_empty_search": "Keine Nutzer gefunden",
   "friends_privacy_no_access": "Dieser Nutzer teilt seinen Kalender nicht.",
+  "friends_calendar_initial_hint": "Trainingstage werden bei Bedarf geladen. Nutze \"Aktualisieren\", um die neuesten 30 Tage zu holen, und \"Ältere Tage laden\" für weitere Historie.",
+  "friends_calendar_refresh": "Aktualisieren",
+  "friends_calendar_load_more_days": "Ältere Tage laden",
   "friends_cta_self": "Du selbst",
   "friends_cta_friend": "Freund",
   "friends_cta_pending": "Ausstehend",
@@ -1096,6 +1129,8 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportRefreshButton": "Aktualisieren"
+  ,"@reportRefreshButton": {"description": "Button zum manuellen Aktualisieren des Reports"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
   ,"reportUsageRange7Days": "Letzte 7 Tage"

@@ -18,6 +18,7 @@ import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -91,10 +92,6 @@ import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
-
-import 'features/report/data/repositories/report_repository_impl.dart';
-import 'features/report/domain/usecases/get_device_usage_stats.dart';
-import 'features/report/domain/usecases/get_all_log_timestamps.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
 
@@ -201,6 +198,8 @@ void _handleMessage(RemoteMessage message) {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Hive.initFlutter();
+
   // .env laden (optional)
   await dotenv.load(fileName: '.env.dev').catchError((_) {});
 
@@ -248,11 +247,6 @@ Future<void> main() async {
     }
     return true;
   }());
-
-  // Reports vorbereiten
-  final reportRepo = ReportRepositoryImpl();
-  final usageUC = GetDeviceUsageStats(reportRepo);
-  final logsUC = GetAllLogTimestamps(reportRepo);
 
   runApp(
     MultiProvider(
@@ -341,14 +335,20 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (c) => FriendSearchProvider(c.read<UserSearchSource>()),
         ),
-        ChangeNotifierProvider(
-          create: (_) => FriendCalendarProvider(),
-        ),
         ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
           create: (_) => FriendPresenceProvider(),
           update: (_, friends, prov) {
             prov ??= FriendPresenceProvider();
             prov.updateUids(friends.friends.map((e) => e.friendUid).toList());
+            return prov;
+          },
+        ),
+        ChangeNotifierProxyProvider<FriendPresenceProvider,
+            FriendCalendarProvider>(
+          create: (_) => FriendCalendarProvider(),
+          update: (_, presence, prov) {
+            prov ??= FriendCalendarProvider();
+            prov.setPresenceProvider(presence);
             return prov;
           },
         ),
@@ -503,10 +503,7 @@ Future<void> main() async {
           create: (c) =>
               AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              ReportProvider(getUsageStats: usageUC, getLogTimestamps: logsUC),
-        ),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(
           create: (_) => SurveyProvider(firestore: FirebaseFirestore.instance),
         ),
@@ -535,6 +532,7 @@ class MyApp extends StatelessWidget {
       title: dotenv.env['APP_NAME'] ?? 'Tap’em',
       debugShowCheckedModeBanner: false,
       theme: theme,
+      navigatorObservers: [routeObserver],
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

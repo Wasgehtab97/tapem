@@ -9,10 +9,10 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "firebase emulators:exec --only firestore 'node --test __tests__/rules.test.js'",
     "set-admin": "node scripts/setAdmin.js",
     "rules-test": "mocha --timeout 120000 firestore-tests/*.test.js",
-    "test:rules": "firebase emulators:exec --only firestore 'node --test ./tests/rules/run.js'",
+    "test:rules": "firebase emulators:exec --only firestore 'node --test __tests__/rules.test.js'",
     "test:functions": "cd functions && npm test",
     "test:all": "npm run test:rules && npm run test:functions"
   },
@@ -186,7 +186,7 @@
     "finalhandler": "^1.3.1",
     "find-up": "^5.0.0",
     "firebase": "^11.7.1",
-    "firebase-admin": "^13.4.0",
+    "firebase-admin": "^13.5.0",
     "flat": "^5.0.2",
     "fn.name": "^1.1.0",
     "foreground-child": "^3.3.1",

@@ -24,6 +24,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cancelButton => 'Abbrechen';
+
+  @override
   String get commonOk => 'OK';
 
   @override
@@ -307,14 +309,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Lieblingsübung';
 
   @override
-  String get profileStatsFavoriteExerciseDialogTitle =>
-      'Top 5 Lieblingsübungen';
+  String get profileStatsFavoriteExerciseDialogTitle => 'Top 5 Lieblingsübungen';
 
   @override
   String get profileStatsFavoriteExerciseFallback => 'Noch keine Sessions';
 
   @override
   String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
+  String get profileStatsNoSummaries => 'Statistiken werden vorbereitet';
+
+  @override
+  String get profileStatsSummariesPending => 'Statistiken werden erstellt – bitte später erneut versuchen.';
+
+  @override
+  String get profileStatsRefreshSummaries => 'Erneut prüfen';
+
+  @override
+  String get profileStatsError => 'Statistiken konnten nicht geladen werden.';
+
+  @override
+  String get profileStatsRetry => 'Erneut versuchen';
+
+  @override
+  String get profileLoadMoreButton => 'Mehr Tage laden';
 
   @override
   String get repsRequired => 'Wdh?';
@@ -931,6 +950,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get friends_privacy_no_access => 'Dieser Nutzer teilt seinen Kalender nicht.';
 
   @override
+  String get friends_calendar_initial_hint => 'Trainingstage werden bei Bedarf geladen. Nutze \"Aktualisieren\", um die neuesten 30 Tage zu holen, und \"Ältere Tage laden\" für weitere Historie.';
+
+  @override
+  String get friends_calendar_refresh => 'Aktualisieren';
+
+  @override
+  String get friends_calendar_load_more_days => 'Ältere Tage laden';
+
+  @override
   String get friends_cta_self => 'Du selbst';
 
   @override
@@ -1081,24 +1109,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportViewSurveysTitle => 'Umfragen ansehen';
 
   @override
+  String get reportRefreshButton => 'Aktualisieren';
+
+  @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
+
+  @override
   String get reportUsageRange7Days => 'Letzte 7 Tage';
+
+  @override
   String get reportUsageRange30Days => 'Letzte 30 Tage';
+
+  @override
   String get reportUsageRange90Days => 'Letzte 90 Tage';
+
+  @override
   String get reportUsageRange365Days => 'Letzte 365 Tage';
+
+  @override
   String get reportUsageRangeAll => 'Gesamt';
 
   @override
-  String get reportDeviceUsageEmpty =>
-      'Noch keine Nutzungsdaten vorhanden';
+  String get reportDeviceUsageEmpty => 'Noch keine Nutzungsdaten vorhanden';
 
   @override
-  String get reportDeviceUsageNoMatches =>
-      'Keine Geräte entsprechen deiner Suche';
+  String get reportDeviceUsageNoMatches => 'Keine Geräte entsprechen deiner Suche';
 
   @override
-  String get reportDeviceUsageError =>
-      'Die Nutzungsdaten konnten nicht geladen werden.';
+  String get reportDeviceUsageError => 'Die Nutzungsdaten konnten nicht geladen werden.';
 
   @override
   String reportDeviceUsageSessions(int count) {
@@ -1110,7 +1148,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String exerciseDeleteMessage(Object name) {
-    return 'Übung "$name" wirklich löschen?';
+    return 'Übung \"$name\" wirklich löschen?';
   }
 
   @override
@@ -1258,6 +1296,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminDashboardBranding => 'Branding';
 
   @override
+  String get adminDeviceNfcWritten => 'NFC-Tag geschrieben';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Fehler beim Schreiben: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Gerät löschen';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Gerät löschen?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Soll das Gerät \"$name\" wirklich gelöscht werden?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Gerät gelöscht';
+
+  @override
+  String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
+
+  @override
   String adminSymbolsAddButton(int count) {
     return 'Hinzufügen ($count)';
   }
@@ -1275,7 +1338,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminSymbolsNoAssetsForTitle(Object title) {
-    return 'Manifest enthält keine ${title}-Assets';
+    return 'Manifest enthält keine $title-Assets';
   }
 
   @override
@@ -1283,7 +1346,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminSymbolsAllTitleAssigned(Object title) {
-    return 'Alle ${title}-Symbole bereits zugewiesen.';
+    return 'Alle $title-Symbole bereits zugewiesen.';
   }
 
   @override
@@ -1389,29 +1452,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Tastatur ausblenden';
-
-  @override
-  String get adminDeviceNfcWritten => 'NFC-Tag geschrieben';
-
-  @override
-  String adminDeviceNfcWriteError(Object error) {
-    return 'Fehler beim Schreiben: $error';
-  }
-
-  @override
-  String get deviceDeleteTooltip => 'Gerät löschen';
-
-  @override
-  String get deviceDeleteDialogTitle => 'Gerät löschen?';
-
-  @override
-  String deviceDeleteDialogMessage(Object name) {
-    return 'Soll das Gerät "$name" wirklich gelöscht werden?';
-  }
-
-  @override
-  String get deviceDeleteSuccess => 'Gerät gelöscht';
-
-  @override
-  String get deviceWriteNfcTooltip => 'NFC-Tag beschreiben';
 }

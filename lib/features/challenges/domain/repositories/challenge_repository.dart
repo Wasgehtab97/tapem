@@ -3,9 +3,9 @@ import '../models/badge.dart';
 import '../models/completed_challenge.dart';
 
 abstract class ChallengeRepository {
-  Stream<List<Challenge>> watchActiveChallenges(String gymId);
-  Stream<List<Badge>> watchBadges(String userId);
-  Stream<List<CompletedChallenge>> watchCompletedChallenges(
+  Future<List<Challenge>> fetchActiveChallenges(String gymId);
+  Future<List<Badge>> fetchBadges(String userId);
+  Future<List<CompletedChallenge>> fetchCompletedChallenges(
     String gymId,
     String userId,
   );

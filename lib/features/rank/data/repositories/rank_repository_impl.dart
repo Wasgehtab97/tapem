@@ -28,11 +28,11 @@ class RankRepositoryImpl implements RankRepository {
   }
 
   @override
-  Stream<List<Map<String, dynamic>>> watchLeaderboard(
+  Future<List<Map<String, dynamic>>> fetchLeaderboard(
     String gymId,
     String deviceId,
   ) {
-    return _source.watchLeaderboard(gymId, deviceId);
+    return _source.fetchLeaderboard(gymId, deviceId);
   }
 
   // Weekly and monthly leaderboards were removed

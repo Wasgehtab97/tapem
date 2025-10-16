@@ -1,0 +1,70 @@
+Summary,Issue Type,Description,Labels,Priority,Parent
+PR-Timeline & Storycards,Story,"Automatisch erkannte erste Male (neues Gerät/Übung, 1RM-, Volumen-, Rep-PR) als Session-Stories mit sharebaren Karten.",members,Medium,{EPIC_MEMBERS}
+Last-Time vs. This-Time,Story,"Vergleich zur letzten Session je Übung/Gerät: Gewicht, Reps, Volumen, Sätze, Pausen-Median inkl. Ampel besser/gleich/schlechter.",members,Medium,{EPIC_MEMBERS}
+e1RM & Relative Strength (RSR),Story,"Berechne e1RM (Epley) und RSR (e1RM/Körpergewicht) mit Verlauf pro Disziplin inkl. Wochentrend.",members,Medium,{EPIC_MEMBERS}
+Volumen/Intensität/Dichte,Story,"Session-Volumen (Σ Gewicht×Reps), Ø-Intensität (%e1RM) und Dichte (Sätze/Trainingsminute) in der Session-Summary.",members,Medium,{EPIC_MEMBERS}
+Muscle Balance Radar,Story,"Radar/Heatmap primärer Muskelgruppen aus XP-History; Ungleichgewichte markieren und Präventions-Hinweise geben.",members,Medium,{EPIC_MEMBERS}
+Drop-Set-Effekt,Story,"Auswertung zusätzlicher Volumen- und Ermüdungsbeiträge von Drop-Sets (Anzahl Drops, abfallende Reps).",members,Low,{EPIC_MEMBERS}
+Pausen-Coach,Story,"Geplanter vs. tatsächlicher Satz-Rest; Hinweise ‚zu kurz/zu lang‘ und Reminder im Ideal-Fenster.",members,Medium,{EPIC_MEMBERS}
+Streaks & Consistency Score,Story,"7/30/90-Tage Aktivität, Missed-Weeks, Comeback-Streak; kleine XP-Booster für 3/7/21-Tage Serien.",members,Medium,{EPIC_MEMBERS}
+Tempo/Technik (Tagging),Story,"Optionales Tempo-Tagging je Satz (z. B. 3-0-3) als Qualitäts-Proxy ohne zusätzliche Sensorik.",members,Low,{EPIC_MEMBERS}
+Recovery Check-in,Story,"3-Fragen-Likert (Energie, Schlaf, Muskelkater) → Readiness-Score; Einfluss auf Session-Planung.",members,Low,{EPIC_MEMBERS}
+Creatin-Compliance → Leistungslineal,Story,"Korrelation Intake-Streak zu Volumen/PR-Rate; dezente Nudges bei Lücken.",members,Low,{EPIC_MEMBERS}
+Off-Peak-Bonus,Story,"Badge/kleine XP-Multiplikatoren für Training in weniger vollen Zeiten (Auslastungsdaten-basiert).",members,Low,{EPIC_MEMBERS}
+Peak-/Off-Peak-Heatmap pro Gerät,Story,"Stündliche Geräteauslastung je Wochentag aus Logs; rote Zonen für Floor-Staff.",operators,High,{EPIC_OPERATORS}
+Satz-Stau & Wartewahrscheinlichkeit,Story,"Gleichzeitige Gerätenutzung (überlappende Logs) → Warte-Score und Empfehlungen (Zusatzgerät/Umplatzierung).",operators,High,{EPIC_OPERATORS}
+Transition-Graph (Sankey/Markov),Story,"Sequenzen aus Session-Setlisten → häufige Wege (z. B. Latzug→Rudern→Rear Delt) für bessere Zonenlayouts.",operators,Medium,{EPIC_OPERATORS}
+Program Fit Score,Story,"Abgleich Trainingsplan vs. reale Durchführung (abgewichen/gekürzt/übererfüllt) → Plan-Iteration priorisieren.",operators,Medium,{EPIC_OPERATORS}
+Onboarding-Funnel (Neumitglieder),Story,"Erstscan→3.→10. Besuch; Drop-Off-Punkte und Geräte, die beim Halten helfen.",operators,Medium,{EPIC_OPERATORS}
+Challenge-Ökonomie,Story,"Teilnahmequote, Abschlussrate, ØXP, Cost-per-Motivation; identifiziert wirksame Challenges.",operators,Medium,{EPIC_OPERATORS}
+Geräte-Gesundheit / Serviceability,Story,"Feedback×Nutzung → Serviceability-Score (Zeit bis Close, Meldungen/1000 Sätze) zur Wartungs-Priorisierung.",operators,High,{EPIC_OPERATORS}
+Sicherheits-Anomalien,Story,"Heuristiken für unplausible Logs (Pausen zu kurz, unrealistische Gewichte, Copy-Paste) → Fairness/Review.",operators,Medium,{EPIC_OPERATORS}
+Cohorts & Retention (Gym-Level),Story,"7/28/90 Retention, DAU/WAU/MAU, Stickiness, Trainingstage/Nutzer/Woche.",operators,Medium,{EPIC_OPERATORS}
+Flächen-ROI-Schätzung,Story,"Volumen-/Satz-Output je m² und Gerätegruppe → Austausch/Neuanschaffungen bewerten.",operators,Low,{EPIC_OPERATORS}
+Staffing-Planer,Story,"Schichtvorschläge und PT-Slot Empfehlungen basierend auf Peak-Heatmaps.",operators,Low,{EPIC_OPERATORS}
+Survey-Loop,Story,"Verknüpft Umfragen mit Nutzungsdaten (vor/nach Feature/Challenge) für kausalere Indizien.",operators,Low,{EPIC_OPERATORS}
+Faire Leaderboards,Story,"Gewichtsklassen/IPF- oder Wilks-Score; optional Percentile-Rank statt absolutem Rang.",community,Medium,{EPIC_COMMUNITY}
+Route of the Day,Story,"Community-basierte Sequenz als Tages-Mini-Plan mit Auslastungsintelligenz.",community,Low,{EPIC_COMMUNITY}
+Device Conquest,Story,"King/Queen of the Machine je Gerät/Tag (Volumen-Index × Adhärenz).",community,Low,{EPIC_COMMUNITY}
+Buddy-Boost,Story,"Korrelieren ‚Trainieren mit Freund X‘ ↔ +Volumen/+Adhärenz; opt-in Pairing-Vorschläge.",community,Low,{EPIC_COMMUNITY}
+Community Milestones,Story,"Gemeinschaftliche Meilensteine (Reps, PRs) mit Live-Ticker im Gym-Feed.",community,Low,{EPIC_COMMUNITY}
+XP-Multiplikatoren dynamisch,Story,"Multiplikatoren für Off-Peak, ‚Muskelgruppe der Woche‘, Plan-Adhärenz ≥80%.",gamification,Medium,{EPIC_GAMIFICATION}
+Quest-Lines,Story,"Mehrstufige Quests (Onboarding→Form→Kraftblock) mit Auto-Freischaltung via Stats.",gamification,Medium,{EPIC_GAMIFICATION}
+Streak Shield,Story,"Schutz vor Streak-Abbruch (z. B. Krankheit) — 1 Shield/Monat, erspielbar.",gamification,Low,{EPIC_GAMIFICATION}
+Session Quality Score (SQS),Story,"Score 0–100 aus Plan-Adhärenz, Dichte, Pausen-Adhärenz, Technik-Proxy; Bonus-XP.",gamification,High,{EPIC_GAMIFICATION}
+Auslastung je Gerät/Slot (sofort),Story,"Heatmap aus timestamp + deviceId; ohne neue Felder machbar.",analytics,High,{EPIC_ANALYTICS}
+Volumen/Intensität/Dichte (sofort),Story,"Berechnungen aus bestehenden Satzfeldern; direkte Session-Insights.",analytics,Medium,{EPIC_ANALYTICS}
+PR-Erkennung (sofort),Story,"Bestes Gewicht×Reps je Übung/Disziplin historisch vs. heute.",analytics,Medium,{EPIC_ANALYTICS}
+Muscle Balance (sofort),Story,"Aus XP-History abgeleitete Balance je Muskelgruppe.",analytics,Medium,{EPIC_ANALYTICS}
+Transitions (sofort),Story,"Geräte-Sequenzen aus Session-Setlisten als Graph.",analytics,Medium,{EPIC_ANALYTICS}
+Per-Satz-Zeitstempel,Story,"Neue Felder startedAt/endedAt je Satz → exakte Pausen, Dichte, Sequenzen.",datapoints,High,{EPIC_DATAPOINTS}
+Subjective Readiness,Story,"users/{uid}/wellness/{day}: sleep, energy, soreness (1–5) → Readiness & ACWR.",datapoints,Medium,{EPIC_DATAPOINTS}
+RPE pro Satz,Story,"Feld rpe (1–10) zusätzlich zu RIR → bessere e1RM/Intensitätsmodelle.",datapoints,Medium,{EPIC_DATAPOINTS}
+Bodyweight Log,Story,"users/{uid}/bodyweight/{day} (kg) → RSR, Gewichtsklassen, Trends.",datapoints,Low,{EPIC_DATAPOINTS}
+Tempo-Tag,Story,"Feld tempo (z. B. 3-0-3) → Technik-/Qualitätspunkte.",datapoints,Low,{EPIC_DATAPOINTS}
+Injury/Pain Flag (opt-in),Story,"Felder painTag (Bereich, Severity) → Präventionshinweise, Coach-Alarm.",datapoints,Low,{EPIC_DATAPOINTS}
+Session Context,Story,"timeOfDay, isPeakHour, withFriendUid? → Personalisierung/Buddy-Boost.",datapoints,Low,{EPIC_DATAPOINTS}
+Device Occupancy Snapshot,Story,"Serverseitige Aggregation für Live-Auslastung/Forecast.",datapoints,Medium,{EPIC_DATAPOINTS}
+Challenge Metadata,Story,"attempts, gaveUpAt → bessere Challenge-Designs.",datapoints,Low,{EPIC_DATAPOINTS}
+ACWR (Belastungssteuerung),Story,"Acute (7-Tage Volumen) / Chronic (28-Tage Ø) → Hinweise bei >1.5.",models,Medium,{EPIC_MODELS}
+SQS Formel,Story,"Gewichte: 40% Plan-Adhärenz, 25% Dichte-Z-Score, 20% Pausen-Adhärenz, 15% Technik/Tempo; fehlende Daten neutral.",models,High,{EPIC_MODELS}
+Serviceability-Score (Formel),Story,"z-normierte Nutzungsintensität − offene Tickets × Zeit offen.",models,Medium,{EPIC_MODELS}
+Sankey Trainingsfluss,Story,"Darstellung typischer Übungs-/Geräte-Sequenzen als Sankey.",viz,Low,{EPIC_VIZ}
+Calendar-Heatmap Trainingstage,Story,"Monats-Heatmap aktiver Tage (Streaks/Consistency).",viz,Low,{EPIC_VIZ}
+Ridgeline Pausenverteilung,Story,"Pausen-Dichte pro Session/Übung als Ridgeline.",viz,Low,{EPIC_VIZ}
+Radar Muskelbalance,Story,"Radar der Muskelgruppen (Push/Pull/Legs …).",viz,Low,{EPIC_VIZ}
+Sparklines e1RM/Volumen,Story,"Kleine Trend-Sparklines je Übung (e1RM/Volumen).",viz,Low,{EPIC_VIZ}
+Peak-Heatmap je Gerät/Wochentag,Story,"Kombinierte Heatmap für Auslastung über die Woche.",viz,Low,{EPIC_VIZ}
+Timestamps & Timezone Normalisierung,Story,"Server-Timestamps konsequent; UTC + userTZ normalisieren.",privacy,Medium,{EPIC_PRIVACY}
+Pseudonymisierung & Opt-ins,Story,"Dashboards ohne Personenbezug; explizite Opt-ins für Wellness/Pain/Friends.",privacy,High,{EPIC_PRIVACY}
+Anti-Cheat Heuristiken,Story,"Plausibilitätschecks (Pausen, Max-Gewichte, Geräte-Kohärenz) für faire Leaderboards.",privacy,Medium,{EPIC_PRIVACY}
+Geräte-Peak-Heatmap (Quick Win),Story,"Schnell umsetzbare Auslastungs-Heatmap pro Gerät.",quickwin,High,{EPIC_QW}
+PR-Timeline & Stories (Quick Win),Story,"Schnelle PR-Erkennung + sharebare Karten.",quickwin,High,{EPIC_QW}
+e1RM/RSR-Sparklines (Quick Win),Story,"Kleine e1RM/RSR-Trends je Übung.",quickwin,High,{EPIC_QW}
+Volumen/Intensität/Dichte Summary (Quick Win),Story,"Kompakte Session-KPIs.",quickwin,High,{EPIC_QW}
+Muscle-Balance Radar (Quick Win),Story,"Schnelle Radar-Ansicht aus XP-History.",quickwin,Medium,{EPIC_QW}
+Transition-Graph Top-5 (Quick Win),Story,"Top-Sequenzen je Gym.",quickwin,Medium,{EPIC_QW}
+Challenge-Ökonomie-Board (Quick Win),Story,"Teilnahme/Abschluss/XP auf einen Blick.",quickwin,Medium,{EPIC_QW}
+Serviceability-Score v1 (Quick Win),Story,"Einfacher Score aus Feedback×Nutzung.",quickwin,Medium,{EPIC_QW}
+Streaks & Consistency-Badges (Quick Win),Story,"Schnelle Streak-Badges.",quickwin,Medium,{EPIC_QW}
+Off-Peak-XP-Multiplier (Quick Win),Story,"Dynamische XP in Nebenzeiten.",quickwin,Medium,{EPIC_QW}

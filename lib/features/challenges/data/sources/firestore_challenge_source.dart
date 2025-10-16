@@ -1,19 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
-import '../../domain/models/challenge.dart';
+
 import '../../domain/models/badge.dart';
+import '../../domain/models/challenge.dart';
 import '../../domain/models/completed_challenge.dart';
 
 class FirestoreChallengeSource {
-  final FirebaseFirestore _firestore;
-
   FirestoreChallengeSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Stream<List<Challenge>> watchActiveChallenges(String gymId) {
+  final FirebaseFirestore _firestore;
+  static const int _challengeLimit = 20;
+  static const int _badgeLimit = 50;
+  static const int _completedLimit = 30;
+
+  Future<List<Challenge>> fetchActiveChallenges(String gymId) async {
     final now = Timestamp.fromDate(DateTime.now());
-    final weekly = _firestore
+    debugPrint('⬇️ fetchActiveChallenges gym=$gymId at=${now.toDate()}');
+    final weeklyFuture = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('challenges')
@@ -21,12 +25,9 @@ class FirestoreChallengeSource {
         .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => Challenge.fromMap(d.id, d.data())).toList(),
-        );
-    final monthly = _firestore
+        .limit(_challengeLimit)
+        .get();
+    final monthlyFuture = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('challenges')
@@ -34,46 +35,53 @@ class FirestoreChallengeSource {
         .collection('items')
         .where('start', isLessThanOrEqualTo: now)
         .where('end', isGreaterThanOrEqualTo: now)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => Challenge.fromMap(d.id, d.data())).toList(),
-        );
-
-    return StreamZip([
-      weekly,
-      monthly,
-    ]).map((lists) => [...lists[0], ...lists[1]]);
+        .limit(_challengeLimit)
+        .get();
+    final results = await Future.wait([weeklyFuture, monthlyFuture]);
+    final weeklySnap = results[0];
+    final monthlySnap = results[1];
+    debugPrint(
+      '✅ fetchActiveChallenges weekly=${weeklySnap.size} monthly=${monthlySnap.size}',
+    );
+    return [
+      ...weeklySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
+      ...monthlySnap.docs.map((d) => Challenge.fromMap(d.id, d.data())),
+    ];
   }
 
-  Stream<List<Badge>> watchBadges(String userId) {
-    final col = _firestore.collection('users').doc(userId).collection('badges');
-    return col
+  Future<List<Badge>> fetchBadges(String userId) async {
+    debugPrint('⬇️ fetchBadges user=$userId limit=$_badgeLimit');
+    final snap = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('badges')
         .orderBy('awardedAt', descending: true)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((d) => Badge.fromMap(d.id, d.data())).toList(),
-        );
+        .limit(_badgeLimit)
+        .get();
+    debugPrint('✅ fetchBadges count=${snap.size}');
+    return snap.docs.map((d) => Badge.fromMap(d.id, d.data())).toList();
   }
 
-  Stream<List<CompletedChallenge>> watchCompletedChallenges(
+  Future<List<CompletedChallenge>> fetchCompletedChallenges(
     String gymId,
     String userId,
-  ) {
-    final col = _firestore
+  ) async {
+    debugPrint(
+      '⬇️ fetchCompletedChallenges gym=$gymId user=$userId limit=$_completedLimit',
+    );
+    final snap = await _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('users')
         .doc(userId)
         .collection('completedChallenges')
-        .orderBy('completedAt', descending: true);
-    return col.snapshots().map(
-      (snap) =>
-          snap.docs
-              .map((d) => CompletedChallenge.fromMap(d.id, d.data()))
-              .toList(),
-    );
+        .orderBy('completedAt', descending: true)
+        .limit(_completedLimit)
+        .get();
+    debugPrint('✅ fetchCompletedChallenges count=${snap.size}');
+    return snap.docs
+        .map((d) => CompletedChallenge.fromMap(d.id, d.data()))
+        .toList();
   }
 
   Future<void> checkChallenges({
@@ -122,37 +130,27 @@ class FirestoreChallengeSource {
       debugPrint('🔍 required sets for ${ch.id}: ${ch.minSets}');
       try {
         var logCount = 0;
-        if (ch.deviceIds.isEmpty) {
-          final snap =
-              await _firestore
-                  .collectionGroup('logs')
-                  .where('userId', isEqualTo: userId)
-                  .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                  .where('timestamp', isLessThanOrEqualTo: ch.end)
-                  .get();
-          logCount = snap.size;
-        } else {
-          // Firestore erlaubt maximal 10 IDs pro whereIn-Query.
-          final chunks = <List<String>>[];
-          for (var i = 0; i < ch.deviceIds.length; i += 10) {
-            chunks.add(
-              ch.deviceIds.sublist(
-                i,
-                i + 10 > ch.deviceIds.length ? ch.deviceIds.length : i + 10,
-              ),
-            );
-          }
-
-          for (final ids in chunks) {
-            final snap =
-                await _firestore
-                    .collectionGroup('logs')
-                    .where('userId', isEqualTo: userId)
-                    .where('deviceId', whereIn: ids)
-                    .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                    .where('timestamp', isLessThanOrEqualTo: ch.end)
-                    .get();
-            logCount += snap.size;
+        final summarySnap = await _firestore
+            .collection('trainingSummary')
+            .doc(userId)
+            .collection('daily')
+            .where('date', isGreaterThanOrEqualTo: ch.start)
+            .where('date', isLessThanOrEqualTo: ch.end)
+            .get();
+        for (final doc in summarySnap.docs) {
+          final data = doc.data();
+          if (ch.deviceIds.isEmpty) {
+            logCount += (data['logCount'] as num?)?.toInt() ?? 0;
+          } else {
+            final deviceCounts = data['deviceCounts'];
+            if (deviceCounts is Map<String, dynamic>) {
+              for (final id in ch.deviceIds) {
+                final entry = deviceCounts[id];
+                if (entry is Map<String, dynamic>) {
+                  logCount += (entry['count'] as num?)?.toInt() ?? 0;
+                }
+              }
+            }
           }
         }
         debugPrint(

@@ -5,7 +5,13 @@ class GetAllLogTimestamps {
   final ReportRepository _repo;
   GetAllLogTimestamps(this._repo);
 
-  Future<List<DateTime>> execute(String gymId) {
-    return _repo.fetchAllLogTimestamps(gymId);
+  Future<List<DateTime>> execute(
+    String gymId, {
+    bool forceRefresh = false,
+  }) {
+    return _repo.fetchRecentLogTimestamps(
+      gymId,
+      forceRefresh: forceRefresh,
+    );
   }
 }

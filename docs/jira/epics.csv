@@ -1,0 +1,11 @@
+Summary,Issue Type,Epic Name,Description,Labels,Priority
+Mitglieder-Features,Epic,Mitglieder-Features,"Alle Endnutzer-Funktionen (Motivation, Progress, Verständnis).",members,Medium
+Betreiber-Analytics,Epic,Betreiber-Analytics,"Auslastung, Fläche, Geräte, Programm-Optimierung.",operators,Medium
+Community-Features,Epic,Community-Features,"Soziale, faire, motivierende Community-Funktionen.",community,Medium
+Gamification,Epic,Gamification,"XP, Quests, Streaks, Session-Qualität.",gamification,Medium
+Analytics (Sofort),Epic,Analytics (Sofort),"Auswertungen, die ohne neue Felder sofort möglich sind.",analytics,Medium
+Neue Datenpunkte,Epic,Neue Datenpunkte,"Leichtgewichtige, DSGVO-freundliche Felder für mehr Insights.",datapoints,Medium
+Modelle & Kennzahlen,Epic,Modelle & Kennzahlen,"Formeln/Scoring für Steuerung und Feedback.",models,Medium
+Visualisierungen,Epic,Visualisierungen,"UX-fertige Charts und Diagrammformen.",viz,Medium
+Datenqualität & Privacy,Epic,Datenqualität & Privacy,"Zeitstempel, Normalisierung, Pseudonymisierung, Anti-Cheat.",privacy,Medium
+Quick Wins,Epic,Quick Wins,"Schnell implementierbare, sichtbare Erfolge.",quickwin,High

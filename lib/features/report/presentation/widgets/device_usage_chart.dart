@@ -6,6 +6,7 @@ import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/utils/chart_interval.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../domain/models/device_usage_range.dart';
 import '../../domain/models/device_usage_stat.dart';
 
 class DeviceUsageChart extends StatefulWidget {

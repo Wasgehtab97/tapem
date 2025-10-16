@@ -1,10 +1,79 @@
 import 'server-only';
 
 import { FieldPath, Timestamp } from 'firebase-admin/firestore';
+import type { Firestore } from 'firebase-admin/firestore';
 
 import { adminDb } from '@/src/server/firebase/admin';
 import { mapActivityEventDoc } from '@/src/server/activity/events';
 import type { AdminActivityEventRecord } from '@/src/types/admin-activity';
+
+async function sumLogCountsInRange(
+  firestore: Firestore,
+  start: Date,
+  end: Date
+): Promise<number> {
+  const snapshot = await firestore
+    .collectionGroup('daily')
+    .where('date', '>=', Timestamp.fromDate(start))
+    .where('date', '<=', Timestamp.fromDate(end))
+    .select('logCount')
+    .get();
+  let total = 0;
+  snapshot.docs.forEach((doc) => {
+    const value = doc.get('logCount');
+    if (typeof value === 'number') {
+      total += value;
+    }
+  });
+  return total;
+}
+
+async function collectActiveUsers(
+  firestore: Firestore,
+  start: Date,
+  end: Date
+): Promise<number> {
+  const snapshot = await firestore
+    .collectionGroup('daily')
+    .where('date', '>=', Timestamp.fromDate(start))
+    .where('date', '<=', Timestamp.fromDate(end))
+    .select(FieldPath.documentId())
+    .get();
+  const users = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const userId = doc.ref.parent.parent?.id;
+    if (typeof userId === 'string' && userId.length > 0) {
+      users.add(userId);
+    }
+  });
+  return users.size;
+}
+
+async function fetchActivitySeries(
+  firestore: Firestore,
+  start: Date,
+  end: Date
+) {
+  const snapshot = await firestore
+    .collectionGroup('daily')
+    .where('date', '>=', Timestamp.fromDate(start))
+    .where('date', '<=', Timestamp.fromDate(end))
+    .select('date', 'logCount')
+    .get();
+  const totals = new Map<string, number>();
+  snapshot.docs.forEach((doc) => {
+    const dateValue = doc.get('date');
+    const timestamp = dateValue instanceof Timestamp ? dateValue.toDate() : null;
+    if (!timestamp) {
+      return;
+    }
+    const iso = timestamp.toISOString().slice(0, 10);
+    const existing = totals.get(iso) ?? 0;
+    const count = doc.get('logCount');
+    totals.set(iso, existing + (typeof count === 'number' ? count : 0));
+  });
+  return totals;
+}
 
 export type AdminKpiMetric = {
   id: string;
@@ -164,48 +233,14 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       id: 'checkins24h',
       label: 'Check-ins (24h)',
       run: async () => {
-        const snapshot = await firestore
-          .collectionGroup('logs')
-          .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
-          .count()
-          .get();
-        return snapshot.data().count ?? 0;
-      },
-      fallback: {
-        run: async () => {
-          const snapshot = await firestore
-            .collectionGroup('logs')
-            .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
-            .select('timestamp')
-            .limit(1000)
-            .get();
-          return snapshot.size;
-        },
-        hint: 'Temporäre Zählung (max. 1.000 Logs) aktiv.',
+        return sumLogCountsInRange(firestore, dayAgo, now);
       },
     }),
     computeMetric({
       id: 'checkins30d',
       label: 'Check-ins (30 Tage)',
       run: async () => {
-        const snapshot = await firestore
-          .collectionGroup('logs')
-          .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
-          .count()
-          .get();
-        return snapshot.data().count ?? 0;
-      },
-      fallback: {
-        run: async () => {
-          const snapshot = await firestore
-            .collectionGroup('logs')
-            .where('timestamp', '>=', Timestamp.fromDate(monthAgo))
-            .select('timestamp')
-            .limit(1000)
-            .get();
-          return snapshot.size;
-        },
-        hint: 'Temporäre Zählung (max. 1.000 Logs) aktiv.',
+        return sumLogCountsInRange(firestore, monthAgo, now);
       },
     }),
     computeMetric({
@@ -235,20 +270,7 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       id: 'dau',
       label: 'Tägliche aktive Nutzer:innen',
       run: async () => {
-        const snapshot = await firestore
-          .collectionGroup('logs')
-          .where('timestamp', '>=', Timestamp.fromDate(dayAgo))
-          .select('userId')
-          .limit(5000)
-          .get();
-        const users = new Set<string>();
-        snapshot.docs.forEach((doc) => {
-          const userId = doc.get('userId');
-          if (typeof userId === 'string' && userId.length > 0) {
-            users.add(userId);
-          }
-        });
-        return users.size;
+        return collectActiveUsers(firestore, dayAgo, now);
       },
     }),
   ]);
@@ -340,69 +362,15 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
   const activityPoints: AdminActivityPoint[] = [];
 
   try {
-    const activitySnapshot = await firestore
-      .collectionGroup('logs')
-      .where('timestamp', '>=', Timestamp.fromDate(twoWeeksAgo))
-      .select('timestamp')
-      .get();
-
-    const totals = new Map<string, number>();
-    activitySnapshot.docs.forEach((doc) => {
-      const timestampValue = doc.get('timestamp');
-      const ts =
-        timestampValue instanceof Timestamp
-          ? timestampValue.toDate()
-          : typeof timestampValue?.toDate === 'function'
-          ? timestampValue.toDate()
-          : null;
-      if (!ts) {
-        return;
-      }
-      const key = formatDateKey(ts);
-      totals.set(key, (totals.get(key) ?? 0) + 1);
-    });
-
-    const days: AdminActivityPoint[] = [];
+    const totals = await fetchActivitySeries(firestore, twoWeeksAgo, now);
     for (let i = 0; i < 14; i += 1) {
       const date = new Date(twoWeeksAgo.getTime() + i * 24 * 60 * 60 * 1000);
       const key = formatDateKey(date);
-      days.push({ date: key, totalCheckIns: totals.get(key) ?? 0 });
+      activityPoints.push({ date: key, totalCheckIns: totals.get(key) ?? 0 });
     }
-    activityPoints.push(...days);
   } catch (error) {
-    if (isFailedPrecondition(error)) {
-      console.warn('[admin-dashboard] Activity Index erforderlich – Fallback aktiv.', error);
-      try {
-        const fallbackSnapshot = await firestore.collectionGroup('logs').limit(1000).get();
-        const totals = new Map<string, number>();
-        fallbackSnapshot.docs.forEach((doc) => {
-          const timestampValue = doc.get('timestamp');
-          const ts =
-            timestampValue instanceof Timestamp
-              ? timestampValue.toDate()
-              : typeof timestampValue?.toDate === 'function'
-              ? timestampValue.toDate()
-              : null;
-          if (!ts || ts < twoWeeksAgo) {
-            return;
-          }
-          const key = formatDateKey(ts);
-          totals.set(key, (totals.get(key) ?? 0) + 1);
-        });
-        for (let i = 0; i < 14; i += 1) {
-          const date = new Date(twoWeeksAgo.getTime() + i * 24 * 60 * 60 * 1000);
-          const key = formatDateKey(date);
-          activityPoints.push({ date: key, totalCheckIns: totals.get(key) ?? 0 });
-        }
-        activityError = 'Index für Check-in-Verlauf wird erstellt – Fallback aktiv.';
-      } catch (fallbackError) {
-        console.error('[admin-dashboard] activity fallback failed', fallbackError);
-        activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
-      }
-    } else {
-      console.error('[admin-dashboard] activity aggregation failed', error);
-      activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
-    }
+    console.error('[admin-dashboard] activity aggregation failed', error);
+    activityError = 'Check-in-Verlauf konnte nicht geladen werden.';
   }
 
   return {

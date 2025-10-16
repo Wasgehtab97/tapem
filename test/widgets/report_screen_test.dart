@@ -1,42 +1,96 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:tapem/core/providers/report_provider.dart';
+import 'package:tapem/core/services/device_usage_summary_service.dart';
+import 'package:tapem/core/services/training_summary_service.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
-import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
-import 'package:tapem/features/report/domain/repositories/report_repository.dart';
-import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
-import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
+import 'package:tapem/features/report/domain/models/device_usage_range.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen_new.dart';
 import 'package:tapem/features/report/presentation/widgets/device_usage_chart.dart';
 
-class FakeReportRepository implements ReportRepository {
-  FakeReportRepository({
-    this.usage = const [
-      DeviceUsageStat(id: 'd1', name: 'Device 1', sessions: 1),
-    ],
-    this.times = const [],
-  });
-  final List<DeviceUsageStat> usage;
-  final List<DateTime> times;
+class FakeDeviceUsageSummaryService extends DeviceUsageSummaryService {
+  FakeDeviceUsageSummaryService({required this.entries})
+      : super(firestore: FakeFirebaseFirestore());
+
+  final List<DeviceUsageSummaryEntry> entries;
+
   @override
-  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
+  Future<DeviceUsageSummaryState> loadSummaries(
     String gymId, {
-    DateTime? since,
-  }) async => usage;
+    bool forceRefresh = false,
+  }) async {
+    return DeviceUsageSummaryState(entries: entries, fromCache: false);
+  }
+
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;
+  Future<List<DateTime>> fetchRecentActivityDates(
+    String gymId, {
+    bool forceRefresh = false,
+  }) async {
+    final uniqueDays = <DateTime>{};
+    for (final entry in entries) {
+      for (final date in entry.recentDates) {
+        uniqueDays.add(DateTime(date.year, date.month, date.day));
+      }
+    }
+    final list = uniqueDays.toList()..sort((a, b) => a.compareTo(b));
+    return list;
+  }
+}
+
+class FakeTrainingSummaryService extends TrainingSummaryService {
+  FakeTrainingSummaryService({this.groupUsageCounts = const {}})
+      : super(firestore: FakeFirebaseFirestore());
+
+  final Map<String, int> groupUsageCounts;
+
+  @override
+  Future<Map<String, int>> fetchGroupUsageCounts({
+    required String gymId,
+    required String userId,
+    bool forceRefresh = false,
+  }) async {
+    return groupUsageCounts;
+  }
+}
+
+DeviceUsageSummaryEntry _makeEntry({
+  String id = 'd1',
+  String name = 'Device 1',
+  String description = '',
+  int totalSessions = 1,
+  Map<String, int>? rangeCounts,
+  List<DateTime>? recentDates,
+}) {
+  return DeviceUsageSummaryEntry(
+    deviceId: id,
+    name: name,
+    description: description,
+    totalSessions: totalSessions,
+    rangeCounts: rangeCounts ??
+        {
+          DeviceUsageRange.last30Days.rangeKey: 1,
+        },
+    lastActive: recentDates?.isNotEmpty == true ? recentDates!.first : null,
+    recentDates: recentDates ?? const [],
+  );
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('ReportScreenNew shows chart with fallback data', (tester) async {
-    final repo = FakeReportRepository();
     final reportProvider = ReportProvider(
-      getUsageStats: GetDeviceUsageStats(repo),
-      getLogTimestamps: GetAllLogTimestamps(repo),
+      deviceSummaryService: FakeDeviceUsageSummaryService(
+        entries: [
+          _makeEntry(
+            recentDates: const [DateTime(2024, 1, 1)],
+          ),
+        ],
+      ),
+      trainingSummaryService: FakeTrainingSummaryService(),
     );
     final feedbackProvider = FeedbackProvider(
       firestore: FakeFirebaseFirestore(),
@@ -63,14 +117,20 @@ void main() {
   });
 
   testWidgets('ReportScreenNew uses provided usage data', (tester) async {
-    final repo = FakeReportRepository(
-      usage: const [
-        DeviceUsageStat(id: 'x', name: 'Device X', sessions: 5),
-      ],
-    );
     final reportProvider = ReportProvider(
-      getUsageStats: GetDeviceUsageStats(repo),
-      getLogTimestamps: GetAllLogTimestamps(repo),
+      deviceSummaryService: FakeDeviceUsageSummaryService(
+        entries: [
+          _makeEntry(
+            id: 'x',
+            name: 'Device X',
+            rangeCounts: {
+              DeviceUsageRange.last30Days.rangeKey: 5,
+            },
+            totalSessions: 5,
+          ),
+        ],
+      ),
+      trainingSummaryService: FakeTrainingSummaryService(),
     );
     final feedbackProvider = FeedbackProvider(
       firestore: FakeFirebaseFirestore(),

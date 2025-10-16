@@ -24,6 +24,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancel';
+
+  @override
   String get commonOk => 'OK';
 
   @override
@@ -307,14 +309,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Favourite exercise';
 
   @override
-  String get profileStatsFavoriteExerciseDialogTitle =>
-      'Top 5 favourite exercises';
+  String get profileStatsFavoriteExerciseDialogTitle => 'Top 5 favourite exercises';
 
   @override
   String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
 
   @override
   String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
+  String get profileStatsNoSummaries => 'Statistics are being prepared';
+
+  @override
+  String get profileStatsSummariesPending => 'Statistics are being prepared – please try again later.';
+
+  @override
+  String get profileStatsRefreshSummaries => 'Check again';
+
+  @override
+  String get profileStatsError => 'Unable to load statistics.';
+
+  @override
+  String get profileStatsRetry => 'Try again';
+
+  @override
+  String get profileLoadMoreButton => 'Load more days';
 
   @override
   String get repsRequired => 'reps?';
@@ -931,6 +950,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get friends_privacy_no_access => 'This user does not share their calendar';
 
   @override
+  String get friends_calendar_initial_hint => 'Training days are loaded on demand. Use Refresh to fetch the latest 30 days and \"Load older days\" for more history.';
+
+  @override
+  String get friends_calendar_refresh => 'Refresh calendar';
+
+  @override
+  String get friends_calendar_load_more_days => 'Load older days';
+
+  @override
   String get friends_cta_self => 'You';
 
   @override
@@ -1081,23 +1109,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportViewSurveysTitle => 'View surveys';
 
   @override
+  String get reportRefreshButton => 'Refresh';
+
+  @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
+
+  @override
   String get reportUsageRange7Days => 'Last 7 days';
+
+  @override
   String get reportUsageRange30Days => 'Last 30 days';
+
+  @override
   String get reportUsageRange90Days => 'Last 90 days';
+
+  @override
   String get reportUsageRange365Days => 'Last 365 days';
+
+  @override
   String get reportUsageRangeAll => 'All time';
 
   @override
   String get reportDeviceUsageEmpty => 'No usage data available yet';
 
   @override
-  String get reportDeviceUsageNoMatches =>
-      'No devices match your search';
+  String get reportDeviceUsageNoMatches => 'No devices match your search';
 
   @override
-  String get reportDeviceUsageError =>
-      "We couldn't load the usage data.";
+  String get reportDeviceUsageError => 'We couldn\'t load the usage data.';
 
   @override
   String reportDeviceUsageSessions(int count) {
@@ -1109,7 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String exerciseDeleteMessage(Object name) {
-    return 'Do you really want to delete the exercise "$name"?';
+    return 'Do you really want to delete the exercise \"$name\"?';
   }
 
   @override
@@ -1257,6 +1296,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminDashboardBranding => 'Branding';
 
   @override
+  String get adminDeviceNfcWritten => 'NFC tag written';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Error writing NFC tag: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Delete device';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Delete device?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Do you really want to delete the device \"$name\"?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Device deleted';
+
+  @override
+  String get deviceWriteNfcTooltip => 'Write NFC tag';
+
+  @override
   String adminSymbolsAddButton(int count) {
     return 'Add ($count)';
   }
@@ -1388,29 +1452,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
-
-  @override
-  String get adminDeviceNfcWritten => 'NFC tag written';
-
-  @override
-  String adminDeviceNfcWriteError(Object error) {
-    return 'Error writing NFC tag: $error';
-  }
-
-  @override
-  String get deviceDeleteTooltip => 'Delete device';
-
-  @override
-  String get deviceDeleteDialogTitle => 'Delete device?';
-
-  @override
-  String deviceDeleteDialogMessage(Object name) {
-    return 'Do you really want to delete the device "$name"?';
-  }
-
-  @override
-  String get deviceDeleteSuccess => 'Device deleted';
-
-  @override
-  String get deviceWriteNfcTooltip => 'Write NFC tag';
 }

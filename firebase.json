@@ -1,6 +1,8 @@
 {
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "runtime": "nodejs16",
+    "platform": "gcfv1"
   },
   "firestore": {
     "rules": "firestore.rules",
