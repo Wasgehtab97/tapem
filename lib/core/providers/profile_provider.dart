@@ -6,18 +6,24 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/storage/profile_cache_store.dart';
+import 'package:tapem/features/profile/domain/models/favorite_exercise_usage.dart';
 
 class ProfileProvider extends ChangeNotifier {
   ProfileProvider();
 
   bool _isLoading = false;
   String? _error;
+  final Set<String> _trainingDateKeys = <String>{};
   List<String> _trainingDates = [];
   List<DateTime> _trainingDayDates = [];
   int _totalTrainingDays = 0;
   double _avgTrainingDaysPerWeek = 0;
   String? _favoriteExerciseName;
   List<FavoriteExerciseUsage> _favoriteExerciseUsages = [];
+  final Map<String, _ExerciseAggregate> _favoriteAggregates =
+      <String, _ExerciseAggregate>{};
+  DateTime? _lastProcessedLogAt;
   String? _lastLoadedUserId;
   String? _pendingTrainingUserId;
   Future<void>? _inFlightTrainingLoad;
@@ -37,25 +43,36 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> loadTrainingDates(
     BuildContext context, {
     bool forceRefresh = false,
-  }) {
+  }) async {
     final authProv = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProv.userId;
 
     if (userId == null) {
       _error = 'Kein Benutzer gefunden';
       notifyListeners();
-      return Future<void>.value();
+      return;
     }
 
     if (!forceRefresh &&
         _hasLoadedTrainingDates &&
         _lastLoadedUserId == userId) {
-      return Future<void>.value();
+      return;
+    }
+
+    if (!forceRefresh) {
+      final restored = await _restoreFromCache(
+        userId: userId,
+        createdAt: authProv.createdAt,
+      );
+      if (restored) {
+        return;
+      }
     }
 
     if (_inFlightTrainingLoad != null &&
         _pendingTrainingUserId == userId) {
-      return _inFlightTrainingLoad!;
+      await _inFlightTrainingLoad!;
+      return;
     }
 
     _isLoading = true;
@@ -65,36 +82,114 @@ class ProfileProvider extends ChangeNotifier {
     final future = _fetchTrainingDates(
       userId: userId,
       createdAt: authProv.createdAt,
+      forceRefresh: forceRefresh,
     );
     _pendingTrainingUserId = userId;
     _inFlightTrainingLoad = future.whenComplete(() {
       _pendingTrainingUserId = null;
       _inFlightTrainingLoad = null;
     });
-    return _inFlightTrainingLoad!;
+    await _inFlightTrainingLoad!;
+  }
+
+  Future<bool> _restoreFromCache({
+    required String userId,
+    required DateTime? createdAt,
+  }) async {
+    try {
+      final entry = await ProfileCacheStore.load(userId);
+      if (entry == null) {
+        return false;
+      }
+      if (entry.isExpired) {
+        await ProfileCacheStore.clear(userId);
+        return false;
+      }
+
+      _trainingDateKeys
+        ..clear()
+        ..addAll(entry.trainingDates);
+      _favoriteAggregates
+        ..clear()
+        ..addEntries(entry.favoriteAggregates.map((agg) {
+          final aggregate = _ExerciseAggregate(
+            gymId: agg.gymId,
+            deviceId: agg.deviceId,
+            exerciseId: agg.exerciseId,
+            name: agg.name,
+            sessionKeys: agg.sessionKeys.toSet(),
+          );
+          return MapEntry(aggregate.cacheKeyValue, aggregate);
+        }));
+      _lastProcessedLogAt = entry.lastProcessedAt;
+      await _recomputeStatistics(
+        createdAt: createdAt,
+        resolveNames: false,
+      );
+      _lastLoadedUserId = userId;
+      _hasLoadedTrainingDates = true;
+      _isLoading = false;
+      _error = null;
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      debugPrintStack(
+        label: 'ProfileProvider.restoreCache',
+        stackTrace: st,
+      );
+      return false;
+    }
   }
 
   Future<void> _fetchTrainingDates({
     required String userId,
     required DateTime? createdAt,
+    bool forceRefresh = false,
   }) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collectionGroup('logs')
-          .where('userId', isEqualTo: userId)
-          .get();
+      if (forceRefresh) {
+        _trainingDateKeys.clear();
+        _favoriteAggregates.clear();
+        _lastProcessedLogAt = null;
+      }
 
-      final dateSet = <DateTime>{};
-      final sessionAggregates = <String, _ExerciseAggregate>{};
+      final since = forceRefresh ? null : _lastProcessedLogAt;
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+          .collectionGroup('logs')
+          .where('userId', isEqualTo: userId);
+      if (since != null) {
+        query = query.where(
+          'timestamp',
+          isGreaterThan: Timestamp.fromDate(since),
+        );
+      }
+
+      final snapshot = await query.get();
+
+      DateTime? latestTimestamp = since;
 
       for (final doc in snapshot.docs) {
         final data = doc.data();
-        final timestamp = (data['timestamp'] as Timestamp).toDate();
-        final day = DateTime(timestamp.year, timestamp.month, timestamp.day);
-        dateSet.add(day);
+        final timestampValue = data['timestamp'];
+        final timestamp = timestampValue is Timestamp
+            ? timestampValue.toDate()
+            : timestampValue is DateTime
+                ? timestampValue
+                : null;
+        if (timestamp == null) {
+          continue;
+        }
+        if (latestTimestamp == null || timestamp.isAfter(latestTimestamp)) {
+          latestTimestamp = timestamp;
+        }
 
-        final sessionId = (data['sessionId'] as String?)?.trim() ?? '';
-        if (sessionId.isEmpty) {
+        final dayKey = _formatDayKey(
+          DateTime(timestamp.year, timestamp.month, timestamp.day),
+        );
+        _trainingDateKeys.add(dayKey);
+
+        final sessionId = (data['sessionId'] as String?)?.trim();
+        if (sessionId == null || sessionId.isEmpty) {
           continue;
         }
 
@@ -106,31 +201,34 @@ class ProfileProvider extends ChangeNotifier {
           continue;
         }
 
-        final exerciseId = (data['exerciseId'] as String?)?.trim() ?? '';
-        final key = '$gymId|$deviceId|$exerciseId';
-        final aggregate = sessionAggregates.putIfAbsent(
-          key,
+        final exerciseId = (data['exerciseId'] as String?)?.trim();
+        final aggregateKey = _ExerciseAggregate.cacheKey(
+          gymId: gymId,
+          deviceId: deviceId,
+          exerciseId: exerciseId,
+        );
+        final aggregate = _favoriteAggregates.putIfAbsent(
+          aggregateKey,
           () => _ExerciseAggregate(
             gymId: gymId,
             deviceId: deviceId,
-            exerciseId: exerciseId,
+            exerciseId:
+                exerciseId == null || exerciseId.isEmpty ? null : exerciseId,
           ),
         );
-        aggregate.sessionIds.add(sessionId);
+        final sessionKey = '$gymId|$deviceId|$sessionId';
+        aggregate.sessionKeys.add(sessionKey);
       }
 
-      _trainingDayDates = dateSet.toList()
-        ..sort((a, b) => a.compareTo(b));
-      _trainingDates = _trainingDayDates
-          .map((dt) =>
-              '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
-          .toList();
-      _totalTrainingDays = _trainingDates.length;
-      _avgTrainingDaysPerWeek =
-          _calculateAverageTrainingDaysPerWeek(createdAt);
-      await _resolveFavoriteExercises(sessionAggregates.values);
+      if (latestTimestamp != null) {
+        _lastProcessedLogAt = latestTimestamp;
+      }
+
+      await _recomputeStatistics(createdAt: createdAt);
       _hasLoadedTrainingDates = true;
       _lastLoadedUserId = userId;
+
+      await _persistCache(userId: userId);
     } catch (e, st) {
       _error = 'Fehler beim Laden der Trainingstage: ${e.toString()}';
       _hasLoadedTrainingDates = false;
@@ -145,6 +243,95 @@ class ProfileProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _recomputeStatistics({
+    required DateTime? createdAt,
+    bool resolveNames = true,
+  }) async {
+    final parsedDates = _trainingDateKeys
+        .map(_parseTrainingDateKey)
+        .whereType<DateTime>()
+        .toList()
+      ..sort((a, b) => a.compareTo(b));
+    _trainingDayDates = parsedDates;
+    _trainingDates = parsedDates.map(_formatDayKey).toList();
+    _totalTrainingDays = _trainingDates.length;
+    _avgTrainingDaysPerWeek = _calculateAverageTrainingDaysPerWeek(createdAt);
+
+    final aggregates = _favoriteAggregates.values
+        .where((aggregate) => aggregate.sessionKeys.isNotEmpty)
+        .toList()
+      ..sort((a, b) => b.sessionCount.compareTo(a.sessionCount));
+
+    final topAggregates = aggregates.take(5).toList();
+    if (resolveNames) {
+      await _ensureAggregateNames(topAggregates);
+    }
+
+    _favoriteExerciseUsages = topAggregates
+        .map(
+          (aggregate) => FavoriteExerciseUsage(
+            id: aggregate.cacheKeyValue,
+            name: aggregate.name.isNotEmpty ? aggregate.name : '—',
+            sessionCount: aggregate.sessionCount,
+          ),
+        )
+        .toList();
+    _favoriteExerciseName =
+        _favoriteExerciseUsages.isEmpty ? null : _favoriteExerciseUsages.first.name;
+  }
+
+  Future<void> _persistCache({required String userId}) async {
+    try {
+      final trainingDates = _trainingDateKeys.toList()..sort();
+      final aggregates = _favoriteAggregates.values.toList()
+        ..sort((a, b) => a.cacheKeyValue.compareTo(b.cacheKeyValue));
+      final cacheAggregates = aggregates
+          .map(
+            (aggregate) => FavoriteExerciseAggregateCache(
+              gymId: aggregate.gymId,
+              deviceId: aggregate.deviceId,
+              exerciseId: aggregate.exerciseId,
+              name: aggregate.name,
+              sessionKeys: aggregate.sessionKeys.toList()..sort(),
+            ),
+          )
+          .toList();
+
+      await ProfileCacheStore.save(
+        userId,
+        ProfileCacheEntry(
+          cachedAt: DateTime.now(),
+          trainingDates: trainingDates,
+          favoriteAggregates: cacheAggregates,
+          lastProcessedAt: _lastProcessedLogAt,
+        ),
+      );
+    } catch (e, st) {
+      debugPrintStack(
+        label: 'ProfileProvider.persistCache',
+        stackTrace: st,
+      );
+    }
+  }
+
+  DateTime? _parseTrainingDateKey(String key) {
+    final parts = key.split('-');
+    if (parts.length != 3) {
+      return null;
+    }
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) {
+      return null;
+    }
+    return DateTime(year, month, day);
+  }
+
+  String _formatDayKey(DateTime day) {
+    return '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
   }
 
   double _calculateAverageTrainingDaysPerWeek(
@@ -212,38 +399,14 @@ class ProfileProvider extends ChangeNotifier {
     return normalized.add(Duration(days: daysToAdd));
   }
 
-  Future<void> _resolveFavoriteExercises(
-    Iterable<_ExerciseAggregate> aggregates,
+  Future<void> _ensureAggregateNames(
+    List<_ExerciseAggregate> aggregates,
   ) async {
-    if (aggregates.isEmpty) {
-      _favoriteExerciseUsages = [];
-      _favoriteExerciseName = null;
-      return;
+    for (final aggregate in aggregates) {
+      if (aggregate.name.isEmpty) {
+        aggregate.name = await _resolveExerciseName(aggregate);
+      }
     }
-
-    final sortedAggregates = aggregates
-        .where((aggregate) => aggregate.sessionIds.isNotEmpty)
-        .toList()
-      ..sort(
-        (a, b) =>
-            b.sessionIds.length.compareTo(a.sessionIds.length),
-      );
-
-    final usages = <FavoriteExerciseUsage>[];
-
-    for (final aggregate in sortedAggregates.take(5)) {
-      final name = await _resolveExerciseName(aggregate);
-      usages.add(
-        FavoriteExerciseUsage(
-          name: name,
-          sessionCount: aggregate.sessionIds.length,
-        ),
-      );
-    }
-
-    _favoriteExerciseUsages = usages;
-    _favoriteExerciseName =
-        usages.isEmpty ? null : usages.first.name;
   }
 
   Future<String> _resolveExerciseName(_ExerciseAggregate aggregate) async {
@@ -271,19 +434,23 @@ class ProfileProvider extends ChangeNotifier {
               await deviceRef.collection('exercises').doc(exerciseId).get();
           final exerciseName = exerciseSnap.data()?['name'] as String?;
           if (exerciseName != null && exerciseName.trim().isNotEmpty) {
-            return exerciseName.trim();
+            aggregate.name = exerciseName.trim();
+            return aggregate.name;
           }
         } catch (_) {}
       }
 
       if (deviceName.trim().isEmpty) {
-        return '—';
+        aggregate.name = '—';
+        return aggregate.name;
       }
 
-      return deviceName;
+      aggregate.name = deviceName;
+      return aggregate.name;
     } catch (e, st) {
       elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
-      return '—';
+      aggregate.name = '—';
+      return aggregate.name;
     }
   }
 }
@@ -293,20 +460,31 @@ class _ExerciseAggregate {
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
-  });
+    String? name,
+    Set<String>? sessionKeys,
+  })  : name = name ?? '',
+        sessionKeys = sessionKeys ?? <String>{};
 
   final String gymId;
   final String deviceId;
   final String? exerciseId;
-  final Set<String> sessionIds = <String>{};
+  String name;
+  final Set<String> sessionKeys;
+
+  int get sessionCount => sessionKeys.length;
+
+  String get cacheKeyValue => cacheKey(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+      );
+
+  static String cacheKey({
+    required String gymId,
+    required String deviceId,
+    String? exerciseId,
+  }) {
+    return '$gymId|$deviceId|${exerciseId ?? ''}';
+  }
 }
 
-class FavoriteExerciseUsage {
-  FavoriteExerciseUsage({
-    required this.name,
-    required this.sessionCount,
-  });
-
-  final String name;
-  final int sessionCount;
-}
