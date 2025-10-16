@@ -92,4 +92,12 @@ class XpRepositoryImpl implements XpRepository {
   }) {
     return _source.watchStatsDailyXp(gymId: gymId, userId: userId);
   }
+
+  @override
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) {
+    return _source.fetchStatsDailyXp(gymId: gymId, userId: userId);
+  }
 }

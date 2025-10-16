@@ -440,6 +440,24 @@ class FirestoreXpSource {
     });
   }
 
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) async {
+    final doc = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
+    debugPrint('📄 fetchStatsDailyXp gymId=$gymId userId=$userId');
+    final snap = await doc.get();
+    final xp = (snap.data()?['dailyXP'] as int?) ?? 0;
+    debugPrint('📄 stats dailyXP fetch $xp');
+    return xp;
+  }
+
   Stream<int> watchStatsDailyXp({
     required String gymId,
     required String userId,

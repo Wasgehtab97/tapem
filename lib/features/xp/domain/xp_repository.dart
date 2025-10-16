@@ -38,4 +38,9 @@ abstract class XpRepository {
     required String gymId,
     required String userId,
   });
+
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  });
 }

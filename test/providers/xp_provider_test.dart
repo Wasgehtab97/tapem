@@ -2,8 +2,45 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
-import 'package:tapem/features/xp/domain/xp_repository.dart';
+import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/xp_repository.dart';
+
+class _InMemoryDailyStatsCache implements DailyStatsCache {
+  DailyStatsCacheEntry? _entry;
+
+  @override
+  Future<void> clear(String gymId, String userId) async {
+    _entry = null;
+  }
+
+  @override
+  Future<DailyStatsCacheEntry?> read(String gymId, String userId) async => _entry;
+
+  @override
+  Future<DailyStatsCacheEntry> write(
+    String gymId,
+    String userId,
+    int xp,
+    DateTime cachedAt,
+  ) async {
+    return _entry = DailyStatsCacheEntry(xp: xp, cachedAt: cachedAt);
+  }
+
+  @override
+  Future<DailyStatsCacheEntry> increment(
+    String gymId,
+    String userId,
+    int delta,
+    DateTime now,
+  ) async {
+    final current = _entry;
+    if (current == null || !current.isSameCalendarDay(now)) {
+      return _entry = DailyStatsCacheEntry(xp: delta, cachedAt: now);
+    }
+    return _entry = DailyStatsCacheEntry(xp: current.xp + delta, cachedAt: now);
+  }
+}
 
 class FakeXpRepository implements XpRepository {
   final dayCtrl = StreamController<int>.broadcast();
@@ -11,6 +48,7 @@ class FakeXpRepository implements XpRepository {
   final deviceCtrls = <String, StreamController<int>>{};
   final statsDailyCtrl = StreamController<int>.broadcast();
   int addCalls = 0;
+  int statsFetchValue = 0;
 
     @override
     Future<DeviceXpResult> addSessionXp({
@@ -61,6 +99,13 @@ class FakeXpRepository implements XpRepository {
   }) =>
       statsDailyCtrl.stream;
 
+  @override
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) async =>
+      statsFetchValue;
+
   void dispose() {
     dayCtrl.close();
     muscleCtrl.close();
@@ -93,7 +138,11 @@ void main() {
 
     test('watchDayXp updates dayXp', () async {
       final repo = FakeXpRepository();
-      final provider = XpProvider(repo: repo);
+      final provider = XpProvider(
+        repo: repo,
+        statsCache: _InMemoryDailyStatsCache(),
+        now: () => DateTime(2024, 1, 1, 12),
+      );
       provider.watchDayXp('u1', DateTime(2024, 1, 1));
       repo.dayCtrl.add(15);
       await Future.delayed(const Duration(milliseconds: 10));
@@ -104,7 +153,11 @@ void main() {
 
     test('watchMuscleXp updates muscleXp', () async {
       final repo = FakeXpRepository();
-      final provider = XpProvider(repo: repo);
+      final provider = XpProvider(
+        repo: repo,
+        statsCache: _InMemoryDailyStatsCache(),
+        now: () => DateTime(2024, 1, 1, 12),
+      );
       provider.watchMuscleXp('g1', 'u1');
       repo.muscleCtrl.add({'m1': 5});
       await Future.delayed(const Duration(milliseconds: 10));
@@ -115,7 +168,11 @@ void main() {
 
     test('watchDeviceXp tracks multiple devices', () async {
       final repo = FakeXpRepository();
-      final provider = XpProvider(repo: repo);
+      final provider = XpProvider(
+        repo: repo,
+        statsCache: _InMemoryDailyStatsCache(),
+        now: () => DateTime(2024, 1, 1, 12),
+      );
       provider.watchDeviceXp('g1', 'u1', ['d1', 'd2']);
       repo.deviceCtrls['d1']!.add(7);
       repo.deviceCtrls['d2']!.add(3);
@@ -127,12 +184,21 @@ void main() {
 
     test('watchStatsDailyXp computes level', () async {
       final repo = FakeXpRepository();
-      final provider = XpProvider(repo: repo);
-      provider.watchStatsDailyXp('g1', 'u1');
-      repo.statsDailyCtrl.add(1950); // level 2, xp 950
-      await Future.delayed(const Duration(milliseconds: 10));
+      final cache = _InMemoryDailyStatsCache();
+      final provider = XpProvider(
+        repo: repo,
+        statsCache: cache,
+        now: () => DateTime(2024, 1, 1, 12),
+      );
+      repo.statsFetchValue = 1950;
+      await provider.watchStatsDailyXp('g1', 'u1');
       expect(provider.dailyLevel, 2);
       expect(provider.dailyLevelXp, 950);
+      // incoming stream update should refresh cache and state
+      repo.statsDailyCtrl.add(2050);
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(provider.statsDailyXp, 2050);
+      expect(await cache.read('g1', 'u1'), isNotNull);
       provider.dispose();
       repo.dispose();
     });
