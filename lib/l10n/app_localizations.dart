@@ -695,7 +695,10 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get profileStatsRetry;
 
-  /// Label for the button that loads additional training summaries.
+  /// Button that loads additional training summaries
+  ///
+  /// In en, this message translates to:
+  /// **'Load more days'**
   String get profileLoadMoreButton;
 
   /// Validation when reps are missing
@@ -1778,7 +1781,7 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get friends_action_cancel;
 
-  /// No description provided for @friends_action_chat.
+  /// Action to open a chat with a friend
   ///
   /// In en, this message translates to:
   /// **'Chat'**
@@ -1886,6 +1889,24 @@ abstract class AppLocalizations {
   /// **'This user does not share their calendar'**
   String get friends_privacy_no_access;
 
+  /// No description provided for @friends_calendar_initial_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Training days are loaded on demand. Use Refresh to fetch the latest 30 days and \"Load older days\" for more history.'**
+  String get friends_calendar_initial_hint;
+
+  /// No description provided for @friends_calendar_refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh calendar'**
+  String get friends_calendar_refresh;
+
+  /// No description provided for @friends_calendar_load_more_days.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older days'**
+  String get friends_calendar_load_more_days;
+
   /// No description provided for @friends_cta_self.
   ///
   /// In en, this message translates to:
@@ -1916,31 +1937,31 @@ abstract class AppLocalizations {
   /// **'Enter at least 2 characters'**
   String get friends_search_min_chars;
 
-  /// No description provided for @friend_chat_empty.
+  /// Empty state when a chat has no messages
   ///
   /// In en, this message translates to:
   /// **'No messages yet'**
   String get friend_chat_empty;
 
-  /// No description provided for @friend_chat_input_hint.
+  /// Hint text for the chat input field
   ///
   /// In en, this message translates to:
   /// **'Write a message'**
   String get friend_chat_input_hint;
 
-  /// No description provided for @friend_chat_send.
+  /// Tooltip for sending a chat message
   ///
   /// In en, this message translates to:
   /// **'Send message'**
   String get friend_chat_send;
 
-  /// No description provided for @friend_chat_send_error.
+  /// Error message when sending a chat message fails
   ///
   /// In en, this message translates to:
   /// **'Message could not be sent.'**
   String get friend_chat_send_error;
 
-  /// No description provided for @friend_chat_login_required.
+  /// Shown when the user must sign in before chatting
   ///
   /// In en, this message translates to:
   /// **'Please sign in to chat.'**
@@ -2078,361 +2099,719 @@ abstract class AppLocalizations {
   /// **'Could not delete the session.'**
   String get trainingDetailsDeleteSessionError;
 
-  /// No description provided for @profileChangeAvatar.
+  /// Tooltip and accessibility label for changing the profile avatar
+  ///
+  /// In en, this message translates to:
+  /// **'Change profile picture'**
   String get profileChangeAvatar;
 
-  /// No description provided for @homeTabAdmin.
+  /// Label of the admin tab
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
   String get homeTabAdmin;
 
-  /// No description provided for @homeTabRank.
+  /// Label of the rank tab
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
   String get homeTabRank;
 
-  /// No description provided for @homeTabAffiliate.
+  /// Label of the affiliate tab
+  ///
+  /// In en, this message translates to:
+  /// **'Affiliate'**
   String get homeTabAffiliate;
 
-  /// No description provided for @homeTabPlans.
+  /// Label of the plans tab
+  ///
+  /// In en, this message translates to:
+  /// **'Plans'**
   String get homeTabPlans;
 
-  /// No description provided for @reportTitle.
+  /// AppBar title of the report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
   String get reportTitle;
 
-  /// No description provided for @reportFeedbackCardTitle.
+  /// Title of the feedback card on the report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
   String get reportFeedbackCardTitle;
 
-  /// No description provided for @reportFeedbackOpenEntries.
+  /// Subtitle showing open feedback entries
+  ///
+  /// In en, this message translates to:
+  /// **'{count} open entries'**
   String reportFeedbackOpenEntries(int count);
 
-  /// No description provided for @reportFeedbackNoOpenEntries.
+  /// Subtitle shown when there are no open feedback entries
+  ///
+  /// In en, this message translates to:
+  /// **'No open feedback'**
   String get reportFeedbackNoOpenEntries;
 
-  /// No description provided for @feedbackDialogTitle.
+  /// Title of the feedback dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
   String get feedbackDialogTitle;
 
-  /// No description provided for @feedbackTooltip.
+  /// Tooltip for the feedback button
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
   String get feedbackTooltip;
 
-  /// No description provided for @feedbackPlaceholder.
+  /// Placeholder text for the feedback input
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback...'**
   String get feedbackPlaceholder;
 
-  /// No description provided for @feedbackSubmit.
+  /// Submit button label for feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
   String get feedbackSubmit;
 
-  /// No description provided for @feedbackSent.
+  /// Snackbar shown after sending feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback sent'**
   String get feedbackSent;
 
-  /// No description provided for @reportCreateSurveyTitle.
+  /// Action title to create a survey
+  ///
+  /// In en, this message translates to:
+  /// **'Create survey'**
   String get reportCreateSurveyTitle;
 
-  /// No description provided for @reportViewSurveysTitle.
+  /// Action title to open the survey overview
+  ///
+  /// In en, this message translates to:
+  /// **'View surveys'**
   String get reportViewSurveysTitle;
 
+  /// Button label for manually refreshing the report
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
   String get reportRefreshButton;
 
-  /// No description provided for @reportDeviceFilterHint.
+  /// Hint text for the device usage search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search devices or descriptions'**
   String get reportDeviceFilterHint;
 
-  /// No description provided for @reportUsageRange7Days.
+  /// Filter option label for viewing usage data of the last 7 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
   String get reportUsageRange7Days;
 
-  /// No description provided for @reportUsageRange30Days.
+  /// Filter option label for viewing usage data of the last 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
   String get reportUsageRange30Days;
 
-  /// No description provided for @reportUsageRange90Days.
+  /// Filter option label for viewing usage data of the last 90 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 90 days'**
   String get reportUsageRange90Days;
 
-  /// No description provided for @reportUsageRange365Days.
+  /// Filter option label for viewing usage data of the last 365 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 365 days'**
   String get reportUsageRange365Days;
 
-  /// No description provided for @reportUsageRangeAll.
+  /// Filter option label for viewing usage data without a time restriction
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
   String get reportUsageRangeAll;
 
-  /// No description provided for @reportDeviceUsageEmpty.
+  /// Message shown when there is no usage data
+  ///
+  /// In en, this message translates to:
+  /// **'No usage data available yet'**
   String get reportDeviceUsageEmpty;
 
-  /// No description provided for @reportDeviceUsageNoMatches.
+  /// Message shown when the device search has no matches
+  ///
+  /// In en, this message translates to:
+  /// **'No devices match your search'**
   String get reportDeviceUsageNoMatches;
 
-  /// No description provided for @reportDeviceUsageError.
+  /// Message shown when fetching usage data fails
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the usage data.'**
   String get reportDeviceUsageError;
 
-  /// No description provided for @reportDeviceUsageSessions.
+  /// Tooltip line with the number of sessions
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions'**
   String reportDeviceUsageSessions(int count);
 
-  /// No description provided for @exerciseDeleteTitle.
+  /// Dialog title asking to delete an exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Delete exercise'**
   String get exerciseDeleteTitle;
 
-  /// No description provided for @exerciseDeleteMessage.
+  /// Dialog message asking to delete an exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete the exercise \"{name}\"?'**
   String exerciseDeleteMessage(Object name);
 
-  /// No description provided for @commonDelete.
+  /// Generic delete action label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
   String get commonDelete;
 
-  /// No description provided for @commonSaveError.
+  /// Snackbar text shown when saving fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save.'**
   String get commonSaveError;
 
-  /// No description provided for @commonUnknown.
+  /// Generic fallback label for unknown values
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
   String get commonUnknown;
 
-  /// No description provided for @commonTitle.
+  /// Generic title label
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
   String get commonTitle;
 
-  /// No description provided for @commonDescription.
+  /// Generic description label
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
   String get commonDescription;
 
-  /// No description provided for @commonCreate.
+  /// Generic create action label
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
   String get commonCreate;
 
-  /// No description provided for @commonSubmit.
+  /// Generic submit action label
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
   String get commonSubmit;
 
-  /// No description provided for @commonDiscard.
+  /// Generic discard action label
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
   String get commonDiscard;
 
-  /// No description provided for @commonNoAccess.
+  /// Message shown when the user has no access
+  ///
+  /// In en, this message translates to:
+  /// **'No access'**
   String get commonNoAccess;
 
-  /// No description provided for @xpDeviceTitle.
+  /// Title of the device XP screen
+  ///
+  /// In en, this message translates to:
+  /// **'Device XP'**
   String get xpDeviceTitle;
 
-  /// No description provided for @xpOverviewTitle.
+  /// AppBar title of the XP overview screen
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle group XP overview'**
   String get xpOverviewTitle;
 
-  /// No description provided for @xpOverviewPeriodLabel.
+  /// Label for the time range dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Time range:'**
   String get xpOverviewPeriodLabel;
 
-  /// No description provided for @xpOverviewPeriodLast7Days.
+  /// Dropdown option for the last 7 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
   String get xpOverviewPeriodLast7Days;
 
-  /// No description provided for @xpOverviewPeriodLast30Days.
+  /// Dropdown option for the last 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
   String get xpOverviewPeriodLast30Days;
 
-  /// No description provided for @xpOverviewPeriodTotal.
+  /// Dropdown option for total XP
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
   String get xpOverviewPeriodTotal;
 
-  /// No description provided for @xpOverviewTableHeaderMuscleGroup.
+  /// Table header for muscle group
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle group'**
   String get xpOverviewTableHeaderMuscleGroup;
 
-  /// No description provided for @xpOverviewTableHeaderXp.
+  /// Table header for XP
+  ///
+  /// In en, this message translates to:
+  /// **'XP'**
   String get xpOverviewTableHeaderXp;
 
-  /// No description provided for @xpOverviewLeaderboardTitle.
+  /// Title of the leaderboard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard: {region}'**
   String xpOverviewLeaderboardTitle(Object region);
 
-  /// No description provided for @challengeAdminTitle.
+  /// AppBar title of the challenge admin screen
+  ///
+  /// In en, this message translates to:
+  /// **'Manage challenges'**
   String get challengeAdminTitle;
 
-  /// No description provided for @challengeAdminErrorFillAllFields.
+  /// Error shown when required fields are missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill out all fields.'**
   String get challengeAdminErrorFillAllFields;
 
-  /// No description provided for @challengeAdminFieldRequiredSets.
+  /// Label for the required sets field
+  ///
+  /// In en, this message translates to:
+  /// **'Required sets'**
   String get challengeAdminFieldRequiredSets;
 
-  /// No description provided for @challengeAdminFieldXpReward.
+  /// Label for the XP reward field
+  ///
+  /// In en, this message translates to:
+  /// **'XP reward'**
   String get challengeAdminFieldXpReward;
 
-  /// No description provided for @challengeAdminFieldType.
+  /// Label for the challenge type field
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
   String get challengeAdminFieldType;
 
-  /// No description provided for @challengeTabActive.
+  /// Tab label for active challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
   String get challengeTabActive;
 
-  /// No description provided for @challengeTabCompleted.
+  /// Tab label for completed challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
   String get challengeTabCompleted;
 
-  /// No description provided for @challengeEmptyActive.
+  /// Message shown when there are no active challenges
+  ///
+  /// In en, this message translates to:
+  /// **'No active challenges'**
   String get challengeEmptyActive;
 
-  /// No description provided for @challengeEmptyCompleted.
+  /// Message shown when there are no completed challenges
+  ///
+  /// In en, this message translates to:
+  /// **'No completed challenges'**
   String get challengeEmptyCompleted;
 
-  /// No description provided for @challengeDetailXpReward.
+  /// XP reward shown in the challenge dialog
+  ///
+  /// In en, this message translates to:
+  /// **'XP: {xp}'**
   String challengeDetailXpReward(int xp);
 
-  /// No description provided for @challengeDetailDevices.
+  /// Device list shown in the challenge dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Devices: {devices}'**
   String challengeDetailDevices(Object devices);
 
-  /// No description provided for @challengeAdminTypeWeekly.
+  /// Weekly challenge option
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
   String get challengeAdminTypeWeekly;
 
-  /// No description provided for @challengeAdminTypeMonthly.
+  /// Monthly challenge option
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
   String get challengeAdminTypeMonthly;
 
-  /// No description provided for @challengeAdminFieldWeek.
+  /// Label for the calendar week selector
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar week'**
   String get challengeAdminFieldWeek;
 
-  /// No description provided for @challengeAdminWeekLabel.
+  /// Displayed label for a specific calendar week
+  ///
+  /// In en, this message translates to:
+  /// **'CW {week}'**
   String challengeAdminWeekLabel(int week);
 
-  /// No description provided for @challengeAdminFieldMonth.
+  /// Label for the month selector
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
   String get challengeAdminFieldMonth;
 
-  /// No description provided for @challengeAdminMonthLabel.
+  /// Displayed label for a specific month
+  ///
+  /// In en, this message translates to:
+  /// **'Month {month}'**
   String challengeAdminMonthLabel(int month);
 
-  /// No description provided for @challengeAdminFieldDevices.
+  /// Section title listing devices
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
   String get challengeAdminFieldDevices;
 
-  /// No description provided for @adminAreaTitle.
+  /// AppBar title when user enters the admin area
+  ///
+  /// In en, this message translates to:
+  /// **'Admin area'**
   String get adminAreaTitle;
 
-  /// No description provided for @adminAreaNoPermission.
+  /// Message shown when a user lacks admin rights
+  ///
+  /// In en, this message translates to:
+  /// **'No admin rights'**
   String get adminAreaNoPermission;
 
-  /// No description provided for @adminDashboardTitle.
+  /// AppBar title of the admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Admin dashboard'**
   String get adminDashboardTitle;
 
-  /// No description provided for @adminDashboardCreateDeviceDialogTitle.
+  /// Dialog title when creating a device
+  ///
+  /// In en, this message translates to:
+  /// **'Create device'**
   String get adminDashboardCreateDeviceDialogTitle;
 
-  /// No description provided for @adminDashboardMultipleExercises.
+  /// Label asking whether the device has multiple exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple exercises?'**
   String get adminDashboardMultipleExercises;
 
-  /// No description provided for @adminDashboardDeviceIdLabel.
+  /// Label showing the generated device ID
+  ///
+  /// In en, this message translates to:
+  /// **'Device ID: {id}'**
   String adminDashboardDeviceIdLabel(Object id);
 
-  /// No description provided for @adminDashboardCreateDevice.
+  /// Action card title to create a device
+  ///
+  /// In en, this message translates to:
+  /// **'Create device'**
   String get adminDashboardCreateDevice;
 
-  /// No description provided for @adminDashboardBranding.
+  /// Action card title for branding settings
+  ///
+  /// In en, this message translates to:
+  /// **'Branding'**
   String get adminDashboardBranding;
 
-  /// No description provided for @adminSymbolsAddButton.
-  String adminSymbolsAddButton(int count);
-
-  /// No description provided for @adminSymbolsAddSuccess.
-  String adminSymbolsAddSuccess(int count);
-
-  /// No description provided for @adminSymbolsRetryLater.
-  String get adminSymbolsRetryLater;
-
-  /// No description provided for @adminSymbolsNoGlobalAssets.
-  String get adminSymbolsNoGlobalAssets;
-
-  /// No description provided for @adminSymbolsNoAssetsForTitle.
-  String adminSymbolsNoAssetsForTitle(Object title);
-
-  /// No description provided for @adminSymbolsAllGlobalAssigned.
-  String get adminSymbolsAllGlobalAssigned;
-
-  /// No description provided for @adminSymbolsAllTitleAssigned.
-  String adminSymbolsAllTitleAssigned(Object title);
-
-  /// No description provided for @brandingImageTooLarge.
-  String get brandingImageTooLarge;
-
-  /// No description provided for @brandingInvalidConfig.
-  String get brandingInvalidConfig;
-
-  /// No description provided for @brandingPickLogo.
-  String get brandingPickLogo;
-
-  /// No description provided for @brandingPrimaryColorLabel.
-  String get brandingPrimaryColorLabel;
-
-  /// No description provided for @brandingAccentColorLabel.
-  String get brandingAccentColorLabel;
-
-  /// No description provided for @nfcNoCode.
-  String get nfcNoCode;
-
-  /// No description provided for @nfcNoGymSelected.
-  String get nfcNoGymSelected;
-
-  /// No description provided for @nfcError.
-  String nfcError(Object error);
-
-  /// No description provided for @surveyThanks.
-  String get surveyThanks;
-
-  /// No description provided for @surveySelectOptionPrompt.
-  String get surveySelectOptionPrompt;
-
-  /// No description provided for @surveyClose.
-  String get surveyClose;
-
-  /// No description provided for @surveyVotesCountWithPercent.
-  String surveyVotesCountWithPercent(int count, Object percent);
-
-  /// No description provided for @surveyListTitle.
-  String get surveyListTitle;
-
-  /// No description provided for @surveyTabOpen.
-  String get surveyTabOpen;
-
-  /// No description provided for @surveyTabClosed.
-  String get surveyTabClosed;
-
-  /// No description provided for @surveyEmpty.
-  String get surveyEmpty;
-
-  /// No description provided for @surveyEmptyClosed.
-  String get surveyEmptyClosed;
-
-  /// No description provided for @surveyResultsTitle.
-  String get surveyResultsTitle;
-
-  /// No description provided for @selectGymTitle.
-  String get selectGymTitle;
-
-  /// No description provided for @sessionStopTitle.
-  String get sessionStopTitle;
-
-  /// No description provided for @sessionStopMessage.
-  String sessionStopMessage(Object duration);
-
-  /// No description provided for @sessionStopResumeAction.
-  String get sessionStopResumeAction;
-
-  /// No description provided for @sessionStopResumeSelectionTitle.
-  String get sessionStopResumeSelectionTitle;
-
-  /// No description provided for @numericKeypadSemanticsDigit.
-  String numericKeypadSemanticsDigit(Object digit);
-
-  /// No description provided for @numericKeypadSemanticsDecimal.
-  String get numericKeypadSemanticsDecimal;
-
-  /// No description provided for @numericKeypadSemanticsDelete.
-  String get numericKeypadSemanticsDelete;
-
-  /// No description provided for @numericKeypadSemanticsNext.
-  String get numericKeypadSemanticsNext;
-
-  /// No description provided for @numericKeypadSemanticsPrevious.
-  String get numericKeypadSemanticsPrevious;
-
-  /// No description provided for @numericKeypadSemanticsDuplicate.
-  String get numericKeypadSemanticsDuplicate;
-
-  /// No description provided for @numericKeypadSemanticsDecrease.
-  String get numericKeypadSemanticsDecrease;
-
-  /// No description provided for @numericKeypadSemanticsIncrease.
-  String get numericKeypadSemanticsIncrease;
-
-  /// No description provided for @numericKeypadSemanticsHideKeyboard.
-  String get numericKeypadSemanticsHideKeyboard;
-
-  /// No description provided for @adminDeviceNfcWritten.
+  /// Snackbar shown after writing an NFC tag
+  ///
+  /// In en, this message translates to:
+  /// **'NFC tag written'**
   String get adminDeviceNfcWritten;
 
-  /// No description provided for @adminDeviceNfcWriteError.
+  /// Snackbar shown when writing an NFC tag failed
+  ///
+  /// In en, this message translates to:
+  /// **'Error writing NFC tag: {error}'**
   String adminDeviceNfcWriteError(Object error);
 
-  /// No description provided for @deviceDeleteTooltip.
+  /// Tooltip for the delete device action
+  ///
+  /// In en, this message translates to:
+  /// **'Delete device'**
   String get deviceDeleteTooltip;
 
-  /// No description provided for @deviceDeleteDialogTitle.
+  /// Title for the delete device confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete device?'**
   String get deviceDeleteDialogTitle;
 
-  /// No description provided for @deviceDeleteDialogMessage.
+  /// Message shown when confirming device deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete the device \"{name}\"?'**
   String deviceDeleteDialogMessage(Object name);
 
-  /// No description provided for @deviceDeleteSuccess.
+  /// Snackbar shown after a device was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Device deleted'**
   String get deviceDeleteSuccess;
 
-  /// No description provided for @deviceWriteNfcTooltip.
+  /// Tooltip for writing an NFC tag
+  ///
+  /// In en, this message translates to:
+  /// **'Write NFC tag'**
   String get deviceWriteNfcTooltip;
+
+  /// Button label to add selected symbols
+  ///
+  /// In en, this message translates to:
+  /// **'Add ({count})'**
+  String adminSymbolsAddButton(int count);
+
+  /// Snackbar after symbols were added
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} symbol(s)'**
+  String adminSymbolsAddSuccess(int count);
+
+  /// Snackbar shown when a network request failed
+  ///
+  /// In en, this message translates to:
+  /// **'No connection – please try again later.'**
+  String get adminSymbolsRetryLater;
+
+  /// Message shown when no global assets were found
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest contains no global assets'**
+  String get adminSymbolsNoGlobalAssets;
+
+  /// Message shown when no assets were found for a specific title
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest contains no {title} assets'**
+  String adminSymbolsNoAssetsForTitle(Object title);
+
+  /// Message shown when all global symbols are already assigned
+  ///
+  /// In en, this message translates to:
+  /// **'All global symbols already assigned.'**
+  String get adminSymbolsAllGlobalAssigned;
+
+  /// Message shown when all symbols for a specific source are assigned
+  ///
+  /// In en, this message translates to:
+  /// **'All {title} symbols already assigned.'**
+  String adminSymbolsAllTitleAssigned(Object title);
+
+  /// Error shown when the selected logo is too large
+  ///
+  /// In en, this message translates to:
+  /// **'Image too large (max 500KB)'**
+  String get brandingImageTooLarge;
+
+  /// Error shown when required branding fields are missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please select valid colours and a logo.'**
+  String get brandingInvalidConfig;
+
+  /// Button label to pick a branding logo
+  ///
+  /// In en, this message translates to:
+  /// **'Choose logo'**
+  String get brandingPickLogo;
+
+  /// Input label for the primary colour
+  ///
+  /// In en, this message translates to:
+  /// **'Primary colour (hex)'**
+  String get brandingPrimaryColorLabel;
+
+  /// Input label for the accent colour
+  ///
+  /// In en, this message translates to:
+  /// **'Accent colour (hex)'**
+  String get brandingAccentColorLabel;
+
+  /// Snackbar shown when no NFC code was read
+  ///
+  /// In en, this message translates to:
+  /// **'No NFC code detected'**
+  String get nfcNoCode;
+
+  /// Snackbar shown when no gym is selected
+  ///
+  /// In en, this message translates to:
+  /// **'No gym selected'**
+  String get nfcNoGymSelected;
+
+  /// Snackbar shown when an NFC error occurs
+  ///
+  /// In en, this message translates to:
+  /// **'NFC error: {error}'**
+  String nfcError(Object error);
+
+  /// Message shown after submitting a survey
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for participating!'**
+  String get surveyThanks;
+
+  /// Prompt asking the user to choose an option
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose an option:'**
+  String get surveySelectOptionPrompt;
+
+  /// Button label to close a survey
+  ///
+  /// In en, this message translates to:
+  /// **'Close survey'**
+  String get surveyClose;
+
+  /// Displays vote count with percentage
+  ///
+  /// In en, this message translates to:
+  /// **'{count} votes ({percent}%)'**
+  String surveyVotesCountWithPercent(int count, Object percent);
+
+  /// AppBar title for the survey list
+  ///
+  /// In en, this message translates to:
+  /// **'Surveys'**
+  String get surveyListTitle;
+
+  /// Tab label for open surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get surveyTabOpen;
+
+  /// Tab label for completed surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get surveyTabClosed;
+
+  /// Message shown when there are no open surveys
+  ///
+  /// In en, this message translates to:
+  /// **'No open surveys'**
+  String get surveyEmpty;
+
+  /// Message shown when there are no completed surveys
+  ///
+  /// In en, this message translates to:
+  /// **'No completed surveys'**
+  String get surveyEmptyClosed;
+
+  /// Heading shown above survey results
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get surveyResultsTitle;
+
+  /// AppBar title of the gym selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select gym'**
+  String get selectGymTitle;
+
+  /// Dialog title asking to end the workout
+  ///
+  /// In en, this message translates to:
+  /// **'End workout?'**
+  String get sessionStopTitle;
+
+  /// Dialog body asking whether to save the tracked duration
+  ///
+  /// In en, this message translates to:
+  /// **'Duration: {duration}. Do you want to save or discard the time?'**
+  String sessionStopMessage(Object duration);
+
+  /// Action button label to resume an unfinished session
+  ///
+  /// In en, this message translates to:
+  /// **'Back to exercise'**
+  String get sessionStopResumeAction;
+
+  /// Title shown when the user has to pick from multiple unfinished sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a session'**
+  String get sessionStopResumeSelectionTitle;
+
+  /// Semantics label for a digit key
+  ///
+  /// In en, this message translates to:
+  /// **'Key {digit}'**
+  String numericKeypadSemanticsDigit(Object digit);
+
+  /// Semantics label for the decimal separator key
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal separator'**
+  String get numericKeypadSemanticsDecimal;
+
+  /// Semantics label for the delete key
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get numericKeypadSemanticsDelete;
+
+  /// Semantics label for the next button
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get numericKeypadSemanticsNext;
+
+  /// Semantics label for the previous button
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get numericKeypadSemanticsPrevious;
+
+  /// Semantics label for the duplicate previous set button
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate previous set'**
+  String get numericKeypadSemanticsDuplicate;
+
+  /// Semantics label for the decrease button
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get numericKeypadSemanticsDecrease;
+
+  /// Semantics label for the increase button
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get numericKeypadSemanticsIncrease;
+
+  /// Semantics label for the hide keyboard button
+  ///
+  /// In en, this message translates to:
+  /// **'Hide keyboard'**
+  String get numericKeypadSemanticsHideKeyboard;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
