@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -209,57 +211,77 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     ProfileProvider prov,
     AppLocalizations loc,
   ) async {
-    final usages = prov.favoriteExerciseUsages;
+    unawaited(prov.ensureFavoriteExercisesLoaded(context));
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(loc.profileStatsFavoriteExerciseDialogTitle),
-          content: usages.isEmpty
-              ? Text(loc.profileStatsFavoriteExerciseFallback)
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final usage in usages)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xs,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                usage.name,
-                                style: Theme.of(dialogContext)
-                                    .textTheme
-                                    .bodyMedium,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              loc.reportDeviceUsageSessions(
-                                usage.sessionCount,
-                              ),
+        return Consumer<ProfileProvider>(
+          builder: (context, provider, _) {
+            final isLoading = provider.isFavoriteExercisesLoading;
+            final error = provider.favoriteExercisesError;
+            final usages = provider.favoriteExerciseUsages;
+
+            Widget content;
+            if (isLoading && usages.isEmpty && error == null) {
+              content = const SizedBox(
+                height: 80,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            } else if (error != null) {
+              content = Text(error);
+            } else if (usages.isEmpty) {
+              content = Text(loc.profileStatsFavoriteExerciseFallback);
+            } else {
+              content = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final usage in usages)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              usage.name,
                               style: Theme.of(dialogContext)
                                   .textTheme
                                   .bodyMedium,
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            loc.reportDeviceUsageSessions(
+                              usage.sessionCount,
+                            ),
+                            style: Theme.of(dialogContext)
+                                .textTheme
+                                .bodyMedium,
+                          ),
+                        ],
                       ),
-                  ],
+                    ),
+                ],
+              );
+            }
+
+            return AlertDialog(
+              title: Text(loc.profileStatsFavoriteExerciseDialogTitle),
+              content: content,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    MaterialLocalizations.of(dialogContext).closeButtonLabel,
+                  ),
                 ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                MaterialLocalizations.of(dialogContext).closeButtonLabel,
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
