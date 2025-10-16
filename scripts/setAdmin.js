@@ -15,7 +15,7 @@ const TEST_UID = 'fZ8akYkdhTQ1vprqcRqo6AX9o5E3';
 async function makeAdmin() {
   try {
     // wir schreiben genau das Claim, das die Rules erwarten:
-    await admin.auth().setCustomUserClaims(TARGET_UID, { admin: true, role: 'admin' });
+    await admin.auth().setCustomUserClaims(TEST_UID, { admin: true, role: 'admin' });
     console.log(`✅ User ${TEST_UID} ist jetzt Admin (role: 'admin').`);
     process.exit(0);
   } catch (err) {
