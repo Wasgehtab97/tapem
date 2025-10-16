@@ -93,10 +93,6 @@ import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
 
-import 'features/report/data/repositories/report_repository_impl.dart';
-import 'features/report/domain/usecases/get_device_usage_stats.dart';
-import 'features/report/domain/usecases/get_all_log_timestamps.dart';
-
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────
@@ -251,11 +247,6 @@ Future<void> main() async {
     }
     return true;
   }());
-
-  // Reports vorbereiten
-  final reportRepo = ReportRepositoryImpl();
-  final usageUC = GetDeviceUsageStats(reportRepo);
-  final logsUC = GetAllLogTimestamps(reportRepo);
 
   runApp(
     MultiProvider(
@@ -512,10 +503,7 @@ Future<void> main() async {
           create: (c) =>
               AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              ReportProvider(getUsageStats: usageUC, getLogTimestamps: logsUC),
-        ),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(
           create: (_) => SurveyProvider(firestore: FirebaseFirestore.instance),
         ),
