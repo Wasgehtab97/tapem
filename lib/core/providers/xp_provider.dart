@@ -3,16 +3,25 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
+import 'package:tapem/core/storage/daily_stats_cache_store.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
+import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
-import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
-import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class XpProvider extends ChangeNotifier {
   final XpRepository _repo;
-  XpProvider({XpRepository? repo})
-    : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource());
+  final DailyStatsCache _statsCache;
+  final DateTime Function() _now;
+
+  XpProvider({
+    XpRepository? repo,
+    DailyStatsCache? statsCache,
+    DateTime Function()? now,
+  })  : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource()),
+        _statsCache = statsCache ?? const DailyStatsCacheStore(),
+        _now = now ?? DateTime.now;
 
   Map<String, int> _muscleXp = {};
   int _dayXp = 0;
@@ -27,6 +36,7 @@ class XpProvider extends ChangeNotifier {
   int _dailyLevel = 1;
   int _dailyLevelXp = 0;
   StreamSubscription<int>? _statsDailySub;
+  DateTime? _statsDailyFetchedAt;
   Map<String, Map<String, int>> _muscleDailyXp = {};
 
   Map<String, int> get muscleXp => _muscleXp;
@@ -42,87 +52,134 @@ class XpProvider extends ChangeNotifier {
           ? 1
           : _dailyLevelXp / LevelService.xpPerLevel;
 
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-      String? exerciseId,
-      required String traceId,
-      List<String> primaryMuscleGroupIds = const [],
-      List<String> secondaryMuscleGroupIds = const [],
-    }) async {
-      assert(LevelService.xpPerSession == 50);
-      XpTrace.log('PROVIDER_IN', {
-        'gymId': gymId,
-        'uid': userId,
-        'deviceId': deviceId,
-        'sessionId': sessionId,
-        'isMulti': isMulti,
-        'exerciseId': exerciseId ?? '',
-        'showInLeaderboard': showInLeaderboard,
+  bool _isSameCalendarDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  void _applyDailyStats({
+    required int xp,
+    required DateTime fetchedAt,
+    required String source,
+  }) {
+    final previousXp = _statsDailyXp;
+    final previousDate = _statsDailyFetchedAt;
+    _statsDailyXp = xp;
+    _statsDailyFetchedAt = fetchedAt;
+    var level = (xp ~/ LevelService.xpPerLevel) + 1;
+    if (level > LevelService.maxLevel) level = LevelService.maxLevel;
+    final xpInLevel =
+        level >= LevelService.maxLevel ? 0 : xp % LevelService.xpPerLevel;
+    final shouldNotify =
+        previousXp != xp ||
+        previousDate == null ||
+        !_isSameCalendarDay(previousDate, fetchedAt);
+    _dailyLevel = level;
+    _dailyLevelXp = xpInLevel;
+    debugPrint(
+        '🔄 provider statsDailyXp=$xp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source');
+    if (shouldNotify) {
+      notifyListeners();
+    }
+  }
+
+  Future<DeviceXpResult> addSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) async {
+    assert(LevelService.xpPerSession == 50);
+    XpTrace.log('PROVIDER_IN', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'isMulti': isMulti,
+      'exerciseId': exerciseId ?? '',
+      'showInLeaderboard': showInLeaderboard,
+      'traceId': traceId,
+    });
+    if (deviceId.isEmpty) {
+      XpTrace.log('SKIP', {
+        'reason': 'noDevice',
         'traceId': traceId,
       });
-      if (deviceId.isEmpty) {
-        XpTrace.log('SKIP', {
-          'reason': 'noDevice',
-          'traceId': traceId,
-        });
-        return DeviceXpResult.skipNoDevice;
-      }
-      try {
-        final result = await _repo.addSessionXp(
-          gymId: gymId,
-          userId: userId,
-          deviceId: deviceId,
-          sessionId: sessionId,
-          showInLeaderboard: showInLeaderboard,
-          isMulti: isMulti,
-          exerciseId: exerciseId,
-          traceId: traceId,
-          primaryMuscleGroupIds: primaryMuscleGroupIds,
-          secondaryMuscleGroupIds: secondaryMuscleGroupIds,
-        );
-        XpTrace.log('PROVIDER_OUT', {
-          'result': result.name,
-          'deltaXp':
-              result == DeviceXpResult.okAdded ||
-                      result == DeviceXpResult.okAddedNoLeaderboard
-                  ? 50
-                  : 0,
-          'updatedLocalCache': result == DeviceXpResult.okAdded ||
-              result == DeviceXpResult.okAddedNoLeaderboard,
-          'traceId': traceId,
-        });
-        if (result == DeviceXpResult.okAdded ||
-            result == DeviceXpResult.okAddedNoLeaderboard) {
-          _deviceXp[deviceId] =
-              (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
-          XpTrace.log('CACHE_BUMP', {
-            'deviceId': deviceId,
-            'newXp': _deviceXp[deviceId],
-            'traceId': traceId,
-          });
-          notifyListeners();
-        }
-        return result;
-      } catch (e, st) {
-        XpTrace.log('PROVIDER_OUT', {
-          'result': 'error',
-          'err': e.toString(),
-          'traceId': traceId,
-        });
-        elogError('XP_ADD_UNEXPECTED', e, st, {
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-        });
-        return DeviceXpResult.error;
-      }
+      return DeviceXpResult.skipNoDevice;
     }
+    try {
+      final result = await _repo.addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: sessionId,
+        showInLeaderboard: showInLeaderboard,
+        isMulti: isMulti,
+        exerciseId: exerciseId,
+        traceId: traceId,
+        primaryMuscleGroupIds: primaryMuscleGroupIds,
+        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+      );
+      XpTrace.log('PROVIDER_OUT', {
+        'result': result.name,
+        'deltaXp':
+            result == DeviceXpResult.okAdded ||
+                    result == DeviceXpResult.okAddedNoLeaderboard
+                ? 50
+                : 0,
+        'updatedLocalCache': result == DeviceXpResult.okAdded ||
+            result == DeviceXpResult.okAddedNoLeaderboard,
+        'traceId': traceId,
+      });
+      if (result == DeviceXpResult.okAdded ||
+          result == DeviceXpResult.okAddedNoLeaderboard) {
+        _deviceXp[deviceId] =
+            (_deviceXp[deviceId] ?? 0) + LevelService.xpPerSession;
+        XpTrace.log('CACHE_BUMP', {
+          'deviceId': deviceId,
+          'newXp': _deviceXp[deviceId],
+          'traceId': traceId,
+        });
+        notifyListeners();
+        try {
+          final entry = await _statsCache.increment(
+            gymId,
+            userId,
+            LevelService.xpPerSession,
+            _now(),
+          );
+          _applyDailyStats(
+            xp: entry.xp,
+            fetchedAt: entry.cachedAt,
+            source: 'localIncrement',
+          );
+        } catch (e, st) {
+          elogError('XP_STATS_CACHE_INCREMENT_FAILED', e, st, {
+            'gymId': gymId,
+            'uid': userId,
+          });
+        }
+      }
+      return result;
+    } catch (e, st) {
+      XpTrace.log('PROVIDER_OUT', {
+        'result': 'error',
+        'err': e.toString(),
+        'traceId': traceId,
+      });
+      elogError('XP_ADD_UNEXPECTED', e, st, {
+        'uid': userId,
+        'gymId': gymId,
+        'deviceId': deviceId,
+        'sessionId': sessionId,
+      });
+      return DeviceXpResult.error;
+    }
+  }
 
   void watchDayXp(String userId, DateTime date) {
     debugPrint('👀 provider watchDayXp userId=$userId date=$date');
@@ -208,23 +265,74 @@ class XpProvider extends ChangeNotifier {
     }
   }
 
-  void watchStatsDailyXp(String gymId, String userId) {
+  Future<void> watchStatsDailyXp(
+    String gymId,
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
     debugPrint('👀 provider watchStatsDailyXp gymId=$gymId userId=$userId');
-    _statsDailySub?.cancel();
+    await _statsDailySub?.cancel();
+    _statsDailySub = null;
+    final now = _now();
+    DailyStatsCacheEntry? cacheEntry;
+    try {
+      cacheEntry = await _statsCache.read(gymId, userId);
+    } catch (e, st) {
+      elogError('XP_STATS_CACHE_READ_FAILED', e, st, {
+        'gymId': gymId,
+        'uid': userId,
+      });
+    }
+    if (!forceRefresh && cacheEntry != null && cacheEntry.isSameCalendarDay(now)) {
+      _applyDailyStats(
+        xp: cacheEntry.xp,
+        fetchedAt: cacheEntry.cachedAt,
+        source: 'cache',
+      );
+      debugPrint('💾 statsDailyXp cache hit -> skip remote fetch');
+      return;
+    }
+
+    try {
+      final xp = await _repo.fetchStatsDailyXp(
+        gymId: gymId,
+        userId: userId,
+      );
+      final saved = await _statsCache.write(gymId, userId, xp, now);
+      _applyDailyStats(
+        xp: saved.xp,
+        fetchedAt: saved.cachedAt,
+        source: 'fetch',
+      );
+    } catch (e, st) {
+      elogError('XP_STATS_FETCH_FAILED', e, st, {
+        'gymId': gymId,
+        'uid': userId,
+      });
+    }
+
     _statsDailySub = _repo
         .watchStatsDailyXp(gymId: gymId, userId: userId)
-        .listen((xp) {
-          _statsDailyXp = xp;
-          var level = (xp ~/ LevelService.xpPerLevel) + 1;
-          if (level > LevelService.maxLevel) level = LevelService.maxLevel;
-          final xpInLevel =
-              level >= LevelService.maxLevel ? 0 : xp % LevelService.xpPerLevel;
-          _dailyLevel = level;
-          _dailyLevelXp = xpInLevel;
-          debugPrint(
-              '🔄 provider statsDailyXp=$xp level=$_dailyLevel xpInLevel=$_dailyLevelXp');
-          notifyListeners();
+        .listen((xp) async {
+      try {
+        final saved = await _statsCache.write(gymId, userId, xp, _now());
+        _applyDailyStats(
+          xp: saved.xp,
+          fetchedAt: saved.cachedAt,
+          source: 'stream',
+        );
+      } catch (e, st) {
+        elogError('XP_STATS_CACHE_WRITE_FAILED', e, st, {
+          'gymId': gymId,
+          'uid': userId,
         });
+      }
+    }, onError: (Object error, StackTrace st) {
+      elogError('XP_STATS_STREAM_FAILED', error, st, {
+        'gymId': gymId,
+        'uid': userId,
+      });
+    });
   }
 
   @override

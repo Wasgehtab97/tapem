@@ -122,6 +122,13 @@ class _ExerciseSnapRepo implements DeviceRepository {
   Stream<int> watchDeviceXp({required String gymId, required String deviceId, required String userId}) => const Stream.empty();
   @override
   Stream<int> watchStatsDailyXp({required String gymId, required String userId}) => const Stream.empty();
+
+  @override
+  Future<int> fetchStatsDailyXp({
+    required String gymId,
+    required String userId,
+  }) async =>
+      0;
 }
 
 class FakeChallengeRepository implements ChallengeRepository {
