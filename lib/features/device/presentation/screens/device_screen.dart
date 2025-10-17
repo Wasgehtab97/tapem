@@ -374,7 +374,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             'deviceId': widget.deviceId,
                             'isMulti': prov.device?.isMulti ?? false,
                             'screen': 'DeviceScreen',
-                            'dayKey': logicDayKey(DateTime.now().toUtc()),
+                            'dayKey': logicDayKey(DateTime.now()),
                           };
                           elogUi('CLICK_SAVE', base);
                           if (!_formKey.currentState!.validate()) {

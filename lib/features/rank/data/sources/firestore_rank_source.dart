@@ -27,7 +27,7 @@ class FirestoreRankSource {
       }) async {
         assert(LevelService.xpPerSession == 50);
         assert(deviceId.isNotEmpty);
-        final dayKey = logicDayKey(DateTime.now().toUtc());
+        final dayKey = logicDayKey(DateTime.now());
         final lbUser = _firestore
             .collection('gyms')
             .doc(gymId)

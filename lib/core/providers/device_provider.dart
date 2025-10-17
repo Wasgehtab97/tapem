@@ -1103,7 +1103,7 @@ class DeviceProvider extends ChangeNotifier {
     required bool showInLeaderboard,
     bool autoFinalize = false,
   }) async {
-    final dayKey = logicDayKey(DateTime.now().toUtc());
+    final dayKey = logicDayKey(DateTime.now());
     if (_device == null) {
       final traceId = XpTrace.buildTraceId(
         dayKey: dayKey,
@@ -1275,7 +1275,7 @@ class DeviceProvider extends ChangeNotifier {
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
-      final dayKey = logicDayKey(DateTime.now().toUtc());
+      final dayKey = logicDayKey(DateTime.now());
       elogUi('SAVE_PERSIST_OK', {
         'uid': userId,
         'gymId': gymId,

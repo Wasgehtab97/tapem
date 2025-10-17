@@ -32,7 +32,7 @@ class FirestoreXpSource {
         List<String> primaryMuscleGroupIds = const [],
         List<String> secondaryMuscleGroupIds = const [],
       }) async {
-        final dayKey = logicDayKey(DateTime.now().toUtc());
+        final dayKey = logicDayKey(DateTime.now());
         final dateStr = dayKey;
         final userRef = _firestore.collection('users').doc(userId);
         final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
@@ -269,7 +269,7 @@ class FirestoreXpSource {
       updates['${key}XP'] = FieldValue.increment(value);
     });
     await statsRef.set(updates, SetOptions(merge: true));
-    final dayKey = logicDayKey(DateTime.now().toUtc());
+    final dayKey = logicDayKey(DateTime.now());
     await _updateMuscleXpHistory(
       statsRef: statsRef,
       dayKey: dayKey,
@@ -329,7 +329,7 @@ class FirestoreXpSource {
   }
 
     Stream<int> watchDayXp({required String userId, required DateTime date}) {
-      final dateStr = logicDayKey(date.toUtc());
+      final dateStr = logicDayKey(date);
     final ref = _firestore
         .collection('users')
         .doc(userId)
