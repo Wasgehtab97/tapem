@@ -10,7 +10,12 @@ class GetSessionsForDate {
   Future<List<Session>> execute({
     required String userId,
     required DateTime date,
+    bool fromCacheOnly = false,
   }) {
-    return _repository.getSessionsForDate(userId: userId, date: date);
+    return _repository.getSessionsForDate(
+      userId: userId,
+      date: date,
+      fromCacheOnly: fromCacheOnly,
+    );
   }
 }

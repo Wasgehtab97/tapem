@@ -4,6 +4,7 @@ abstract class SessionRepository {
   Future<List<Session>> getSessionsForDate({
     required String userId,
     required DateTime date,
+    bool fromCacheOnly = false,
   });
 
   Future<void> deleteSession({

@@ -90,27 +90,78 @@ class TrainingDetailsProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      _sessions = await _getSessions.execute(userId: userId, date: date);
-      debugPrint('✅ loaded ${_sessions.length} sessions');
-      if (_sessions.isNotEmpty) {
-        _dayDurationMs = _sessions.first.durationMs;
-      } else {
-        final dayKey = logicDayKey(date);
-        final meta = await _meta.getMetaByDayKey(
-          gymId: gymId,
-          uid: userId,
-          dayKey: dayKey,
-        );
-        _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+      final cachedSessions = await _getSessions.execute(
+        userId: userId,
+        date: date,
+        fromCacheOnly: true,
+      );
+      debugPrint('✅ cache loaded ${cachedSessions.length} sessions');
+      await _applySessions(
+        sessions: cachedSessions,
+        userId: userId,
+        gymId: gymId,
+        date: date,
+        fromCacheOnly: true,
+      );
+      if (showLoading && cachedSessions.isNotEmpty) {
+        _isLoading = false;
       }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('⚠️ cache load error: $e');
+    }
+
+    var remoteSucceeded = false;
+    try {
+      final sessions = await _getSessions.execute(userId: userId, date: date);
+      debugPrint('✅ loaded ${sessions.length} sessions');
+      await _applySessions(
+        sessions: sessions,
+        userId: userId,
+        gymId: gymId,
+        date: date,
+        fromCacheOnly: false,
+      );
+      remoteSucceeded = true;
+      if (showLoading) {
+        _isLoading = false;
+      }
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ loadSessions error: $e');
     }
 
-    if (showLoading) {
+    if (!remoteSucceeded) {
+      if (showLoading) {
+        _isLoading = false;
+      }
+      notifyListeners();
+    }
+  }
+
+  Future<void> _applySessions({
+    required List<Session> sessions,
+    required String userId,
+    required String gymId,
+    required DateTime date,
+    required bool fromCacheOnly,
+  }) async {
+    _sessions = sessions;
+    if (_sessions.isNotEmpty) {
+      _dayDurationMs = _sessions.first.durationMs;
+    } else {
+      final dayKey = logicDayKey(date);
+      final meta = await _meta.getMetaByDayKey(
+        gymId: gymId,
+        uid: userId,
+        dayKey: dayKey,
+        fromCacheOnly: fromCacheOnly,
+      );
+      _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+    }
+    if (!fromCacheOnly) {
       _isLoading = false;
     }
-    notifyListeners();
   }
 }

@@ -25,7 +25,12 @@ class SessionMetaSource {
     required String gymId,
     required String uid,
     required String sessionId,
+    bool fromCacheOnly = false,
   }) async {
+    final options = fromCacheOnly
+        ? const GetOptions(source: Source.cache)
+        : const GetOptions(source: Source.serverAndCache);
+
     final doc = await _firestore
         .collection('gyms')
         .doc(gymId)
@@ -33,7 +38,7 @@ class SessionMetaSource {
         .doc(uid)
         .collection('session_meta')
         .doc(sessionId)
-        .get();
+        .get(options);
     return doc.data();
   }
 
@@ -56,7 +61,12 @@ class SessionMetaSource {
     required String gymId,
     required String uid,
     required String dayKey,
+    bool fromCacheOnly = false,
   }) async {
+    final options = fromCacheOnly
+        ? const GetOptions(source: Source.cache)
+        : const GetOptions(source: Source.serverAndCache);
+
     final snap = await _firestore
         .collection('gyms')
         .doc(gymId)
@@ -65,7 +75,7 @@ class SessionMetaSource {
         .collection('session_meta')
         .where('dayKey', isEqualTo: dayKey)
         .limit(1)
-        .get();
+        .get(options);
     if (snap.docs.isEmpty) return null;
     return snap.docs.first.data();
   }

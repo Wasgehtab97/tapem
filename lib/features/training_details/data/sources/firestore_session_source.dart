@@ -12,6 +12,7 @@ class FirestoreSessionSource {
   Future<List<SessionDto>> getSessionsForDate({
     required String userId,
     required DateTime date,
+    bool fromCacheOnly = false,
   }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start
@@ -26,15 +27,20 @@ class FirestoreSessionSource {
         end.toString());
 
     try {
-      final snap = await _firestore
+      final query = _firestore
           .collectionGroup('logs')
           .where('userId', isEqualTo: userId)
           .where(
             'timestamp',
             isGreaterThanOrEqualTo: Timestamp.fromDate(start),
           )
-          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
-          .get();
+          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end));
+
+      final options = fromCacheOnly
+          ? const GetOptions(source: Source.cache)
+          : const GetOptions(source: Source.serverAndCache);
+
+      final snap = await query.get(options);
 
       debugPrint('FirestoreSessionSource: success path=collectionGroup/logs owner=' +
           userId +
@@ -43,6 +49,13 @@ class FirestoreSessionSource {
 
       return snap.docs.map((doc) => SessionDto.fromFirestore(doc)).toList();
     } on FirebaseException catch (e) {
+      if (fromCacheOnly &&
+          (e.code == 'unavailable' || e.code == 'failed-precondition')) {
+        debugPrint(
+            'FirestoreSessionSource: cache miss path=collectionGroup/logs owner=' +
+                userId);
+        return [];
+      }
       debugPrint('FirestoreSessionSource: failure path=collectionGroup/logs owner=' +
           userId +
           ' code=' +
