@@ -46,6 +46,7 @@ class ProfileProvider extends ChangeNotifier {
   String? _favoriteExercisesError;
   String? _pendingFavoriteExercisesUserId;
   Future<void>? _inFlightFavoriteExercisesLoad;
+  DateTime? _lastCacheAt;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -77,7 +78,14 @@ class ProfileProvider extends ChangeNotifier {
     if (!forceRefresh &&
         _hasLoadedTrainingDates &&
         _lastLoadedUserId == userId) {
-      return;
+      final now = _nowProvider();
+      final lastCache = _lastCacheAt;
+      final hasFreshData = lastCache != null &&
+          now.difference(lastCache) <= _cacheTtl &&
+          _isSameCalendarDay(now, lastCache);
+      if (hasFreshData) {
+        return;
+      }
     }
 
     if (_inFlightTrainingLoad != null &&
@@ -117,12 +125,15 @@ class ProfileProvider extends ChangeNotifier {
       return false;
     }
 
+    final now = _nowProvider();
+    final shouldInvalidate =
+        cached.isExpired(now, _cacheTtl) || !_isSameCalendarDay(now, cached.cachedAt);
+
     _assignEntry(cached, userId);
-    final isExpired = cached.isExpired(_nowProvider(), _cacheTtl);
     _error = null;
-    _isLoading = isExpired;
+    _isLoading = shouldInvalidate;
     notifyListeners();
-    return !isExpired;
+    return !shouldInvalidate;
   }
 
   Future<void> _loadFromFirestore({
@@ -217,6 +228,7 @@ class ProfileProvider extends ChangeNotifier {
     _hasLoadedFavoriteExercises =
         _favoriteExerciseName != null || _favoriteExerciseUsages.isNotEmpty;
     _favoriteExercisesError = null;
+    _lastCacheAt = entry.cachedAt;
   }
 
   ProfileCacheEntry _buildCacheEntry(DateTime now) {
@@ -230,6 +242,10 @@ class ProfileProvider extends ChangeNotifier {
           List<FavoriteExerciseUsage>.from(_favoriteExerciseUsages),
       cachedAt: now,
     );
+  }
+
+  bool _isSameCalendarDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   Future<void> ensureFavoriteExercisesLoaded(
