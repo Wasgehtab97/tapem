@@ -99,7 +99,12 @@ class ReportProvider extends ChangeNotifier {
       return;
     }
     try {
-      heatmapDates = await _getTimestamps.execute(gymId);
+      final now = DateTime.now();
+      final since = usageRange.resolveSince(now);
+      heatmapDates = await _getTimestamps.execute(
+        gymId,
+        since: since,
+      );
       notifyListeners();
     } catch (_) {
       // Heatmap-Daten sind optional. Fehler werden stillschweigend ignoriert,

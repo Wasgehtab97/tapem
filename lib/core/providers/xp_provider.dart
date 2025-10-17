@@ -283,34 +283,28 @@ class XpProvider extends ChangeNotifier {
         'uid': userId,
       });
     }
-    if (!forceRefresh && cacheEntry != null && cacheEntry.isSameCalendarDay(now)) {
-      _applyDailyStats(
-        xp: cacheEntry.xp,
-        fetchedAt: cacheEntry.cachedAt,
-        source: 'cache',
-      );
-      debugPrint('💾 statsDailyXp cache hit -> skip remote fetch');
-      return;
+    Future<void> fetchAndApply(String source) async {
+      try {
+        final xp = await _repo.fetchStatsDailyXp(
+          gymId: gymId,
+          userId: userId,
+        );
+        final saved = await _statsCache.write(gymId, userId, xp, _now());
+        _applyDailyStats(
+          xp: saved.xp,
+          fetchedAt: saved.cachedAt,
+          source: source,
+        );
+      } catch (e, st) {
+        elogError('XP_STATS_FETCH_FAILED', e, st, {
+          'gymId': gymId,
+          'uid': userId,
+        });
+      }
     }
 
-    try {
-      final xp = await _repo.fetchStatsDailyXp(
-        gymId: gymId,
-        userId: userId,
-      );
-      final saved = await _statsCache.write(gymId, userId, xp, now);
-      _applyDailyStats(
-        xp: saved.xp,
-        fetchedAt: saved.cachedAt,
-        source: 'fetch',
-      );
-    } catch (e, st) {
-      elogError('XP_STATS_FETCH_FAILED', e, st, {
-        'gymId': gymId,
-        'uid': userId,
-      });
-    }
-
+    final initialCompleter = Completer<void>();
+    var hasInitialStreamValue = false;
     _statsDailySub = _repo
         .watchStatsDailyXp(gymId: gymId, userId: userId)
         .listen((xp) async {
@@ -326,13 +320,42 @@ class XpProvider extends ChangeNotifier {
           'gymId': gymId,
           'uid': userId,
         });
+      } finally {
+        if (!hasInitialStreamValue) {
+          hasInitialStreamValue = true;
+          if (!initialCompleter.isCompleted) {
+            initialCompleter.complete();
+          }
+        }
       }
     }, onError: (Object error, StackTrace st) {
       elogError('XP_STATS_STREAM_FAILED', error, st, {
         'gymId': gymId,
         'uid': userId,
       });
+      if (!initialCompleter.isCompleted) {
+        initialCompleter.completeError(error, st);
+      }
     });
+
+    if (!forceRefresh && cacheEntry != null && cacheEntry.isSameCalendarDay(now)) {
+      _applyDailyStats(
+        xp: cacheEntry.xp,
+        fetchedAt: cacheEntry.cachedAt,
+        source: 'cache',
+      );
+      debugPrint('💾 statsDailyXp cache hit -> using stream for updates');
+      return;
+    }
+
+    try {
+      await initialCompleter.future.timeout(const Duration(seconds: 3));
+    } on TimeoutException {
+      debugPrint('⏱ statsDailyXp initial stream timeout -> fallback fetch');
+      await fetchAndApply('fetch');
+    } catch (_) {
+      await fetchAndApply('fetch');
+    }
   }
 
   @override

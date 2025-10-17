@@ -23,8 +23,12 @@ class FakeReportRepository implements ReportRepository {
   }
 
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async {
+  Future<List<DateTime>> fetchAllLogTimestamps(
+    String gymId, {
+    DateTime? since,
+  }) async {
     timeCalls++;
+    lastSince = since;
     return [DateTime(2024)];
   }
 }
@@ -44,9 +48,11 @@ void main() {
     test('GetAllLogTimestamps delegates to repository', () async {
       final repo = FakeReportRepository();
       final usecase = GetAllLogTimestamps(repo);
-      final result = await usecase.execute('g1');
+      final rangeSince = DateTime(2024, 1, 1);
+      final result = await usecase.execute('g1', since: rangeSince);
       expect(result.length, 1);
       expect(repo.timeCalls, 1);
+      expect(repo.lastSince, rangeSince);
     });
   });
 }
