@@ -26,8 +26,13 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<List<Session>> getSessionsForDate({
     required String userId,
     required DateTime date,
+    bool fromCacheOnly = false,
   }) async {
-    final dtos = await _source.getSessionsForDate(userId: userId, date: date);
+    final dtos = await _source.getSessionsForDate(
+      userId: userId,
+      date: date,
+      fromCacheOnly: fromCacheOnly,
+    );
 
     // 1) Gruppieren
     final Map<String, List<SessionDto>> grouped = {};
@@ -44,11 +49,14 @@ class SessionRepositoryImpl implements SessionRepository {
         <String, DocumentSnapshot<Map<String, dynamic>>>{};
     for (var entry in grouped.entries) {
       final list = entry.value;
-      if (list.any((d) => d.setNumber <= 0)) {
+      final hasMissingSetNumber = list.any((d) => d.setNumber <= 0);
+      if (hasMissingSetNumber) {
         list.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        try {
-          await _source.backfillSetNumbers(list);
-        } catch (_) {}
+        if (!fromCacheOnly) {
+          try {
+            await _source.backfillSetNumbers(list);
+          } catch (_) {}
+        }
       } else {
         list.sort((a, b) => a.setNumber.compareTo(b.setNumber));
       }
@@ -63,7 +71,11 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceCache[deviceRef.path];
       if (deviceSnap == null) {
         try {
-          deviceSnap = await deviceRef.get();
+          deviceSnap = await deviceRef.get(
+            fromCacheOnly
+                ? const GetOptions(source: Source.cache)
+                : const GetOptions(source: Source.serverAndCache),
+          );
           deviceCache[deviceRef.path] = deviceSnap;
         } on FirebaseException {
           deviceSnap = null;
@@ -83,7 +95,11 @@ class SessionRepositoryImpl implements SessionRepository {
             exerciseCache[exRef.path];
         if (exSnap == null) {
           try {
-            exSnap = await exRef.get();
+            exSnap = await exRef.get(
+              fromCacheOnly
+                  ? const GetOptions(source: Source.cache)
+                  : const GetOptions(source: Source.serverAndCache),
+            );
             exerciseCache[exRef.path] = exSnap;
           } on FirebaseException {
             exSnap = null;
@@ -115,6 +131,7 @@ class SessionRepositoryImpl implements SessionRepository {
           gymId: gymId,
           uid: first.userId,
           sessionId: first.sessionId,
+          fromCacheOnly: fromCacheOnly,
         );
         if (meta != null) {
           final startTs = meta['startTime'];
