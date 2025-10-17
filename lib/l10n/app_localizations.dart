@@ -1364,7 +1364,7 @@ abstract class AppLocalizations {
   /// Title shown on the story session dialog
   ///
   /// In en, this message translates to:
-  /// **'Training Day Highlights'**
+  /// **'Session Highlights'**
   String get storySessionTitle;
 
   /// Headline for the XP banner in the story session dialog
@@ -1376,8 +1376,50 @@ abstract class AppLocalizations {
   /// Text describing the XP amount earned that day
   ///
   /// In en, this message translates to:
-  /// **'{xp} XP earned'**
+  /// **'{xp} XP'**
   String storySessionDailyXpValue(int xp);
+
+  /// Heading above the list of badges in the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Badges'**
+  String get storySessionBadgesTitle;
+
+  /// Label for the exercises card in the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises'**
+  String get storySessionStatsExercisesTitle;
+
+  /// Label for the sets card in the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get storySessionStatsSetsTitle;
+
+  /// Label for the duration card in the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get storySessionStatsDurationTitle;
+
+  /// Text describing a duration in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String storySessionDurationMinutes(int minutes);
+
+  /// Text describing a duration in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String storySessionDurationHours(int hours);
+
+  /// Text describing a duration in hours and minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String storySessionDurationHoursMinutes(int hours, int minutes);
 
   /// Title shown when a device was used for the first time
   ///
