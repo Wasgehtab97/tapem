@@ -49,16 +49,17 @@ class StorySessionService {
         totalXp: 0,
         generatedAt: _now(),
         achievements: const [],
+        stats: const StorySessionStats.empty(),
       );
     }
 
     final cached = await _summaryStore.read(gymId, userId, dayKey);
-    if (cached != null) {
+    if (cached != null && !_needsStatsRebuild(cached, sessions)) {
       return cached;
     }
 
     final remote = await _loadRemoteSummary(gymId, userId, dayKey);
-    if (remote != null) {
+    if (remote != null && !_needsStatsRebuild(remote, sessions)) {
       await _summaryStore.write(remote);
       return remote;
     }
@@ -94,11 +95,34 @@ class StorySessionService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final newDevices = <String, Session>{};
     final newExercises = <String, Session>{};
+    final uniqueActivities = <String>{};
+
+    var totalSets = 0;
+    var totalDurationMs = 0;
+    DateTime? earliestStart;
+    DateTime? latestEnd;
 
     for (final session in sessions) {
+      totalSets += session.sets.length;
+      final sessionDuration = _sessionDurationMs(session);
+      if (sessionDuration != null) {
+        totalDurationMs += sessionDuration;
+      }
+      final startTime = session.startTime;
+      if (startTime != null && (earliestStart == null || startTime.isBefore(earliestStart!))) {
+        earliestStart = startTime;
+      }
+      final endTime = session.endTime;
+      if (endTime != null && (latestEnd == null || endTime.isAfter(latestEnd!))) {
+        latestEnd = endTime;
+      }
+
       final deviceId = session.deviceId;
       final exerciseId = session.exerciseId;
       final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
+
+      final activityKey = hasExercise ? '$deviceId::$exerciseId' : deviceId;
+      uniqueActivities.add(activityKey);
 
       final seenDevice = await _historyStore.hasSeenDevice(gymId, userId, deviceId);
       if (!seenDevice && !newDevices.containsKey(deviceId)) {
@@ -133,6 +157,13 @@ class StorySessionService {
       }
     }
 
+    if (totalDurationMs == 0 && earliestStart != null && latestEnd != null) {
+      final diff = latestEnd!.difference(earliestStart!).inMilliseconds;
+      if (diff > 0) {
+        totalDurationMs = diff;
+      }
+    }
+
     final newPrs = <String, _PrCandidate>{};
     for (final session in sessions) {
       final bestE1rm = _bestE1rmForSession(session);
@@ -154,6 +185,34 @@ class StorySessionService {
       }
     }
 
+    final nameRequests = <_ExerciseKey>{};
+    for (final session in newExercises.values) {
+      final exerciseId = session.exerciseId;
+      if (exerciseId != null && exerciseId.isNotEmpty) {
+        final exerciseName = session.exerciseName;
+        if (exerciseName == null || exerciseName.trim().isEmpty) {
+          nameRequests.add(
+            _ExerciseKey(deviceId: session.deviceId, exerciseId: exerciseId),
+          );
+        }
+      }
+    }
+    for (final candidate in newPrs.values) {
+      final exerciseId = candidate.session.exerciseId;
+      if (exerciseId != null && exerciseId.isNotEmpty) {
+        final exerciseName = candidate.session.exerciseName;
+        if (exerciseName == null || exerciseName.trim().isEmpty) {
+          nameRequests.add(
+            _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId),
+          );
+        }
+      }
+    }
+
+    final resolvedExerciseNames = nameRequests.isNotEmpty
+        ? await _loadExerciseNames(gymId: gymId, exerciseKeys: nameRequests)
+        : const <_ExerciseKey, String>{};
+
     final achievementsBuffer = <StoryAchievement>[
       StoryAchievement(type: StoryAchievementType.dailyXp, xp: dayXp),
     ];
@@ -169,25 +228,47 @@ class StorySessionService {
 
     for (final entry in newExercises.entries) {
       final session = entry.value;
+      final exerciseId = session.exerciseId;
+      final resolvedName = (exerciseId != null && exerciseId.isNotEmpty)
+          ? resolvedExerciseNames[_ExerciseKey(deviceId: session.deviceId, exerciseId: exerciseId)]
+          : null;
+      final displayName = (session.exerciseName?.trim().isNotEmpty ?? false)
+          ? session.exerciseName!.trim()
+          : (resolvedName ?? session.deviceName);
       achievementsBuffer.add(
         StoryAchievement(
           type: StoryAchievementType.newExercise,
           deviceName: session.deviceName,
-          exerciseName: session.exerciseName ?? session.exerciseId,
+          exerciseName: displayName,
         ),
       );
     }
 
     for (final candidate in newPrs.values) {
+      final exerciseId = candidate.session.exerciseId;
+      final resolvedName = (exerciseId != null && exerciseId.isNotEmpty)
+          ? resolvedExerciseNames[
+              _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId),
+            ]
+          : null;
+      final exerciseName = (candidate.session.exerciseName?.trim().isNotEmpty ?? false)
+          ? candidate.session.exerciseName!.trim()
+          : resolvedName;
       achievementsBuffer.add(
         StoryAchievement(
           type: StoryAchievementType.personalRecord,
           deviceName: candidate.session.deviceName,
-          exerciseName: candidate.session.exerciseName ?? candidate.session.exerciseId,
+          exerciseName: exerciseName ?? candidate.session.deviceName,
           e1rm: candidate.e1rm,
         ),
       );
     }
+
+    final stats = StorySessionStats(
+      exerciseCount: uniqueActivities.length,
+      setCount: totalSets,
+      durationMs: totalDurationMs,
+    );
 
     final summary = StorySessionSummary(
       gymId: gymId,
@@ -196,6 +277,7 @@ class StorySessionService {
       totalXp: dayXp,
       generatedAt: generatedAt,
       achievements: achievementsBuffer,
+      stats: stats,
     );
 
     await _historyStore.markDeviceSeen(gymId, userId, newDevices.keys);
@@ -217,6 +299,28 @@ class StorySessionService {
     );
 
     return summary;
+  }
+
+  int? _sessionDurationMs(Session session) {
+    final durationMs = session.durationMs;
+    if (durationMs != null && durationMs > 0) {
+      return durationMs;
+    }
+    final start = session.startTime;
+    final end = session.endTime;
+    if (start != null && end != null) {
+      final diff = end.difference(start).inMilliseconds;
+      if (diff > 0) {
+        return diff;
+      }
+    }
+    return null;
+  }
+
+  bool _needsStatsRebuild(StorySessionSummary summary, List<Session> sessions) {
+    if (sessions.isEmpty) return false;
+    final stats = summary.stats;
+    return stats.exerciseCount == 0 && stats.setCount == 0 && stats.durationMs == 0;
   }
 
   Future<bool> _hasPriorUsage({
@@ -357,6 +461,9 @@ class StorySessionService {
             .whereType<Map<String, dynamic>>()
             .map(StoryAchievement.fromJson)
             .toList(),
+        stats: data['stats'] is Map<String, dynamic>
+            ? StorySessionStats.fromJson(data['stats'] as Map<String, dynamic>)
+            : const StorySessionStats.empty(),
       );
     } on FirebaseException {
       return null;
@@ -376,10 +483,40 @@ class StorySessionService {
         'totalXp': summary.totalXp,
         'generatedAt': Timestamp.fromDate(summary.generatedAt),
         'achievements': summary.achievements.map((a) => a.toJson()).toList(),
+        'stats': summary.stats.toJson(),
       }, SetOptions(merge: true));
     } on FirebaseException {
       // Ignore persistence errors; summary remains available locally.
     }
+  }
+
+  Future<Map<_ExerciseKey, String>> _loadExerciseNames({
+    required String gymId,
+    required Iterable<_ExerciseKey> exerciseKeys,
+  }) async {
+    final result = <_ExerciseKey, String>{};
+    final uniqueKeys = exerciseKeys.toSet();
+    for (final key in uniqueKeys) {
+      if (key.exerciseId.isEmpty) continue;
+      try {
+        final snap = await _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .doc(key.deviceId)
+            .collection('exercises')
+            .doc(key.exerciseId)
+            .get();
+        if (!snap.exists) continue;
+        final name = (snap.data()?['name'] as String?)?.trim();
+        if (name != null && name.isNotEmpty) {
+          result[key] = name;
+        }
+      } on FirebaseException {
+        // Ignore lookup issues; we'll fall back to IDs or device names.
+      }
+    }
+    return result;
   }
 }
 
@@ -388,4 +525,20 @@ class _PrCandidate {
   final double e1rm;
 
   const _PrCandidate({required this.session, required this.e1rm});
+}
+
+class _ExerciseKey {
+  final String deviceId;
+  final String exerciseId;
+
+  const _ExerciseKey({required this.deviceId, required this.exerciseId});
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _ExerciseKey && other.deviceId == deviceId && other.exerciseId == exerciseId;
+  }
+
+  @override
+  int get hashCode => Object.hash(deviceId, exerciseId);
 }
