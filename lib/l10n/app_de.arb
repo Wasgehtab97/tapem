@@ -945,6 +945,8 @@
   "@exerciseEdit_discard": {"description": "Dialogaktion verwerfen"},
   "commonCancel": "Abbrechen",
   "@commonCancel": {"description": "Allgemeines Abbrechen"},
+  "commonClose": "Schließen",
+  "@commonClose": {"description": "Allgemeines Schließen"},
   "commonSave": "Speichern",
   "@commonSave": {"description": "Allgemeines Speichern"},
   "muscleAdminTitle": "Muskelgruppen verwalten",

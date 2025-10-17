@@ -803,6 +803,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancel => 'Cancel';
 
   @override
+  String get commonClose => 'Close';
+
+  @override
   String get commonSave => 'Save';
 
   @override

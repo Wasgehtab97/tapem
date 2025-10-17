@@ -803,6 +803,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonCancel => 'Abbrechen';
 
   @override
+  String get commonClose => 'Schließen';
+
+  @override
   String get commonSave => 'Speichern';
 
   @override
