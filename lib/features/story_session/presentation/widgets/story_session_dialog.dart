@@ -114,34 +114,31 @@ class _StoryStatsRow extends StatelessWidget {
     final exerciseValue = format.format(stats.exerciseCount);
     final setsValue = format.format(stats.setCount);
     final durationText = _formatDuration(loc, stats.duration);
+    final isCompactLayout = MediaQuery.sizeOf(context).width < 360;
     final cards = [
       _StoryStatCard(title: loc.storySessionStatsExercisesTitle, value: exerciseValue),
       _StoryStatCard(title: loc.storySessionStatsSetsTitle, value: setsValue),
       _StoryStatCard(title: loc.storySessionStatsDurationTitle, value: durationText),
     ];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 360) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < cards.length; i++) ...[
-                if (i > 0) const SizedBox(height: 12),
-                cards[i],
-              ],
-            ],
-          );
-        }
-        return Row(
-          children: [
-            Expanded(child: cards[0]),
-            const SizedBox(width: 12),
-            Expanded(child: cards[1]),
-            const SizedBox(width: 12),
-            Expanded(child: cards[2]),
+    if (isCompactLayout) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < cards.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            cards[i],
           ],
-        );
-      },
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: cards[0]),
+        const SizedBox(width: 12),
+        Expanded(child: cards[1]),
+        const SizedBox(width: 12),
+        Expanded(child: cards[2]),
+      ],
     );
   }
 
