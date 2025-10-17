@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
-import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
@@ -105,18 +104,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    // Nach Login Gym laden und Report triggern
+    // Nach Login Gym laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = context.read<AuthProvider>();
       debugPrint('[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}');
       final gymProv = context.read<GymProvider>();
-      final reportProv = context.read<ReportProvider>();
       final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
-        gymProv.loadGymData(code).then((_) {
-          final id = gymProv.currentGymId;
-          reportProv.loadReport(id);
-        });
+        gymProv.loadGymData(code);
       }
       if (authProv.userName == null || authProv.userName!.isEmpty) {
         showUsernameDialog(context);
