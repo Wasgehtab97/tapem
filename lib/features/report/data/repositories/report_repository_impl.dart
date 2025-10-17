@@ -48,11 +48,18 @@ class ReportRepositoryImpl implements ReportRepository {
   }
 
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async {
+  Future<List<DateTime>> fetchAllLogTimestamps(
+    String gymId, {
+    DateTime? since,
+  }) async {
     final devices = await _source.fetchDevices(gymId);
     final allTimestamps = await Future.wait(devices.map((deviceDoc) async {
       final deviceId = deviceDoc.id;
-      final logs = await _source.fetchLogsForDevice(gymId, deviceId);
+      final logs = await _source.fetchLogsForDevice(
+        gymId,
+        deviceId,
+        since: since,
+      );
       final timestamps = <DateTime>[];
       for (final logDoc in logs) {
         final data = logDoc.data();

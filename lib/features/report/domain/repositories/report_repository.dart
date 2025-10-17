@@ -10,5 +10,8 @@ abstract class ReportRepository {
   });
 
   /// Liefert alle Log-Timestamps (über alle Geräte) für den Heatmap.
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId);
+  Future<List<DateTime>> fetchAllLogTimestamps(
+    String gymId, {
+    DateTime? since,
+  });
 }

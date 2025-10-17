@@ -191,6 +191,9 @@ void main() {
         now: () => DateTime(2024, 1, 1, 12),
       );
       repo.statsFetchValue = 1950;
+      scheduleMicrotask(() {
+        repo.statsDailyCtrl.add(1950);
+      });
       await provider.watchStatsDailyXp('g1', 'u1');
       expect(provider.dailyLevel, 2);
       expect(provider.dailyLevelXp, 950);

@@ -26,7 +26,10 @@ class FakeReportRepository implements ReportRepository {
     DateTime? since,
   }) async => usage;
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId) async => times;
+  Future<List<DateTime>> fetchAllLogTimestamps(
+    String gymId, {
+    DateTime? since,
+  }) async => times;
 }
 
 void main() {
