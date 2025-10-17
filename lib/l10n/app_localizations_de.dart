@@ -679,6 +679,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get multiDeviceSessionSaved => 'Session gespeichert. Tages-XP und Stats aktualisiert.';
 
   @override
+  String get storySessionTitle => 'Trainingstag-Highlights';
+
+  @override
+  String get storySessionDailyXpTitle => 'Tägliche XP';
+
+  @override
+  String storySessionDailyXpValue(int xp) => '$xp XP gesammelt';
+
+  @override
+  String storySessionNewDeviceTitle(String device) => 'Erstes Mal an $device';
+
+  @override
+  String storySessionNewExerciseTitle(String device, String exercise) =>
+      'Erstes Mal: $exercise an $device';
+
+  @override
+  String storySessionNewPrTitle(String name) => 'Neuer Personal Best in $name';
+
+  @override
+  String storySessionNewPrSubtitle(String value) => 'Geschätztes 1RM: $value kg';
+
+  @override
+  String get storySessionButtonTooltip => 'Training-Story anzeigen';
+
+  @override
+  String get storySessionEmptyMessage => 'Für diesen Tag gibt es keine Highlights.';
+
+  @override
   String get multiDeviceNewExercise => 'Übung hinzufügen';
 
   @override

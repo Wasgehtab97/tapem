@@ -61,6 +61,7 @@ import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/features/creatine/providers/creatine_provider.dart';
 import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
+import 'package:tapem/features/story_session/story_session_service.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
 import 'ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'ui/timer/session_timer_service.dart';
@@ -366,6 +367,11 @@ Future<void> main() async {
         // Membership/Branding/Theme
         Provider<MembershipService>(
           create: (_) => FirestoreMembershipService(),
+        ),
+        Provider(
+          create: (_) => StorySessionService(
+            firestore: FirebaseFirestore.instance,
+          ),
         ),
         ChangeNotifierProxyProvider2<
           AuthProvider,

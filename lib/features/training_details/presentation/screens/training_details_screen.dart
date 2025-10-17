@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
+import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
+import 'package:tapem/features/story_session/story_session_service.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -47,8 +49,35 @@ class TrainingDetailsScreen extends StatelessWidget {
           final sessions = prov.sessions;
           final duration = prov.dayDurationMs;
           final loc = AppLocalizations.of(ctx)!;
+          Future<void> openStory() async {
+            final storyService = ctx.read<StorySessionService>();
+            final navigator = Navigator.of(ctx);
+            final messenger = ScaffoldMessenger.of(ctx);
+            final summary = await storyService.getSummary(
+              gymId: gymId,
+              userId: userId,
+              date: date,
+              sessions: sessions,
+            );
+            if (summary == null || summary.achievements.isEmpty) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(loc.storySessionEmptyMessage)),
+              );
+              return;
+            }
+            if (!navigator.mounted) return;
+            await showDialog<void>(
+              context: navigator.context,
+              builder: (_) => StorySessionDialog(summary: summary),
+            );
+          }
+
           return Scaffold(
-            appBar: _AppBar(titleDate: date, durationMs: duration),
+            appBar: _AppBar(
+              titleDate: date,
+              durationMs: duration,
+              onStoryPressed: sessions.isEmpty ? null : openStory,
+            ),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
                 : Scrollbar(
@@ -122,7 +151,8 @@ class TrainingDetailsScreen extends StatelessWidget {
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
   final int? durationMs;
-  const _AppBar({this.titleDate, this.durationMs});
+  final VoidCallback? onStoryPressed;
+  const _AppBar({this.titleDate, this.durationMs, this.onStoryPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +187,17 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       );
     }
-    return AppBar(title: titleWidget);
+    return AppBar(
+      title: titleWidget,
+      actions: [
+        if (onStoryPressed != null)
+          IconButton(
+            icon: const Icon(Icons.auto_stories_outlined),
+            onPressed: onStoryPressed,
+            tooltip: AppLocalizations.of(context)!.storySessionButtonTooltip,
+          ),
+      ],
+    );
   }
 
   @override

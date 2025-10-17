@@ -1361,6 +1361,60 @@ abstract class AppLocalizations {
   /// **'Session saved. Daily XP and device stats updated.'**
   String get multiDeviceSessionSaved;
 
+  /// Title shown on the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Training Day Highlights'**
+  String get storySessionTitle;
+
+  /// Headline for the XP banner in the story session dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Daily XP'**
+  String get storySessionDailyXpTitle;
+
+  /// Text describing the XP amount earned that day
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP earned'**
+  String storySessionDailyXpValue(int xp);
+
+  /// Title shown when a device was used for the first time
+  ///
+  /// In en, this message translates to:
+  /// **'First time on {device}'**
+  String storySessionNewDeviceTitle(String device);
+
+  /// Title shown when an exercise was used for the first time
+  ///
+  /// In en, this message translates to:
+  /// **'First time: {exercise} on {device}'**
+  String storySessionNewExerciseTitle(String device, String exercise);
+
+  /// Title shown when a new personal record was achieved
+  ///
+  /// In en, this message translates to:
+  /// **'New personal record in {name}'**
+  String storySessionNewPrTitle(String name);
+
+  /// Subtitle describing the value of a new personal record
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated 1RM: {value} kg'**
+  String storySessionNewPrSubtitle(String value);
+
+  /// Tooltip for the story session button
+  ///
+  /// In en, this message translates to:
+  /// **'Show training story'**
+  String get storySessionButtonTooltip;
+
+  /// Message shown when no highlights are available
+  ///
+  /// In en, this message translates to:
+  /// **'No highlights available for this day.'**
+  String get storySessionEmptyMessage;
+
   /// CTA new exercise
   ///
   /// In en, this message translates to:
