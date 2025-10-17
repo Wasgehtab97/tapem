@@ -248,7 +248,7 @@ class StorySessionService {
       final exerciseId = candidate.session.exerciseId;
       final resolvedName = (exerciseId != null && exerciseId.isNotEmpty)
           ? resolvedExerciseNames[
-              _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId),
+              _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId)
             ]
           : null;
       final exerciseName = (candidate.session.exerciseName?.trim().isNotEmpty ?? false)
