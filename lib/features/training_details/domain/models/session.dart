@@ -4,6 +4,8 @@ class Session {
   final String deviceId;
   final String deviceName;
   final String deviceDescription; // neu!
+  final String? exerciseId;
+  final String? exerciseName;
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
@@ -22,6 +24,8 @@ class Session {
     required this.deviceId,
     required this.deviceName,
     required this.deviceDescription, // neu!
+    this.exerciseId,
+    this.exerciseName,
     required this.timestamp,
     required this.note,
     required this.sets,

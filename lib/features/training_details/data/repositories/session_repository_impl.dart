@@ -66,6 +66,7 @@ class SessionRepositoryImpl implements SessionRepository {
       var deviceName = first.deviceId;
       var deviceDescription = '';
       var isMulti = false;
+      String? exerciseName;
 
       DocumentSnapshot<Map<String, dynamic>>? deviceSnap =
           deviceCache[deviceRef.path];
@@ -107,7 +108,10 @@ class SessionRepositoryImpl implements SessionRepository {
         }
         if (exSnap != null && exSnap.exists) {
           final exName = (exSnap.data()?['name'] as String?) ?? '';
-          if (exName.isNotEmpty) deviceName = exName;
+          if (exName.isNotEmpty) {
+            exerciseName = exName;
+            deviceName = exName;
+          }
         }
       }
 
@@ -148,6 +152,8 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceId: first.deviceId,
           deviceName: deviceName,
           deviceDescription: deviceDescription,
+          exerciseId: first.exerciseId.isEmpty ? null : first.exerciseId,
+          exerciseName: exerciseName,
           timestamp: first.timestamp,
           note: first.note,
           sets: sets,
