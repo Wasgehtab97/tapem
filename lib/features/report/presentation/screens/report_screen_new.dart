@@ -22,6 +22,11 @@ class ReportScreenNew extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reportProvider = context.watch<ReportProvider>();
+    if (reportProvider.shouldLoadReport(gymId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ReportProvider>().loadReport(gymId);
+      });
+    }
     final usageData = reportProvider.usageStats;
     final feedbackProvider = context.watch<FeedbackProvider>();
     final loc = AppLocalizations.of(context)!;

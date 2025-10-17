@@ -41,10 +41,22 @@ class ReportProvider extends ChangeNotifier {
   ReportProvider({
     required GetDeviceUsageStats getUsageStats,
     required GetAllLogTimestamps getLogTimestamps,
-  }) : _getUsage = getUsageStats,
-       _getTimestamps = getLogTimestamps;
+  })  : _getUsage = getUsageStats,
+        _getTimestamps = getLogTimestamps;
 
-  Future<void> loadReport(String gymId) async {
+  String? get currentGymId => _currentGymId;
+
+  bool shouldLoadReport(String gymId) {
+    if (gymId.isEmpty) {
+      return false;
+    }
+    if (_currentGymId != gymId) {
+      return true;
+    }
+    return state == ReportState.initial || state == ReportState.error;
+  }
+
+  Future<void> loadReport(String gymId, {bool force = false}) async {
     if (gymId.isEmpty) {
       state = ReportState.initial;
       usageStats = const [];
@@ -54,22 +66,45 @@ class ReportProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (!force &&
+        _currentGymId == gymId &&
+        (state == ReportState.loaded || state == ReportState.loading)) {
+      return;
+    }
+
+    final isNewGym = _currentGymId != gymId;
     _currentGymId = gymId;
     state = ReportState.loading;
     errorMessage = null;
+    if (isNewGym) {
+      heatmapDates = [];
+    }
     notifyListeners();
     try {
-      final usageFuture = _fetchUsageStats(gymId);
-      final timestampsFuture = _getTimestamps.execute(gymId);
-
-      usageStats = await usageFuture;
-      heatmapDates = await timestampsFuture;
+      usageStats = await _fetchUsageStats(gymId);
       state = ReportState.loaded;
     } catch (e) {
       errorMessage = e.toString();
       state = ReportState.error;
     }
     notifyListeners();
+  }
+
+  Future<void> loadHeatmapDates({bool force = false}) async {
+    final gymId = _currentGymId;
+    if (gymId == null || gymId.isEmpty) {
+      return;
+    }
+    if (!force && heatmapDates.isNotEmpty) {
+      return;
+    }
+    try {
+      heatmapDates = await _getTimestamps.execute(gymId);
+      notifyListeners();
+    } catch (_) {
+      // Heatmap-Daten sind optional. Fehler werden stillschweigend ignoriert,
+      // um die restlichen Report-Daten nicht zu blockieren.
+    }
   }
 
   Future<void> changeUsageRange(DeviceUsageRange range) async {
