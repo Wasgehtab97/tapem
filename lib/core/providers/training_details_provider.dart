@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
@@ -20,6 +22,9 @@ class TrainingDetailsProvider extends ChangeNotifier {
   String? _error;
   List<Session> _sessions = [];
   int? _dayDurationMs;
+  StreamSubscription<DayMetaSnapshot>? _dayMetaSubscription;
+  bool _disposed = false;
+  String? _lastMetaSignature;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -45,6 +50,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
     _userId = userId;
     _gymId = gymId;
     _date = date;
+    await _startMetaSubscription();
     await _refreshSessions(showLoading: true);
   }
 
@@ -55,14 +61,14 @@ class TrainingDetailsProvider extends ChangeNotifier {
       throw StateError('TrainingDetailsProvider not initialised');
     }
     _isLoading = true;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       await _deleteSession.execute(
         gymId: gymId,
         userId: userId,
         session: session,
       );
-      await _refreshSessions(showLoading: false);
+      await _refreshSessions(showLoading: false, refreshFromServer: true);
       if (_error != null) {
         throw Exception(_error);
       }
@@ -71,11 +77,14 @@ class TrainingDetailsProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
-  Future<void> _refreshSessions({required bool showLoading}) async {
+  Future<void> _refreshSessions({
+    required bool showLoading,
+    bool refreshFromServer = false,
+  }) async {
     final userId = _userId;
     final gymId = _gymId;
     final date = _date;
@@ -85,12 +94,13 @@ class TrainingDetailsProvider extends ChangeNotifier {
 
     if (showLoading) {
       _isLoading = true;
-      notifyListeners();
+      _safeNotifyListeners();
     }
     _error = null;
 
+    List<Session> cachedSessions = const [];
     try {
-      final cachedSessions = await _getSessions.execute(
+      cachedSessions = await _getSessions.execute(
         userId: userId,
         date: date,
         fromCacheOnly: true,
@@ -106,9 +116,18 @@ class TrainingDetailsProvider extends ChangeNotifier {
       if (showLoading && cachedSessions.isNotEmpty) {
         _isLoading = false;
       }
-      notifyListeners();
+      _safeNotifyListeners();
     } catch (e) {
       debugPrint('⚠️ cache load error: $e');
+    }
+
+    final shouldLoadRemote = refreshFromServer || cachedSessions.isEmpty;
+    if (!shouldLoadRemote) {
+      if (showLoading) {
+        _isLoading = false;
+        _safeNotifyListeners();
+      }
+      return;
     }
 
     var remoteSucceeded = false;
@@ -126,7 +145,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
       if (showLoading) {
         _isLoading = false;
       }
-      notifyListeners();
+      _safeNotifyListeners();
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ loadSessions error: $e');
@@ -136,7 +155,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
       if (showLoading) {
         _isLoading = false;
       }
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
@@ -148,11 +167,12 @@ class TrainingDetailsProvider extends ChangeNotifier {
     required bool fromCacheOnly,
   }) async {
     _sessions = sessions;
+    Map<String, dynamic>? meta;
     if (_sessions.isNotEmpty) {
       _dayDurationMs = _sessions.first.durationMs;
     } else {
       final dayKey = logicDayKey(date);
-      final meta = await _meta.getMetaByDayKey(
+      meta = await _meta.getMetaByDayKey(
         gymId: gymId,
         uid: userId,
         dayKey: dayKey,
@@ -160,8 +180,63 @@ class TrainingDetailsProvider extends ChangeNotifier {
       );
       _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
     }
+    if (meta != null || _lastMetaSignature == null) {
+      _lastMetaSignature = _buildMetaSignature(meta);
+    }
     if (!fromCacheOnly) {
       _isLoading = false;
     }
+  }
+
+  Future<void> _startMetaSubscription() async {
+    await _dayMetaSubscription?.cancel();
+    final userId = _userId;
+    final gymId = _gymId;
+    final date = _date;
+    if (userId == null || gymId == null || date == null) {
+      return;
+    }
+    final dayKey = logicDayKey(date);
+    _dayMetaSubscription = _meta
+        .watchMetaByDayKey(gymId: gymId, uid: userId, dayKey: dayKey)
+        .listen((event) async {
+      if (_disposed) return;
+      final signature = _buildMetaSignature(event.data);
+      if (event.isFromCache) {
+        _lastMetaSignature = signature;
+        return;
+      }
+      if (signature == _lastMetaSignature) {
+        return;
+      }
+      _lastMetaSignature = signature;
+      await _refreshSessions(showLoading: false, refreshFromServer: true);
+    });
+  }
+
+  String? _buildMetaSignature(Map<String, dynamic>? meta) {
+    if (meta == null) return null;
+    final sortedKeys = meta.keys.toList()..sort();
+    final buffer = StringBuffer();
+    for (final key in sortedKeys) {
+      buffer
+        ..write(key)
+        ..write(':')
+        ..write(meta[key])
+        ..write(';');
+    }
+    return buffer.toString();
+  }
+
+  void _safeNotifyListeners() {
+    if (_disposed) return;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _dayMetaSubscription?.cancel();
+    super.dispose();
   }
 }
