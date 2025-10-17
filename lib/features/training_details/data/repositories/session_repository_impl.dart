@@ -215,7 +215,7 @@ class SessionRepositoryImpl implements SessionRepository {
     final metaDayKey = meta?['dayKey'] as String?;
     final derivedDayKey = metaDayKey ??
         logicDayKey(
-          (earliest ?? session.startTime ?? session.timestamp).toUtc(),
+          (earliest ?? session.startTime ?? session.timestamp).toLocal(),
         );
 
     await _source.deleteSessionEntries(entries);

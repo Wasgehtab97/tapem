@@ -117,7 +117,7 @@ class ExerciseXpReassignmentService {
       final adj = adjustments[i];
       final meta = metas[i];
       final dayKey = (meta?['dayKey'] as String?) ??
-          logicDayKey((adj.createdAt ?? DateTime.now()).toUtc());
+          logicDayKey((adj.createdAt ?? DateTime.now()).toLocal());
 
       final oldDelta = MuscleXpCalculator.calculateDelta(
         adj.previousPrimary,
