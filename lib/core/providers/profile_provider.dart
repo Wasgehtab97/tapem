@@ -193,9 +193,9 @@ class ProfileProvider extends ChangeNotifier {
 
     final trainingDayDates = <DateTime>[];
     for (final doc in snapshot.docs) {
-      final parsed = DateTime.tryParse(doc.id);
+      final parsed = _parseTrainingDayId(doc.id);
       if (parsed != null) {
-        trainingDayDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+        trainingDayDates.add(parsed);
       }
     }
     trainingDayDates.sort((a, b) => a.compareTo(b));
@@ -277,10 +277,9 @@ class ProfileProvider extends ChangeNotifier {
 
         final trainingDayDates = <DateTime>[];
         for (final doc in snapshot.docs) {
-          final parsed = DateTime.tryParse(doc.id);
+          final parsed = _parseTrainingDayId(doc.id);
           if (parsed != null) {
-            trainingDayDates
-                .add(DateTime(parsed.year, parsed.month, parsed.day));
+            trainingDayDates.add(parsed);
           }
         }
         trainingDayDates.sort((a, b) => a.compareTo(b));
@@ -581,6 +580,20 @@ class ProfileProvider extends ChangeNotifier {
       elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
       return '—';
     }
+  }
+
+  DateTime? _parseTrainingDayId(String id) {
+    final parsed = DateTime.tryParse(id);
+    if (parsed != null) {
+      return DateTime(parsed.year, parsed.month, parsed.day);
+    }
+    if (id.length == 8 && int.tryParse(id) != null) {
+      final year = int.parse(id.substring(0, 4));
+      final month = int.parse(id.substring(4, 6));
+      final day = int.parse(id.substring(6, 8));
+      return DateTime(year, month, day);
+    }
+    return null;
   }
 
   @override

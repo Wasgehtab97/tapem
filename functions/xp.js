@@ -40,7 +40,8 @@ exports.grantXpForSession = functions.https.onCall(async (data, context) => {
   }
 
   const db = admin.firestore();
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const markerDate = dayKey.replace(/-/g, '');
 
   const markerCol = db.collection('users').doc(uid).collection('xp_markers');
 
@@ -48,11 +49,11 @@ exports.grantXpForSession = functions.https.onCall(async (data, context) => {
     const awards = [];
 
     // Daily XP
-    const dailyMarkerId = `${uid}:${date}`;
+    const dailyMarkerId = `${uid}:${markerDate}`;
     const dailyMarkerRef = markerCol.doc(dailyMarkerId);
     const dailyMarkerSnap = await tx.get(dailyMarkerRef);
     if (!dailyMarkerSnap.exists) {
-      const dayRef = db.collection('users').doc(uid).collection('trainingDayXP').doc(date);
+      const dayRef = db.collection('users').doc(uid).collection('trainingDayXP').doc(dayKey);
       const daySnap = await tx.get(dayRef);
       const dayData = daySnap.exists ? daySnap.data() : { xp: 0, level: 1 };
       const applied = applyXp({ xp: dayData.xp || 0, level: dayData.level || 1, add: 50 });
@@ -68,7 +69,7 @@ exports.grantXpForSession = functions.https.onCall(async (data, context) => {
     if (!deviceSessionSnap.exists) {
       let amount = 50;
       if (!isMulti) {
-        const deviceDayMarkerId = `${uid}:${deviceId}:${date}`;
+        const deviceDayMarkerId = `${uid}:${deviceId}:${markerDate}`;
         const deviceDayMarkerRef = markerCol.doc(deviceDayMarkerId);
         const deviceDaySnap = await tx.get(deviceDayMarkerRef);
         const already = deviceDaySnap.exists ? deviceDaySnap.data().xp || 0 : 0;
