@@ -828,6 +828,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonClose => 'Schließen';
 
   @override
+  String get commonShare => 'Teilen';
+
+  @override
   String get commonSave => 'Speichern';
 
   @override

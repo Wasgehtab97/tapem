@@ -961,6 +961,8 @@
   "@commonCancel": {"description": "Allgemeines Abbrechen"},
   "commonClose": "Schließen",
   "@commonClose": {"description": "Allgemeines Schließen"},
+  "commonShare": "Teilen",
+  "@commonShare": {"description": "Allgemeines Teilen"},
   "commonSave": "Speichern",
   "@commonSave": {"description": "Allgemeines Speichern"},
   "muscleAdminTitle": "Muskelgruppen verwalten",

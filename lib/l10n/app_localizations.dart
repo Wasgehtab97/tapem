@@ -1655,6 +1655,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// Common share
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get commonShare;
+
   /// Common save
   ///
   /// In en, this message translates to:
