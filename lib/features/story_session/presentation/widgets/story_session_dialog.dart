@@ -6,8 +6,9 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 class StorySessionDialog extends StatelessWidget {
   final StorySessionSummary summary;
+  final VoidCallback? onShare;
 
-  const StorySessionDialog({super.key, required this.summary});
+  const StorySessionDialog({super.key, required this.summary, this.onShare});
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +36,7 @@ class StorySessionDialog extends StatelessWidget {
                 stats: summary.stats,
                 achievements: achievements,
                 loc: loc,
+                onShare: onShare,
               ),
             ),
           );
@@ -51,6 +53,7 @@ class _StorySessionCard extends StatelessWidget {
   final StorySessionStats stats;
   final List<StoryAchievement> achievements;
   final AppLocalizations loc;
+  final VoidCallback? onShare;
 
   const _StorySessionCard({
     required this.headerTitle,
@@ -59,6 +62,7 @@ class _StorySessionCard extends StatelessWidget {
     required this.stats,
     required this.achievements,
     required this.loc,
+    this.onShare,
   });
 
   @override
@@ -74,51 +78,85 @@ class _StorySessionCard extends StatelessWidget {
       color: Colors.white.withOpacity(0.72),
       fontWeight: FontWeight.w500,
     );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3F216D), Color(0xFF150926)],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF31135D), Color(0xFF150A2C)],
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x8010021F),
+              blurRadius: 36,
+              offset: Offset(0, 24),
+            ),
+          ],
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x80000000),
-            blurRadius: 32,
-            offset: Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 36,
-            left: 24,
-            child: _FloatingStar(size: 18, opacity: 0.25),
-          ),
-          Positioned(
-            top: 70,
-            right: 36,
-            child: _FloatingStar(size: 12, opacity: 0.3),
-          ),
-          Positioned(
-            bottom: 120,
-            left: 64,
-            child: _FloatingStar(size: 14, opacity: 0.2),
-          ),
-          Positioned(
-            bottom: 48,
-            right: 54,
-            child: _FloatingStar(size: 20, opacity: 0.35),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+        child: Stack(
+          children: [
+            const Positioned(
+              left: -76,
+              top: -48,
+              child: _GlowingBlob(
+                size: 220,
+                color: Color(0xFF8F5BFF),
+                opacity: 0.26,
+              ),
+            ),
+            const Positioned(
+              right: -92,
+              top: 24,
+              child: _GlowingBlob(
+                size: 180,
+                color: Color(0xFFFF7AD5),
+                opacity: 0.18,
+              ),
+            ),
+            const Positioned(
+              left: -64,
+              bottom: -54,
+              child: _GlowingBlob(
+                size: 210,
+                color: Color(0xFF5225FF),
+                opacity: 0.22,
+              ),
+            ),
+            Positioned(
+              top: 36,
+              left: 32,
+              child: _FloatingStar(size: 18, opacity: 0.35),
+            ),
+            Positioned(
+              top: 80,
+              right: 44,
+              child: _FloatingStar(size: 12, opacity: 0.32),
+            ),
+            Positioned(
+              bottom: 132,
+              left: 80,
+              child: _FloatingStar(size: 14, opacity: 0.28),
+            ),
+            Positioned(
+              bottom: 60,
+              right: 62,
+              child: _FloatingStar(size: 22, opacity: 0.4),
+            ),
+            Positioned(
+              top: 48,
+              right: 132,
+              child: _FloatingStar(size: 10, opacity: 0.28),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -135,8 +173,10 @@ class _StorySessionCard extends StatelessWidget {
                       tooltip: loc.commonClose,
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        shape: const CircleBorder(),
+                        backgroundColor: Colors.white.withOpacity(0.12),
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(10),
                       ),
                       icon: const Icon(Icons.close_rounded),
                     ),
@@ -165,38 +205,55 @@ class _StorySessionCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF63CE), Color(0xFF7F5CFF)],
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x661F0438),
-                          blurRadius: 16,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: TextButton(
+                const SizedBox(height: 28),
+                Row(
+                  children: [
+                    TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 12,
-                        ),
-                        textStyle: textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        foregroundColor: Colors.white.withOpacity(0.76),
+                        textStyle: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.1,
                         ),
                       ),
                       child: Text(loc.commonClose),
                     ),
-                  ),
+                    const Spacer(),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x661F0438),
+                            blurRadius: 18,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          onShare?.call();
+                          Navigator.of(context).pop();
+                        },
+                        icon: const Icon(Icons.ios_share_rounded),
+                        label: Text(loc.commonShare),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 12,
+                          ),
+                          textStyle: textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -218,17 +275,18 @@ class _XpBanner extends StatelessWidget {
     final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF6BD5), Color(0xFF7C5CFF)],
+          colors: [Color(0xFF7B5BFF), Color(0xFFFF6CD8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        border: Border.all(color: Colors.white.withOpacity(0.14)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x80170132),
-            blurRadius: 26,
-            offset: Offset(0, 14),
+            blurRadius: 30,
+            offset: Offset(0, 16),
           ),
         ],
       ),
@@ -236,17 +294,26 @@ class _XpBanner extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Positioned(
-            top: 18,
-            left: 32,
-            child: _FloatingStar(size: 14, opacity: 0.4, color: Colors.white),
+            top: 22,
+            left: 38,
+            child: _FloatingStar(size: 16, opacity: 0.45, color: Colors.white),
           ),
           Positioned(
-            bottom: 18,
-            right: 36,
-            child: _FloatingStar(size: 18, opacity: 0.35, color: Colors.white),
+            bottom: 22,
+            right: 42,
+            child: _FloatingStar(size: 20, opacity: 0.38, color: Colors.white),
+          ),
+          Positioned(
+            top: -48,
+            right: -60,
+            child: _GlowingBlob(
+              size: 160,
+              color: Colors.white.withOpacity(0.5),
+              opacity: 0.12,
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -256,16 +323,16 @@ class _XpBanner extends StatelessWidget {
                   style: theme.textTheme.displaySmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.6,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   loc.storySessionDailyXpTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withOpacity(0.88),
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.25,
                   ),
                 ),
               ],
@@ -367,22 +434,29 @@ class _StoryStatCard extends StatelessWidget {
     );
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0x33222146), Color(0x6613192F)],
+          colors: [Color(0x442C1E4A), Color(0x6613172F)],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x3314022A),
+            blurRadius: 18,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(value, style: valueStyle),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(title, style: titleStyle),
           ],
         ),
@@ -435,23 +509,23 @@ class _StoryBadgeChip extends StatelessWidget {
     final subtitle = _buildSubtitle();
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [Color(0xFF2F1B4D), Color(0xFF27113E)],
+          colors: [Color(0xFF37205E), Color(0xFF281245)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x401D0436),
-            blurRadius: 18,
-            offset: Offset(0, 10),
+            color: Color(0x3316032C),
+            blurRadius: 20,
+            offset: Offset(0, 12),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -460,7 +534,7 @@ class _StoryBadgeChip extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6CD8), Color(0xFF7E5CFF)],
+                  colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -490,11 +564,11 @@ class _StoryBadgeChip extends StatelessWidget {
                   ),
                   if (subtitle != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.only(top: 3),
                       child: Text(
                         subtitle!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withOpacity(0.72),
                         ),
                         softWrap: true,
                       ),
@@ -567,6 +641,35 @@ class _FloatingStar extends StatelessWidget {
       Icons.auto_awesome,
       size: size,
       color: color.withOpacity(opacity.clamp(0, 1).toDouble()),
+    );
+  }
+}
+
+class _GlowingBlob extends StatelessWidget {
+  final double size;
+  final Color color;
+  final double opacity;
+
+  const _GlowingBlob({
+    this.size = 160,
+    this.color = const Color(0xFF7B5BFF),
+    this.opacity = 0.2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: true,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color.withOpacity(opacity), Colors.transparent],
+          ),
+        ),
+      ),
     );
   }
 }

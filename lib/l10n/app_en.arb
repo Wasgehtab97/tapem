@@ -959,6 +959,8 @@
   "@commonCancel": {"description": "Common cancel"},
   "commonClose": "Close",
   "@commonClose": {"description": "Common close"},
+  "commonShare": "Share",
+  "@commonShare": {"description": "Common share"},
   "commonSave": "Save",
   "@commonSave": {"description": "Common save"},
   "muscleAdminTitle": "Manage muscle groups",
