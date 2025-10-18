@@ -55,6 +55,7 @@ class ProfileProvider extends ChangeNotifier {
   String? _trainingDaySubscriptionUserId;
   DateTime? _lastKnownCreatedAt;
   bool _disposed = false;
+  String? _activeUserId;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -68,6 +69,52 @@ class ProfileProvider extends ChangeNotifier {
   bool get isFavoriteExercisesLoading => _isFavoriteExercisesLoading;
   String? get favoriteExercisesError => _favoriteExercisesError;
   bool get hasLoadedFavoriteExercises => _hasLoadedFavoriteExercises;
+
+  /// Aktualisiert den Benutzerkontext und setzt den Zustand bei User-Wechsel
+  /// zurück.
+  void updateUserContext({required String? userId}) {
+    if (_activeUserId == userId) {
+      return;
+    }
+
+    final previousUserId = _activeUserId;
+    _activeUserId = userId;
+
+    _trainingDaySubscription?.cancel();
+    _trainingDaySubscription = null;
+    _trainingDaySubscriptionUserId = null;
+
+    _pendingTrainingUserId = null;
+    _inFlightTrainingLoad = null;
+    _pendingFavoriteExercisesUserId = null;
+    _inFlightFavoriteExercisesLoad = null;
+
+    _resetState();
+
+    // Cache-Einträge sind bereits user-spezifisch. Optional kann beim Logout
+    // der Cache geleert werden.
+    if (previousUserId != null && userId == null) {
+      unawaited(_cache.clear(previousUserId));
+    }
+  }
+
+  void _resetState() {
+    _isLoading = false;
+    _error = null;
+    _trainingDates = [];
+    _trainingDayDates = [];
+    _totalTrainingDays = 0;
+    _avgTrainingDaysPerWeek = 0;
+    _favoriteExerciseName = null;
+    _favoriteExerciseUsages = [];
+    _hasLoadedTrainingDates = false;
+    _hasLoadedFavoriteExercises = false;
+    _favoriteExercisesError = null;
+    _lastLoadedUserId = null;
+    _lastCacheAt = null;
+    _lastKnownCreatedAt = null;
+    notifyListeners();
+  }
 
   /// Lädt alle Trainingstage (YYYY-MM-DD) des aktuellen Users.
   Future<void> loadTrainingDates(
@@ -152,12 +199,18 @@ class ProfileProvider extends ChangeNotifier {
     required String userId,
     required DateTime? createdAt,
   }) async {
+    if (_activeUserId != null && _activeUserId != userId) {
+      return;
+    }
     try {
       final entry = await _fetchTrainingOverview(
         userId: userId,
         createdAt: createdAt,
         now: _nowProvider(),
       );
+      if (_activeUserId != null && _activeUserId != userId) {
+        return;
+      }
       _assignEntry(entry, userId);
       _error = null;
       await _cache.write(userId, _buildCacheEntry(entry.cachedAt));
@@ -353,6 +406,10 @@ class ProfileProvider extends ChangeNotifier {
       return;
     }
 
+    if (_activeUserId != null && _activeUserId != userId) {
+      return;
+    }
+
     if (!forceRefresh && _hasLoadedFavoriteExercises &&
         _lastLoadedUserId == userId) {
       return;
@@ -384,6 +441,9 @@ class ProfileProvider extends ChangeNotifier {
     required String userId,
     required DateTime? createdAt,
   }) async {
+    if (_activeUserId != null && _activeUserId != userId) {
+      return;
+    }
     try {
       final now = _nowProvider();
       var since = now.subtract(_favoriteExercisesLookback);
@@ -434,6 +494,10 @@ class ProfileProvider extends ChangeNotifier {
       final favoriteExercises = await _resolveFavoriteExercises(
         sessionAggregates.values,
       );
+
+      if (_activeUserId != null && _activeUserId != userId) {
+        return;
+      }
 
       _favoriteExerciseName = favoriteExercises.favoriteExerciseName;
       _favoriteExerciseUsages = favoriteExercises.usages;

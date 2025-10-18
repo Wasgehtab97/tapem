@@ -463,7 +463,14 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
+          create: (_) => ProfileProvider(),
+          update: (_, auth, provider) {
+            final prov = provider ?? ProfileProvider();
+            prov.updateUserContext(userId: auth.userId);
+            return prov;
+          },
+        ),
         ChangeNotifierProxyProvider2<AuthProvider, GymProvider,
             PowerliftingProvider>(
           create: (c) => PowerliftingProvider(
