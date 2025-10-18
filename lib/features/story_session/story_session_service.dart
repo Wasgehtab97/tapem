@@ -54,15 +54,30 @@ class StorySessionService {
       );
     }
 
+    final dayXp = await _resolveDayXp(
+      gymId: gymId,
+      userId: userId,
+      date: date,
+    );
+
     final cached = await _summaryStore.read(gymId, userId, dayKey);
     if (cached != null && !_needsStatsRebuild(cached, sessions)) {
-      return cached;
+      final normalized = _normalizeSummary(summary: cached, dayXp: dayXp);
+      if (normalized != cached) {
+        await _summaryStore.write(normalized);
+        await _persistRemoteSummary(normalized);
+      }
+      return normalized;
     }
 
     final remote = await _loadRemoteSummary(gymId, userId, dayKey);
     if (remote != null && !_needsStatsRebuild(remote, sessions)) {
-      await _summaryStore.write(remote);
-      return remote;
+      final normalized = _normalizeSummary(summary: remote, dayXp: dayXp);
+      await _summaryStore.write(normalized);
+      if (normalized != remote) {
+        await _persistRemoteSummary(normalized);
+      }
+      return normalized;
     }
 
     final summary = await _buildSummary(
@@ -71,10 +86,13 @@ class StorySessionService {
       date: date,
       dayKey: dayKey,
       sessions: sessions,
+      dayXp: dayXp,
     );
     if (summary != null) {
-      await _summaryStore.write(summary);
-      await _persistRemoteSummary(summary);
+      final normalized = _normalizeSummary(summary: summary, dayXp: dayXp);
+      await _summaryStore.write(normalized);
+      await _persistRemoteSummary(normalized);
+      return normalized;
     }
     return summary;
   }
@@ -85,14 +103,10 @@ class StorySessionService {
     required DateTime date,
     required String dayKey,
     required List<Session> sessions,
+    required int dayXp,
   }) async {
     if (sessions.isEmpty) return null;
     final generatedAt = _now();
-    final xpEntry = await _dailyStatsCache.read(gymId, userId);
-    final xpPerSession = LevelService.xpPerSession;
-    final dayXp = (xpEntry != null && xpEntry.isSameCalendarDay(date))
-        ? xpEntry.xp.clamp(0, xpPerSession)
-        : xpPerSession;
 
     final startOfDay = DateTime(date.year, date.month, date.day);
     final newDevices = <String, Session>{};
@@ -237,6 +251,12 @@ class StorySessionService {
       final displayName = (session.exerciseName?.trim().isNotEmpty ?? false)
           ? session.exerciseName!.trim()
           : (resolvedName ?? session.deviceName);
+      final deviceName = session.deviceName.trim();
+      final isDuplicateDevice = newDevices.containsKey(session.deviceId) &&
+          displayName.trim().toLowerCase() == deviceName.toLowerCase();
+      if (isDuplicateDevice) {
+        continue;
+      }
       achievementsBuffer.add(
         StoryAchievement(
           type: StoryAchievementType.newExercise,
@@ -522,6 +542,61 @@ class StorySessionService {
       }
     }
     return result;
+  }
+
+  Future<int> _resolveDayXp({
+    required String gymId,
+    required String userId,
+    required DateTime date,
+  }) async {
+    final xpPerSession = LevelService.xpPerSession;
+    try {
+      final xpEntry = await _dailyStatsCache.read(gymId, userId);
+      if (xpEntry == null || !xpEntry.isSameCalendarDay(date)) {
+        return xpPerSession;
+      }
+      final clamped = xpEntry.xp.clamp(0, xpPerSession);
+      if (clamped > 0) {
+        return clamped;
+      }
+      if (xpEntry.totalXp > 0) {
+        return min(xpEntry.totalXp, xpPerSession);
+      }
+    } catch (_) {
+      // Ignore cache read issues and fall back to default XP.
+    }
+    return xpPerSession;
+  }
+
+  StorySessionSummary _normalizeSummary({
+    required StorySessionSummary summary,
+    required int dayXp,
+  }) {
+    final achievements = summary.achievements;
+    List<StoryAchievement>? updatedAchievements;
+    final idx = achievements.indexWhere((a) => a.type == StoryAchievementType.dailyXp);
+    if (idx >= 0) {
+      final daily = achievements[idx];
+      final currentXp = daily.xp ?? 0;
+      if (currentXp != dayXp) {
+        updatedAchievements = List.of(achievements);
+        updatedAchievements[idx] = daily.copyWith(xp: dayXp);
+      }
+    } else {
+      updatedAchievements = [
+        StoryAchievement(type: StoryAchievementType.dailyXp, xp: dayXp),
+        ...achievements,
+      ];
+    }
+
+    if (summary.totalXp == dayXp && updatedAchievements == null) {
+      return summary;
+    }
+
+    return summary.copyWith(
+      totalXp: dayXp,
+      achievements: updatedAchievements ?? achievements,
+    );
   }
 }
 
