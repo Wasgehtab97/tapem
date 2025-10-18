@@ -111,35 +111,12 @@ class StorySessionService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final newDevices = <String, Session>{};
     final newExercises = <String, Session>{};
-    final uniqueActivities = <String>{};
-
-    var totalSets = 0;
-    var totalDurationMs = 0;
-    DateTime? earliestStart;
-    DateTime? latestEnd;
 
     for (final session in sessions) {
-      totalSets += session.sets.length;
-      final sessionDuration = _sessionDurationMs(session);
-      if (sessionDuration != null) {
-        totalDurationMs += sessionDuration;
-      }
-      final startTime = session.startTime;
-      if (startTime != null && (earliestStart == null || startTime.isBefore(earliestStart!))) {
-        earliestStart = startTime;
-      }
-      final endTime = session.endTime;
-      if (endTime != null && (latestEnd == null || endTime.isAfter(latestEnd!))) {
-        latestEnd = endTime;
-      }
-
       final deviceId = session.deviceId;
       final exerciseId = session.exerciseId;
       final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
       final isMulti = session.isMulti;
-
-      final activityKey = hasExercise ? '$deviceId::$exerciseId' : deviceId;
-      uniqueActivities.add(activityKey);
 
       if (!isMulti) {
         final seenDevice =
@@ -174,13 +151,6 @@ class StorySessionService {
             newExercises[key] = session;
           }
         }
-      }
-    }
-
-    if (totalDurationMs == 0 && earliestStart != null && latestEnd != null) {
-      final diff = latestEnd!.difference(earliestStart!).inMilliseconds;
-      if (diff > 0) {
-        totalDurationMs = diff;
       }
     }
 
@@ -290,11 +260,7 @@ class StorySessionService {
       );
     }
 
-    final stats = StorySessionStats(
-      exerciseCount: uniqueActivities.length,
-      setCount: totalSets,
-      durationMs: totalDurationMs,
-    );
+    final stats = _deriveStatsFromSessions(sessions);
 
     final summary = StorySessionSummary(
       gymId: gymId,
@@ -343,10 +309,82 @@ class StorySessionService {
     return null;
   }
 
+  StorySessionStats _deriveStatsFromSessions(List<Session> sessions) {
+    if (sessions.isEmpty) {
+      return const StorySessionStats.empty();
+    }
+
+    final uniqueActivities = <String>{};
+    var totalSets = 0;
+    var totalDurationMs = 0;
+    DateTime? earliestStart;
+    DateTime? latestEnd;
+
+    for (final session in sessions) {
+      totalSets += session.sets.length;
+      final sessionDuration = _sessionDurationMs(session);
+      if (sessionDuration != null) {
+        totalDurationMs += sessionDuration;
+      }
+
+      final startTime = session.startTime;
+      if (startTime != null &&
+          (earliestStart == null || startTime.isBefore(earliestStart!))) {
+        earliestStart = startTime;
+      }
+      final endTime = session.endTime;
+      if (endTime != null &&
+          (latestEnd == null || endTime.isAfter(latestEnd!))) {
+        latestEnd = endTime;
+      }
+
+      final deviceId = session.deviceId;
+      final exerciseId = session.exerciseId;
+      final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
+      final activityKey = hasExercise ? '$deviceId::$exerciseId' : deviceId;
+      uniqueActivities.add(activityKey);
+    }
+
+    if (totalDurationMs == 0 && earliestStart != null && latestEnd != null) {
+      final diff = latestEnd!.difference(earliestStart!).inMilliseconds;
+      if (diff > 0) {
+        totalDurationMs = diff;
+      }
+    }
+
+    return StorySessionStats(
+      exerciseCount: uniqueActivities.length,
+      setCount: totalSets,
+      durationMs: totalDurationMs,
+    );
+  }
+
+  DateTime? _latestActivityTimestamp(List<Session> sessions) {
+    DateTime? latest;
+    for (final session in sessions) {
+      final candidate =
+          session.endTime ?? session.startTime ?? session.timestamp;
+      if (latest == null || candidate.isAfter(latest)) {
+        latest = candidate;
+      }
+    }
+    return latest;
+  }
+
   bool _needsStatsRebuild(StorySessionSummary summary, List<Session> sessions) {
     if (sessions.isEmpty) return false;
+    final derivedStats = _deriveStatsFromSessions(sessions);
     final stats = summary.stats;
-    return stats.exerciseCount == 0 && stats.setCount == 0 && stats.durationMs == 0;
+    if (stats.exerciseCount != derivedStats.exerciseCount ||
+        stats.setCount != derivedStats.setCount ||
+        stats.durationMs != derivedStats.durationMs) {
+      return true;
+    }
+    final latestActivity = _latestActivityTimestamp(sessions);
+    if (latestActivity != null && summary.generatedAt.isBefore(latestActivity)) {
+      return true;
+    }
+    return false;
   }
 
   Future<bool> _hasPriorUsage({
