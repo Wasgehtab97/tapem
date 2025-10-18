@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
+import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class _InMemoryDailyStatsCache implements DailyStatsCache {
   DailyStatsCacheEntry? _entry;
@@ -22,9 +24,47 @@ class _InMemoryDailyStatsCache implements DailyStatsCache {
     String gymId,
     String userId,
     int xp,
+    DateTime cachedAt, {
+    int? totalXp,
+  }) async {
+    final entry = DailyStatsCacheEntry(
+      xp: xp,
+      cachedAt: cachedAt,
+      totalXp: totalXp ?? xp,
+      dayKey: logicDayKey(cachedAt),
+    );
+    return _entry = entry;
+  }
+
+  @override
+  Future<DailyStatsCacheEntry> writeTotal(
+    String gymId,
+    String userId,
+    int totalXp,
     DateTime cachedAt,
   ) async {
-    return _entry = DailyStatsCacheEntry(xp: xp, cachedAt: cachedAt);
+    final previous = _entry;
+    final dayKey = logicDayKey(cachedAt);
+    final prevTotal = previous?.totalXp ?? previous?.xp ?? 0;
+    var baseline = prevTotal;
+    if (previous != null && previous.dayKey == dayKey) {
+      baseline = prevTotal - previous.xp;
+      if (previous.totalXp == previous.xp && previous.xp > LevelService.xpPerSession) {
+        baseline = prevTotal - LevelService.xpPerSession;
+      }
+    }
+    var dailyXp = totalXp - baseline;
+    if (dailyXp < 0) dailyXp = 0;
+    if (dailyXp > LevelService.xpPerSession) {
+      dailyXp = LevelService.xpPerSession;
+    }
+    final entry = DailyStatsCacheEntry(
+      xp: dailyXp,
+      cachedAt: cachedAt,
+      totalXp: totalXp,
+      dayKey: dayKey,
+    );
+    return _entry = entry;
   }
 
   @override
@@ -34,11 +74,20 @@ class _InMemoryDailyStatsCache implements DailyStatsCache {
     int delta,
     DateTime now,
   ) async {
-    final current = _entry;
-    if (current == null || !current.isSameCalendarDay(now)) {
-      return _entry = DailyStatsCacheEntry(xp: delta, cachedAt: now);
-    }
-    return _entry = DailyStatsCacheEntry(xp: current.xp + delta, cachedAt: now);
+    final previous = _entry;
+    final dayKey = logicDayKey(now);
+    final prevTotal = previous?.totalXp ?? previous?.xp ?? 0;
+    final totalXp = prevTotal + delta;
+    final dailyXp = (previous == null || previous.dayKey != dayKey)
+        ? delta
+        : previous.xp + delta;
+    final entry = DailyStatsCacheEntry(
+      xp: dailyXp,
+      cachedAt: now,
+      totalXp: totalXp,
+      dayKey: dayKey,
+    );
+    return _entry = entry;
   }
 }
 
@@ -201,7 +250,10 @@ void main() {
       repo.statsDailyCtrl.add(2050);
       await Future.delayed(const Duration(milliseconds: 10));
       expect(provider.statsDailyXp, 2050);
-      expect(await cache.read('g1', 'u1'), isNotNull);
+      final cacheEntry = await cache.read('g1', 'u1');
+      expect(cacheEntry, isNotNull);
+      expect(cacheEntry!.xp, LevelService.xpPerSession);
+      expect(cacheEntry.totalXp, 2050);
       provider.dispose();
       repo.dispose();
     });
