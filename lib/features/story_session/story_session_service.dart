@@ -62,22 +62,30 @@ class StorySessionService {
 
     final cached = await _summaryStore.read(gymId, userId, dayKey);
     if (cached != null && !_needsStatsRebuild(cached, sessions)) {
-      final normalized = _normalizeSummary(summary: cached, dayXp: dayXp);
-      if (normalized != cached) {
-        await _summaryStore.write(normalized);
-        await _persistRemoteSummary(normalized);
-      }
-      return normalized;
+      return _finalizeSummary(
+        summary: cached,
+        gymId: gymId,
+        userId: userId,
+        dayKey: dayKey,
+        date: date,
+        sessions: sessions,
+        dayXp: dayXp,
+        isCachedLocal: true,
+      );
     }
 
     final remote = await _loadRemoteSummary(gymId, userId, dayKey);
     if (remote != null && !_needsStatsRebuild(remote, sessions)) {
-      final normalized = _normalizeSummary(summary: remote, dayXp: dayXp);
-      await _summaryStore.write(normalized);
-      if (normalized != remote) {
-        await _persistRemoteSummary(normalized);
-      }
-      return normalized;
+      return _finalizeSummary(
+        summary: remote,
+        gymId: gymId,
+        userId: userId,
+        dayKey: dayKey,
+        date: date,
+        sessions: sessions,
+        dayXp: dayXp,
+        isCachedLocal: false,
+      );
     }
 
     final summary = await _buildSummary(
@@ -89,12 +97,167 @@ class StorySessionService {
       dayXp: dayXp,
     );
     if (summary != null) {
-      final normalized = _normalizeSummary(summary: summary, dayXp: dayXp);
-      await _summaryStore.write(normalized);
-      await _persistRemoteSummary(normalized);
-      return normalized;
+      return _finalizeSummary(
+        summary: summary,
+        gymId: gymId,
+        userId: userId,
+        dayKey: dayKey,
+        date: date,
+        sessions: sessions,
+        dayXp: dayXp,
+        isCachedLocal: false,
+      );
     }
     return summary;
+  }
+
+  Future<StorySessionSummary> _finalizeSummary({
+    required StorySessionSummary summary,
+    required String gymId,
+    required String userId,
+    required String dayKey,
+    required DateTime date,
+    required List<Session> sessions,
+    required int dayXp,
+    required bool isCachedLocal,
+  }) async {
+    final normalized = _normalizeSummary(summary: summary, dayXp: dayXp);
+    if (!isCachedLocal || normalized != summary) {
+      await _summaryStore.write(normalized);
+    }
+    if (normalized != summary) {
+      await _persistRemoteSummary(normalized);
+    }
+
+    final ensured = await _ensureHighlights(
+      summary: normalized,
+      gymId: gymId,
+      userId: userId,
+      dayKey: dayKey,
+      date: date,
+      sessions: sessions,
+      dayXp: dayXp,
+    );
+    if (ensured != normalized) {
+      await _summaryStore.write(ensured);
+      await _persistRemoteSummary(ensured);
+      return ensured;
+    }
+    return normalized;
+  }
+
+  Future<StorySessionSummary> _ensureHighlights({
+    required StorySessionSummary summary,
+    required String gymId,
+    required String userId,
+    required String dayKey,
+    required DateTime date,
+    required List<Session> sessions,
+    required int dayXp,
+  }) async {
+    if (sessions.isEmpty || _hasNonDailyAchievements(summary)) {
+      return summary;
+    }
+
+    final shouldRebuild = await _shouldRebuildHighlights(
+      gymId: gymId,
+      userId: userId,
+      date: date,
+      sessions: sessions,
+    );
+    if (!shouldRebuild) {
+      return summary;
+    }
+
+    final rebuilt = await _buildSummary(
+      gymId: gymId,
+      userId: userId,
+      date: date,
+      dayKey: dayKey,
+      sessions: sessions,
+      dayXp: dayXp,
+    );
+    if (rebuilt == null) {
+      return summary;
+    }
+    return _normalizeSummary(summary: rebuilt, dayXp: dayXp);
+  }
+
+  Future<bool> _shouldRebuildHighlights({
+    required String gymId,
+    required String userId,
+    required DateTime date,
+    required List<Session> sessions,
+  }) async {
+    if (sessions.isEmpty) {
+      return false;
+    }
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    for (final session in sessions) {
+      if (!session.isMulti) {
+        final seenDevice =
+            await _historyStore.hasSeenDevice(gymId, userId, session.deviceId);
+        if (!seenDevice) {
+          final existedBefore = await _hasPriorUsage(
+            gymId: gymId,
+            userId: userId,
+            deviceId: session.deviceId,
+            exerciseId: null,
+            before: startOfDay,
+          );
+          if (!existedBefore) {
+            return true;
+          }
+        }
+      }
+
+      final exerciseId = session.exerciseId;
+      if (session.isMulti && exerciseId != null && exerciseId.isNotEmpty) {
+        final seenExercise = await _historyStore.hasSeenExercise(
+          gymId,
+          userId,
+          session.deviceId,
+          exerciseId,
+        );
+        if (!seenExercise) {
+          final existedBefore = await _hasPriorUsage(
+            gymId: gymId,
+            userId: userId,
+            deviceId: session.deviceId,
+            exerciseId: exerciseId,
+            before: startOfDay,
+          );
+          if (!existedBefore) {
+            return true;
+          }
+        }
+      }
+
+      final bestE1rm = _bestE1rmForSession(session);
+      if (bestE1rm != null) {
+        final recordKey = '${session.deviceId}::${exerciseId ?? ''}';
+        var previousBest = await _prStore.read(gymId, userId, recordKey);
+        if (previousBest == null || previousBest <= 0) {
+          previousBest = await _loadPreviousBestE1rm(
+            gymId: gymId,
+            userId: userId,
+            deviceId: session.deviceId,
+            exerciseId: exerciseId,
+            before: startOfDay,
+          );
+        }
+        final baseline = previousBest ?? 0;
+        if (bestE1rm > baseline + 0.01) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _hasNonDailyAchievements(StorySessionSummary summary) {
+    return summary.achievements
+        .any((achievement) => achievement.type != StoryAchievementType.dailyXp);
   }
 
   Future<StorySessionSummary?> _buildSummary({
