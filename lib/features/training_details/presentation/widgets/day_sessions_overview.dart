@@ -40,7 +40,7 @@ class DaySessionsOverview extends StatelessWidget {
                           ? () => onSessionLongPress!(session)
                           : null,
                       child: SessionExerciseCard(
-                        title: session.deviceName,
+                        title: session.exerciseName ?? session.deviceName,
                         subtitle: session.deviceDescription,
                         sets: session.sets,
                       ),

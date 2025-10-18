@@ -136,25 +136,29 @@ class StorySessionService {
       final deviceId = session.deviceId;
       final exerciseId = session.exerciseId;
       final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
+      final isMulti = session.isMulti;
 
       final activityKey = hasExercise ? '$deviceId::$exerciseId' : deviceId;
       uniqueActivities.add(activityKey);
 
-      final seenDevice = await _historyStore.hasSeenDevice(gymId, userId, deviceId);
-      if (!seenDevice && !newDevices.containsKey(deviceId)) {
-        final existedBefore = await _hasPriorUsage(
-          gymId: gymId,
-          userId: userId,
-          deviceId: deviceId,
-          exerciseId: null,
-          before: startOfDay,
-        );
-        if (!existedBefore) {
-          newDevices[deviceId] = session;
+      if (!isMulti) {
+        final seenDevice =
+            await _historyStore.hasSeenDevice(gymId, userId, deviceId);
+        if (!seenDevice && !newDevices.containsKey(deviceId)) {
+          final existedBefore = await _hasPriorUsage(
+            gymId: gymId,
+            userId: userId,
+            deviceId: deviceId,
+            exerciseId: null,
+            before: startOfDay,
+          );
+          if (!existedBefore) {
+            newDevices[deviceId] = session;
+          }
         }
       }
 
-      if (hasExercise) {
+      if (isMulti && hasExercise) {
         final key = '$deviceId::$exerciseId';
         final seenExercise =
             await _historyStore.hasSeenExercise(gymId, userId, deviceId, exerciseId!);
