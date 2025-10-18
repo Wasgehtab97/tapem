@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -68,87 +71,104 @@ class _StorySessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = _StorySessionPalette.fromTheme(theme);
     final textTheme = theme.textTheme;
     final headlineStyle = textTheme.headlineSmall?.copyWith(
-      color: Colors.white,
+      color: palette.onCardPrimary,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.4,
     );
     final subtitleStyle = textTheme.bodyMedium?.copyWith(
-      color: Colors.white.withOpacity(0.72),
+      color: palette.onCardSecondary,
       fontWeight: FontWeight.w500,
     );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
+      borderRadius: palette.cardRadius,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF31135D), Color(0xFF150A2C)],
-          ),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-          boxShadow: const [
+          gradient: palette.cardBackground,
+          border: Border.all(color: palette.cardBorder),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x8010021F),
+              color: palette.cardShadow,
               blurRadius: 36,
-              offset: Offset(0, 24),
+              offset: const Offset(0, 24),
             ),
           ],
         ),
         child: Stack(
           children: [
-            const Positioned(
+            Positioned(
               left: -76,
               top: -48,
               child: _GlowingBlob(
                 size: 220,
-                color: Color(0xFF8F5BFF),
+                color: palette.glowColors[0],
                 opacity: 0.26,
               ),
             ),
-            const Positioned(
+            Positioned(
               right: -92,
               top: 24,
               child: _GlowingBlob(
                 size: 180,
-                color: Color(0xFFFF7AD5),
+                color: palette.glowColors[1 % palette.glowColors.length],
                 opacity: 0.18,
               ),
             ),
-            const Positioned(
+            Positioned(
               left: -64,
               bottom: -54,
               child: _GlowingBlob(
                 size: 210,
-                color: Color(0xFF5225FF),
+                color: palette.glowColors[2 % palette.glowColors.length],
                 opacity: 0.22,
               ),
             ),
             Positioned(
               top: 36,
               left: 32,
-              child: _FloatingStar(size: 18, opacity: 0.35),
+              child: _FloatingStar(
+                size: 18,
+                opacity: 0.35,
+                color: palette.starColors[0 % palette.starColors.length],
+              ),
             ),
             Positioned(
               top: 80,
               right: 44,
-              child: _FloatingStar(size: 12, opacity: 0.32),
+              child: _FloatingStar(
+                size: 12,
+                opacity: 0.32,
+                color: palette.starColors[1 % palette.starColors.length],
+              ),
             ),
             Positioned(
               bottom: 132,
               left: 80,
-              child: _FloatingStar(size: 14, opacity: 0.28),
+              child: _FloatingStar(
+                size: 14,
+                opacity: 0.28,
+                color: palette.starColors[2 % palette.starColors.length],
+              ),
             ),
             Positioned(
               bottom: 60,
               right: 62,
-              child: _FloatingStar(size: 22, opacity: 0.4),
+              child: _FloatingStar(
+                size: 22,
+                opacity: 0.4,
+                color: palette.starColors[3 % palette.starColors.length],
+              ),
             ),
             Positioned(
               top: 48,
               right: 132,
-              child: _FloatingStar(size: 10, opacity: 0.28),
+              child: _FloatingStar(
+                size: 10,
+                opacity: 0.28,
+                color: palette.starColors[1 % palette.starColors.length],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
@@ -175,8 +195,8 @@ class _StorySessionCard extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(),
                           style: IconButton.styleFrom(
                             shape: const CircleBorder(),
-                            backgroundColor: Colors.white.withOpacity(0.12),
-                            foregroundColor: Colors.white,
+                            backgroundColor: palette.closeButtonBackground,
+                            foregroundColor: palette.onCardPrimary,
                             padding: const EdgeInsets.all(10),
                           ),
                           icon: const Icon(Icons.close_rounded),
@@ -184,25 +204,29 @@ class _StorySessionCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 28),
-                    _XpBanner(xp: xp),
+                    _XpBanner(xp: xp, palette: palette),
                     const SizedBox(height: 24),
-                    _StoryStatsRow(stats: stats),
+                    _StoryStatsRow(stats: stats, palette: palette),
                     const SizedBox(height: 30),
                     if (achievements.isNotEmpty) ...[
                       Text(
                         loc.storySessionBadgesTitle,
                         style: textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: palette.onCardPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _BadgesSection(achievements: achievements, loc: loc),
+                      _BadgesSection(
+                        achievements: achievements,
+                        loc: loc,
+                        palette: palette,
+                      ),
                     ] else ...[
                       Text(
                         loc.storySessionEmptyMessage,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.65),
+                          color: palette.emptyState,
                         ),
                       ),
                     ],
@@ -212,7 +236,7 @@ class _StorySessionCard extends StatelessWidget {
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.white.withOpacity(0.76),
+                            foregroundColor: palette.onCardSecondary,
                             textStyle: textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.1,
@@ -224,16 +248,8 @@ class _StorySessionCard extends StatelessWidget {
                         DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(18),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x661F0438),
-                                blurRadius: 18,
-                                offset: Offset(0, 10),
-                              ),
-                            ],
+                            gradient: palette.shareGradient,
+                            boxShadow: palette.shareShadow,
                           ),
                           child: TextButton.icon(
                             onPressed: () {
@@ -243,7 +259,7 @@ class _StorySessionCard extends StatelessWidget {
                             icon: const Icon(Icons.ios_share_rounded),
                             label: Text(loc.commonShare),
                             style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
+                              foregroundColor: palette.onGradientPrimary,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 22,
                                 vertical: 12,
@@ -269,7 +285,9 @@ class _StorySessionCard extends StatelessWidget {
 
 class _XpBanner extends StatelessWidget {
   final int xp;
-  const _XpBanner({required this.xp});
+  final _StorySessionPalette palette;
+
+  const _XpBanner({required this.xp, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -279,17 +297,13 @@ class _XpBanner extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7B5BFF), Color(0xFFFF6CD8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colors.white.withOpacity(0.14)),
-        boxShadow: const [
+        gradient: palette.xpBanner,
+        border: Border.all(color: palette.xpBorder),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x80170132),
+            color: palette.xpShadow,
             blurRadius: 30,
-            offset: Offset(0, 16),
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -299,20 +313,28 @@ class _XpBanner extends StatelessWidget {
           Positioned(
             top: 22,
             left: 38,
-            child: _FloatingStar(size: 16, opacity: 0.45, color: Colors.white),
+            child: _FloatingStar(
+              size: 16,
+              opacity: 0.45,
+              color: palette.onGradientPrimary,
+            ),
           ),
           Positioned(
             bottom: 22,
             right: 42,
-            child: _FloatingStar(size: 20, opacity: 0.38, color: Colors.white),
+            child: _FloatingStar(
+              size: 20,
+              opacity: 0.38,
+              color: palette.onGradientPrimary,
+            ),
           ),
           Positioned(
             top: -48,
             right: -60,
             child: _GlowingBlob(
               size: 160,
-              color: Colors.white.withOpacity(0.5),
-              opacity: 0.12,
+              color: palette.glowColors.last,
+              opacity: 0.18,
             ),
           ),
           Padding(
@@ -324,7 +346,7 @@ class _XpBanner extends StatelessWidget {
                 Text(
                   '${format.format(xp)} XP',
                   style: theme.textTheme.displaySmall?.copyWith(
-                    color: Colors.white,
+                    color: palette.onGradientPrimary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
                   ),
@@ -333,7 +355,7 @@ class _XpBanner extends StatelessWidget {
                 Text(
                   loc.storySessionDailyXpTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.88),
+                    color: palette.onGradientMuted,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.25,
                   ),
@@ -349,8 +371,9 @@ class _XpBanner extends StatelessWidget {
 
 class _StoryStatsRow extends StatelessWidget {
   final StorySessionStats stats;
+  final _StorySessionPalette palette;
 
-  const _StoryStatsRow({required this.stats});
+  const _StoryStatsRow({required this.stats, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -364,14 +387,17 @@ class _StoryStatsRow extends StatelessWidget {
       _StoryStatCard(
         title: loc.storySessionStatsExercisesTitle,
         value: exerciseValue,
+        palette: palette,
       ),
       _StoryStatCard(
         title: loc.storySessionStatsSetsTitle,
         value: setsValue,
+        palette: palette,
       ),
       _StoryStatCard(
         title: loc.storySessionStatsDurationTitle,
         value: durationText,
+        palette: palette,
       ),
     ];
     if (isCompactLayout) {
@@ -419,36 +445,33 @@ class _StoryStatsRow extends StatelessWidget {
 class _StoryStatCard extends StatelessWidget {
   final String title;
   final String value;
+  final _StorySessionPalette palette;
 
-  const _StoryStatCard({required this.title, required this.value});
+  const _StoryStatCard({required this.title, required this.value, required this.palette});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final titleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: Colors.white.withOpacity(0.65),
+      color: palette.onCardMuted,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
     );
     final valueStyle = theme.textTheme.titleLarge?.copyWith(
-      color: Colors.white,
+      color: palette.onCardPrimary,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.3,
     );
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0x442C1E4A), Color(0x6613172F)],
-        ),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-        boxShadow: const [
+        gradient: palette.statCardBackground,
+        border: Border.all(color: palette.statBorder),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x3314022A),
+            color: palette.cardShadow.withOpacity(0.35),
             blurRadius: 18,
-            offset: Offset(0, 12),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -480,8 +503,13 @@ class _StoryStatCard extends StatelessWidget {
 class _BadgesSection extends StatelessWidget {
   final List<StoryAchievement> achievements;
   final AppLocalizations loc;
+  final _StorySessionPalette palette;
 
-  const _BadgesSection({required this.achievements, required this.loc});
+  const _BadgesSection({
+    required this.achievements,
+    required this.loc,
+    required this.palette,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -497,8 +525,11 @@ class _BadgesSection extends StatelessWidget {
             spacing: 14,
             runSpacing: 14,
             children: achievements
-                .map((achievement) =>
-                    _StoryBadgeChip(achievement: achievement, loc: loc))
+                .map((achievement) => _StoryBadgeChip(
+                      achievement: achievement,
+                      loc: loc,
+                      palette: palette,
+                    ))
                 .toList(),
           ),
         ),
@@ -510,8 +541,13 @@ class _BadgesSection extends StatelessWidget {
 class _StoryBadgeChip extends StatelessWidget {
   final StoryAchievement achievement;
   final AppLocalizations loc;
+  final _StorySessionPalette palette;
 
-  const _StoryBadgeChip({required this.achievement, required this.loc});
+  const _StoryBadgeChip({
+    required this.achievement,
+    required this.loc,
+    required this.palette,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -522,19 +558,15 @@ class _StoryBadgeChip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF37205E), Color(0xFF281245)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
+        gradient: palette.badgeBackground,
+        boxShadow: [
           BoxShadow(
-            color: Color(0x3316032C),
+            color: palette.cardShadow.withOpacity(0.32),
             blurRadius: 20,
-            offset: Offset(0, 12),
+            offset: const Offset(0, 12),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: palette.badgeBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -545,17 +577,13 @@ class _StoryBadgeChip extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: palette.badgeIconBackground,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color: palette.onGradientPrimary,
                   size: 20,
                 ),
               ),
@@ -569,7 +597,7 @@ class _StoryBadgeChip extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
+                      color: palette.onCardPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                     softWrap: true,
@@ -580,7 +608,7 @@ class _StoryBadgeChip extends StatelessWidget {
                       child: Text(
                         subtitle!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.72),
+                          color: palette.onCardSecondary,
                         ),
                         softWrap: true,
                       ),
@@ -694,6 +722,183 @@ class _GlowingBlob extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StorySessionPalette {
+  final LinearGradient cardBackground;
+  final LinearGradient xpBanner;
+  final LinearGradient statCardBackground;
+  final LinearGradient badgeBackground;
+  final LinearGradient badgeIconBackground;
+  final LinearGradient shareGradient;
+  final Color cardBorder;
+  final Color cardShadow;
+  final Color closeButtonBackground;
+  final Color onCardPrimary;
+  final Color onCardSecondary;
+  final Color onCardMuted;
+  final Color onGradientPrimary;
+  final Color onGradientMuted;
+  final Color statBorder;
+  final Color badgeBorder;
+  final Color emptyState;
+  final Color xpBorder;
+  final Color xpShadow;
+  final List<BoxShadow> shareShadow;
+  final List<Color> glowColors;
+  final List<Color> starColors;
+  final BorderRadius cardRadius;
+
+  const _StorySessionPalette({
+    required this.cardBackground,
+    required this.xpBanner,
+    required this.statCardBackground,
+    required this.badgeBackground,
+    required this.badgeIconBackground,
+    required this.shareGradient,
+    required this.cardBorder,
+    required this.cardShadow,
+    required this.closeButtonBackground,
+    required this.onCardPrimary,
+    required this.onCardSecondary,
+    required this.onCardMuted,
+    required this.onGradientPrimary,
+    required this.onGradientMuted,
+    required this.statBorder,
+    required this.badgeBorder,
+    required this.emptyState,
+    required this.xpBorder,
+    required this.xpShadow,
+    required this.shareShadow,
+    required this.glowColors,
+    required this.starColors,
+    required this.cardRadius,
+  });
+
+  factory _StorySessionPalette.fromTheme(ThemeData theme) {
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final onColors = theme.extension<BrandOnColors>();
+    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final colors = gradient.colors;
+    final start = colors.first;
+    final end = colors.last;
+    final mid = Color.lerp(start, end, 0.5)!;
+    final surface = theme.colorScheme.surface;
+    final onSurface = theme.colorScheme.onSurface;
+
+    Color mix(Color a, Color b, double t) => Color.lerp(a, b, t) ?? b;
+    Color lighten(Color color, double amount) =>
+        Color.lerp(color, Colors.white, amount) ?? color;
+    Color darken(Color color, double amount) =>
+        Color.lerp(color, Colors.black, amount) ?? color;
+    Color tintSurface(Color color, double opacity) =>
+        Color.alphaBlend(color.withOpacity(opacity), surface);
+
+    final cardBackground = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomRight,
+      colors: [
+        mix(surface, darken(start, 0.35), 0.75),
+        mix(surface, darken(end, 0.45), 0.8),
+      ],
+    );
+
+    final xpBanner = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        lighten(start, 0.12),
+        lighten(end, 0.12),
+      ],
+    );
+
+    final statCardBackground = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.2), 0.35),
+        tintSurface(darken(end, 0.2), 0.4),
+      ],
+    );
+
+    final badgeBackground = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.15), 0.45),
+        tintSurface(darken(end, 0.2), 0.55),
+      ],
+    );
+
+    final badgeIconBackground = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        lighten(start, 0.08),
+        lighten(end, 0.08),
+      ],
+    );
+
+    final shareGradient = LinearGradient(
+      begin: gradient.begin,
+      end: gradient.end,
+      colors: [
+        lighten(start, 0.05),
+        lighten(end, 0.05),
+      ],
+    );
+
+    final onGradientPrimary =
+        onColors?.onGradient ?? brandTheme?.onBrand ?? Colors.black;
+    final onGradientMuted = onGradientPrimary.withOpacity(0.82);
+    final onCardSecondary = onSurface.withOpacity(0.72);
+    final onCardMuted = onSurface.withOpacity(0.65);
+
+    final shareShadow = brandTheme?.shadow ??
+        [
+          BoxShadow(
+            color: darken(mid, 0.6).withOpacity(0.45),
+            blurRadius: 22,
+            offset: const Offset(0, 14),
+          ),
+        ];
+
+    return _StorySessionPalette(
+      cardBackground: cardBackground,
+      xpBanner: xpBanner,
+      statCardBackground: statCardBackground,
+      badgeBackground: badgeBackground,
+      badgeIconBackground: badgeIconBackground,
+      shareGradient: shareGradient,
+      cardBorder: tintSurface(onSurface, 0.08),
+      cardShadow: darken(end, 0.7).withOpacity(0.45),
+      closeButtonBackground: tintSurface(mid, 0.5),
+      onCardPrimary: onSurface,
+      onCardSecondary: onCardSecondary,
+      onCardMuted: onCardMuted,
+      onGradientPrimary: onGradientPrimary,
+      onGradientMuted: onGradientMuted,
+      statBorder: tintSurface(onSurface, 0.12),
+      badgeBorder: tintSurface(onSurface, 0.14),
+      emptyState: onCardSecondary,
+      xpBorder: tintSurface(onSurface, 0.14),
+      xpShadow: darken(mid, 0.65).withOpacity(0.45),
+      shareShadow: shareShadow,
+      glowColors: [
+        lighten(start, 0.22),
+        lighten(end, 0.25),
+        lighten(mid, 0.2),
+      ],
+      starColors: [
+        lighten(start, 0.35),
+        lighten(end, 0.32),
+        lighten(mid, 0.28),
+        lighten(end, 0.4),
+      ],
+      cardRadius:
+          (brandTheme?.radius as BorderRadius?) ?? BorderRadius.circular(32),
     );
   }
 }
