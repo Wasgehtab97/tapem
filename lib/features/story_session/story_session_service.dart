@@ -324,8 +324,9 @@ class StorySessionService {
 
     final newPrs = <String, _PrCandidate>{};
     for (final session in sessions) {
-      final bestE1rm = _bestE1rmForSession(session);
-      if (bestE1rm == null) continue;
+      final bestPr = _bestPrForSession(session);
+      if (bestPr == null) continue;
+      final bestE1rm = bestPr.e1rm;
       final exerciseId = session.exerciseId ?? '';
       final recordKey = '${session.deviceId}::$exerciseId';
       final previousBest = await _ensurePreviousPr(
@@ -338,7 +339,12 @@ class StorySessionService {
       if (bestE1rm > (previousBest ?? 0) + 0.01) {
         final existing = newPrs[recordKey];
         if (existing == null || bestE1rm > existing.e1rm) {
-          newPrs[recordKey] = _PrCandidate(session: session, e1rm: bestE1rm);
+          newPrs[recordKey] = _PrCandidate(
+            session: session,
+            e1rm: bestE1rm,
+            weight: bestPr.weight,
+            reps: bestPr.reps,
+          );
         }
       }
     }
@@ -424,6 +430,8 @@ class StorySessionService {
           deviceName: candidate.session.deviceName,
           exerciseName: exerciseName ?? candidate.session.deviceName,
           e1rm: candidate.e1rm,
+          prWeight: candidate.weight,
+          prReps: candidate.reps,
         ),
       );
     }
@@ -647,18 +655,18 @@ class StorySessionService {
     return best > 0 ? best : null;
   }
 
-  double? _bestE1rmForSession(Session session) {
-    var best = 0.0;
+  _PrPerformance? _bestPrForSession(Session session) {
+    _PrPerformance? best;
     for (final set in session.sets) {
       final weight = set.weight;
       final reps = set.reps;
       if (weight <= 0 || reps <= 0) continue;
       final e1rm = _calculateE1rm(weight, reps);
-      if (e1rm > best) {
-        best = e1rm;
+      if (best == null || e1rm > best.e1rm) {
+        best = _PrPerformance(e1rm: e1rm, weight: weight, reps: reps);
       }
     }
-    return best > 0 ? best : null;
+    return best;
   }
 
   double _calculateE1rm(double weight, int reps) {
@@ -813,8 +821,27 @@ class StorySessionService {
 class _PrCandidate {
   final Session session;
   final double e1rm;
+  final double weight;
+  final int reps;
 
-  const _PrCandidate({required this.session, required this.e1rm});
+  const _PrCandidate({
+    required this.session,
+    required this.e1rm,
+    required this.weight,
+    required this.reps,
+  });
+}
+
+class _PrPerformance {
+  final double e1rm;
+  final double weight;
+  final int reps;
+
+  const _PrPerformance({
+    required this.e1rm,
+    required this.weight,
+    required this.reps,
+  });
 }
 
 class _ExerciseKey {

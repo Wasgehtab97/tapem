@@ -889,7 +889,21 @@
   "storySessionNewDeviceTitle": "First time on {device}",
   "storySessionNewExerciseTitle": "First time: {exercise} on {device}",
   "storySessionNewPrTitle": "New personal record in {name}",
-  "storySessionNewPrSubtitle": "Estimated 1RM: {value} kg",
+  "storySessionNewPrSubtitle": "Top PR set: {weight} kg × {reps} reps",
+  "@storySessionNewPrSubtitle": {
+    "description": "Subtitle describing the top set that led to a personal record",
+    "placeholders": {
+      "weight": {"type": "String"},
+      "reps": {"type": "String"}
+    }
+  },
+  "storySessionNewPrFallback": "Estimated 1RM: {value} kg",
+  "@storySessionNewPrFallback": {
+    "description": "Fallback subtitle when only an estimated 1RM is available",
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
   "storySessionButtonTooltip": "Show training story",
   "storySessionEmptyMessage": "No highlights available for this day.",
   "@multiDeviceSessionSaved": {"description": "Snackbar text after save"},

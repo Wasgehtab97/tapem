@@ -13,6 +13,8 @@ class StoryAchievement extends Equatable {
   final String? exerciseName;
   final double? e1rm;
   final int? xp;
+  final double? prWeight;
+  final int? prReps;
 
   const StoryAchievement({
     required this.type,
@@ -20,6 +22,8 @@ class StoryAchievement extends Equatable {
     this.exerciseName,
     this.e1rm,
     this.xp,
+    this.prWeight,
+    this.prReps,
   });
 
   Map<String, dynamic> toJson() => {
@@ -28,6 +32,8 @@ class StoryAchievement extends Equatable {
         if (exerciseName != null) 'exerciseName': exerciseName,
         if (e1rm != null) 'e1rm': e1rm,
         if (xp != null) 'xp': xp,
+        if (prWeight != null) 'prWeight': prWeight,
+        if (prReps != null) 'prReps': prReps,
       };
 
   factory StoryAchievement.fromJson(Map<String, dynamic> json) {
@@ -42,6 +48,8 @@ class StoryAchievement extends Equatable {
       exerciseName: json['exerciseName'] as String?,
       e1rm: (json['e1rm'] as num?)?.toDouble(),
       xp: (json['xp'] as num?)?.toInt(),
+      prWeight: (json['prWeight'] as num?)?.toDouble(),
+      prReps: (json['prReps'] as num?)?.toInt(),
     );
   }
 
@@ -51,6 +59,8 @@ class StoryAchievement extends Equatable {
     String? exerciseName,
     double? e1rm,
     int? xp,
+    double? prWeight,
+    int? prReps,
   }) {
     return StoryAchievement(
       type: type ?? this.type,
@@ -58,9 +68,11 @@ class StoryAchievement extends Equatable {
       exerciseName: exerciseName ?? this.exerciseName,
       e1rm: e1rm ?? this.e1rm,
       xp: xp ?? this.xp,
+      prWeight: prWeight ?? this.prWeight,
+      prReps: prReps ?? this.prReps,
     );
   }
 
   @override
-  List<Object?> get props => [type, deviceName, exerciseName, e1rm, xp];
+  List<Object?> get props => [type, deviceName, exerciseName, e1rm, xp, prWeight, prReps];
 }

@@ -152,112 +152,114 @@ class _StorySessionCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(headerTitle, style: headlineStyle),
-                          const SizedBox(height: 4),
-                          Text(headerSubtitle, style: subtitleStyle),
-                        ],
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(headerTitle, style: headlineStyle),
+                              const SizedBox(height: 4),
+                              Text(headerSubtitle, style: subtitleStyle),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: loc.commonClose,
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: IconButton.styleFrom(
+                            shape: const CircleBorder(),
+                            backgroundColor: Colors.white.withOpacity(0.12),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.all(10),
+                          ),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      tooltip: loc.commonClose,
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: IconButton.styleFrom(
-                        shape: const CircleBorder(),
-                        backgroundColor: Colors.white.withOpacity(0.12),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(10),
+                    const SizedBox(height: 28),
+                    _XpBanner(xp: xp),
+                    const SizedBox(height: 24),
+                    _StoryStatsRow(stats: stats),
+                    const SizedBox(height: 30),
+                    if (achievements.isNotEmpty) ...[
+                      Text(
+                        loc.storySessionBadgesTitle,
+                        style: textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      icon: const Icon(Icons.close_rounded),
+                      const SizedBox(height: 16),
+                      _BadgesSection(achievements: achievements, loc: loc),
+                    ] else ...[
+                      Text(
+                        loc.storySessionEmptyMessage,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.65),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white.withOpacity(0.76),
+                            textStyle: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                          child: Text(loc.commonClose),
+                        ),
+                        const Spacer(),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x661F0438),
+                                blurRadius: 18,
+                                offset: Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: TextButton.icon(
+                            onPressed: () {
+                              onShare?.call();
+                              Navigator.of(context).pop();
+                            },
+                            icon: const Icon(Icons.ios_share_rounded),
+                            label: Text(loc.commonShare),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 12,
+                              ),
+                              textStyle: textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                _XpBanner(xp: xp),
-                const SizedBox(height: 24),
-                _StoryStatsRow(stats: stats),
-                const SizedBox(height: 30),
-                if (achievements.isNotEmpty) ...[
-                  Text(
-                    loc.storySessionBadgesTitle,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _BadgesSection(achievements: achievements, loc: loc),
-                ] else ...[
-                  Text(
-                    loc.storySessionEmptyMessage,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.65),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white.withOpacity(0.76),
-                        textStyle: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                      child: Text(loc.commonClose),
-                    ),
-                    const Spacer(),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF6DD6), Color(0xFF815DFF)],
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x661F0438),
-                            blurRadius: 18,
-                            offset: Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          onShare?.call();
-                          Navigator.of(context).pop();
-                        },
-                        icon: const Icon(Icons.ios_share_rounded),
-                        label: Text(loc.commonShare),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 12,
-                          ),
-                          textStyle: textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     ),
@@ -456,7 +458,16 @@ class _StoryStatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(value, style: valueStyle),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: valueStyle,
+                maxLines: 1,
+                softWrap: false,
+              ),
+            ),
             const SizedBox(height: 10),
             Text(title, style: titleStyle),
           ],
@@ -615,8 +626,20 @@ class _StoryBadgeChip extends StatelessWidget {
   String? _buildSubtitle() {
     switch (achievement.type) {
       case StoryAchievementType.personalRecord:
-        final value = achievement.e1rm ?? 0;
-        return loc.storySessionNewPrSubtitle(value.toStringAsFixed(1));
+        final weight = achievement.prWeight;
+        final reps = achievement.prReps;
+        if (weight != null && reps != null && reps > 0) {
+          final numberFormat = NumberFormat('#,##0.##', loc.localeName);
+          final repsFormat = NumberFormat.decimalPattern(loc.localeName);
+          final weightText = numberFormat.format(weight);
+          final repsText = repsFormat.format(reps);
+          return loc.storySessionNewPrSubtitle(weightText, repsText);
+        }
+        final value = achievement.e1rm;
+        if (value != null && value > 0) {
+          return loc.storySessionNewPrFallback(value.toStringAsFixed(1));
+        }
+        return null;
       case StoryAchievementType.newDevice:
       case StoryAchievementType.newExercise:
       case StoryAchievementType.dailyXp:
