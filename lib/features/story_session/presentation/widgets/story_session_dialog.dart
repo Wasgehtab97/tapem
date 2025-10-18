@@ -260,7 +260,8 @@ class _StorySessionCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 
