@@ -1,6 +1,9 @@
 // lib/core/providers/profile_provider.dart
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -47,6 +50,11 @@ class ProfileProvider extends ChangeNotifier {
   String? _pendingFavoriteExercisesUserId;
   Future<void>? _inFlightFavoriteExercisesLoad;
   DateTime? _lastCacheAt;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+      _trainingDaySubscription;
+  String? _trainingDaySubscriptionUserId;
+  DateTime? _lastKnownCreatedAt;
+  bool _disposed = false;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -75,6 +83,8 @@ class ProfileProvider extends ChangeNotifier {
       return;
     }
 
+    _lastKnownCreatedAt = authProv.createdAt;
+
     if (!forceRefresh &&
         _hasLoadedTrainingDates &&
         _lastLoadedUserId == userId) {
@@ -96,6 +106,7 @@ class ProfileProvider extends ChangeNotifier {
 
     final hasFreshCache = await _tryLoadFromCache(userId, forceRefresh);
     if (hasFreshCache) {
+      _ensureTrainingDaySubscription(userId);
       return;
     }
 
@@ -113,6 +124,7 @@ class ProfileProvider extends ChangeNotifier {
       _inFlightTrainingLoad = null;
     });
     await _inFlightTrainingLoad;
+    _ensureTrainingDaySubscription(userId);
   }
 
   Future<bool> _tryLoadFromCache(String userId, bool forceRefresh) async {
@@ -241,6 +253,71 @@ class ProfileProvider extends ChangeNotifier {
       favoriteExerciseUsages:
           List<FavoriteExerciseUsage>.from(_favoriteExerciseUsages),
       cachedAt: now,
+    );
+  }
+
+  void _ensureTrainingDaySubscription(String userId) {
+    if (_trainingDaySubscriptionUserId == userId &&
+        _trainingDaySubscription != null) {
+      return;
+    }
+
+    _trainingDaySubscription?.cancel();
+    _trainingDaySubscriptionUserId = userId;
+
+    final query = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('trainingDayXP')
+        .orderBy(FieldPath.documentId);
+
+    _trainingDaySubscription = query.snapshots().listen(
+      (snapshot) {
+        if (_disposed) return;
+
+        final trainingDayDates = <DateTime>[];
+        for (final doc in snapshot.docs) {
+          final parsed = DateTime.tryParse(doc.id);
+          if (parsed != null) {
+            trainingDayDates
+                .add(DateTime(parsed.year, parsed.month, parsed.day));
+          }
+        }
+        trainingDayDates.sort((a, b) => a.compareTo(b));
+
+        final trainingDates = trainingDayDates
+            .map((dt) =>
+                '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
+            .toList();
+
+        if (const ListEquality<String>().equals(
+          _trainingDates,
+          trainingDates,
+        )) {
+          return;
+        }
+
+        _trainingDates = trainingDates;
+        _trainingDayDates = trainingDayDates;
+        _totalTrainingDays = trainingDates.length;
+        _avgTrainingDaysPerWeek = _calculateAverageTrainingDaysPerWeek(
+          trainingDayDates,
+          _lastKnownCreatedAt,
+          nowProvider: _nowProvider,
+        );
+        _hasLoadedTrainingDates = true;
+        _lastLoadedUserId = userId;
+        _lastCacheAt = _nowProvider();
+
+        final cacheEntry = _buildCacheEntry(_lastCacheAt!);
+        unawaited(_cache.write(userId, cacheEntry));
+        notifyListeners();
+      },
+      onError: (Object error, StackTrace st) {
+        elogError('PROFILE_TRAINING_DATES_STREAM_FAILED', error, st, {
+          'uid': userId,
+        });
+      },
     );
   }
 
@@ -504,6 +581,13 @@ class ProfileProvider extends ChangeNotifier {
       elogError('PROFILE_FAVORITE_EXERCISE', e.toString(), st);
       return '—';
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _trainingDaySubscription?.cancel();
+    super.dispose();
   }
 }
 
