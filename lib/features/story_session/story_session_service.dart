@@ -233,8 +233,9 @@ class StorySessionService {
         }
       }
 
-      final bestE1rm = _bestE1rmForSession(session);
-      if (bestE1rm != null) {
+      final topSet = _bestPrSetForSession(session);
+      if (topSet != null) {
+        final bestE1rm = topSet.e1rm;
         final recordKey = '${session.deviceId}::${exerciseId ?? ''}';
         var previousBest = await _prStore.read(gymId, userId, recordKey);
         if (previousBest == null || previousBest <= 0) {
@@ -324,8 +325,9 @@ class StorySessionService {
 
     final newPrs = <String, _PrCandidate>{};
     for (final session in sessions) {
-      final bestE1rm = _bestE1rmForSession(session);
-      if (bestE1rm == null) continue;
+      final topSet = _bestPrSetForSession(session);
+      if (topSet == null) continue;
+      final bestE1rm = topSet.e1rm;
       final exerciseId = session.exerciseId ?? '';
       final recordKey = '${session.deviceId}::$exerciseId';
       final previousBest = await _ensurePreviousPr(
@@ -337,8 +339,8 @@ class StorySessionService {
       );
       if (bestE1rm > (previousBest ?? 0) + 0.01) {
         final existing = newPrs[recordKey];
-        if (existing == null || bestE1rm > existing.e1rm) {
-          newPrs[recordKey] = _PrCandidate(session: session, e1rm: bestE1rm);
+        if (existing == null || bestE1rm > existing.topSet.e1rm) {
+          newPrs[recordKey] = _PrCandidate(session: session, topSet: topSet);
         }
       }
     }
@@ -423,7 +425,9 @@ class StorySessionService {
           type: StoryAchievementType.personalRecord,
           deviceName: candidate.session.deviceName,
           exerciseName: exerciseName ?? candidate.session.deviceName,
-          e1rm: candidate.e1rm,
+          e1rm: candidate.topSet.e1rm,
+          topSetWeight: candidate.topSet.weight,
+          topSetReps: candidate.topSet.reps,
         ),
       );
     }
@@ -454,7 +458,7 @@ class StorySessionService {
       userId,
       {
         for (final entry in newPrs.entries)
-          entry.key: double.parse(entry.value.e1rm.toStringAsFixed(3)),
+          entry.key: double.parse(entry.value.topSet.e1rm.toStringAsFixed(3)),
       },
     );
 
@@ -647,18 +651,18 @@ class StorySessionService {
     return best > 0 ? best : null;
   }
 
-  double? _bestE1rmForSession(Session session) {
-    var best = 0.0;
+  _PrSet? _bestPrSetForSession(Session session) {
+    _PrSet? best;
     for (final set in session.sets) {
       final weight = set.weight;
       final reps = set.reps;
       if (weight <= 0 || reps <= 0) continue;
       final e1rm = _calculateE1rm(weight, reps);
-      if (e1rm > best) {
-        best = e1rm;
+      if (best == null || e1rm > best.e1rm) {
+        best = _PrSet(weight: weight, reps: reps, e1rm: e1rm);
       }
     }
-    return best > 0 ? best : null;
+    return best;
   }
 
   double _calculateE1rm(double weight, int reps) {
@@ -812,9 +816,17 @@ class StorySessionService {
 
 class _PrCandidate {
   final Session session;
+  final _PrSet topSet;
+
+  const _PrCandidate({required this.session, required this.topSet});
+}
+
+class _PrSet {
+  final double weight;
+  final int reps;
   final double e1rm;
 
-  const _PrCandidate({required this.session, required this.e1rm});
+  const _PrSet({required this.weight, required this.reps, required this.e1rm});
 }
 
 class _ExerciseKey {

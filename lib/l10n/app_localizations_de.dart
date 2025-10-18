@@ -723,6 +723,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String storySessionNewPrSubtitle(String value) => 'Geschätztes 1RM: $value kg';
 
   @override
+  String storySessionNewPrSetSubtitle(String weight, String reps) =>
+      'Top-PR-Satz: $weight kg × $reps Wdh';
+
+  @override
   String get storySessionButtonTooltip => 'Training-Story anzeigen';
 
   @override

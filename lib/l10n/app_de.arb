@@ -892,6 +892,7 @@
   "storySessionNewExerciseTitle": "Erstes Mal: {exercise} an {device}",
   "storySessionNewPrTitle": "Neuer Personal Best in {name}",
   "storySessionNewPrSubtitle": "Geschätztes 1RM: {value} kg",
+  "storySessionNewPrSetSubtitle": "Top-PR-Satz: {weight} kg × {reps} Wdh",
   "storySessionButtonTooltip": "Training-Story anzeigen",
   "storySessionEmptyMessage": "Für diesen Tag gibt es keine Highlights.",
   "@multiDeviceSessionSaved": {"description": "Snackbar-Text nach Speichern"},

@@ -890,6 +890,7 @@
   "storySessionNewExerciseTitle": "First time: {exercise} on {device}",
   "storySessionNewPrTitle": "New personal record in {name}",
   "storySessionNewPrSubtitle": "Estimated 1RM: {value} kg",
+  "storySessionNewPrSetSubtitle": "Top PR set: {weight} kg × {reps} reps",
   "storySessionButtonTooltip": "Show training story",
   "storySessionEmptyMessage": "No highlights available for this day.",
   "@multiDeviceSessionSaved": {"description": "Snackbar text after save"},
