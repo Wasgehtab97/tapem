@@ -456,7 +456,13 @@ class _StoryStatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(value, style: valueStyle),
+            Text(
+              value,
+              style: valueStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            ),
             const SizedBox(height: 10),
             Text(title, style: titleStyle),
           ],
@@ -615,8 +621,19 @@ class _StoryBadgeChip extends StatelessWidget {
   String? _buildSubtitle() {
     switch (achievement.type) {
       case StoryAchievementType.personalRecord:
-        final value = achievement.e1rm ?? 0;
-        return loc.storySessionNewPrSubtitle(value.toStringAsFixed(1));
+        final weight = achievement.topSetWeight;
+        final reps = achievement.topSetReps;
+        if (weight != null && reps != null && weight > 0 && reps > 0) {
+          final decimalFormat = NumberFormat.decimalPattern(loc.localeName);
+          final weightText = decimalFormat.format(weight);
+          final repsText = decimalFormat.format(reps);
+          return loc.storySessionNewPrSetSubtitle(weightText, repsText);
+        }
+        final value = achievement.e1rm;
+        if (value != null && value > 0) {
+          return loc.storySessionNewPrSubtitle(value.toStringAsFixed(1));
+        }
+        return null;
       case StoryAchievementType.newDevice:
       case StoryAchievementType.newExercise:
       case StoryAchievementType.dailyXp:

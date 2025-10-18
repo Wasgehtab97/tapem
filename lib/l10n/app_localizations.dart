@@ -1445,6 +1445,12 @@ abstract class AppLocalizations {
   /// **'Estimated 1RM: {value} kg'**
   String storySessionNewPrSubtitle(String value);
 
+  /// Subtitle describing the top set that produced a new personal record
+  ///
+  /// In en, this message translates to:
+  /// **'Top PR set: {weight} kg × {reps} reps'**
+  String storySessionNewPrSetSubtitle(String weight, String reps);
+
   /// Tooltip for the story session button
   ///
   /// In en, this message translates to:
