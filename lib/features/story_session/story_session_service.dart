@@ -197,17 +197,17 @@ class StorySessionService {
       if (!session.isMulti) {
         final seenDevice =
             await _historyStore.hasSeenDevice(gymId, userId, session.deviceId);
-        if (!seenDevice) {
-          final existedBefore = await _hasPriorUsage(
-            gymId: gymId,
-            userId: userId,
-            deviceId: session.deviceId,
-            exerciseId: null,
-            before: startOfDay,
-          );
-          if (!existedBefore) {
-            return true;
-          }
+        final existedBefore = await _hasPriorUsage(
+          gymId: gymId,
+          userId: userId,
+          deviceId: session.deviceId,
+          exerciseId: null,
+          before: startOfDay,
+        );
+        final shouldTrigger =
+            existedBefore == false || (existedBefore == null && !seenDevice);
+        if (shouldTrigger) {
+          return true;
         }
       }
 
@@ -219,17 +219,17 @@ class StorySessionService {
           session.deviceId,
           exerciseId,
         );
-        if (!seenExercise) {
-          final existedBefore = await _hasPriorUsage(
-            gymId: gymId,
-            userId: userId,
-            deviceId: session.deviceId,
-            exerciseId: exerciseId,
-            before: startOfDay,
-          );
-          if (!existedBefore) {
-            return true;
-          }
+        final existedBefore = await _hasPriorUsage(
+          gymId: gymId,
+          userId: userId,
+          deviceId: session.deviceId,
+          exerciseId: exerciseId,
+          before: startOfDay,
+        );
+        final shouldTrigger =
+            existedBefore == false || (existedBefore == null && !seenExercise);
+        if (shouldTrigger) {
+          return true;
         }
       }
 
@@ -281,28 +281,31 @@ class StorySessionService {
       final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
       final isMulti = session.isMulti;
 
-      if (!isMulti) {
+      if (!isMulti && !newDevices.containsKey(deviceId)) {
         final seenDevice =
             await _historyStore.hasSeenDevice(gymId, userId, deviceId);
-        if (!seenDevice && !newDevices.containsKey(deviceId)) {
-          final existedBefore = await _hasPriorUsage(
-            gymId: gymId,
-            userId: userId,
-            deviceId: deviceId,
-            exerciseId: null,
-            before: startOfDay,
-          );
-          if (!existedBefore) {
-            newDevices[deviceId] = session;
-          }
+        final existedBefore = await _hasPriorUsage(
+          gymId: gymId,
+          userId: userId,
+          deviceId: deviceId,
+          exerciseId: null,
+          before: startOfDay,
+        );
+        final shouldAdd = existedBefore == false || (existedBefore == null && !seenDevice);
+        if (shouldAdd) {
+          newDevices[deviceId] = session;
         }
       }
 
       if (isMulti && hasExercise) {
         final key = '$deviceId::$exerciseId';
-        final seenExercise =
-            await _historyStore.hasSeenExercise(gymId, userId, deviceId, exerciseId!);
-        if (!seenExercise && !newExercises.containsKey(key)) {
+        if (!newExercises.containsKey(key)) {
+          final seenExercise = await _historyStore.hasSeenExercise(
+            gymId,
+            userId,
+            deviceId,
+            exerciseId!,
+          );
           final existedBefore = await _hasPriorUsage(
             gymId: gymId,
             userId: userId,
@@ -310,7 +313,9 @@ class StorySessionService {
             exerciseId: exerciseId,
             before: startOfDay,
           );
-          if (!existedBefore) {
+          final shouldAdd =
+              existedBefore == false || (existedBefore == null && !seenExercise);
+          if (shouldAdd) {
             newExercises[key] = session;
           }
         }
@@ -550,7 +555,7 @@ class StorySessionService {
     return false;
   }
 
-  Future<bool> _hasPriorUsage({
+  Future<bool?> _hasPriorUsage({
     required String gymId,
     required String userId,
     required String deviceId,
@@ -573,7 +578,7 @@ class StorySessionService {
       final snap = await query.limit(1).get();
       return snap.docs.isNotEmpty;
     } on FirebaseException {
-      return false;
+      return null;
     }
   }
 

@@ -110,5 +110,64 @@ void main() {
           .toList();
       expect(secondHighlights, hasLength(2));
     });
+
+    test('produces new-device and new-exercise badges for first-time usage', () async {
+      final sessions = [
+        Session(
+          sessionId: 'deadlift-session',
+          deviceId: 'device-deadlift',
+          deviceName: 'Eleiko Deadlift Platform',
+          deviceDescription: 'Deadlift area',
+          isMulti: false,
+          exerciseId: null,
+          exerciseName: null,
+          timestamp: DateTime(2025, 10, 18, 6, 0),
+          note: '',
+          sets: const [
+            SessionSet(weight: 100, reps: 5, setNumber: 1),
+          ],
+        ),
+        Session(
+          sessionId: 'flys-session',
+          deviceId: 'device-flys',
+          deviceName: 'Precor Fly Machine',
+          deviceDescription: 'Chest fly machine',
+          isMulti: true,
+          exerciseId: 'exercise-flys',
+          exerciseName: 'Flys',
+          timestamp: DateTime(2025, 10, 18, 7, 0),
+          note: '',
+          sets: const [
+            SessionSet(weight: 40, reps: 12, setNumber: 1),
+          ],
+        ),
+      ];
+
+      final summary = await service.getSummary(
+        gymId: gymId,
+        userId: userId,
+        date: date,
+        sessions: sessions,
+      );
+
+      expect(summary, isNotNull);
+      final highlights = summary!.achievements
+          .where((a) => a.type != StoryAchievementType.dailyXp)
+          .toList();
+      expect(highlights, hasLength(2));
+      expect(
+        highlights.any((a) =>
+            a.type == StoryAchievementType.newDevice &&
+            a.deviceName == 'Eleiko Deadlift Platform'),
+        isTrue,
+      );
+      expect(
+        highlights.any((a) =>
+            a.type == StoryAchievementType.newExercise &&
+            a.deviceName == 'Precor Fly Machine' &&
+            a.exerciseName == 'Flys'),
+        isTrue,
+      );
+    });
   });
 }
