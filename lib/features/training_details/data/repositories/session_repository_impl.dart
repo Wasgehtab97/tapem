@@ -110,7 +110,6 @@ class SessionRepositoryImpl implements SessionRepository {
           final exName = (exSnap.data()?['name'] as String?) ?? '';
           if (exName.isNotEmpty) {
             exerciseName = exName;
-            deviceName = exName;
           }
         }
       }
@@ -154,6 +153,7 @@ class SessionRepositoryImpl implements SessionRepository {
           deviceDescription: deviceDescription,
           exerciseId: first.exerciseId.isEmpty ? null : first.exerciseId,
           exerciseName: exerciseName,
+          isMulti: isMulti,
           timestamp: first.timestamp,
           note: first.note,
           sets: sets,

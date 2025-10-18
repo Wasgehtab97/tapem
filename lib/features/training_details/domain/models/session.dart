@@ -6,6 +6,7 @@ class Session {
   final String deviceDescription; // neu!
   final String? exerciseId;
   final String? exerciseName;
+  final bool isMulti;
   final DateTime timestamp;
   final String note;
   final List<SessionSet> sets;
@@ -26,6 +27,7 @@ class Session {
     required this.deviceDescription, // neu!
     this.exerciseId,
     this.exerciseName,
+    this.isMulti = false,
     required this.timestamp,
     required this.note,
     required this.sets,
