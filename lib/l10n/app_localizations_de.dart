@@ -720,7 +720,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String storySessionNewPrTitle(String name) => 'Neuer Personal Best in $name';
 
   @override
-  String storySessionNewPrSubtitle(String value) => 'Geschätztes 1RM: $value kg';
+  String storySessionNewPrSubtitle(String weight, String reps) =>
+      'Top PR Satz: $weight kg × $reps Wdh';
+
+  String storySessionNewPrFallback(String value) =>
+      'Geschätztes 1RM: $value kg';
 
   @override
   String get storySessionButtonTooltip => 'Training-Story anzeigen';

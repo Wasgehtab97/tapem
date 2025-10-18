@@ -891,7 +891,21 @@
   "storySessionNewDeviceTitle": "Erstes Mal an {device}",
   "storySessionNewExerciseTitle": "Erstes Mal: {exercise} an {device}",
   "storySessionNewPrTitle": "Neuer Personal Best in {name}",
-  "storySessionNewPrSubtitle": "Geschätztes 1RM: {value} kg",
+  "storySessionNewPrSubtitle": "Top PR Satz: {weight} kg × {reps} Wdh",
+  "@storySessionNewPrSubtitle": {
+    "description": "Untertitel mit dem Top-PR-Satz",
+    "placeholders": {
+      "weight": {"type": "String"},
+      "reps": {"type": "String"}
+    }
+  },
+  "storySessionNewPrFallback": "Geschätztes 1RM: {value} kg",
+  "@storySessionNewPrFallback": {
+    "description": "Fallback-Untertitel, wenn nur das 1RM verfügbar ist",
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
   "storySessionButtonTooltip": "Training-Story anzeigen",
   "storySessionEmptyMessage": "Für diesen Tag gibt es keine Highlights.",
   "@multiDeviceSessionSaved": {"description": "Snackbar-Text nach Speichern"},

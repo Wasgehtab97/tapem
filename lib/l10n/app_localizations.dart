@@ -1439,11 +1439,17 @@ abstract class AppLocalizations {
   /// **'New personal record in {name}'**
   String storySessionNewPrTitle(String name);
 
-  /// Subtitle describing the value of a new personal record
+  /// Subtitle describing the top set of a new personal record
+  ///
+  /// In en, this message translates to:
+  /// **'Top PR set: {weight} kg × {reps} reps'**
+  String storySessionNewPrSubtitle(String weight, String reps);
+
+  /// Fallback subtitle describing the estimated 1RM of a personal record
   ///
   /// In en, this message translates to:
   /// **'Estimated 1RM: {value} kg'**
-  String storySessionNewPrSubtitle(String value);
+  String storySessionNewPrFallback(String value);
 
   /// Tooltip for the story session button
   ///
