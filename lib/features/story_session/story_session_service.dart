@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 
 import 'data/story_session_history_store.dart';
@@ -87,10 +88,20 @@ class StorySessionService {
   }) async {
     if (sessions.isEmpty) return null;
     final generatedAt = _now();
+    var dayXp = 0;
     final xpEntry = await _dailyStatsCache.read(gymId, userId);
-    final dayXp = (xpEntry != null && xpEntry.isSameCalendarDay(date))
-        ? xpEntry.xp
-        : 50;
+    if (xpEntry != null && xpEntry.isSameCalendarDay(date) &&
+        xpEntry.xp <= LevelService.xpPerSession) {
+      dayXp = xpEntry.xp;
+    } else {
+      final remoteXp = await _loadTrainingDayXp(userId: userId, dayKey: dayKey);
+      if (remoteXp != null) {
+        dayXp = remoteXp;
+      }
+    }
+    if (dayXp <= 0 && sessions.isNotEmpty) {
+      dayXp = LevelService.xpPerSession;
+    }
 
     final startOfDay = DateTime(date.year, date.month, date.day);
     final newDevices = <String, Session>{};
@@ -299,6 +310,33 @@ class StorySessionService {
     );
 
     return summary;
+  }
+
+  Future<int?> _loadTrainingDayXp({
+    required String userId,
+    required String dayKey,
+  }) async {
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('trainingDayXP')
+          .doc(dayKey)
+          .get();
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null) return null;
+      final value = data['xp'];
+      if (value is int) {
+        return value;
+      }
+      if (value is num) {
+        return value.toInt();
+      }
+    } on FirebaseException {
+      return null;
+    }
+    return null;
   }
 
   int? _sessionDurationMs(Session session) {
