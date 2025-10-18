@@ -655,6 +655,11 @@ class StorySessionService {
     return best > 0 ? best : null;
   }
 
+  double? _bestE1rmForSession(Session session) {
+    final bestPr = _bestPrForSession(session);
+    return bestPr?.e1rm;
+  }
+
   _PrPerformance? _bestPrForSession(Session session) {
     _PrPerformance? best;
     for (final set in session.sets) {
