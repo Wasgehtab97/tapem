@@ -193,9 +193,9 @@ class ProfileProvider extends ChangeNotifier {
 
     final trainingDayDates = <DateTime>[];
     for (final doc in snapshot.docs) {
-      final parsed = DateTime.tryParse(doc.id);
+      final parsed = _parseTrainingDayId(doc.id);
       if (parsed != null) {
-        trainingDayDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+        trainingDayDates.add(parsed);
       }
     }
     trainingDayDates.sort((a, b) => a.compareTo(b));
@@ -256,6 +256,22 @@ class ProfileProvider extends ChangeNotifier {
     );
   }
 
+  DateTime? _parseTrainingDayId(String id) {
+    final parsedIso = DateTime.tryParse(id);
+    if (parsedIso != null) {
+      return DateTime(parsedIso.year, parsedIso.month, parsedIso.day);
+    }
+    if (id.length == 8 && int.tryParse(id) != null) {
+      final year = int.tryParse(id.substring(0, 4));
+      final month = int.tryParse(id.substring(4, 6));
+      final day = int.tryParse(id.substring(6, 8));
+      if (year != null && month != null && day != null) {
+        return DateTime(year, month, day);
+      }
+    }
+    return null;
+  }
+
   void _ensureTrainingDaySubscription(String userId) {
     if (_trainingDaySubscriptionUserId == userId &&
         _trainingDaySubscription != null) {
@@ -277,10 +293,9 @@ class ProfileProvider extends ChangeNotifier {
 
         final trainingDayDates = <DateTime>[];
         for (final doc in snapshot.docs) {
-          final parsed = DateTime.tryParse(doc.id);
+          final parsed = _parseTrainingDayId(doc.id);
           if (parsed != null) {
-            trainingDayDates
-                .add(DateTime(parsed.year, parsed.month, parsed.day));
+            trainingDayDates.add(parsed);
           }
         }
         trainingDayDates.sort((a, b) => a.compareTo(b));

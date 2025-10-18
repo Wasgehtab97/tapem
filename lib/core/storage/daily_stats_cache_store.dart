@@ -1,24 +1,30 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class DailyStatsCacheEntry {
   const DailyStatsCacheEntry({
     required this.xp,
     required this.cachedAt,
+    required this.totalXp,
+    required this.dayKey,
   });
 
   final int xp;
   final DateTime cachedAt;
+  final int totalXp;
+  final String dayKey;
 
   bool isSameCalendarDay(DateTime other) {
-    return cachedAt.year == other.year &&
-        cachedAt.month == other.month &&
-        cachedAt.day == other.day;
+    return dayKey == logicDayKey(other);
   }
 
   Map<String, dynamic> toJson() => {
         'xp': xp,
+        'totalXp': totalXp,
+        'dayKey': dayKey,
         'cachedAt': cachedAt.toIso8601String(),
       };
 
@@ -32,9 +38,19 @@ class DailyStatsCacheEntry {
     if (timestamp == null) {
       return null;
     }
+    final totalValue = (json['totalXp'] as num?)?.toInt();
+    final storedDayKey = json['dayKey'] as String? ?? logicDayKey(timestamp);
+    final rawXp = xpValue.toInt();
+    final totalXp = totalValue ?? rawXp;
+    final xpPerSession = LevelService.xpPerSession;
+    final sanitizedXp = totalValue == null && rawXp > xpPerSession
+        ? xpPerSession
+        : rawXp;
     return DailyStatsCacheEntry(
-      xp: xpValue.toInt(),
+      xp: sanitizedXp,
       cachedAt: timestamp,
+      totalXp: totalXp,
+      dayKey: storedDayKey,
     );
   }
 }
@@ -46,6 +62,14 @@ abstract class DailyStatsCache {
     String gymId,
     String userId,
     int xp,
+    DateTime cachedAt, {
+    int? totalXp,
+  });
+
+  Future<DailyStatsCacheEntry> writeTotal(
+    String gymId,
+    String userId,
+    int totalXp,
     DateTime cachedAt,
   );
 
@@ -89,11 +113,66 @@ class DailyStatsCacheStore implements DailyStatsCache {
     String gymId,
     String userId,
     int xp,
+    DateTime cachedAt, {
+    int? totalXp,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final entry = DailyStatsCacheEntry(
+      xp: xp,
+      cachedAt: cachedAt,
+      totalXp: totalXp ?? xp,
+      dayKey: logicDayKey(cachedAt),
+    );
+    await prefs.setString(_key(gymId, userId), jsonEncode(entry.toJson()));
+    return entry;
+  }
+
+  @override
+  Future<DailyStatsCacheEntry> writeTotal(
+    String gymId,
+    String userId,
+    int totalXp,
     DateTime cachedAt,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final entry = DailyStatsCacheEntry(xp: xp, cachedAt: cachedAt);
-    await prefs.setString(_key(gymId, userId), jsonEncode(entry.toJson()));
+    final key = _key(gymId, userId);
+    final raw = prefs.getString(key);
+    DailyStatsCacheEntry? existing;
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          existing = DailyStatsCacheEntry.fromJson(decoded);
+        }
+      } catch (_) {
+        existing = null;
+      }
+    }
+
+    final dayKey = logicDayKey(cachedAt);
+    final prevTotal = existing?.totalXp ?? existing?.xp ?? 0;
+    var baseline = prevTotal;
+    if (existing != null && existing.dayKey == dayKey) {
+      baseline = prevTotal - existing.xp;
+      if (existing.totalXp == existing.xp && existing.xp > LevelService.xpPerSession) {
+        baseline = prevTotal - LevelService.xpPerSession;
+      }
+    }
+    var dailyXp = totalXp - baseline;
+    if (dailyXp < 0) {
+      dailyXp = 0;
+    }
+    if (dailyXp > LevelService.xpPerSession) {
+      dailyXp = LevelService.xpPerSession;
+    }
+
+    final entry = DailyStatsCacheEntry(
+      xp: dailyXp,
+      cachedAt: cachedAt,
+      totalXp: totalXp,
+      dayKey: dayKey,
+    );
+    await prefs.setString(key, jsonEncode(entry.toJson()));
     return entry;
   }
 
@@ -119,21 +198,21 @@ class DailyStatsCacheStore implements DailyStatsCache {
       }
     }
 
-    if (existing == null || !existing.isSameCalendarDay(now)) {
-      final fresh = DailyStatsCacheEntry(
-        xp: delta,
-        cachedAt: now,
-      );
-      await prefs.setString(key, jsonEncode(fresh.toJson()));
-      return fresh;
-    }
+    final dayKey = logicDayKey(now);
+    final prevTotal = existing?.totalXp ?? existing?.xp ?? 0;
+    final totalXp = prevTotal + delta;
+    final dailyXp = (existing == null || existing.dayKey != dayKey)
+        ? delta
+        : existing.xp + delta;
 
-    final updated = DailyStatsCacheEntry(
-      xp: existing.xp + delta,
+    final entry = DailyStatsCacheEntry(
+      xp: dailyXp,
       cachedAt: now,
+      totalXp: totalXp,
+      dayKey: dayKey,
     );
-    await prefs.setString(key, jsonEncode(updated.toJson()));
-    return updated;
+    await prefs.setString(key, jsonEncode(entry.toJson()));
+    return entry;
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 import 'story_achievement.dart';
 
@@ -81,11 +82,13 @@ class StorySessionSummary extends Equatable {
 
   factory StorySessionSummary.fromJson(Map<String, dynamic> json) {
     final statsJson = json['stats'];
+    final rawXp = (json['totalXp'] as num?)?.toInt() ?? 0;
+    final clampedXp = rawXp.clamp(0, LevelService.xpPerSession);
     return StorySessionSummary(
       gymId: json['gymId'] as String,
       userId: json['userId'] as String,
       dayKey: json['dayKey'] as String,
-      totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
+      totalXp: clampedXp,
       generatedAt:
           DateTime.tryParse(json['generatedAt'] as String? ?? '') ?? DateTime.now(),
       achievements: (json['achievements'] as List<dynamic>? ?? [])

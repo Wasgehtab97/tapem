@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 
 import 'data/story_session_history_store.dart';
@@ -88,9 +89,10 @@ class StorySessionService {
     if (sessions.isEmpty) return null;
     final generatedAt = _now();
     final xpEntry = await _dailyStatsCache.read(gymId, userId);
+    final xpPerSession = LevelService.xpPerSession;
     final dayXp = (xpEntry != null && xpEntry.isSameCalendarDay(date))
-        ? xpEntry.xp
-        : 50;
+        ? xpEntry.xp.clamp(0, xpPerSession)
+        : xpPerSession;
 
     final startOfDay = DateTime(date.year, date.month, date.day);
     final newDevices = <String, Session>{};
@@ -450,11 +452,14 @@ class StorySessionService {
       if (!snap.exists) return null;
       final data = snap.data();
       if (data == null) return null;
+      final xpPerSession = LevelService.xpPerSession;
+      final remoteXp = (data['totalXp'] as num?)?.toInt() ?? 0;
+      final sanitizedXp = remoteXp.clamp(0, xpPerSession);
       return StorySessionSummary(
         gymId: gymId,
         userId: userId,
         dayKey: dayKey,
-        totalXp: (data['totalXp'] as num?)?.toInt() ?? 0,
+        totalXp: sanitizedXp,
         generatedAt:
             (data['generatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         achievements: (data['achievements'] as List<dynamic>? ?? [])

@@ -56,26 +56,26 @@ class XpProvider extends ChangeNotifier {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   void _applyDailyStats({
-    required int xp,
+    required int totalXp,
     required DateTime fetchedAt,
     required String source,
   }) {
     final previousXp = _statsDailyXp;
     final previousDate = _statsDailyFetchedAt;
-    _statsDailyXp = xp;
+    _statsDailyXp = totalXp;
     _statsDailyFetchedAt = fetchedAt;
-    var level = (xp ~/ LevelService.xpPerLevel) + 1;
+    var level = (totalXp ~/ LevelService.xpPerLevel) + 1;
     if (level > LevelService.maxLevel) level = LevelService.maxLevel;
     final xpInLevel =
-        level >= LevelService.maxLevel ? 0 : xp % LevelService.xpPerLevel;
+        level >= LevelService.maxLevel ? 0 : totalXp % LevelService.xpPerLevel;
     final shouldNotify =
-        previousXp != xp ||
+        previousXp != totalXp ||
         previousDate == null ||
         !_isSameCalendarDay(previousDate, fetchedAt);
     _dailyLevel = level;
     _dailyLevelXp = xpInLevel;
     debugPrint(
-        '🔄 provider statsDailyXp=$xp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source');
+        '🔄 provider statsDailyXp=$totalXp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source');
     if (shouldNotify) {
       notifyListeners();
     }
@@ -153,7 +153,7 @@ class XpProvider extends ChangeNotifier {
             _now(),
           );
           _applyDailyStats(
-            xp: entry.xp,
+            totalXp: entry.totalXp,
             fetchedAt: entry.cachedAt,
             source: 'localIncrement',
           );
@@ -289,9 +289,9 @@ class XpProvider extends ChangeNotifier {
           gymId: gymId,
           userId: userId,
         );
-        final saved = await _statsCache.write(gymId, userId, xp, _now());
+        final saved = await _statsCache.writeTotal(gymId, userId, xp, _now());
         _applyDailyStats(
-          xp: saved.xp,
+          totalXp: saved.totalXp,
           fetchedAt: saved.cachedAt,
           source: source,
         );
@@ -309,9 +309,9 @@ class XpProvider extends ChangeNotifier {
         .watchStatsDailyXp(gymId: gymId, userId: userId)
         .listen((xp) async {
       try {
-        final saved = await _statsCache.write(gymId, userId, xp, _now());
+        final saved = await _statsCache.writeTotal(gymId, userId, xp, _now());
         _applyDailyStats(
-          xp: saved.xp,
+          totalXp: saved.totalXp,
           fetchedAt: saved.cachedAt,
           source: 'stream',
         );
@@ -340,7 +340,7 @@ class XpProvider extends ChangeNotifier {
 
     if (!forceRefresh && cacheEntry != null && cacheEntry.isSameCalendarDay(now)) {
       _applyDailyStats(
-        xp: cacheEntry.xp,
+        totalXp: cacheEntry.totalXp,
         fetchedAt: cacheEntry.cachedAt,
         source: 'cache',
       );
