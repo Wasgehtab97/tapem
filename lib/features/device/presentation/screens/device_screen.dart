@@ -313,12 +313,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                           },
                         ),
                       if (prov.sets.isNotEmpty) const SizedBox(height: 12),
-                      Center(
-                        child: _AddSetButton(
-                          label: loc.addSetButton,
-                          onPressed: _addSet,
-                        ),
-                      ),
+                      const SizedBox(height: 12),
                     ],
                     if ((FF.showLastSessionOnDevicePage ||
                             FF.runtimeShowLastSessionOnDevicePage) &&
@@ -543,19 +538,32 @@ class _DeviceScreenState extends State<DeviceScreen> {
         floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
         body: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
-          child: DevicePager(
-            key: _pagerKey,
-            gymId: widget.gymId,
-            deviceId: prov.device!.uid,
-            userId: auth.userId!,
-            provider: prov,
-            editablePage:
-                _buildEditablePage(
-                  prov,
-                  loc,
-                  locale,
-                  plannedEntry,
+          child: Column(
+            children: [
+              Expanded(
+                child: DevicePager(
+                  key: _pagerKey,
+                  gymId: widget.gymId,
+                  deviceId: prov.device!.uid,
+                  userId: auth.userId!,
+                  provider: prov,
+                  editablePage:
+                      _buildEditablePage(
+                        prov,
+                        loc,
+                        locale,
+                        plannedEntry,
+                      ),
                 ),
+              ),
+              _PagerControlBar(
+                pagerKey: _pagerKey,
+                label: loc.addSetButton,
+                onAddSet: _addSet,
+                accentColor:
+                    Theme.of(context).colorScheme.primary,
+              ),
+            ],
           ),
         ),
       );
@@ -693,7 +701,7 @@ class _DeviceAppBarFooter extends StatelessWidget
 }
 
 class _AddSetButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String label;
 
   const _AddSetButton({
@@ -711,40 +719,198 @@ class _AddSetButton extends StatelessWidget {
           fontSize: AppFontSizes.title,
           fontWeight: FontWeight.w600,
         );
+    final enabled = onPressed != null;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AppRadius.button),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.xs,
-            horizontal: AppSpacing.sm,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xs,
+              horizontal: AppSpacing.sm,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) {
+                    final rect = bounds.isEmpty
+                        ? const Rect.fromLTWH(0, 0, 1, 1)
+                        : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
+                    return AppGradients.brandGradient.createShader(rect);
+                  },
+                  blendMode: BlendMode.srcIn,
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                BrandGradientText(
+                  label,
+                  style: textStyle,
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ShaderMask(
-                shaderCallback: (bounds) {
-                  final rect = bounds.isEmpty
-                      ? const Rect.fromLTWH(0, 0, 1, 1)
-                      : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
-                  return AppGradients.brandGradient.createShader(rect);
-                },
-                blendMode: BlendMode.srcIn,
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 20,
+        ),
+      ),
+    );
+  }
+}
+
+class _PagerControlBar extends StatefulWidget {
+  final GlobalKey<DevicePagerState> pagerKey;
+  final String label;
+  final VoidCallback onAddSet;
+  final Color accentColor;
+
+  const _PagerControlBar({
+    required this.pagerKey,
+    required this.label,
+    required this.onAddSet,
+    required this.accentColor,
+  });
+
+  @override
+  State<_PagerControlBar> createState() => _PagerControlBarState();
+}
+
+class _PagerControlBarState extends State<_PagerControlBar> {
+  bool _scheduledUpdate = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final pagerState = widget.pagerKey.currentState;
+    if (pagerState == null) {
+      if (!_scheduledUpdate) {
+        _scheduledUpdate = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _scheduledUpdate = false;
+            });
+          } else {
+            _scheduledUpdate = false;
+          }
+        });
+      }
+      return _buildLayout(context, null, null, null);
+    }
+    return ValueListenableBuilder<int>(
+      valueListenable: pagerState.currentIndexListenable,
+      builder: (context, index, _) {
+        final itemCount = pagerState.itemCount;
+        final canGoOlder = index < itemCount - 1;
+        final canGoNewer = index > 0;
+        final canAdd = index == 0;
+        return _buildLayout(
+          context,
+          canGoOlder ? pagerState.goToPreviousSession : null,
+          canGoNewer ? pagerState.goToNextSession : null,
+          canAdd ? widget.onAddSet : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildLayout(
+    BuildContext context,
+    VoidCallback? onOlder,
+    VoidCallback? onNewer,
+    VoidCallback? onAdd,
+  ) {
+    final arrowColor = widget.accentColor;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          bottomInset > 0 ? bottomInset + 12 : 16,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _PagerArrowButton(
+              icon: Icons.chevron_left,
+              tooltip: 'Vorherige Session',
+              color: arrowColor,
+              onPressed: onOlder,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Center(
+                child: _AddSetButton(
+                  onPressed: onAdd,
+                  label: widget.label,
                 ),
               ),
-              const SizedBox(width: AppSpacing.xs),
-              BrandGradientText(
-                label,
-                style: textStyle,
+            ),
+            const SizedBox(width: 12),
+            _PagerArrowButton(
+              icon: Icons.chevron_right,
+              tooltip: 'Neuere / Aktuelle',
+              color: arrowColor,
+              onPressed: onNewer,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PagerArrowButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  const _PagerArrowButton({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final foreground = enabled ? color : color.withOpacity(0.35);
+    final background = enabled ? color.withOpacity(0.12) : color.withOpacity(0.06);
+    final borderColor = color.withOpacity(enabled ? 0.42 : 0.22);
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: borderColor, width: 1),
               ),
-            ],
+              child: Icon(icon, color: foreground),
+            ),
           ),
         ),
       ),
