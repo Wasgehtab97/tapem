@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
@@ -133,12 +135,12 @@ class MuscleGroupProvider extends ChangeNotifier {
 
     try {
       await _membership.ensureMembership(gymId, userId);
-      _counts.clear();
+      List<MuscleGroup> groups;
       try {
-        _groups = await _getGroups.execute(gymId);
+        groups = await _getGroups.execute(gymId);
         bool createdCanonical = false;
         for (final region in MuscleRegion.values) {
-          final hasCanonical = _groups.any(
+          final hasCanonical = groups.any(
             (g) => g.region == region && _isCanonicalName(g),
           );
           if (!hasCanonical) {
@@ -147,7 +149,7 @@ class MuscleGroupProvider extends ChangeNotifier {
           }
         }
         if (createdCanonical) {
-          _groups = await _getGroups.execute(gymId);
+          groups = await _getGroups.execute(gymId);
         }
       } on FirebaseException catch (e) {
         if (e.code == 'permission-denied') {
@@ -155,20 +157,32 @@ class MuscleGroupProvider extends ChangeNotifier {
           await _membership.ensureMembership(gymId, userId);
           debugPrint(
               'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/muscleGroups op=read');
-          _groups = await _getGroups.execute(gymId);
+          groups = await _getGroups.execute(gymId);
         } else {
           rethrow;
         }
       }
-      await _loadCounts(gymId, userId);
+      _groups = groups;
       _loadedGymId = gymId;
       _hasLoadedSuccessfully = true;
     } catch (e, st) {
       _error = e.toString();
       debugPrintStack(label: 'MuscleGroupProvider.loadGroups', stackTrace: st);
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return;
+    }
+
+    _isLoading = false;
+    notifyListeners();
+
+    try {
+      await _loadCounts(gymId, userId);
+    } catch (e, st) {
+      debugPrintStack(
+        label: 'MuscleGroupProvider.loadCounts',
+        stackTrace: st,
+      );
     }
   }
 
@@ -382,21 +396,45 @@ class MuscleGroupProvider extends ChangeNotifier {
   }
 
   Future<void> _loadCounts(String gymId, String userId) async {
-    final ctx = navigatorKey.currentContext;
-    if (ctx == null) return;
-    _counts.clear();
+    if (navigatorKey.currentContext == null) return;
+
+    final deviceIds = <String>{
+      for (final group in _groups) ...group.deviceIds,
+    };
+    final deviceCounts = <String, int>{};
+    final fetches = deviceIds
+        .map((dId) async {
+          try {
+            final logs = await _getHistory.execute(
+              gymId: gymId,
+              deviceId: dId,
+              userId: userId,
+            );
+            deviceCounts[dId] = logs.length;
+          } catch (e, st) {
+            debugPrintStack(
+              label: 'MuscleGroupProvider.loadCounts(device=$dId)',
+              stackTrace: st,
+            );
+            deviceCounts[dId] = 0;
+          }
+        })
+        .toList();
+    await Future.wait(fetches);
+
+    final nextCounts = <String, int>{};
     for (final group in _groups) {
-      int sum = 0;
-      for (final dId in group.deviceIds) {
-        final logs = await _getHistory.execute(
-          gymId: gymId,
-          deviceId: dId,
-          userId: userId,
-        );
-        sum += logs.length;
-      }
-      _counts[group.id] = sum;
+      final total = group.deviceIds.fold<int>(
+        0,
+        (sum, dId) => sum + (deviceCounts[dId] ?? 0),
+      );
+      nextCounts[group.id] = total;
     }
+
+    _counts
+      ..clear()
+      ..addAll(nextCounts);
+    notifyListeners();
   }
 
   List<String> canonicalizeGroupIds(Iterable<String> ids) {
