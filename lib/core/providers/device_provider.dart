@@ -153,6 +153,7 @@ class _ResolvedMuscleAssignments {
 }
 
 class DeviceProvider extends ChangeNotifier {
+  static const int _defaultInitialSetCount = 3;
   final GetDevicesForGym _getDevicesForGym;
   final FirebaseFirestore _firestore;
   final LogFn _log;
@@ -198,6 +199,34 @@ class DeviceProvider extends ChangeNotifier {
 
   // Snapshots (Historie zum Blättern)
   final List<DeviceSessionSnapshot> _sessionSnapshots = [];
+
+  Map<String, dynamic> _createEmptySet({
+    required int number,
+    bool? isBodyweight,
+  }) {
+    return _withNormalizedDrops({
+      'number': '$number',
+      'weight': '',
+      'reps': '',
+      'dropWeight': '',
+      'dropReps': '',
+      'done': false,
+      'isBodyweight': isBodyweight ?? _isBodyweightMode,
+    });
+  }
+
+  List<Map<String, dynamic>> _buildInitialEmptySets({bool? isBodyweight}) {
+    final resolvedIsBodyweight = isBodyweight ?? _isBodyweightMode;
+    return List.generate(
+      _defaultInitialSetCount,
+      (index) => _createEmptySet(
+        number: index + 1,
+        isBodyweight: resolvedIsBodyweight,
+      ),
+      growable: true,
+    );
+  }
+
   DocumentSnapshot? _lastSnapshotCursor;
   bool _snapshotsHasMore = true;
   bool _snapshotsLoading = false;
@@ -476,17 +505,7 @@ class DeviceProvider extends ChangeNotifier {
       _xp = 0;
       _level = 1;
 
-      _sets = [
-        _withNormalizedDrops({
-          'number': '1',
-          'weight': '',
-          'reps': '',
-          'dropWeight': '',
-          'dropReps': '',
-          'done': false,
-          'isBodyweight': false,
-        }),
-      ];
+      _sets = _buildInitialEmptySets(isBodyweight: false);
       _lastSessionSets = [];
       _lastSessionDate = null;
       _lastSessionNote = '';
@@ -533,17 +552,7 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void addSet() {
-    _sets.add(
-      _withNormalizedDrops({
-        'number': '${_sets.length + 1}',
-        'weight': '',
-        'reps': '',
-        'dropWeight': '',
-        'dropReps': '',
-        'done': false,
-        'isBodyweight': _isBodyweightMode,
-      }),
-    );
+    _sets.add(_createEmptySet(number: _sets.length + 1));
     _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
     notifyListeners();
     _onSessionMutated();
@@ -1368,17 +1377,7 @@ class DeviceProvider extends ChangeNotifier {
 
       _sets.removeWhere((s) => (s['done'] == true || s['done'] == 'true'));
       if (_sets.isEmpty) {
-        _sets = [
-          _withNormalizedDrops({
-            'number': '1',
-            'weight': '',
-            'reps': '',
-            'done': false,
-            'dropWeight': '',
-            'dropReps': '',
-            'isBodyweight': _isBodyweightMode,
-          }),
-        ];
+        _sets = _buildInitialEmptySets(isBodyweight: _isBodyweightMode);
       }
       for (var i = 0; i < _sets.length; i++) {
         _sets[i]['number'] = '${i + 1}';
