@@ -72,12 +72,9 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.85 : 0.9),
       softenedSurface,
     );
-    final inputBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.88 : 0.92),
-      softenedSurface,
-    );
+    final inputBase = cardFill;
     final inputDisabledBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.7 : 0.78),
+      Colors.black.withOpacity(isDark ? 0.82 : 0.88),
       softenedSurface,
     );
     final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);

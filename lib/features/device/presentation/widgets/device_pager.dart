@@ -118,29 +118,69 @@ class DevicePagerState extends State<DevicePager> {
           onLeftEdgeSwipe: _goToPreviousSession,
           onRightEdgeSwipe: _goToNextSession,
         ),
-        _buildChevrons(itemCount),
+        _buildChevrons(context, itemCount),
         _buildBottomDateOrDots(current),
       ],
     );
   }
 
-  Widget _buildChevrons(int itemCount) {
-    return Positioned.fill(
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: 'Vorherige Session',
-            onPressed:
-                _currentIndex == itemCount - 1 ? null : _goToPreviousSession,
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: 'Neuere / Aktuelle',
-            onPressed: _currentIndex == 0 ? null : _goToNextSession,
-          ),
-        ],
+  Widget _buildChevrons(BuildContext context, int itemCount) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final brandColor = colorScheme.primary;
+    final iconColor = colorScheme.onPrimary;
+    final isDark = theme.brightness == Brightness.dark;
+
+    ButtonStyle buildStyle() {
+      return ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(MaterialState.disabled)) {
+              return brandColor.withOpacity(0.12);
+            }
+            return brandColor.withOpacity(isDark ? 0.35 : 0.4);
+          },
+        ),
+        foregroundColor: MaterialStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(MaterialState.disabled)) {
+              return iconColor.withOpacity(0.45);
+            }
+            return iconColor;
+          },
+        ),
+        padding: const MaterialStatePropertyAll(EdgeInsets.all(10)),
+        shape: MaterialStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+    }
+
+    final buttonStyle = buildStyle();
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              style: buttonStyle,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Vorherige Session',
+              onPressed: _currentIndex == itemCount - 1 ? null : _goToPreviousSession,
+            ),
+            IconButton(
+              style: buttonStyle,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Neuere / Aktuelle',
+              onPressed: _currentIndex == 0 ? null : _goToNextSession,
+            ),
+          ],
+        ),
       ),
     );
   }
