@@ -27,15 +27,18 @@ class DevicePager extends StatefulWidget {
 class DevicePagerState extends State<DevicePager> {
   late final PageController _pc;
   int _currentIndex = 0;
+  late final ValueNotifier<int> _currentIndexNotifier;
 
   @override
   void initState() {
     super.initState();
     _pc = PageController(initialPage: 0);
+    _currentIndexNotifier = ValueNotifier<int>(_currentIndex);
   }
 
   @override
   void dispose() {
+    _currentIndexNotifier.dispose();
     _pc.dispose();
     super.dispose();
   }
@@ -65,10 +68,14 @@ class DevicePagerState extends State<DevicePager> {
   void goToPreviousSession() => _goToPreviousSession();
   void goToNextSession() => _goToNextSession();
 
+  ValueListenable<int> get currentIndexListenable => _currentIndexNotifier;
+
+  int get itemCount => 1 + widget.provider.sessionSnapshots.length;
+
   @override
   Widget build(BuildContext context) {
     final prov = widget.provider;
-    final itemCount = 1 + prov.sessionSnapshots.length;
+    final itemCount = this.itemCount;
 
     if ((_currentIndex == 0 || _currentIndex == 1) &&
         prov.hasMoreSnapshots &&
@@ -88,7 +95,10 @@ class DevicePagerState extends State<DevicePager> {
       physics: const PageScrollPhysics(),
       itemCount: itemCount,
       onPageChanged: (index) {
-        setState(() => _currentIndex = index);
+        setState(() {
+          _currentIndex = index;
+          _currentIndexNotifier.value = index;
+        });
         HapticFeedback.lightImpact();
         if (index >= itemCount - 3 && prov.hasMoreSnapshots) {
           prov.loadMoreSnapshots(
@@ -118,30 +128,8 @@ class DevicePagerState extends State<DevicePager> {
           onLeftEdgeSwipe: _goToPreviousSession,
           onRightEdgeSwipe: _goToNextSession,
         ),
-        _buildChevrons(itemCount),
         _buildBottomDateOrDots(current),
       ],
-    );
-  }
-
-  Widget _buildChevrons(int itemCount) {
-    return Positioned.fill(
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: 'Vorherige Session',
-            onPressed:
-                _currentIndex == itemCount - 1 ? null : _goToPreviousSession,
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: 'Neuere / Aktuelle',
-            onPressed: _currentIndex == 0 ? null : _goToNextSession,
-          ),
-        ],
-      ),
     );
   }
 

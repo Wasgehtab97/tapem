@@ -72,15 +72,12 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.85 : 0.9),
       softenedSurface,
     );
-    final inputBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.88 : 0.92),
-      softenedSurface,
-    );
+    final inputBase = cardFill;
     final inputDisabledBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.7 : 0.78),
-      softenedSurface,
+      scheme.onSurface.withOpacity(isDark ? 0.12 : 0.08),
+      cardFill,
     );
-    final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
+    final stroke = scheme.onSurface.withOpacity(isDark ? 0.24 : 0.14);
     final strokeActive = Color.alphaBlend(
       scheme.primary.withOpacity(isDark ? 0.5 : 0.4),
       stroke,
@@ -1261,7 +1258,7 @@ class _InputPillState extends State<_InputPill> {
           borderRadius: radius,
           border: Border.all(
             color: borderColor,
-            width: showLabel ? 0.8 : 1,
+            width: showLabel ? 0.6 : 0.8,
           ),
           boxShadow: disabled
               ? null
