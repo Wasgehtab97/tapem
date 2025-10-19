@@ -773,6 +773,9 @@ class _GroupedSetList extends StatelessWidget {
     if (dense) {
       tokens = tokens.copyWith(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        inputPaddingDense:
+            const EdgeInsets.symmetric(horizontal: 11, vertical: 5.5),
+        inputMinHeightDense: 38,
       );
     }
     final outlineRadius = (brand?.outlineRadius as BorderRadius?) ??
