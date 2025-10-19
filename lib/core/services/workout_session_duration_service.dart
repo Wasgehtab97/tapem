@@ -18,6 +18,26 @@ import 'workout_timer_telemetry.dart';
 
 enum StopResult { save, discard, cancel, resume }
 
+class WorkoutSessionCompletionEvent {
+  final String gymId;
+  final String userId;
+  final String dayKey;
+  final DateTime start;
+  final DateTime end;
+  final String? sessionId;
+  final int durationMs;
+
+  const WorkoutSessionCompletionEvent({
+    required this.gymId,
+    required this.userId,
+    required this.dayKey,
+    required this.start,
+    required this.end,
+    required this.durationMs,
+    this.sessionId,
+  });
+}
+
 class StopDialogResult {
   final StopResult result;
   final ResumeSessionTarget? resumeTarget;
@@ -70,6 +90,8 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   String? _firstSessionId;
   String? _lastSessionId;
   int? _lastActivityEpochMs;
+  final StreamController<WorkoutSessionCompletionEvent> _completionCtrl =
+      StreamController<WorkoutSessionCompletionEvent>.broadcast();
 
   WorkoutSessionDurationService({
     FirebaseFirestore? firestore,
@@ -85,6 +107,8 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
   bool get isRunning => _isRunning;
   Stream<Duration> get tickStream => _tickCtrl.stream;
+  Stream<WorkoutSessionCompletionEvent> get completionStream =>
+      _completionCtrl.stream;
   Duration get elapsed =>
       _startEpochMs != null
           ? Duration(milliseconds:
@@ -440,7 +464,18 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _telemetry?.timerStopSave(
         durationMs: durationMs, dayKey: dayKey, hasSets: hasSets);
 
+    final completionEvent = WorkoutSessionCompletionEvent(
+      gymId: gymId,
+      userId: uid,
+      dayKey: dayKey,
+      start: start,
+      end: end,
+      durationMs: durationMs,
+      sessionId: resolvedSessionId,
+    );
+
     await _clearLocal();
+    _completionCtrl.add(completionEvent);
   }
 
   Future<void> discard() async {
@@ -567,6 +602,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _ticker?.cancel();
     _autoStopTimer?.cancel();
     _tickCtrl.close();
+    _completionCtrl.close();
     super.dispose();
   }
 
