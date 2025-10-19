@@ -17,8 +17,6 @@ class TimerAppBarTitle extends StatelessWidget {
     final theme = Theme.of(context);
     final hasOutlineBranding = theme.extension<AppBrandTheme>() != null;
     final alignment = centerTitle ? Alignment.center : Alignment.centerLeft;
-    final mainAxisAlignment =
-        centerTitle ? MainAxisAlignment.center : MainAxisAlignment.start;
 
     if (!hasOutlineBranding) {
       return Align(
@@ -27,22 +25,77 @@ class TimerAppBarTitle extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: mainAxisAlignment,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const ActiveWorkoutTimer(
-          padding: EdgeInsets.only(right: 12),
-          compact: true,
-        ),
-        Flexible(
-          child: Align(
-            alignment: alignment,
-            child: title,
+    const timerPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 4);
+    final timerSlotWidth = _estimatedTimerSlotWidth(context, theme);
+    const timer = ActiveWorkoutTimer(
+      padding: timerPadding,
+      compact: true,
+    );
+
+    if (!centerTitle) {
+      return Row(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: timerSlotWidth,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: timer,
+            ),
           ),
-        ),
-      ],
+          Flexible(
+            child: Align(
+              alignment: alignment,
+              child: title,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return SizedBox(
+      height: kToolbarHeight,
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: timerSlotWidth,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: timer,
+            ),
+          ),
+          Expanded(
+            child: Align(
+              alignment: alignment,
+              child: title,
+            ),
+          ),
+          SizedBox(width: timerSlotWidth),
+        ],
+      ),
     );
   }
+}
+
+double _estimatedTimerSlotWidth(BuildContext context, ThemeData theme) {
+  final baseStyle = (theme.textTheme.titleSmall ??
+          theme.textTheme.bodyMedium ??
+          const TextStyle(fontSize: 14))
+      .copyWith(fontWeight: FontWeight.w600);
+  final painter = TextPainter(
+    text: TextSpan(text: '000:00', style: baseStyle),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+  )
+    ..layout();
+
+  const iconWidth = 16.0;
+  const spacing = 6.0;
+  const outlinePadding = 12.0 * 2;
+  const outerPadding = 6.0 * 2;
+
+  return painter.width + iconWidth + spacing + outlinePadding + outerPadding;
 }
