@@ -3,9 +3,27 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/story_session/data/story_session_summary_store.dart';
 import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
+import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
+
+class _EphemeralSummaryStore extends StorySessionSummaryStore {
+  const _EphemeralSummaryStore();
+
+  @override
+  Future<StorySessionSummary?> read(
+    String gymId,
+    String userId,
+    String dayKey,
+  ) async {
+    return null;
+  }
+
+  @override
+  Future<void> write(StorySessionSummary summary) async {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -168,6 +186,88 @@ void main() {
             a.exerciseName == 'Flys'),
         isTrue,
       );
+    });
+
+    test('keeps same-day PR achievements after rebuilding summary twice', () async {
+      service = StorySessionService(
+        firestore: firestore,
+        summaryStore: const _EphemeralSummaryStore(),
+        now: () => DateTime(2025, 10, 18, 20, 0),
+      );
+
+      final sessions = [
+        Session(
+          sessionId: 'squat-session',
+          deviceId: 'device-squat',
+          deviceName: 'Eleiko Power Rack',
+          deviceDescription: 'Main squat rack',
+          isMulti: true,
+          exerciseId: 'exercise-squat',
+          exerciseName: 'Back Squat',
+          timestamp: DateTime(2025, 10, 18, 6, 30),
+          note: '',
+          sets: const [
+            SessionSet(weight: 140, reps: 3, setNumber: 1),
+          ],
+        ),
+        Session(
+          sessionId: 'bench-session',
+          deviceId: 'device-bench',
+          deviceName: 'Hammer Strength Bench',
+          deviceDescription: 'Competition bench',
+          isMulti: true,
+          exerciseId: 'exercise-bench',
+          exerciseName: 'Bench Press',
+          timestamp: DateTime(2025, 10, 18, 7, 45),
+          note: '',
+          sets: const [
+            SessionSet(weight: 90, reps: 5, setNumber: 1),
+          ],
+        ),
+      ];
+
+      final firstSummary = await service.getSummary(
+        gymId: gymId,
+        userId: userId,
+        date: date,
+        sessions: sessions,
+      );
+
+      expect(firstSummary, isNotNull);
+      final firstPrs = firstSummary!.achievements
+          .where((a) => a.type == StoryAchievementType.personalRecord)
+          .toList();
+      expect(firstPrs, hasLength(2));
+      final firstIdentifiers = firstPrs
+          .map((a) => '${a.deviceName}::${a.exerciseName}')
+          .toSet();
+
+      await firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('users')
+          .doc(userId)
+          .collection('session_stories')
+          .doc(dayKey)
+          .delete();
+
+      final rebuiltSummary = await service.getSummary(
+        gymId: gymId,
+        userId: userId,
+        date: date,
+        sessions: sessions,
+      );
+
+      expect(rebuiltSummary, isNotNull);
+      final rebuiltPrs = rebuiltSummary!.achievements
+          .where((a) => a.type == StoryAchievementType.personalRecord)
+          .toList();
+      expect(rebuiltPrs, hasLength(2));
+      final rebuiltIdentifiers = rebuiltPrs
+          .map((a) => '${a.deviceName}::${a.exerciseName}')
+          .toSet();
+
+      expect(rebuiltIdentifiers, equals(firstIdentifiers));
     });
   });
 }
