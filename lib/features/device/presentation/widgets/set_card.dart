@@ -28,6 +28,13 @@ class SetCardTheme {
   final Color menuBg;
   final Color menuFg;
   final Color cardFill;
+  final Color inputFill;
+  final Color inputFillDisabled;
+  final Color inputStroke;
+  final Color inputStrokeActive;
+  final Color inputShadow;
+  final Color inputShadowActive;
+  final Color inputPlaceholder;
 
   const SetCardTheme({
     required this.padding,
@@ -39,6 +46,13 @@ class SetCardTheme {
     required this.menuBg,
     required this.menuFg,
     required this.cardFill,
+    required this.inputFill,
+    required this.inputFillDisabled,
+    required this.inputStroke,
+    required this.inputStrokeActive,
+    required this.inputShadow,
+    required this.inputShadowActive,
+    required this.inputPlaceholder,
   });
 
   factory SetCardTheme.of(BuildContext context) {
@@ -58,6 +72,21 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.85 : 0.9),
       softenedSurface,
     );
+    final inputBase = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.88 : 0.92),
+      softenedSurface,
+    );
+    final inputDisabledBase = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.7 : 0.78),
+      softenedSurface,
+    );
+    final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
+    final strokeActive = Color.alphaBlend(
+      scheme.primary.withOpacity(isDark ? 0.5 : 0.4),
+      stroke,
+    );
+    final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
+    final glowActive = scheme.primary.withOpacity(isDark ? 0.28 : 0.2);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -69,6 +98,13 @@ class SetCardTheme {
       menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
       menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
       cardFill: cardFill,
+      inputFill: inputBase,
+      inputFillDisabled: inputDisabledBase,
+      inputStroke: stroke,
+      inputStrokeActive: strokeActive,
+      inputShadow: glowIdle,
+      inputShadowActive: glowActive,
+      inputPlaceholder: scheme.primary.withOpacity(isDark ? 0.45 : 0.38),
     );
   }
 
@@ -82,6 +118,13 @@ class SetCardTheme {
     Color? menuBg,
     Color? menuFg,
     Color? cardFill,
+    Color? inputFill,
+    Color? inputFillDisabled,
+    Color? inputStroke,
+    Color? inputStrokeActive,
+    Color? inputShadow,
+    Color? inputShadowActive,
+    Color? inputPlaceholder,
   }) {
     return SetCardTheme(
       padding: padding ?? this.padding,
@@ -93,6 +136,13 @@ class SetCardTheme {
       menuBg: menuBg ?? this.menuBg,
       menuFg: menuFg ?? this.menuFg,
       cardFill: cardFill ?? this.cardFill,
+      inputFill: inputFill ?? this.inputFill,
+      inputFillDisabled: inputFillDisabled ?? this.inputFillDisabled,
+      inputStroke: inputStroke ?? this.inputStroke,
+      inputStrokeActive: inputStrokeActive ?? this.inputStrokeActive,
+      inputShadow: inputShadow ?? this.inputShadow,
+      inputShadowActive: inputShadowActive ?? this.inputShadowActive,
+      inputPlaceholder: inputPlaceholder ?? this.inputPlaceholder,
     );
   }
 }
@@ -713,9 +763,9 @@ class SetRowContent extends StatelessWidget {
       letterSpacing: 0.2,
       color: tokens.chipFg.withOpacity(0.78),
     );
-    final double indexBadgeWidth = dense ? 28.0 : 32.0;
-    final double indexBadgeGap = dense ? 8.0 : 12.0;
-    final double dropBadgeToFieldGap = dense ? 8.0 : 12.0;
+    final double indexBadgeWidth = dense ? 26.0 : 30.0;
+    final double indexBadgeGap = dense ? 6.0 : 9.0;
+    final double dropBadgeToFieldGap = dense ? 6.0 : 9.0;
     final double leadingWidth = indexBadgeWidth + indexBadgeGap;
 
     final children = <Widget>[];
@@ -755,7 +805,7 @@ class SetRowContent extends StatelessWidget {
             index: index,
             dense: dense,
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 8),
           Expanded(
             child: _InputPill(
               controller: weightController,
@@ -776,7 +826,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: weightLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 8),
           Expanded(
             child: _InputPill(
               controller: repsController,
@@ -795,7 +845,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: repsLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 8),
           _RoundButton(
             tokens: tokens,
             icon: showExtras ? Icons.expand_less : Icons.expand_more,
@@ -806,7 +856,7 @@ class SetRowContent extends StatelessWidget {
             iconColor: primaryColor,
             disabledIconColor: primaryColor.withOpacity(0.4),
           ),
-          SizedBox(width: dense ? 6 : 8),
+          SizedBox(width: dense ? 5 : 7),
           _RoundButton(
             tokens: tokens,
             icon: Icons.check,
@@ -822,7 +872,7 @@ class SetRowContent extends StatelessWidget {
       ),
     );
     if (showExtras) {
-      children.add(SizedBox(height: dense ? 8 : 12));
+      children.add(SizedBox(height: dense ? 6 : 9));
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
         children.add(
@@ -831,10 +881,10 @@ class SetRowContent extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final hasAddButton = !readOnly && drop.showAddButton;
-                final fieldGap = dense ? 8.0 : 12.0;
-                final buttonSize = dense ? 40.0 : 44.0;
+                final fieldGap = dense ? 6.0 : 10.0;
+                final buttonSize = dense ? 38.0 : 42.0;
                 final trailingLeadingGap = fieldGap;
-                final trailingBetweenGap = dense ? 6.0 : 8.0;
+                final trailingBetweenGap = dense ? 5.0 : 6.0;
                 final trailingReservedWidth =
                     trailingLeadingGap + buttonSize + trailingBetweenGap + buttonSize;
                 final available = constraints.maxWidth -
@@ -1124,48 +1174,49 @@ class _InputPillState extends State<_InputPill> {
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final brandColor = colorScheme.primary;
+    final tokens = widget.tokens;
+    final dense = widget.dense;
 
-    final radius = BorderRadius.circular(widget.dense ? 16 : 20);
-    final baseOverlay = Colors.transparent;
-    final haloColor = Colors.black.withOpacity(
-      hasFocus
-          ? (isDark ? 0.28 : 0.22)
-          : (isDark ? 0.18 : 0.12),
-    );
-    final borderColor = colorScheme.outline.withOpacity(
-      hasFocus
-          ? (isDark ? 0.7 : 0.6)
-          : (isDark ? 0.45 : 0.4),
-    );
+    final radius = BorderRadius.circular(dense ? 14 : 18);
+    final fillColor = disabled ? tokens.inputFillDisabled : tokens.inputFill;
+    final borderColor = hasFocus ? tokens.inputStrokeActive : tokens.inputStroke;
+    final haloColor = hasFocus ? tokens.inputShadowActive : tokens.inputShadow;
 
     final labelStyle = GoogleFonts.inter(
-      fontSize: widget.dense ? 11 : 12,
+      fontSize: dense ? 10.5 : 11.5,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
-      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.8 : 0.6),
+      color: tokens.chipFg.withOpacity(hasFocus ? 0.82 : 0.62),
     );
 
-    final valueColor = brandColor
-        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.65));
+    final valueColor = brandColor.withOpacity(
+      disabled
+          ? 0.45
+          : hasValue
+              ? (isDark ? 0.96 : 0.9)
+              : (isDark ? 0.7 : 0.68),
+    );
     final keypadTypeface = Theme.of(context).textTheme.titleLarge ??
         Theme.of(context).textTheme.bodyMedium ??
         const TextStyle();
     final valueStyle = keypadTypeface.copyWith(
-      fontSize:
-          showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
+      fontSize: showLabel
+          ? (dense ? 16 : 18)
+          : (dense ? 18 : 20),
       fontWeight: FontWeight.w600,
       color: valueColor,
-      height: 1.15,
+      height: 1.1,
     );
 
     final placeholderStyle = valueStyle.copyWith(
-      color: brandColor.withOpacity(0.35),
+      color: tokens.inputPlaceholder,
     );
 
     final double horizontalPadding =
-        showLabel ? (widget.dense ? 12 : 14) : (widget.dense ? 12 : 16);
+        showLabel ? (dense ? 10 : 12) : (dense ? 11 : 14);
     final double verticalPadding =
-        showLabel ? (widget.dense ? 6 : 8) : (widget.dense ? 8 : 10);
+        showLabel ? (dense ? 4 : 6) : (dense ? 6 : 8);
+    final double minHeight = dense ? 40 : 46;
 
     final Widget textField = SizedBox(
       width: double.infinity,
@@ -1204,26 +1255,22 @@ class _InputPillState extends State<_InputPill> {
           horizontal: horizontalPadding,
           vertical: verticalPadding,
         ),
-        constraints:
-            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 48 : 56),
+        constraints: showLabel ? null : BoxConstraints(minHeight: minHeight),
         decoration: BoxDecoration(
-          color: baseOverlay,
+          color: fillColor,
           borderRadius: radius,
           border: Border.all(
             color: borderColor,
-            width: showLabel ? 1 : 1.2,
+            width: showLabel ? 0.8 : 1,
           ),
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
                     color: haloColor,
-                    blurRadius:
-                        hasFocus ? (showLabel ? 24 : 28) : (showLabel ? 12 : 16),
-                    spreadRadius:
-                        hasFocus ? (showLabel ? 0.8 : 0.9) : (showLabel ? 0.2 : 0.3),
-                    offset:
-                        Offset(0, hasFocus ? (showLabel ? 10 : 12) : (showLabel ? 6 : 8)),
+                    blurRadius: hasFocus ? 18 : 10,
+                    spreadRadius: hasFocus ? 0.6 : 0.1,
+                    offset: Offset(0, hasFocus ? 8 : 4),
                   ),
                 ],
         ),
