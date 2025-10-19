@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
@@ -83,26 +85,28 @@ class FirestoreChallengeSource {
   }) async {
     final now = Timestamp.fromDate(DateTime.now());
     debugPrint('⏳ checkChallenges gym=$gymId user=$userId device=$deviceId');
-    final weeklySnap =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('challenges')
-            .doc('weekly')
-            .collection('items')
-            .where('start', isLessThanOrEqualTo: now)
-            .where('end', isGreaterThanOrEqualTo: now)
-            .get();
-    final monthlySnap =
-        await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('challenges')
-            .doc('monthly')
-            .collection('items')
-            .where('start', isLessThanOrEqualTo: now)
-            .where('end', isGreaterThanOrEqualTo: now)
-            .get();
+    final weeklyQuery = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('challenges')
+        .doc('weekly')
+        .collection('items')
+        .where('start', isLessThanOrEqualTo: now)
+        .where('end', isGreaterThanOrEqualTo: now);
+    final monthlyQuery = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('challenges')
+        .doc('monthly')
+        .collection('items')
+        .where('start', isLessThanOrEqualTo: now)
+        .where('end', isGreaterThanOrEqualTo: now);
+    final challengeSnaps = await Future.wait([
+      weeklyQuery.get(),
+      monthlyQuery.get(),
+    ]);
+    final weeklySnap = challengeSnaps[0];
+    final monthlySnap = challengeSnaps[1];
     debugPrint(
       '📥 loaded challenges weekly=${weeklySnap.size} monthly=${monthlySnap.size}',
     );
@@ -143,15 +147,17 @@ class FirestoreChallengeSource {
             );
           }
 
-          for (final ids in chunks) {
-            final snap =
-                await _firestore
-                    .collectionGroup('logs')
-                    .where('userId', isEqualTo: userId)
-                    .where('deviceId', whereIn: ids)
-                    .where('timestamp', isGreaterThanOrEqualTo: ch.start)
-                    .where('timestamp', isLessThanOrEqualTo: ch.end)
-                    .get();
+          final chunkSnaps = await Future.wait([
+            for (final ids in chunks)
+              _firestore
+                  .collectionGroup('logs')
+                  .where('userId', isEqualTo: userId)
+                  .where('deviceId', whereIn: ids)
+                  .where('timestamp', isGreaterThanOrEqualTo: ch.start)
+                  .where('timestamp', isLessThanOrEqualTo: ch.end)
+                  .get(),
+          ]);
+          for (final snap in chunkSnaps) {
             logCount += snap.size;
           }
         }

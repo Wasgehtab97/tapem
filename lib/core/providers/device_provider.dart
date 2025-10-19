@@ -1349,7 +1349,16 @@ class DeviceProvider extends ChangeNotifier {
             notifyListeners();
           }
           final challengeProv = _challengeProvider;
-          await challengeProv?.checkChallenges(gymId, userId, resolvedDeviceId);
+          if (challengeProv != null) {
+            unawaited(() async {
+              try {
+                await challengeProv
+                    .checkChallenges(gymId, userId, resolvedDeviceId);
+              } catch (e, st) {
+                _log('⚠️ [Provider] challenge check error: $e', st);
+              }
+            }());
+          }
         } catch (e, st) {
           XpTrace.log('CALL_RESULT', {'result': 'error', 'traceId': traceId, 'error': e.toString()});
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
