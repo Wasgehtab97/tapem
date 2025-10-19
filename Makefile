@@ -84,7 +84,7 @@ rules-dev:
 alter-stand:
 	git fetch origin
 	git checkout a_gpt5 
-	git reset --hard (hier die alte branch einfügen)
+	git reset --hard origin/(hier die alte branch einfügen)
 	git push --force-with-lease origin a_gpt5
 
 # APK Release

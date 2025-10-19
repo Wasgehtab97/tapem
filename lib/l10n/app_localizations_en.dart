@@ -24,6 +24,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancel';
+
+  @override
   String get commonOk => 'OK';
 
   @override
@@ -307,8 +309,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsFavoriteExercise => 'Favourite exercise';
 
   @override
-  String get profileStatsFavoriteExerciseDialogTitle =>
-      'Top 5 favourite exercises';
+  String get profileStatsFavoriteExerciseDialogTitle => 'Top 5 favourite exercises';
 
   @override
   String get profileStatsFavoriteExerciseFallback => 'No sessions yet';
@@ -685,7 +686,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpTitle => 'Daily XP';
 
   @override
-  String storySessionDailyXpValue(int xp) => '$xp XP';
+  String storySessionDailyXpValue(Object xp) {
+    return '$xp XP';
+  }
 
   @override
   String get storySessionBadgesTitle => 'Badges';
@@ -700,30 +703,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionStatsDurationTitle => 'Duration';
 
   @override
-  String storySessionDurationMinutes(int minutes) => '$minutes min';
+  String storySessionDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
 
   @override
-  String storySessionDurationHours(int hours) => '$hours h';
+  String storySessionDurationHours(int hours) {
+    return '$hours h';
+  }
 
   @override
-  String storySessionDurationHoursMinutes(int hours, int minutes) =>
-      '${storySessionDurationHours(hours)} ${storySessionDurationMinutes(minutes)}';
+  String storySessionDurationHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
 
   @override
-  String storySessionNewDeviceTitle(String device) => 'First time on $device';
+  String storySessionNewDeviceTitle(Object device) {
+    return 'First time on $device';
+  }
 
   @override
-  String storySessionNewExerciseTitle(String device, String exercise) =>
-      'First time: $exercise on $device';
+  String storySessionNewExerciseTitle(Object device, Object exercise) {
+    return 'First time: $exercise on $device';
+  }
 
   @override
-  String storySessionNewPrTitle(String name) => 'New personal record in $name';
+  String storySessionNewPrTitle(Object name) {
+    return 'New personal record in $name';
+  }
 
   @override
-  String storySessionNewPrSubtitle(String weight, String reps) =>
-      'Top PR set: $weight kg × $reps reps';
+  String storySessionNewPrSubtitle(String weight, String reps) {
+    return 'Top PR set: $weight kg × $reps reps';
+  }
 
-  String storySessionNewPrFallback(String value) => 'Estimated 1RM: $value kg';
+  @override
+  String storySessionNewPrFallback(String value) {
+    return 'Estimated 1RM: $value kg';
+  }
 
   @override
   String get storySessionButtonTooltip => 'Show training story';
@@ -1141,22 +1158,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
+
+  @override
   String get reportUsageRange7Days => 'Last 7 days';
+
+  @override
   String get reportUsageRange30Days => 'Last 30 days';
+
+  @override
   String get reportUsageRange90Days => 'Last 90 days';
+
+  @override
   String get reportUsageRange365Days => 'Last 365 days';
+
+  @override
   String get reportUsageRangeAll => 'All time';
 
   @override
   String get reportDeviceUsageEmpty => 'No usage data available yet';
 
   @override
-  String get reportDeviceUsageNoMatches =>
-      'No devices match your search';
+  String get reportDeviceUsageNoMatches => 'No devices match your search';
 
   @override
-  String get reportDeviceUsageError =>
-      "We couldn't load the usage data.";
+  String get reportDeviceUsageError => 'We couldn\'t load the usage data.';
 
   @override
   String reportDeviceUsageSessions(int count) {
@@ -1168,7 +1193,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String exerciseDeleteMessage(Object name) {
-    return 'Do you really want to delete the exercise "$name"?';
+    return 'Do you really want to delete the exercise \"$name\"?';
   }
 
   @override
@@ -1316,6 +1341,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminDashboardBranding => 'Branding';
 
   @override
+  String get adminDeviceNfcWritten => 'NFC tag written';
+
+  @override
+  String adminDeviceNfcWriteError(Object error) {
+    return 'Error writing NFC tag: $error';
+  }
+
+  @override
+  String get deviceDeleteTooltip => 'Delete device';
+
+  @override
+  String get deviceDeleteDialogTitle => 'Delete device?';
+
+  @override
+  String deviceDeleteDialogMessage(Object name) {
+    return 'Do you really want to delete the device \"$name\"?';
+  }
+
+  @override
+  String get deviceDeleteSuccess => 'Device deleted';
+
+  @override
+  String get deviceWriteNfcTooltip => 'Write NFC tag';
+
+  @override
   String adminSymbolsAddButton(int count) {
     return 'Add ($count)';
   }
@@ -1447,29 +1497,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
-
-  @override
-  String get adminDeviceNfcWritten => 'NFC tag written';
-
-  @override
-  String adminDeviceNfcWriteError(Object error) {
-    return 'Error writing NFC tag: $error';
-  }
-
-  @override
-  String get deviceDeleteTooltip => 'Delete device';
-
-  @override
-  String get deviceDeleteDialogTitle => 'Delete device?';
-
-  @override
-  String deviceDeleteDialogMessage(Object name) {
-    return 'Do you really want to delete the device "$name"?';
-  }
-
-  @override
-  String get deviceDeleteSuccess => 'Device deleted';
-
-  @override
-  String get deviceWriteNfcTooltip => 'Write NFC tag';
 }
