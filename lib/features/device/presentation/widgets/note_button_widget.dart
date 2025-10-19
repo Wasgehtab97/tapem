@@ -16,13 +16,17 @@ class NoteButtonWidget extends StatelessWidget {
     final prov = context.watch<DeviceProvider>();
     final hasNote = prov.note.isNotEmpty;
 
-    return FloatingActionButton(
+    final scheme = Theme.of(context).colorScheme;
+
+    return FloatingActionButton.small(
       heroTag: 'noteBtn_$deviceId',
-      mini: true, // verkleinert den Button
       tooltip: hasNote ? loc.noteEditTooltip : loc.noteAddTooltip,
+      backgroundColor: scheme.surfaceVariant.withOpacity(0.92),
+      foregroundColor: scheme.onSurfaceVariant,
+      shape: const CircleBorder(),
       child: Icon(
         hasNote ? Icons.info : Icons.info_outline,
-        size: 20, // Icon etwas kleiner
+        size: 18,
       ),
       onPressed: () => _openNoteModal(context, prov),
     );
