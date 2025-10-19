@@ -193,6 +193,7 @@ class StorySessionService {
       return false;
     }
     final startOfDay = DateTime(date.year, date.month, date.day);
+    final dayKey = logicDayKey(date);
     for (final session in sessions) {
       if (!session.isMulti) {
         final seenDevice =
@@ -235,17 +236,14 @@ class StorySessionService {
 
       final bestE1rm = _bestE1rmForSession(session);
       if (bestE1rm != null) {
-        final recordKey = '${session.deviceId}::${exerciseId ?? ''}';
-        var previousBest = await _prStore.read(gymId, userId, recordKey);
-        if (previousBest == null || previousBest <= 0) {
-          previousBest = await _loadPreviousBestE1rm(
-            gymId: gymId,
-            userId: userId,
-            deviceId: session.deviceId,
-            exerciseId: exerciseId,
-            before: startOfDay,
-          );
-        }
+        final previousBest = await _ensurePreviousPr(
+          gymId: gymId,
+          userId: userId,
+          deviceId: session.deviceId,
+          exerciseId: exerciseId,
+          before: startOfDay,
+          dayKey: dayKey,
+        );
         final baseline = previousBest ?? 0;
         if (bestE1rm > baseline + 0.01) {
           return true;
@@ -335,6 +333,7 @@ class StorySessionService {
         deviceId: session.deviceId,
         exerciseId: session.exerciseId,
         before: startOfDay,
+        dayKey: dayKey,
       );
       if (bestE1rm > (previousBest ?? 0) + 0.01) {
         final existing = newPrs[recordKey];
@@ -462,7 +461,10 @@ class StorySessionService {
       userId,
       {
         for (final entry in newPrs.entries)
-          entry.key: double.parse(entry.value.e1rm.toStringAsFixed(3)),
+          entry.key: StorySessionPrCacheEntry(
+            value: double.parse(entry.value.e1rm.toStringAsFixed(3)),
+            dayKey: dayKey,
+          ),
       },
     );
 
@@ -596,11 +598,17 @@ class StorySessionService {
     required String deviceId,
     String? exerciseId,
     required DateTime before,
+    required String dayKey,
   }) async {
     final key = '${deviceId}::${exerciseId ?? ''}';
-    final cached = await _prStore.read(gymId, userId, key);
-    if (cached != null && cached > 0) {
-      return cached;
+    final cached = await _prStore.readEntry(gymId, userId, key);
+    if (cached != null) {
+      final cachedDayKey = cached.dayKey;
+      final isBeforeRequestedDay =
+          cachedDayKey == null || cachedDayKey.compareTo(dayKey) < 0;
+      if (isBeforeRequestedDay && cached.value > 0) {
+        return cached.value;
+      }
     }
     final value = await _loadPreviousBestE1rm(
       gymId: gymId,
@@ -610,7 +618,13 @@ class StorySessionService {
       before: before,
     );
     if (value != null) {
-      await _prStore.write(gymId, userId, {key: value});
+      await _prStore.write(
+        gymId,
+        userId,
+        {
+          key: StorySessionPrCacheEntry(value: value),
+        },
+      );
     }
     return value;
   }
