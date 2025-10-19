@@ -27,22 +27,46 @@ class TimerAppBarTitle extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: mainAxisAlignment,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const ActiveWorkoutTimer(
-          padding: EdgeInsets.only(right: 12),
-          compact: true,
-        ),
-        Flexible(
-          child: Align(
-            alignment: alignment,
+    if (!centerTitle) {
+      return Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: mainAxisAlignment,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const ActiveWorkoutTimer(
+            padding: EdgeInsets.only(right: 12),
+            compact: true,
+          ),
+          Flexible(
+            child: Align(
+              alignment: alignment,
+              child: title,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return SizedBox(
+      height: kToolbarHeight,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            heightFactor: 1,
+            child: ActiveWorkoutTimer(
+              padding: EdgeInsets.only(right: 12),
+              compact: true,
+            ),
+          ),
+          Align(
+            alignment: Alignment.center,
             child: title,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
