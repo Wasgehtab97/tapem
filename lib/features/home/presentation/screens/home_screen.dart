@@ -158,12 +158,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAppBarTitle(BuildContext context, String currentLabel) {
     final loc = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
+    final rawGymName =
+        context.select<GymProvider, String?>((g) => g.gym?.name);
+    final gymName = rawGymName?.trim();
 
     switch (_currentIndex) {
       case 0:
+        final resolvedGymName =
+            (gymName != null && gymName.isNotEmpty) ? gymName : loc.gymTitle;
         return TimerAppBarTitle(
           title: BrandGradientText(
-            loc.gymTitle,
+            resolvedGymName,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
             maxLines: 1,
