@@ -170,7 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         );
       case 1:
@@ -181,7 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         );
       default:
@@ -192,7 +190,6 @@ class _HomeScreenState extends State<HomeScreen> {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         );
     }

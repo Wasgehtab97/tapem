@@ -14,11 +14,11 @@ class BaseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: TimerAppBarTitle(
-          centerTitle: false,
           title: Text(
             title,
-            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
         ),
         actions: const [

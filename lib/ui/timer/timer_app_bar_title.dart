@@ -33,47 +33,55 @@ class TimerAppBarTitle extends StatelessWidget {
     );
 
     if (!centerTitle) {
-      return Row(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: timerSlotWidth,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: timer,
+      return SizedBox(
+        height: kToolbarHeight,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: timerSlotWidth,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: timer,
+              ),
             ),
-          ),
-          Flexible(
-            child: Align(
-              alignment: alignment,
-              child: title,
+            Expanded(
+              child: Align(
+                alignment: alignment,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: title,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
     return SizedBox(
       height: kToolbarHeight,
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          SizedBox(
-            width: timerSlotWidth,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: timer,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: timerSlotWidth,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: timer,
+              ),
             ),
           ),
-          Expanded(
-            child: Align(
-              alignment: alignment,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: timerSlotWidth),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               child: title,
             ),
           ),
-          SizedBox(width: timerSlotWidth),
         ],
       ),
     );
