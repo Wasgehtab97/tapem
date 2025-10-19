@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'read_only_snapshot_page.dart';
 
@@ -110,33 +111,48 @@ class DevicePagerState extends State<DevicePager> {
     final current =
         _currentIndex > 0 ? prov.sessionSnapshots[_currentIndex - 1] : null;
 
-    return Stack(
+    return Column(
       children: [
-        pageView,
-        EdgeGestureOverlay(
-          enabled: isEditor,
-          onLeftEdgeSwipe: _goToPreviousSession,
-          onRightEdgeSwipe: _goToNextSession,
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              pageView,
+              EdgeGestureOverlay(
+                enabled: isEditor,
+                onLeftEdgeSwipe: _goToPreviousSession,
+                onRightEdgeSwipe: _goToNextSession,
+              ),
+              _buildBottomDateOrDots(current),
+            ],
+          ),
         ),
-        _buildChevrons(itemCount),
-        _buildBottomDateOrDots(current),
+        _buildChevronRow(itemCount),
       ],
     );
   }
 
-  Widget _buildChevrons(int itemCount) {
-    return Positioned.fill(
+  Widget _buildChevronRow(int itemCount) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final accent = brand?.outline ?? theme.colorScheme.primary;
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(24, 8, 24, 16),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
+          _ChevronButton(
+            icon: Icons.chevron_left,
+            color: accent,
             tooltip: 'Vorherige Session',
             onPressed:
                 _currentIndex == itemCount - 1 ? null : _goToPreviousSession,
           ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
+          _ChevronButton(
+            icon: Icons.chevron_right,
+            color: accent,
             tooltip: 'Neuere / Aktuelle',
             onPressed: _currentIndex == 0 ? null : _goToNextSession,
           ),
@@ -161,6 +177,37 @@ class DevicePagerState extends State<DevicePager> {
           ),
           child: Text(date, style: const TextStyle(fontSize: 12)),
         ),
+      ),
+    );
+  }
+}
+
+class _ChevronButton extends StatelessWidget {
+  const _ChevronButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        shape: const CircleBorder(),
+        padding: const EdgeInsets.all(12),
+        foregroundColor: color,
+        backgroundColor: color.withOpacity(0.12),
+        disabledForegroundColor: color.withOpacity(0.35),
+        disabledBackgroundColor: color.withOpacity(0.06),
       ),
     );
   }

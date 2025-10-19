@@ -73,18 +73,15 @@ class SetCardTheme {
       softenedSurface,
     );
     final inputBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.88 : 0.92),
-      softenedSurface,
+      scheme.primary.withOpacity(isDark ? 0.08 : 0.05),
+      cardFill,
     );
     final inputDisabledBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.7 : 0.78),
-      softenedSurface,
+      scheme.onSurface.withOpacity(isDark ? 0.12 : 0.08),
+      cardFill,
     );
-    final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
-    final strokeActive = Color.alphaBlend(
-      scheme.primary.withOpacity(isDark ? 0.5 : 0.4),
-      stroke,
-    );
+    final stroke = scheme.primary.withOpacity(isDark ? 0.42 : 0.3);
+    final strokeActive = scheme.primary.withOpacity(isDark ? 0.65 : 0.5);
     final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
     final glowActive = scheme.primary.withOpacity(isDark ? 0.28 : 0.2);
 
