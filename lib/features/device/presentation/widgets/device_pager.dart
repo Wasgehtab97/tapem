@@ -110,57 +110,101 @@ class DevicePagerState extends State<DevicePager> {
     final current =
         _currentIndex > 0 ? prov.sessionSnapshots[_currentIndex - 1] : null;
 
-    return Stack(
+    return Column(
       children: [
-        pageView,
-        EdgeGestureOverlay(
-          enabled: isEditor,
-          onLeftEdgeSwipe: _goToPreviousSession,
-          onRightEdgeSwipe: _goToNextSession,
+        Expanded(
+          child: Stack(
+            children: [
+              pageView,
+              EdgeGestureOverlay(
+                enabled: isEditor,
+                onLeftEdgeSwipe: _goToPreviousSession,
+                onRightEdgeSwipe: _goToNextSession,
+              ),
+            ],
+          ),
         ),
-        _buildChevrons(itemCount),
-        _buildBottomDateOrDots(current),
+        _buildNavigationBar(itemCount, current),
       ],
     );
   }
 
-  Widget _buildChevrons(int itemCount) {
-    return Positioned.fill(
+  Widget _buildNavigationBar(
+    int itemCount,
+    DeviceSessionSnapshot? current,
+  ) {
+    final theme = Theme.of(context);
+    final brandColor = theme.colorScheme.primary;
+    final disabledColor =
+        theme.colorScheme.onSurface.withOpacity(theme.brightness == Brightness.dark ? 0.4 : 0.38);
+    final disabledBackground =
+        theme.colorScheme.onSurface.withOpacity(theme.brightness == Brightness.dark ? 0.2 : 0.12);
+
+    Widget buildChevron({
+      required IconData icon,
+      required VoidCallback? onPressed,
+    }) {
+      return IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        style: IconButton.styleFrom(
+          foregroundColor: brandColor,
+          backgroundColor: brandColor.withOpacity(0.12),
+          disabledForegroundColor: disabledColor,
+          disabledBackgroundColor: disabledBackground,
+          padding: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        tooltip: icon == Icons.chevron_left
+            ? 'Vorherige Session'
+            : 'Neuere / Aktuelle',
+      );
+    }
+
+    final dateStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface.withOpacity(0.72),
+      fontWeight: FontWeight.w600,
+    );
+
+    final dateText = current == null
+        ? null
+        : DateFormat('dd.MM.yyyy • HH:mm').format(current.createdAt);
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: 'Vorherige Session',
+          buildChevron(
+            icon: Icons.chevron_left,
             onPressed:
                 _currentIndex == itemCount - 1 ? null : _goToPreviousSession,
           ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: 'Neuere / Aktuelle',
+          const SizedBox(width: 12),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: dateText == null
+                  ? const SizedBox(height: 24)
+                  : Text(
+                      dateText,
+                      key: ValueKey(dateText),
+                      textAlign: TextAlign.center,
+                      style: dateStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          buildChevron(
+            icon: Icons.chevron_right,
             onPressed: _currentIndex == 0 ? null : _goToNextSession,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomDateOrDots(DeviceSessionSnapshot? current) {
-    if (current == null) return const SizedBox.shrink();
-    final date =
-        DateFormat('dd.MM.yyyy • HH:mm').format(current.createdAt);
-    return SafeArea(
-      minimum: const EdgeInsets.only(bottom: 8),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(date, style: const TextStyle(fontSize: 12)),
-        ),
       ),
     );
   }
