@@ -28,6 +28,11 @@ class SetCardTheme {
   final Color menuBg;
   final Color menuFg;
   final Color cardFill;
+  final Color inputFill;
+  final Color inputFillDisabled;
+  final Color inputStroke;
+  final Color inputStrokeFocused;
+  final Color inputHalo;
 
   const SetCardTheme({
     required this.padding,
@@ -39,6 +44,11 @@ class SetCardTheme {
     required this.menuBg,
     required this.menuFg,
     required this.cardFill,
+    required this.inputFill,
+    required this.inputFillDisabled,
+    required this.inputStroke,
+    required this.inputStrokeFocused,
+    required this.inputHalo,
   });
 
   factory SetCardTheme.of(BuildContext context) {
@@ -58,6 +68,27 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.85 : 0.9),
       softenedSurface,
     );
+    final inputBase = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.82 : 0.9),
+      softenedSurface,
+    );
+    final inputFill = Color.alphaBlend(
+      scheme.surfaceTint.withOpacity(isDark ? 0.08 : 0.12),
+      inputBase,
+    );
+    final inputFillDisabled = Color.alphaBlend(
+      scheme.onSurface.withOpacity(isDark ? 0.08 : 0.14),
+      inputBase,
+    );
+    final inputStroke = scheme.onSurface.withOpacity(isDark ? 0.28 : 0.18);
+    final inputStrokeFocused = Color.alphaBlend(
+      scheme.primary.withOpacity(isDark ? 0.48 : 0.42),
+      inputStroke,
+    );
+    final inputHalo = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.6 : 0.5),
+      scheme.primary.withOpacity(isDark ? 0.2 : 0.16),
+    );
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -69,6 +100,11 @@ class SetCardTheme {
       menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
       menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
       cardFill: cardFill,
+      inputFill: inputFill,
+      inputFillDisabled: inputFillDisabled,
+      inputStroke: inputStroke,
+      inputStrokeFocused: inputStrokeFocused,
+      inputHalo: inputHalo,
     );
   }
 
@@ -82,6 +118,11 @@ class SetCardTheme {
     Color? menuBg,
     Color? menuFg,
     Color? cardFill,
+    Color? inputFill,
+    Color? inputFillDisabled,
+    Color? inputStroke,
+    Color? inputStrokeFocused,
+    Color? inputHalo,
   }) {
     return SetCardTheme(
       padding: padding ?? this.padding,
@@ -93,6 +134,12 @@ class SetCardTheme {
       menuBg: menuBg ?? this.menuBg,
       menuFg: menuFg ?? this.menuFg,
       cardFill: cardFill ?? this.cardFill,
+      inputFill: inputFill ?? this.inputFill,
+      inputFillDisabled: inputFillDisabled ?? this.inputFillDisabled,
+      inputStroke: inputStroke ?? this.inputStroke,
+      inputStrokeFocused:
+          inputStrokeFocused ?? this.inputStrokeFocused,
+      inputHalo: inputHalo ?? this.inputHalo,
     );
   }
 }
@@ -713,9 +760,9 @@ class SetRowContent extends StatelessWidget {
       letterSpacing: 0.2,
       color: tokens.chipFg.withOpacity(0.78),
     );
-    final double indexBadgeWidth = dense ? 28.0 : 32.0;
-    final double indexBadgeGap = dense ? 8.0 : 12.0;
-    final double dropBadgeToFieldGap = dense ? 8.0 : 12.0;
+    final double indexBadgeWidth = dense ? 24.0 : 28.0;
+    final double indexBadgeGap = dense ? 6.0 : 8.0;
+    final double dropBadgeToFieldGap = dense ? 6.0 : 8.0;
     final double leadingWidth = indexBadgeWidth + indexBadgeGap;
 
     final children = <Widget>[];
@@ -755,7 +802,7 @@ class SetRowContent extends StatelessWidget {
             index: index,
             dense: dense,
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           Expanded(
             child: _InputPill(
               controller: weightController,
@@ -776,7 +823,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: weightLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           Expanded(
             child: _InputPill(
               controller: repsController,
@@ -795,7 +842,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: repsLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           _RoundButton(
             tokens: tokens,
             icon: showExtras ? Icons.expand_less : Icons.expand_more,
@@ -806,7 +853,7 @@ class SetRowContent extends StatelessWidget {
             iconColor: primaryColor,
             disabledIconColor: primaryColor.withOpacity(0.4),
           ),
-          SizedBox(width: dense ? 6 : 8),
+          SizedBox(width: dense ? 4 : 6),
           _RoundButton(
             tokens: tokens,
             icon: Icons.check,
@@ -822,7 +869,7 @@ class SetRowContent extends StatelessWidget {
       ),
     );
     if (showExtras) {
-      children.add(SizedBox(height: dense ? 8 : 12));
+      children.add(SizedBox(height: dense ? 6 : 10));
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
         children.add(
@@ -831,8 +878,8 @@ class SetRowContent extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final hasAddButton = !readOnly && drop.showAddButton;
-                final fieldGap = dense ? 8.0 : 12.0;
-                final buttonSize = dense ? 40.0 : 44.0;
+                final fieldGap = dense ? 6.0 : 10.0;
+                final buttonSize = dense ? 36.0 : 40.0;
                 final trailingLeadingGap = fieldGap;
                 final trailingBetweenGap = dense ? 6.0 : 8.0;
                 final trailingReservedWidth =
@@ -908,7 +955,7 @@ class SetRowContent extends StatelessWidget {
           ),
         );
         if (i != dropRows.length - 1) {
-          children.add(SizedBox(height: dense ? 8 : 12));
+          children.add(SizedBox(height: dense ? 6 : 10));
         }
       }
     }
@@ -970,12 +1017,12 @@ class _IndexBadge extends StatelessWidget {
     return Semantics(
       label: 'Set $index',
       child: Container(
-        width: dense ? 28 : 32,
-        height: dense ? 28 : 32,
+        width: dense ? 24 : 28,
+        height: dense ? 24 : 28,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tokens.cardFill,
-          borderRadius: BorderRadius.circular(dense ? 14 : 16),
+          borderRadius: BorderRadius.circular(dense ? 12 : 14),
           boxShadow: [
             BoxShadow(
               color: tokens.menuFg.withOpacity(0.12),
@@ -1121,51 +1168,54 @@ class _InputPillState extends State<_InputPill> {
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final brandColor = colorScheme.primary;
 
-    final radius = BorderRadius.circular(widget.dense ? 16 : 20);
-    final baseOverlay = Colors.transparent;
-    final haloColor = Colors.black.withOpacity(
-      hasFocus
-          ? (isDark ? 0.28 : 0.22)
-          : (isDark ? 0.18 : 0.12),
-    );
-    final borderColor = colorScheme.outline.withOpacity(
-      hasFocus
-          ? (isDark ? 0.7 : 0.6)
-          : (isDark ? 0.45 : 0.4),
-    );
+    final radius = BorderRadius.circular(widget.dense ? 12 : 16);
+    final baseTextColor = colorScheme.onSurface;
+    final fillColor = disabled
+        ? widget.tokens.inputFillDisabled
+        : widget.tokens.inputFill;
+    final borderColor = disabled
+        ? widget.tokens.inputStroke.withOpacity(0.45)
+        : hasFocus
+            ? widget.tokens.inputStrokeFocused
+            : widget.tokens.inputStroke;
+    final haloColor = disabled
+        ? Colors.transparent
+        : widget.tokens.inputHalo.withOpacity(hasFocus ? 1.0 : 0.65);
 
     final labelStyle = GoogleFonts.inter(
       fontSize: widget.dense ? 11 : 12,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
-      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.8 : 0.6),
+      color: baseTextColor.withOpacity(hasFocus ? 0.74 : 0.6),
     );
 
-    final valueColor = brandColor
-        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.65));
-    final keypadTypeface = Theme.of(context).textTheme.titleLarge ??
-        Theme.of(context).textTheme.bodyMedium ??
+    final valueColor = disabled
+        ? baseTextColor.withOpacity(0.42)
+        : baseTextColor
+            .withOpacity(hasValue ? 0.95 : (hasFocus ? 0.8 : 0.7));
+    final keypadTypeface = theme.textTheme.titleLarge ??
+        theme.textTheme.bodyMedium ??
         const TextStyle();
     final valueStyle = keypadTypeface.copyWith(
       fontSize:
-          showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
+          showLabel ? (widget.dense ? 16 : 18) : (widget.dense ? 20 : 24),
       fontWeight: FontWeight.w600,
       color: valueColor,
       height: 1.15,
     );
 
     final placeholderStyle = valueStyle.copyWith(
-      color: brandColor.withOpacity(0.35),
+      color: baseTextColor.withOpacity(0.4),
+      fontWeight: FontWeight.w500,
     );
 
     final double horizontalPadding =
-        showLabel ? (widget.dense ? 12 : 14) : (widget.dense ? 12 : 16);
+        showLabel ? (widget.dense ? 10 : 12) : (widget.dense ? 10 : 14);
     final double verticalPadding =
-        showLabel ? (widget.dense ? 6 : 8) : (widget.dense ? 8 : 10);
+        showLabel ? (widget.dense ? 4 : 6) : (widget.dense ? 6 : 8);
 
     final Widget textField = SizedBox(
       width: double.infinity,
@@ -1204,26 +1254,31 @@ class _InputPillState extends State<_InputPill> {
           horizontal: horizontalPadding,
           vertical: verticalPadding,
         ),
-        constraints:
-            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 48 : 56),
+        constraints: showLabel
+            ? null
+            : BoxConstraints(minHeight: widget.dense ? 40 : 46),
         decoration: BoxDecoration(
-          color: baseOverlay,
+          color: fillColor,
           borderRadius: radius,
           border: Border.all(
             color: borderColor,
-            width: showLabel ? 1 : 1.2,
+            width: showLabel ? 1 : 1.1,
           ),
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
                     color: haloColor,
-                    blurRadius:
-                        hasFocus ? (showLabel ? 24 : 28) : (showLabel ? 12 : 16),
-                    spreadRadius:
-                        hasFocus ? (showLabel ? 0.8 : 0.9) : (showLabel ? 0.2 : 0.3),
-                    offset:
-                        Offset(0, hasFocus ? (showLabel ? 10 : 12) : (showLabel ? 6 : 8)),
+                    blurRadius: hasFocus
+                        ? (showLabel ? 16 : 20)
+                        : (showLabel ? 9 : 12),
+                    spreadRadius: hasFocus
+                        ? (showLabel ? 0.5 : 0.7)
+                        : (showLabel ? 0.18 : 0.25),
+                    offset: Offset(
+                      0,
+                      hasFocus ? (showLabel ? 5 : 7) : (showLabel ? 3 : 5),
+                    ),
                   ),
                 ],
         ),
@@ -1295,7 +1350,7 @@ class _RoundButtonState extends State<_RoundButton> {
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.dense ? 40.0 : 44.0;
+    final size = widget.dense ? 36.0 : 40.0;
     final scale = _pressed ? 0.98 : 1.0;
     return Semantics(
       label: widget.semantics,
@@ -1318,7 +1373,7 @@ class _RoundButtonState extends State<_RoundButton> {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(widget.dense ? 12 : 14),
               color: widget.tokens.cardFill,
               boxShadow: widget.onTap == null
                   ? null
