@@ -28,6 +28,12 @@ class SetCardTheme {
   final Color menuBg;
   final Color menuFg;
   final Color cardFill;
+  final Color pillFill;
+  final Color pillFillDisabled;
+  final Color pillBorderIdle;
+  final Color pillBorderFocus;
+  final Color pillShadowIdle;
+  final Color pillShadowFocus;
 
   const SetCardTheme({
     required this.padding,
@@ -39,6 +45,12 @@ class SetCardTheme {
     required this.menuBg,
     required this.menuFg,
     required this.cardFill,
+    required this.pillFill,
+    required this.pillFillDisabled,
+    required this.pillBorderIdle,
+    required this.pillBorderFocus,
+    required this.pillShadowIdle,
+    required this.pillShadowFocus,
   });
 
   factory SetCardTheme.of(BuildContext context) {
@@ -58,6 +70,24 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.85 : 0.9),
       softenedSurface,
     );
+    final pillBase = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.82 : 0.88),
+      scheme.surfaceVariant.withOpacity(isDark ? 0.65 : 0.78),
+    );
+    final pillDisabled = Color.alphaBlend(
+      Colors.black.withOpacity(isDark ? 0.72 : 0.68),
+      scheme.surfaceVariant.withOpacity(isDark ? 0.5 : 0.6),
+    );
+    final pillBorderIdle = Color.alphaBlend(
+      scheme.surfaceTint.withOpacity(isDark ? 0.08 : 0.05),
+      scheme.onSurface.withOpacity(isDark ? 0.38 : 0.24),
+    );
+    final pillBorderFocus = Color.alphaBlend(
+      scheme.primary.withOpacity(isDark ? 0.7 : 0.55),
+      scheme.onSurface.withOpacity(isDark ? 0.5 : 0.38),
+    );
+    final pillShadowIdle = Colors.black.withOpacity(isDark ? 0.42 : 0.34);
+    final pillShadowFocus = Colors.black.withOpacity(isDark ? 0.56 : 0.48);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -69,6 +99,12 @@ class SetCardTheme {
       menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
       menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
       cardFill: cardFill,
+      pillFill: pillBase,
+      pillFillDisabled: pillDisabled,
+      pillBorderIdle: pillBorderIdle,
+      pillBorderFocus: pillBorderFocus,
+      pillShadowIdle: pillShadowIdle,
+      pillShadowFocus: pillShadowFocus,
     );
   }
 
@@ -82,6 +118,12 @@ class SetCardTheme {
     Color? menuBg,
     Color? menuFg,
     Color? cardFill,
+    Color? pillFill,
+    Color? pillFillDisabled,
+    Color? pillBorderIdle,
+    Color? pillBorderFocus,
+    Color? pillShadowIdle,
+    Color? pillShadowFocus,
   }) {
     return SetCardTheme(
       padding: padding ?? this.padding,
@@ -93,6 +135,12 @@ class SetCardTheme {
       menuBg: menuBg ?? this.menuBg,
       menuFg: menuFg ?? this.menuFg,
       cardFill: cardFill ?? this.cardFill,
+      pillFill: pillFill ?? this.pillFill,
+      pillFillDisabled: pillFillDisabled ?? this.pillFillDisabled,
+      pillBorderIdle: pillBorderIdle ?? this.pillBorderIdle,
+      pillBorderFocus: pillBorderFocus ?? this.pillBorderFocus,
+      pillShadowIdle: pillShadowIdle ?? this.pillShadowIdle,
+      pillShadowFocus: pillShadowFocus ?? this.pillShadowFocus,
     );
   }
 }
@@ -713,16 +761,16 @@ class SetRowContent extends StatelessWidget {
       letterSpacing: 0.2,
       color: tokens.chipFg.withOpacity(0.78),
     );
-    final double indexBadgeWidth = dense ? 28.0 : 32.0;
-    final double indexBadgeGap = dense ? 8.0 : 12.0;
-    final double dropBadgeToFieldGap = dense ? 8.0 : 12.0;
+    final double indexBadgeWidth = dense ? 26.0 : 30.0;
+    final double indexBadgeGap = dense ? 6.0 : 10.0;
+    final double dropBadgeToFieldGap = dense ? 6.0 : 10.0;
     final double leadingWidth = indexBadgeWidth + indexBadgeGap;
 
     final children = <Widget>[];
     if (showFieldHeaderRow && showFieldHeaders) {
       children.add(
         Padding(
-          padding: EdgeInsets.only(bottom: dense ? 6 : 8),
+          padding: EdgeInsets.only(bottom: dense ? 4 : 6),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -733,7 +781,7 @@ class SetRowContent extends StatelessWidget {
                   style: headerStyle,
                 ),
               ),
-              SizedBox(width: dense ? 8 : 12),
+                SizedBox(width: dense ? 6 : 10),
               Expanded(
                 child: Text(
                   repsLabel,
@@ -755,7 +803,7 @@ class SetRowContent extends StatelessWidget {
             index: index,
             dense: dense,
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           Expanded(
             child: _InputPill(
               controller: weightController,
@@ -776,7 +824,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: weightLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           Expanded(
             child: _InputPill(
               controller: repsController,
@@ -795,7 +843,7 @@ class SetRowContent extends StatelessWidget {
               placeholder: repsLabel,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
+          SizedBox(width: dense ? 6 : 10),
           _RoundButton(
             tokens: tokens,
             icon: showExtras ? Icons.expand_less : Icons.expand_more,
@@ -806,7 +854,7 @@ class SetRowContent extends StatelessWidget {
             iconColor: primaryColor,
             disabledIconColor: primaryColor.withOpacity(0.4),
           ),
-          SizedBox(width: dense ? 6 : 8),
+          SizedBox(width: dense ? 5 : 7),
           _RoundButton(
             tokens: tokens,
             icon: Icons.check,
@@ -822,7 +870,7 @@ class SetRowContent extends StatelessWidget {
       ),
     );
     if (showExtras) {
-      children.add(SizedBox(height: dense ? 8 : 12));
+      children.add(SizedBox(height: dense ? 6 : 10));
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
         children.add(
@@ -831,10 +879,10 @@ class SetRowContent extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final hasAddButton = !readOnly && drop.showAddButton;
-                final fieldGap = dense ? 8.0 : 12.0;
-                final buttonSize = dense ? 40.0 : 44.0;
+                final fieldGap = dense ? 6.0 : 10.0;
+                final buttonSize = dense ? 38.0 : 42.0;
                 final trailingLeadingGap = fieldGap;
-                final trailingBetweenGap = dense ? 6.0 : 8.0;
+                final trailingBetweenGap = dense ? 5.0 : 7.0;
                 final trailingReservedWidth =
                     trailingLeadingGap + buttonSize + trailingBetweenGap + buttonSize;
                 final available = constraints.maxWidth -
@@ -1121,51 +1169,52 @@ class _InputPillState extends State<_InputPill> {
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final brandColor = colorScheme.primary;
 
-    final radius = BorderRadius.circular(widget.dense ? 16 : 20);
-    final baseOverlay = Colors.transparent;
-    final haloColor = Colors.black.withOpacity(
-      hasFocus
-          ? (isDark ? 0.28 : 0.22)
-          : (isDark ? 0.18 : 0.12),
-    );
-    final borderColor = colorScheme.outline.withOpacity(
-      hasFocus
-          ? (isDark ? 0.7 : 0.6)
-          : (isDark ? 0.45 : 0.4),
-    );
+    final radius = BorderRadius.circular(widget.dense ? 14 : 18);
+    final borderColor =
+        hasFocus ? widget.tokens.pillBorderFocus : widget.tokens.pillBorderIdle;
+    final fillColor =
+        disabled ? widget.tokens.pillFillDisabled : widget.tokens.pillFill;
+    final haloColor = hasFocus
+        ? widget.tokens.pillShadowFocus
+        : widget.tokens.pillShadowIdle;
 
     final labelStyle = GoogleFonts.inter(
-      fontSize: widget.dense ? 11 : 12,
+      fontSize: widget.dense ? 10.5 : 11.5,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
-      color: widget.tokens.chipFg.withOpacity(hasFocus ? 0.8 : 0.6),
+      color: widget.tokens.chipFg
+          .withOpacity(disabled ? 0.45 : (hasFocus ? 0.85 : 0.7)),
     );
 
-    final valueColor = brandColor
-        .withOpacity(disabled ? 0.4 : (hasValue ? 0.95 : 0.65));
-    final keypadTypeface = Theme.of(context).textTheme.titleLarge ??
-        Theme.of(context).textTheme.bodyMedium ??
+    final onSurface = colorScheme.onSurface;
+    final keypadTypeface = theme.textTheme.titleLarge ??
+        theme.textTheme.bodyMedium ??
         const TextStyle();
     final valueStyle = keypadTypeface.copyWith(
       fontSize:
-          showLabel ? (widget.dense ? 18 : 20) : (widget.dense ? 22 : 26),
+          showLabel ? (widget.dense ? 17 : 19) : (widget.dense ? 20 : 24),
       fontWeight: FontWeight.w600,
-      color: valueColor,
-      height: 1.15,
+      color: onSurface.withOpacity(
+        disabled
+            ? 0.42
+            : hasValue
+                ? (hasFocus ? 0.96 : 0.86)
+                : 0.68,
+      ),
+      height: 1.12,
     );
 
     final placeholderStyle = valueStyle.copyWith(
-      color: brandColor.withOpacity(0.35),
+      color: onSurface.withOpacity(disabled ? 0.28 : 0.38),
     );
 
     final double horizontalPadding =
-        showLabel ? (widget.dense ? 12 : 14) : (widget.dense ? 12 : 16);
+        showLabel ? (widget.dense ? 10 : 12) : (widget.dense ? 10 : 14);
     final double verticalPadding =
-        showLabel ? (widget.dense ? 6 : 8) : (widget.dense ? 8 : 10);
+        showLabel ? (widget.dense ? 4 : 6) : (widget.dense ? 6 : 8);
 
     final Widget textField = SizedBox(
       width: double.infinity,
@@ -1205,13 +1254,13 @@ class _InputPillState extends State<_InputPill> {
           vertical: verticalPadding,
         ),
         constraints:
-            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 48 : 56),
+            showLabel ? null : BoxConstraints(minHeight: widget.dense ? 40 : 46),
         decoration: BoxDecoration(
-          color: baseOverlay,
+          color: fillColor,
           borderRadius: radius,
           border: Border.all(
             color: borderColor,
-            width: showLabel ? 1 : 1.2,
+            width: showLabel ? 1 : 1.1,
           ),
           boxShadow: disabled
               ? null
@@ -1219,11 +1268,11 @@ class _InputPillState extends State<_InputPill> {
                   BoxShadow(
                     color: haloColor,
                     blurRadius:
-                        hasFocus ? (showLabel ? 24 : 28) : (showLabel ? 12 : 16),
+                        hasFocus ? (showLabel ? 18 : 22) : (showLabel ? 10 : 14),
                     spreadRadius:
-                        hasFocus ? (showLabel ? 0.8 : 0.9) : (showLabel ? 0.2 : 0.3),
+                        hasFocus ? (showLabel ? 0.4 : 0.6) : (showLabel ? 0.15 : 0.25),
                     offset:
-                        Offset(0, hasFocus ? (showLabel ? 10 : 12) : (showLabel ? 6 : 8)),
+                        Offset(0, hasFocus ? (showLabel ? 8 : 10) : (showLabel ? 4 : 6)),
                   ),
                 ],
         ),
