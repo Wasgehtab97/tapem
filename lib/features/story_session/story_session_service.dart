@@ -155,7 +155,17 @@ class StorySessionService {
     required List<Session> sessions,
     required int dayXp,
   }) async {
-    if (sessions.isEmpty || _hasNonDailyAchievements(summary)) {
+    final hasPrAchievement = summary.achievements
+        .any((achievement) => achievement.type == StoryAchievementType.personalRecord);
+    final hasFirstTimeAchievement = summary.achievements.any(
+      (achievement) =>
+          achievement.type == StoryAchievementType.newDevice ||
+          achievement.type == StoryAchievementType.newExercise,
+    );
+
+    if (sessions.isEmpty ||
+        (_hasNonDailyAchievements(summary) &&
+            !(hasPrAchievement && hasFirstTimeAchievement))) {
       return summary;
     }
 
@@ -321,6 +331,7 @@ class StorySessionService {
     }
 
     final newPrs = <String, _PrCandidate>{};
+    final prUpdates = <String, StorySessionPrCacheEntry>{};
     for (final session in sessions) {
       final bestPr = _bestPrForSession(session);
       if (bestPr == null) continue;
@@ -335,7 +346,19 @@ class StorySessionService {
         before: startOfDay,
         dayKey: dayKey,
       );
-      if (bestE1rm > (previousBest ?? 0) + 0.01) {
+      final pendingUpdate = prUpdates[recordKey];
+      final hasBaseline = previousBest != null || pendingUpdate != null;
+
+      if (!hasBaseline) {
+        prUpdates[recordKey] = StorySessionPrCacheEntry(
+          value: double.parse(bestE1rm.toStringAsFixed(3)),
+          dayKey: dayKey,
+        );
+        continue;
+      }
+
+      final baseline = max(previousBest ?? 0, pendingUpdate?.value ?? 0);
+      if (bestE1rm > baseline + 0.01) {
         final existing = newPrs[recordKey];
         if (existing == null || bestE1rm > existing.e1rm) {
           newPrs[recordKey] = _PrCandidate(
@@ -345,6 +368,16 @@ class StorySessionService {
             reps: bestPr.reps,
           );
         }
+        prUpdates[recordKey] = StorySessionPrCacheEntry(
+          value: double.parse(bestE1rm.toStringAsFixed(3)),
+          dayKey: dayKey,
+        );
+      } else if (bestE1rm > baseline &&
+          (pendingUpdate == null || bestE1rm > pendingUpdate.value)) {
+        prUpdates[recordKey] = StorySessionPrCacheEntry(
+          value: double.parse(bestE1rm.toStringAsFixed(3)),
+          dayKey: dayKey,
+        );
       }
     }
 
@@ -456,17 +489,7 @@ class StorySessionService {
         return MapEntry(parts.first, parts.last);
       }),
     );
-    await _prStore.write(
-      gymId,
-      userId,
-      {
-        for (final entry in newPrs.entries)
-          entry.key: StorySessionPrCacheEntry(
-            value: double.parse(entry.value.e1rm.toStringAsFixed(3)),
-            dayKey: dayKey,
-          ),
-      },
-    );
+    await _prStore.write(gymId, userId, prUpdates);
 
     return summary;
   }
