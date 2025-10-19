@@ -34,6 +34,7 @@ import '../models/session_set_vm.dart';
 import '../widgets/device_pager.dart';
 import '../widgets/last_session_card.dart';
 import '../widgets/note_button_widget.dart';
+import '../widgets/session_navigation_controls.dart';
 import '../widgets/set_card.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
 
@@ -60,6 +61,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   final _scrollController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
   final _pagerKey = GlobalKey<DevicePagerState>();
+  int _currentPagerIndex = 0;
   OverlayNumericKeypadController? _keypadController;
 
   @override
@@ -125,6 +127,14 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void _closeKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
     (_keypadController ?? context.read<OverlayNumericKeypadController>()).close();
+  }
+
+  void _handlePagerIndexChanged(int index) {
+    if (_currentPagerIndex != index) {
+      setState(() {
+        _currentPagerIndex = index;
+      });
+    }
   }
 
   String? _resolveExerciseTitle(
@@ -274,6 +284,9 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 final lastSets = lastSnap != null ? mapSnapshotToVM(lastSnap) : mapLegacySetsToVM(prov.lastSessionSets);
                 final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
                 final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+                final itemCount = 1 + prov.sessionSnapshots.length;
+                final canGoOlder = _currentPagerIndex < itemCount - 1;
+                final canGoNewer = _currentPagerIndex > 0;
                 return ListView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -314,9 +327,17 @@ class _DeviceScreenState extends State<DeviceScreen> {
                         ),
                       if (prov.sets.isNotEmpty) const SizedBox(height: 12),
                       Center(
-                        child: _AddSetButton(
-                          label: loc.addSetButton,
-                          onPressed: _addSet,
+                        child: SessionNavigationControls(
+                          onPrevious: canGoOlder
+                              ? () => _pagerKey.currentState?.goToPreviousSession()
+                              : null,
+                          onNext: canGoNewer
+                              ? () => _pagerKey.currentState?.goToNextSession()
+                              : null,
+                          center: _AddSetButton(
+                            label: loc.addSetButton,
+                            onPressed: _addSet,
+                          ),
                         ),
                       ),
                     ],
@@ -540,7 +561,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
       scaffold = Scaffold(
         appBar: _buildAppBar(context, prov),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: NoteButtonWidget(deviceId: widget.deviceId),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 72, right: 4),
+          child: NoteButtonWidget(deviceId: widget.deviceId),
+        ),
         body: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
           child: DevicePager(
@@ -549,6 +573,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
             deviceId: prov.device!.uid,
             userId: auth.userId!,
             provider: prov,
+            onIndexChanged: _handlePagerIndexChanged,
             editablePage:
                 _buildEditablePage(
                   prov,

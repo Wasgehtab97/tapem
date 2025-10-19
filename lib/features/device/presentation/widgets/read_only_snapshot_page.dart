@@ -4,10 +4,22 @@ import 'package:tapem/features/device/domain/models/device_session_snapshot.dart
 import 'set_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'session_navigation_controls.dart';
 
 class ReadOnlySnapshotPage extends StatelessWidget {
   final DeviceSessionSnapshot snapshot;
-  const ReadOnlySnapshotPage({super.key, required this.snapshot});
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+  final bool canGoPrevious;
+  final bool canGoNext;
+  const ReadOnlySnapshotPage({
+    super.key,
+    required this.snapshot,
+    this.onPrevious,
+    this.onNext,
+    this.canGoPrevious = true,
+    this.canGoNext = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +101,17 @@ class ReadOnlySnapshotPage extends StatelessWidget {
               child: Text(snapshot.note!),
             ),
           ),
+        SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Center(
+            child: SessionNavigationControls(
+              onPrevious: canGoPrevious ? onPrevious : null,
+              onNext: canGoNext ? onNext : null,
+              center: const SizedBox(width: 48, height: 48),
+            ),
+          ),
+        ),
       ],
     );
   }
