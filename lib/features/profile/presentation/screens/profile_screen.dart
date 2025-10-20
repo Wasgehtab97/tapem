@@ -565,9 +565,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: DefaultTextStyle.merge(
-        style: TextStyle(color: brandColor),
-        child: buildBody(),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Align(
+                alignment: Alignment.center,
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: Opacity(
+                    opacity: 0.06,
+                    child: Image.asset(
+                      'assets/logos/logo.png',
+                      fit: BoxFit.contain,
+                      color: brandColor,
+                      colorBlendMode: BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          DefaultTextStyle.merge(
+            style: TextStyle(color: brandColor),
+            child: buildBody(),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         child: DefaultTextStyle.merge(
