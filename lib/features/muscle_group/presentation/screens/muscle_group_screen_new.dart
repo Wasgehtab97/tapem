@@ -1,21 +1,17 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
-import '../widgets/interactive_svg_muscle_heatmap_widget.dart';
-import '../widgets/mesh_3d_heatmap_widget.dart';
 import '../../domain/models/muscle_group.dart';
+import '../widgets/muscle_group_radar_chart.dart';
+import '../../../../ui/muscles/muscle_group_display.dart';
 
-/// A revised muscle group screen that displays a granular 2D heatmap instead of
-/// the previous rudimentary visualisation. The heatmap colours each muscle
-/// region according to the normalised training count and follows the
-/// mint→turquoise→amber gradient. Hover or tap interactions can be added
-/// later via tooltips.
 class MuscleGroupScreenNew extends StatefulWidget {
   const MuscleGroupScreenNew({Key? key}) : super(key: key);
 
@@ -24,7 +20,6 @@ class MuscleGroupScreenNew extends StatefulWidget {
 }
 
 class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
-  bool showFront = true;
   @override
   void initState() {
     super.initState();
@@ -56,13 +51,29 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     }
 
     final xpProv = context.watch<XpProvider>();
-
-    // Map XP data from the provider to the corresponding muscle regions.
-    final Map<MuscleRegion, int> regionXp = {};
     final groups = prov.groups;
+
+    const orderedRegions = [
+      MuscleRegion.brust,
+      MuscleRegion.schulter,
+      MuscleRegion.nacken,
+      MuscleRegion.ruecken,
+      MuscleRegion.bizeps,
+      MuscleRegion.trizeps,
+      MuscleRegion.bauch,
+      MuscleRegion.quadrizeps,
+      MuscleRegion.hamstrings,
+      MuscleRegion.gluteus,
+      MuscleRegion.waden,
+    ];
+
+    final regionXp = <MuscleRegion, double>{
+      for (final region in orderedRegions) region: 0,
+    };
+
     for (final entry in xpProv.muscleXp.entries) {
-      MuscleRegion? region;
       final grp = groups.firstWhereOrNull((g) => g.id == entry.key);
+      MuscleRegion? region;
       if (grp != null) {
         region = grp.region;
       } else {
@@ -71,118 +82,184 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
         );
       }
       if (region != null) {
-        regionXp[region] = (regionXp[region] ?? 0) + entry.value;
+        regionXp[region] = (regionXp[region] ?? 0) + entry.value.toDouble();
       }
     }
 
-    int valueFor(MuscleRegion region) => regionXp[region] ?? 0;
+    double totalXp = 0;
+    for (final value in regionXp.values) {
+      totalXp += value;
+    }
 
-    final xpMap = <String, int>{
-      'trapezius': valueFor(MuscleRegion.nacken),
-      'anterior_deltoid': valueFor(MuscleRegion.schulter),
-      'lateral_deltoid': valueFor(MuscleRegion.schulter),
-      'posterior_deltoid': valueFor(MuscleRegion.schulter),
-      'pectoral': valueFor(MuscleRegion.brust),
-      'latissimus_dorsi': valueFor(MuscleRegion.ruecken),
-      'lower_back': valueFor(MuscleRegion.ruecken),
-      'rhomboids': valueFor(MuscleRegion.ruecken),
-      'biceps': valueFor(MuscleRegion.bizeps),
-      'triceps': valueFor(MuscleRegion.trizeps),
-      'forearm': 0,
-      'abs': valueFor(MuscleRegion.bauch),
-      'gluteus': valueFor(MuscleRegion.gluteus),
-      'quadriceps': valueFor(MuscleRegion.quadrizeps),
-      'hamstrings': valueFor(MuscleRegion.hamstrings),
-      'adductors': 0,
-      'abductors': 0,
-      'calves': valueFor(MuscleRegion.waden),
-      'feet': valueFor(MuscleRegion.waden),
+    final percentageByRegion = <MuscleRegion, double>{
+      for (final region in orderedRegions)
+        region: totalXp > 0 ? (regionXp[region]! / totalXp) : 0,
     };
 
-    final values = xpMap.values.map((e) => e.toDouble());
-    final minXp = values.isNotEmpty ? values.reduce(math.min) : 0.0;
-    final maxXp = values.isNotEmpty ? values.reduce(math.max) : 0.0;
-    const mintColor = Color(0xFF00E676);
-    const amberColor = Color(0xFFFFC107);
-    final colorMap = <String, Color>{};
-    xpMap.forEach((id, xp) {
-      final t =
-          maxXp > minXp
-              ? ((xp - minXp) / (maxXp - minXp)).clamp(0.0, 1.0)
-              : 0.0;
-      colorMap[id] = Color.lerp(mintColor, amberColor, t)!;
-    });
-
-    void showXp(String regionId) {
-      final xp = xpMap[regionId] ?? 0;
-      showDialog(
-        context: context,
-        builder:
-            (_) => AlertDialog(
-              title: Text(regionId.replaceAll('_', ' ')),
-              content: Text('$xp XP'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
+    String _labelForRegion(MuscleRegion region) {
+      final regionGroups = groups.where((g) => g.region == region);
+      final canonical = regionGroups.firstWhereOrNull(
+        (g) => g.name.trim().toLowerCase() == region.name.toLowerCase(),
       );
+      final fallback = canonical ?? regionGroups.firstOrNull;
+      return displayNameForMuscleGroup(region, fallback);
     }
+
+    final chartEntries = [
+      for (final region in orderedRegions)
+        MuscleRadarEntry(
+          label: _labelForRegion(region),
+          percentage: percentageByRegion[region]!.clamp(0.0, 1.0),
+        ),
+    ];
+
+    final localeName = Localizations.localeOf(context).toString();
+    final numberFormat = NumberFormat.decimalPattern(localeName);
+
+    final stats = [
+      for (final region in orderedRegions)
+        _MuscleStat(
+          region: region,
+          label: _labelForRegion(region),
+          xp: regionXp[region] ?? 0,
+          percentage: percentageByRegion[region] ?? 0,
+        ),
+    ];
+
+    final chartExtent = math.max(
+      280.0,
+      math.min(MediaQuery.of(context).size.width - 32, 420.0),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Muskelgruppen')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: DefaultTabController(
-          length: 2,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const TabBar(tabs: [Tab(text: '2D'), Tab(text: '3D')]),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() => showFront = true),
-                    child: Text(
-                      'Front',
-                      style: TextStyle(
-                        color: showFront ? Colors.green : Colors.grey,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => showFront = false),
-                    child: Text(
-                      'Back',
-                      style: TextStyle(
-                        color: !showFront ? Colors.green : Colors.grey,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                'Verteilung deiner XP',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    Center(
-                      child: InteractiveSvgMuscleHeatmapWidget(
-                        colors: colorMap,
-                        assetPath:
-                            showFront
-                                ? 'assets/body_front.svg'
-                                : 'assets/body_back.svg',
-                        onRegionTap: showXp,
-                      ),
+              const SizedBox(height: 12),
+              if (totalXp <= 0)
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  child: const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Sammle erste Trainingseinheiten, um deine Muskelverteilung zu sehen.',
                     ),
-                    Mesh3DHeatmapWidget(muscleColors: colorMap),
-                  ],
+                  ),
+                )
+              else ...[
+                Center(
+                  child: SizedBox(
+                    height: chartExtent,
+                    width: chartExtent,
+                    child: MuscleGroupRadarChart(entries: chartEntries),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                Text(
+                  'Details nach Muskelgruppe',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                ...stats.map((stat) {
+                  final xpLabel = numberFormat.format(stat.xp.round());
+                  final percentLabel = (stat.percentage * 100).toStringAsFixed(1);
+                  return _MuscleStatTile(
+                    label: stat.label,
+                    xpLabel: '$xpLabel XP',
+                    percentage: stat.percentage.clamp(0.0, 1.0),
+                    percentageLabel: '$percentLabel %',
+                  );
+                }),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MuscleStat {
+  const _MuscleStat({
+    required this.region,
+    required this.label,
+    required this.xp,
+    required this.percentage,
+  });
+
+  final MuscleRegion region;
+  final String label;
+  final double xp;
+  final double percentage;
+}
+
+class _MuscleStatTile extends StatelessWidget {
+  const _MuscleStatTile({
+    required this.label,
+    required this.xpLabel,
+    required this.percentage,
+    required this.percentageLabel,
+  });
+
+  final String label;
+  final String xpLabel;
+  final double percentage;
+  final String percentageLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                Text(
+                  percentageLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              xpLabel,
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(4)),
+              child: LinearProgressIndicator(
+                value: percentage.clamp(0.0, 1.0),
+                minHeight: 6,
+                backgroundColor: theme.colorScheme.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
