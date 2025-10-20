@@ -16,17 +16,22 @@ import 'package:tapem/l10n/app_localizations.dart';
 class TrainingDetailsScreen extends StatelessWidget {
   final DateTime date;
   final String userId;
+  final String? gymId;
 
-  const TrainingDetailsScreen({Key? key, required this.date, required this.userId})
-      : super(key: key);
+  const TrainingDetailsScreen({
+    Key? key,
+    required this.date,
+    required this.userId,
+    this.gymId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final gymId = context.read<BrandingProvider>().gymId!;
+    final fallbackGymId = gymId ?? context.read<BrandingProvider>().gymId;
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
         final prov = TrainingDetailsProvider();
-        prov.loadSessions(userId: userId, date: date, gymId: gymId);
+        prov.loadSessions(userId: userId, date: date, gymId: fallbackGymId);
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(
@@ -53,8 +58,13 @@ class TrainingDetailsScreen extends StatelessWidget {
             final storyService = ctx.read<StorySessionService>();
             final navigator = Navigator.of(ctx);
             final messenger = ScaffoldMessenger.of(ctx);
+            final resolvedGymId = prov.gymId ?? fallbackGymId;
+            if (resolvedGymId == null) {
+              debugPrint('⚠️ storySession: missing gymId for summary');
+              return;
+            }
             final summary = await storyService.getSummary(
-              gymId: gymId,
+              gymId: resolvedGymId,
               userId: userId,
               date: date,
               sessions: sessions,
@@ -76,7 +86,10 @@ class TrainingDetailsScreen extends StatelessWidget {
             appBar: _AppBar(
               titleDate: date,
               durationMs: duration,
-              onStoryPressed: sessions.isEmpty ? null : openStory,
+              onStoryPressed: sessions.isEmpty ||
+                      (prov.gymId ?? fallbackGymId) == null
+                  ? null
+                  : openStory,
             ),
             body: sessions.isEmpty
                 ? const Center(child: Text('Keine Trainingseinheiten'))
