@@ -27,6 +27,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required String userId,
     required DateTime date,
     bool fromCacheOnly = false,
+    bool includePrivateMeta = true,
   }) async {
     final dtos = await _source.getSessionsForDate(
       userId: userId,
@@ -129,21 +130,23 @@ class SessionRepositoryImpl implements SessionRepository {
       DateTime? startTime;
       DateTime? endTime;
       int? durationMs;
-      try {
-        final meta = await _meta.getMetaBySessionId(
-          gymId: gymId,
-          uid: first.userId,
-          sessionId: first.sessionId,
-          fromCacheOnly: fromCacheOnly,
-        );
-        if (meta != null) {
-          final startTs = meta['startTime'];
-          final endTs = meta['endTime'];
-          if (startTs is Timestamp) startTime = startTs.toDate();
-          if (endTs is Timestamp) endTime = endTs.toDate();
-          durationMs = (meta['durationMs'] as num?)?.toInt();
-        }
-      } catch (_) {}
+      if (includePrivateMeta) {
+        try {
+          final meta = await _meta.getMetaBySessionId(
+            gymId: gymId,
+            uid: first.userId,
+            sessionId: first.sessionId,
+            fromCacheOnly: fromCacheOnly,
+          );
+          if (meta != null) {
+            final startTs = meta['startTime'];
+            final endTs = meta['endTime'];
+            if (startTs is Timestamp) startTime = startTs.toDate();
+            if (endTs is Timestamp) endTime = endTs.toDate();
+            durationMs = (meta['durationMs'] as num?)?.toInt();
+          }
+        } catch (_) {}
+      }
 
       sessions.add(
         Session(

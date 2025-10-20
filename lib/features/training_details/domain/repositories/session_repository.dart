@@ -5,6 +5,7 @@ abstract class SessionRepository {
     required String userId,
     required DateTime date,
     bool fromCacheOnly = false,
+    bool includePrivateMeta = true,
   });
 
   Future<void> deleteSession({

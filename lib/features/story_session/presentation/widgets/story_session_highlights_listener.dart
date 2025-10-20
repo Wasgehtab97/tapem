@@ -75,6 +75,7 @@ class _StorySessionHighlightsListenerState
       sessions = await _getSessionsForDate.execute(
         userId: event.userId,
         date: event.start,
+        includePrivateMeta: true,
       );
     } catch (error, stackTrace) {
       debugPrint(

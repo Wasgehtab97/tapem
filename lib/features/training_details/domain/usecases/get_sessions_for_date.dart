@@ -11,11 +11,13 @@ class GetSessionsForDate {
     required String userId,
     required DateTime date,
     bool fromCacheOnly = false,
+    bool includePrivateMeta = true,
   }) {
     return _repository.getSessionsForDate(
       userId: userId,
       date: date,
       fromCacheOnly: fromCacheOnly,
+      includePrivateMeta: includePrivateMeta,
     );
   }
 }

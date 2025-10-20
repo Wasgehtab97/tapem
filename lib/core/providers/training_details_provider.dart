@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
@@ -8,15 +9,19 @@ import 'package:tapem/features/training_details/domain/usecases/delete_session.d
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/services/membership_service.dart';
 
 /// Notifier für den TrainingDetailsScreen.
 class TrainingDetailsProvider extends ChangeNotifier {
   late final GetSessionsForDate _getSessions;
   late final DeleteSession _deleteSession;
   final SessionMetaSource _meta = SessionMetaSource();
+  final MembershipService _membership;
   String? _userId;
+  String? _viewerId;
   String? _gymId;
   DateTime? _date;
+  bool _includePrivateMeta = true;
 
   bool _isLoading = false;
   String? _error;
@@ -32,13 +37,17 @@ class TrainingDetailsProvider extends ChangeNotifier {
   int? get dayDurationMs => _dayDurationMs;
   String? get gymId => _gymId;
 
-  TrainingDetailsProvider() {
+  TrainingDetailsProvider({
+    MembershipService? membership,
+    String? viewerUserId,
+  }) : _membership = membership ?? FirestoreMembershipService() {
     final repo = SessionRepositoryImpl(
       FirestoreSessionSource(),
       _meta,
     );
     _getSessions = GetSessionsForDate(repo);
     _deleteSession = DeleteSession(repo);
+    _viewerId = viewerUserId ?? FirebaseAuth.instance.currentUser?.uid;
   }
 
   /// Lädt alle Sessions für [userId] am [date].
@@ -46,12 +55,16 @@ class TrainingDetailsProvider extends ChangeNotifier {
     required String userId,
     required DateTime date,
     String? gymId,
+    String? viewerId,
   }) async {
     debugPrint(
         '📆 loadSessions user=$userId date=$date gym=${gymId ?? 'auto'}');
     _userId = userId;
     _date = date;
+    _viewerId = viewerId ?? _viewerId ?? FirebaseAuth.instance.currentUser?.uid;
+    _includePrivateMeta = _viewerId == null || _viewerId == _userId;
     await _updateGymId(gymId);
+    await _ensureMembership();
     await _refreshSessions(showLoading: true);
   }
 
@@ -104,6 +117,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
         userId: userId,
         date: date,
         fromCacheOnly: true,
+        includePrivateMeta: _includePrivateMeta,
       );
       debugPrint('✅ cache loaded ${cachedSessions.length} sessions');
       await _applySessions(
@@ -131,7 +145,11 @@ class TrainingDetailsProvider extends ChangeNotifier {
 
     var remoteSucceeded = false;
     try {
-      final sessions = await _getSessions.execute(userId: userId, date: date);
+      final sessions = await _getSessions.execute(
+        userId: userId,
+        date: date,
+        includePrivateMeta: _includePrivateMeta,
+      );
       debugPrint('✅ loaded ${sessions.length} sessions');
       await _applySessions(
         sessions: sessions,
@@ -172,7 +190,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
     } else {
       final currentGymId = _gymId;
       Map<String, dynamic>? meta;
-      if (currentGymId != null) {
+      if (currentGymId != null && _includePrivateMeta) {
         final dayKey = logicDayKey(date);
         meta = await _meta.getMetaByDayKey(
           gymId: currentGymId,
@@ -203,11 +221,15 @@ class TrainingDetailsProvider extends ChangeNotifier {
       return;
     }
     _gymId = newGymId;
+    await _ensureMembership();
     await _startMetaSubscription();
   }
 
   Future<void> _startMetaSubscription() async {
     await _dayMetaSubscription?.cancel();
+    if (!_includePrivateMeta) {
+      return;
+    }
     final userId = _userId;
     final gymId = _gymId;
     final date = _date;
@@ -230,6 +252,20 @@ class TrainingDetailsProvider extends ChangeNotifier {
       _lastMetaSignature = signature;
       await _refreshSessions(showLoading: false, refreshFromServer: true);
     });
+  }
+
+  Future<void> _ensureMembership() async {
+    final gymId = _gymId;
+    final viewerId = _viewerId;
+    if (gymId == null || viewerId == null || viewerId.isEmpty) {
+      return;
+    }
+    try {
+      await _membership.ensureMembership(gymId, viewerId);
+    } catch (error, stackTrace) {
+      debugPrint('❌ ensureMembership failed for $gymId/$viewerId: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   String? _buildMetaSignature(Map<String, dynamic>? meta) {

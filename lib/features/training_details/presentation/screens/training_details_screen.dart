@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
@@ -30,8 +31,15 @@ class TrainingDetailsScreen extends StatelessWidget {
     final fallbackGymId = gymId ?? context.read<BrandingProvider>().gymId;
     return ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
-        final prov = TrainingDetailsProvider();
-        prov.loadSessions(userId: userId, date: date, gymId: fallbackGymId);
+        final auth = context.read<AuthProvider>();
+        final viewerId = auth.userId;
+        final prov = TrainingDetailsProvider(viewerUserId: viewerId);
+        prov.loadSessions(
+          userId: userId,
+          date: date,
+          gymId: fallbackGymId,
+          viewerId: viewerId,
+        );
         return prov;
       },
       child: Consumer<TrainingDetailsProvider>(
