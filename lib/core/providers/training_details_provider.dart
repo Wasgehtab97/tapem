@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
@@ -17,6 +18,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
   String? _userId;
   String? _gymId;
   DateTime? _date;
+  bool _canAccessMeta = false;
 
   bool _isLoading = false;
   String? _error;
@@ -51,6 +53,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
         '📆 loadSessions user=$userId date=$date gym=${gymId ?? 'auto'}');
     _userId = userId;
     _date = date;
+    _canAccessMeta = _isCurrentUser(userId);
     await _updateGymId(gymId);
     await _refreshSessions(showLoading: true);
   }
@@ -120,7 +123,9 @@ class TrainingDetailsProvider extends ChangeNotifier {
       debugPrint('⚠️ cache load error: $e');
     }
 
-    final shouldLoadRemote = refreshFromServer || cachedSessions.isEmpty;
+    final hasIncompleteLabels = _hasIncompleteLabels(cachedSessions);
+    final shouldLoadRemote =
+        refreshFromServer || cachedSessions.isEmpty || hasIncompleteLabels;
     if (!shouldLoadRemote) {
       if (showLoading) {
         _isLoading = false;
@@ -170,24 +175,28 @@ class TrainingDetailsProvider extends ChangeNotifier {
       _dayDurationMs = _sessions.first.durationMs;
       _lastMetaSignature = null;
     } else {
-      final currentGymId = _gymId;
       Map<String, dynamic>? meta;
-      if (currentGymId != null) {
-        final dayKey = logicDayKey(date);
-        meta = await _meta.getMetaByDayKey(
-          gymId: currentGymId,
-          uid: userId,
-          dayKey: dayKey,
-          fromCacheOnly: fromCacheOnly,
-        );
-        _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+      if (_canAccessMeta) {
+        final currentGymId = _gymId;
+        if (currentGymId != null) {
+          final dayKey = logicDayKey(date);
+          meta = await _meta.getMetaByDayKey(
+            gymId: currentGymId,
+            uid: userId,
+            dayKey: dayKey,
+            fromCacheOnly: fromCacheOnly,
+          );
+          _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+        } else {
+          _dayDurationMs = null;
+          meta = null;
+        }
+        final newSignature = _buildMetaSignature(meta);
+        if (newSignature != _lastMetaSignature) {
+          _lastMetaSignature = newSignature;
+        }
       } else {
         _dayDurationMs = null;
-        meta = null;
-      }
-      final newSignature = _buildMetaSignature(meta);
-      if (newSignature != _lastMetaSignature) {
-        _lastMetaSignature = newSignature;
       }
     }
     if (!fromCacheOnly) {
@@ -208,6 +217,9 @@ class TrainingDetailsProvider extends ChangeNotifier {
 
   Future<void> _startMetaSubscription() async {
     await _dayMetaSubscription?.cancel();
+    if (!_canAccessMeta) {
+      return;
+    }
     final userId = _userId;
     final gymId = _gymId;
     final date = _date;
@@ -244,6 +256,34 @@ class TrainingDetailsProvider extends ChangeNotifier {
         ..write(';');
     }
     return buffer.toString();
+  }
+
+  bool _hasIncompleteLabels(List<Session> sessions) {
+    for (final session in sessions) {
+      final deviceName = session.deviceName.trim();
+      final deviceId = session.deviceId.trim();
+      if (deviceName.isEmpty || deviceName == deviceId) {
+        return true;
+      }
+      if (session.isMulti) {
+        final exerciseId = session.exerciseId?.trim();
+        final exerciseName = session.exerciseName?.trim() ?? '';
+        if ((exerciseName.isEmpty || (exerciseId != null &&
+                exerciseName == exerciseId)) &&
+            (exerciseId != null && exerciseId.isNotEmpty)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isCurrentUser(String userId) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return false;
+    }
+    return currentUser.uid == userId;
   }
 
   void _safeNotifyListeners() {
