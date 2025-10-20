@@ -27,7 +27,10 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
     });
   }
 
-  void _openCalendarPopup(List<String> trainingDates) {
+  void _openCalendarPopup(
+    List<String> trainingDates,
+    Map<String, String> gymIdsByDate,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -36,6 +39,7 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
         trainingDates: trainingDates,
         initialYear: DateTime.now().year,
         userId: widget.friendUid,
+        gymIdsByDate: gymIdsByDate,
       ),
     );
   }
@@ -44,6 +48,7 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
   Widget build(BuildContext context) {
     final prov = context.watch<FriendCalendarProvider>();
     final dates = prov.trainingDates;
+    final gymIdsByDate = prov.gymIdsByDate;
     final loc = AppLocalizations.of(context)!;
 
     Widget body;
@@ -65,7 +70,7 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _openCalendarPopup(dates),
+                onTap: () => _openCalendarPopup(dates, gymIdsByDate),
                 child: Calendar(
                   trainingDates: dates,
                   showNavigation: false,

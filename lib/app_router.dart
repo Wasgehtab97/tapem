@@ -187,8 +187,10 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         final date = args['date'] as DateTime? ?? DateTime.now();
         final userId = args['userId'] as String? ?? '';
+        final gymId = args['gymId'] as String?;
         return MaterialPageRoute(
-          builder: (_) => TrainingDetailsScreen(date: date, userId: userId),
+          builder: (_) =>
+              TrainingDetailsScreen(date: date, userId: userId, gymId: gymId),
         );
 
       case planOverview:

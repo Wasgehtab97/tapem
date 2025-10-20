@@ -12,6 +12,7 @@ class CalendarPopup extends StatefulWidget {
   final int initialYear;
   final String userId;
   final bool navigateOnTap;
+  final Map<String, String>? gymIdsByDate;
 
   const CalendarPopup({
     Key? key,
@@ -19,6 +20,7 @@ class CalendarPopup extends StatefulWidget {
     required this.initialYear,
     required this.userId,
     this.navigateOnTap = true,
+    this.gymIdsByDate,
   }) : super(key: key);
 
   @override
@@ -28,6 +30,10 @@ class CalendarPopup extends StatefulWidget {
 class _CalendarPopupState extends State<CalendarPopup> {
   late final ScrollController _scrollCtrl;
   bool _hasJumped = false;
+
+  String _formatDateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
 
   @override
   void initState() {
@@ -96,9 +102,17 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 onDayTap: (date) {
                   Navigator.of(context).pop(date);
                   if (widget.navigateOnTap) {
+                    final args = <String, dynamic>{
+                      'userId': widget.userId,
+                      'date': date,
+                    };
+                    final gymId = widget.gymIdsByDate?[_formatDateKey(date)];
+                    if (gymId != null) {
+                      args['gymId'] = gymId;
+                    }
                     Navigator.of(context).pushNamed(
                       AppRouter.trainingDetails,
-                      arguments: {'userId': widget.userId, 'date': date},
+                      arguments: args,
                     );
                   }
                 },
