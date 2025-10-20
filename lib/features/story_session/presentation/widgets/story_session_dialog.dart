@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -84,202 +86,217 @@ class _StorySessionCard extends StatelessWidget {
     );
     return ClipRRect(
       borderRadius: palette.cardRadius,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: palette.cardBackground,
-          border: Border.all(color: palette.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: palette.cardShadow,
-              blurRadius: 36,
-              offset: const Offset(0, 24),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              left: -76,
-              top: -48,
-              child: _GlowingBlob(
-                size: 220,
-                color: palette.glowColors[0],
-                opacity: 0.26,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 24),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: palette.cardRadius,
+            gradient: palette.cardBackground,
+            border: Border.all(color: palette.cardBorder, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: palette.cardShadow,
+                blurRadius: 42,
+                offset: const Offset(0, 28),
               ),
-            ),
-            Positioned(
-              right: -92,
-              top: 24,
-              child: _GlowingBlob(
-                size: 180,
-                color: palette.glowColors[1 % palette.glowColors.length],
-                opacity: 0.18,
-              ),
-            ),
-            Positioned(
-              left: -64,
-              bottom: -54,
-              child: _GlowingBlob(
-                size: 210,
-                color: palette.glowColors[2 % palette.glowColors.length],
-                opacity: 0.22,
-              ),
-            ),
-            Positioned(
-              top: 36,
-              left: 32,
-              child: _FloatingStar(
-                size: 18,
-                opacity: 0.35,
-                color: palette.starColors[0 % palette.starColors.length],
-              ),
-            ),
-            Positioned(
-              top: 80,
-              right: 44,
-              child: _FloatingStar(
-                size: 12,
-                opacity: 0.32,
-                color: palette.starColors[1 % palette.starColors.length],
-              ),
-            ),
-            Positioned(
-              bottom: 132,
-              left: 80,
-              child: _FloatingStar(
-                size: 14,
-                opacity: 0.28,
-                color: palette.starColors[2 % palette.starColors.length],
-              ),
-            ),
-            Positioned(
-              bottom: 60,
-              right: 62,
-              child: _FloatingStar(
-                size: 22,
-                opacity: 0.4,
-                color: palette.starColors[3 % palette.starColors.length],
-              ),
-            ),
-            Positioned(
-              top: 48,
-              right: 132,
-              child: _FloatingStar(
-                size: 10,
-                opacity: 0.28,
-                color: palette.starColors[1 % palette.starColors.length],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(headerTitle, style: headlineStyle),
-                              const SizedBox(height: 4),
-                              Text(headerSubtitle, style: subtitleStyle),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: loc.commonClose,
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: IconButton.styleFrom(
-                            shape: const CircleBorder(),
-                            backgroundColor: palette.closeButtonBackground,
-                            foregroundColor: palette.onCardPrimary,
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    _XpBanner(xp: xp, palette: palette),
-                    const SizedBox(height: 24),
-                    _StoryStatsRow(stats: stats, palette: palette),
-                    const SizedBox(height: 30),
-                    if (achievements.isNotEmpty) ...[
-                      Text(
-                        loc.storySessionBadgesTitle,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: palette.onCardPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _BadgesSection(
-                        achievements: achievements,
-                        loc: loc,
-                        palette: palette,
-                      ),
-                    ] else ...[
-                      Text(
-                        loc.storySessionEmptyMessage,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: palette.emptyState,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 28),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            foregroundColor: palette.onCardSecondary,
-                            textStyle: textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                          child: Text(loc.commonClose),
-                        ),
-                        const Spacer(),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            gradient: palette.shareGradient,
-                            boxShadow: palette.shareShadow,
-                          ),
-                          child: TextButton.icon(
-                            onPressed: () {
-                              onShare?.call();
-                              Navigator.of(context).pop();
-                            },
-                            icon: const Icon(Icons.ios_share_rounded),
-                            label: Text(loc.commonShare),
-                            style: TextButton.styleFrom(
-                              foregroundColor: palette.onGradientPrimary,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 12,
-                              ),
-                              textStyle: textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: palette.cardRadius,
+                    gradient: palette.cardHighlight,
+                  ),
                 ),
               ),
-            ),
-        ],
+              Positioned(
+                left: -76,
+                top: -48,
+                child: _GlowingBlob(
+                  size: 220,
+                  color: palette.glowColors[0],
+                  opacity: 0.26,
+                ),
+              ),
+              Positioned(
+                right: -92,
+                top: 24,
+                child: _GlowingBlob(
+                  size: 180,
+                  color: palette.glowColors[1 % palette.glowColors.length],
+                  opacity: 0.18,
+                ),
+              ),
+              Positioned(
+                left: -64,
+                bottom: -54,
+                child: _GlowingBlob(
+                  size: 210,
+                  color: palette.glowColors[2 % palette.glowColors.length],
+                  opacity: 0.22,
+                ),
+              ),
+              Positioned(
+                top: 36,
+                left: 32,
+                child: _FloatingStar(
+                  size: 18,
+                  opacity: 0.35,
+                  color: palette.starColors[0 % palette.starColors.length],
+                ),
+              ),
+              Positioned(
+                top: 80,
+                right: 44,
+                child: _FloatingStar(
+                  size: 12,
+                  opacity: 0.32,
+                  color: palette.starColors[1 % palette.starColors.length],
+                ),
+              ),
+              Positioned(
+                bottom: 132,
+                left: 80,
+                child: _FloatingStar(
+                  size: 14,
+                  opacity: 0.28,
+                  color: palette.starColors[2 % palette.starColors.length],
+                ),
+              ),
+              Positioned(
+                bottom: 60,
+                right: 62,
+                child: _FloatingStar(
+                  size: 22,
+                  opacity: 0.4,
+                  color: palette.starColors[3 % palette.starColors.length],
+                ),
+              ),
+              Positioned(
+                top: 48,
+                right: 132,
+                child: _FloatingStar(
+                  size: 10,
+                  opacity: 0.28,
+                  color: palette.starColors[1 % palette.starColors.length],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(36, 36, 36, 32),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(headerTitle, style: headlineStyle),
+                                const SizedBox(height: 4),
+                                Text(headerSubtitle, style: subtitleStyle),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: loc.commonClose,
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: IconButton.styleFrom(
+                              shape: const CircleBorder(),
+                              backgroundColor: palette.closeButtonBackground,
+                              foregroundColor: palette.onCardPrimary,
+                              padding: const EdgeInsets.all(10),
+                            ),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      _XpBanner(xp: xp, palette: palette),
+                      const SizedBox(height: 24),
+                      _StoryStatsRow(stats: stats, palette: palette),
+                      const SizedBox(height: 30),
+                      if (achievements.isNotEmpty) ...[
+                        Text(
+                          loc.storySessionBadgesTitle,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: palette.onCardPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _BadgesSection(
+                          achievements: achievements,
+                          loc: loc,
+                          palette: palette,
+                        ),
+                      ] else ...[
+                        Text(
+                          loc.storySessionEmptyMessage,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: palette.emptyState,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 28),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: palette.onCardSecondary,
+                              textStyle: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                            child: Text(loc.commonClose),
+                          ),
+                          const Spacer(),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: palette.shareRadius,
+                              gradient: palette.shareGradient,
+                              boxShadow: palette.shareShadow,
+                            ),
+                            child: TextButton.icon(
+                              onPressed: () {
+                                onShare?.call();
+                                Navigator.of(context).pop();
+                              },
+                              icon: const Icon(Icons.ios_share_rounded),
+                              label: Text(loc.commonShare),
+                              style: TextButton.styleFrom(
+                                foregroundColor: palette.onGradientPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 22,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: palette.shareRadius,
+                                ),
+                                textStyle: textTheme.labelLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -296,7 +313,7 @@ class _XpBanner extends StatelessWidget {
     final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: palette.xpRadius,
         gradient: palette.xpBanner,
         border: Border.all(color: palette.xpBorder),
         boxShadow: [
@@ -464,7 +481,7 @@ class _StoryStatCard extends StatelessWidget {
     );
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: palette.statRadius,
         gradient: palette.statCardBackground,
         border: Border.all(color: palette.statBorder),
         boxShadow: [
@@ -579,7 +596,7 @@ class _StoryBadgeChip extends StatelessWidget {
     final subtitle = _buildSubtitle();
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: palette.badgeRadius,
         gradient: palette.badgeBackground,
         boxShadow: [
           BoxShadow(
@@ -772,6 +789,7 @@ class _StorySessionPalette {
   final List<Color> glowColors;
   final List<Color> starColors;
   final BorderRadius cardRadius;
+  final LinearGradient cardHighlight;
 
   const _StorySessionPalette({
     required this.cardBackground,
@@ -797,6 +815,7 @@ class _StorySessionPalette {
     required this.glowColors,
     required this.starColors,
     required this.cardRadius,
+    required this.cardHighlight,
   });
 
   factory _StorySessionPalette.fromTheme(ThemeData theme) {
@@ -887,6 +906,13 @@ class _StorySessionPalette {
           ),
         ];
 
+    final exaggeratedRadius = BorderRadius.lerp(
+          (brandTheme?.radius as BorderRadius?) ?? BorderRadius.circular(32),
+          BorderRadius.circular(56),
+          0.75,
+        ) ??
+        BorderRadius.circular(48);
+
     return _StorySessionPalette(
       cardBackground: cardBackground,
       xpBanner: xpBanner,
@@ -919,8 +945,34 @@ class _StorySessionPalette {
         lighten(mid, 0.28),
         lighten(end, 0.4),
       ],
-      cardRadius:
-          (brandTheme?.radius as BorderRadius?) ?? BorderRadius.circular(32),
+      cardRadius: exaggeratedRadius,
+      cardHighlight: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.08),
+          Colors.white.withOpacity(0.015),
+        ],
+      ),
     );
   }
+
+  BorderRadius get xpRadius => BorderRadius.circular(
+        _clampRadius(cardRadius.topLeft.x + 14, cardRadius.topLeft.x, 72),
+      );
+
+  BorderRadius get statRadius => BorderRadius.circular(
+        _clampRadius(cardRadius.topLeft.x - 6, 20, 64),
+      );
+
+  BorderRadius get badgeRadius => BorderRadius.circular(
+        _clampRadius(cardRadius.topLeft.x - 2, 22, 68),
+      );
+
+  BorderRadius get shareRadius => BorderRadius.circular(
+        _clampRadius(cardRadius.topLeft.x - 10, 24, 60),
+      );
+
+  double _clampRadius(double value, double min, double max) =>
+      value.clamp(min, max).toDouble();
 }
