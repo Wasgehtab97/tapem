@@ -30,6 +30,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
   String? get error => _error;
   List<Session> get sessions => List.unmodifiable(_sessions);
   int? get dayDurationMs => _dayDurationMs;
+  String? get gymId => _gymId;
 
   TrainingDetailsProvider() {
     final repo = SessionRepositoryImpl(
@@ -44,13 +45,13 @@ class TrainingDetailsProvider extends ChangeNotifier {
   Future<void> loadSessions({
     required String userId,
     required DateTime date,
-    required String gymId,
+    String? gymId,
   }) async {
-    debugPrint('📆 loadSessions user=$userId date=$date gym=$gymId');
+    debugPrint(
+        '📆 loadSessions user=$userId date=$date gym=${gymId ?? 'auto'}');
     _userId = userId;
-    _gymId = gymId;
     _date = date;
-    await _startMetaSubscription();
+    await _updateGymId(gymId);
     await _refreshSessions(showLoading: true);
   }
 
@@ -86,9 +87,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
     bool refreshFromServer = false,
   }) async {
     final userId = _userId;
-    final gymId = _gymId;
     final date = _date;
-    if (userId == null || gymId == null || date == null) {
+    if (userId == null || date == null) {
       return;
     }
 
@@ -109,7 +109,6 @@ class TrainingDetailsProvider extends ChangeNotifier {
       await _applySessions(
         sessions: cachedSessions,
         userId: userId,
-        gymId: gymId,
         date: date,
         fromCacheOnly: true,
       );
@@ -137,7 +136,6 @@ class TrainingDetailsProvider extends ChangeNotifier {
       await _applySessions(
         sessions: sessions,
         userId: userId,
-        gymId: gymId,
         date: date,
         fromCacheOnly: false,
       );
@@ -162,30 +160,50 @@ class TrainingDetailsProvider extends ChangeNotifier {
   Future<void> _applySessions({
     required List<Session> sessions,
     required String userId,
-    required String gymId,
     required DateTime date,
     required bool fromCacheOnly,
   }) async {
     _sessions = sessions;
-    Map<String, dynamic>? meta;
     if (_sessions.isNotEmpty) {
+      final sessionGymId = _sessions.first.gymId;
+      await _updateGymId(sessionGymId);
       _dayDurationMs = _sessions.first.durationMs;
+      _lastMetaSignature = null;
     } else {
-      final dayKey = logicDayKey(date);
-      meta = await _meta.getMetaByDayKey(
-        gymId: gymId,
-        uid: userId,
-        dayKey: dayKey,
-        fromCacheOnly: fromCacheOnly,
-      );
-      _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
-    }
-    if (meta != null || _lastMetaSignature == null) {
-      _lastMetaSignature = _buildMetaSignature(meta);
+      final currentGymId = _gymId;
+      Map<String, dynamic>? meta;
+      if (currentGymId != null) {
+        final dayKey = logicDayKey(date);
+        meta = await _meta.getMetaByDayKey(
+          gymId: currentGymId,
+          uid: userId,
+          dayKey: dayKey,
+          fromCacheOnly: fromCacheOnly,
+        );
+        _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+      } else {
+        _dayDurationMs = null;
+        meta = null;
+      }
+      final newSignature = _buildMetaSignature(meta);
+      if (newSignature != _lastMetaSignature) {
+        _lastMetaSignature = newSignature;
+      }
     }
     if (!fromCacheOnly) {
       _isLoading = false;
     }
+  }
+
+  Future<void> _updateGymId(String? newGymId) async {
+    if (newGymId == null || newGymId.isEmpty) {
+      return;
+    }
+    if (_gymId == newGymId) {
+      return;
+    }
+    _gymId = newGymId;
+    await _startMetaSubscription();
   }
 
   Future<void> _startMetaSubscription() async {

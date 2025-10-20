@@ -500,7 +500,7 @@ class _StoryStatCard extends StatelessWidget {
   }
 }
 
-class _BadgesSection extends StatelessWidget {
+class _BadgesSection extends StatefulWidget {
   final List<StoryAchievement> achievements;
   final AppLocalizations loc;
   final _StorySessionPalette palette;
@@ -512,23 +512,45 @@ class _BadgesSection extends StatelessWidget {
   });
 
   @override
+  State<_BadgesSection> createState() => _BadgesSectionState();
+}
+
+class _BadgesSectionState extends State<_BadgesSection> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final achievements = widget.achievements;
     if (achievements.isEmpty) {
       return const SizedBox.shrink();
     }
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 280),
       child: Scrollbar(
+        controller: _scrollController,
         thumbVisibility: achievements.length > 6,
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Wrap(
             spacing: 14,
             runSpacing: 14,
             children: achievements
                 .map((achievement) => _StoryBadgeChip(
                       achievement: achievement,
-                      loc: loc,
-                      palette: palette,
+                      loc: widget.loc,
+                      palette: widget.palette,
                     ))
                 .toList(),
           ),

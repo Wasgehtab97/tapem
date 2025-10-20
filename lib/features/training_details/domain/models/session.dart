@@ -1,6 +1,7 @@
 /// Enthält alle Sets einer einzelnen Session an einem Gerät.
 class Session {
   final String sessionId;
+  final String gymId;
   final String deviceId;
   final String deviceName;
   final String deviceDescription; // neu!
@@ -22,6 +23,7 @@ class Session {
 
   Session({
     required this.sessionId,
+    required this.gymId,
     required this.deviceId,
     required this.deviceName,
     required this.deviceDescription, // neu!

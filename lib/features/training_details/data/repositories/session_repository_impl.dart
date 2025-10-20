@@ -148,6 +148,7 @@ class SessionRepositoryImpl implements SessionRepository {
       sessions.add(
         Session(
           sessionId: first.sessionId,
+          gymId: gymId,
           deviceId: first.deviceId,
           deviceName: deviceName,
           deviceDescription: deviceDescription,
