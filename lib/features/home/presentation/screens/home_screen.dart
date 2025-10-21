@@ -6,7 +6,6 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
@@ -39,60 +38,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return [
       _TabInfo(
-        const GymScreen(key: PageStorageKey('Gym')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.gym,
+        page: const GymScreen(key: PageStorageKey('Gym')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.fitness_center),
           label: loc.gymTitle,
         ),
       ),
       _TabInfo(
-        const ProfileScreen(key: PageStorageKey('Profile')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.profile,
+        page: const ProfileScreen(key: PageStorageKey('Profile')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.person),
           label: loc.profileTitle,
         ),
       ),
       _TabInfo(
-        const ReportScreen(key: PageStorageKey('Report')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.report,
+        page: const ReportScreen(key: PageStorageKey('Report')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.insert_chart),
           label: loc.reportTitle,
         ),
       ),
       _TabInfo(
-        const MuscleGroupScreenNew(key: PageStorageKey('Muskeln')),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.accessibility_new),
-          label: loc.muscleGroupTitle,
-        ),
-      ),
-      _TabInfo(
-        const AdminDashboardScreen(key: PageStorageKey('Admin')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.admin,
+        page: const AdminDashboardScreen(key: PageStorageKey('Admin')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.admin_panel_settings),
           label: loc.homeTabAdmin,
         ),
       ),
       _TabInfo(
-        RankScreen(
+        id: _HomeTabId.rank,
+        page: RankScreen(
             key: const PageStorageKey('Rank'),
             gymId: gymId,
             deviceId: deviceId),
-        BottomNavigationBarItem(
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.leaderboard),
           label: loc.homeTabRank,
         ),
       ),
       _TabInfo(
-        const AffiliateScreen(key: PageStorageKey('Affiliate')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.affiliate,
+        page: const AffiliateScreen(key: PageStorageKey('Affiliate')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.group),
           label: loc.homeTabAffiliate,
         ),
       ),
       _TabInfo(
-        const PlanOverviewScreen(key: PageStorageKey('Plaene')),
-        BottomNavigationBarItem(
+        id: _HomeTabId.plan,
+        page: const PlanOverviewScreen(key: PageStorageKey('Plaene')),
+        item: BottomNavigationBarItem(
           icon: const Icon(Icons.event_note),
           label: loc.homeTabPlans,
         ),
@@ -123,8 +122,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
     final allTabs = _buildTabs(context);
+    const restrictedTabIds = {
+      _HomeTabId.gym,
+      _HomeTabId.profile,
+      _HomeTabId.rank,
+    };
     final tabs = (FF.limitTabsForMembers && !isAdmin)
-        ? [allTabs[0], allTabs[1], allTabs[5]]
+        ? allTabs
+            .where((tab) => restrictedTabIds.contains(tab.id))
+            .toList(growable: false)
         : allTabs;
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;
@@ -196,8 +202,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+enum _HomeTabId { gym, profile, report, admin, rank, affiliate, plan }
+
 class _TabInfo {
+  final _HomeTabId id;
   final Widget page;
   final BottomNavigationBarItem item;
-  const _TabInfo(this.page, this.item);
+  const _TabInfo({required this.id, required this.page, required this.item});
 }

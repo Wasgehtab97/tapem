@@ -7,7 +7,6 @@ import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
@@ -55,7 +54,6 @@ class AppRouter {
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
   static const planOverview = '/plan_overview';
-  static const muscleGroups = '/muscle_groups';
   static const manageMuscleGroups = '/manage_muscle_groups';
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
@@ -78,7 +76,6 @@ class AppRouter {
 
   static const restrictedRoutesForMembers = {
     report,
-    muscleGroups,
     admin,
     affiliate,
     planOverview,
@@ -142,9 +139,6 @@ class AppRouter {
 
       case report:
         return MaterialPageRoute(builder: (_) => const ReportScreen());
-
-      case muscleGroups:
-        return MaterialPageRoute(builder: (_) => const MuscleGroupScreenNew());
 
       case manageMuscleGroups:
         return MaterialPageRoute(
