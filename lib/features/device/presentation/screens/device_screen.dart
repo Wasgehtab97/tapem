@@ -653,6 +653,8 @@ class _DeviceAppBarFooter extends StatelessWidget
               xp: provider.xp,
               level: provider.level,
               color: accentColor,
+              gymId: gymId,
+              deviceId: deviceId,
             ),
             const SizedBox(width: 4),
             FeedbackButton(

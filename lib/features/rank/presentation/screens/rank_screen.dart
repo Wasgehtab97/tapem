@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
-import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
+import 'package:tapem/core/providers/rank_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
+import 'package:tapem/features/rank/presentation/widgets/rank_muscle_level_section.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 /// Rank landing displayed in the "Rank" tab of the leaderboard.
+enum RankSection { muscleLevel }
+
 class RankScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
-  const RankScreen({Key? key, required this.gymId, required this.deviceId})
-    : super(key: key);
+  final RankSection? initialSection;
+  const RankScreen({
+    Key? key,
+    required this.gymId,
+    required this.deviceId,
+    this.initialSection,
+  }) : super(key: key);
 
   @override
   _RankScreenState createState() => _RankScreenState();
@@ -24,19 +32,41 @@ class _RankScreenState extends State<RankScreen>
     with SingleTickerProviderStateMixin {
   late RankProvider _provider;
   late TabController _tabController;
+  final ScrollController _rankScrollController = ScrollController();
+  final GlobalKey _muscleSectionKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _provider = Provider.of<RankProvider>(context, listen: false);
     _tabController = TabController(length: 2, vsync: this);
-    _provider.watchDevice(widget.gymId, widget.deviceId);
+    if (widget.gymId.isNotEmpty && widget.deviceId.isNotEmpty) {
+      _provider.watchDevice(widget.gymId, widget.deviceId);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialSection == RankSection.muscleLevel) {
+        _tabController.animateTo(0);
+        _scrollToMuscleSection();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _rankScrollController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _scrollToMuscleSection() async {
+    final context = _muscleSectionKey.currentContext;
+    if (context == null) return;
+    await Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.0,
+    );
   }
 
   @override
@@ -74,6 +104,7 @@ class _RankScreenState extends State<RankScreen>
             controller: _tabController,
             children: [
               ListView(
+                controller: _rankScrollController,
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 children: [
                   _RankCard(
@@ -91,13 +122,10 @@ class _RankScreenState extends State<RankScreen>
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _RankCard(
-                    title: loc.rankMuscleLevel,
-                    icon: const _BicepsIcon(),
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    key: _muscleSectionKey,
+                    child: const RankMuscleLevelSection(),
                   ),
                 ],
               ),

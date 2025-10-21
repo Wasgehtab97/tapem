@@ -6,7 +6,6 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
@@ -60,13 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       _TabInfo(
-        const MuscleGroupScreenNew(key: PageStorageKey('Muskeln')),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.accessibility_new),
-          label: loc.muscleGroupTitle,
-        ),
-      ),
-      _TabInfo(
         const AdminDashboardScreen(key: PageStorageKey('Admin')),
         BottomNavigationBarItem(
           icon: const Icon(Icons.admin_panel_settings),
@@ -75,9 +67,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       _TabInfo(
         RankScreen(
-            key: const PageStorageKey('Rank'),
-            gymId: gymId,
-            deviceId: deviceId),
+          key: const PageStorageKey('Rank'),
+          gymId: gymId,
+          deviceId: deviceId,
+        ),
         BottomNavigationBarItem(
           icon: const Icon(Icons.leaderboard),
           label: loc.homeTabRank,
@@ -124,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
     final allTabs = _buildTabs(context);
     final tabs = (FF.limitTabsForMembers && !isAdmin)
-        ? [allTabs[0], allTabs[1], allTabs[5]]
+        ? [allTabs[0], allTabs[1], allTabs[4]]
         : allTabs;
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;

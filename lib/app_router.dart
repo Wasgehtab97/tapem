@@ -7,7 +7,6 @@ import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_screen_new.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
@@ -18,7 +17,6 @@ import 'package:tapem/features/training_details/presentation/screens/training_de
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
-import 'package:tapem/features/xp/presentation/screens/xp_overview_screen.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/challenge_admin_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/day_xp_screen.dart';
@@ -52,14 +50,14 @@ class AppRouter {
   static const rank = '/rank';
   // Deprecated alias for backward compatibility
   static const rankScreen = rank;
+  static const rankInitialSectionKey = 'initialSection';
+  static const rankInitialSectionMuscleLevel = 'muscleLevel';
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
   static const planOverview = '/plan_overview';
-  static const muscleGroups = '/muscle_groups';
   static const manageMuscleGroups = '/manage_muscle_groups';
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
-  static const xpOverview = '/xp_overview';
   static const dayXp = '/day_xp';
   static const deviceXp = '/device_xp';
   static const challenges = '/challenges';
@@ -78,7 +76,6 @@ class AppRouter {
 
   static const restrictedRoutesForMembers = {
     report,
-    muscleGroups,
     admin,
     affiliate,
     planOverview,
@@ -143,9 +140,6 @@ class AppRouter {
       case report:
         return MaterialPageRoute(builder: (_) => const ReportScreen());
 
-      case muscleGroups:
-        return MaterialPageRoute(builder: (_) => const MuscleGroupScreenNew());
-
       case manageMuscleGroups:
         return MaterialPageRoute(
           builder: (_) => const MuscleGroupAdminScreen(),
@@ -172,11 +166,16 @@ class AppRouter {
 
       case rank:
         final args = settings.arguments as Map<String, String>? ?? const {};
+        final initialSection = args[rankInitialSectionKey];
         return MaterialPageRoute(
           builder:
               (_) => RankScreen(
                 gymId: args['gymId'] ?? '',
                 deviceId: args['deviceId'] ?? '',
+                initialSection:
+                    initialSection == rankInitialSectionMuscleLevel
+                        ? RankSection.muscleLevel
+                        : null,
               ),
         );
 
@@ -201,9 +200,6 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => ResetPasswordScreen(oobCode: code),
         );
-
-      case xpOverview:
-        return MaterialPageRoute(builder: (_) => const XpOverviewScreen());
 
       case dayXp:
         return MaterialPageRoute(builder: (_) => const DayXpScreen());

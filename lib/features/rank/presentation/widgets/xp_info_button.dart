@@ -7,12 +7,16 @@ class XpInfoButton extends StatelessWidget {
   final int xp;
   final int level;
   final Color? color;
+  final String? gymId;
+  final String? deviceId;
 
   const XpInfoButton({
     Key? key,
     required this.xp,
     required this.level,
     this.color,
+    this.gymId,
+    this.deviceId,
   }) : super(key: key);
 
   @override
@@ -54,7 +58,20 @@ class XpInfoButton extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed(AppRouter.xpOverview);
+                  final args = <String, String>{
+                    AppRouter.rankInitialSectionKey:
+                        AppRouter.rankInitialSectionMuscleLevel,
+                  };
+                  if (gymId != null && gymId!.isNotEmpty) {
+                    args['gymId'] = gymId!;
+                  }
+                  if (deviceId != null && deviceId!.isNotEmpty) {
+                    args['deviceId'] = deviceId!;
+                  }
+                  Navigator.of(context).pushNamed(
+                    AppRouter.rank,
+                    arguments: args,
+                  );
                 },
                 child: Text(loc.xpInfoDetails),
               ),
