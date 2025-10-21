@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
+import '../../../rank/domain/services/level_service.dart';
 import '../../domain/models/muscle_group.dart';
 import '../widgets/muscle_group_radar_chart.dart';
 import '../../../../ui/muscles/muscle_group_display.dart';
@@ -116,14 +117,34 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     final localeName = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(localeName);
 
+    const xpPerLevel = LevelService.xpPerLevel;
+    const maxLevel = LevelService.maxLevel;
+
     final stats = [
       for (final region in orderedRegions)
-        _MuscleStat(
-          region: region,
-          label: _labelForRegion(region),
-          xp: regionXp[region] ?? 0,
-          percentage: percentageByRegion[region] ?? 0,
-        ),
+        () {
+          final xpValue = (regionXp[region] ?? 0).toDouble();
+          final xpTotal = xpValue.round();
+          var level = (xpTotal ~/ xpPerLevel) + 1;
+          if (level > maxLevel) {
+            level = maxLevel;
+          }
+          final reachedMaxLevel = level >= maxLevel;
+          final xpInLevel = reachedMaxLevel ? 0 : xpTotal % xpPerLevel;
+          final levelProgress = reachedMaxLevel
+              ? 1.0
+              : (xpInLevel / xpPerLevel).clamp(0.0, 1.0);
+          return _MuscleStat(
+            region: region,
+            label: _labelForRegion(region),
+            xp: xpValue,
+            percentage: percentageByRegion[region] ?? 0,
+            level: level,
+            xpInLevel: xpInLevel,
+            levelProgress: levelProgress,
+            reachedMaxLevel: reachedMaxLevel,
+          );
+        }(),
     ];
 
     final chartExtent = math.max(
@@ -171,12 +192,23 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
                 const SizedBox(height: 12),
                 ...stats.map((stat) {
                   final xpLabel = numberFormat.format(stat.xp.round());
-                  final percentLabel = (stat.percentage * 100).toStringAsFixed(1);
+                  final shareLabel =
+                      '${(stat.percentage * 100).toStringAsFixed(1)} % Anteil';
+                  final level = stat.level;
+                  final isMaxLevel = stat.reachedMaxLevel;
+                  final progressLabel = isMaxLevel
+                      ? 'Maximales Level erreicht'
+                      : 'Fortschritt zu Level ${level + 1}: '
+                          '${numberFormat.format(stat.xpInLevel)} / '
+                          '${numberFormat.format(LevelService.xpPerLevel)} XP';
                   return _MuscleStatTile(
                     label: stat.label,
-                    xpLabel: '$xpLabel XP',
-                    percentage: stat.percentage.clamp(0.0, 1.0),
-                    percentageLabel: '$percentLabel %',
+                    levelLabel: 'Level $level',
+                    totalXpLabel: '$xpLabel XP',
+                    shareLabel: shareLabel,
+                    levelProgress: stat.levelProgress,
+                    progressLabel: progressLabel,
+                    maxedOut: isMaxLevel,
                   );
                 }),
               ],
@@ -194,26 +226,40 @@ class _MuscleStat {
     required this.label,
     required this.xp,
     required this.percentage,
+    required this.level,
+    required this.xpInLevel,
+    required this.levelProgress,
+    required this.reachedMaxLevel,
   });
 
   final MuscleRegion region;
   final String label;
   final double xp;
   final double percentage;
+  final int level;
+  final int xpInLevel;
+  final double levelProgress;
+  final bool reachedMaxLevel;
 }
 
 class _MuscleStatTile extends StatelessWidget {
   const _MuscleStatTile({
     required this.label,
-    required this.xpLabel,
-    required this.percentage,
-    required this.percentageLabel,
+    required this.levelLabel,
+    required this.totalXpLabel,
+    required this.shareLabel,
+    required this.levelProgress,
+    required this.progressLabel,
+    required this.maxedOut,
   });
 
   final String label;
-  final String xpLabel;
-  final double percentage;
-  final String percentageLabel;
+  final String levelLabel;
+  final String totalXpLabel;
+  final String shareLabel;
+  final double levelProgress;
+  final String progressLabel;
+  final bool maxedOut;
 
   @override
   Widget build(BuildContext context) {
@@ -233,30 +279,50 @@ class _MuscleStatTile extends StatelessWidget {
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
-                Text(
-                  percentageLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.all(Radius.circular(999)),
+                  ),
+                  child: Text(
+                    levelLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              xpLabel,
+              '$totalXpLabel · $shareLabel',
               style: theme.textTheme.bodySmall,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(4)),
               child: LinearProgressIndicator(
-                value: percentage.clamp(0.0, 1.0),
+                value: levelProgress.clamp(0.0, 1.0),
                 minHeight: 6,
                 backgroundColor: theme.colorScheme.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  theme.colorScheme.primary,
+                  maxedOut
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.primary,
                 ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              progressLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: maxedOut
+                    ? theme.colorScheme.tertiary
+                    : theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
