@@ -154,11 +154,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(tester.widget<TextButton>(find.text('Save')).onPressed, isNull);
+    final saveButtonFinder = find.widgetWithText(TextButton, 'Save');
+    expect(tester.widget<TextButton>(saveButtonFinder).onPressed, isNull);
     await tester.enterText(find.byType(TextField), 'Pushup');
     await tester.tap(find.text('Brust'));
     await tester.pump();
-    expect(tester.widget<TextButton>(find.text('Save')).onPressed, isNotNull);
+    expect(tester.widget<TextButton>(saveButtonFinder).onPressed, isNotNull);
   });
 }
 

@@ -66,14 +66,22 @@ void main() {
     final localizations = MaterialLocalizations.of(element);
     final previousTooltip = localizations.previousPageTooltip;
     final nextTooltip = localizations.nextPageTooltip;
+    final previousButtonFinder =
+        find.widgetWithIcon(IconButton, Icons.chevron_left);
+    final nextButtonFinder =
+        find.widgetWithIcon(IconButton, Icons.chevron_right);
 
     expect(find.text('edit'), findsOneWidget);
 
-    await tester.tap(find.byTooltip(previousTooltip));
+    await tester.dragFrom(const Offset(5, 300), const Offset(300, 0));
     await tester.pumpAndSettle();
     expect(find.text('snapnote'), findsOneWidget);
+    expect(find.byTooltip(previousTooltip), findsOneWidget);
+    expect(find.byTooltip(nextTooltip), findsOneWidget);
+    expect(tester.widget<IconButton>(previousButtonFinder).onPressed, isNull);
+    expect(tester.widget<IconButton>(nextButtonFinder).onPressed, isNotNull);
 
-    await tester.tap(find.byTooltip(nextTooltip));
+    await tester.tap(nextButtonFinder);
     await tester.pumpAndSettle();
     expect(find.text('edit'), findsOneWidget);
 

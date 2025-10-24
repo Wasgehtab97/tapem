@@ -1,5 +1,76 @@
 import 'package:flutter/material.dart';
 
+double _averageLuminance(Iterable<Color> colors) {
+  if (colors.isEmpty) return 0.0;
+  final total = colors.fold<double>(0.0, (sum, c) => sum + c.computeLuminance());
+  return total / colors.length;
+}
+
+double _clampLuminance(double value) => value.clamp(0.0, 1.0).toDouble();
+
+Color _colorWithTargetLuminance(Color color, double targetLuminance) {
+  final target = _clampLuminance(targetLuminance);
+  final base = HSLColor.fromColor(color);
+  final baseLightness = base.lightness;
+  double low = -baseLightness;
+  double high = 1.0 - baseLightness;
+  var result = color;
+  for (var i = 0; i < 16; i++) {
+    final mid = (low + high) / 2;
+    final candidateLightness = (baseLightness + mid).clamp(0.0, 1.0);
+    final candidate = base.withLightness(candidateLightness).toColor();
+    final lum = candidate.computeLuminance();
+    result = candidate;
+    if ((lum - target).abs() < 1e-4) {
+      break;
+    }
+    if (lum > target) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+  return result;
+}
+
+LinearGradient _gradientWithAverageLuminance(
+  LinearGradient gradient,
+  double targetLuminance,
+) {
+  final target = _clampLuminance(targetLuminance);
+  double low = -1.0;
+  double high = 1.0;
+  var adjusted = gradient;
+  for (var i = 0; i < 18; i++) {
+    final mid = (low + high) / 2;
+    final colors = gradient.colors
+        .map((color) {
+          final hsl = HSLColor.fromColor(color);
+          final lightness = (hsl.lightness + mid).clamp(0.0, 1.0);
+          return hsl.withLightness(lightness).toColor();
+        })
+        .toList(growable: false);
+    final avg = _averageLuminance(colors);
+    adjusted = LinearGradient(
+      begin: gradient.begin,
+      end: gradient.end,
+      stops: gradient.stops,
+      tileMode: gradient.tileMode,
+      transform: gradient.transform,
+      colors: colors,
+    );
+    if ((avg - target).abs() < 1e-4) {
+      break;
+    }
+    if (avg > target) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+  return adjusted;
+}
+
 /// New design tokens for the Tap’em dark theme.
 ///
 /// This file defines the central colours, spacing values, radii and font sizes
@@ -81,24 +152,17 @@ class MagentaTones {
 
   /// Re-computes tone values based on [gradient].
   static void normalizeFromGradient(LinearGradient gradient) {
-    // Current gradient luminance and required delta to match anchor.
-    final lums = gradient.colors.map((c) => c.computeLuminance());
-    final origLum = lums.reduce((a, b) => a + b) / gradient.colors.length;
-    final delta = brightnessAnchor - origLum;
-    AppGradients.brandGradient = Tone.gradient(gradient, delta);
+    AppGradients.brandGradient =
+        _gradientWithAverageLuminance(gradient, brightnessAnchor);
 
-    // Derive surface tones relative to anchor.
-    surface1 = Tone.color(
-      MagentaColors.surface1,
-      brightnessAnchor - MagentaColors.surface1.computeLuminance(),
-    );
-    surface2 = Tone.color(
+    surface1 = _colorWithTargetLuminance(MagentaColors.surface1, brightnessAnchor);
+    surface2 = _colorWithTargetLuminance(
       MagentaColors.surface2,
-      brightnessAnchor + 0.025 - MagentaColors.surface2.computeLuminance(),
+      brightnessAnchor + 0.025,
     );
-    control = Tone.color(
+    control = _colorWithTargetLuminance(
       MagentaColors.surface2,
-      brightnessAnchor + 0.01 - MagentaColors.surface2.computeLuminance(),
+      brightnessAnchor + 0.01,
     );
   }
 }
@@ -135,24 +199,17 @@ class ClubAktivTones {
 
   /// Re-computes tone values based on [gradient].
   static void normalizeFromGradient(LinearGradient gradient) {
-    // Current gradient luminance and required delta to match anchor.
-    final lums = gradient.colors.map((c) => c.computeLuminance());
-    final origLum = lums.reduce((a, b) => a + b) / gradient.colors.length;
-    final delta = brightnessAnchor - origLum;
-    AppGradients.brandGradient = Tone.gradient(gradient, delta);
+    AppGradients.brandGradient =
+        _gradientWithAverageLuminance(gradient, brightnessAnchor);
 
-    // Derive surface tones relative to anchor.
-    surface1 = Tone.color(
-      ClubAktivColors.surface1,
-      brightnessAnchor - ClubAktivColors.surface1.computeLuminance(),
-    );
-    surface2 = Tone.color(
+    surface1 = _colorWithTargetLuminance(ClubAktivColors.surface1, brightnessAnchor);
+    surface2 = _colorWithTargetLuminance(
       ClubAktivColors.surface2,
-      brightnessAnchor + 0.025 - ClubAktivColors.surface2.computeLuminance(),
+      brightnessAnchor + 0.025,
     );
-    control = Tone.color(
+    control = _colorWithTargetLuminance(
       ClubAktivColors.surface2,
-      brightnessAnchor + 0.01 - ClubAktivColors.surface2.computeLuminance(),
+      brightnessAnchor + 0.01,
     );
   }
 }
