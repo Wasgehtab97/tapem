@@ -51,7 +51,9 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
-          home: ReadOnlySnapshotPage(snapshot: snapshot),
+          home: Scaffold(
+            body: ReadOnlySnapshotPage(snapshot: snapshot),
+          ),
         ),
       ),
     );
