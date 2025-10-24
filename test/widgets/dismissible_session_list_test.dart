@@ -145,12 +145,11 @@ void main() {
     expect(find.text('Session bearbeiten'), findsNothing);
 
     final before = provider.sets.length;
-    await tester.fling(
+    await tester.drag(
       find.byType(Dismissible).first,
       const Offset(-500, 0),
-      1000,
     );
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
     expect(provider.sets.length, before - 1);
     expect(find.text('Satz entfernt'), findsOneWidget);
