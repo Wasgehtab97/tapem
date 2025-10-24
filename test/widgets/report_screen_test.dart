@@ -8,8 +8,9 @@ import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
-import 'package:tapem/features/report/presentation/screens/report_screen_new.dart';
 import 'package:tapem/features/report/presentation/widgets/device_usage_chart.dart';
+import 'package:tapem/features/report/presentation/screens/report_screen_new.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class FakeReportRepository implements ReportRepository {
   FakeReportRepository({
@@ -54,7 +55,12 @@ void main() {
           ChangeNotifierProvider<ReportProvider>.value(value: reportProvider),
           ChangeNotifierProvider<FeedbackProvider>.value(value: feedbackProvider),
         ],
-        child: const MaterialApp(home: ReportScreenNew(gymId: 'g1')),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const ReportScreenNew(gymId: 'g1'),
+        ),
       ),
     );
 
@@ -88,7 +94,12 @@ void main() {
           ChangeNotifierProvider<ReportProvider>.value(value: reportProvider),
           ChangeNotifierProvider<FeedbackProvider>.value(value: feedbackProvider),
         ],
-        child: const MaterialApp(home: ReportScreenNew(gymId: 'g1')),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const ReportScreenNew(gymId: 'g1'),
+        ),
       ),
     );
 
