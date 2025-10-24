@@ -5,8 +5,8 @@ import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/session_xp_award.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class _InMemoryDailyStatsCache implements DailyStatsCache {
   DailyStatsCacheEntry? _entry;
@@ -41,25 +41,20 @@ class _InMemoryDailyStatsCache implements DailyStatsCache {
     String gymId,
     String userId,
     int totalXp,
-    DateTime cachedAt,
-  ) async {
+    DateTime cachedAt, {
+    int? dayXp,
+  }) async {
     final previous = _entry;
     final dayKey = logicDayKey(cachedAt);
     final prevTotal = previous?.totalXp ?? previous?.xp ?? 0;
     var baseline = prevTotal;
     if (previous != null && previous.dayKey == dayKey) {
       baseline = prevTotal - previous.xp;
-      if (previous.totalXp == previous.xp && previous.xp > LevelService.xpPerSession) {
-        baseline = prevTotal - LevelService.xpPerSession;
-      }
     }
-    var dailyXp = totalXp - baseline;
-    if (dailyXp < 0) dailyXp = 0;
-    if (dailyXp > LevelService.xpPerSession) {
-      dailyXp = LevelService.xpPerSession;
-    }
+    var resolvedDailyXp = dayXp ?? (totalXp - baseline);
+    if (resolvedDailyXp < 0) resolvedDailyXp = 0;
     final entry = DailyStatsCacheEntry(
-      xp: dailyXp,
+      xp: resolvedDailyXp,
       cachedAt: cachedAt,
       totalXp: totalXp,
       dayKey: dayKey,
@@ -82,9 +77,9 @@ class _InMemoryDailyStatsCache implements DailyStatsCache {
         ? delta
         : previous.xp + delta;
     final entry = DailyStatsCacheEntry(
-      xp: dailyXp,
+      xp: dailyXp < 0 ? 0 : dailyXp,
       cachedAt: now,
-      totalXp: totalXp,
+      totalXp: totalXp < 0 ? 0 : totalXp,
       dayKey: dayKey,
     );
     return _entry = entry;
@@ -99,22 +94,29 @@ class FakeXpRepository implements XpRepository {
   int addCalls = 0;
   int statsFetchValue = 0;
 
-    @override
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-      String? exerciseId,
-      required String traceId,
-      List<String> primaryMuscleGroupIds = const [],
-      List<String> secondaryMuscleGroupIds = const [],
-    }) async {
-      addCalls++;
-      return DeviceXpResult.okAdded;
-    }
+  @override
+  Future<SessionXpAward> addSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) async {
+    addCalls++;
+    return const SessionXpAward(
+      result: DeviceXpResult.okAdded,
+      totalXp: 100,
+      dayXp: 75,
+      xpDelta: 75,
+    );
+  }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) =>
@@ -179,15 +181,17 @@ void main() {
     test('addSessionXp delegates to repository', () async {
       final repo = FakeXpRepository();
       final provider = XpProvider(repo: repo);
-        await provider.addSessionXp(
-          gymId: 'g1',
-          userId: 'u1',
-          deviceId: 'd1',
-          sessionId: 's1',
-          showInLeaderboard: false,
-          isMulti: false,
-          traceId: 't',
-        );
+      await provider.addSessionXp(
+        gymId: 'g1',
+        userId: 'u1',
+        deviceId: 'd1',
+        sessionId: 's1',
+        showInLeaderboard: false,
+        isMulti: false,
+        traceId: 't',
+        sessionDate: DateTime(2024, 1, 1),
+        timeZone: 'UTC',
+      );
       expect(repo.addCalls, 1);
       repo.dispose();
     });

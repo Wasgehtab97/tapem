@@ -9,8 +9,10 @@ import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
-import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
+import 'package:tapem/features/xp/domain/session_xp_award.dart';
+import 'package:tapem/features/xp/domain/training_day_xp_engine.dart';
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -20,121 +22,382 @@ class FirestoreXpSource {
     : _firestore = firestore ?? FirebaseFirestore.instance,
       _rankSource = FirestoreRankSource(firestore: firestore);
 
-      Future<DeviceXpResult> addSessionXp({
-        required String gymId,
-        required String userId,
-        required String deviceId,
-        required String sessionId,
-        required bool showInLeaderboard,
-        required bool isMulti,
-        String? exerciseId,
-        required String traceId,
-        List<String> primaryMuscleGroupIds = const [],
-        List<String> secondaryMuscleGroupIds = const [],
-      }) async {
-        final dayKey = logicDayKey(DateTime.now());
-        final dateStr = dayKey;
-        final userRef = _firestore.collection('users').doc(userId);
-        final dayRef = userRef.collection('trainingDayXP').doc(dateStr);
-        final statsRef = _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(userId)
-            .collection('rank')
-            .doc('stats');
+  Future<SessionXpAward> addSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) async {
+    assert(LevelService.xpPerSession == 50);
+    final sessionDay = DateTime(sessionDate.year, sessionDate.month, sessionDate.day);
+    final dayKey = logicDayKey(sessionDay);
+    final userRef = _firestore.collection('users').doc(userId);
+    final dayCollection = userRef.collection('trainingDayXP');
+    final penaltyCollection = userRef.collection('xpPenalties');
+    final statsRef = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('users')
+        .doc(userId)
+        .collection('rank')
+        .doc('stats');
 
-        XpTrace.log('FS_IN', {
-          'gymId': gymId,
-          'uid': userId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-          'isMulti': isMulti,
-          'exerciseId': exerciseId ?? '',
-          'dayKey': dayKey,
-          'showInLeaderboard': showInLeaderboard,
-          'traceId': traceId,
-        });
-        XpTrace.log('FS_PATHS', {
-          'userDayPath': dayRef.path,
-          'deviceLbPath':
-              _firestore
-                  .collection('gyms')
-                  .doc(gymId)
-                  .collection('devices')
-                  .doc(deviceId)
-                  .collection('leaderboard')
-                  .doc(userId)
-                  .path,
-          'traceId': traceId,
-        });
+    XpTrace.log('FS_IN', {
+      'gymId': gymId,
+      'uid': userId,
+      'deviceId': deviceId,
+      'sessionId': sessionId,
+      'isMulti': isMulti,
+      'exerciseId': exerciseId ?? '',
+      'dayKey': dayKey,
+      'showInLeaderboard': showInLeaderboard,
+      'traceId': traceId,
+      'timeZone': timeZone,
+    });
 
-        try {
-          await _runTransactionWithRetry<void>(
-            (tx) async {
-              final daySnap = await tx.get(dayRef);
-              final statsSnap = await tx.get(statsRef);
-              final statsData = statsSnap.data() ?? {};
-              final updates = <String, dynamic>{};
-
-              final currentDayXp = (daySnap.data()?['xp'] as int?) ?? 0;
-              final newDayXp = currentDayXp + LevelService.xpPerSession;
-              final dayData = {'xp': newDayXp};
-              if (daySnap.exists) {
-                tx.update(dayRef, dayData);
-              } else {
-                tx.set(dayRef, dayData);
-              }
-              if (currentDayXp == 0) {
-                updates['dailyXP'] =
-                    (statsData['dailyXP'] as int? ?? 0) + LevelService.xpPerSession;
-              }
-
-              if (updates.isNotEmpty) {
-                if (statsSnap.exists) {
-                  tx.update(statsRef, updates);
-                } else {
-                  tx.set(statsRef, updates);
-                }
-              }
-            },
-            traceId: traceId,
-            logPrefix: 'FS',
-          );
-        } catch (e) {
-          XpTrace.log('FS_OUT', {
-            'result': 'error',
-            'errMsg': e.toString(),
-            'traceId': traceId,
-          });
-          rethrow;
-        }
-
-        final result = await _rankSource.addXp(
-          gymId: gymId,
-          userId: userId,
-          deviceId: deviceId,
-          sessionId: sessionId,
-          showInLeaderboard: showInLeaderboard,
-          isMulti: isMulti,
-          exerciseId: exerciseId,
-          traceId: traceId,
-        );
-        if (result == DeviceXpResult.okAdded ||
-            result == DeviceXpResult.okAddedNoLeaderboard) {
-          await _applyMuscleXp(
-            statsRef: statsRef,
-            primaryMuscleGroupIds: primaryMuscleGroupIds,
-            secondaryMuscleGroupIds: secondaryMuscleGroupIds,
-            traceId: traceId,
-          );
-        }
-        XpTrace.log('FS_OUT', {
-          'result': result.name,
-          'traceId': traceId,
-        });
-        return result;
+    final existingDaysSnap = await dayCollection.get();
+    QueryDocumentSnapshot<Map<String, dynamic>>? existingDayDoc;
+    for (final doc in existingDaysSnap.docs) {
+      if (doc.id == dayKey) {
+        existingDayDoc = doc;
+        break;
       }
+    }
+
+    if (existingDayDoc != null) {
+      final statsSnap = await statsRef.get();
+      final totalXp = (statsSnap.data()?['dailyXP'] as num?)?.toInt();
+      final components = _deserializeComponents(existingDayDoc.data()['components']);
+      final xp = (existingDayDoc.data()['xp'] as num?)?.toInt() ?? 0;
+      XpTrace.log('FS_SKIP', {
+        'reason': 'alreadyCredited',
+        'dayKey': dayKey,
+        'traceId': traceId,
+      });
+      return SessionXpAward(
+        result: DeviceXpResult.alreadyToday,
+        totalXp: totalXp,
+        dayXp: xp,
+        xpDelta: 0,
+        components: components,
+        penalties: const [],
+      );
+    }
+
+    final existingPenaltySnap = await penaltyCollection.get();
+    final existingTrainingDays = existingDaysSnap.docs
+        .map((doc) => _parseDayKey(doc.id))
+        .whereType<DateTime>()
+        .toList();
+
+    final engine = _buildEngine();
+    final previousLedger = engine.buildLedger(
+      trainingDays: existingTrainingDays,
+      timeZone: timeZone,
+    );
+    final nextLedger = engine.buildLedger(
+      trainingDays: [...existingTrainingDays, sessionDay],
+      timeZone: timeZone,
+    );
+
+    final trainingEvents = nextLedger.events
+        .where((event) => event.type == XpLedgerEventType.trainingDay)
+        .toList();
+    final dayEvent = trainingEvents.firstWhere(
+      (event) => event.day.isoDate == dayKey,
+      orElse: () {
+        throw StateError('Ledger missing training event for $dayKey');
+      },
+    );
+
+    final prevPenaltyEvents = previousLedger.events
+        .where((event) => event.type != XpLedgerEventType.trainingDay)
+        .toList();
+    final nextPenaltyEvents = nextLedger.events
+        .where((event) => event.type != XpLedgerEventType.trainingDay)
+        .toList();
+
+    final prevPenaltyIds = prevPenaltyEvents.map(_penaltyDocId).toSet();
+    final nextPenaltyIds = nextPenaltyEvents.map(_penaltyDocId).toSet();
+    final penaltiesToDelete = prevPenaltyIds.difference(nextPenaltyIds);
+    final newPenaltySummaries = nextPenaltyEvents
+        .where((event) => !prevPenaltyIds.contains(_penaltyDocId(event)))
+        .map(_penaltySummary)
+        .toList();
+
+    await _applyLedgerUpdates(
+      trainingDayCollection: dayCollection,
+      existingTrainingDocs: existingDaysSnap.docs,
+      penaltyCollection: penaltyCollection,
+      existingPenaltyDocs: existingPenaltySnap.docs,
+      trainingEvents: trainingEvents,
+      penaltyEvents: nextPenaltyEvents,
+      penaltyKeysToDelete: penaltiesToDelete,
+      statsRef: statsRef,
+      totalXp: nextLedger.totalXp,
+      computedTotalXp: nextLedger.computedTotalXp,
+      traceId: traceId,
+    );
+
+    final leaderboardResult = await _rankSource.addXp(
+      gymId: gymId,
+      userId: userId,
+      deviceId: deviceId,
+      sessionId: sessionId,
+      showInLeaderboard: showInLeaderboard,
+      isMulti: isMulti,
+      exerciseId: exerciseId,
+      traceId: traceId,
+    );
+
+    if (leaderboardResult == DeviceXpResult.okAdded ||
+        leaderboardResult == DeviceXpResult.okAddedNoLeaderboard) {
+      await _applyMuscleXp(
+        statsRef: statsRef,
+        primaryMuscleGroupIds: primaryMuscleGroupIds,
+        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+        traceId: traceId,
+      );
+    }
+
+    final xpDelta = nextLedger.totalXp - previousLedger.totalXp;
+    final components = dayEvent.components.map((component) => component.toJson()).toList();
+
+    XpTrace.log('FS_OUT', {
+      'result': leaderboardResult.name,
+      'traceId': traceId,
+      'xpDelta': xpDelta,
+      'dayXp': dayEvent.xpDelta,
+      'penaltiesWritten': newPenaltySummaries.length,
+    });
+
+    return SessionXpAward(
+      result: leaderboardResult,
+      totalXp: nextLedger.totalXp,
+      dayXp: dayEvent.xpDelta,
+      xpDelta: xpDelta,
+      components: components,
+      penalties: newPenaltySummaries,
+    );
+  }
+
+  List<Map<String, dynamic>> _deserializeComponents(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((component) => Map<String, dynamic>.from(component))
+        .toList();
+  }
+
+  TrainingDayXpEngine _buildEngine() {
+    return TrainingDayXpEngine(
+      config: const XpEngineConfig(minTotalXp: 0),
+    );
+  }
+
+  DateTime? _parseDayKey(String dayKey) {
+    try {
+      return DateTime.parse(dayKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Map<String, dynamic> _penaltySummary(XpLedgerEvent event) {
+    return {
+      'id': _penaltyDocId(event),
+      'type': event.type.name,
+      'xpDelta': event.xpDelta,
+      'day': event.day.isoDate,
+      'metadata': Map<String, dynamic>.from(event.metadata),
+    };
+  }
+
+  Future<void> _applyLedgerUpdates({
+    required CollectionReference<Map<String, dynamic>> trainingDayCollection,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> existingTrainingDocs,
+    required CollectionReference<Map<String, dynamic>> penaltyCollection,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> existingPenaltyDocs,
+    required List<XpLedgerEvent> trainingEvents,
+    required List<XpLedgerEvent> penaltyEvents,
+    required Set<String> penaltyKeysToDelete,
+    required DocumentReference<Map<String, dynamic>> statsRef,
+    required int totalXp,
+    required int computedTotalXp,
+    required String traceId,
+  }) async {
+    final operations = <void Function(WriteBatch)>[];
+
+    final desiredTrainingIds =
+        trainingEvents.map((event) => event.day.isoDate).toSet();
+    final trainingDocRefs = {
+      for (final doc in existingTrainingDocs) doc.id: doc.reference,
+    };
+    for (final entry in trainingDocRefs.entries) {
+      if (!desiredTrainingIds.contains(entry.key)) {
+        operations.add((batch) => batch.delete(entry.value));
+      }
+    }
+    for (final event in trainingEvents) {
+      final ref = trainingDayCollection.doc(event.day.isoDate);
+      operations.add(
+        (batch) => batch.set(
+          ref,
+          _buildTrainingDayData(
+            event: event,
+            totalXp: totalXp,
+            computedTotalXp: computedTotalXp,
+          ),
+        ),
+      );
+    }
+
+    final penaltyDocRefs = {
+      for (final doc in existingPenaltyDocs) doc.id: doc.reference,
+    };
+    for (final key in penaltyKeysToDelete) {
+      final ref = penaltyDocRefs[key] ?? penaltyCollection.doc(key);
+      operations.add((batch) => batch.delete(ref));
+    }
+    for (final event in penaltyEvents) {
+      final ref = penaltyCollection.doc(_penaltyDocId(event));
+      operations.add(
+        (batch) => batch.set(
+          ref,
+          _buildPenaltyData(
+            event: event,
+            totalXp: totalXp,
+            computedTotalXp: computedTotalXp,
+          ),
+        ),
+      );
+    }
+
+    final statsData = <String, dynamic>{
+      'dailyXP': totalXp,
+      'dailyComputedTotalXp': computedTotalXp,
+      'dailyTrainingDays': trainingEvents.length,
+      'dailyLedgerComputedAt': FieldValue.serverTimestamp(),
+      'dailyLedgerVersion': 2,
+    };
+    if (trainingEvents.isEmpty) {
+      statsData['dailyLastTrainingDay'] = FieldValue.delete();
+      statsData['dailyStreakLength'] = 0;
+      statsData['dailyTimeZone'] = FieldValue.delete();
+    } else {
+      final last = trainingEvents.last;
+      statsData['dailyLastTrainingDay'] = last.day.isoDate;
+      statsData['dailyStreakLength'] =
+          (last.metadata['streakLength'] as num?)?.toInt() ?? 0;
+      statsData['dailyTimeZone'] = last.day.timeZone;
+    }
+    operations.add(
+      (batch) => batch.set(
+        statsRef,
+        statsData,
+        SetOptions(merge: true),
+      ),
+    );
+
+    XpTrace.log('FS_LEDGER_APPLY', {
+      'trainingEvents': trainingEvents.length,
+      'penaltyEvents': penaltyEvents.length,
+      'ops': operations.length,
+      'traceId': traceId,
+    });
+
+    await _commitBatchOperations(operations);
+  }
+
+  Map<String, dynamic> _buildTrainingDayData({
+    required XpLedgerEvent event,
+    required int totalXp,
+    required int computedTotalXp,
+  }) {
+    return {
+      'xp': event.xpDelta,
+      'components': [
+        for (final component in event.components)
+          Map<String, dynamic>.from(component.toJson()),
+      ],
+      'metadata': Map<String, dynamic>.from(event.metadata),
+      'trainingDayIndex':
+          (event.metadata['trainingDayIndex'] as num?)?.toInt() ?? 0,
+      'streakLength': (event.metadata['streakLength'] as num?)?.toInt() ?? 0,
+      'runningTotalXp': event.runningTotalXp,
+      'computedTotalXp': computedTotalXp,
+      'totalXp': totalXp,
+      'timeZone': event.day.timeZone,
+      'ledgerVersion': 2,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  Map<String, dynamic> _buildPenaltyData({
+    required XpLedgerEvent event,
+    required int totalXp,
+    required int computedTotalXp,
+  }) {
+    return {
+      'xp': event.xpDelta,
+      'type': event.type.name,
+      'metadata': Map<String, dynamic>.from(event.metadata),
+      'day': event.day.isoDate,
+      'timeZone': event.day.timeZone,
+      'runningTotalXp': event.runningTotalXp,
+      'totalXp': totalXp,
+      'computedTotalXp': computedTotalXp,
+      'ledgerVersion': 2,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  String _penaltyDocId(XpLedgerEvent event) {
+    final gapIndex = (event.metadata['gapIndex'] as num?)?.toInt() ?? 0;
+    final weekIndex = (event.metadata['missedWeekNumber'] as num?)?.toInt() ?? 0;
+    return '${event.day.isoDate}_${event.type.name}_g$gapIndex-w$weekIndex';
+  }
+
+  Future<void> _commitBatchOperations(
+    List<void Function(WriteBatch)> operations,
+  ) async {
+    if (operations.isEmpty) {
+      return;
+    }
+    final commits = <WriteBatch>[];
+    var batch = _firestore.batch();
+    var opCount = 0;
+
+    void enqueueBatch() {
+      if (opCount == 0) {
+        return;
+      }
+      commits.add(batch);
+      batch = _firestore.batch();
+      opCount = 0;
+    }
+
+    for (final op in operations) {
+      op(batch);
+      opCount++;
+      if (opCount >= 400) {
+        enqueueBatch();
+      }
+    }
+    enqueueBatch();
+
+    for (final writeBatch in commits) {
+      await writeBatch.commit();
+    }
+  }
 
   Future<void> removeSessionXp({
     required String gymId,
@@ -147,7 +410,8 @@ class FirestoreXpSource {
     List<String> secondaryMuscleGroupIds = const [],
   }) async {
     final userRef = _firestore.collection('users').doc(userId);
-    final dayRef = userRef.collection('trainingDayXP').doc(dayKey);
+    final dayCollection = userRef.collection('trainingDayXP');
+    final penaltyCollection = userRef.collection('xpPenalties');
     final statsRef = _firestore
         .collection('gyms')
         .doc(gymId)
@@ -174,32 +438,96 @@ class FirestoreXpSource {
       'exerciseCount': exerciseIds.where((e) => e.isNotEmpty).length,
     });
 
+    final daySnapshot = await dayCollection.get();
+    QueryDocumentSnapshot<Map<String, dynamic>>? targetDoc;
+    for (final doc in daySnapshot.docs) {
+      if (doc.id == dayKey) {
+        targetDoc = doc;
+        break;
+      }
+    }
+    if (targetDoc == null) {
+      XpTrace.log('FS_REMOVE_SKIP', {
+        'reason': 'missingDayDoc',
+        'dayKey': dayKey,
+        'gymId': gymId,
+        'uid': userId,
+      });
+      return;
+    }
+    final penaltySnapshot = await penaltyCollection.get();
+
+    final timeZone = (targetDoc.data()['timeZone'] as String?) ??
+        DateTime.now().timeZoneName;
+
+    final engine = _buildEngine();
+    final existingDays = daySnapshot.docs
+        .map((doc) => _parseDayKey(doc.id))
+        .whereType<DateTime>()
+        .toList();
+    final remainingDays = daySnapshot.docs
+        .where((doc) => doc.id != dayKey)
+        .map((doc) => _parseDayKey(doc.id))
+        .whereType<DateTime>()
+        .toList();
+
+    final previousLedger = engine.buildLedger(
+      trainingDays: existingDays,
+      timeZone: timeZone,
+    );
+    final nextLedger = engine.buildLedger(
+      trainingDays: remainingDays,
+      timeZone: timeZone,
+    );
+
+    final nextTrainingEvents = nextLedger.events
+        .where((event) => event.type == XpLedgerEventType.trainingDay)
+        .toList();
+    final prevPenaltyEvents = previousLedger.events
+        .where((event) => event.type != XpLedgerEventType.trainingDay)
+        .toList();
+    final nextPenaltyEvents = nextLedger.events
+        .where((event) => event.type != XpLedgerEventType.trainingDay)
+        .toList();
+
+    final prevPenaltyIds = prevPenaltyEvents.map(_penaltyDocId).toSet();
+    final nextPenaltyIds = nextPenaltyEvents.map(_penaltyDocId).toSet();
+    final penaltiesToDelete = prevPenaltyIds.difference(nextPenaltyIds);
+    final newPenaltySummaries = nextPenaltyEvents
+        .where((event) => !prevPenaltyIds.contains(_penaltyDocId(event)))
+        .map(_penaltySummary)
+        .toList();
+
+    await _applyLedgerUpdates(
+      trainingDayCollection: dayCollection,
+      existingTrainingDocs: daySnapshot.docs,
+      penaltyCollection: penaltyCollection,
+      existingPenaltyDocs: penaltySnapshot.docs,
+      trainingEvents: nextTrainingEvents,
+      penaltyEvents: nextPenaltyEvents,
+      penaltyKeysToDelete: penaltiesToDelete,
+      statsRef: statsRef,
+      totalXp: nextLedger.totalXp,
+      computedTotalXp: nextLedger.computedTotalXp,
+      traceId: 'remove:$dayKey:$sessionId',
+    );
+
+    final xpDelta = nextLedger.totalXp - previousLedger.totalXp;
+
+    XpTrace.log('FS_REMOVE_LEDGER', {
+      'dayKey': dayKey,
+      'xpDelta': xpDelta,
+      'penaltiesWritten': newPenaltySummaries.length,
+      'penaltiesDeleted': penaltiesToDelete.length,
+      'remainingDays': nextTrainingEvents.length,
+    });
+
     await _firestore.runTransaction((tx) async {
-      final daySnap = await tx.get(dayRef);
-      final statsSnap = await tx.get(statsRef);
       final lbUserSnap = await tx.get(lbUser);
       final lbSessSnap = await tx.get(lbSess);
       final lbDaySnap = await tx.get(lbDay);
 
       const xpDelta = LevelService.xpPerSession;
-      var adjustStats = false;
-
-      if (daySnap.exists) {
-        final currentDayXp = (daySnap.data()?['xp'] as num?)?.toInt() ?? 0;
-        final newDayXp = currentDayXp - xpDelta;
-        if (newDayXp > 0) {
-          tx.update(dayRef, {'xp': newDayXp});
-        } else {
-          tx.delete(dayRef);
-        }
-        adjustStats = currentDayXp > 0 && newDayXp <= 0;
-      }
-
-      if (adjustStats && statsSnap.exists) {
-        final currentStatsXp = (statsSnap.data()?['dailyXP'] as num?)?.toInt() ?? 0;
-        final newStatsXp = currentStatsXp - xpDelta;
-        tx.update(statsRef, {'dailyXP': newStatsXp > 0 ? newStatsXp : 0});
-      }
 
       if (lbUserSnap.exists) {
         final info = LevelInfo.fromMap(lbUserSnap.data());
@@ -297,35 +625,6 @@ class FirestoreXpSource {
       updates['${key}XP'] = FieldValue.increment(value);
     });
     await historyDoc.set(updates, SetOptions(merge: true));
-  }
-
-  Future<T> _runTransactionWithRetry<T>(
-    Future<T> Function(Transaction tx) body, {
-    required String traceId,
-    required String logPrefix,
-    int maxRetries = 3,
-  }) async {
-    var delayMs = 200;
-    for (var attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await _firestore.runTransaction<T>(
-          (tx) => body(tx),
-          maxAttempts: 5,
-        );
-      } on FirebaseException catch (e) {
-        if (e.code != 'resource-exhausted' || attempt == maxRetries) {
-          rethrow;
-        }
-        XpTrace.log('${logPrefix}_TX_RETRY', {
-          'traceId': traceId,
-          'attempt': attempt + 1,
-          'code': e.code,
-        });
-        await Future<void>.delayed(Duration(milliseconds: delayMs));
-        delayMs = delayMs >= 1600 ? 1600 : delayMs * 2;
-      }
-    }
-    throw StateError('Retry loop exited unexpectedly for $traceId');
   }
 
     Stream<int> watchDayXp({required String userId, required DateTime date}) {

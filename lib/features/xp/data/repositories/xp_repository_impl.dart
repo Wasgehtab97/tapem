@@ -1,41 +1,47 @@
-import '../../domain/xp_repository.dart';
-import '../../domain/device_xp_result.dart';
-import '../sources/firestore_xp_source.dart';
 import 'package:tapem/core/logging/elog.dart';
+
+import '../../domain/device_xp_result.dart';
+import '../../domain/session_xp_award.dart';
+import '../../domain/xp_repository.dart';
+import '../sources/firestore_xp_source.dart';
 
 class XpRepositoryImpl implements XpRepository {
   final FirestoreXpSource _source;
   XpRepositoryImpl(this._source);
 
   @override
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-      String? exerciseId,
-      required String traceId,
-      List<String> primaryMuscleGroupIds = const [],
-      List<String> secondaryMuscleGroupIds = const [],
-    }) {
-      return _source
-          .addSessionXp(
-        gymId: gymId,
-        userId: userId,
-        deviceId: deviceId,
-        sessionId: sessionId,
-        showInLeaderboard: showInLeaderboard,
-        isMulti: isMulti,
-        exerciseId: exerciseId,
-        traceId: traceId,
-        primaryMuscleGroupIds: primaryMuscleGroupIds,
-        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
-      )
-          .then((result) {
+  Future<SessionXpAward> addSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) {
+    return _source
+        .addSessionXp(
+      gymId: gymId,
+      userId: userId,
+      deviceId: deviceId,
+      sessionId: sessionId,
+      showInLeaderboard: showInLeaderboard,
+      isMulti: isMulti,
+      exerciseId: exerciseId,
+      traceId: traceId,
+      sessionDate: sessionDate,
+      timeZone: timeZone,
+      primaryMuscleGroupIds: primaryMuscleGroupIds,
+      secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+    )
+        .then((result) {
         elogDeviceXp('REPO_RETURN', {
-          'result': result.name,
+          'result': result.result.name,
           'uid': userId,
           'gymId': gymId,
           'deviceId': deviceId,
@@ -44,7 +50,7 @@ class XpRepositoryImpl implements XpRepository {
         });
         return result;
       });
-    }
+  }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) {

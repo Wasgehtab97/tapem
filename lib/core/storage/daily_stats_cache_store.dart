@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/time/logic_day.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 class DailyStatsCacheEntry {
   const DailyStatsCacheEntry({
@@ -42,12 +41,8 @@ class DailyStatsCacheEntry {
     final storedDayKey = json['dayKey'] as String? ?? logicDayKey(timestamp);
     final rawXp = xpValue.toInt();
     final totalXp = totalValue ?? rawXp;
-    final xpPerSession = LevelService.xpPerSession;
-    final sanitizedXp = totalValue == null && rawXp > xpPerSession
-        ? xpPerSession
-        : rawXp;
     return DailyStatsCacheEntry(
-      xp: sanitizedXp,
+      xp: rawXp,
       cachedAt: timestamp,
       totalXp: totalXp,
       dayKey: storedDayKey,
@@ -70,8 +65,9 @@ abstract class DailyStatsCache {
     String gymId,
     String userId,
     int totalXp,
-    DateTime cachedAt,
-  );
+    DateTime cachedAt, {
+    int? dayXp,
+  });
 
   Future<DailyStatsCacheEntry> increment(
     String gymId,
@@ -132,8 +128,9 @@ class DailyStatsCacheStore implements DailyStatsCache {
     String gymId,
     String userId,
     int totalXp,
-    DateTime cachedAt,
-  ) async {
+    DateTime cachedAt, {
+    int? dayXp,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final key = _key(gymId, userId);
     final raw = prefs.getString(key);
@@ -154,20 +151,14 @@ class DailyStatsCacheStore implements DailyStatsCache {
     var baseline = prevTotal;
     if (existing != null && existing.dayKey == dayKey) {
       baseline = prevTotal - existing.xp;
-      if (existing.totalXp == existing.xp && existing.xp > LevelService.xpPerSession) {
-        baseline = prevTotal - LevelService.xpPerSession;
-      }
     }
-    var dailyXp = totalXp - baseline;
-    if (dailyXp < 0) {
-      dailyXp = 0;
-    }
-    if (dailyXp > LevelService.xpPerSession) {
-      dailyXp = LevelService.xpPerSession;
+    var resolvedDailyXp = dayXp ?? (totalXp - baseline);
+    if (resolvedDailyXp < 0) {
+      resolvedDailyXp = 0;
     }
 
     final entry = DailyStatsCacheEntry(
-      xp: dailyXp,
+      xp: resolvedDailyXp,
       cachedAt: cachedAt,
       totalXp: totalXp,
       dayKey: dayKey,
@@ -204,11 +195,13 @@ class DailyStatsCacheStore implements DailyStatsCache {
     final dailyXp = (existing == null || existing.dayKey != dayKey)
         ? delta
         : existing.xp + delta;
+    final adjustedDailyXp = dailyXp < 0 ? 0 : dailyXp;
+    final adjustedTotal = totalXp < 0 ? 0 : totalXp;
 
     final entry = DailyStatsCacheEntry(
-      xp: dailyXp,
+      xp: adjustedDailyXp,
       cachedAt: now,
-      totalXp: totalXp,
+      totalXp: adjustedTotal,
       dayKey: dayKey,
     );
     await prefs.setString(key, jsonEncode(entry.toJson()));
