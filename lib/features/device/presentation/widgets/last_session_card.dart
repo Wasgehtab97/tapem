@@ -49,7 +49,7 @@ class _MainSetRow extends StatelessWidget {
   const _MainSetRow({required this.s});
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.maybeOf(context);
+    final loc = AppLocalizations.of(context);
     final weightText = _weightDescription(loc);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

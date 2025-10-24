@@ -58,7 +58,7 @@ class SessionExerciseCard extends StatelessWidget {
                       Builder(builder: (context) {
                         final isBodyweight = set.isBodyweight;
                         final loc = isBodyweight
-                            ? AppLocalizations.maybeOf(context)
+                            ? AppLocalizations.of(context)
                             : null;
                         final wt = () {
                           if (!isBodyweight) {
