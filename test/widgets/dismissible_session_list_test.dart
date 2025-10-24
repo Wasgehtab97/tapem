@@ -145,7 +145,11 @@ void main() {
     expect(find.text('Session bearbeiten'), findsNothing);
 
     final before = provider.sets.length;
-    await tester.drag(find.byType(Dismissible).first, const Offset(-500, 0));
+    await tester.fling(
+      find.byType(Dismissible).first,
+      const Offset(-500, 0),
+      1000,
+    );
     await tester.pumpAndSettle();
 
     expect(provider.sets.length, before - 1);
