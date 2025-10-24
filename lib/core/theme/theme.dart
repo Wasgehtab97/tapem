@@ -11,6 +11,27 @@ import 'avatar_ring_theme.dart';
 /// variant pairs different primary and secondary accents – e.g. mint +
 /// turquoise – while maintaining a consistent base.
 class AppTheme {
+  static TextStyle _safeInter({
+    required Color color,
+    required double fontSize,
+    FontWeight? fontWeight,
+  }) {
+    try {
+      return GoogleFonts.inter(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+      );
+    } on Exception {
+      return TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontFamilyFallback: const ['Inter', 'sans-serif'],
+      );
+    }
+  }
+
   /// Builds a ThemeData with the given primary and secondary colours.
   static ThemeData _buildTheme({
     required Color primary,
@@ -57,21 +78,21 @@ class AppTheme {
       ),
       textTheme: TextTheme(
         // Large display numbers
-        displayLarge: GoogleFonts.inter(
+        displayLarge: _safeInter(
           color: textPrimary,
           fontSize: AppFontSizes.kpi,
           fontWeight: FontWeight.w700,
         ),
-        titleLarge: GoogleFonts.inter(
+        titleLarge: _safeInter(
           color: textPrimary,
           fontSize: AppFontSizes.headline,
           fontWeight: FontWeight.w600,
         ),
-        titleMedium: GoogleFonts.inter(
+        titleMedium: _safeInter(
           color: textSecondary,
           fontSize: AppFontSizes.title,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: _safeInter(
           color: textSecondary,
           fontSize: AppFontSizes.body,
         ),

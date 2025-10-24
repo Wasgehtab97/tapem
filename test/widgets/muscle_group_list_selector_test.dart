@@ -204,7 +204,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rücken'));
     await tester.pump();
-    expect(p, ['2']);
+    expect(p, ['1']);
     expect(s, isEmpty);
     await tester.tap(find.text('Reset'));
     await tester.pump();

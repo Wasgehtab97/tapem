@@ -228,6 +228,12 @@ class ThemeLoader extends ChangeNotifier {
       useMagenta: useMagenta,
       useClubAktiv: useClubAktiv,
     );
+
+    if (useMagenta) {
+      MagentaTones.normalizeFromGradient(AppGradients.brandGradient);
+    } else if (useClubAktiv) {
+      ClubAktivTones.normalizeFromGradient(AppGradients.brandGradient);
+    }
   }
 
   void _attachBrandTheme({
