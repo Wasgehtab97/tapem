@@ -1,7 +1,10 @@
 // lib/features/profile/presentation/widgets/calendar_popup.dart
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:tapem/app_router.dart'; // ← HIER DEN IMPORT HINZUFÜGEN
+
 import 'calendar.dart';
 
 /// Modal Bottom Sheet mit größerem, horizontal scrollbarem Jahres-Heatmap-Kalender.
@@ -29,7 +32,10 @@ class CalendarPopup extends StatefulWidget {
 
 class _CalendarPopupState extends State<CalendarPopup> {
   late final ScrollController _scrollCtrl;
-  bool _hasJumped = false;
+  late int _currentYear;
+  int? _lastJumpedYear;
+
+  static const int _minYear = 2025;
 
   String _formatDateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -39,6 +45,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
+    _currentYear = math.max(_minYear, widget.initialYear);
   }
 
   @override
@@ -47,11 +54,31 @@ class _CalendarPopupState extends State<CalendarPopup> {
     super.dispose();
   }
 
+  void _setYear(int year) {
+    if (year == _currentYear) {
+      return;
+    }
+    setState(() {
+      _currentYear = year;
+      _lastJumpedYear = null;
+    });
+  }
+
+  void _prevYear() {
+    if (_currentYear > _minYear) {
+      _setYear(_currentYear - 1);
+    }
+  }
+
+  void _nextYear() {
+    _setYear(_currentYear + 1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final sheetHeight = MediaQuery.of(context).size.height * 0.6;
-    final firstOfYear = DateTime(widget.initialYear, 1, 1);
-    final lastOfYear = DateTime(widget.initialYear, 12, 31);
+    final firstOfYear = DateTime(_currentYear, 1, 1);
+    final lastOfYear = DateTime(_currentYear, 12, 31);
     final startOffset = (firstOfYear.weekday + 6) % 7;
     final gridStart = firstOfYear.subtract(Duration(days: startOffset));
     final totalDays = lastOfYear.difference(gridStart).inDays + 1;
@@ -63,7 +90,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
 
     final today = DateTime.now();
     int targetWeek = 0;
-    if (today.year == widget.initialYear) {
+    if (today.year == _currentYear) {
       final diff = today.difference(gridStart).inDays;
       targetWeek = (diff / 7).floor().clamp(0, weekCount - 1);
     }
@@ -73,10 +100,12 @@ class _CalendarPopupState extends State<CalendarPopup> {
         targetWeek * cellWidth - (viewportWidth - boxSize) / 2;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasJumped && _scrollCtrl.hasClients) {
+      if (_lastJumpedYear != _currentYear && _scrollCtrl.hasClients) {
         final max = _scrollCtrl.position.maxScrollExtent;
-        _scrollCtrl.jumpTo(desiredOffset.clamp(0.0, max));
-        _hasJumped = true;
+        final targetOffset =
+            today.year == _currentYear ? desiredOffset : 0.0;
+        _scrollCtrl.jumpTo(targetOffset.clamp(0.0, max));
+        _lastJumpedYear = _currentYear;
       }
     });
 
@@ -89,35 +118,65 @@ class _CalendarPopupState extends State<CalendarPopup> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            controller: _scrollCtrl,
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: weekCount * cellWidth,
-              child: Calendar(
-                trainingDates: widget.trainingDates,
-                year: widget.initialYear,
-                showNavigation: false,
-                showDayNumbers: true,
-                onDayTap: (date) {
-                  Navigator.of(context).pop(date);
-                  if (widget.navigateOnTap) {
-                    final args = <String, dynamic>{
-                      'userId': widget.userId,
-                      'date': date,
-                    };
-                    final gymId = widget.gymIdsByDate?[_formatDateKey(date)];
-                    if (gymId != null) {
-                      args['gymId'] = gymId;
-                    }
-                    Navigator.of(context).pushNamed(
-                      AppRouter.trainingDetails,
-                      arguments: args,
-                    );
-                  }
-                },
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: _currentYear > _minYear ? _prevYear : null,
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '$_currentYear',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _nextYear,
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollCtrl,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: weekCount * cellWidth,
+                    child: Calendar(
+                      trainingDates: widget.trainingDates,
+                      year: _currentYear,
+                      showNavigation: false,
+                      showDayNumbers: true,
+                      onDayTap: (date) {
+                        Navigator.of(context).pop(date);
+                        if (widget.navigateOnTap) {
+                          final args = <String, dynamic>{
+                            'userId': widget.userId,
+                            'date': date,
+                          };
+                          final gymId = widget.gymIdsByDate?[_formatDateKey(date)];
+                          if (gymId != null) {
+                            args['gymId'] = gymId;
+                          }
+                          Navigator.of(context).pushNamed(
+                            AppRouter.trainingDetails,
+                            arguments: args,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
