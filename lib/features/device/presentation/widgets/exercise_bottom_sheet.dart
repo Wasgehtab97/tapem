@@ -13,6 +13,7 @@ import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_list_selector.dart';
+import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
@@ -299,6 +300,23 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_primaryIds.isNotEmpty || _secondaryIds.isNotEmpty) ...[
+                    Text(
+                      loc.exerciseSelectedMuscleGroups,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: MuscleChips(
+                        primaryIds: _primaryIds,
+                        secondaryIds: _secondaryIds,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   Row(
                     children: [
                       Expanded(

@@ -17,6 +17,8 @@ import 'package:tapem/ui/muscles/muscle_group_list_selector.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/features/muscle_group/domain/usecases/ensure_region_group.dart';
 
 class _FakeMuscleGroupRepo implements MuscleGroupRepository {
   final List<MuscleGroup> groups;
@@ -89,6 +91,8 @@ class _FakeMuscleGroupProvider extends MuscleGroupProvider {
           getHistory: GetHistoryForDevice(_FakeHistoryRepo()),
           updateDeviceGroups: UpdateDeviceMuscleGroupsUseCase(_FakeDeviceRepo()),
           setDeviceGroups: SetDeviceMuscleGroupsUseCase(_FakeDeviceRepo()),
+          ensureRegionGroup: EnsureRegionGroup(_FakeMuscleGroupRepo(_groups)),
+          membership: _FakeMembershipService(),
         );
   @override
   bool get isLoading => false;
@@ -96,6 +100,11 @@ class _FakeMuscleGroupProvider extends MuscleGroupProvider {
   List<MuscleGroup> get groups => _groups;
   @override
   Future<void> loadGroups(BuildContext context, {bool force = false}) async {}
+}
+
+class _FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {}
 }
 
 void main() {

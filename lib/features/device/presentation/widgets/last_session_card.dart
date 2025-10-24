@@ -17,24 +17,28 @@ class LastSessionCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).toString();
     return BrandGradientCard(
       padding: const EdgeInsets.all(AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(date)}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          for (final s in sets) ...[
-            _MainSetRow(s: s),
-            if (s.drops.isNotEmpty) _DropRows(drops: s.drops),
-            const SizedBox(height: 4),
-          ],
-          if (note != null && note!.isNotEmpty) ...[
+      child: SingleChildScrollView(
+        primary: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Letzte Session: ${DateFormat.yMd(locale).add_Hm().format(date)}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
-            Text('Notiz: $note'),
+            for (final s in sets) ...[
+              _MainSetRow(s: s),
+              if (s.drops.isNotEmpty) _DropRows(drops: s.drops),
+              const SizedBox(height: 4),
+            ],
+            if (note != null && note!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Notiz: $note'),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -45,10 +49,8 @@ class _MainSetRow extends StatelessWidget {
   const _MainSetRow({required this.s});
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final weightText = s.isBodyweight
-        ? (s.kg == 0 ? loc.bodyweight : loc.bodyweightPlus(s.kg))
-        : '${s.kg} kg';
+    final loc = AppLocalizations.maybeOf(context);
+    final weightText = _weightDescription(loc);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,6 +67,17 @@ class _MainSetRow extends StatelessWidget {
         Text('${s.reps} x'),
       ],
     );
+  }
+
+  String _weightDescription(AppLocalizations? loc) {
+    if (!s.isBodyweight) {
+      return '${s.kg} kg';
+    }
+    if (s.kg == 0) {
+      return loc?.bodyweight ?? 'Bodyweight';
+    }
+    final kgText = NumberFormat('0.##').format(s.kg);
+    return loc?.bodyweightPlus(kgText) ?? 'Bodyweight + $kgText kg';
   }
 }
 
