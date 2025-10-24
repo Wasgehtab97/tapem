@@ -1038,7 +1038,6 @@ class _RailBtnSquare extends StatefulWidget {
   final IconData icon;
   final String semanticsLabel;
   final VoidCallback onTap;
-  final bool repeat;
   final NumericKeypadTheme theme;
 
   const _RailBtnSquare({
@@ -1047,7 +1046,6 @@ class _RailBtnSquare extends StatefulWidget {
     required this.semanticsLabel,
     required this.onTap,
     required this.theme,
-    this.repeat = false,
   });
 
   @override
@@ -1055,30 +1053,6 @@ class _RailBtnSquare extends StatefulWidget {
 }
 
 class _RailBtnSquareState extends State<_RailBtnSquare> {
-  Timer? _timer;
-
-  void _start() {
-    widget.onTap();
-    if (!widget.repeat) return;
-    _timer?.cancel();
-    _timer = Timer(const Duration(milliseconds: 260), () {
-      _timer = Timer.periodic(const Duration(milliseconds: 70), (_) {
-        widget.onTap();
-      });
-    });
-  }
-
-  void _stop() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _stop();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final th = widget.theme;
@@ -1086,9 +1060,7 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
       label: widget.semanticsLabel,
       button: true,
       child: GestureDetector(
-        onTapDown: (_) => _start(),
-        onTapUp: (_) => _stop(),
-        onTapCancel: _stop,
+        onTap: widget.onTap,
         child: Container(
           width: double.infinity,
           height: double.infinity,

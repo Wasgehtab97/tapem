@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -136,9 +135,7 @@ class _StorySessionHighlightsListenerState
       if (!mounted) {
         _isShowingDialog = false;
         _pendingSummaries.clear();
-        return;
-      }
-      if (_pendingSummaries.isNotEmpty) {
+      } else if (_pendingSummaries.isNotEmpty) {
         final next = _pendingSummaries.removeFirst();
         unawaited(_showSummary(next));
       } else {

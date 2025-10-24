@@ -128,6 +128,13 @@ class FakeXpRepository implements XpRepository {
       muscleCtrl.stream;
 
   @override
+  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+  }) =>
+      const Stream.empty();
+
+  @override
   Stream<Map<String, int>> watchTrainingDaysXp(String userId) =>
       const Stream.empty();
 

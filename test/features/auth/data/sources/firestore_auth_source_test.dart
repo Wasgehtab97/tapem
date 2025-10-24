@@ -6,7 +6,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:tapem/features/auth/data/services/username_service.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
 
-class _MockChangeUsernameRunner extends Mock implements ChangeUsernameRunner {}
+class _MockChangeUsernameRunner extends Mock {
+  Future<void> call({
+    required FirebaseFirestore firestore,
+    required String uid,
+    required String newUsername,
+  });
+}
 
 class _FakeFirebaseAuth extends Fake implements FirebaseAuth {}
 

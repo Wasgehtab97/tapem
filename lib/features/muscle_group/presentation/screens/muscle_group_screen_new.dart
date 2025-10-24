@@ -97,7 +97,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
         region: totalXp > 0 ? (regionXp[region]! / totalXp) : 0,
     };
 
-    String _labelForRegion(MuscleRegion region) {
+    String labelForRegion(MuscleRegion region) {
       final regionGroups = groups.where((g) => g.region == region);
       final canonical = regionGroups.firstWhereOrNull(
         (g) => g.name.trim().toLowerCase() == region.name.toLowerCase(),
@@ -109,7 +109,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
     final chartEntries = [
       for (final region in orderedRegions)
         MuscleRadarEntry(
-          label: _labelForRegion(region),
+          label: labelForRegion(region),
           percentage: percentageByRegion[region]!.clamp(0.0, 1.0),
         ),
     ];
@@ -136,7 +136,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
               : (xpInLevel / xpPerLevel).clamp(0.0, 1.0);
           return _MuscleStat(
             region: region,
-            label: _labelForRegion(region),
+            label: labelForRegion(region),
             xp: xpValue,
             percentage: percentageByRegion[region] ?? 0,
             level: level,

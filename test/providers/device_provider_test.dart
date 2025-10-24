@@ -116,6 +116,13 @@ class _ExerciseSnapRepo implements DeviceRepository {
   Stream<int> watchDayXp({required String userId, required DateTime date}) => const Stream.empty();
   @override
   Stream<Map<String, int>> watchMuscleXp({required String gymId, required String userId}) => const Stream.empty();
+
+  @override
+  Stream<Map<String, Map<String, int>>> watchMuscleXpHistory({
+    required String gymId,
+    required String userId,
+  }) =>
+      const Stream.empty();
   @override
   Stream<Map<String, int>> watchTrainingDaysXp(String userId) => const Stream.empty();
   @override

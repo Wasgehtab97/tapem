@@ -552,7 +552,6 @@ class _UsageChartPainter extends CustomPainter {
       final stat = bar.stat;
       final barRect = bar.rect;
       final left = barRect.left;
-      final barBottom = barRect.bottom;
       final barHeight = barRect.height;
       final paint = Paint()
         ..shader = gradient.createShader(barRect.outerRect);

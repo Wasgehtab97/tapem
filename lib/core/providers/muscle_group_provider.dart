@@ -426,7 +426,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     for (final group in _groups) {
       final total = group.deviceIds.fold<int>(
         0,
-        (sum, dId) => sum + (deviceCounts[dId] ?? 0),
+        (acc, dId) => acc + (deviceCounts[dId] ?? 0),
       );
       nextCounts[group.id] = total;
     }
