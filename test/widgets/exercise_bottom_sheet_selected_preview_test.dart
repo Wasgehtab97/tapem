@@ -14,6 +14,7 @@ import 'package:tapem/features/muscle_group/domain/usecases/delete_muscle_group.
 import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
 import 'package:tapem/features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
+import 'package:tapem/features/muscle_group/domain/usecases/ensure_region_group.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/models/device.dart';

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
@@ -124,6 +125,11 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          theme: ThemeData(
+            extensions: <ThemeExtension<dynamic>>[
+              AppBrandTheme.defaultTheme(),
+            ],
+          ),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('de'),
