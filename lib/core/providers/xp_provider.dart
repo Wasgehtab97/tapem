@@ -90,6 +90,8 @@ class XpProvider extends ChangeNotifier {
     required bool isMulti,
     String? exerciseId,
     required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
     List<String> primaryMuscleGroupIds = const [],
     List<String> secondaryMuscleGroupIds = const [],
   }) async {
@@ -112,7 +114,7 @@ class XpProvider extends ChangeNotifier {
       return DeviceXpResult.skipNoDevice;
     }
     try {
-      final result = await _repo.addSessionXp(
+      final award = await _repo.addSessionXp(
         gymId: gymId,
         userId: userId,
         deviceId: deviceId,
@@ -121,18 +123,19 @@ class XpProvider extends ChangeNotifier {
         isMulti: isMulti,
         exerciseId: exerciseId,
         traceId: traceId,
+        sessionDate: sessionDate,
+        timeZone: timeZone,
         primaryMuscleGroupIds: primaryMuscleGroupIds,
         secondaryMuscleGroupIds: secondaryMuscleGroupIds,
       );
+      final result = award.result;
       XpTrace.log('PROVIDER_OUT', {
         'result': result.name,
-        'deltaXp':
-            result == DeviceXpResult.okAdded ||
-                    result == DeviceXpResult.okAddedNoLeaderboard
-                ? 50
-                : 0,
-        'updatedLocalCache': result == DeviceXpResult.okAdded ||
-            result == DeviceXpResult.okAddedNoLeaderboard,
+        'deltaXp': award.xpDelta,
+        'dayXp': award.dayXp,
+        'updatedLocalCache': (result == DeviceXpResult.okAdded ||
+            result == DeviceXpResult.okAddedNoLeaderboard) &&
+            (award.totalXp != null),
         'traceId': traceId,
       });
       if (result == DeviceXpResult.okAdded ||
@@ -145,23 +148,26 @@ class XpProvider extends ChangeNotifier {
           'traceId': traceId,
         });
         notifyListeners();
-        try {
-          final entry = await _statsCache.increment(
-            gymId,
-            userId,
-            LevelService.xpPerSession,
-            _now(),
-          );
-          _applyDailyStats(
-            totalXp: entry.totalXp,
-            fetchedAt: entry.cachedAt,
-            source: 'localIncrement',
-          );
-        } catch (e, st) {
-          elogError('XP_STATS_CACHE_INCREMENT_FAILED', e, st, {
-            'gymId': gymId,
-            'uid': userId,
-          });
+        if (award.totalXp != null) {
+          try {
+            final entry = await _statsCache.writeTotal(
+              gymId,
+              userId,
+              award.totalXp!,
+              _now(),
+              dayXp: award.dayXp,
+            );
+            _applyDailyStats(
+              totalXp: entry.totalXp,
+              fetchedAt: entry.cachedAt,
+              source: 'localWrite',
+            );
+          } catch (e, st) {
+            elogError('XP_STATS_CACHE_WRITE_FAILED', e, st, {
+              'gymId': gymId,
+              'uid': userId,
+            });
+          }
         }
       }
       return result;

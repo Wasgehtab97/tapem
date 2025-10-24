@@ -9,8 +9,9 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
-import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/session_xp_award.dart';
+import 'package:tapem/features/xp/domain/xp_repository.dart';
 import 'package:tapem/features/challenges/domain/repositories/challenge_repository.dart';
 import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
@@ -93,24 +94,31 @@ class _ExerciseSnapRepo implements DeviceRepository {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-  class FakeXpRepository implements XpRepository {
-    int calls = 0;
-    @override
-    Future<DeviceXpResult> addSessionXp({
-      required String gymId,
-      required String userId,
-      required String deviceId,
-      required String sessionId,
-      required bool showInLeaderboard,
-      required bool isMulti,
-      String? exerciseId,
-      required String traceId,
-      List<String> primaryMuscleGroupIds = const [],
-      List<String> secondaryMuscleGroupIds = const [],
-    }) async {
-      calls++;
-      return DeviceXpResult.okAdded;
-    }
+class FakeXpRepository implements XpRepository {
+  int calls = 0;
+  @override
+  Future<SessionXpAward> addSessionXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
+    List<String> primaryMuscleGroupIds = const [],
+    List<String> secondaryMuscleGroupIds = const [],
+  }) async {
+    calls++;
+    return const SessionXpAward(
+      result: DeviceXpResult.okAdded,
+      totalXp: 50,
+      dayXp: 50,
+      xpDelta: 50,
+    );
+  }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) => const Stream.empty();

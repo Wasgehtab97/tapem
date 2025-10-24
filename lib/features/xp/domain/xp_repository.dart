@@ -1,7 +1,7 @@
-import 'device_xp_result.dart';
+import 'session_xp_award.dart';
 
 abstract class XpRepository {
-  Future<DeviceXpResult> addSessionXp({
+  Future<SessionXpAward> addSessionXp({
     required String gymId,
     required String userId,
     required String deviceId,
@@ -10,6 +10,8 @@ abstract class XpRepository {
     required bool isMulti,
     String? exerciseId,
     required String traceId,
+    required DateTime sessionDate,
+    required String timeZone,
     List<String> primaryMuscleGroupIds = const [],
     List<String> secondaryMuscleGroupIds = const [],
   });

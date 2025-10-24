@@ -1325,6 +1325,8 @@ class DeviceProvider extends ChangeNotifier {
             isMulti: _device!.isMulti,
             exerciseId: _currentExerciseId,
             traceId: traceId,
+            sessionDate: ts.toDate(),
+            timeZone: tz,
             primaryMuscleGroupIds: assignments.primary,
             secondaryMuscleGroupIds: assignments.secondary,
           );
