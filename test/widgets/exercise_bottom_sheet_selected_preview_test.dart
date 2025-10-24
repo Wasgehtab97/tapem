@@ -19,6 +19,7 @@ import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class _FakeMuscleGroupRepo implements MuscleGroupRepository {
   final List<MuscleGroup> groups;
@@ -83,17 +84,33 @@ class _FakeDeviceRepo implements DeviceRepository {
   DocumentSnapshot? get lastSnapshotCursor => null;
 }
 
+class FakeMembershipService implements MembershipService {
+  @override
+  Future<void> ensureMembership(String gymId, String uid) {
+    return Future.value();
+  }
+}
+
 class FakeMuscleGroupProvider extends MuscleGroupProvider {
   final List<MuscleGroup> _groups;
-  FakeMuscleGroupProvider(this._groups)
+  final _FakeMuscleGroupRepo _repo;
+
+  FakeMuscleGroupProvider._(this._groups, this._repo)
       : super(
-          getGroups: GetMuscleGroupsForGym(_FakeMuscleGroupRepo(_groups)),
-          saveGroup: SaveMuscleGroup(_FakeMuscleGroupRepo(_groups)),
-          deleteGroup: DeleteMuscleGroup(_FakeMuscleGroupRepo(_groups)),
+          getGroups: GetMuscleGroupsForGym(_repo),
+          saveGroup: SaveMuscleGroup(_repo),
+          deleteGroup: DeleteMuscleGroup(_repo),
           getHistory: GetHistoryForDevice(_FakeHistoryRepo()),
           updateDeviceGroups: UpdateDeviceMuscleGroupsUseCase(_FakeDeviceRepo()),
           setDeviceGroups: SetDeviceMuscleGroupsUseCase(_FakeDeviceRepo()),
+          ensureRegionGroup: EnsureRegionGroup(_repo),
+          membership: FakeMembershipService(),
         );
+
+  factory FakeMuscleGroupProvider(List<MuscleGroup> groups) {
+    final repo = _FakeMuscleGroupRepo(groups);
+    return FakeMuscleGroupProvider._(groups, repo);
+  }
 
   @override
   bool get isLoading => false;
