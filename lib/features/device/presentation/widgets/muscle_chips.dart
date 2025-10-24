@@ -35,19 +35,29 @@ class MuscleChips extends StatelessWidget {
 
     Widget buildChip(String id, bool primary) {
       final name = nameFor(id);
-      final color = primary ? theme.colorScheme.primary : theme.colorScheme.tertiary;
-      final textColor = primary ? theme.colorScheme.onPrimary : theme.colorScheme.tertiary;
+      final scheme = theme.colorScheme;
+      final isDark = theme.brightness == Brightness.dark;
+      final backgroundColor = primary
+          ? scheme.primary.withOpacity(isDark ? 0.22 : 0.12)
+          : scheme.surfaceVariant.withOpacity(isDark ? 0.35 : 0.45);
+      final borderColor = scheme.outline.withOpacity(primary ? 0.18 : 0.32);
+      final textStyle = theme.textTheme.labelSmall?.copyWith(
+        color: scheme.onSurface.withOpacity(primary ? 0.85 : 0.7),
+        fontWeight: primary ? FontWeight.w600 : FontWeight.w500,
+        letterSpacing: 0.1,
+      );
       return Semantics(
         label: '$name, ${primary ? loc.muscleTabsPrimary : loc.muscleTabsSecondary}',
         child: Chip(
           visualDensity: VisualDensity.compact,
-          backgroundColor: primary ? color : Colors.transparent,
-          shape: primary ? null : StadiumBorder(side: BorderSide(color: color)),
+          backgroundColor: backgroundColor,
+          shape: StadiumBorder(side: BorderSide(color: borderColor)),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 8),
           label: Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: textColor),
+            style: textStyle,
           ),
         ),
       );
