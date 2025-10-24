@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tapem/core/theme/theme_loader.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -9,6 +10,9 @@ import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   group('ThemeLoader', () {
     test('lifthouse_koblenz without branding uses magenta theme', () {
       final loader = ThemeLoader()..loadDefault();

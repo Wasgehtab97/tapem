@@ -56,18 +56,21 @@ class SessionExerciseCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Builder(builder: (context) {
-                        final loc = AppLocalizations.of(context)!;
+                        final isBodyweight = set.isBodyweight;
+                        final loc = isBodyweight
+                            ? AppLocalizations.maybeOf(context)
+                            : null;
                         final wt = () {
-                          if (!set.isBodyweight) {
+                          if (!isBodyweight) {
                             return '${set.weight.toStringAsFixed(1)} kg';
                           }
-                          final additional = set.weight.abs() < 0.01
-                              ? 0
-                              : set.weight;
+                          final additional =
+                              set.weight.abs() < 0.01 ? 0 : set.weight;
+                          final base = loc?.bodyweightAbbrev ?? 'BW';
                           if (additional == 0) {
-                            return loc.bodyweightAbbrev;
+                            return base;
                           }
-                          return '${loc.bodyweightAbbrev} + ${additional.toStringAsFixed(1)} kg';
+                          return '$base + ${additional.toStringAsFixed(1)} kg';
                         }();
                         return Text(
                           wt,
