@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/core/providers/muscle_group_provider.dart';
@@ -33,21 +34,35 @@ class MuscleChips extends StatelessWidget {
       return displayNameForMuscleGroup(region, g);
     }
 
+    final onSurface = theme.colorScheme.onSurface;
+    final highlight = theme.colorScheme.primary;
+
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(
+      color: onSurface.withOpacity(0.75),
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.1,
+    );
+
     Widget buildChip(String id, bool primary) {
       final name = nameFor(id);
-      final color = primary ? theme.colorScheme.primary : theme.colorScheme.tertiary;
-      final textColor = primary ? theme.colorScheme.onPrimary : theme.colorScheme.tertiary;
+      final backgroundColor = primary
+          ? highlight.withOpacity(0.12)
+          : onSurface.withOpacity(0.06);
+      final borderColor = primary
+          ? highlight.withOpacity(0.2)
+          : onSurface.withOpacity(0.12);
       return Semantics(
         label: '$name, ${primary ? loc.muscleTabsPrimary : loc.muscleTabsSecondary}',
         child: Chip(
           visualDensity: VisualDensity.compact,
-          backgroundColor: primary ? color : Colors.transparent,
-          shape: primary ? null : StadiumBorder(side: BorderSide(color: color)),
+          backgroundColor: backgroundColor,
+          shape: StadiumBorder(side: BorderSide(color: borderColor)),
+          labelPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
           label: Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: textColor),
+            style: labelStyle,
           ),
         ),
       );
