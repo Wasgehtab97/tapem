@@ -72,7 +72,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<DeviceProvider>.value(value: provider),
-          Provider<OverlayNumericKeypadController>.value(
+          ChangeNotifierProvider<OverlayNumericKeypadController>.value(
             value: keypadController,
           ),
         ],

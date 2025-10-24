@@ -62,13 +62,18 @@ void main() {
       ),
     ));
 
+    final element = tester.element(find.byType(DevicePager));
+    final localizations = MaterialLocalizations.of(element);
+    final previousTooltip = localizations.previousPageTooltip;
+    final nextTooltip = localizations.nextPageTooltip;
+
     expect(find.text('edit'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Vorherige Session'));
+    await tester.tap(find.byTooltip(previousTooltip));
     await tester.pumpAndSettle();
     expect(find.text('snapnote'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Neuere / Aktuelle'));
+    await tester.tap(find.byTooltip(nextTooltip));
     await tester.pumpAndSettle();
     expect(find.text('edit'), findsOneWidget);
 

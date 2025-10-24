@@ -15,12 +15,14 @@ class SessionNavigationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final material = MaterialLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SessionNavigationIconButton(
           icon: Icons.chevron_left,
           onPressed: onPrevious,
+          tooltip: material.previousPageTooltip,
         ),
         const SizedBox(width: 12),
         center,
@@ -28,6 +30,7 @@ class SessionNavigationControls extends StatelessWidget {
         SessionNavigationIconButton(
           icon: Icons.chevron_right,
           onPressed: onNext,
+          tooltip: material.nextPageTooltip,
         ),
       ],
     );
@@ -37,11 +40,13 @@ class SessionNavigationControls extends StatelessWidget {
 class SessionNavigationIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;
+  final String? tooltip;
 
   const SessionNavigationIconButton({
     super.key,
     required this.icon,
     required this.onPressed,
+    this.tooltip,
   });
 
   @override
@@ -53,6 +58,7 @@ class SessionNavigationIconButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       icon: Icon(icon),
+      tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       style: IconButton.styleFrom(
         foregroundColor: color,
