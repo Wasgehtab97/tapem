@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/presentation/widgets/read_only_snapshot_page.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('shows drop mini cards under main set', (tester) async {
@@ -15,7 +16,14 @@ void main() {
         SetEntry(kg: 70, reps: 8, drops: [DropEntry(kg: 11, reps: 1)]),
       ],
     );
-    await tester.pumpWidget(MaterialApp(home: ReadOnlySnapshotPage(snapshot: snapshot)));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: ReadOnlySnapshotPage(snapshot: snapshot),
+      ),
+    );
     expect(find.text('11 kg'), findsOneWidget);
     expect(find.text('1 ×'), findsOneWidget);
   });
