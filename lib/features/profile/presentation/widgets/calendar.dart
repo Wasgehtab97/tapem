@@ -12,6 +12,9 @@ class Calendar extends StatefulWidget {
   final bool showNavigation;
   final int year;
   final bool showDayNumbers;
+  final int? minYear;
+  final int? maxYear;
+  final ValueChanged<int>? onYearChanged;
 
   Calendar({
     Key? key,
@@ -20,6 +23,9 @@ class Calendar extends StatefulWidget {
     this.showNavigation = true,
     this.showDayNumbers = false,
     int? year,
+    this.minYear,
+    this.maxYear,
+    this.onYearChanged,
   }) : year = year ?? DateTime.now().year,
        super(key: key);
 
@@ -33,11 +39,51 @@ class _CalendarState extends State<Calendar> {
   @override
   void initState() {
     super.initState();
-    _year = widget.year;
+    _year = _normalizeYear(widget.year);
   }
 
-  void _prevYear() => setState(() => _year--);
-  void _nextYear() => setState(() => _year++);
+  @override
+  void didUpdateWidget(covariant Calendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final normalizedYear = _normalizeYear(widget.year);
+    if (normalizedYear != _year) {
+      setState(() {
+        _year = normalizedYear;
+      });
+    }
+  }
+
+  int get _minYear => widget.minYear ?? -0x7fffffff;
+  int get _maxYear => widget.maxYear ?? 0x7fffffff;
+
+  bool get _canGoPrev => _year > _minYear;
+  bool get _canGoNext => _year < _maxYear;
+
+  int _normalizeYear(int year) {
+    if (year < _minYear) {
+      return _minYear;
+    }
+    if (year > _maxYear) {
+      return _maxYear;
+    }
+    return year;
+  }
+
+  void _prevYear() {
+    if (!_canGoPrev) return;
+    setState(() {
+      _year--;
+    });
+    widget.onYearChanged?.call(_year);
+  }
+
+  void _nextYear() {
+    if (!_canGoNext) return;
+    setState(() {
+      _year++;
+    });
+    widget.onYearChanged?.call(_year);
+  }
 
   bool _isNeutralScheme(ColorScheme scheme) {
     return scheme.primary.value == Colors.white.value &&
@@ -120,7 +166,7 @@ class _CalendarState extends State<Calendar> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.chevron_left, size: 20),
-                        onPressed: _prevYear,
+                        onPressed: _canGoPrev ? _prevYear : null,
                       ),
                       Expanded(
                         child: Center(
@@ -134,7 +180,7 @@ class _CalendarState extends State<Calendar> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.chevron_right, size: 20),
-                        onPressed: _nextYear,
+                        onPressed: _canGoNext ? _nextYear : null,
                       ),
                     ],
                   ),

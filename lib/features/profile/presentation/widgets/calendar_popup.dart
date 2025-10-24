@@ -29,7 +29,9 @@ class CalendarPopup extends StatefulWidget {
 
 class _CalendarPopupState extends State<CalendarPopup> {
   late final ScrollController _scrollCtrl;
-  bool _hasJumped = false;
+  static const int _firstSupportedYear = 2025;
+  late int _activeYear;
+  bool _hasScheduledInitialJump = false;
 
   String _formatDateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -39,6 +41,9 @@ class _CalendarPopupState extends State<CalendarPopup> {
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
+    _activeYear = widget.initialYear < _firstSupportedYear
+        ? _firstSupportedYear
+        : widget.initialYear;
   }
 
   @override
@@ -47,38 +52,73 @@ class _CalendarPopupState extends State<CalendarPopup> {
     super.dispose();
   }
 
+  _YearMetrics _calculateMetrics(int year) {
+    final firstOfYear = DateTime(year, 1, 1);
+    final lastOfYear = DateTime(year, 12, 31);
+    final startOffset = (firstOfYear.weekday + 6) % 7;
+    final gridStart = firstOfYear.subtract(Duration(days: startOffset));
+    final endOffset = 6 - ((lastOfYear.weekday + 6) % 7);
+    final gridEnd = lastOfYear.add(Duration(days: endOffset));
+    final totalDays = gridEnd.difference(gridStart).inDays + 1;
+    final weekCount = (totalDays / 7).ceil();
+    return _YearMetrics(gridStart: gridStart, weekCount: weekCount);
+  }
+
+  void _scheduleJumpToRelevantWeek({bool animate = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollCtrl.hasClients) {
+        return;
+      }
+
+      const boxSize = 24.0;
+      const boxMargin = 2.0;
+      final metrics = _calculateMetrics(_activeYear);
+      final cellWidth = boxSize + boxMargin * 2;
+      final viewportWidth = MediaQuery.of(context).size.width - 32;
+      final today = DateTime.now();
+      int targetWeek = 0;
+      if (today.year == _activeYear) {
+        final diff = today.difference(metrics.gridStart).inDays;
+        targetWeek = (diff / 7).floor().clamp(0, metrics.weekCount - 1);
+      }
+      final desiredOffset =
+          targetWeek * cellWidth - (viewportWidth - boxSize) / 2;
+      final max = _scrollCtrl.position.maxScrollExtent;
+      final target = desiredOffset.clamp(0.0, max);
+      if (animate && _scrollCtrl.position.haveDimensions) {
+        _scrollCtrl.animateTo(
+          target,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _scrollCtrl.jumpTo(target);
+      }
+    });
+  }
+
+  void _handleYearChanged(int year) {
+    if (year == _activeYear) {
+      return;
+    }
+    setState(() {
+      _activeYear = year;
+    });
+    _scheduleJumpToRelevantWeek(animate: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final sheetHeight = MediaQuery.of(context).size.height * 0.6;
-    final firstOfYear = DateTime(widget.initialYear, 1, 1);
-    final lastOfYear = DateTime(widget.initialYear, 12, 31);
-    final startOffset = (firstOfYear.weekday + 6) % 7;
-    final gridStart = firstOfYear.subtract(Duration(days: startOffset));
-    final totalDays = lastOfYear.difference(gridStart).inDays + 1;
-    final weekCount = (totalDays / 7).ceil();
-
     const boxSize = 24.0;
     const boxMargin = 2.0;
     final cellWidth = boxSize + boxMargin * 2;
+    final metrics = _calculateMetrics(_activeYear);
 
-    final today = DateTime.now();
-    int targetWeek = 0;
-    if (today.year == widget.initialYear) {
-      final diff = today.difference(gridStart).inDays;
-      targetWeek = (diff / 7).floor().clamp(0, weekCount - 1);
+    if (!_hasScheduledInitialJump) {
+      _hasScheduledInitialJump = true;
+      _scheduleJumpToRelevantWeek();
     }
-
-    final viewportWidth = MediaQuery.of(context).size.width - 32;
-    final desiredOffset =
-        targetWeek * cellWidth - (viewportWidth - boxSize) / 2;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasJumped && _scrollCtrl.hasClients) {
-        final max = _scrollCtrl.position.maxScrollExtent;
-        _scrollCtrl.jumpTo(desiredOffset.clamp(0.0, max));
-        _hasJumped = true;
-      }
-    });
 
     return SizedBox(
       height: sheetHeight,
@@ -93,11 +133,12 @@ class _CalendarPopupState extends State<CalendarPopup> {
             controller: _scrollCtrl,
             scrollDirection: Axis.horizontal,
             child: SizedBox(
-              width: weekCount * cellWidth,
+              width: metrics.weekCount * cellWidth,
               child: Calendar(
                 trainingDates: widget.trainingDates,
-                year: widget.initialYear,
-                showNavigation: false,
+                year: _activeYear,
+                minYear: _firstSupportedYear,
+                onYearChanged: _handleYearChanged,
                 showDayNumbers: true,
                 onDayTap: (date) {
                   Navigator.of(context).pop(date);
@@ -123,4 +164,11 @@ class _CalendarPopupState extends State<CalendarPopup> {
       ),
     );
   }
+}
+
+class _YearMetrics {
+  const _YearMetrics({required this.gridStart, required this.weekCount});
+
+  final DateTime gridStart;
+  final int weekCount;
 }
