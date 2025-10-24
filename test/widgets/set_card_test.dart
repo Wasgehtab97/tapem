@@ -98,8 +98,8 @@ void main() {
     );
 
     expect(
-      tester.widget<TextField>(find.byType(TextField).first).readOnly,
-      false,
+      tester.widget<TextFormField>(find.byType(TextFormField).first).enabled,
+      isTrue,
     );
 
     await tester.enterText(find.byType(TextFormField).first, '10');
@@ -116,8 +116,8 @@ void main() {
 
     expect(provider.completedCount, 1);
     expect(
-      tester.widget<TextField>(find.byType(TextField).first).readOnly,
-      true,
+      tester.widget<TextFormField>(find.byType(TextFormField).first).enabled,
+      isFalse,
     );
     // Card keeps gradient background, no explicit color check here.
   });

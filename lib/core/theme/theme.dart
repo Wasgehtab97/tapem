@@ -16,6 +16,14 @@ class AppTheme {
     required double fontSize,
     FontWeight? fontWeight,
   }) {
+    if (!GoogleFonts.config.allowRuntimeFetching) {
+      return TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontFamilyFallback: const ['Inter', 'sans-serif'],
+      );
+    }
     try {
       return GoogleFonts.inter(
         color: color,
