@@ -9,6 +9,8 @@ import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('ThemeLoader', () {
     test('lifthouse_koblenz without branding uses magenta theme', () {
       final loader = ThemeLoader()..loadDefault();

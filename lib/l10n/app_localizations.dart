@@ -66,8 +66,14 @@ abstract class AppLocalizations {
 
   final String localeName;
 
-  static AppLocalizations? of(BuildContext context) {
+  static AppLocalizations? maybeOf(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static AppLocalizations of(BuildContext context) {
+    final AppLocalizations? result = maybeOf(context);
+    assert(result != null, 'No AppLocalizations found in context');
+    return result!;
   }
 
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
