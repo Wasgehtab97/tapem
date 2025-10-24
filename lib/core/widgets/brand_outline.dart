@@ -103,7 +103,8 @@ class _BrandOutlineState extends State<BrandOutline> {
 
   @override
   Widget build(BuildContext context) {
-    final brand = Theme.of(context).extension<AppBrandTheme>()!;
+    final brand =
+        Theme.of(context).extension<AppBrandTheme>() ?? AppBrandTheme.defaultTheme();
     final highContrast = MediaQuery.of(context).highContrast;
     final BorderRadius radius =
         (widget.radiusOverride ?? brand.outlineRadius) as BorderRadius;
