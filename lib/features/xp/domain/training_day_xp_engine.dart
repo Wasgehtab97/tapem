@@ -70,10 +70,21 @@ class XpLedgerEvent {
 
 /// Canonical representation of a calendar day within a timezone.
 class LedgerDay {
-  const LedgerDay({
+  const LedgerDay._({
     required this.canonicalDate,
     required this.timeZone,
-  }) : assert(canonicalDate.isUtc);
+  });
+
+  factory LedgerDay({
+    required DateTime canonicalDate,
+    required String timeZone,
+  }) {
+    assert(
+      canonicalDate.isUtc,
+      'LedgerDay canonicalDate must be provided in UTC.',
+    );
+    return LedgerDay._(canonicalDate: canonicalDate, timeZone: timeZone);
+  }
 
   /// Date truncated to midnight UTC for deterministic ordering.
   final DateTime canonicalDate;
@@ -423,9 +434,9 @@ class TrainingDayXpEngine {
         ),
       );
     }
-    final days = unique.values.toList()
+    final normalizedDays = unique.values.toList()
       ..sort((a, b) => a.canonical.compareTo(b.canonical));
-    return days;
+    return normalizedDays;
   }
 
   LedgerDay _dateFromCanonical(String timeZone, DateTime canonical) {
@@ -434,7 +445,7 @@ class TrainingDayXpEngine {
 }
 
 class _NormalizedTrainingDay {
-  const _NormalizedTrainingDay({
+  _NormalizedTrainingDay({
     required this.ledgerDay,
     required this.canonical,
   });

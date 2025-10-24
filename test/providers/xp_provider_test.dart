@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/session_xp_award.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
