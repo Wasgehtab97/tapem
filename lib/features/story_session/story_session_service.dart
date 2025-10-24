@@ -286,7 +286,6 @@ class StorySessionService {
     for (final session in sessions) {
       final deviceId = session.deviceId;
       final exerciseId = session.exerciseId;
-      final hasExercise = exerciseId != null && exerciseId.isNotEmpty;
       final isMulti = session.isMulti;
 
       if (!isMulti && !newDevices.containsKey(deviceId)) {
