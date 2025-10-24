@@ -8,6 +8,7 @@ void main() {
   testWidgets('Session card uses brand gradient', (tester) async {
     final session = Session(
       sessionId: 's1',
+      gymId: 'gym-1',
       deviceId: 'd1',
       deviceName: 'Device',
       deviceDescription: '',

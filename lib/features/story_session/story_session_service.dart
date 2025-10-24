@@ -305,20 +305,21 @@ class StorySessionService {
         }
       }
 
-      if (isMulti && hasExercise) {
-        final key = '$deviceId::$exerciseId';
+      if (isMulti && exerciseId != null && exerciseId.isNotEmpty) {
+        final resolvedExerciseId = exerciseId;
+        final key = '$deviceId::$resolvedExerciseId';
         if (!newExercises.containsKey(key)) {
           final seenExercise = await _historyStore.hasSeenExercise(
             gymId,
             userId,
             deviceId,
-            exerciseId!,
+            resolvedExerciseId,
           );
           final existedBefore = await _hasPriorUsage(
             gymId: gymId,
             userId: userId,
             deviceId: deviceId,
-            exerciseId: exerciseId,
+            exerciseId: resolvedExerciseId,
             before: startOfDay,
           );
           final shouldAdd =
@@ -529,14 +530,18 @@ class StorySessionService {
       }
 
       final startTime = session.startTime;
-      if (startTime != null &&
-          (earliestStart == null || startTime.isBefore(earliestStart!))) {
-        earliestStart = startTime;
+      if (startTime != null) {
+        final currentEarliest = earliestStart;
+        if (currentEarliest == null || startTime.isBefore(currentEarliest)) {
+          earliestStart = startTime;
+        }
       }
       final endTime = session.endTime;
-      if (endTime != null &&
-          (latestEnd == null || endTime.isAfter(latestEnd!))) {
-        latestEnd = endTime;
+      if (endTime != null) {
+        final currentLatest = latestEnd;
+        if (currentLatest == null || endTime.isAfter(currentLatest)) {
+          latestEnd = endTime;
+        }
       }
 
       final deviceId = session.deviceId;
@@ -546,8 +551,10 @@ class StorySessionService {
       uniqueActivities.add(activityKey);
     }
 
-    if (totalDurationMs == 0 && earliestStart != null && latestEnd != null) {
-      final diff = latestEnd!.difference(earliestStart!).inMilliseconds;
+    final start = earliestStart;
+    final end = latestEnd;
+    if (totalDurationMs == 0 && start != null && end != null) {
+      final diff = end.difference(start).inMilliseconds;
       if (diff > 0) {
         totalDurationMs = diff;
       }
@@ -623,7 +630,7 @@ class StorySessionService {
     required DateTime before,
     required String dayKey,
   }) async {
-    final key = '${deviceId}::${exerciseId ?? ''}';
+    final key = '$deviceId::${exerciseId ?? ''}';
     final cached = await _prStore.readEntry(gymId, userId, key);
     if (cached != null) {
       final cachedDayKey = cached.dayKey;

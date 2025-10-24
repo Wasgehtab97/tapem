@@ -52,7 +52,6 @@ class _DayXpScreenState extends State<DayXpScreen> {
   Widget build(BuildContext context) {
     final xpProv = context.watch<XpProvider>();
     final auth = context.watch<AuthProvider>();
-    final theme = Theme.of(context);
     final userLevel = xpProv.dailyLevel;
     final userXpInLevel = xpProv.dailyLevelXp;
     final locale = Localizations.localeOf(context).toString();

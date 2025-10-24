@@ -71,7 +71,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         return 0;
       }
     }));
-    return xpValues.fold<int>(0, (sum, value) => sum + value);
+    return xpValues.fold<int>(0, (total, value) => total + value);
   }
 
   @override

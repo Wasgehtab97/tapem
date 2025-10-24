@@ -645,7 +645,7 @@ class _StoryBadgeChip extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
                       child: Text(
-                        subtitle!,
+                        subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: palette.onCardSecondary,
                         ),

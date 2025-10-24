@@ -50,6 +50,7 @@ void main() {
       final sessions = [
         Session(
           sessionId: 's1',
+          gymId: gymId,
           deviceId: 'device-a',
           deviceName: 'Eleiko Rack',
           deviceDescription: 'Barbell station',
@@ -67,6 +68,7 @@ void main() {
         ),
         Session(
           sessionId: 's2',
+          gymId: gymId,
           deviceId: 'device-b',
           deviceName: 'Precor Butterfly',
           deviceDescription: 'Chest machine',
@@ -133,6 +135,7 @@ void main() {
       final sessions = [
         Session(
           sessionId: 'deadlift-session',
+          gymId: gymId,
           deviceId: 'device-deadlift',
           deviceName: 'Eleiko Deadlift Platform',
           deviceDescription: 'Deadlift area',
@@ -141,12 +144,13 @@ void main() {
           exerciseName: null,
           timestamp: DateTime(2025, 10, 18, 6, 0),
           note: '',
-          sets: const [
+          sets: [
             SessionSet(weight: 100, reps: 5, setNumber: 1),
           ],
         ),
         Session(
           sessionId: 'flys-session',
+          gymId: gymId,
           deviceId: 'device-flys',
           deviceName: 'Precor Fly Machine',
           deviceDescription: 'Chest fly machine',
@@ -155,7 +159,7 @@ void main() {
           exerciseName: 'Flys',
           timestamp: DateTime(2025, 10, 18, 7, 0),
           note: '',
-          sets: const [
+          sets: [
             SessionSet(weight: 40, reps: 12, setNumber: 1),
           ],
         ),
@@ -198,6 +202,7 @@ void main() {
       final sessions = [
         Session(
           sessionId: 'squat-session',
+          gymId: gymId,
           deviceId: 'device-squat',
           deviceName: 'Eleiko Power Rack',
           deviceDescription: 'Main squat rack',
@@ -206,12 +211,13 @@ void main() {
           exerciseName: 'Back Squat',
           timestamp: DateTime(2025, 10, 18, 6, 30),
           note: '',
-          sets: const [
+          sets: [
             SessionSet(weight: 140, reps: 3, setNumber: 1),
           ],
         ),
         Session(
           sessionId: 'bench-session',
+          gymId: gymId,
           deviceId: 'device-bench',
           deviceName: 'Hammer Strength Bench',
           deviceDescription: 'Competition bench',
@@ -220,7 +226,7 @@ void main() {
           exerciseName: 'Bench Press',
           timestamp: DateTime(2025, 10, 18, 7, 45),
           note: '',
-          sets: const [
+          sets: [
             SessionSet(weight: 90, reps: 5, setNumber: 1),
           ],
         ),
