@@ -12,6 +12,7 @@ on:
 
 env:
   FLUTTER_CHANNEL: stable
+  FLUTTER_VERSION: "3.32.8"
 
 jobs:
   lint:
@@ -25,6 +26,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Cache Pub & Dart tool files
         uses: actions/cache@v3
@@ -55,6 +57,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Dart dependencies
         run: flutter pub get
@@ -129,6 +132,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Dart dependencies
         run: flutter pub get
