@@ -16,14 +16,17 @@ class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final ChangeUsernameRunner _changeUsername;
+  final FirestoreGymSource _gymSource;
 
   FirestoreAuthSource({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     ChangeUsernameRunner? changeUsername,
+    FirestoreGymSource? gymSource,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
-        _changeUsername = changeUsername ?? changeUsernameTransaction;
+        _changeUsername = changeUsername ?? changeUsernameTransaction,
+        _gymSource = gymSource ?? FirestoreGymSource();
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -48,8 +51,7 @@ class FirestoreAuthSource {
     final uid = cred.user!.uid;
 
     // Gym anhand des Codes suchen und dessen ID speichern
-    final gymSrc = FirestoreGymSource();
-    final gym = await gymSrc.getGymByCode(initialGymCode);
+    final gym = await _gymSource.getGymByCode(initialGymCode);
     if (gym == null) throw Exception('Gym code not found');
 
     final now = DateTime.now();
