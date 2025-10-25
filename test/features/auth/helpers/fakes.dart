@@ -61,8 +61,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<UserData> login(String email, String password) {
     loginCalls++;
-    if (_onLogin != null) {
-      return _onLogin!(email, password);
+    final handler = _onLogin;
+    if (handler != null) {
+      return handler(email, password);
     }
     throw UnimplementedError('login handler not provided');
   }
@@ -70,8 +71,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<UserData> register(String email, String password, String gymId) {
     registerCalls++;
-    if (_onRegister != null) {
-      return _onRegister!(email, password, gymId);
+    final handler = _onRegister;
+    if (handler != null) {
+      return handler(email, password, gymId);
     }
     throw UnimplementedError('register handler not provided');
   }
@@ -79,8 +81,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> logout() {
     logoutCalls++;
-    if (_onLogout != null) {
-      return _onLogout!();
+    final handler = _onLogout;
+    if (handler != null) {
+      return handler();
     }
     throw UnimplementedError('logout handler not provided');
   }
@@ -88,8 +91,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<UserData?> getCurrentUser() {
     getCurrentUserCalls++;
-    if (_onGetCurrentUser != null) {
-      return _onGetCurrentUser!();
+    final handler = _onGetCurrentUser;
+    if (handler != null) {
+      return handler();
     }
     throw UnimplementedError('getCurrentUser handler not provided');
   }
@@ -97,8 +101,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> setUsername(String userId, String username) {
     setUsernameCalls++;
-    if (_onSetUsername != null) {
-      return _onSetUsername!(userId, username);
+    final handler = _onSetUsername;
+    if (handler != null) {
+      return handler(userId, username);
     }
     throw UnimplementedError('setUsername handler not provided');
   }
@@ -106,8 +111,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> setShowInLeaderboard(String userId, bool value) {
     setShowInLeaderboardCalls++;
-    if (_onSetShowInLeaderboard != null) {
-      return _onSetShowInLeaderboard!(userId, value);
+    final handler = _onSetShowInLeaderboard;
+    if (handler != null) {
+      return handler(userId, value);
     }
     throw UnimplementedError('setShowInLeaderboard handler not provided');
   }
@@ -115,8 +121,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> setPublicProfile(String userId, bool value) {
     setPublicProfileCalls++;
-    if (_onSetPublicProfile != null) {
-      return _onSetPublicProfile!(userId, value);
+    final handler = _onSetPublicProfile;
+    if (handler != null) {
+      return handler(userId, value);
     }
     throw UnimplementedError('setPublicProfile handler not provided');
   }
@@ -124,8 +131,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> setAvatarKey(String userId, String avatarKey) {
     setAvatarKeyCalls++;
-    if (_onSetAvatarKey != null) {
-      return _onSetAvatarKey!(userId, avatarKey);
+    final handler = _onSetAvatarKey;
+    if (handler != null) {
+      return handler(userId, avatarKey);
     }
     throw UnimplementedError('setAvatarKey handler not provided');
   }
@@ -133,8 +141,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<bool> isUsernameAvailable(String username) {
     isUsernameAvailableCalls++;
-    if (_onIsUsernameAvailable != null) {
-      return _onIsUsernameAvailable!(username);
+    final handler = _onIsUsernameAvailable;
+    if (handler != null) {
+      return handler(username);
     }
     throw UnimplementedError('isUsernameAvailable handler not provided');
   }
@@ -142,8 +151,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> sendPasswordResetEmail(String email) {
     sendPasswordResetEmailCalls++;
-    if (_onSendPasswordResetEmail != null) {
-      return _onSendPasswordResetEmail!(email);
+    final handler = _onSendPasswordResetEmail;
+    if (handler != null) {
+      return handler(email);
     }
     throw UnimplementedError('sendPasswordResetEmail handler not provided');
   }
@@ -177,8 +187,9 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   @override
   Future<void> reloadUser(fb_auth.User user) {
     reloadCalls++;
-    if (_onReload != null) {
-      return _onReload!(user);
+    final handler = _onReload;
+    if (handler != null) {
+      return handler(user);
     }
     return Future.value();
   }
@@ -186,8 +197,9 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   @override
   Future<void> forceRefreshIdToken(fb_auth.User user) {
     forceRefreshCalls++;
-    if (_onForceRefresh != null) {
-      return _onForceRefresh!(user);
+    final handler = _onForceRefresh;
+    if (handler != null) {
+      return handler(user);
     }
     return Future.value();
   }
@@ -195,8 +207,9 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   @override
   Future<Map<String, dynamic>> getIdTokenClaims(fb_auth.User user) {
     claimsCalls++;
-    if (_onGetClaims != null) {
-      return _onGetClaims!(user);
+    final handler = _onGetClaims;
+    if (handler != null) {
+      return handler(user);
     }
     return Future.value(const {});
   }
@@ -230,8 +243,9 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     required String email,
     required String password,
   }) async {
-    if (signInError != null) {
-      throw signInError;
+    final error = signInError;
+    if (error != null) {
+      throw error;
     }
     final entry = _users[email];
     if (entry == null || entry.password != password) {
@@ -249,8 +263,9 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     required String email,
     required String password,
   }) async {
-    if (registerError != null) {
-      throw registerError;
+    final error = registerError;
+    if (error != null) {
+      throw error;
     }
     final user = FakeFirebaseUser(uid: email, email: email);
     _users[email] = _StoredUser(password: password, user: user);
