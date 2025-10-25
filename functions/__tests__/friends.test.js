@@ -1,9 +1,14 @@
+jest.mock('firebase-admin');
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
-const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const admin = require('firebase-admin');
+const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const myFuncs = require('..');
 
 describe('friend functions', () => {
+  beforeEach(() => {
+    admin.__resetFirestore();
+  });
+
   afterAll(() => {
     fft.cleanup();
   });
@@ -26,6 +31,6 @@ describe('friend functions', () => {
     await wrapped({ toUserId: 'B2' }, { auth: { uid: 'A2' } });
     await expect(
       wrapped({ toUserId: 'B2' }, { auth: { uid: 'A2' } })
-    ).rejects.toThrow('already-exists');
+    ).rejects.toThrow('Request already exists');
   });
 });

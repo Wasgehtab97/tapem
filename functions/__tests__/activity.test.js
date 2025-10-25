@@ -1,3 +1,4 @@
+jest.mock('firebase-admin');
 const admin = require('firebase-admin');
 
 const { buildDeviceLogActivityEvent } = require('../activity');

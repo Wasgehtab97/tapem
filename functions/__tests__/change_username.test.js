@@ -1,9 +1,14 @@
+jest.mock('firebase-admin');
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
-const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const admin = require('firebase-admin');
+const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const myFuncs = require('..');
 
 describe('changeUsername', () => {
+  beforeEach(() => {
+    admin.__resetFirestore();
+  });
+
   afterAll(() => {
     fft.cleanup();
   });
