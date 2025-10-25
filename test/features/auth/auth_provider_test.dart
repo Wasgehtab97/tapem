@@ -27,7 +27,7 @@ void main() {
     late MockFirebaseUser firebaseUser;
 
     setUp(() {
-      SharedPreferences.setMockInitialValues(<String, Object?>{});
+      SharedPreferences.setMockInitialValues(<String, Object>{});
       authRepository = MockAuthRepository();
       authManager = MockFirebaseAuthManager();
       draftRepository = MockSessionDraftRepository();
@@ -148,7 +148,7 @@ void main() {
     });
 
     test('logout clears session and persisted data', () async {
-      SharedPreferences.setMockInitialValues(<String, Object?>{
+      SharedPreferences.setMockInitialValues(<String, Object>{
         'selectedGymCode': 'G2',
       });
       when(() => authManager.currentUser).thenReturn(firebaseUser);
@@ -198,7 +198,7 @@ void main() {
     });
 
     test('uses stored gym code when it is valid', () async {
-      SharedPreferences.setMockInitialValues(<String, Object?>{
+      SharedPreferences.setMockInitialValues(<String, Object>{
         'selectedGymCode': 'G2',
       });
       when(() => authManager.currentUser).thenReturn(firebaseUser);
@@ -221,7 +221,7 @@ void main() {
     });
 
     test('writes first gym code when none stored or invalid', () async {
-      SharedPreferences.setMockInitialValues(<String, Object?>{
+      SharedPreferences.setMockInitialValues(<String, Object>{
         'selectedGymCode': 'unknown',
       });
       when(() => authManager.currentUser).thenReturn(firebaseUser);
