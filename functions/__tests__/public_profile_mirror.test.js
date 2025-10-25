@@ -1,27 +1,32 @@
+jest.mock('firebase-admin');
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
-const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const admin = require('firebase-admin');
+const fft = require('firebase-functions-test')({ projectId: 'demo-friends' });
 const myFuncs = require('..');
 
 describe('public profile mirror', () => {
+  const makeSnapshot = (data) => ({
+    data: () => data,
+    exists: data !== null && data !== undefined,
+  });
+
+  beforeEach(() => {
+    admin.__resetFirestore();
+  });
+
   afterAll(() => {
     fft.cleanup();
   });
 
   it('mirrors user writes to publicProfiles', async () => {
     const wrapped = fft.wrap(myFuncs.mirrorPublicProfile);
-    const after = fft.firestore.makeDocumentSnapshot(
-      { username: 'Alice' },
-      'users/A1'
-    );
-    await wrapped({ before: null, after }, { params: { uid: 'A1' } });
+    const before = makeSnapshot(null);
+    const after = makeSnapshot({ username: 'Alice' });
+    await wrapped({ before, after }, { params: { uid: 'A1' } });
     let snap = await admin.firestore().collection('publicProfiles').doc('A1').get();
     expect(snap.data().usernameLower).toBe('alice');
 
-    const after2 = fft.firestore.makeDocumentSnapshot(
-      { username: 'Alicia', usernameLower: 'alicia' },
-      'users/A1'
-    );
+    const after2 = makeSnapshot({ username: 'Alicia', usernameLower: 'alicia' });
     await wrapped({ before: after, after: after2 }, { params: { uid: 'A1' } });
     snap = await admin.firestore().collection('publicProfiles').doc('A1').get();
     expect(snap.data().username).toBe('Alicia');
