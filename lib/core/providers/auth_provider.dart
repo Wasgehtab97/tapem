@@ -195,8 +195,18 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      await _registerUC.execute(email, password, initialGymCode);
+      final registeredUser =
+          await _registerUC.execute(email, password, initialGymCode);
       await _loadCurrentUser();
+      if (_user == null) {
+        _user = registeredUser;
+        if (registeredUser.gymCodes.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          _selectedGymCode = registeredUser.gymCodes.first;
+          await prefs.setString('selectedGymCode', _selectedGymCode!);
+        }
+        notifyListeners();
+      }
     } catch (e) {
       _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
       _user = null;

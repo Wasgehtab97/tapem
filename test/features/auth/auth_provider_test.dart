@@ -421,7 +421,17 @@ void main() {
       expect(provider.avatarKey, 'new');
 
       final failingRepo = FakeAuthRepository(
-        onGetCurrentUser: () async => storedUser,
+        onGetCurrentUser: () async =>
+            UserData(
+              id: 'uid',
+              email: 'user@example.com',
+              gymCodes: const ['gym1'],
+              showInLeaderboard: true,
+              publicProfile: true,
+              role: 'member',
+              createdAt: DateTime(2023, 4, 1),
+              avatarKey: 'old',
+            ),
         onSetAvatarKey: (_, __) => Future<void>.error(Exception('fail')),
         onSetPublicProfile: (_, __) async {},
         onSetShowInLeaderboard: (_, __) async {},
