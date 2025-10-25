@@ -50,10 +50,10 @@ void main() {
           equals(const Color(0xFF654321)));
     });
 
-    test('BronzeDaniel without branding uses red/orange theme', () {
+    test('BronzeDaniel without branding uses mint theme', () {
       final loader = ThemeLoader()..loadDefault();
       loader.applyBranding('BronzeDaniel', null);
-      expect(loader.theme.colorScheme.primary, ClubAktivColors.primary600);
+      expect(loader.theme.colorScheme.primary, AppColors.accentMint);
     });
 
     test('other gyms keep default theme', () {

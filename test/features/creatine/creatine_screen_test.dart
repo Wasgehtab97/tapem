@@ -91,6 +91,9 @@ class _FakeLauncher extends UrlLauncherPlatform {
   LinkDelegate? linkDelegate;
 
   @override
+  bool supportsLaunchUrl(Uri url) => true;
+
+  @override
   Future<bool> launchUrl(String url, LaunchOptions options) async {
     launched = true;
     return true;

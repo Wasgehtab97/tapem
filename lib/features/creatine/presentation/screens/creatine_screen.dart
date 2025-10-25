@@ -119,6 +119,7 @@ class _CreatineScreenState extends State<CreatineScreen> {
           children: [
             Expanded(
               child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => _openCalendar(prov),
                 child: Calendar(
                   trainingDates: prov.intakeDates.toList(),

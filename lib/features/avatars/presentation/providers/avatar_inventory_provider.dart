@@ -19,11 +19,16 @@ class AvatarInventoryEntry {
 
 /// Provider for managing avatar inventory per user.
 class AvatarInventoryProvider extends ChangeNotifier {
-  AvatarInventoryProvider({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
+  AvatarInventoryProvider({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    FirebaseFirestore Function()? firestoreBuilder,
+  })  : _firestoreBuilder =
+            firestoreBuilder ?? (() => firestore ?? FirebaseFirestore.instance),
         _auth = auth;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore Function() _firestoreBuilder;
+  FirebaseFirestore get _firestore => _firestoreBuilder();
   final FirebaseAuth? _auth;
 
   Set<String>? _cache;
