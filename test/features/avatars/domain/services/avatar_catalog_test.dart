@@ -44,6 +44,8 @@ void main() {
     expect(
         catalog.resolvePathOrFallback('kurzhantel', gymId: 'gym_01'),
         'assets/avatars/gym_01/kurzhantel.png');
+    expect(catalog.resolvePathOrFallback('global/unknown'),
+        'assets/avatars/global/default.png');
     expect(catalog.resolvePathOrFallback('unknown'),
         'assets/avatars/global/default.png');
   });
