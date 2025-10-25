@@ -1,246 +1,528 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
-import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
-import 'package:tapem/features/auth/domain/services/firebase_auth_manager.dart';
 
-class MockAuthRepository extends Mock implements AuthRepository {}
+import 'helpers/fakes.dart';
 
-class MockFirebaseAuthManager extends Mock implements FirebaseAuthManager {}
-
-class MockSessionDraftRepository extends Mock
-    implements SessionDraftRepository {}
-
-class MockFirebaseUser extends Mock implements fb_auth.User {}
+Future<void> _pumpEventQueue() async {
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AuthProvider unit tests', () {
-    late MockAuthRepository authRepository;
-    late MockFirebaseAuthManager authManager;
-    late MockSessionDraftRepository draftRepository;
-    late MockFirebaseUser firebaseUser;
+  group('AuthProvider', () {
+    late FakeSessionDraftRepository sessionRepo;
 
-    setUp(() {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      authRepository = MockAuthRepository();
-      authManager = MockFirebaseAuthManager();
-      draftRepository = MockSessionDraftRepository();
-      firebaseUser = MockFirebaseUser();
-
-      when(() => draftRepository.deleteAll()).thenAnswer((_) async {});
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sessionRepo = FakeSessionDraftRepository();
     });
 
-    UserData buildUser({
-      String role = 'member',
-      List<String> gymCodes = const ['G1', 'G2'],
-      bool showInLeaderboard = true,
-      bool publicProfile = true,
-    }) {
-      return UserData(
-        id: 'uid-123',
+    test('initial load fetches user, syncs profile flags and persists gym', () async {
+      var storedUser = UserData(
+        id: 'uid',
         email: 'user@example.com',
-        userName: 'tester',
-        gymCodes: gymCodes,
-        showInLeaderboard: showInLeaderboard,
-        publicProfile: publicProfile,
-        role: role,
-        createdAt: DateTime(2024, 1, 1),
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: false,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
       );
-    }
-
-    Future<AuthProvider> createProvider({
-      fb_auth.User? currentUser,
-      Map<String, dynamic>? claims,
-      UserData? currentUserData,
-    }) async {
-      when(() => authManager.currentUser).thenReturn(currentUser);
-      if (currentUser != null) {
-        when(() => authManager.getIdTokenClaims(currentUser))
-            .thenAnswer((_) async => claims ?? <String, dynamic>{});
-      }
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => currentUserData);
+      var publicProfileUpdated = false;
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (id, value) async {
+          storedUser = storedUser.copyWith(publicProfile: value);
+          publicProfileUpdated = true;
+        },
+        onSetShowInLeaderboard: (id, value) async {
+          storedUser = storedUser.copyWith(showInLeaderboard: value);
+        },
+        onSetAvatarKey: (id, key) async {
+          storedUser = storedUser.copyWith(avatarKey: key);
+        },
+        onSetUsername: (id, username) async {
+          storedUser = storedUser.copyWith(userName: username);
+        },
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final firebaseUser = FakeFirebaseUser(uid: storedUser.id, email: storedUser.email, claims: {'role': 'coach'});
+      final manager = FakeFirebaseAuthManager(
+        currentUser: firebaseUser,
+        onGetClaims: (_) async => {'role': 'coach'},
+      );
 
       final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
+        repo: repo,
+        authManager: manager,
+        sessionDraftRepository: sessionRepo,
       );
-      await pumpEventQueue();
-      return provider;
-    }
+      await _pumpEventQueue();
 
-    test('login success updates state and persists gym code', () async {
-      final userData = buildUser();
-      fb_auth.User? currentUser;
-      when(() => authManager.currentUser).thenAnswer((_) => currentUser);
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => null);
-      when(() => authRepository.login(any(), any()))
-          .thenAnswer((_) async => userData);
-      when(() => authManager.getIdTokenClaims(firebaseUser))
-          .thenAnswer((_) async => <String, dynamic>{'role': 'coach'});
-      when(() => authManager.reloadUser(firebaseUser))
-          .thenAnswer((_) async {});
-      when(() => authManager.forceRefreshIdToken(firebaseUser))
-          .thenAnswer((_) async {});
-
-      final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
-      );
-      await pumpEventQueue();
-
-      currentUser = firebaseUser;
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => userData);
-
-      var notifications = 0;
-      provider.addListener(() => notifications++);
-
-      await provider.login('user@example.com', 'secret');
-      await pumpEventQueue();
-
-      expect(provider.userId, userData.id);
-      expect(provider.userEmail, userData.email);
-      expect(provider.role, 'coach');
-      expect(provider.gymCode, 'G1');
       expect(provider.isLoggedIn, isTrue);
-      expect(provider.isLoading, isFalse);
-      expect(provider.error, isNull);
-
+      expect(provider.role, 'coach');
+      expect(provider.publicProfile, isTrue);
+      expect(publicProfileUpdated, isTrue);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), 'G1');
-      expect(notifications, greaterThan(0));
-
-      verify(() => authManager.reloadUser(firebaseUser)).called(1);
-      verify(() => authManager.forceRefreshIdToken(firebaseUser)).called(1);
+      expect(prefs.getString('selectedGymCode'), 'gym1');
     });
 
-    test('login failure surfaces error and clears user state', () async {
-      when(() => authManager.currentUser).thenReturn(null);
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => null);
-      when(() => authRepository.login(any(), any()))
-          .thenThrow(Exception('login failed'));
-
-      final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
+    test('login updates user and clears error on success', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
       );
-      await pumpEventQueue();
+      final repo = FakeAuthRepository(
+        onLogin: (email, password) async {
+          storedUser = storedUser.copyWith(email: email);
+          return storedUser;
+        },
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (id, value) async {
+          storedUser = storedUser.copyWith(publicProfile: value);
+        },
+        onSetShowInLeaderboard: (id, value) async {
+          storedUser = storedUser.copyWith(showInLeaderboard: value);
+        },
+        onSetAvatarKey: (id, key) async {
+          storedUser = storedUser.copyWith(avatarKey: key);
+        },
+        onSetUsername: (id, username) async {
+          storedUser = storedUser.copyWith(userName: username);
+        },
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: manager,
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await provider.login('login@example.com', 'secret');
+      await _pumpEventQueue();
+
+      expect(provider.userEmail, 'login@example.com');
+      expect(provider.error, isNull);
+    });
+
+    test('login stores error on failure', () async {
+      final repo = FakeAuthRepository(
+        onLogin: (_, __) => Future<UserData>.error(Exception('invalid')),
+        onGetCurrentUser: () async => null,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
 
       await provider.login('user@example.com', 'wrong');
-
-      expect(provider.error, contains('login failed'));
-      expect(provider.isLoggedIn, isFalse);
-      expect(provider.userId, isNull);
+      expect(provider.error, contains('invalid'));
       expect(provider.isLoading, isFalse);
-      verifyNever(() => authManager.reloadUser(firebaseUser));
     });
 
-    test('logout clears session and persisted data', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        'selectedGymCode': 'G2',
-      });
-      when(() => authManager.currentUser).thenReturn(firebaseUser);
-      when(() => authManager.getIdTokenClaims(firebaseUser))
-          .thenAnswer((_) async => <String, dynamic>{});
-      final userData = buildUser();
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => userData);
-      when(() => authRepository.logout()).thenAnswer((_) async {});
-
-      final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
+    test('register updates user on success and handles failure', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
       );
-      await pumpEventQueue();
+      final successRepo = FakeAuthRepository(
+        onRegister: (email, password, gym) async {
+          storedUser = storedUser.copyWith(email: email);
+          return storedUser;
+        },
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (id, value) async {
+          storedUser = storedUser.copyWith(publicProfile: value);
+        },
+        onSetShowInLeaderboard: (id, value) async {
+          storedUser = storedUser.copyWith(showInLeaderboard: value);
+        },
+        onSetAvatarKey: (id, key) async {
+          storedUser = storedUser.copyWith(avatarKey: key);
+        },
+        onSetUsername: (id, username) async {
+          storedUser = storedUser.copyWith(userName: username);
+        },
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: successRepo,
+        authManager: FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
 
-      expect(provider.isLoggedIn, isTrue);
-      expect(provider.gymCode, 'G2');
+      await provider.register('new@example.com', 'secret', 'gym');
+      await _pumpEventQueue();
+      expect(provider.userEmail, 'new@example.com');
+
+      final failingRepo = FakeAuthRepository(
+        onRegister: (_, __, ___) => Future<UserData>.error(Exception('fail')),
+        onGetCurrentUser: () async => null,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider2 = AuthProvider(
+        repo: failingRepo,
+        authManager: FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await provider2.register('user@example.com', 'secret', 'gym');
+      expect(provider2.error, contains('fail'));
+    });
+
+    test('logout clears state and session drafts', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onLogout: () async {},
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
 
       await provider.logout();
+      await _pumpEventQueue();
 
       expect(provider.isLoggedIn, isFalse);
-      expect(provider.gymCode, isNull);
-      expect(provider.isLoading, isFalse);
+      expect(sessionRepo.deleted, contains('all'));
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), isNull);
-      verify(() => authRepository.logout()).called(1);
-      verify(() => draftRepository.deleteAll()).called(1);
     });
 
-    test('loads role from custom claims when current user exists', () async {
-      when(() => authManager.currentUser).thenReturn(firebaseUser);
-      when(() => authManager.getIdTokenClaims(firebaseUser))
-          .thenAnswer((_) async => <String, dynamic>{'role': 'admin'});
-      final userData = buildUser(role: 'member');
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => userData);
-
-      final provider = await createProvider(
-        currentUser: firebaseUser,
-        claims: <String, dynamic>{'role': 'admin'},
-        currentUserData: userData,
+    test('setUsername succeeds, handles taken name and firebase errors', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
       );
-
-      expect(provider.role, 'admin');
-    });
-
-    test('uses stored gym code when it is valid', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        'selectedGymCode': 'G2',
-      });
-      when(() => authManager.currentUser).thenReturn(firebaseUser);
-      when(() => authManager.getIdTokenClaims(firebaseUser))
-          .thenAnswer((_) async => <String, dynamic>{});
-      final userData = buildUser(gymCodes: const ['G1', 'G2']);
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => userData);
-
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetUsername: (id, username) async {
+          storedUser = storedUser.copyWith(userName: username);
+        },
+        onIsUsernameAvailable: (_) async => true,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
       final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
       );
-      await pumpEventQueue();
+      await _pumpEventQueue();
 
-      expect(provider.gymCode, 'G2');
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), 'G2');
+      final success = await provider.setUsername('NewName');
+      expect(success, isTrue);
+      expect(provider.userName, 'NewName');
+
+      final takenRepo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onIsUsernameAvailable: (_) async => false,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final providerTaken = AuthProvider(
+        repo: takenRepo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      final available = await providerTaken.setUsername('Other');
+      expect(available, isFalse);
+      expect(providerTaken.error, 'username_taken');
+
+      final errorRepo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onIsUsernameAvailable: (_) async => true,
+        onSetUsername: (_, __) => Future<void>.error(
+          FirebaseException(plugin: 'firestore', code: 'failed'),
+        ),
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final providerError = AuthProvider(
+        repo: errorRepo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      final result = await providerError.setUsername('Crash');
+      expect(result, isFalse);
+      expect(providerError.error, 'failed');
     });
 
-    test('writes first gym code when none stored or invalid', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        'selectedGymCode': 'unknown',
-      });
-      when(() => authManager.currentUser).thenReturn(firebaseUser);
-      when(() => authManager.getIdTokenClaims(firebaseUser))
-          .thenAnswer((_) async => <String, dynamic>{});
-      final userData = buildUser(gymCodes: const ['G1', 'G3']);
-      when(() => authRepository.getCurrentUser())
-          .thenAnswer((_) async => userData);
-
-      final provider = AuthProvider(
-        repo: authRepository,
-        authManager: authManager,
-        sessionDraftRepository: draftRepository,
+    test('setShowInLeaderboard and setPublicProfile update values and handle errors', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
       );
-      await pumpEventQueue();
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetShowInLeaderboard: (_, value) async {
+          storedUser = storedUser.copyWith(showInLeaderboard: value);
+        },
+        onSetPublicProfile: (_, value) async {
+          storedUser = storedUser.copyWith(publicProfile: value);
+        },
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
 
-      expect(provider.gymCode, 'G1');
+      await provider.setShowInLeaderboard(false);
+      expect(provider.showInLeaderboard, isFalse);
+
+      await provider.setPublicProfile(false);
+      expect(provider.publicProfile, isFalse);
+
+      final errorRepo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetShowInLeaderboard: (_, __) => Future<void>.error(Exception('fail')),
+        onSetPublicProfile: (_, __) => Future<void>.error(Exception('fail')),
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final providerError = AuthProvider(
+        repo: errorRepo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await providerError.setShowInLeaderboard(false);
+      expect(providerError.error, contains('fail'));
+
+      await providerError.setPublicProfile(false);
+      expect(providerError.error, contains('fail'));
+    });
+
+    test('setAvatarKey performs optimistic update and rolls back on error', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+        avatarKey: 'old',
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetAvatarKey: (_, key) async {
+          storedUser = storedUser.copyWith(avatarKey: key);
+        },
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await provider.setAvatarKey('new');
+      expect(provider.avatarKey, 'new');
+
+      final failingRepo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetAvatarKey: (_, __) => Future<void>.error(Exception('fail')),
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final providerFail = AuthProvider(
+        repo: failingRepo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      expect(
+        () => providerFail.setAvatarKey('new'),
+        throwsA(isA<Exception>()),
+      );
+      expect(providerFail.avatarKey, 'old');
+      expect(providerFail.error, contains('fail'));
+    });
+
+    test('resetPassword forwards to repository and stores errors', () async {
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => null,
+        onSendPasswordResetEmail: (_) async {},
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await provider.resetPassword('user@example.com');
+      expect(provider.error, isNull);
+
+      final failingRepo = FakeAuthRepository(
+        onGetCurrentUser: () async => null,
+        onSendPasswordResetEmail: (_) => Future<void>.error(
+          fb_auth.FirebaseAuthException(code: 'error', message: 'bad'),
+        ),
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onLogout: () async {},
+      );
+      final providerFail = AuthProvider(
+        repo: failingRepo,
+        authManager: FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await providerFail.resetPassword('user@example.com');
+      expect(providerFail.error, 'bad');
+    });
+
+    test('selectGym persists valid gym code and ignores invalid ones', () async {
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = AuthProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
+        sessionDraftRepository: sessionRepo,
+      );
+      await _pumpEventQueue();
+
+      await provider.selectGym('gym2');
+      expect(provider.gymCode, 'gym2');
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), 'G1');
+      expect(prefs.getString('selectedGymCode'), 'gym2');
+
+      await provider.selectGym('unknown');
+      expect(provider.gymCode, 'gym2');
     });
   });
 }
