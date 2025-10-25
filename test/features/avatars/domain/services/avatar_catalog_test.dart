@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
 void main() {
@@ -48,5 +49,8 @@ void main() {
         'assets/avatars/global/default.png');
     expect(catalog.resolvePathOrFallback('unknown'),
         'assets/avatars/global/default.png');
+    expect(
+        catalog.resolvePathOrFallback('gym_02/unknown', gymId: 'gym_02'),
+        AvatarAssets.placeholderPath);
   });
 }
