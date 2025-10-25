@@ -101,7 +101,11 @@ class AvatarCatalog {
       debugPrint('[AvatarCatalog] missing key $normalized');
     }
     final ns = normalized.split('/').first;
-    if (!AvatarAssets.isGlobalNamespace(ns) && manifestHasGlobalDefault) {
+    if (AvatarAssets.isGlobalNamespace(ns)) {
+      if (manifestHasGlobalDefault) {
+        return _paths[AvatarKeys.globalDefault]!;
+      }
+    } else if (manifestHasGlobalDefault) {
       return _paths[AvatarKeys.globalDefault]!;
     }
     if (!manifestHasGlobalDefault && kDebugMode && !_warnedMissingGlobalDefault) {

@@ -98,4 +98,7 @@ class _FakeLauncher extends UrlLauncherPlatform {
 
   @override
   Future<bool> canLaunchUrl(Uri url) async => true;
+
+  @override
+  Future<bool> supportsLaunchUrl(Uri url) async => true;
 }

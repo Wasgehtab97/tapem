@@ -46,5 +46,9 @@ void main() {
         'assets/avatars/gym_01/kurzhantel.png');
     expect(catalog.resolvePathOrFallback('unknown'),
         'assets/avatars/global/default.png');
+    expect(
+      catalog.resolvePathOrFallback('global/does-not-exist'),
+      'assets/avatars/global/default.png',
+    );
   });
 }

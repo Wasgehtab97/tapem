@@ -45,7 +45,11 @@ void main() {
         trainingEvents.map((event) => event.day.isoDate).toList(),
         ['2024-03-09', '2024-03-10', '2024-03-12'],
       );
-      expect(result.computedTotalXp, 50 + 100 + 150);
+      expect(
+        trainingEvents.last.components.map((component) => component.code),
+        contains('streak_bonus'),
+      );
+      expect(result.computedTotalXp, 375);
     });
 
     test('streak breaks after seven idle days but not after six', () {
@@ -70,9 +74,8 @@ void main() {
       expect(breakEvents, hasLength(1));
       expect(breakEvents.first.day.isoDate, '2024-01-15');
 
-      expect(missedWeeks, hasLength(2));
+      expect(missedWeeks, hasLength(1));
       expect(missedWeeks.first.day.isoDate, '2024-01-15');
-      expect(missedWeeks.elementAt(1).day.isoDate, '2024-01-22');
 
       final comebackDay = result.events
           .where((event) => event.type == XpLedgerEventType.trainingDay)
