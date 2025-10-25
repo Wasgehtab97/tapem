@@ -2,12 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
-import 'package:tapem/features/auth/data/sources/firestore_gym_source.dart';
+import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
-import '../../helpers/fake_base.dart';
 
 void main() {
   group('AuthRepositoryImpl', () {
@@ -225,4 +224,6 @@ class _StubFirestoreAuthSource extends FirestoreAuthSource {
   }
 }
 
-class _FakeGymSource extends Fake implements FirestoreGymSource {}
+class _FakeGymSource extends FirestoreGymSource {
+  _FakeGymSource() : super(firestore: FakeFirebaseFirestore());
+}

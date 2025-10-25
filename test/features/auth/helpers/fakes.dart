@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
+import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
@@ -201,15 +202,6 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   }
 }
 
-class FakeSessionDraftRepository implements SessionDraftRepository {
-  final List<String> deleted = <String>[];
-
-  @override
-  Future<void> deleteAll() async {
-    deleted.add('all');
-  }
-}
-
 class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
   FakeFirebaseAuth({fb_auth.User? currentUser}) : _currentUser = currentUser;
 
@@ -239,7 +231,7 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     required String password,
   }) async {
     if (signInError != null) {
-      throw signInError!;
+      throw signInError;
     }
     final entry = _users[email];
     if (entry == null || entry.password != password) {
@@ -258,7 +250,7 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     required String password,
   }) async {
     if (registerError != null) {
-      throw registerError!;
+      throw registerError;
     }
     final user = FakeFirebaseUser(uid: email, email: email);
     _users[email] = _StoredUser(password: password, user: user);
@@ -281,8 +273,6 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     lastPasswordResetEmail = email;
   }
 
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeFirebaseUser extends Fake implements fb_auth.User {
@@ -320,8 +310,6 @@ class FakeFirebaseUser extends Fake implements fb_auth.User {
     return FakeIdTokenResult(_claims);
   }
 
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeIdTokenResult extends Fake implements fb_auth.IdTokenResult {
@@ -332,8 +320,6 @@ class FakeIdTokenResult extends Fake implements fb_auth.IdTokenResult {
   @override
   Map<String, dynamic>? get claims => claimsMap;
 
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeUserCredential extends Fake implements fb_auth.UserCredential {
@@ -344,8 +330,39 @@ class FakeUserCredential extends Fake implements fb_auth.UserCredential {
   @override
   fb_auth.User? get user => _user;
 
+}
+
+class FakeSessionDraftRepository implements SessionDraftRepository {
+  final Map<String, SessionDraft> drafts = <String, SessionDraft>{};
+  final List<String> deleted = <String>[];
+
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<SessionDraft?> get(String key) async => drafts[key];
+
+  @override
+  Future<Map<String, SessionDraft>> getAll() async => Map<String, SessionDraft>.from(drafts);
+
+  @override
+  Future<void> put(String key, SessionDraft draft) async {
+    drafts[key] = draft;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    drafts.remove(key);
+    deleted.add(key);
+  }
+
+  @override
+  Future<void> deleteExpired(int nowMs) async {
+    deleted.add('expired-$nowMs');
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    drafts.clear();
+    deleted.add('all');
+  }
 }
 
 class _StoredUser {

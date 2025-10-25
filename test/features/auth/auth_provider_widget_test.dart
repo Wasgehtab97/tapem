@@ -21,7 +21,7 @@ void main() {
       authProvider = _MockAuthProvider();
     });
 
-    Widget _buildLoginApp({
+    Widget buildLoginApp({
       required _MockAuthProvider provider,
       required void Function(String? routeName) onRoutePushed,
     }) {
@@ -58,7 +58,7 @@ void main() {
       });
 
       await tester.pumpWidget(
-        _buildLoginApp(
+        buildLoginApp(
           provider: authProvider,
           onRoutePushed: (route) => pushedRoute = route,
         ),
@@ -145,7 +145,7 @@ void main() {
       authProvider = _MockAuthProvider();
     });
 
-    Widget _buildSplashApp({
+    Widget buildSplashApp({
       required _MockAuthProvider provider,
       required void Function(String? routeName) onRoutePushed,
     }) {
@@ -171,7 +171,7 @@ void main() {
 
       String? pushedRoute;
       await tester.pumpWidget(
-        _buildSplashApp(
+        buildSplashApp(
           provider: authProvider,
           onRoutePushed: (route) => pushedRoute = route,
         ),
@@ -190,7 +190,7 @@ void main() {
 
       String? pushedRoute;
       await tester.pumpWidget(
-        _buildSplashApp(
+        buildSplashApp(
           provider: authProvider,
           onRoutePushed: (route) => pushedRoute = route,
         ),
@@ -209,7 +209,7 @@ void main() {
 
       String? pushedRoute;
       await tester.pumpWidget(
-        _buildSplashApp(
+        buildSplashApp(
           provider: authProvider,
           onRoutePushed: (route) => pushedRoute = route,
         ),
@@ -229,7 +229,7 @@ void main() {
       authProvider = _MockAuthProvider();
     });
 
-    Future<void> _pumpDialogApp(WidgetTester tester) {
+    Future<void> pumpDialogApp(WidgetTester tester) {
       return tester.pumpWidget(
         ChangeNotifierProvider<AuthProvider>.value(
           value: authProvider,
@@ -255,7 +255,7 @@ void main() {
       when(() => authProvider.setUsername(any())).thenAnswer((_) async => true);
       when(() => authProvider.error).thenReturn(null);
 
-      await _pumpDialogApp(tester);
+      await pumpDialogApp(tester);
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
@@ -277,7 +277,7 @@ void main() {
         return false;
       });
 
-      await _pumpDialogApp(tester);
+      await pumpDialogApp(tester);
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
