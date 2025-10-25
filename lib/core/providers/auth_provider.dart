@@ -1,20 +1,22 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:tapem/core/drafts/session_draft_repository.dart';
+import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
+import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
+import 'package:tapem/features/auth/domain/services/firebase_auth_manager.dart';
+import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 import 'package:tapem/features/auth/domain/usecases/get_current_user.dart';
 import 'package:tapem/features/auth/domain/usecases/login.dart';
 import 'package:tapem/features/auth/domain/usecases/logout.dart';
 import 'package:tapem/features/auth/domain/usecases/register.dart';
-import 'package:tapem/features/auth/domain/usecases/set_username.dart';
-import 'package:tapem/features/auth/domain/usecases/check_username_available.dart';
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
-import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
-import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
 import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
-import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
+import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
+import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
+import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -27,24 +29,67 @@ class AuthProvider extends ChangeNotifier {
   final SetAvatarKeyUseCase _setAvatarKeyUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final ResetPasswordUseCase _resetPasswordUC;
+  final FirebaseAuthManager _authManager;
+  final SessionDraftRepository _sessionDraftRepository;
 
   UserData? _user;
   bool _isLoading = false;
   String? _error;
   String? _selectedGymCode;
 
-  AuthProvider({AuthRepositoryImpl? repo})
-    : _loginUC = LoginUseCase(repo),
-      _registerUC = RegisterUseCase(repo),
-      _logoutUC = LogoutUseCase(repo),
-      _currentUC = GetCurrentUserUseCase(repo),
-      _setUsernameUC = SetUsernameUseCase(repo),
-      _setShowInLbUC = SetShowInLeaderboardUseCase(repo),
-      _setPublicProfileUC = SetPublicProfileUseCase(repo),
-      _setAvatarKeyUC = SetAvatarKeyUseCase(repo),
-      _checkUsernameUC = CheckUsernameAvailable(repo),
-      _resetPasswordUC = ResetPasswordUseCase(repo) {
+  AuthProvider._({
+    required LoginUseCase loginUseCase,
+    required RegisterUseCase registerUseCase,
+    required LogoutUseCase logoutUseCase,
+    required GetCurrentUserUseCase currentUserUseCase,
+    required SetUsernameUseCase setUsernameUseCase,
+    required SetShowInLeaderboardUseCase setShowInLeaderboardUseCase,
+    required SetPublicProfileUseCase setPublicProfileUseCase,
+    required SetAvatarKeyUseCase setAvatarKeyUseCase,
+    required CheckUsernameAvailable checkUsernameUseCase,
+    required ResetPasswordUseCase resetPasswordUseCase,
+    required FirebaseAuthManager authManager,
+    required SessionDraftRepository sessionDraftRepository,
+  })  : _loginUC = loginUseCase,
+        _registerUC = registerUseCase,
+        _logoutUC = logoutUseCase,
+        _currentUC = currentUserUseCase,
+        _setUsernameUC = setUsernameUseCase,
+        _setShowInLbUC = setShowInLeaderboardUseCase,
+        _setPublicProfileUC = setPublicProfileUseCase,
+        _setAvatarKeyUC = setAvatarKeyUseCase,
+        _checkUsernameUC = checkUsernameUseCase,
+        _resetPasswordUC = resetPasswordUseCase,
+        _authManager = authManager,
+        _sessionDraftRepository = sessionDraftRepository {
     _loadCurrentUser();
+  }
+
+  factory AuthProvider({
+    AuthRepository? repo,
+    FirebaseAuthManager? authManager,
+    SessionDraftRepository? sessionDraftRepository,
+  }) {
+    final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
+    final resolvedSessionDraftRepo =
+        sessionDraftRepository ?? SessionDraftRepositoryImpl();
+    return AuthProvider._(
+      loginUseCase:
+          LoginUseCase(repo: repo, authManager: resolvedAuthManager),
+      registerUseCase:
+          RegisterUseCase(repo: repo, authManager: resolvedAuthManager),
+      logoutUseCase: LogoutUseCase(repo),
+      currentUserUseCase: GetCurrentUserUseCase(repo),
+      setUsernameUseCase: SetUsernameUseCase(repo),
+      setShowInLeaderboardUseCase:
+          SetShowInLeaderboardUseCase(repo),
+      setPublicProfileUseCase: SetPublicProfileUseCase(repo),
+      setAvatarKeyUseCase: SetAvatarKeyUseCase(repo),
+      checkUsernameUseCase: CheckUsernameAvailable(repo),
+      resetPasswordUseCase: ResetPasswordUseCase(repo),
+      authManager: resolvedAuthManager,
+      sessionDraftRepository: resolvedSessionDraftRepo,
+    );
   }
 
   bool get isLoading => _isLoading;
@@ -75,11 +120,11 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
+      final fbUser = _authManager.currentUser;
       if (fbUser != null) {
         Map<String, dynamic> claims = {};
         try {
-          claims = (await fbUser.getIdTokenResult()).claims ?? {};
+          claims = await _authManager.getIdTokenClaims(fbUser);
         } on fb_auth.FirebaseAuthException catch (e) {
           _error = e.message;
           _user = null;
@@ -168,7 +213,7 @@ class AuthProvider extends ChangeNotifier {
       _selectedGymCode = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('selectedGymCode');
-      await SessionDraftRepositoryImpl().deleteAll();
+      await _sessionDraftRepository.deleteAll();
       _setLoading(false);
     }
   }
