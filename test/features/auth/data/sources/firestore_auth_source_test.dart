@@ -7,7 +7,6 @@ import 'package:tapem/features/gym/domain/models/gym_config.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
-import '../../helpers/fake_base.dart';
 
 void main() {
   group('FirestoreAuthSource', () {
@@ -210,7 +209,9 @@ Future<void> _changeUsername({
   await users.doc(uid).update({'username': newUsername});
 }
 
-class _FakeGymSource extends Fake implements FirestoreGymSource {
+class _FakeGymSource extends FirestoreGymSource {
+  _FakeGymSource() : super(firestore: FakeFirebaseFirestore());
+
   final Map<String, GymConfig> gyms = <String, GymConfig>{};
 
   void reset() {
