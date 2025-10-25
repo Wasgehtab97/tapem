@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:test/fake.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
@@ -8,6 +7,7 @@ import 'package:tapem/features/gym/domain/models/gym_config.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
+import '../../helpers/fake_base.dart';
 
 void main() {
   group('FirestoreAuthSource', () {
@@ -32,7 +32,7 @@ void main() {
     test('login fetches user document and returns dto', () async {
       final user = FakeFirebaseUser(uid: 'uid-1', email: 'user@example.com');
       auth.addUser(email: 'user@example.com', password: 'secret', user: user);
-      firestore.seedDocument('users/uid-1', {
+      await firestore.seedDocument('users/uid-1', {
         'email': 'user@example.com',
         'role': 'member',
         'createdAt': Timestamp.fromDate(DateTime(2023, 1, 1)),
@@ -92,7 +92,7 @@ void main() {
     test('getCurrentUser loads dto when document exists', () async {
       final user = FakeFirebaseUser(uid: 'uid-3', email: 'user3@example.com');
       auth.addUser(email: 'user3@example.com', password: 'secret', user: user);
-      firestore.seedDocument('users/uid-3', {
+      await firestore.seedDocument('users/uid-3', {
         'email': 'user3@example.com',
         'role': 'member',
         'createdAt': Timestamp.fromDate(DateTime(2023, 3, 1)),
@@ -112,7 +112,7 @@ void main() {
     });
 
     test('isUsernameAvailable returns false when username exists', () async {
-      firestore.seedDocument('usernames/some', {'uid': 'uid-1'});
+      await firestore.seedDocument('usernames/some', {'uid': 'uid-1'});
       final available = await source.isUsernameAvailable('some');
       expect(available, isFalse);
     });
@@ -165,7 +165,7 @@ void main() {
     });
 
     test('setShowInLeaderboard updates Firestore field', () async {
-      firestore.seedDocument('users/uid-1', {
+      await firestore.seedDocument('users/uid-1', {
         'showInLeaderboard': true,
       });
       await source.setShowInLeaderboard('uid-1', false);
@@ -174,7 +174,7 @@ void main() {
     });
 
     test('setPublicProfile updates Firestore field', () async {
-      firestore.seedDocument('users/uid-2', {
+      await firestore.seedDocument('users/uid-2', {
         'publicProfile': false,
       });
       await source.setPublicProfile('uid-2', true);
@@ -183,13 +183,14 @@ void main() {
     });
 
     test('setAvatarKey updates Firestore field and timestamp', () async {
-      firestore.seedDocument('users/uid-4', {
+      await firestore.seedDocument('users/uid-4', {
         'avatarKey': 'old',
       });
       await source.setAvatarKey('uid-4', 'new');
       final doc = await firestore.collection('users').doc('uid-4').get();
-      expect(doc.data(), containsPair('avatarKey', 'new'));
-      expect(doc.data(), containsKey('avatarUpdatedAt'));
+      final data = doc.data();
+      expect(data, containsPair('avatarKey', 'new'));
+      expect(data!.containsKey('avatarUpdatedAt'), isTrue);
     });
 
     test('sendPasswordResetEmail delegates to FirebaseAuth', () async {

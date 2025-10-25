@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:test/fake.dart';
 
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tapem/features/auth/domain/services/firebase_auth_manager.dart';
+
+import 'fake_base.dart';
 
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({

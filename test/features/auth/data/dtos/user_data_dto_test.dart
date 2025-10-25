@@ -7,18 +7,23 @@ import '../../helpers/fake_firestore.dart';
 
 void main() {
   group('UserDataDto', () {
-    final firestore = FakeFirebaseFirestore();
-    final now = Timestamp.fromDate(DateTime(2023, 5, 1));
-    firestore.seedDocument('users/user-1', {
-      'email': 'user@example.com',
-      'username': 'Hero',
-      'usernameLower': 'hero',
-      'gymCodes': ['gym-1'],
-      'showInLeaderboard': true,
-      'publicProfile': false,
-      'role': 'member',
-      'createdAt': now,
-      'avatarKey': 'avatar-1',
+    late FakeFirebaseFirestore firestore;
+    late Timestamp now;
+
+    setUp(() async {
+      firestore = FakeFirebaseFirestore();
+      now = Timestamp.fromDate(DateTime(2023, 5, 1));
+      await firestore.seedDocument('users/user-1', {
+        'email': 'user@example.com',
+        'username': 'Hero',
+        'usernameLower': 'hero',
+        'gymCodes': ['gym-1'],
+        'showInLeaderboard': true,
+        'publicProfile': false,
+        'role': 'member',
+        'createdAt': now,
+        'avatarKey': 'avatar-1',
+      });
     });
 
     test('fromDocument reads Firestore data and falls back to emailLower', () async {
