@@ -651,13 +651,13 @@ class _XpReconciliationFooter extends StatelessWidget {
         label: loc.storySessionDailyXpGrossLabel,
         value: '${format.format(gross)} XP',
         palette: palette,
-        theme: theme,
+        theme: theme.textTheme,
       ),
       _XpSummaryTile(
         label: loc.storySessionDailyXpPenaltiesLabel,
         value: '${_formatSignedInt(penalties, format)} XP',
         palette: palette,
-        theme: theme,
+        theme: theme.textTheme,
         isPenalty: penalties < 0,
       ),
       if (result != null)
@@ -665,7 +665,7 @@ class _XpReconciliationFooter extends StatelessWidget {
           label: loc.storySessionDailyXpResultingTotalLabel,
           value: '${format.format(result)} XP',
           palette: palette,
-          theme: theme,
+          theme: theme.textTheme,
         ),
     ];
 
