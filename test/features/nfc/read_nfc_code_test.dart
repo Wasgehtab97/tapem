@@ -22,12 +22,16 @@ void main() {
     test('returns the raw stream from the service', () async {
       final controller = StreamController<String>();
       final stream = controller.stream;
-      addTearDown(controller.close);
+
       when(() => service.readStream()).thenAnswer((_) => stream);
 
-      final result = useCase.execute();
+      try {
+        final result = useCase.execute();
 
-      expect(result, same(stream));
+        expect(result, same(stream));
+      } finally {
+        await controller.close();
+      }
     });
 
     test('forwards every NFC code emitted by the service', () async {
