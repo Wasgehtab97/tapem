@@ -843,8 +843,10 @@ class _GroupedSetList extends StatelessWidget {
         children: [
           if (header != null) header,
           for (var index = 0; index < sets.length; index++) ...[
+            final setIndex = index;
+            final set = sets[setIndex];
             Dismissible(
-              key: ValueKey('set-${sets[index]['number']}'),
+              key: ValueKey('set-${set['number']}'),
               direction: DismissDirection.endToStart,
               background: const SizedBox.shrink(),
               secondaryBackground: Container(
@@ -857,22 +859,26 @@ class _GroupedSetList extends StatelessWidget {
                 ),
               ),
               onDismissed: (_) {
-                final removed = Map<String, dynamic>.from(sets[index]);
-                onRemove(index, removed);
+                final removedSource =
+                    setIndex < sets.length ? sets[setIndex] : set;
+                final removed = Map<String, dynamic>.from(removedSource);
+                onRemove(setIndex, removed);
               },
               child: SetCard(
-                key: setKeys[index],
-                index: index,
-                set: sets[index],
+                key: setKeys[setIndex],
+                index: setIndex,
+                set: set,
                 size: SetCardSize.dense,
                 displayMode: SetCardDisplayMode.grouped,
                 groupedRadius: BorderRadius.only(
-                  topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
-                  topRight: index == 0 ? innerRadius.topRight : Radius.zero,
-                  bottomLeft:
-                      index == sets.length - 1 ? innerRadius.bottomLeft : Radius.zero,
-                  bottomRight:
-                      index == sets.length - 1 ? innerRadius.bottomRight : Radius.zero,
+                  topLeft: setIndex == 0 ? innerRadius.topLeft : Radius.zero,
+                  topRight: setIndex == 0 ? innerRadius.topRight : Radius.zero,
+                  bottomLeft: setIndex == sets.length - 1
+                      ? innerRadius.bottomLeft
+                      : Radius.zero,
+                  bottomRight: setIndex == sets.length - 1
+                      ? innerRadius.bottomRight
+                      : Radius.zero,
                 ),
               ),
             ),
