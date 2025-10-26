@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 
 import 'story_achievement.dart';
+import 'story_daily_xp.dart';
 
 class StorySessionStats extends Equatable {
   final int exerciseCount;
@@ -59,6 +59,7 @@ class StorySessionSummary extends Equatable {
   final DateTime generatedAt;
   final List<StoryAchievement> achievements;
   final StorySessionStats stats;
+  final StoryDailyXp dailyXp;
 
   const StorySessionSummary({
     required this.gymId,
@@ -68,6 +69,7 @@ class StorySessionSummary extends Equatable {
     required this.generatedAt,
     required this.achievements,
     required this.stats,
+    required this.dailyXp,
   });
 
   Map<String, dynamic> toJson() => {
@@ -78,26 +80,44 @@ class StorySessionSummary extends Equatable {
         'generatedAt': generatedAt.toIso8601String(),
         'achievements': achievements.map((a) => a.toJson()).toList(),
         'stats': stats.toJson(),
+        'dailyXp': dailyXp.toJson(),
       };
 
   factory StorySessionSummary.fromJson(Map<String, dynamic> json) {
     final statsJson = json['stats'];
     final rawXp = (json['totalXp'] as num?)?.toInt() ?? 0;
-    final clampedXp = rawXp.clamp(0, LevelService.xpPerSession);
+    final achievements = (json['achievements'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(StoryAchievement.fromJson)
+        .toList();
+    final dailyXpJson = json['dailyXp'];
+    StoryDailyXp resolvedDailyXp;
+    if (dailyXpJson is Map<String, dynamic>) {
+      resolvedDailyXp = StoryDailyXp.fromJson(dailyXpJson);
+    } else {
+      final dailyAchievement = achievements.firstWhere(
+        (achievement) => achievement.type == StoryAchievementType.dailyXp,
+        orElse: () =>
+            const StoryAchievement(type: StoryAchievementType.dailyXp),
+      );
+      resolvedDailyXp = StoryDailyXp(
+        xp: rawXp,
+        components: dailyAchievement.xpComponents,
+        penalties: dailyAchievement.xpPenalties,
+      );
+    }
     return StorySessionSummary(
       gymId: json['gymId'] as String,
       userId: json['userId'] as String,
       dayKey: json['dayKey'] as String,
-      totalXp: clampedXp,
+      totalXp: rawXp,
       generatedAt:
           DateTime.tryParse(json['generatedAt'] as String? ?? '') ?? DateTime.now(),
-      achievements: (json['achievements'] as List<dynamic>? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(StoryAchievement.fromJson)
-          .toList(),
+      achievements: achievements,
       stats: statsJson is Map<String, dynamic>
           ? StorySessionStats.fromJson(statsJson)
           : const StorySessionStats.empty(),
+      dailyXp: resolvedDailyXp,
     );
   }
 
@@ -106,6 +126,7 @@ class StorySessionSummary extends Equatable {
     DateTime? generatedAt,
     List<StoryAchievement>? achievements,
     StorySessionStats? stats,
+    StoryDailyXp? dailyXp,
   }) {
     return StorySessionSummary(
       gymId: gymId,
@@ -115,10 +136,19 @@ class StorySessionSummary extends Equatable {
       generatedAt: generatedAt ?? this.generatedAt,
       achievements: achievements ?? this.achievements,
       stats: stats ?? this.stats,
+      dailyXp: dailyXp ?? this.dailyXp,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [gymId, userId, dayKey, totalXp, generatedAt, achievements, stats];
+  List<Object?> get props => [
+        gymId,
+        userId,
+        dayKey,
+        totalXp,
+        generatedAt,
+        achievements,
+        stats,
+        dailyXp,
+      ];
 }

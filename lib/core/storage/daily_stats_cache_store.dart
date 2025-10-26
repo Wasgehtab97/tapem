@@ -9,12 +9,16 @@ class DailyStatsCacheEntry {
     required this.cachedAt,
     required this.totalXp,
     required this.dayKey,
+    this.components = const [],
+    this.penalties = const [],
   });
 
   final int xp;
   final DateTime cachedAt;
   final int totalXp;
   final String dayKey;
+  final List<Map<String, dynamic>> components;
+  final List<Map<String, dynamic>> penalties;
 
   bool isSameCalendarDay(DateTime other) {
     return dayKey == logicDayKey(other);
@@ -25,6 +29,8 @@ class DailyStatsCacheEntry {
         'totalXp': totalXp,
         'dayKey': dayKey,
         'cachedAt': cachedAt.toIso8601String(),
+        if (components.isNotEmpty) 'components': components,
+        if (penalties.isNotEmpty) 'penalties': penalties,
       };
 
   static DailyStatsCacheEntry? fromJson(Map<String, dynamic> json) {
@@ -41,13 +47,25 @@ class DailyStatsCacheEntry {
     final storedDayKey = json['dayKey'] as String? ?? logicDayKey(timestamp);
     final rawXp = xpValue.toInt();
     final totalXp = totalValue ?? rawXp;
+    final components = _decodeMapList(json['components']);
+    final penalties = _decodeMapList(json['penalties']);
     return DailyStatsCacheEntry(
       xp: rawXp,
       cachedAt: timestamp,
       totalXp: totalXp,
       dayKey: storedDayKey,
+      components: components,
+      penalties: penalties,
     );
   }
+}
+
+List<Map<String, dynamic>> _decodeMapList(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((entry) => entry.map((key, value) => MapEntry('$key', value)))
+      .toList();
 }
 
 abstract class DailyStatsCache {
@@ -59,6 +77,8 @@ abstract class DailyStatsCache {
     int xp,
     DateTime cachedAt, {
     int? totalXp,
+    List<Map<String, dynamic>>? components,
+    List<Map<String, dynamic>>? penalties,
   });
 
   Future<DailyStatsCacheEntry> writeTotal(
@@ -67,6 +87,8 @@ abstract class DailyStatsCache {
     int totalXp,
     DateTime cachedAt, {
     int? dayXp,
+    List<Map<String, dynamic>>? components,
+    List<Map<String, dynamic>>? penalties,
   });
 
   Future<DailyStatsCacheEntry> increment(
@@ -111,6 +133,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
     int xp,
     DateTime cachedAt, {
     int? totalXp,
+    List<Map<String, dynamic>>? components,
+    List<Map<String, dynamic>>? penalties,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final entry = DailyStatsCacheEntry(
@@ -118,6 +142,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
       cachedAt: cachedAt,
       totalXp: totalXp ?? xp,
       dayKey: logicDayKey(cachedAt),
+      components: components ?? const [],
+      penalties: penalties ?? const [],
     );
     await prefs.setString(_key(gymId, userId), jsonEncode(entry.toJson()));
     return entry;
@@ -130,6 +156,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
     int totalXp,
     DateTime cachedAt, {
     int? dayXp,
+    List<Map<String, dynamic>>? components,
+    List<Map<String, dynamic>>? penalties,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final key = _key(gymId, userId);
@@ -157,11 +185,22 @@ class DailyStatsCacheStore implements DailyStatsCache {
       resolvedDailyXp = 0;
     }
 
+    final resolvedComponents = components ??
+        (existing != null && existing.dayKey == dayKey
+            ? existing.components
+            : const []);
+    final resolvedPenalties = penalties ??
+        (existing != null && existing.dayKey == dayKey
+            ? existing.penalties
+            : const []);
+
     final entry = DailyStatsCacheEntry(
       xp: resolvedDailyXp,
       cachedAt: cachedAt,
       totalXp: totalXp,
       dayKey: dayKey,
+      components: resolvedComponents,
+      penalties: resolvedPenalties,
     );
     await prefs.setString(key, jsonEncode(entry.toJson()));
     return entry;
@@ -197,12 +236,18 @@ class DailyStatsCacheStore implements DailyStatsCache {
         : existing.xp + delta;
     final adjustedDailyXp = dailyXp < 0 ? 0 : dailyXp;
     final adjustedTotal = totalXp < 0 ? 0 : totalXp;
+    final resolvedComponents =
+        existing != null && existing.dayKey == dayKey ? existing.components : const [];
+    final resolvedPenalties =
+        existing != null && existing.dayKey == dayKey ? existing.penalties : const [];
 
     final entry = DailyStatsCacheEntry(
       xp: adjustedDailyXp,
       cachedAt: now,
       totalXp: adjustedTotal,
       dayKey: dayKey,
+      components: resolvedComponents,
+      penalties: resolvedPenalties,
     );
     await prefs.setString(key, jsonEncode(entry.toJson()));
     return entry;

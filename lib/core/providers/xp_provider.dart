@@ -156,6 +156,8 @@ class XpProvider extends ChangeNotifier {
               award.totalXp!,
               _now(),
               dayXp: award.dayXp,
+              components: award.components,
+              penalties: award.penalties,
             );
             _applyDailyStats(
               totalXp: entry.totalXp,
