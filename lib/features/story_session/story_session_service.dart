@@ -11,6 +11,7 @@ import 'data/story_session_history_store.dart';
 import 'data/story_session_pr_store.dart';
 import 'data/story_session_summary_store.dart';
 import 'domain/models/story_achievement.dart';
+import 'domain/models/story_daily_xp.dart';
 import 'domain/models/story_session_summary.dart';
 
 class StorySessionService {
@@ -51,6 +52,7 @@ class StorySessionService {
         generatedAt: _now(),
         achievements: const [],
         stats: const StorySessionStats.empty(),
+        dailyXp: const StoryDailyXp.empty(),
       );
     }
 
@@ -118,7 +120,7 @@ class StorySessionService {
     required String dayKey,
     required DateTime date,
     required List<Session> sessions,
-    required int dayXp,
+    required StoryDailyXp dayXp,
     required bool isCachedLocal,
   }) async {
     final normalized = _normalizeSummary(summary: summary, dayXp: dayXp);
@@ -153,7 +155,7 @@ class StorySessionService {
     required String dayKey,
     required DateTime date,
     required List<Session> sessions,
-    required int dayXp,
+    required StoryDailyXp dayXp,
   }) async {
     final hasPrAchievement = summary.achievements
         .any((achievement) => achievement.type == StoryAchievementType.personalRecord);
@@ -274,7 +276,7 @@ class StorySessionService {
     required DateTime date,
     required String dayKey,
     required List<Session> sessions,
-    required int dayXp,
+    required StoryDailyXp dayXp,
   }) async {
     if (sessions.isEmpty) return null;
     final generatedAt = _now();
@@ -410,7 +412,12 @@ class StorySessionService {
         : const <_ExerciseKey, String>{};
 
     final achievementsBuffer = <StoryAchievement>[
-      StoryAchievement(type: StoryAchievementType.dailyXp, xp: dayXp),
+      StoryAchievement(
+        type: StoryAchievementType.dailyXp,
+        xp: dayXp.xp,
+        xpComponents: dayXp.components,
+        xpPenalties: dayXp.penalties,
+      ),
     ];
 
     for (final entry in newDevices.values) {
@@ -474,10 +481,11 @@ class StorySessionService {
       gymId: gymId,
       userId: userId,
       dayKey: dayKey,
-      totalXp: dayXp,
+      totalXp: dayXp.xp,
       generatedAt: generatedAt,
       achievements: achievementsBuffer,
       stats: stats,
+      dailyXp: dayXp,
     );
 
     await _historyStore.markDeviceSeen(gymId, userId, newDevices.keys);
@@ -738,23 +746,41 @@ class StorySessionService {
       if (!snap.exists) return null;
       final data = snap.data();
       if (data == null) return null;
-      final xpPerSession = LevelService.xpPerSession;
       final remoteXp = (data['totalXp'] as num?)?.toInt() ?? 0;
-      final sanitizedXp = remoteXp.clamp(0, xpPerSession);
+      final achievements = (data['achievements'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(StoryAchievement.fromJson)
+          .toList();
+      final rawDailyXp = data['dailyXp'];
+      StoryDailyXp dailyXp;
+      if (rawDailyXp is Map) {
+        dailyXp = StoryDailyXp.fromJson(
+          rawDailyXp.map((key, value) => MapEntry('$key', value)),
+        );
+      } else {
+        final dailyAchievement = achievements.firstWhere(
+          (achievement) => achievement.type == StoryAchievementType.dailyXp,
+          orElse: () =>
+              const StoryAchievement(type: StoryAchievementType.dailyXp),
+        );
+        dailyXp = StoryDailyXp(
+          xp: remoteXp,
+          components: dailyAchievement.xpComponents,
+          penalties: dailyAchievement.xpPenalties,
+        );
+      }
       return StorySessionSummary(
         gymId: gymId,
         userId: userId,
         dayKey: dayKey,
-        totalXp: sanitizedXp,
+        totalXp: remoteXp,
         generatedAt:
             (data['generatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        achievements: (data['achievements'] as List<dynamic>? ?? [])
-            .whereType<Map<String, dynamic>>()
-            .map(StoryAchievement.fromJson)
-            .toList(),
+        achievements: achievements,
         stats: data['stats'] is Map<String, dynamic>
             ? StorySessionStats.fromJson(data['stats'] as Map<String, dynamic>)
             : const StorySessionStats.empty(),
+        dailyXp: dailyXp,
       );
     } on FirebaseException {
       return null;
@@ -775,6 +801,7 @@ class StorySessionService {
         'generatedAt': Timestamp.fromDate(summary.generatedAt),
         'achievements': summary.achievements.map((a) => a.toJson()).toList(),
         'stats': summary.stats.toJson(),
+        'dailyXp': summary.dailyXp.toJson(),
       }, SetOptions(merge: true));
     } on FirebaseException {
       // Ignore persistence errors; summary remains available locally.
@@ -810,60 +837,176 @@ class StorySessionService {
     return result;
   }
 
-  Future<int> _resolveDayXp({
+  Future<StoryDailyXp> _resolveDayXp({
     required String gymId,
     required String userId,
     required DateTime date,
   }) async {
     final xpPerSession = LevelService.xpPerSession;
+    final dayKey = logicDayKey(date);
+    StoryDailyXp? cacheDaily;
     try {
       final xpEntry = await _dailyStatsCache.read(gymId, userId);
-      if (xpEntry == null || !xpEntry.isSameCalendarDay(date)) {
-        return xpPerSession;
-      }
-      final clamped = xpEntry.xp.clamp(0, xpPerSession);
-      if (clamped > 0) {
-        return clamped;
-      }
-      if (xpEntry.totalXp > 0) {
-        return min(xpEntry.totalXp, xpPerSession);
+      if (xpEntry != null && xpEntry.isSameCalendarDay(date)) {
+        cacheDaily = StoryDailyXp(
+          xp: xpEntry.xp,
+          totalXp: xpEntry.totalXp,
+          components: _mapComponents(xpEntry.components),
+          penalties: _mapPenalties(xpEntry.penalties),
+        );
       }
     } catch (_) {
-      // Ignore cache read issues and fall back to default XP.
+      // Ignore cache read issues and fall back to Firestore.
     }
-    return xpPerSession;
+
+    try {
+      final dayRef = _firestore.collection('users').doc(userId).collection('trainingDayXP');
+      final snap = await dayRef.doc(dayKey).get();
+      final data = snap.data();
+      if (snap.exists && data != null) {
+        final remote = _dailyXpFromDoc(data, fallbackPenalties: cacheDaily?.penalties);
+        return cacheDaily != null ? _mergeDailyXpDetails(remote, cacheDaily) : remote;
+      }
+    } on FirebaseException {
+      // Ignore remote read issues and fall back to cache/defaults.
+    }
+
+    if (cacheDaily != null) {
+      return cacheDaily;
+    }
+
+    return StoryDailyXp(xp: xpPerSession);
   }
 
   StorySessionSummary _normalizeSummary({
     required StorySessionSummary summary,
-    required int dayXp,
+    required StoryDailyXp dayXp,
   }) {
+    final merged = _mergeDailyXpDetails(dayXp, summary.dailyXp);
     final achievements = summary.achievements;
     List<StoryAchievement>? updatedAchievements;
     final idx = achievements.indexWhere((a) => a.type == StoryAchievementType.dailyXp);
     if (idx >= 0) {
       final daily = achievements[idx];
-      final currentXp = daily.xp ?? 0;
-      if (currentXp != dayXp) {
+      final needsUpdate =
+          (daily.xp ?? 0) != merged.xp ||
+          !_listsEqual(daily.xpComponents, merged.components) ||
+          !_listsEqual(daily.xpPenalties, merged.penalties);
+      if (needsUpdate) {
         updatedAchievements = List.of(achievements);
-        updatedAchievements[idx] = daily.copyWith(xp: dayXp);
+        updatedAchievements[idx] = daily.copyWith(
+          xp: merged.xp,
+          xpComponents: merged.components,
+          xpPenalties: merged.penalties,
+        );
       }
-    } else {
+    } else if (merged.xp != 0 || merged.hasBreakdown) {
       updatedAchievements = [
-        StoryAchievement(type: StoryAchievementType.dailyXp, xp: dayXp),
+        StoryAchievement(
+          type: StoryAchievementType.dailyXp,
+          xp: merged.xp,
+          xpComponents: merged.components,
+          xpPenalties: merged.penalties,
+        ),
         ...achievements,
       ];
     }
 
-    if (summary.totalXp == dayXp && updatedAchievements == null) {
+    if (summary.totalXp == merged.xp && summary.dailyXp == merged &&
+        updatedAchievements == null) {
       return summary;
     }
 
     return summary.copyWith(
-      totalXp: dayXp,
+      totalXp: merged.xp,
       achievements: updatedAchievements ?? achievements,
+      dailyXp: merged,
     );
   }
+}
+
+StoryDailyXp _dailyXpFromDoc(
+  Map<String, dynamic> data, {
+  List<StoryXpPenalty>? fallbackPenalties,
+}) {
+  final xp = (data['xp'] as num?)?.toInt() ?? 0;
+  final totalXp = (data['totalXp'] as num?)?.toInt();
+  final runningTotal = (data['runningTotalXp'] as num?)?.toInt();
+  final metadata = _coerceMetadata(data['metadata']);
+  final components = _mapComponents(data['components']);
+  return StoryDailyXp(
+    xp: xp,
+    totalXp: totalXp,
+    runningTotalXp: runningTotal,
+    metadata: metadata,
+    components: components,
+    penalties: fallbackPenalties ?? const [],
+  );
+}
+
+Map<String, dynamic> _coerceMetadata(dynamic raw) {
+  if (raw is Map) {
+    return raw.map((key, value) => MapEntry('$key', value));
+  }
+  return const {};
+}
+
+List<StoryXpComponent> _mapComponents(dynamic raw) {
+  if (raw is List) {
+    return List.unmodifiable(raw.whereType<Map>().map((entry) {
+      return StoryXpComponent.fromJson(
+        entry.map((key, value) => MapEntry('$key', value)),
+      );
+    }));
+  }
+  if (raw is List<Map<String, dynamic>>) {
+    return List.unmodifiable(raw.map(StoryXpComponent.fromJson));
+  }
+  return const [];
+}
+
+List<StoryXpPenalty> _mapPenalties(dynamic raw) {
+  if (raw is List) {
+    return List.unmodifiable(raw.whereType<Map>().map((entry) {
+      return StoryXpPenalty.fromJson(
+        entry.map((key, value) => MapEntry('$key', value)),
+      );
+    }));
+  }
+  if (raw is List<Map<String, dynamic>>) {
+    return List.unmodifiable(raw.map(StoryXpPenalty.fromJson));
+  }
+  return const [];
+}
+
+StoryDailyXp _mergeDailyXpDetails(StoryDailyXp incoming, StoryDailyXp existing) {
+  final xp = incoming.xp != 0 || existing.xp == 0 ? incoming.xp : existing.xp;
+  final totalXp = incoming.totalXp ?? existing.totalXp;
+  final runningTotalXp = incoming.runningTotalXp ?? existing.runningTotalXp;
+  final metadata = incoming.metadata.isNotEmpty ? incoming.metadata : existing.metadata;
+  final components = incoming.components.isNotEmpty
+      ? incoming.components
+      : existing.components;
+  final penalties = incoming.penalties.isNotEmpty
+      ? incoming.penalties
+      : existing.penalties;
+  return StoryDailyXp(
+    xp: xp,
+    totalXp: totalXp,
+    runningTotalXp: runningTotalXp,
+    metadata: metadata,
+    components: components,
+    penalties: penalties,
+  );
+}
+
+bool _listsEqual<T>(List<T> a, List<T> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 class _PrCandidate {

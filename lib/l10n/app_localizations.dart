@@ -1379,6 +1379,96 @@ abstract class AppLocalizations {
   /// **'{xp} XP'**
   String storySessionDailyXpValue(Object xp);
 
+  /// No description provided for @storySessionDailyXpBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **"Today's XP breakdown"**
+  String get storySessionDailyXpBreakdownTitle;
+
+  /// No description provided for @storySessionDailyXpPenaltyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Penalties applied'**
+  String get storySessionDailyXpPenaltyTitle;
+
+  /// No description provided for @storySessionDailyXpComponentBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base reward'**
+  String get storySessionDailyXpComponentBase;
+
+  /// No description provided for @storySessionDailyXpComponentBaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Training day #{day}'**
+  String storySessionDailyXpComponentBaseSubtitle(int day);
+
+  /// No description provided for @storySessionDailyXpComponentComeback.
+  ///
+  /// In en, this message translates to:
+  /// **'Comeback boost'**
+  String get storySessionDailyXpComponentComeback;
+
+  /// No description provided for @storySessionDailyXpComponentStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak bonus'**
+  String get storySessionDailyXpComponentStreak;
+
+  /// No description provided for @storySessionDailyXpComponentStreakSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{streak, plural, one {Streak of # day} other {Streak of # days}}'**
+  String storySessionDailyXpComponentStreakSubtitle(int streak);
+
+  /// No description provided for @storySessionDailyXpComponentMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone reward'**
+  String get storySessionDailyXpComponentMilestone;
+
+  /// No description provided for @storySessionDailyXpComponentMilestoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone day {day}'**
+  String storySessionDailyXpComponentMilestoneSubtitle(int day);
+
+  /// No description provided for @storySessionDailyXpComponentUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional reward'**
+  String get storySessionDailyXpComponentUnknown;
+
+  /// No description provided for @storySessionDailyXpPenaltyStreakBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak break penalty'**
+  String get storySessionDailyXpPenaltyStreakBreak;
+
+  /// No description provided for @storySessionDailyXpPenaltyMissedWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed week penalty'**
+  String get storySessionDailyXpPenaltyMissedWeek;
+
+  /// No description provided for @storySessionDailyXpPenaltyGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Penalty'**
+  String get storySessionDailyXpPenaltyGeneric;
+
+  /// No description provided for @storySessionDailyXpPenaltyIdleDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one {# day without training} other {# days without training}}'**
+  String storySessionDailyXpPenaltyIdleDays(int days);
+
+  /// No description provided for @storySessionDailyXpPenaltyWeekLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Week {week} without training'**
+  String storySessionDailyXpPenaltyWeekLabel(int week);
+
   /// Heading above the badges list in the session story dialog
   ///
   /// In en, this message translates to:

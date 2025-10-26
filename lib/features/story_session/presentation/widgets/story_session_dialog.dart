@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
+import 'package:tapem/features/story_session/domain/models/story_daily_xp.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -38,6 +39,7 @@ class StorySessionDialog extends StatelessWidget {
                 headerTitle: loc.storySessionTitle,
                 headerSubtitle: dateText,
                 xp: summary.totalXp,
+                dailyXp: summary.dailyXp,
                 stats: summary.stats,
                 achievements: achievements,
                 loc: loc,
@@ -55,6 +57,7 @@ class _StorySessionCard extends StatelessWidget {
   final String headerTitle;
   final String headerSubtitle;
   final int xp;
+  final StoryDailyXp dailyXp;
   final StorySessionStats stats;
   final List<StoryAchievement> achievements;
   final AppLocalizations loc;
@@ -64,6 +67,7 @@ class _StorySessionCard extends StatelessWidget {
     required this.headerTitle,
     required this.headerSubtitle,
     required this.xp,
+    required this.dailyXp,
     required this.stats,
     required this.achievements,
     required this.loc,
@@ -84,6 +88,7 @@ class _StorySessionCard extends StatelessWidget {
       color: palette.onCardSecondary,
       fontWeight: FontWeight.w500,
     );
+    final hasBreakdown = dailyXp.components.isNotEmpty || dailyXp.penalties.isNotEmpty;
     return ClipRRect(
       borderRadius: palette.cardRadius,
       child: BackdropFilter(
@@ -218,6 +223,13 @@ class _StorySessionCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
                       _XpBanner(xp: xp, palette: palette),
+                      if (hasBreakdown) ...[
+                        const SizedBox(height: 24),
+                        _XpBreakdownSection(
+                          dailyXp: dailyXp,
+                          palette: palette,
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       _StoryStatsRow(stats: stats, palette: palette),
                       const SizedBox(height: 30),
@@ -384,6 +396,288 @@ class _XpBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _XpBreakdownSection extends StatelessWidget {
+  final StoryDailyXp dailyXp;
+  final _StorySessionPalette palette;
+
+  const _XpBreakdownSection({required this.dailyXp, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final format = NumberFormat.decimalPattern(loc.localeName);
+
+    final componentLines = dailyXp.components
+        .map(
+          (component) => _XpBreakdownLine(
+            label: _componentLabel(component, loc),
+            subtitle: _componentSubtitle(component, loc),
+            amount: component.amount,
+            isPenalty: component.amount < 0,
+          ),
+        )
+        .toList();
+
+    final penaltyLines = dailyXp.penalties
+        .map(
+          (penalty) => _XpBreakdownLine(
+            label: _penaltyLabel(penalty, loc),
+            subtitle: _penaltySubtitle(penalty, loc),
+            amount: penalty.delta,
+            isPenalty: penalty.delta <= 0,
+          ),
+        )
+        .toList();
+
+    final children = <Widget>[];
+    for (var i = 0; i < componentLines.length; i++) {
+      if (i != 0) {
+        children.add(_XpBreakdownDivider(palette: palette));
+      }
+      children.add(
+        _XpBreakdownRow(
+          line: componentLines[i],
+          palette: palette,
+          format: format,
+        ),
+      );
+    }
+
+    if (penaltyLines.isNotEmpty) {
+      if (children.isNotEmpty) {
+        children.add(_XpBreakdownDivider(palette: palette));
+      }
+      children.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+          child: Text(
+            loc.storySessionDailyXpPenaltyTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: palette.onCardSecondary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < penaltyLines.length; i++) {
+        if (i != 0) {
+          children.add(_XpBreakdownDivider(palette: palette));
+        }
+        children.add(
+          _XpBreakdownRow(
+            line: penaltyLines[i],
+            palette: palette,
+            format: format,
+          ),
+        );
+      }
+    }
+
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final borderColor = palette.cardBorder.withOpacity(0.28);
+    final backgroundColor = palette.cardBorder.withOpacity(0.18);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loc.storySessionDailyXpBreakdownTitle,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: palette.onCardPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+class _XpBreakdownDivider extends StatelessWidget {
+  final _StorySessionPalette palette;
+
+  const _XpBreakdownDivider({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      color: palette.cardBorder.withOpacity(0.16),
+    );
+  }
+}
+
+class _XpBreakdownRow extends StatelessWidget {
+  final _XpBreakdownLine line;
+  final _StorySessionPalette palette;
+  final NumberFormat format;
+
+  const _XpBreakdownRow({
+    required this.line,
+    required this.palette,
+    required this.format,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final amount = line.amount;
+    final formatted = '${amount >= 0 ? '+' : ''}${format.format(amount)} XP';
+    final valueColor = line.isPenalty
+        ? theme.colorScheme.error
+        : palette.onCardPrimary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  line.label,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: palette.onCardPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (line.subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    line.subtitle!,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: palette.onCardSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            formatted,
+            style: textTheme.bodyLarge?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _XpBreakdownLine {
+  final String label;
+  final String? subtitle;
+  final int amount;
+  final bool isPenalty;
+
+  const _XpBreakdownLine({
+    required this.label,
+    this.subtitle,
+    required this.amount,
+    this.isPenalty = false,
+  });
+}
+
+String _componentLabel(StoryXpComponent component, AppLocalizations loc) {
+  switch (component.code) {
+    case 'base_daily':
+      return loc.storySessionDailyXpComponentBase;
+    case 'comeback_bonus':
+      return loc.storySessionDailyXpComponentComeback;
+    case 'streak_bonus':
+      return loc.storySessionDailyXpComponentStreak;
+    case 'training_day_milestone':
+      return loc.storySessionDailyXpComponentMilestone;
+    default:
+      return loc.storySessionDailyXpComponentUnknown;
+  }
+}
+
+String? _componentSubtitle(StoryXpComponent component, AppLocalizations loc) {
+  final metadata = component.metadata;
+  switch (component.code) {
+    case 'base_daily':
+      final dayIndex = (metadata['trainingDayIndex'] as num?)?.toInt();
+      if (dayIndex != null && dayIndex > 0) {
+        return loc.storySessionDailyXpComponentBaseSubtitle(dayIndex);
+      }
+      break;
+    case 'streak_bonus':
+      final streak = (metadata['streakLength'] as num?)?.toInt();
+      if (streak != null && streak > 0) {
+        return loc.storySessionDailyXpComponentStreakSubtitle(streak);
+      }
+      break;
+    case 'training_day_milestone':
+      final milestone = (metadata['milestoneDay'] as num?)?.toInt();
+      if (milestone != null && milestone > 0) {
+        return loc.storySessionDailyXpComponentMilestoneSubtitle(milestone);
+      }
+      break;
+  }
+  return null;
+}
+
+String _penaltyLabel(StoryXpPenalty penalty, AppLocalizations loc) {
+  switch (penalty.type) {
+    case 'streakBreakPenalty':
+      return loc.storySessionDailyXpPenaltyStreakBreak;
+    case 'missedWeekPenalty':
+      return loc.storySessionDailyXpPenaltyMissedWeek;
+    default:
+      return loc.storySessionDailyXpPenaltyGeneric;
+  }
+}
+
+String? _penaltySubtitle(StoryXpPenalty penalty, AppLocalizations loc) {
+  final metadata = penalty.metadata;
+  final idleDays = (metadata['idleDays'] as num?)?.toInt();
+  final week = (metadata['missedWeekNumber'] as num?)?.toInt();
+  switch (penalty.type) {
+    case 'streakBreakPenalty':
+      if (idleDays != null && idleDays > 0) {
+        return loc.storySessionDailyXpPenaltyIdleDays(idleDays);
+      }
+      break;
+    case 'missedWeekPenalty':
+      final segments = <String>[];
+      if (week != null && week > 0) {
+        segments.add(loc.storySessionDailyXpPenaltyWeekLabel(week));
+      }
+      if (idleDays != null && idleDays > 0) {
+        segments.add(loc.storySessionDailyXpPenaltyIdleDays(idleDays));
+      }
+      if (segments.isNotEmpty) {
+        return segments.join(' · ');
+      }
+      break;
+    default:
+      if (idleDays != null && idleDays > 0) {
+        return loc.storySessionDailyXpPenaltyIdleDays(idleDays);
+      }
+      break;
+  }
+  return null;
 }
 
 class _StoryStatsRow extends StatelessWidget {

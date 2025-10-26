@@ -691,6 +691,71 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get storySessionDailyXpBreakdownTitle => 'Aufschlüsselung deiner XP';
+
+  @override
+  String get storySessionDailyXpPenaltyTitle => 'Angewendete Strafen';
+
+  @override
+  String get storySessionDailyXpComponentBase => 'Grundbelohnung';
+
+  @override
+  String storySessionDailyXpComponentBaseSubtitle(int day) {
+    return 'Trainingstag #$day';
+  }
+
+  @override
+  String get storySessionDailyXpComponentComeback => 'Comeback-Boost';
+
+  @override
+  String get storySessionDailyXpComponentStreak => 'Streak-Bonus';
+
+  @override
+  String storySessionDailyXpComponentStreakSubtitle(int streak) {
+    return intl.Intl.pluralLogic(
+      streak,
+      locale: localeName,
+      one: 'Streak über $streak Tag',
+      other: 'Streak über $streak Tage',
+    );
+  }
+
+  @override
+  String get storySessionDailyXpComponentMilestone => 'Meilenstein-Bonus';
+
+  @override
+  String storySessionDailyXpComponentMilestoneSubtitle(int day) {
+    return 'Meilenstein-Tag $day';
+  }
+
+  @override
+  String get storySessionDailyXpComponentUnknown => 'Zusätzliche Belohnung';
+
+  @override
+  String get storySessionDailyXpPenaltyStreakBreak => 'Strafe für Streak-Abbruch';
+
+  @override
+  String get storySessionDailyXpPenaltyMissedWeek => 'Strafe für verpasste Woche';
+
+  @override
+  String get storySessionDailyXpPenaltyGeneric => 'Strafe';
+
+  @override
+  String storySessionDailyXpPenaltyIdleDays(int days) {
+    return intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      one: '$days trainingsfreier Tag',
+      other: '$days trainingsfreie Tage',
+    );
+  }
+
+  @override
+  String storySessionDailyXpPenaltyWeekLabel(int week) {
+    return 'Woche $week ohne Training';
+  }
+
+  @override
   String get storySessionBadgesTitle => 'Badges';
 
   @override
