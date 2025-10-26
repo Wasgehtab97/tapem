@@ -23,7 +23,7 @@ void main() {
       final controller = StreamController<String>();
       addTearDown(controller.close);
 
-      when(() => service.readStream()).thenReturn(controller.stream);
+      when(() => service.readStream()).thenAnswer((_) => controller.stream);
 
       final result = useCase.execute();
 
