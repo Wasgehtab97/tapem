@@ -447,10 +447,11 @@ void main() {
       );
       await _pumpEventQueue();
 
-      expect(
-        () => providerFail.setAvatarKey('new'),
+      await expectLater(
+        providerFail.setAvatarKey('new'),
         throwsA(isA<Exception>()),
       );
+      await _pumpEventQueue();
       expect(providerFail.avatarKey, 'old');
       expect(providerFail.error, contains('fail'));
     });
