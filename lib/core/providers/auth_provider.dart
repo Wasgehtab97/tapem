@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
@@ -125,6 +127,20 @@ class AuthProvider extends ChangeNotifier {
 
   String? get error => _error;
 
+  Future<SharedPreferences?> _safeGetPreferences() async {
+    try {
+      return await _sharedPreferencesGetter()
+          .timeout(const Duration(seconds: 2));
+    } on TimeoutException catch (e, st) {
+      debugPrint('AuthProvider: SharedPreferences timeout: $e');
+      debugPrintStack(stackTrace: st);
+    } catch (e, st) {
+      debugPrint('AuthProvider: Failed to load SharedPreferences: $e');
+      debugPrintStack(stackTrace: st);
+    }
+    return null;
+  }
+
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
     _error = null;
@@ -161,13 +177,15 @@ class AuthProvider extends ChangeNotifier {
           _user = currentUser.copyWith(
             role: claims['role'] as String? ?? currentUser.role,
           );
-          final prefs = await _sharedPreferencesGetter();
-          final stored = prefs.getString('selectedGymCode');
-          if (stored != null && currentUser.gymCodes.contains(stored)) {
-            _selectedGymCode = stored;
-          } else if (currentUser.gymCodes.isNotEmpty) {
-            _selectedGymCode = currentUser.gymCodes.first;
-            await prefs.setString('selectedGymCode', _selectedGymCode!);
+          final prefs = await _safeGetPreferences();
+          if (prefs != null) {
+            final stored = prefs.getString('selectedGymCode');
+            if (stored != null && currentUser.gymCodes.contains(stored)) {
+              _selectedGymCode = stored;
+            } else if (currentUser.gymCodes.isNotEmpty) {
+              _selectedGymCode = currentUser.gymCodes.first;
+              await prefs.setString('selectedGymCode', _selectedGymCode!);
+            }
           }
         }
       } else {
@@ -210,9 +228,11 @@ class AuthProvider extends ChangeNotifier {
       if (_user == null) {
         _user = registeredUser;
         if (registeredUser.gymCodes.isNotEmpty) {
-          final prefs = await _sharedPreferencesGetter();
-          _selectedGymCode = registeredUser.gymCodes.first;
-          await prefs.setString('selectedGymCode', _selectedGymCode!);
+          final prefs = await _safeGetPreferences();
+          if (prefs != null) {
+            _selectedGymCode = registeredUser.gymCodes.first;
+            await prefs.setString('selectedGymCode', _selectedGymCode!);
+          }
         }
         notifyListeners();
       }
@@ -230,8 +250,10 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _user = null;
       _selectedGymCode = null;
-      final prefs = await _sharedPreferencesGetter();
-      await prefs.remove('selectedGymCode');
+      final prefs = await _safeGetPreferences();
+      if (prefs != null) {
+        await prefs.remove('selectedGymCode');
+      }
       await _sessionDraftRepository.deleteAll();
       _setLoading(false);
     }
@@ -328,8 +350,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> selectGym(String code) async {
     if (_user == null || !_user!.gymCodes.contains(code)) return;
     _selectedGymCode = code;
-    final prefs = await _sharedPreferencesGetter();
-    await prefs.setString('selectedGymCode', code);
+    final prefs = await _safeGetPreferences();
+    if (prefs != null) {
+      await prefs.setString('selectedGymCode', code);
+    }
     notifyListeners();
   }
 
