@@ -37,7 +37,7 @@ class WriteNfcTagUseCase {
       final record = _buildRawTextRecord(hexCode);
       await _channel.invokeMethod<void>('writeNDEFRawRecords', [record]);
     } on PlatformException catch (e, st) {
-      debugPrint('❌ WriteNfcTagUseCase failed: \$e');
+      debugPrint('❌ WriteNfcTagUseCase failed: $e');
       debugPrint(st.toString());
       rethrow;
     } finally {
@@ -47,7 +47,7 @@ class WriteNfcTagUseCase {
           'iosAlertMessage': 'Schreiben abgeschlossen',
         });
       } on PlatformException catch (e) {
-        debugPrint('⚠️ NFC finish() failed: \$e');
+        debugPrint('⚠️ NFC finish() failed: $e');
       }
     }
   }
