@@ -225,6 +225,10 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
   String? lastPasswordResetEmail;
   Object? signInError;
   Object? registerError;
+  Object? confirmResetError;
+  bool confirmPasswordResetCalled = false;
+  String? lastConfirmCode;
+  String? lastConfirmPassword;
 
   void addUser({
     required String email,
@@ -286,6 +290,20 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
   }) async {
     passwordResetCalled = true;
     lastPasswordResetEmail = email;
+  }
+
+  @override
+  Future<void> confirmPasswordReset({
+    required String code,
+    required String newPassword,
+  }) async {
+    final error = confirmResetError;
+    if (error != null) {
+      throw error;
+    }
+    confirmPasswordResetCalled = true;
+    lastConfirmCode = code;
+    lastConfirmPassword = newPassword;
   }
 
 }

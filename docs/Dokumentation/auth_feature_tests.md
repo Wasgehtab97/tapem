@@ -7,14 +7,15 @@ Diese Dokumentation beschreibt alle aktuellen Tests des Auth-Features und erläu
 | Testebene | Abgedeckte Komponenten | Datei |
 |-----------|------------------------|-------|
 | Unit-Tests | `AuthProvider` inkl. Statusverwaltung, Persistenz und Fehlerbehandlung | `test/features/auth/auth_provider_test.dart` |
-| Widget-Tests | `LoginForm`, `SplashScreen`, `showUsernameDialog` | `test/features/auth/auth_provider_widget_test.dart` |
+| Widget-Tests | `LoginForm`, `RegistrationForm`, `PasswordResetDialog`, `UsernameDialog`, `DynamicLinkListener` | `test/features/auth/presentation/widgets/*.dart` |
+| Screen-Tests | `AuthScreen`, `ResetPasswordScreen` | `test/features/auth/presentation/screens/*.dart` |
 
 ## Testumgebung und Mocking
 
 * **SharedPreferences**: Jeder Test setzt `SharedPreferences.setMockInitialValues({})`, um persistente Zustände deterministisch zu halten und Gym-Codes zu verifizieren.
 * **Repositories & Manager**: Der `AuthProvider` wird mit Fake-Repositories und einem Fake `FirebaseAuthManager` betrieben, um Authentifizierungs- und Profildaten zu simulieren, ohne echte Firebase-Aufrufe auszuführen.
 * **SessionDraftRepository**: Ein Fake-Repository protokolliert Löschoperationen, sodass der Logout-Test die Bereinigung von Session-Entwürfen validieren kann.
-* **Widget-Tests**: Verwenden `mocktail`-basierte `AuthProvider`-Mocks, um Ladezustände, Navigationsentscheidungen und Fehlermeldungen kontrolliert auszulösen.
+* **Widget- und Screen-Tests**: Verwenden echte `AuthProvider`-Instanzen mit Fake-Repositories sowie Fake-Dienste (z. B. `FakeFirebaseAuthManager`, `FakeFirebaseAuth`), um Navigation, Ladezustände und Fehlermeldungen kontrolliert auszulösen – ganz ohne externe Mocking-Frameworks.
 
 ## Unit-Tests für den AuthProvider
 
@@ -64,19 +65,37 @@ Diese Dokumentation beschreibt alle aktuellen Tests des Auth-Features und erläu
 
 ## Widget-Tests für Auth-Komponenten
 
-### LoginForm
-1. **Credential-Submit navigiert nach Erfolg**: Testet Eingabe von Mail/Passwort, prüft `login`-Aufruf, `notifyListeners`-Sequenz und Navigation zur Home-Route.
-2. **Fehleranzeige**: Simuliert Fehlerantwort des Providers und erwartet gerenderte Fehlermeldung.
-3. **Ladeindikator**: Erzwingt `isLoading = true`, überprüft deaktivierten Button und sichtbaren `CircularProgressIndicator`.
+### LoginForm (`test/features/auth/presentation/widgets/login_form_test.dart`)
+1. **Erfolgreiche Anmeldung**: Füllt Formular, löst echten Provider-Login aus und verifiziert Navigation zu `AppRouter.home`.
+2. **Fehlgeschlagene Anmeldung**: Simuliert Repository-Exception und erwartet SnackBar mit Fehlertext.
+3. **Ladezustand**: Erzwingt einen langen Login-Vorgang und prüft deaktivierten Button sowie Spinner.
 
-### SplashScreen
-4. **Navigation zur Auth-Route**: Bei nicht eingeloggtem Nutzer Navigationsziel `AppRouter.auth` nach Ablauf des Timers.
-5. **Navigation zur Gym-Auswahl**: Bei mehreren Gym-Codes wird `AppRouter.selectGym` gepusht.
-6. **Direkt zur Home-Route**: Bei einem einzigen Gym-Code führt Splash direkt nach `AppRouter.home`.
+### RegistrationForm (`.../registration_form_test.dart`)
+4. **Erfolgreiche Registrierung**: Validiert Gym-Code über injizierten Validator, führt Registrierung aus und navigiert nach `AppRouter.home`.
+5. **Ungültiger Gym-Code**: Wirft `GymNotFoundException`, zeigt Validierungsfehler und verhindert Login.
+6. **Rate-Limit**: Drei Fehlversuche sperren das Formular, deaktivieren den Button und zeigen `gymCodeLockedMessage`.
 
-### Username-Dialog (`showUsernameDialog`)
-7. **Dialog schließt nach erfolgreichem Speichern**: `setUsername` liefert `true`; Dialog verschwindet nach `pumpAndSettle`.
-8. **Fehler bleibt sichtbar**: `setUsername` gibt `false` zurück, Provider setzt Fehlertext; AlertDialog bleibt geöffnet und zeigt Meldung.
+### PasswordResetDialog (`.../password_reset_dialog_test.dart`)
+7. **Validierung**: Prüft, dass leere oder ungültige E-Mail unmittelbar Fehler anzeigt.
+8. **Erfolgreicher Versand**: Simuliert erfolgreiches Repository, schließt Dialog und zeigt Bestätigungs-SnackBar.
+9. **Fehlerfall**: Erzwingt `FirebaseAuthException` und zeigt Backend-Fehlermeldung im Dialog.
+
+### UsernameDialog (`.../username_dialog_test.dart`)
+10. **Speichern**: Reale Provider-Instanz setzt Nutzernamen und schließt den Dialog.
+11. **Name belegt**: Fake-Repository meldet belegten Namen; Dialog bleibt offen und zeigt `username_taken`.
+
+### DynamicLinkListener (`.../dynamic_link_listener_test.dart`)
+12. **Initialer Link**: Kontrollierter Pending-Link navigiert direkt zu `AppRouter.resetPassword`.
+13. **Ignorierte Links**: Nicht passende Modi lösen keine Navigation aus.
+14. **Live-Stream**: Eine simulierte Stream-Nachricht führt zur Navigation und wird nachgewiesen.
+
+### AuthScreen (`test/features/auth/presentation/screens/auth_screen_test.dart`)
+15. **Tab-Navigation**: Wechselt zwischen Login- und Registrierungs-Tab und prüft Sichtbarkeit der Formularfelder.
+16. **Lade-Overlay**: Ein laufender Provider-Login blendet den Overlay-Spinner über beide Tabs ein.
+
+### ResetPasswordScreen (`.../reset_password_screen_test.dart`)
+17. **Erfolgreicher Reset**: Fake-FirebaseAuth bestätigt Passwort-Reset, zeigt Erfolgsnachricht und navigiert zu `AppRouter.auth`.
+18. **Fehlerfall**: Simulierter `FirebaseAuthException` hinterlegt Fehlertext im Formular, ohne die Navigation auszulösen.
 
 ## Ausführung der Tests
 
