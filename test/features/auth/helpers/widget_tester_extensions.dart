@@ -13,8 +13,8 @@ extension WidgetTesterAsyncExtensions on WidgetTester {
     if (finder.evaluate().isNotEmpty) {
       return;
     }
-    final endTime = binding.clock.now().add(timeout);
-    while (binding.clock.now().isBefore(endTime)) {
+    final watch = Stopwatch()..start();
+    while (watch.elapsed < timeout) {
       await pump(step);
       if (finder.evaluate().isNotEmpty) {
         return;
@@ -33,8 +33,8 @@ extension WidgetTesterAsyncExtensions on WidgetTester {
     if (finder.evaluate().isEmpty) {
       return;
     }
-    final endTime = binding.clock.now().add(timeout);
-    while (binding.clock.now().isBefore(endTime)) {
+    final watch = Stopwatch()..start();
+    while (watch.elapsed < timeout) {
       await pump(step);
       if (finder.evaluate().isEmpty) {
         return;
