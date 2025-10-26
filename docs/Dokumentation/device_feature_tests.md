@@ -24,9 +24,32 @@ Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräte
 ### DeviceScreen (`test/features/device/presentation/screens/device_screen_test.dart`)
 1. **Set hinzufügen**: Prüft, dass ein Tap auf die Schaltfläche „Set hinzufügen“ den Provider-Aufruf `addSet()` auslöst.
 2. **Set entfernen**: Bestätigt, dass das Wegwischen eines `Dismissible`-Elements `removeSet(0)` auf dem Provider ausführt.
+3. **Aktueller Status**: Der Test „tapping remove set calls provider.removeSet“ schlägt derzeit fehl. `mocktail` meldet „No matching calls“, obwohl `removeSet(0)` erwartet wird. Der Provider-Mock zeichnet aktuell nur Lesezugriffe (`sets`, `isLoading`, `device` etc.) auf.
 
 ### SetCard (`test/features/device/presentation/widgets/set_card_test.dart`)
 1. **Keypad-Interaktion**: Sicherstellt, dass das Tippen auf das Gewichts-Eingabefeld den Fokus korrekt beim Provider registriert und den Keypad-Controller mit `allowDecimal: true` öffnet.
+2. **Aktueller Status**: Besteht weiterhin. Die Fokus-/Keypad-Interaktion liefert die erwarteten Debug-Logs (`open keypad`, `dispose`).
+
+## Aktueller Teststatus (Stand laut letztem Lauf `flutter test`)
+
+| Test | Ergebnis | Beobachtung |
+|------|----------|-------------|
+| `device_screen_test.dart` | ❌ Verifikation schlägt fehl | Beim Entfernen eines Sets werden nur Provider-Getter abgefragt; `verify(() => provider.removeSet(any()))` findet keinen Treffer. |
+| `set_card_test.dart` | ✅ Bestanden | Fokusverwaltung und Keypad-Integration funktionieren wie erwartet. |
+| `device_test.dart` | ✅ Bestanden | Domain-Model-Logik unverändert stabil. |
+
+## Blocker & nächste Schritte
+
+* Die aktuelle Herangehensweise nach dem Motto „Vibecoding“ (trial & error ohne strukturiertes Debugging) bringt uns nicht weiter. Trotz mehrerer Anpassungsversuche lässt sich die fehlende `removeSet`-Interaktion nicht reproduzierbar triggern.
+* Mögliche Ursachen: 
+  * `Dismissible` löst im Test nicht den `onDismissed`-Callback aus (Timing/`pump`-Sequenz).
+  * `removeSet` wird mit einem anderen Index oder Argumenttyp aufgerufen; der `verify`-Matcher greift daher nicht.
+  * Der Provider-Mock ist nicht korrekt registriert (`registerFallbackValue`) oder der Test greift über einen Proxy auf eine andere Instanz zu.
+* Alternative Lösungswege:
+  * Nutzung eines `FakeDeviceProvider`, der die Methodenaufrufe protokolliert, statt `mocktail`-Verifikation.
+  * Integrationstest mit echtem `ChangeNotifierProvider`, um den Dismiss-Flow end-to-end abzudecken.
+  * Visuelles Debugging über `flutter run --profile` mit manuellen Interaktionen oder Einsatz des Flutter-Inspector, um den Swipe-Gesture-Fluss zu verfolgen.
+* Bis eine dieser Alternativen umgesetzt ist, sollten wir die fehlgeschlagene Assertion als bekannten Blocker dokumentieren, um Fehlinterpretationen im CI zu vermeiden.
 
 ## Ausführung der Tests
 
