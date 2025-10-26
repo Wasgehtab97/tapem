@@ -32,9 +32,62 @@ class _MockExerciseProvider extends Mock
     with ChangeNotifier
     implements ExerciseProvider {}
 
-class _MockKeypadController extends Mock
-    with ChangeNotifier
-    implements OverlayNumericKeypadController {}
+class _FakeKeypadController extends ChangeNotifier
+    implements OverlayNumericKeypadController {
+  TextEditingController? _target;
+  bool _isOpen = false;
+  double _contentHeight = 0.0;
+
+  @override
+  bool allowDecimal = true;
+
+  @override
+  double decimalStep = 2.5;
+
+  @override
+  double integerStep = 1.0;
+
+  @override
+  bool get isOpen => _isOpen;
+
+  @override
+  TextEditingController? get target => _target;
+
+  @override
+  double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
+
+  @override
+  void close() {
+    if (!_isOpen) {
+      return;
+    }
+    _isOpen = false;
+    _contentHeight = 0.0;
+    notifyListeners();
+  }
+
+  @override
+  void openFor(
+    TextEditingController controller, {
+    bool allowDecimal = true,
+    double? decimalStep,
+    double? integerStep,
+  }) {
+    _target = controller;
+    this.allowDecimal = allowDecimal;
+    if (decimalStep != null) {
+      this.decimalStep = decimalStep;
+    }
+    if (integerStep != null) {
+      this.integerStep = integerStep;
+    }
+    if (_isOpen) {
+      return;
+    }
+    _isOpen = true;
+    notifyListeners();
+  }
+}
 
 class _MockSessionTimerService extends Mock
     with ChangeNotifier
@@ -69,7 +122,7 @@ void main() {
   late _MockAuthProvider authProvider;
   late _MockTrainingPlanProvider trainingPlanProvider;
   late _MockExerciseProvider exerciseProvider;
-  late _MockKeypadController keypadController;
+  late OverlayNumericKeypadController keypadController;
   late _MockGetDeviceByNfcCode getDeviceByNfcCode;
   late _MockMembershipService membershipService;
   late _MockSessionTimerService sessionTimerService;
@@ -82,9 +135,7 @@ void main() {
     authProvider = _MockAuthProvider();
     trainingPlanProvider = _MockTrainingPlanProvider();
     exerciseProvider = _MockExerciseProvider();
-    keypadController = _MockKeypadController();
-    when(() => keypadController.keypadContentHeight).thenReturn(0.0);
-    when(() => keypadController.isOpen).thenReturn(false);
+    keypadController = _FakeKeypadController();
     getDeviceByNfcCode = _MockGetDeviceByNfcCode();
     membershipService = _MockMembershipService();
     sessionTimerService = _MockSessionTimerService();
@@ -205,12 +256,6 @@ void main() {
         .thenAnswer((_) async => null);
     when(() => membershipService.ensureMembership(any(), any()))
         .thenAnswer((_) async {});
-
-    when(() => keypadController.openFor(
-          any(),
-          allowDecimal: any(named: 'allowDecimal'),
-        )).thenAnswer((_) {});
-    when(() => keypadController.close()).thenAnswer((_) {});
 
     final remainingNotifier = ValueNotifier(Duration.zero);
     final runningNotifier = ValueNotifier(false);
