@@ -32,7 +32,11 @@ class _LoginFormState extends State<LoginForm> {
     }
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRouter.home,
+      (Route<dynamic> route) => false,
+      arguments: 1,
+    );
   }
 
   @override
