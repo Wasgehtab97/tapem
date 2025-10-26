@@ -7,6 +7,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/recording_navigator_observer.dart';
+import '../../helpers/widget_tester_extensions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +52,10 @@ void main() {
         'password123',
       );
       await tester.tap(find.widgetWithText(ElevatedButton, loc.confirmPasswordButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
+      await tester.pump();
+      await tester.pumpUntilVisible(find.text(loc.passwordResetSuccess));
 
       expect(fakeAuth.confirmPasswordResetCalled, isTrue);
       expect(fakeAuth.lastConfirmCode, 'abc');

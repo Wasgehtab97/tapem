@@ -10,6 +10,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/recording_navigator_observer.dart';
+import '../../helpers/widget_tester_extensions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +93,7 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
 
       final BuildContext context = tester.element(find.byType(RegistrationForm));
       final loc = AppLocalizations.of(context)!;
@@ -111,7 +113,8 @@ void main() {
 
       await tester.tap(find.widgetWithText(ElevatedButton, loc.registerButton));
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
+      await tester.pump();
 
       expect(provider.isLoggedIn, isTrue);
       expect(
@@ -145,6 +148,7 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
 
       final BuildContext context = tester.element(find.byType(RegistrationForm));
       final loc = AppLocalizations.of(context)!;
@@ -191,6 +195,7 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
 
       final BuildContext context = tester.element(find.byType(RegistrationForm));
       final loc = AppLocalizations.of(context)!;

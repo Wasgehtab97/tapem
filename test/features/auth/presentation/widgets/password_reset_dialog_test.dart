@@ -8,6 +8,7 @@ import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.d
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/widget_tester_extensions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +71,8 @@ void main() {
       await tester.pumpWidget(buildHarness(provider));
 
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.byType(AlertDialog));
 
       final BuildContext context = tester.element(find.byType(AlertDialog));
       final loc = AppLocalizations.of(context)!;
@@ -97,7 +99,8 @@ void main() {
       await tester.pumpWidget(buildHarness(provider));
 
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.byType(AlertDialog));
 
       final BuildContext context = tester.element(find.byType(AlertDialog));
       final loc = AppLocalizations.of(context)!;
@@ -107,7 +110,10 @@ void main() {
         'user@example.com',
       );
       await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(AlertDialog));
+      await tester.pump();
+      await tester.pumpUntilVisible(find.text(loc.passwordResetSent));
 
       expect(called, isTrue);
       expect(find.byType(AlertDialog), findsNothing);
@@ -127,7 +133,8 @@ void main() {
       await tester.pumpWidget(buildHarness(provider));
 
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.byType(AlertDialog));
 
       final BuildContext context = tester.element(find.byType(AlertDialog));
       final loc = AppLocalizations.of(context)!;

@@ -7,6 +7,7 @@ import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/widget_tester_extensions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -69,11 +70,13 @@ void main() {
       await tester.pumpWidget(buildHarness(provider));
 
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.byType(AlertDialog));
 
       await tester.enterText(find.byType(TextField), 'new-user');
       await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(AlertDialog));
 
       expect(provider.userName, 'new-user');
       expect(find.byType(AlertDialog), findsNothing);
@@ -91,7 +94,8 @@ void main() {
       await tester.pumpWidget(buildHarness(provider));
 
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.byType(AlertDialog));
 
       await tester.enterText(find.byType(TextField), 'taken');
       await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));

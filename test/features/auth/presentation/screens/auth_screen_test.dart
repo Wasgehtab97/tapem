@@ -9,6 +9,7 @@ import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/widget_tester_extensions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,7 @@ void main() {
 
       await tester.pumpWidget(buildApp(provider));
       await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
 
       final BuildContext context = tester.element(find.byType(AuthScreen));
       final loc = AppLocalizations.of(context)!;
@@ -75,12 +77,14 @@ void main() {
       expect(find.text(loc.gymCodeFieldLabel), findsNothing);
 
       await tester.tap(find.text(loc.registerButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilVisible(find.text(loc.gymCodeFieldLabel));
 
       expect(find.text(loc.gymCodeFieldLabel), findsOneWidget);
 
       await tester.tap(find.text(loc.loginButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilAbsent(find.text(loc.gymCodeFieldLabel));
 
       expect(find.text(loc.gymCodeFieldLabel), findsNothing);
     });
@@ -107,6 +111,7 @@ void main() {
 
       await tester.pumpWidget(buildApp(provider));
       await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
 
       await tester.runAsync(() async {
         provider.login('user@example.com', 'password123');
@@ -116,7 +121,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       completer.complete();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpUntilAbsent(find.byType(CircularProgressIndicator));
     });
   });
 }
