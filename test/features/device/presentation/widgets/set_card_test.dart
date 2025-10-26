@@ -76,7 +76,7 @@ void main() {
     when(() => keypad.close()).thenAnswer((_) {});
   });
 
-  Widget _buildTestApp() {
+  Widget buildTestApp() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<DeviceProvider>.value(value: provider),
@@ -99,7 +99,7 @@ void main() {
   }
 
   testWidgets('tapping weight field opens keypad and requests focus', (tester) async {
-    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(TextFormField).first);

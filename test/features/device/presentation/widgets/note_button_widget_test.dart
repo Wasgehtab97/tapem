@@ -21,7 +21,7 @@ void main() {
     when(() => provider.setNote(any())).thenAnswer((_) {});
   });
 
-  Widget _buildApp() {
+  Widget buildApp() {
     return ChangeNotifierProvider<DeviceProvider>.value(
       value: provider,
       child: MaterialApp(
@@ -38,7 +38,7 @@ void main() {
   testWidgets('saving a note forwards trimmed text to provider', (tester) async {
     when(() => provider.note).thenReturn('initial');
 
-    await tester.pumpWidget(_buildApp());
+    await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(FloatingActionButton));
@@ -54,7 +54,7 @@ void main() {
   testWidgets('deleting a note clears provider value', (tester) async {
     when(() => provider.note).thenReturn('existing');
 
-    await tester.pumpWidget(_buildApp());
+    await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(FloatingActionButton));

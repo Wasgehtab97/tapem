@@ -147,7 +147,7 @@ void main() {
     when(() => authProvider.userId).thenReturn('user');
     when(() => authProvider.showInLeaderboard).thenReturn(true);
 
-    when(() => exerciseProvider.exercises).thenReturn(const [
+    when(() => exerciseProvider.exercises).thenReturn([
           Exercise(id: 'ex', name: 'Exercise', userId: 'user'),
         ]);
 
@@ -168,7 +168,7 @@ void main() {
     when(() => keypadController.close()).thenAnswer((_) {});
   });
 
-  Widget _buildTestApp() {
+  Widget buildTestApp() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<DeviceProvider>.value(value: deviceProvider),
@@ -195,7 +195,7 @@ void main() {
   }
 
   testWidgets('tapping add set calls provider.addSet', (tester) async {
-    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
     final addFinder = find.text('Set hinzufügen');
@@ -207,7 +207,7 @@ void main() {
   });
 
   testWidgets('tapping remove set calls provider.removeSet', (tester) async {
-    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
     final dismissibleFinder = find.byType(Dismissible).first;
