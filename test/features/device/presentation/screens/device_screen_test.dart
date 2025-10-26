@@ -83,6 +83,8 @@ void main() {
     trainingPlanProvider = _MockTrainingPlanProvider();
     exerciseProvider = _MockExerciseProvider();
     keypadController = _MockKeypadController();
+    when(() => keypadController.keypadContentHeight).thenReturn(0.0);
+    when(() => keypadController.isOpen).thenReturn(false);
     getDeviceByNfcCode = _MockGetDeviceByNfcCode();
     membershipService = _MockMembershipService();
     sessionTimerService = _MockSessionTimerService();
