@@ -9,8 +9,8 @@ class DailyStatsCacheEntry {
     required this.cachedAt,
     required this.totalXp,
     required this.dayKey,
-    this.components = const [],
-    this.penalties = const [],
+    this.components = const <Map<String, dynamic>>[],
+    this.penalties = const <Map<String, dynamic>>[],
   });
 
   final int xp;
@@ -61,7 +61,7 @@ class DailyStatsCacheEntry {
 }
 
 List<Map<String, dynamic>> _decodeMapList(dynamic raw) {
-  if (raw is! List) return const [];
+  if (raw is! List) return const <Map<String, dynamic>>[];
   return raw
       .whereType<Map>()
       .map((entry) => entry.map((key, value) => MapEntry('$key', value)))
@@ -142,8 +142,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
       cachedAt: cachedAt,
       totalXp: totalXp ?? xp,
       dayKey: logicDayKey(cachedAt),
-      components: components ?? const [],
-      penalties: penalties ?? const [],
+      components: components ?? const <Map<String, dynamic>>[],
+      penalties: penalties ?? const <Map<String, dynamic>>[],
     );
     await prefs.setString(_key(gymId, userId), jsonEncode(entry.toJson()));
     return entry;
@@ -188,11 +188,11 @@ class DailyStatsCacheStore implements DailyStatsCache {
     final resolvedComponents = components ??
         (existing != null && existing.dayKey == dayKey
             ? existing.components
-            : const []);
+            : const <Map<String, dynamic>>[]);
     final resolvedPenalties = penalties ??
         (existing != null && existing.dayKey == dayKey
             ? existing.penalties
-            : const []);
+            : const <Map<String, dynamic>>[]);
 
     final entry = DailyStatsCacheEntry(
       xp: resolvedDailyXp,
@@ -236,10 +236,12 @@ class DailyStatsCacheStore implements DailyStatsCache {
         : existing.xp + delta;
     final adjustedDailyXp = dailyXp < 0 ? 0 : dailyXp;
     final adjustedTotal = totalXp < 0 ? 0 : totalXp;
-    final resolvedComponents =
-        existing != null && existing.dayKey == dayKey ? existing.components : const [];
-    final resolvedPenalties =
-        existing != null && existing.dayKey == dayKey ? existing.penalties : const [];
+    final resolvedComponents = existing != null && existing.dayKey == dayKey
+        ? existing.components
+        : const <Map<String, dynamic>>[];
+    final resolvedPenalties = existing != null && existing.dayKey == dayKey
+        ? existing.penalties
+        : const <Map<String, dynamic>>[];
 
     final entry = DailyStatsCacheEntry(
       xp: adjustedDailyXp,
