@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tapem/features/device/data/dtos/device_dto.dart';
@@ -9,51 +10,15 @@ import 'package:tapem/features/device/domain/models/device_session_snapshot.dart
 
 class _MockDeviceSource extends Mock implements FirestoreDeviceSource {}
 
-class _FakeDocumentReference extends Fake
-    implements DocumentReference<Map<String, dynamic>> {
-  @override
-  Future<void> update(Map<String, Object?> data) async {}
-}
-
-class _FakeQueryDocumentSnapshot extends Fake
-    implements QueryDocumentSnapshot<Map<String, dynamic>> {
-  _FakeQueryDocumentSnapshot(this._data, this._reference, this._id);
-
-  final Map<String, dynamic> _data;
-  final DocumentReference<Map<String, dynamic>> _reference;
-  final String _id;
-
-  @override
-  Map<String, dynamic> data() => _data;
-
-  @override
-  DocumentReference<Map<String, dynamic>> get reference => _reference;
-
-  @override
-  String get id => _id;
-}
-
-class _FakeQuerySnapshot extends Fake
-    implements QuerySnapshot<Map<String, dynamic>> {
-  _FakeQuerySnapshot(this._docs);
-
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs;
-
-  @override
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> get docs => _docs;
-}
-
 void main() {
   late _MockDeviceSource source;
   late DeviceRepositoryImpl repository;
-
-  setUpAll(() {
-    registerFallbackValue(_FakeDocumentReference());
-  });
+  late FakeFirebaseFirestore firestore;
 
   setUp(() {
     source = _MockDeviceSource();
     repository = DeviceRepositoryImpl(source);
+    firestore = FakeFirebaseFirestore();
   });
 
   group('DeviceRepositoryImpl', () {
@@ -88,12 +53,6 @@ void main() {
     });
 
     test('getDeviceByNfcCode returns device when available', () async {
-      final device = Device(
-        uid: 'd1',
-        id: 1,
-        name: 'Device',
-        nfcCode: 'CODE',
-      );
       when(() => source.getDevicesForGym('gym')).thenAnswer((_) async => [
             DeviceDto(
               uid: 'd1',
@@ -187,17 +146,18 @@ void main() {
     });
 
     test('fetchSessionSnapshotsPaginated maps snapshots and stores cursor', () async {
-      final doc = _FakeQueryDocumentSnapshot(
-        {
-          'sessionId': 's1',
-          'deviceId': 'd1',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'userId': 'u1',
-          'sets': const [],
-        },
-        _FakeDocumentReference(),
-        'doc1',
-      );
+      final collection =
+          firestore.collection('gyms/gym/devices/device/users/user/sessions');
+      await collection.add({
+        'sessionId': 's1',
+        'deviceId': 'd1',
+        'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+        'userId': 'u1',
+        'sets': const [],
+      });
+      final querySnapshot = await collection.get();
+      final doc = querySnapshot.docs.first;
+
       when(
         () => source.fetchSessionSnapshotsPage(
           gymId: 'gym',
@@ -207,7 +167,7 @@ void main() {
           limit: 10,
           startAfter: null,
         ),
-      ).thenAnswer((_) async => _FakeQuerySnapshot([doc]));
+      ).thenAnswer((_) async => querySnapshot);
 
       final results = await repository.fetchSessionSnapshotsPaginated(
         gymId: 'gym',
@@ -218,7 +178,7 @@ void main() {
 
       expect(results, hasLength(1));
       expect(results.first.sessionId, 's1');
-      expect(repository.lastSnapshotCursor, doc);
+      expect(repository.lastSnapshotCursor?.id, doc.id);
     });
 
     test('getSnapshotBySessionId delegates to source', () async {
