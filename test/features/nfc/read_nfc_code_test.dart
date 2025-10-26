@@ -19,14 +19,13 @@ void main() {
       useCase = ReadNfcCode(service);
     });
 
-    test('returns the raw stream from the service', () async {
-      final controller = StreamController<String>();
-      addTearDown(controller.close);
-      when(() => service.readStream()).thenAnswer((_) => controller.stream);
+    test('returns the raw stream from the service', () {
+      final stream = Stream<String>.empty();
+      when(() => service.readStream()).thenReturn(stream);
 
       final result = useCase.execute();
 
-      expect(result, same(controller.stream));
+      expect(result, same(stream));
     });
 
     test('forwards every NFC code emitted by the service', () async {
