@@ -9,7 +9,11 @@ import 'package:tapem/features/gym/data/repositories/gym_repository_impl.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 
 class RegistrationForm extends StatefulWidget {
-  const RegistrationForm({Key? key}) : super(key: key);
+  const RegistrationForm({Key? key, this.validateGymCode}) : super(key: key);
+
+  /// Optional override used in tests to validate gym codes without hitting
+  /// Firestore.
+  final Future<void> Function(String code)? validateGymCode;
 
   @override
   State<RegistrationForm> createState() => _RegistrationFormState();
@@ -41,10 +45,14 @@ class _RegistrationFormState extends State<RegistrationForm> {
     _formKey.currentState!.save();
     setState(() => _gymError = null);
 
-    final validator = ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
-
     try {
-      await validator.execute(_gymCode);
+      if (widget.validateGymCode != null) {
+        await widget.validateGymCode!(_gymCode);
+      } else {
+        final validator =
+            ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
+        await validator.execute(_gymCode);
+      }
     } on GymNotFoundException {
       if (!mounted) return;
       setState(() {

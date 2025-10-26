@@ -5,8 +5,13 @@ import '../../../../app_router.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String oobCode;
-  const ResetPasswordScreen({Key? key, required this.oobCode})
-    : super(key: key);
+  final fb_auth.FirebaseAuth? firebaseAuth;
+
+  const ResetPasswordScreen({
+    Key? key,
+    required this.oobCode,
+    this.firebaseAuth,
+  }) : super(key: key);
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -26,7 +31,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _error = null;
     });
     try {
-      await fb_auth.FirebaseAuth.instance.confirmPasswordReset(
+      final auth = widget.firebaseAuth ?? fb_auth.FirebaseAuth.instance;
+      await auth.confirmPasswordReset(
         code: widget.oobCode,
         newPassword: _password,
       );
