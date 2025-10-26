@@ -5,8 +5,8 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../../../helpers/fakes.dart';
-import '../../../helpers/recording_navigator_observer.dart';
+import '../../helpers/fakes.dart';
+import '../../helpers/recording_navigator_observer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -68,7 +68,7 @@ void main() {
 
     testWidgets('shows backend errors', (WidgetTester tester) async {
       final fakeAuth = FakeFirebaseAuth()
-        ..confirmResetError = const fb_auth.FirebaseAuthException(
+        ..confirmResetError = fb_auth.FirebaseAuthException(
           code: 'expired-action-code',
           message: 'Invalid or expired code',
         );
