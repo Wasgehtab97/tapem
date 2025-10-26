@@ -6,7 +6,7 @@ import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const channel = MethodChannel('flutter_nfc_kit');
+  const channel = MethodChannel('flutter_nfc_kit/method');
   final recordedCalls = <MethodCall>[];
   final availabilityQueue = <String>[];
   var throwOnWrite = false;
@@ -20,7 +20,7 @@ void main() {
         .setMockMethodCallHandler(channel, (MethodCall call) async {
       recordedCalls.add(call);
       switch (call.method) {
-        case 'nfcAvailability':
+        case 'getNFCAvailability':
           return availabilityQueue.isNotEmpty
               ? availabilityQueue.removeAt(0)
               : 'available';
@@ -79,7 +79,7 @@ void main() {
 
       expect(
         recordedCalls.map((call) => call.method),
-        contains('nfcAvailability'),
+        contains('getNFCAvailability'),
       );
     });
 
@@ -91,7 +91,7 @@ void main() {
 
       final methodNames = recordedCalls.map((call) => call.method).toList();
       expect(methodNames,
-          containsAllInOrder(['nfcAvailability', 'poll', 'writeNDEFRawRecords', 'finish']));
+          containsAllInOrder(['getNFCAvailability', 'poll', 'writeNDEFRawRecords', 'finish']));
 
       final pollCall =
           recordedCalls.firstWhere((call) => call.method == 'poll');
