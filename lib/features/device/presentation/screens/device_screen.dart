@@ -842,48 +842,57 @@ class _GroupedSetList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (header != null) header,
-          for (var index = 0; index < sets.length; index++) ...[
-            final setIndex = index;
-            final set = sets[setIndex];
-            Dismissible(
-              key: ValueKey('set-${set['number']}'),
-              direction: DismissDirection.endToStart,
-              background: const SizedBox.shrink(),
-              secondaryBackground: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                color: Colors.red.withOpacity(0.15),
-                child: const Icon(
-                  Icons.delete,
-                  semanticLabel: 'Löschen',
-                ),
-              ),
-              onDismissed: (_) {
-                final removedSource =
-                    setIndex < sets.length ? sets[setIndex] : set;
-                final removed = Map<String, dynamic>.from(removedSource);
-                onRemove(setIndex, removed);
-              },
-              child: SetCard(
-                key: setKeys[setIndex],
-                index: setIndex,
-                set: set,
-                size: SetCardSize.dense,
-                displayMode: SetCardDisplayMode.grouped,
-                groupedRadius: BorderRadius.only(
-                  topLeft: setIndex == 0 ? innerRadius.topLeft : Radius.zero,
-                  topRight: setIndex == 0 ? innerRadius.topRight : Radius.zero,
-                  bottomLeft: setIndex == sets.length - 1
-                      ? innerRadius.bottomLeft
-                      : Radius.zero,
-                  bottomRight: setIndex == sets.length - 1
-                      ? innerRadius.bottomRight
-                      : Radius.zero,
-                ),
-              ),
+          ...sets.asMap().entries.map(
+            (entry) => _buildSetItem(
+              context: context,
+              index: entry.key,
+              set: entry.value,
+              innerRadius: innerRadius,
             ),
-          ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSetItem({
+    required BuildContext context,
+    required int index,
+    required Map<String, dynamic> set,
+    required BorderRadius innerRadius,
+  }) {
+    return Dismissible(
+      key: ValueKey("set-${set['number']}"),
+      direction: DismissDirection.endToStart,
+      background: const SizedBox.shrink(),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: Colors.red.withOpacity(0.15),
+        child: const Icon(
+          Icons.delete,
+          semanticLabel: 'Löschen',
+        ),
+      ),
+      onDismissed: (_) {
+        final removedSource = index < sets.length ? sets[index] : set;
+        final removed = Map<String, dynamic>.from(removedSource);
+        onRemove(index, removed);
+      },
+      child: SetCard(
+        key: setKeys[index],
+        index: index,
+        set: set,
+        size: SetCardSize.dense,
+        displayMode: SetCardDisplayMode.grouped,
+        groupedRadius: BorderRadius.only(
+          topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
+          topRight: index == 0 ? innerRadius.topRight : Radius.zero,
+          bottomLeft:
+              index == sets.length - 1 ? innerRadius.bottomLeft : Radius.zero,
+          bottomRight:
+              index == sets.length - 1 ? innerRadius.bottomRight : Radius.zero,
+        ),
       ),
     );
   }
