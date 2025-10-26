@@ -12,7 +12,9 @@ import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dar
 import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/ui/timer/session_timer_service.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 
 class _MockDeviceProvider extends Mock
     with ChangeNotifier
@@ -33,6 +35,14 @@ class _MockExerciseProvider extends Mock
 class _MockKeypadController extends Mock
     with ChangeNotifier
     implements OverlayNumericKeypadController {}
+
+class _MockSessionTimerService extends Mock
+    with ChangeNotifier
+    implements SessionTimerService {}
+
+class _MockWorkoutSessionDurationService extends Mock
+    with ChangeNotifier
+    implements WorkoutSessionDurationService {}
 
 class _MockGetDeviceByNfcCode extends Mock implements GetDeviceByNfcCode {}
 
@@ -61,6 +71,8 @@ void main() {
   late _MockKeypadController keypadController;
   late _MockGetDeviceByNfcCode getDeviceByNfcCode;
   late _MockMembershipService membershipService;
+  late _MockSessionTimerService sessionTimerService;
+  late _MockWorkoutSessionDurationService workoutSessionDurationService;
   late Device device;
   late List<Map<String, dynamic>> sets;
 
@@ -72,6 +84,8 @@ void main() {
     keypadController = _MockKeypadController();
     getDeviceByNfcCode = _MockGetDeviceByNfcCode();
     membershipService = _MockMembershipService();
+    sessionTimerService = _MockSessionTimerService();
+    workoutSessionDurationService = _MockWorkoutSessionDurationService();
     device = Device(uid: 'd1', id: 1, name: 'Test Device');
     sets = [
       {
@@ -194,6 +208,26 @@ void main() {
           allowDecimal: any(named: 'allowDecimal'),
         )).thenAnswer((_) {});
     when(() => keypadController.close()).thenAnswer((_) {});
+
+    final remainingNotifier = ValueNotifier(Duration.zero);
+    final runningNotifier = ValueNotifier(false);
+    when(() => sessionTimerService.remaining).thenReturn(remainingNotifier);
+    when(() => sessionTimerService.running).thenReturn(runningNotifier);
+    when(() => sessionTimerService.total).thenReturn(const Duration(minutes: 2));
+    when(() => sessionTimerService.selectedDuration)
+        .thenReturn(const Duration(minutes: 2));
+    when(() => sessionTimerService.addTickListener(any())).thenAnswer((_) {});
+    when(() => sessionTimerService.removeTickListener(any())).thenAnswer((_) {});
+    when(() => sessionTimerService.changeDuration(any())).thenAnswer((_) {});
+    when(() => sessionTimerService.start()).thenAnswer((_) {});
+    when(() => sessionTimerService.startWith(any())).thenAnswer((_) {});
+    when(() => sessionTimerService.stop()).thenAnswer((_) {});
+
+    when(() => workoutSessionDurationService.isRunning).thenReturn(false);
+    when(() => workoutSessionDurationService.tickStream)
+        .thenAnswer((_) => const Stream<Duration>.empty());
+    when(() => workoutSessionDurationService.elapsed)
+        .thenReturn(Duration.zero);
   });
 
   Widget buildTestApp() {
@@ -207,6 +241,12 @@ void main() {
         ChangeNotifierProvider<ExerciseProvider>.value(value: exerciseProvider),
         ChangeNotifierProvider<OverlayNumericKeypadController>.value(
           value: keypadController,
+        ),
+        ChangeNotifierProvider<SessionTimerService>.value(
+          value: sessionTimerService,
+        ),
+        ChangeNotifierProvider<WorkoutSessionDurationService>.value(
+          value: workoutSessionDurationService,
         ),
         Provider<GetDeviceByNfcCode>.value(value: getDeviceByNfcCode),
         Provider<MembershipService>.value(value: membershipService),
