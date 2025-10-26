@@ -1,6 +1,6 @@
-# Geräte- und NFC-Feature – Testdokumentation
+# Geräte-Feature – Testdokumentation
 
-Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräteverwaltung sowie die NFC-Funktionalitäten zusammen. Grundlage sind die in `docs/Dokumentation/` abgelegten Feature-Beschreibungen.
+Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräteverwaltung zusammen. Grundlage sind die in `docs/Dokumentation/` abgelegten Feature-Beschreibungen.
 
 ## Überblick
 
@@ -9,13 +9,12 @@ Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräte
 | Unit-Tests | `Device.fromJson` (Fallback für Muskelgruppen) | `test/features/device/domain/models/device_test.dart` |
 | Widget-Tests | `DeviceScreen` (Set-Erstellung/-Entfernung) | `test/features/device/presentation/screens/device_screen_test.dart` |
 | Widget-Tests | `SetCard` (Keypad-Fokussteuerung) | `test/features/device/presentation/widgets/set_card_test.dart` |
-| Unit-Tests | `ReadNfcCode` UseCase (Weiterleitung des Datenstroms) | `test/features/nfc/read_nfc_code_test.dart` |
 
 ## Testumgebung und Mocking
 
-* **Device-spezifische Provider**: Die Tests verwenden `mocktail`, um `DeviceProvider` und abhängige Provider (u. a. `AuthProvider`, `TrainingPlanProvider`, `ExerciseProvider`) zu simulieren. Für `DeviceSetFieldFocus` wird ein Fallback-Enum registriert, damit Matcherausdrücke mit `any()` auch in Dart's Sound Null Safety gültig bleiben.
+* **Device-abhängige Provider**: Die Tests verwenden `mocktail`, um `DeviceProvider` und zugehörige Provider wie `AuthProvider`, `TrainingPlanProvider` und `ExerciseProvider` zu simulieren. Fallbacks für `Device`, `Exercise`, `TextEditingController` sowie das Enum `DeviceSetFieldFocus` stellen sicher, dass `any()`-Matcher mit Dart's Sound Null Safety kompatibel bleiben.
+* **Snapshot-Pagination**: Die Widget-Tests stubben `hasMoreSnapshots`, `prefetchSnapshots` und `loadMoreSnapshots`, damit `DevicePager` in der `DeviceScreen` keine Nullwerte erhält und keine unnötigen Timer startet.
 * **OverlayNumericKeypadController**: Der Keypad-Controller wird vollständig gemockt. Die Tests stubben ausschließlich die tatsächlich genutzten Parameter (`allowDecimal`), wodurch unerwartete Matcher-Fehler bei optionalen Argumenten vermieden werden.
-* **NFC-Service**: Der `ReadNfcCode`-Test nutzt einen `StreamController<String>` und reicht exakt dieselbe Stream-Instanz aus dem Mock zurück, um die Identitätserwartung (`same()`) zu erfüllen.
 
 ## Gerätebezogene Tests
 
@@ -29,12 +28,6 @@ Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräte
 ### SetCard (`test/features/device/presentation/widgets/set_card_test.dart`)
 1. **Keypad-Interaktion**: Sicherstellt, dass das Tippen auf das Gewichts-Eingabefeld den Fokus korrekt beim Provider registriert und den Keypad-Controller mit `allowDecimal: true` öffnet.
 
-## NFC-bezogene Tests
-
-### ReadNfcCode (`test/features/nfc/read_nfc_code_test.dart`)
-1. **Stream-Durchleitung**: Bestätigt, dass `execute()` exakt dieselbe Stream-Instanz wie der `NfcService` liefert, wodurch `same()` erfolgreich ist.
-2. **Event-Weitergabe**: Überprüft die vollständige Weiterleitung einer Beispielsequenz (`a`, `b`, `c`) inklusive `emitsDone`.
-
 ## Ausführung der Tests
 
 Die beschriebenen Tests lassen sich gezielt oder gesammelt mit folgenden Kommandos ausführen:
@@ -43,7 +36,6 @@ Die beschriebenen Tests lassen sich gezielt oder gesammelt mit folgenden Kommand
 flutter test test/features/device/domain/models/device_test.dart
 flutter test test/features/device/presentation/screens/device_screen_test.dart
 flutter test test/features/device/presentation/widgets/set_card_test.dart
-flutter test test/features/nfc/read_nfc_code_test.dart
 ```
 
 Alle Tests arbeiten mit gemockten Abhängigkeiten, sodass keine externe Hardware oder Backend-Verbindung erforderlich ist.
