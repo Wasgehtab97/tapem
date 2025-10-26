@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.dart';
@@ -27,7 +26,7 @@ void main() {
   Future<AuthProvider> createProvider({
     required FakeAuthRepository repository,
   }) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefsGetter = createInMemorySharedPreferences();
     final provider = AuthProvider(
       repo: repository,
       authManager: FakeFirebaseAuthManager(
@@ -35,6 +34,7 @@ void main() {
         onGetClaims: (_) async => const <String, dynamic>{'role': 'member'},
       ),
       sessionDraftRepository: FakeSessionDraftRepository(),
+      sharedPreferencesProvider: prefsGetter,
     );
     await Future<void>.delayed(Duration.zero);
     return provider;
