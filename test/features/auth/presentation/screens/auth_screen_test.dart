@@ -109,7 +109,7 @@ void main() {
       await tester.pump();
 
       await tester.runAsync(() async {
-        provider.login('user@example.com', 'password123');
+        await provider.login('user@example.com', 'password123');
       });
       await tester.pump();
 
