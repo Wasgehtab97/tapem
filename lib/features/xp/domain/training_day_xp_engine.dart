@@ -352,20 +352,17 @@ class TrainingDayXpEngine {
           Duration(days: _config.streakBreakDaysWithoutTraining),
         ),
       );
-      final delta = -_config.streakBreakPenalty;
-      runningTotal += delta;
-      events.add(
-        XpLedgerEvent(
-          type: XpLedgerEventType.streakBreakPenalty,
-          day: breakEventDay,
-          xpDelta: delta,
-          metadata: {
-            'gapIndex': gapIndex,
-            'idleDays': gapDays,
-            'streakBeforeBreak': streakBeforeBreak,
-          },
-          runningTotalXp: runningTotal,
-        ),
+      runningTotal = _recordPenaltyEvent(
+        events: events,
+        type: XpLedgerEventType.streakBreakPenalty,
+        day: breakEventDay,
+        baseDelta: -_config.streakBreakPenalty,
+        runningTotal: runningTotal,
+        metadata: {
+          'gapIndex': gapIndex,
+          'idleDays': gapDays,
+          'streakBeforeBreak': streakBeforeBreak,
+        },
       );
     }
 
@@ -376,24 +373,63 @@ class TrainingDayXpEngine {
           Duration(days: week * _config.missedWeekSpanDays),
         ),
       );
-      final delta = -_config.missedWeekPenalty;
-      runningTotal += delta;
-      events.add(
-        XpLedgerEvent(
-          type: XpLedgerEventType.missedWeekPenalty,
-          day: penaltyDay,
-          xpDelta: delta,
-          metadata: {
-            'gapIndex': gapIndex,
-            'idleDays': gapDays,
-            'missedWeekNumber': week,
-          },
-          runningTotalXp: runningTotal,
-        ),
+      runningTotal = _recordPenaltyEvent(
+        events: events,
+        type: XpLedgerEventType.missedWeekPenalty,
+        day: penaltyDay,
+        baseDelta: -_config.missedWeekPenalty,
+        runningTotal: runningTotal,
+        metadata: {
+          'gapIndex': gapIndex,
+          'idleDays': gapDays,
+          'missedWeekNumber': week,
+        },
       );
     }
 
     return runningTotal;
+  }
+
+  int _recordPenaltyEvent({
+    required List<XpLedgerEvent> events,
+    required XpLedgerEventType type,
+    required LedgerDay day,
+    required int baseDelta,
+    required int runningTotal,
+    Map<String, Object?> metadata = const {},
+  }) {
+    final delta = _clampPenaltyDelta(
+      runningTotal: runningTotal,
+      baseDelta: baseDelta,
+    );
+    final nextTotal = runningTotal + delta;
+    events.add(
+      XpLedgerEvent(
+        type: type,
+        day: day,
+        xpDelta: delta,
+        metadata: metadata,
+        runningTotalXp: nextTotal,
+      ),
+    );
+    return nextTotal;
+  }
+
+  int _clampPenaltyDelta({
+    required int runningTotal,
+    required int baseDelta,
+  }) {
+    if (_config.minTotalXp == null || baseDelta >= 0) {
+      return baseDelta;
+    }
+
+    final minTotal = _config.minTotalXp!;
+    final minDelta = minTotal - runningTotal;
+    if (minDelta >= 0) {
+      return 0;
+    }
+
+    return math.max(baseDelta, minDelta);
   }
 
   int? _resolveStreakBonus(int streak) {
