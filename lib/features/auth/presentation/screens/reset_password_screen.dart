@@ -42,7 +42,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
         ),
       );
-      Navigator.of(context).pushReplacementNamed(AppRouter.auth);
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRouter.auth, (Route<dynamic> route) => false);
     } on fb_auth.FirebaseAuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
