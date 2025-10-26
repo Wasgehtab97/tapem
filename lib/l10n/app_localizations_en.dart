@@ -691,6 +691,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get storySessionDailyXpGrossLabel => 'Gross reward';
+
+  @override
+  String get storySessionDailyXpNetLabel => 'Net XP change';
+
+  @override
+  String get storySessionDailyXpFloorAppliedNotice =>
+      'Includes minimum balance adjustment';
+
+  @override
+  String get storySessionDailyXpPreviousTotalLabel => 'Balance before day';
+
+  @override
+  String get storySessionDailyXpResultingTotalLabel => 'Balance after day';
+
+  @override
+  String get storySessionDailyXpPenaltiesLabel => 'Penalties';
+
+  @override
   String get storySessionDailyXpBreakdownTitle => "Today's XP breakdown";
 
   @override

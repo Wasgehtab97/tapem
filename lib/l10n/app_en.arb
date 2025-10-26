@@ -872,6 +872,30 @@
   "storySessionTitle": "Session Highlights",
   "storySessionDailyXpTitle": "Daily XP",
   "storySessionDailyXpValue": "{xp} XP",
+  "storySessionDailyXpGrossLabel": "Gross reward",
+  "@storySessionDailyXpGrossLabel": {
+    "description": "Label for the gross XP value in the session story dialog banner"
+  },
+  "storySessionDailyXpNetLabel": "Net XP change",
+  "@storySessionDailyXpNetLabel": {
+    "description": "Label for the net XP change in the session story dialog banner"
+  },
+  "storySessionDailyXpFloorAppliedNotice": "Includes minimum balance adjustment",
+  "@storySessionDailyXpFloorAppliedNotice": {
+    "description": "Hint shown when the XP floor was applied"
+  },
+  "storySessionDailyXpPreviousTotalLabel": "Balance before day",
+  "@storySessionDailyXpPreviousTotalLabel": {
+    "description": "Label for the previous XP total in the session story dialog banner"
+  },
+  "storySessionDailyXpResultingTotalLabel": "Balance after day",
+  "@storySessionDailyXpResultingTotalLabel": {
+    "description": "Label for the resulting XP total in the session story dialog banner"
+  },
+  "storySessionDailyXpPenaltiesLabel": "Penalties",
+  "@storySessionDailyXpPenaltiesLabel": {
+    "description": "Label for the penalties summary in the session story dialog footer"
+  },
   "storySessionDailyXpBreakdownTitle": "Today's XP breakdown",
   "storySessionDailyXpPenaltyTitle": "Penalties applied",
   "storySessionDailyXpComponentBase": "Base reward",

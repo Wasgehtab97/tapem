@@ -9,6 +9,7 @@ class DailyStatsCacheEntry {
     required this.cachedAt,
     required this.totalXp,
     required this.dayKey,
+    this.computedTotalXp,
     this.components = const <Map<String, dynamic>>[],
     this.penalties = const <Map<String, dynamic>>[],
   });
@@ -17,6 +18,7 @@ class DailyStatsCacheEntry {
   final DateTime cachedAt;
   final int totalXp;
   final String dayKey;
+  final int? computedTotalXp;
   final List<Map<String, dynamic>> components;
   final List<Map<String, dynamic>> penalties;
 
@@ -29,6 +31,7 @@ class DailyStatsCacheEntry {
         'totalXp': totalXp,
         'dayKey': dayKey,
         'cachedAt': cachedAt.toIso8601String(),
+        if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
         if (components.isNotEmpty) 'components': components,
         if (penalties.isNotEmpty) 'penalties': penalties,
       };
@@ -44,9 +47,11 @@ class DailyStatsCacheEntry {
       return null;
     }
     final totalValue = (json['totalXp'] as num?)?.toInt();
+    final computedValue = (json['computedTotalXp'] as num?)?.toInt();
     final storedDayKey = json['dayKey'] as String? ?? logicDayKey(timestamp);
     final rawXp = xpValue.toInt();
     final totalXp = totalValue ?? rawXp;
+    final computedTotalXp = computedValue ?? totalXp;
     final components = _decodeMapList(json['components']);
     final penalties = _decodeMapList(json['penalties']);
     return DailyStatsCacheEntry(
@@ -54,6 +59,7 @@ class DailyStatsCacheEntry {
       cachedAt: timestamp,
       totalXp: totalXp,
       dayKey: storedDayKey,
+      computedTotalXp: computedTotalXp,
       components: components,
       penalties: penalties,
     );
@@ -77,6 +83,7 @@ abstract class DailyStatsCache {
     int xp,
     DateTime cachedAt, {
     int? totalXp,
+    int? computedTotalXp,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   });
@@ -87,6 +94,7 @@ abstract class DailyStatsCache {
     int totalXp,
     DateTime cachedAt, {
     int? dayXp,
+    int? computedTotalXp,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   });
@@ -133,6 +141,7 @@ class DailyStatsCacheStore implements DailyStatsCache {
     int xp,
     DateTime cachedAt, {
     int? totalXp,
+    int? computedTotalXp,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   }) async {
@@ -142,6 +151,7 @@ class DailyStatsCacheStore implements DailyStatsCache {
       cachedAt: cachedAt,
       totalXp: totalXp ?? xp,
       dayKey: logicDayKey(cachedAt),
+      computedTotalXp: computedTotalXp ?? totalXp ?? xp,
       components: components ?? const <Map<String, dynamic>>[],
       penalties: penalties ?? const <Map<String, dynamic>>[],
     );
@@ -156,6 +166,7 @@ class DailyStatsCacheStore implements DailyStatsCache {
     int totalXp,
     DateTime cachedAt, {
     int? dayXp,
+    int? computedTotalXp,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   }) async {
@@ -199,6 +210,7 @@ class DailyStatsCacheStore implements DailyStatsCache {
       cachedAt: cachedAt,
       totalXp: totalXp,
       dayKey: dayKey,
+      computedTotalXp: computedTotalXp ?? totalXp,
       components: resolvedComponents,
       penalties: resolvedPenalties,
     );
@@ -248,6 +260,7 @@ class DailyStatsCacheStore implements DailyStatsCache {
       cachedAt: now,
       totalXp: adjustedTotal,
       dayKey: dayKey,
+      computedTotalXp: adjustedTotal,
       components: resolvedComponents,
       penalties: resolvedPenalties,
     );

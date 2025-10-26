@@ -851,6 +851,7 @@ class StorySessionService {
         cacheDaily = StoryDailyXp(
           xp: xpEntry.xp,
           totalXp: xpEntry.totalXp,
+          computedTotalXp: xpEntry.computedTotalXp,
           components: _mapComponents(xpEntry.components),
           penalties: _mapPenalties(xpEntry.penalties),
         );
@@ -931,12 +932,14 @@ StoryDailyXp _dailyXpFromDoc(
 }) {
   final xp = (data['xp'] as num?)?.toInt() ?? 0;
   final totalXp = (data['totalXp'] as num?)?.toInt();
+  final computedTotal = (data['computedTotalXp'] as num?)?.toInt();
   final runningTotal = (data['runningTotalXp'] as num?)?.toInt();
   final metadata = _coerceMetadata(data['metadata']);
   final components = _mapComponents(data['components']);
   return StoryDailyXp(
     xp: xp,
     totalXp: totalXp,
+    computedTotalXp: computedTotal,
     runningTotalXp: runningTotal,
     metadata: metadata,
     components: components,
@@ -982,6 +985,7 @@ List<StoryXpPenalty> _mapPenalties(dynamic raw) {
 StoryDailyXp _mergeDailyXpDetails(StoryDailyXp incoming, StoryDailyXp existing) {
   final xp = incoming.xp != 0 || existing.xp == 0 ? incoming.xp : existing.xp;
   final totalXp = incoming.totalXp ?? existing.totalXp;
+  final computedTotalXp = incoming.computedTotalXp ?? existing.computedTotalXp;
   final runningTotalXp = incoming.runningTotalXp ?? existing.runningTotalXp;
   final metadata = incoming.metadata.isNotEmpty ? incoming.metadata : existing.metadata;
   final components = incoming.components.isNotEmpty
@@ -993,6 +997,7 @@ StoryDailyXp _mergeDailyXpDetails(StoryDailyXp incoming, StoryDailyXp existing) 
   return StoryDailyXp(
     xp: xp,
     totalXp: totalXp,
+    computedTotalXp: computedTotalXp,
     runningTotalXp: runningTotalXp,
     metadata: metadata,
     components: components,
