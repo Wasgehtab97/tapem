@@ -5,5 +5,8 @@ class ReadNfcCode {
   final NfcService _service;
   ReadNfcCode(this._service);
 
-  Stream<String> execute() => _service.readStream();
+  Stream<String> execute() {
+    final stream = _service.readStream();
+    return stream;
+  }
 }
