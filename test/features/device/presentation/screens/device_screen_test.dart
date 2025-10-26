@@ -62,6 +62,7 @@ void main() {
     registerFallbackValue(_FakeExercise());
     registerFallbackValue(_FakeTextEditingController());
     registerFallbackValue(DeviceSetFieldFocus.weight);
+    registerFallbackValue(Duration.zero);
   });
 
   late _MockDeviceProvider deviceProvider;

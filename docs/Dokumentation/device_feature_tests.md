@@ -12,7 +12,7 @@ Diese Dokumentation fasst die relevanten Unit- und Widget-Tests für die Geräte
 
 ## Testumgebung und Mocking
 
-* **Device-abhängige Provider**: Die Tests verwenden `mocktail`, um `DeviceProvider` und zugehörige Provider wie `AuthProvider`, `TrainingPlanProvider` und `ExerciseProvider` zu simulieren. Fallbacks für `Device`, `Exercise`, `TextEditingController` sowie das Enum `DeviceSetFieldFocus` stellen sicher, dass `any()`-Matcher mit Dart's Sound Null Safety kompatibel bleiben.
+* **Device-abhängige Provider**: Die Tests verwenden `mocktail`, um `DeviceProvider` und zugehörige Provider wie `AuthProvider`, `TrainingPlanProvider` und `ExerciseProvider` zu simulieren. Fallbacks für `Device`, `Exercise`, `TextEditingController`, das Enum `DeviceSetFieldFocus` sowie `Duration.zero` stellen sicher, dass `any()`-Matcher mit Dart's Sound Null Safety kompatibel bleiben.
 * **Snapshot-Pagination**: Die Widget-Tests stubben `hasMoreSnapshots`, `prefetchSnapshots` und `loadMoreSnapshots`, damit `DevicePager` in der `DeviceScreen` keine Nullwerte erhält und keine unnötigen Timer startet.
 * **OverlayNumericKeypadController**: Der Keypad-Controller wird vollständig gemockt. Die Tests stubben ausschließlich die tatsächlich genutzten Parameter (`allowDecimal`), wodurch unerwartete Matcher-Fehler bei optionalen Argumenten vermieden werden.
 
