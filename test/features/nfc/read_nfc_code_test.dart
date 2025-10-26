@@ -20,12 +20,14 @@ void main() {
     });
 
     test('returns the raw stream from the service', () {
-      final stream = Stream<String>.empty();
-      when(() => service.readStream()).thenReturn(stream);
+      final controller = StreamController<String>();
+      addTearDown(controller.close);
+
+      when(() => service.readStream()).thenReturn(controller.stream);
 
       final result = useCase.execute();
 
-      expect(result, same(stream));
+      expect(result, same(controller.stream));
       verify(() => service.readStream()).called(1);
     });
 
