@@ -65,7 +65,7 @@ Diese Dokumentation beschreibt alle aktuellen Tests des Auth-Features und erläu
 ## Widget-Tests für Auth-Komponenten
 
 ### LoginForm
-1. **Credential-Submit navigiert nach Erfolg**: Testet Eingabe von Mail/Passwort, prüft `login`-Aufruf, `notifyListeners`-Sequenz und Navigation zur Home-Route.
+1. **Credential-Submit navigiert nach Erfolg**: Testet Eingabe von Mail/Passwort, überprüft den erwarteten `login`-Aufruf des Providers und stellt sicher, dass nach dem Abschließen des Futures zur Home-Route navigiert wird.
 2. **Fehleranzeige**: Simuliert Fehlerantwort des Providers und erwartet gerenderte Fehlermeldung.
 3. **Ladeindikator**: Erzwingt `isLoading = true`, überprüft deaktivierten Button und sichtbaren `CircularProgressIndicator`.
 
@@ -77,6 +77,13 @@ Diese Dokumentation beschreibt alle aktuellen Tests des Auth-Features und erläu
 ### Username-Dialog (`showUsernameDialog`)
 7. **Dialog schließt nach erfolgreichem Speichern**: `setUsername` liefert `true`; Dialog verschwindet nach `pumpAndSettle`.
 8. **Fehler bleibt sichtbar**: `setUsername` gibt `false` zurück, Provider setzt Fehlertext; AlertDialog bleibt geöffnet und zeigt Meldung.
+
+## Aktuelle Lücken und mögliche Ergänzungen
+
+* **Registrierungs-Flow ohne Widget-Tests**: `RegistrationForm` (inkl. Gym-Code-Validierung, Sperrlogik nach Fehlversuchen und Snackbar-Feedback) wird aktuell nicht durch Widget-Tests abgesichert.
+* **AuthScreen ohne UI-Tests**: Der Tab-basierte Wechsel zwischen Login und Registrierung sowie der globale Lade-Overlay des `AuthScreen` sind ungetestet.
+* **ResetPasswordScreen ohne Abdeckung**: Für `ResetPasswordScreen` existieren weder Widget- noch Integrationstests, obwohl dort Interaktionen mit `FirebaseAuth.confirmPasswordReset` stattfinden.
+* **Validierungs- und Fehler-Edge-Cases**: Formularvalidierungen (z. B. ungültige E-Mails oder zu kurze Passwörter) sowie Snackbar-Ausgaben werden momentan nicht explizit geprüft.
 
 ## Ausführung der Tests
 
