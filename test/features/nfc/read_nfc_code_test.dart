@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tapem/features/nfc/data/nfc_service.dart';
@@ -19,14 +17,13 @@ void main() {
       useCase = ReadNfcCode(service);
     });
 
-    test('returns the raw stream from the service', () async {
-      final controller = StreamController<String>();
-      addTearDown(controller.close);
-      when(() => service.readStream()).thenAnswer((_) => controller.stream);
+    test('returns the raw stream from the service', () {
+      final stream = Stream<String>.empty();
+      when(() => service.readStream()).thenAnswer((_) => stream);
 
       final result = useCase.execute();
 
-      expect(result, same(controller.stream));
+      expect(result, same(stream));
     });
 
     test('forwards every NFC code emitted by the service', () async {
