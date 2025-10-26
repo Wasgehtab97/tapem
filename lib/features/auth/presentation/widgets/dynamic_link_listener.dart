@@ -33,11 +33,29 @@ class _DynamicLinkListenerState extends State<DynamicLinkListener> {
   }
 
   Future<void> _initLinks() async {
-    final links = FirebaseDynamicLinks.instance;
-    final initial = await (widget.getInitialLink ?? () => links.getInitialLink())();
-    if (initial != null) _handleLink(initial);
-    final stream = widget.onLinkStream ?? links.onLink;
-    _linkSubscription = stream.listen(_handleLink);
+    FirebaseDynamicLinks? links;
+
+    Future<PendingDynamicLinkData?> getInitialLink() {
+      if (widget.getInitialLink != null) {
+        return widget.getInitialLink!();
+      }
+      links ??= FirebaseDynamicLinks.instance;
+      return links!.getInitialLink();
+    }
+
+    Stream<PendingDynamicLinkData> getOnLinkStream() {
+      if (widget.onLinkStream != null) {
+        return widget.onLinkStream!;
+      }
+      links ??= FirebaseDynamicLinks.instance;
+      return links!.onLink;
+    }
+
+    final initial = await getInitialLink();
+    if (initial != null) {
+      _handleLink(initial);
+    }
+    _linkSubscription = getOnLinkStream().listen(_handleLink);
   }
 
   void _handleLink(PendingDynamicLinkData data) {
