@@ -60,30 +60,41 @@ class Device {
     secondaryMuscleGroups: secondaryMuscleGroups ?? this.secondaryMuscleGroups,
   );
 
-  factory Device.fromJson(Map<String, dynamic> json) => Device(
-    uid: json['uid'] as String,
-    id: json['id'] as int? ?? 0,
-    name: json['name'] as String,
-    description: json['description'] as String? ?? '',
-    nfcCode: json['nfcCode'] as String?,
-    isMulti: json['isMulti'] as bool? ?? false,
-    muscleGroupIds:
-        (json['muscleGroupIds'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-    primaryMuscleGroups:
-        (json['primaryMuscleGroups'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-    secondaryMuscleGroups:
-        (json['secondaryMuscleGroups'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-    muscleGroups:
-        (json['muscleGroups'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-  );
+  factory Device.fromJson(Map<String, dynamic> json) {
+    final primary = (json['primaryMuscleGroups'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList();
+    final secondary = (json['secondaryMuscleGroups'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList();
+
+    List<String>? muscleGroups;
+    if (json.containsKey('muscleGroups')) {
+      final rawMuscleGroups = json['muscleGroups'];
+      if (rawMuscleGroups is List) {
+        muscleGroups = rawMuscleGroups.map((e) => e.toString()).toList();
+      } else if (rawMuscleGroups != null) {
+        muscleGroups = [rawMuscleGroups.toString()];
+      } else {
+        muscleGroups = null;
+      }
+    }
+
+    return Device(
+      uid: json['uid'] as String,
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String,
+      description: json['description'] as String? ?? '',
+      nfcCode: json['nfcCode'] as String?,
+      isMulti: json['isMulti'] as bool? ?? false,
+      muscleGroupIds: (json['muscleGroupIds'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      primaryMuscleGroups: primary,
+      secondaryMuscleGroups: secondary,
+      muscleGroups: muscleGroups ?? [...primary, ...secondary],
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,

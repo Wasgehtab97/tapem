@@ -45,6 +45,7 @@ void main() {
     registerFallbackValue(_FakeDevice());
     registerFallbackValue(_FakeExercise());
     registerFallbackValue(_FakeTextEditingController());
+    registerFallbackValue(DeviceSetFieldFocus.weight);
   });
 
   late _MockDeviceProvider deviceProvider;
@@ -162,8 +163,6 @@ void main() {
     when(() => keypadController.openFor(
           any(),
           allowDecimal: any(named: 'allowDecimal'),
-          decimalStep: any(named: 'decimalStep'),
-          integerStep: any(named: 'integerStep'),
         )).thenAnswer((_) {});
     when(() => keypadController.close()).thenAnswer((_) {});
   });

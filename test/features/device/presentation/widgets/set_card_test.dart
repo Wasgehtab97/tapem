@@ -22,6 +22,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_FakeTextEditingController());
+    registerFallbackValue(DeviceSetFieldFocus.weight);
   });
 
   late _MockDeviceProvider provider;
@@ -70,8 +71,6 @@ void main() {
     when(() => keypad.openFor(
           any(),
           allowDecimal: any(named: 'allowDecimal'),
-          decimalStep: any(named: 'decimalStep'),
-          integerStep: any(named: 'integerStep'),
         )).thenAnswer((_) {});
     when(() => keypad.close()).thenAnswer((_) {});
   });
@@ -112,7 +111,6 @@ void main() {
         dropIndex: any(named: 'dropIndex'),
       ),
     ).called(1);
-    verify(() => keypad.openFor(any(), allowDecimal: true, decimalStep: any(named: 'decimalStep'), integerStep: any(named: 'integerStep')))
-        .called(1);
+    verify(() => keypad.openFor(any(), allowDecimal: true)).called(1);
   });
 }
