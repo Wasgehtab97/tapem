@@ -9,11 +9,16 @@ import 'package:tapem/features/gym/data/repositories/gym_repository_impl.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 
 class RegistrationForm extends StatefulWidget {
-  const RegistrationForm({Key? key, this.validateGymCode}) : super(key: key);
+  const RegistrationForm({Key? key, this.validateGymCode, this.lockDuration})
+      : super(key: key);
 
   /// Optional override used in tests to validate gym codes without hitting
   /// Firestore.
   final Future<void> Function(String code)? validateGymCode;
+
+  /// Optional override used in tests to shorten the lock duration so that
+  /// timers don't keep widget tests alive for the full production timeout.
+  final Duration? lockDuration;
 
   @override
   State<RegistrationForm> createState() => _RegistrationFormState();
@@ -30,7 +35,13 @@ class _RegistrationFormState extends State<RegistrationForm> {
   bool _isLocked = false;
   Timer? _lockTimer;
   static const _maxAttempts = 3;
-  static const _lockDuration = Duration(seconds: 30);
+  static const bool _isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
+  static const Duration _defaultLockDuration = _isFlutterTest
+      ? Duration(milliseconds: 100)
+      : Duration(seconds: 30);
+
+  Duration get _effectiveLockDuration =>
+      widget.lockDuration ?? _defaultLockDuration;
 
   @override
   void dispose() {
@@ -61,7 +72,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
       });
       if (_attempts >= _maxAttempts) {
         setState(() => _isLocked = true);
-        _lockTimer = Timer(_lockDuration, () {
+        _lockTimer?.cancel();
+        _lockTimer = Timer(_effectiveLockDuration, () {
           if (!mounted) return;
           setState(() {
             _isLocked = false;
