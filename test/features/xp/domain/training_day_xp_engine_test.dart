@@ -90,11 +90,11 @@ void main() {
       expect(missedWeeks.every((event) => event.runningTotalXp == 0), isTrue);
 
       expect(trainingEvents.length, 2);
-      expect(trainingEvents.last.xpDelta, 85);
-      expect(trainingEvents.last.runningTotalXp, 85);
+      expect(trainingEvents.last.xpDelta, 55);
+      expect(trainingEvents.last.runningTotalXp, 55);
 
-      expect(ledger.totalXp, 85);
-      expect(ledger.computedTotalXp, 85);
+      expect(ledger.totalXp, 55);
+      expect(ledger.computedTotalXp, 55);
     });
   });
 }

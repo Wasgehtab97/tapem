@@ -260,7 +260,7 @@ class TrainingDayXpEngine {
       final components = <XpComponent>[
         XpComponent(
           code: 'base_daily',
-          amount: totalTrainingDays * _config.baseDailyStep,
+          amount: _config.baseDailyStep,
           metadata: {
             'trainingDayIndex': totalTrainingDays,
           },
