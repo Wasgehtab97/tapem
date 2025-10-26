@@ -25,14 +25,17 @@ class WriteNfcTagUseCase {
       throw Exception('NFC wird auf diesem Gerät nicht unterstützt.');
     }
 
-    // 2) Polling starten (ISO-14443) mit Timeout und iOS-Hinweisen
-    await _channel.invokeMethod<void>('poll', {
-      'timeout': _pollTimeout.inMilliseconds,
-      'iosAlertMessage': 'Bitte halte dein Gerät an den NFC-Tag',
-      'iosMultipleTagMessage': 'Mehrere Tags erkannt – bitte nur ein Tag halten.',
-    });
-
+    var sessionStarted = false;
     try {
+      // 2) Polling starten (ISO-14443) mit Timeout und iOS-Hinweisen
+      await _channel.invokeMethod<void>('poll', {
+        'timeout': _pollTimeout.inMilliseconds,
+        'iosAlertMessage': 'Bitte halte dein Gerät an den NFC-Tag',
+        'iosMultipleTagMessage':
+            'Mehrere Tags erkannt – bitte nur ein Tag halten.',
+      });
+      sessionStarted = true;
+
       // 3) Raw-Record bauen und schreiben
       final record = _buildRawTextRecord(hexCode);
       await _channel.invokeMethod<void>('writeNDEFRawRecords', [record]);
@@ -42,12 +45,14 @@ class WriteNfcTagUseCase {
       rethrow;
     } finally {
       // 4) Session immer beenden
-      try {
-        await _channel.invokeMethod<void>('finish', {
-          'iosAlertMessage': 'Schreiben abgeschlossen',
-        });
-      } on PlatformException catch (e) {
-        debugPrint('⚠️ NFC finish() failed: $e');
+      if (sessionStarted) {
+        try {
+          await _channel.invokeMethod<void>('finish', {
+            'iosAlertMessage': 'Schreiben abgeschlossen',
+          });
+        } on PlatformException catch (e) {
+          debugPrint('⚠️ NFC finish() failed: $e');
+        }
       }
     }
   }
