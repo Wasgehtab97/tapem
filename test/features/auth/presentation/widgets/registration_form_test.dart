@@ -9,13 +9,13 @@ import 'package:tapem/features/auth/presentation/widgets/registration_form.dart'
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../../../helpers/fakes.dart';
-import '../../../helpers/recording_navigator_observer.dart';
+import '../../helpers/fakes.dart';
+import '../../helpers/recording_navigator_observer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const user = UserData(
+  final user = UserData(
     id: 'uid-1',
     email: 'user@example.com',
     userName: 'tester',
@@ -30,7 +30,7 @@ void main() {
     required FakeFirebaseAuthManager authManager,
     required FakeAuthRepository repository,
   }) async {
-    SharedPreferences.setMockInitialValues(<String, Object?>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     final provider = AuthProvider(
       repo: repository,
       authManager: authManager,

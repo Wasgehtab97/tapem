@@ -6,7 +6,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/auth/presentation/widgets/dynamic_link_listener.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
-import '../../../helpers/recording_navigator_observer.dart';
+import '../../helpers/recording_navigator_observer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,13 +30,13 @@ void main() {
         (WidgetTester tester) async {
       final observer = RecordingNavigatorObserver();
       final listener = DynamicLinkListener(
-        child: const Scaffold(),
         getInitialLink: () async => PendingDynamicLinkData(
           link: Uri.parse(
             'https://example.com/path?mode=resetPassword&oobCode=abc',
           ),
         ),
         onLinkStream: const Stream<PendingDynamicLinkData>.empty(),
+        child: const Scaffold(),
       );
 
       await tester.pumpWidget(buildApp(listener: listener, observer: observer));
@@ -54,11 +54,11 @@ void main() {
     testWidgets('ignores non reset links', (WidgetTester tester) async {
       final observer = RecordingNavigatorObserver();
       final listener = DynamicLinkListener(
-        child: const Scaffold(),
         getInitialLink: () async => PendingDynamicLinkData(
           link: Uri.parse('https://example.com/path?mode=signIn'),
         ),
         onLinkStream: const Stream<PendingDynamicLinkData>.empty(),
+        child: const Scaffold(),
       );
 
       await tester.pumpWidget(buildApp(listener: listener, observer: observer));
@@ -77,9 +77,9 @@ void main() {
       final controller = StreamController<PendingDynamicLinkData>();
       final observer = RecordingNavigatorObserver();
       final listener = DynamicLinkListener(
-        child: const Scaffold(),
         getInitialLink: () async => null,
         onLinkStream: controller.stream,
+        child: const Scaffold(),
       );
 
       await tester.pumpWidget(buildApp(listener: listener, observer: observer));

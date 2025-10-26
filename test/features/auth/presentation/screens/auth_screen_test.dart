@@ -9,12 +9,12 @@ import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../../../helpers/fakes.dart';
+import '../../helpers/fakes.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const user = UserData(
+  final user = UserData(
     id: 'uid-1',
     email: 'user@example.com',
     userName: 'tester',
@@ -29,7 +29,7 @@ void main() {
     required FakeAuthRepository repository,
     FakeFirebaseAuthManager? authManager,
   }) async {
-    SharedPreferences.setMockInitialValues(<String, Object?>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     final provider = AuthProvider(
       repo: repository,
       authManager: authManager ??
