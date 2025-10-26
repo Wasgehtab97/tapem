@@ -8,9 +8,11 @@ import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/presentation/screens/device_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/services/membership_service.dart';
 
 class _MockDeviceProvider extends Mock
     with ChangeNotifier
@@ -31,6 +33,10 @@ class _MockExerciseProvider extends Mock
 class _MockKeypadController extends Mock
     with ChangeNotifier
     implements OverlayNumericKeypadController {}
+
+class _MockGetDeviceByNfcCode extends Mock implements GetDeviceByNfcCode {}
+
+class _MockMembershipService extends Mock implements MembershipService {}
 
 class _FakeDevice extends Fake implements Device {}
 
@@ -53,6 +59,8 @@ void main() {
   late _MockTrainingPlanProvider trainingPlanProvider;
   late _MockExerciseProvider exerciseProvider;
   late _MockKeypadController keypadController;
+  late _MockGetDeviceByNfcCode getDeviceByNfcCode;
+  late _MockMembershipService membershipService;
   late Device device;
   late List<Map<String, dynamic>> sets;
 
@@ -62,6 +70,8 @@ void main() {
     trainingPlanProvider = _MockTrainingPlanProvider();
     exerciseProvider = _MockExerciseProvider();
     keypadController = _MockKeypadController();
+    getDeviceByNfcCode = _MockGetDeviceByNfcCode();
+    membershipService = _MockMembershipService();
     device = Device(uid: 'd1', id: 1, name: 'Test Device');
     sets = [
       {
@@ -79,6 +89,7 @@ void main() {
     when(() => deviceProvider.device).thenReturn(device);
     when(() => deviceProvider.sets).thenAnswer((_) => sets);
     when(() => deviceProvider.sessionSnapshots).thenReturn(const []);
+    when(() => deviceProvider.hasMoreSnapshots).thenReturn(false);
     when(() => deviceProvider.lastSessionSets).thenReturn(const []);
     when(() => deviceProvider.lastSessionDate).thenReturn(null);
     when(() => deviceProvider.lastSessionNote).thenReturn('');
@@ -88,6 +99,18 @@ void main() {
         .thenReturn((done: 0, filledNotDone: 0, emptyOrIncomplete: sets.length));
     when(() => deviceProvider.completeAllFilledNotDone()).thenReturn(0);
     when(() => deviceProvider.completedCount).thenReturn(0);
+    when(() => deviceProvider.prefetchSnapshots(
+          gymId: any(named: 'gymId'),
+          deviceId: any(named: 'deviceId'),
+          userId: any(named: 'userId'),
+          target: any(named: 'target'),
+        )).thenAnswer((_) {});
+    when(() => deviceProvider.loadMoreSnapshots(
+          gymId: any(named: 'gymId'),
+          deviceId: any(named: 'deviceId'),
+          userId: any(named: 'userId'),
+          pageSize: any(named: 'pageSize'),
+        )).thenAnswer((_) async {});
     when(
       () => deviceProvider.saveWorkoutSession(
         gymId: any(named: 'gymId'),
@@ -99,6 +122,7 @@ void main() {
     when(() => deviceProvider.lastSessionId).thenReturn(null);
     when(() => deviceProvider.updateAutoSavePreference(any())).thenAnswer((_) {});
     when(() => deviceProvider.level).thenReturn(1);
+    when(() => deviceProvider.xp).thenReturn(0);
     when(() => deviceProvider.isBodyweightMode).thenReturn(false);
     when(() => deviceProvider.focusedField).thenReturn(null);
     when(() => deviceProvider.focusedIndex).thenReturn(null);
@@ -160,6 +184,11 @@ void main() {
     when(() => trainingPlanProvider.setActivePlan(any()))
         .thenAnswer((_) async {});
 
+    when(() => getDeviceByNfcCode.execute(any(), any()))
+        .thenAnswer((_) async => null);
+    when(() => membershipService.ensureMembership(any(), any()))
+        .thenAnswer((_) async {});
+
     when(() => keypadController.openFor(
           any(),
           allowDecimal: any(named: 'allowDecimal'),
@@ -179,6 +208,8 @@ void main() {
         ChangeNotifierProvider<OverlayNumericKeypadController>.value(
           value: keypadController,
         ),
+        Provider<GetDeviceByNfcCode>.value(value: getDeviceByNfcCode),
+        Provider<MembershipService>.value(value: membershipService),
       ],
       child: MaterialApp(
         locale: const Locale('de'),
