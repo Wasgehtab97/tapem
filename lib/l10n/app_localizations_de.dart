@@ -691,6 +691,25 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get storySessionDailyXpGrossLabel => 'Bruttobelohnung';
+
+  @override
+  String get storySessionDailyXpNetLabel => 'Netto-XP-Veränderung';
+
+  @override
+  String get storySessionDailyXpFloorAppliedNotice =>
+      'Beinhaltet Anpassung auf das Mindestguthaben';
+
+  @override
+  String get storySessionDailyXpPreviousTotalLabel => 'Kontostand vor dem Tag';
+
+  @override
+  String get storySessionDailyXpResultingTotalLabel => 'Kontostand nach dem Tag';
+
+  @override
+  String get storySessionDailyXpPenaltiesLabel => 'Strafen';
+
+  @override
   String get storySessionDailyXpBreakdownTitle => 'Aufschlüsselung deiner XP';
 
   @override

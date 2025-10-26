@@ -113,6 +113,7 @@ class StoryXpPenalty extends Equatable {
 class StoryDailyXp extends Equatable {
   final int xp;
   final int? totalXp;
+  final int? computedTotalXp;
   final int? runningTotalXp;
   final Map<String, dynamic> metadata;
   final List<StoryXpComponent> components;
@@ -121,6 +122,7 @@ class StoryDailyXp extends Equatable {
   const StoryDailyXp({
     required this.xp,
     this.totalXp,
+    this.computedTotalXp,
     this.runningTotalXp,
     this.metadata = const {},
     this.components = const [],
@@ -130,6 +132,7 @@ class StoryDailyXp extends Equatable {
   const StoryDailyXp.empty()
       : xp = 0,
         totalXp = null,
+        computedTotalXp = null,
         runningTotalXp = null,
         metadata = const {},
         components = const [],
@@ -137,10 +140,37 @@ class StoryDailyXp extends Equatable {
 
   bool get hasBreakdown => components.isNotEmpty || penalties.isNotEmpty;
 
+  int get penaltySum {
+    if (penalties.isEmpty) return 0;
+    return penalties.fold(0, (sum, penalty) => sum + penalty.delta);
+  }
+
+  int? get previousTotalXp {
+    final baseline = runningTotalXp ?? computedTotalXp ?? totalXp;
+    if (baseline == null) return null;
+    return baseline - xp - penaltySum;
+  }
+
+  int? get netXpDelta {
+    final total = totalXp ?? computedTotalXp ?? runningTotalXp;
+    final previous = previousTotalXp;
+    if (total != null && previous != null) {
+      return total - previous;
+    }
+    final floorDelta =
+        totalXp != null && computedTotalXp != null ? totalXp! - computedTotalXp! : 0;
+    return xp + penaltySum + floorDelta;
+  }
+
+  bool get floorApplied =>
+      totalXp != null && computedTotalXp != null && totalXp! > computedTotalXp!;
+
   StoryDailyXp copyWith({
     int? xp,
     int? totalXp,
     bool unsetTotalXp = false,
+    int? computedTotalXp,
+    bool unsetComputedTotalXp = false,
     int? runningTotalXp,
     bool unsetRunningTotalXp = false,
     Map<String, dynamic>? metadata,
@@ -150,6 +180,8 @@ class StoryDailyXp extends Equatable {
     return StoryDailyXp(
       xp: xp ?? this.xp,
       totalXp: unsetTotalXp ? null : (totalXp ?? this.totalXp),
+      computedTotalXp:
+          unsetComputedTotalXp ? null : (computedTotalXp ?? this.computedTotalXp),
       runningTotalXp:
           unsetRunningTotalXp ? null : (runningTotalXp ?? this.runningTotalXp),
       metadata: metadata ?? this.metadata,
@@ -161,6 +193,7 @@ class StoryDailyXp extends Equatable {
   Map<String, dynamic> toJson() => {
         'xp': xp,
         if (totalXp != null) 'totalXp': totalXp,
+        if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
         if (runningTotalXp != null) 'runningTotalXp': runningTotalXp,
         if (metadata.isNotEmpty) 'metadata': metadata,
         if (components.isNotEmpty)
@@ -172,6 +205,7 @@ class StoryDailyXp extends Equatable {
   factory StoryDailyXp.fromJson(Map<String, dynamic> json) {
     final xp = (json['xp'] as num?)?.toInt() ?? 0;
     final totalXp = (json['totalXp'] as num?)?.toInt();
+    final computedTotalXp = (json['computedTotalXp'] as num?)?.toInt();
     final runningTotalXp = (json['runningTotalXp'] as num?)?.toInt();
     final metadata = StoryXpComponent._readMetadata(json['metadata']);
     final rawComponents = json['components'];
@@ -195,6 +229,7 @@ class StoryDailyXp extends Equatable {
     return StoryDailyXp(
       xp: xp,
       totalXp: totalXp,
+      computedTotalXp: computedTotalXp,
       runningTotalXp: runningTotalXp,
       metadata: metadata,
       components: components,
@@ -206,6 +241,7 @@ class StoryDailyXp extends Equatable {
   List<Object?> get props => [
         xp,
         totalXp,
+        computedTotalXp,
         runningTotalXp,
         metadata,
         components,

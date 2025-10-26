@@ -1379,6 +1379,42 @@ abstract class AppLocalizations {
   /// **'{xp} XP'**
   String storySessionDailyXpValue(Object xp);
 
+  /// No description provided for @storySessionDailyXpGrossLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross reward'**
+  String get storySessionDailyXpGrossLabel;
+
+  /// No description provided for @storySessionDailyXpNetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net XP change'**
+  String get storySessionDailyXpNetLabel;
+
+  /// No description provided for @storySessionDailyXpFloorAppliedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes minimum balance adjustment'**
+  String get storySessionDailyXpFloorAppliedNotice;
+
+  /// No description provided for @storySessionDailyXpPreviousTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance before day'**
+  String get storySessionDailyXpPreviousTotalLabel;
+
+  /// No description provided for @storySessionDailyXpResultingTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance after day'**
+  String get storySessionDailyXpResultingTotalLabel;
+
+  /// No description provided for @storySessionDailyXpPenaltiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Penalties'**
+  String get storySessionDailyXpPenaltiesLabel;
+
   /// No description provided for @storySessionDailyXpBreakdownTitle.
   ///
   /// In en, this message translates to:

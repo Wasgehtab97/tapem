@@ -38,7 +38,6 @@ class StorySessionDialog extends StatelessWidget {
               child: _StorySessionCard(
                 headerTitle: loc.storySessionTitle,
                 headerSubtitle: dateText,
-                xp: summary.totalXp,
                 dailyXp: summary.dailyXp,
                 stats: summary.stats,
                 achievements: achievements,
@@ -56,7 +55,6 @@ class StorySessionDialog extends StatelessWidget {
 class _StorySessionCard extends StatelessWidget {
   final String headerTitle;
   final String headerSubtitle;
-  final int xp;
   final StoryDailyXp dailyXp;
   final StorySessionStats stats;
   final List<StoryAchievement> achievements;
@@ -66,7 +64,6 @@ class _StorySessionCard extends StatelessWidget {
   const _StorySessionCard({
     required this.headerTitle,
     required this.headerSubtitle,
-    required this.xp,
     required this.dailyXp,
     required this.stats,
     required this.achievements,
@@ -222,7 +219,7 @@ class _StorySessionCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 28),
-                      _XpBanner(xp: xp, palette: palette),
+                      _XpBanner(dailyXp: dailyXp, palette: palette),
                       if (hasBreakdown) ...[
                         const SizedBox(height: 24),
                         _XpBreakdownSection(
@@ -313,16 +310,27 @@ class _StorySessionCard extends StatelessWidget {
 }
 
 class _XpBanner extends StatelessWidget {
-  final int xp;
+  final StoryDailyXp dailyXp;
   final _StorySessionPalette palette;
 
-  const _XpBanner({required this.xp, required this.palette});
+  const _XpBanner({required this.dailyXp, required this.palette});
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final format = NumberFormat.decimalPattern(loc.localeName);
     final theme = Theme.of(context);
+    final grossXp = dailyXp.xp;
+    final netDelta = dailyXp.netXpDelta ?? (dailyXp.xp + dailyXp.penaltySum);
+    final previousTotal = dailyXp.previousTotalXp;
+    final resultingTotal = dailyXp.totalXp ??
+        dailyXp.computedTotalXp ??
+        dailyXp.runningTotalXp ??
+        (previousTotal != null ? previousTotal + netDelta : null);
+    final grossText = '${format.format(grossXp)} XP';
+    final netText = '${_formatSignedInt(netDelta, format)} XP';
+    final previousText = previousTotal != null ? format.format(previousTotal) : null;
+    final resultingText = resultingTotal != null ? format.format(resultingTotal) : null;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: palette.xpRadius,
@@ -373,27 +381,119 @@ class _XpBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '${format.format(xp)} XP',
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    color: palette.onGradientPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  loc.storySessionDailyXpTitle,
+                  loc.storySessionDailyXpGrossLabel,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: palette.onGradientMuted,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.25,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  grossText,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: palette.onGradientPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  loc.storySessionDailyXpNetLabel,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: palette.onGradientMuted,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.25,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  netText,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: palette.onGradientPrimary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                if (dailyXp.floorApplied) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    loc.storySessionDailyXpFloorAppliedNotice,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: palette.onGradientMuted,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+                if (previousText != null || resultingText != null) ...[
+                  const SizedBox(height: 18),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 28,
+                    runSpacing: 12,
+                    children: [
+                      if (previousText != null)
+                        _XpBannerStat(
+                          label: loc.storySessionDailyXpPreviousTotalLabel,
+                          value: '$previousText XP',
+                          palette: palette,
+                        ),
+                      if (resultingText != null)
+                        _XpBannerStat(
+                          label: loc.storySessionDailyXpResultingTotalLabel,
+                          value: '$resultingText XP',
+                          palette: palette,
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _XpBannerStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final _StorySessionPalette palette;
+
+  const _XpBannerStat({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: palette.onGradientMuted,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: palette.onGradientPrimary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -503,6 +603,11 @@ class _XpBreakdownSection extends StatelessWidget {
           ),
           child: Column(children: children),
         ),
+        const SizedBox(height: 16),
+        _XpReconciliationFooter(
+          dailyXp: dailyXp,
+          palette: palette,
+        ),
       ],
     );
   }
@@ -520,6 +625,144 @@ class _XpBreakdownDivider extends StatelessWidget {
       color: palette.cardBorder.withOpacity(0.16),
     );
   }
+}
+
+class _XpReconciliationFooter extends StatelessWidget {
+  final StoryDailyXp dailyXp;
+  final _StorySessionPalette palette;
+
+  const _XpReconciliationFooter({required this.dailyXp, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final format = NumberFormat.decimalPattern(loc.localeName);
+    final theme = Theme.of(context);
+    final gross = dailyXp.xp;
+    final penalties = dailyXp.penaltySum;
+    final result = dailyXp.totalXp ??
+        dailyXp.computedTotalXp ??
+        dailyXp.runningTotalXp ??
+        (dailyXp.previousTotalXp != null && dailyXp.netXpDelta != null
+            ? dailyXp.previousTotalXp! + dailyXp.netXpDelta!
+            : null);
+    final tiles = <Widget>[
+      _XpSummaryTile(
+        label: loc.storySessionDailyXpGrossLabel,
+        value: '${format.format(gross)} XP',
+        palette: palette,
+        theme: theme,
+      ),
+      _XpSummaryTile(
+        label: loc.storySessionDailyXpPenaltiesLabel,
+        value: '${_formatSignedInt(penalties, format)} XP',
+        palette: palette,
+        theme: theme,
+        isPenalty: penalties < 0,
+      ),
+      if (result != null)
+        _XpSummaryTile(
+          label: loc.storySessionDailyXpResultingTotalLabel,
+          value: '${format.format(result)} XP',
+          palette: palette,
+          theme: theme,
+        ),
+    ];
+
+    if (tiles.length < 2) {
+      return const SizedBox.shrink();
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: palette.cardBorder.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 360;
+            if (isCompact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < tiles.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    tiles[i],
+                  ],
+                ],
+              );
+            }
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var i = 0; i < tiles.length; i++) ...[
+                  Expanded(child: tiles[i]),
+                  if (i < tiles.length - 1) const SizedBox(width: 12),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _XpSummaryTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final _StorySessionPalette palette;
+  final TextTheme theme;
+  final bool isPenalty;
+
+  const _XpSummaryTile({
+    required this.label,
+    required this.value,
+    required this.palette,
+    required this.theme,
+    this.isPenalty = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: theme.bodySmall?.copyWith(
+            color: palette.onCardSecondary,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: theme.titleMedium?.copyWith(
+            color: isPenalty
+                ? palette.onCardSecondary
+                : palette.onCardPrimary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _formatSignedInt(int value, NumberFormat format) {
+  if (value > 0) {
+    return '+${format.format(value)}';
+  }
+  if (value < 0) {
+    return '-${format.format(value.abs())}';
+  }
+  return format.format(0);
 }
 
 class _XpBreakdownRow extends StatelessWidget {
