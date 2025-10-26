@@ -694,7 +694,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpGrossLabel => 'Bruttobelohnung';
 
   @override
-  String get storySessionDailyXpNetLabel => 'Netto-XP-Veränderung';
+  String get storySessionDailyXpNetLabel => 'XP-Erhalt';
 
   @override
   String get storySessionDailyXpFloorAppliedNotice =>

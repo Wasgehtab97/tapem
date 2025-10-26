@@ -876,7 +876,7 @@
   "storySessionDailyXpValue": "{xp} XP",
   "storySessionDailyXpGrossLabel": "Bruttobelohnung",
   "@storySessionDailyXpGrossLabel": {"description": "Beschriftung für den Brutto-XP-Wert im Story-Dialog"},
-  "storySessionDailyXpNetLabel": "Netto-XP-Veränderung",
+  "storySessionDailyXpNetLabel": "XP-Erhalt",
   "@storySessionDailyXpNetLabel": {"description": "Beschriftung für die Netto-XP-Veränderung im Story-Dialog"},
   "storySessionDailyXpFloorAppliedNotice": "Beinhaltet Anpassung auf das Mindestguthaben",
   "@storySessionDailyXpFloorAppliedNotice": {"description": "Hinweis, wenn der Mindestkontostand angewendet wurde"},

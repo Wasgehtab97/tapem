@@ -876,7 +876,7 @@
   "@storySessionDailyXpGrossLabel": {
     "description": "Label for the gross XP value in the session story dialog banner"
   },
-  "storySessionDailyXpNetLabel": "Net XP change",
+  "storySessionDailyXpNetLabel": "XP earned",
   "@storySessionDailyXpNetLabel": {
     "description": "Label for the net XP change in the session story dialog banner"
   },

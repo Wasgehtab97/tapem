@@ -320,14 +320,12 @@ class _XpBanner extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final format = NumberFormat.decimalPattern(loc.localeName);
     final theme = Theme.of(context);
-    final grossXp = dailyXp.xp;
     final netDelta = dailyXp.netXpDelta ?? (dailyXp.xp + dailyXp.penaltySum);
     final previousTotal = dailyXp.previousTotalXp;
     final resultingTotal = dailyXp.totalXp ??
         dailyXp.computedTotalXp ??
         dailyXp.runningTotalXp ??
         (previousTotal != null ? previousTotal + netDelta : null);
-    final grossText = '${format.format(grossXp)} XP';
     final netText = '${_formatSignedInt(netDelta, format)} XP';
     final previousText = previousTotal != null ? format.format(previousTotal) : null;
     final resultingText = resultingTotal != null ? format.format(resultingTotal) : null;
@@ -381,7 +379,7 @@ class _XpBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  loc.storySessionDailyXpGrossLabel,
+                  loc.storySessionDailyXpNetLabel,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: palette.onGradientMuted,
                     fontWeight: FontWeight.w600,
@@ -390,33 +388,15 @@ class _XpBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  grossText,
+                  netText,
                   style: theme.textTheme.displaySmall?.copyWith(
                     color: palette.onGradientPrimary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
                   ),
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  loc.storySessionDailyXpNetLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: palette.onGradientMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.25,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  netText,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: palette.onGradientPrimary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                  ),
-                ),
                 if (dailyXp.floorApplied) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     loc.storySessionDailyXpFloorAppliedNotice,
                     textAlign: TextAlign.center,
@@ -428,7 +408,7 @@ class _XpBanner extends StatelessWidget {
                   ),
                 ],
                 if (previousText != null || resultingText != null) ...[
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 28,
@@ -511,6 +491,7 @@ class _XpBreakdownSection extends StatelessWidget {
     final format = NumberFormat.decimalPattern(loc.localeName);
 
     final componentLines = dailyXp.components
+        .where((component) => component.amount != 0)
         .map(
           (component) => _XpBreakdownLine(
             label: _componentLabel(component, loc),
@@ -522,12 +503,13 @@ class _XpBreakdownSection extends StatelessWidget {
         .toList();
 
     final penaltyLines = dailyXp.penalties
+        .where((penalty) => penalty.delta < 0)
         .map(
           (penalty) => _XpBreakdownLine(
             label: _penaltyLabel(penalty, loc),
             subtitle: _penaltySubtitle(penalty, loc),
             amount: penalty.delta,
-            isPenalty: penalty.delta <= 0,
+            isPenalty: true,
           ),
         )
         .toList();
