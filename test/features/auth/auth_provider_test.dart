@@ -17,9 +17,12 @@ void main() {
 
   group('AuthProvider', () {
     late FakeSessionDraftRepository sessionRepo;
+    late Future<SharedPreferences> Function() sharedPrefsGetter;
+    late SharedPreferences sharedPrefs;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      sharedPrefsGetter = createInMemorySharedPreferences();
+      sharedPrefs = await sharedPrefsGetter();
       sessionRepo = FakeSessionDraftRepository();
     });
 
@@ -63,6 +66,7 @@ void main() {
         repo: repo,
         authManager: manager,
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -70,8 +74,7 @@ void main() {
       expect(provider.role, 'coach');
       expect(provider.publicProfile, isTrue);
       expect(publicProfileUpdated, isTrue);
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), 'gym1');
+      expect(sharedPrefs.getString('selectedGymCode'), 'gym1');
     });
 
     test('login updates user and clears error on success', () async {
@@ -113,6 +116,7 @@ void main() {
         repo: repo,
         authManager: manager,
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -139,6 +143,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -183,6 +188,7 @@ void main() {
         repo: successRepo,
         authManager: FakeFirebaseAuthManager(),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -205,6 +211,7 @@ void main() {
         repo: failingRepo,
         authManager: FakeFirebaseAuthManager(),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -236,6 +243,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -244,8 +252,7 @@ void main() {
 
       expect(provider.isLoggedIn, isFalse);
       expect(sessionRepo.deleted, contains('all'));
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), isNull);
+      expect(sharedPrefs.getString('selectedGymCode'), isNull);
     });
 
     test('setUsername succeeds, handles taken name and firebase errors', () async {
@@ -274,6 +281,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -295,6 +303,7 @@ void main() {
         repo: takenRepo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -318,6 +327,7 @@ void main() {
         repo: errorRepo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -354,6 +364,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -377,6 +388,7 @@ void main() {
         repo: errorRepo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -414,6 +426,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -444,6 +457,7 @@ void main() {
         repo: failingRepo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -471,6 +485,7 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -493,6 +508,7 @@ void main() {
         repo: failingRepo,
         authManager: FakeFirebaseAuthManager(),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
@@ -524,13 +540,13 @@ void main() {
         repo: repo,
         authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
         sessionDraftRepository: sessionRepo,
+        sharedPreferencesProvider: sharedPrefsGetter,
       );
       await _pumpEventQueue();
 
       await provider.selectGym('gym2');
       expect(provider.gymCode, 'gym2');
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('selectedGymCode'), 'gym2');
+      expect(sharedPrefs.getString('selectedGymCode'), 'gym2');
 
       await provider.selectGym('unknown');
       expect(provider.gymCode, 'gym2');

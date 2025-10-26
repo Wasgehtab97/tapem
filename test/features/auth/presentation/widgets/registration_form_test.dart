@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
@@ -30,11 +29,12 @@ void main() {
     required FakeFirebaseAuthManager authManager,
     required FakeAuthRepository repository,
   }) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefsGetter = createInMemorySharedPreferences();
     final provider = AuthProvider(
       repo: repository,
       authManager: authManager,
       sessionDraftRepository: FakeSessionDraftRepository(),
+      sharedPreferencesProvider: prefsGetter,
     );
     await Future<void>.delayed(Duration.zero);
     return provider;

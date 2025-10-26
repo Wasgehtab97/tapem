@@ -31,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
   final ResetPasswordUseCase _resetPasswordUC;
   final FirebaseAuthManager _authManager;
   final SessionDraftRepository _sessionDraftRepository;
+  final Future<SharedPreferences> Function() _sharedPreferencesGetter;
 
   UserData? _user;
   bool _isLoading = false;
@@ -50,6 +51,7 @@ class AuthProvider extends ChangeNotifier {
     required ResetPasswordUseCase resetPasswordUseCase,
     required FirebaseAuthManager authManager,
     required SessionDraftRepository sessionDraftRepository,
+    required Future<SharedPreferences> Function() sharedPreferencesGetter,
   })  : _loginUC = loginUseCase,
         _registerUC = registerUseCase,
         _logoutUC = logoutUseCase,
@@ -61,7 +63,8 @@ class AuthProvider extends ChangeNotifier {
         _checkUsernameUC = checkUsernameUseCase,
         _resetPasswordUC = resetPasswordUseCase,
         _authManager = authManager,
-        _sessionDraftRepository = sessionDraftRepository {
+        _sessionDraftRepository = sessionDraftRepository,
+        _sharedPreferencesGetter = sharedPreferencesGetter {
     _loadCurrentUser();
   }
 
@@ -69,10 +72,15 @@ class AuthProvider extends ChangeNotifier {
     AuthRepository? repo,
     FirebaseAuthManager? authManager,
     SessionDraftRepository? sessionDraftRepository,
+    Future<SharedPreferences> Function()? sharedPreferencesProvider,
+    SharedPreferences? sharedPreferences,
   }) {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
         sessionDraftRepository ?? SessionDraftRepositoryImpl();
+    final prefsGetter = sharedPreferences != null
+        ? (() => Future<SharedPreferences>.value(sharedPreferences))
+        : (sharedPreferencesProvider ?? SharedPreferences.getInstance);
     return AuthProvider._(
       loginUseCase:
           LoginUseCase(repo: repo, authManager: resolvedAuthManager),
@@ -89,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
       resetPasswordUseCase: ResetPasswordUseCase(repo),
       authManager: resolvedAuthManager,
       sessionDraftRepository: resolvedSessionDraftRepo,
+      sharedPreferencesGetter: prefsGetter,
     );
   }
 
@@ -152,7 +161,7 @@ class AuthProvider extends ChangeNotifier {
           _user = currentUser.copyWith(
             role: claims['role'] as String? ?? currentUser.role,
           );
-          final prefs = await SharedPreferences.getInstance();
+          final prefs = await _sharedPreferencesGetter();
           final stored = prefs.getString('selectedGymCode');
           if (stored != null && currentUser.gymCodes.contains(stored)) {
             _selectedGymCode = stored;
@@ -201,7 +210,7 @@ class AuthProvider extends ChangeNotifier {
       if (_user == null) {
         _user = registeredUser;
         if (registeredUser.gymCodes.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
+          final prefs = await _sharedPreferencesGetter();
           _selectedGymCode = registeredUser.gymCodes.first;
           await prefs.setString('selectedGymCode', _selectedGymCode!);
         }
@@ -221,7 +230,7 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _user = null;
       _selectedGymCode = null;
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _sharedPreferencesGetter();
       await prefs.remove('selectedGymCode');
       await _sessionDraftRepository.deleteAll();
       _setLoading(false);
@@ -319,7 +328,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> selectGym(String code) async {
     if (_user == null || !_user!.gymCodes.contains(code)) return;
     _selectedGymCode = code;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _sharedPreferencesGetter();
     await prefs.setString('selectedGymCode', code);
     notifyListeners();
   }

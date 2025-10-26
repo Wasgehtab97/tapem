@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
@@ -157,6 +158,13 @@ class FakeAuthRepository implements AuthRepository {
     }
     throw UnimplementedError('sendPasswordResetEmail handler not provided');
   }
+}
+
+Future<SharedPreferences> Function() createInMemorySharedPreferences(
+    [Map<String, Object> initialValues = const {}]) {
+  SharedPreferences.setMockInitialValues(initialValues);
+  final prefsFuture = SharedPreferences.getInstance();
+  return () => prefsFuture;
 }
 
 class FakeFirebaseAuthManager implements FirebaseAuthManager {
