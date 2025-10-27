@@ -701,10 +701,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Includes minimum balance adjustment';
 
   @override
-  String get storySessionDailyXpPreviousTotalLabel => 'Balance before day';
+  String get storySessionDailyXpPreviousTotalLabel => 'Before';
 
   @override
-  String get storySessionDailyXpResultingTotalLabel => 'Balance after day';
+  String get storySessionDailyXpResultingTotalLabel => 'Now';
 
   @override
   String storySessionDailyXpLevelValue(Object level, Object xp) {

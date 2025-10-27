@@ -701,10 +701,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Beinhaltet Anpassung auf das Mindestguthaben';
 
   @override
-  String get storySessionDailyXpPreviousTotalLabel => 'Kontostand vor dem Tag';
+  String get storySessionDailyXpPreviousTotalLabel => 'Vorher';
 
   @override
-  String get storySessionDailyXpResultingTotalLabel => 'Kontostand nach dem Tag';
+  String get storySessionDailyXpResultingTotalLabel => 'Jetzt';
 
   @override
   String storySessionDailyXpLevelValue(Object level, Object xp) {

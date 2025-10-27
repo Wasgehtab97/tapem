@@ -884,11 +884,11 @@
   "@storySessionDailyXpFloorAppliedNotice": {
     "description": "Hint shown when the XP floor was applied"
   },
-  "storySessionDailyXpPreviousTotalLabel": "Balance before day",
+  "storySessionDailyXpPreviousTotalLabel": "Before",
   "@storySessionDailyXpPreviousTotalLabel": {
     "description": "Label for the previous XP total in the session story dialog banner"
   },
-  "storySessionDailyXpResultingTotalLabel": "Balance after day",
+  "storySessionDailyXpResultingTotalLabel": "Now",
   "@storySessionDailyXpResultingTotalLabel": {
     "description": "Label for the resulting XP total in the session story dialog banner"
   },

@@ -880,9 +880,9 @@
   "@storySessionDailyXpNetLabel": {"description": "Beschriftung für die Netto-XP-Veränderung im Story-Dialog"},
   "storySessionDailyXpFloorAppliedNotice": "Beinhaltet Anpassung auf das Mindestguthaben",
   "@storySessionDailyXpFloorAppliedNotice": {"description": "Hinweis, wenn der Mindestkontostand angewendet wurde"},
-  "storySessionDailyXpPreviousTotalLabel": "Kontostand vor dem Tag",
+  "storySessionDailyXpPreviousTotalLabel": "Vorher",
   "@storySessionDailyXpPreviousTotalLabel": {"description": "Beschriftung für den vorherigen XP-Kontostand im Story-Dialog"},
-  "storySessionDailyXpResultingTotalLabel": "Kontostand nach dem Tag",
+  "storySessionDailyXpResultingTotalLabel": "Jetzt",
   "@storySessionDailyXpResultingTotalLabel": {"description": "Beschriftung für den resultierenden XP-Kontostand im Story-Dialog"},
   "storySessionDailyXpLevelValue": "Level {level} · {xp} XP",
   "@storySessionDailyXpLevelValue": {
