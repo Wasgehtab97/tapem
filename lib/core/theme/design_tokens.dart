@@ -226,7 +226,9 @@ class AppSpacing {
 /// Corner radii definitions.
 class AppRadius {
   static const double card = 16.0;
+  static const double cardLg = 24.0;
   static const double button = 12.0;
+  static const double chip = 20.0;
 }
 
 /// Typography sizes.  These values may be adjusted to taste but should stay
