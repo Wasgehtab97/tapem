@@ -115,6 +115,7 @@ class _CalendarState extends State<Calendar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
+    final accentColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final isNeutralTheme = _isNeutralScheme(theme.colorScheme);
     final trainingFillColor =
         _resolveTrainingFillColor(theme, brandTheme, isNeutralTheme);
@@ -152,7 +153,8 @@ class _CalendarState extends State<Calendar> {
               left: hPad + colIndex * (cellSize + margin * 2),
               child: Text(
                 DateFormat.MMM(locale).format(firstOfMonth),
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.bodySmall?.copyWith(color: accentColor) ??
+                    TextStyle(color: accentColor),
               ),
             ),
           );
