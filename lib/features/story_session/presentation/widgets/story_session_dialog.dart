@@ -373,15 +373,6 @@ class _XpBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  loc.storySessionDailyXpNetLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: palette.onGradientMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.25,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
                   netText,
                   style: theme.textTheme.displaySmall?.copyWith(
                     color: palette.onGradientPrimary,
@@ -501,14 +492,6 @@ class _XpBreakdownSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          loc.storySessionDailyXpBreakdownTitle,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: palette.onCardPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 12),
         DecoratedBox(
           decoration: BoxDecoration(
             color: backgroundColor,
