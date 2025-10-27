@@ -321,14 +321,7 @@ class _XpBanner extends StatelessWidget {
     final format = NumberFormat.decimalPattern(loc.localeName);
     final theme = Theme.of(context);
     final netDelta = dailyXp.netXpDelta ?? (dailyXp.xp + dailyXp.penaltySum);
-    final previousTotal = dailyXp.previousTotalXp;
-    final resultingTotal = dailyXp.totalXp ??
-        dailyXp.computedTotalXp ??
-        dailyXp.runningTotalXp ??
-        (previousTotal != null ? previousTotal + netDelta : null);
     final netText = '${_formatSignedInt(netDelta, format)} XP';
-    final previousText = previousTotal != null ? format.format(previousTotal) : null;
-    final resultingText = resultingTotal != null ? format.format(resultingTotal) : null;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: palette.xpRadius,
@@ -407,73 +400,11 @@ class _XpBanner extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (previousText != null || resultingText != null) ...[
-                  const SizedBox(height: 24),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 28,
-                    runSpacing: 12,
-                    children: [
-                      if (previousText != null)
-                        _XpBannerStat(
-                          label: loc.storySessionDailyXpPreviousTotalLabel,
-                          value: '$previousText XP',
-                          palette: palette,
-                        ),
-                      if (resultingText != null)
-                        _XpBannerStat(
-                          label: loc.storySessionDailyXpResultingTotalLabel,
-                          value: '$resultingText XP',
-                          palette: palette,
-                        ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _XpBannerStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final _StorySessionPalette palette;
-
-  const _XpBannerStat({
-    required this.label,
-    required this.value,
-    required this.palette,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: palette.onGradientMuted,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: palette.onGradientPrimary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -622,6 +553,7 @@ class _XpReconciliationFooter extends StatelessWidget {
     final theme = Theme.of(context);
     final gross = dailyXp.xp;
     final penalties = dailyXp.penaltySum;
+    final previous = dailyXp.previousTotalXp;
     final result = dailyXp.totalXp ??
         dailyXp.computedTotalXp ??
         dailyXp.runningTotalXp ??
@@ -629,19 +561,27 @@ class _XpReconciliationFooter extends StatelessWidget {
             ? dailyXp.previousTotalXp! + dailyXp.netXpDelta!
             : null);
     final tiles = <Widget>[
+      if (previous != null)
+        _XpSummaryTile(
+          label: loc.storySessionDailyXpPreviousTotalLabel,
+          value: '${format.format(previous)} XP',
+          palette: palette,
+          theme: theme.textTheme,
+        ),
       _XpSummaryTile(
         label: loc.storySessionDailyXpGrossLabel,
         value: '${format.format(gross)} XP',
         palette: palette,
         theme: theme.textTheme,
       ),
-      _XpSummaryTile(
-        label: loc.storySessionDailyXpPenaltiesLabel,
-        value: '${_formatSignedInt(penalties, format)} XP',
-        palette: palette,
-        theme: theme.textTheme,
-        isPenalty: penalties < 0,
-      ),
+      if (penalties != 0)
+        _XpSummaryTile(
+          label: loc.storySessionDailyXpPenaltiesLabel,
+          value: '${_formatSignedInt(penalties, format)} XP',
+          palette: palette,
+          theme: theme.textTheme,
+          isPenalty: penalties < 0,
+        ),
       if (result != null)
         _XpSummaryTile(
           label: loc.storySessionDailyXpResultingTotalLabel,
