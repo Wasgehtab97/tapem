@@ -4,7 +4,6 @@ import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -42,29 +41,31 @@ class _RankScreenState extends State<RankScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accentColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    final titleStyle =
+        theme.textTheme.titleLarge?.copyWith(color: accentColor);
+    final tabTextStyle = theme.textTheme.titleMedium;
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: BrandGradientText(
+        foregroundColor: accentColor,
+        title: Text(
           loc.leaderboardTitle,
-          style: theme.textTheme.titleLarge,
+          style: titleStyle,
         ),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: accentColor,
+          unselectedLabelColor:
+              tabTextStyle?.color?.withOpacity(0.6) ??
+              theme.colorScheme.onSurface.withOpacity(0.6),
+          labelStyle: tabTextStyle,
+          unselectedLabelStyle: tabTextStyle,
           tabs: [
-            Tab(
-              child: BrandGradientText(
-                loc.leaderboardRankTab,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-            Tab(
-              child: BrandGradientText(
-                loc.leaderboardChallengesTab,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
+            Tab(text: loc.leaderboardRankTab),
+            Tab(text: loc.leaderboardChallengesTab),
           ],
         ),
       ),

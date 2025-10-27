@@ -17,7 +17,6 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
@@ -171,6 +170,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
           fontWeight: FontWeight.w600,
         );
     final titleStyle = titleBase.copyWith(fontWeight: FontWeight.w600);
+    final resolvedTitleStyle = titleStyle.copyWith(color: accentColor);
 
     final isMulti = prov.device?.isMulti ?? false;
     final exercises = isMulti
@@ -187,10 +187,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
     if (hasOutlineBranding) {
       titleWidget = const _DeviceAppBarTimer();
     } else if (headerTitle != null) {
-      final gradientTitle = BrandGradientText(
+      final textTitle = Text(
         headerTitle,
         key: ValueKey(headerTitle),
-        style: titleStyle,
+        style: resolvedTitleStyle,
         textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -200,11 +200,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
           tag: 'device-${prov.device!.uid}',
           child: Material(
             type: MaterialType.transparency,
-            child: gradientTitle,
+            child: textTitle,
           ),
         );
       } else {
-        titleWidget = gradientTitle;
+        titleWidget = textTitle;
       }
     } else {
       titleWidget = const SizedBox.shrink();
@@ -214,7 +214,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       foregroundColor: accentColor,
       iconTheme: IconThemeData(color: accentColor),
       actionsIconTheme: IconThemeData(color: accentColor),
-      titleTextStyle: titleStyle,
+      titleTextStyle: resolvedTitleStyle,
       toolbarTextStyle:
           theme.textTheme.titleMedium?.copyWith(color: accentColor),
       centerTitle: true,
@@ -296,13 +296,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       _PlannedTable(entry: plannedEntry)
                     else ...[
                       Center(
-                        child: BrandGradientText(
+                        child: Text(
                           exerciseTitle ?? loc.newSessionTitle,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                          ),
+                          ).copyWith(color: outlineColor),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -729,13 +729,14 @@ class _AddSetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ) ??
+    final accentColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    final baseTextStyle = theme.textTheme.titleMedium ??
         const TextStyle(
           fontSize: AppFontSizes.title,
           fontWeight: FontWeight.w600,
         );
+    final textStyle = baseTextStyle.copyWith(color: accentColor);
 
     return Material(
       color: Colors.transparent,
@@ -750,25 +751,9 @@ class _AddSetButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ShaderMask(
-                shaderCallback: (bounds) {
-                  final rect = bounds.isEmpty
-                      ? const Rect.fromLTWH(0, 0, 1, 1)
-                      : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
-                  return AppGradients.brandGradient.createShader(rect);
-                },
-                blendMode: BlendMode.srcIn,
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+              Icon(Icons.add, color: accentColor, size: 20),
               const SizedBox(width: AppSpacing.xs),
-              BrandGradientText(
-                label,
-                style: textStyle,
-              ),
+              Text(label, style: textStyle),
             ],
           ),
         ),

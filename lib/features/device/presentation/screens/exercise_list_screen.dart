@@ -9,7 +9,6 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
@@ -315,9 +314,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
               child: Row(
                 children: [
                   FilterChip(
-                    label: BrandGradientText(
+                    label: Text(
                       loc.filterNameChip,
-                      style: theme.textTheme.labelLarge,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                            color: brandColor,
+                          ) ??
+                          TextStyle(color: brandColor),
                     ),
                     selected: _sortDescending,
                     onSelected: (_) => setState(() => _sortDescending = !_sortDescending),
@@ -327,9 +329,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: BrandGradientText(
+                    label: Text(
                       loc.filterMuscleChip,
-                      style: theme.textTheme.labelLarge,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                            color: brandColor,
+                          ) ??
+                          TextStyle(color: brandColor),
                     ),
                     selected: _selectedGroups.isNotEmpty,
                     onSelected: (_) => _openMuscleFilter(groups),
