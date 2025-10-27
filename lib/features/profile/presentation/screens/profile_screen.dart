@@ -16,7 +16,6 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
@@ -452,12 +451,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            BrandGradientText(
+            Text(
               loc.profileTrainingDaysHeading,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ) ??
+                  TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Expanded(

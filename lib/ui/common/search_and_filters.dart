@@ -3,8 +3,8 @@ import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_display.dart';
@@ -118,6 +118,8 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accentColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final loc = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,9 +142,12 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
         Row(
           children: [
             FilterChip(
-              label: BrandGradientText(
+              label: Text(
                 loc.filterNameChip,
-                style: theme.textTheme.labelLarge,
+                style: theme.textTheme.labelLarge?.copyWith(
+                      color: accentColor,
+                    ) ??
+                    TextStyle(color: accentColor),
               ),
               selected: widget.sort == SortOrder.za,
               onSelected: (_) => _showSortSheet(),
@@ -152,9 +157,12 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             ),
             const SizedBox(width: 8),
             FilterChip(
-              label: BrandGradientText(
+              label: Text(
                 loc.filterMuscleChip,
-                style: theme.textTheme.labelLarge,
+                style: theme.textTheme.labelLarge?.copyWith(
+                      color: accentColor,
+                    ) ??
+                    TextStyle(color: accentColor),
               ),
               selected: widget.muscleFilterIds.isNotEmpty,
               onSelected: (_) => _showMuscleSheet(),
@@ -164,9 +172,12 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
             ),
             const SizedBox(width: 8),
             FilterChip(
-              label: BrandGradientText(
+              label: Text(
                 loc.filterRecentChip,
-                style: theme.textTheme.labelLarge,
+                style: theme.textTheme.labelLarge?.copyWith(
+                      color: accentColor,
+                    ) ??
+                    TextStyle(color: accentColor),
               ),
               selected: widget.sort == SortOrder.recent,
               onSelected: (v) =>
