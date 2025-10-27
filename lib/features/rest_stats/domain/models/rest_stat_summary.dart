@@ -8,6 +8,8 @@ class RestStatSummary {
     required this.sumActualRestMs,
     required this.sumPlannedRestMs,
     required this.plannedSampleCount,
+    this.sumActualRestDurationMs = 0,
+    this.sumSetCount = 0,
     this.exerciseId,
     this.exerciseName,
     this.lastSessionAt,
@@ -21,6 +23,8 @@ class RestStatSummary {
   final double sumActualRestMs;
   final double sumPlannedRestMs;
   final int plannedSampleCount;
+  final double sumActualRestDurationMs;
+  final int sumSetCount;
   final DateTime? lastSessionAt;
 
   double? get averageActualRestMs =>
@@ -28,6 +32,30 @@ class RestStatSummary {
 
   double? get averagePlannedRestMs =>
       plannedSampleCount > 0 ? sumPlannedRestMs / plannedSampleCount : null;
+
+  double get totalActualRestDurationMs {
+    if (sumActualRestDurationMs > 0) {
+      return sumActualRestDurationMs;
+    }
+    final average = averageActualRestMs;
+    if (average != null && sumSetCount > 0) {
+      return average * sumSetCount;
+    }
+    if (average != null && sampleCount > 0) {
+      return average * sampleCount;
+    }
+    return sumActualRestMs;
+  }
+
+  double? get effectiveAverageActualRestMs {
+    if (sumSetCount > 0) {
+      final totalDuration = totalActualRestDurationMs;
+      if (totalDuration > 0) {
+        return totalDuration / sumSetCount;
+      }
+    }
+    return averageActualRestMs;
+  }
 
   RestStatSummary copyWith({
     String? deviceId,
@@ -38,6 +66,8 @@ class RestStatSummary {
     double? sumActualRestMs,
     double? sumPlannedRestMs,
     int? plannedSampleCount,
+    double? sumActualRestDurationMs,
+    int? sumSetCount,
     DateTime? lastSessionAt,
   }) {
     return RestStatSummary(
@@ -49,6 +79,9 @@ class RestStatSummary {
       sumActualRestMs: sumActualRestMs ?? this.sumActualRestMs,
       sumPlannedRestMs: sumPlannedRestMs ?? this.sumPlannedRestMs,
       plannedSampleCount: plannedSampleCount ?? this.plannedSampleCount,
+      sumActualRestDurationMs:
+          sumActualRestDurationMs ?? this.sumActualRestDurationMs,
+      sumSetCount: sumSetCount ?? this.sumSetCount,
       lastSessionAt: lastSessionAt ?? this.lastSessionAt,
     );
   }
@@ -74,6 +107,9 @@ class RestStatSummary {
       sumActualRestMs: (data['sumActualRestMs'] as num?)?.toDouble() ?? 0,
       sumPlannedRestMs: (data['sumPlannedRestMs'] as num?)?.toDouble() ?? 0,
       plannedSampleCount: (data['plannedSampleCount'] as num?)?.toInt() ?? 0,
+      sumActualRestDurationMs:
+          (data['sumActualRestDurationMs'] as num?)?.toDouble() ?? 0,
+      sumSetCount: (data['sumSetCount'] as num?)?.toInt() ?? 0,
       lastSessionAt: lastSessionAt,
     );
   }
@@ -94,6 +130,9 @@ class RestStatSummary {
       sumActualRestMs: (json['sumActualRestMs'] as num?)?.toDouble() ?? 0,
       sumPlannedRestMs: (json['sumPlannedRestMs'] as num?)?.toDouble() ?? 0,
       plannedSampleCount: (json['plannedSampleCount'] as num?)?.toInt() ?? 0,
+      sumActualRestDurationMs:
+          (json['sumActualRestDurationMs'] as num?)?.toDouble() ?? 0,
+      sumSetCount: (json['sumSetCount'] as num?)?.toInt() ?? 0,
       lastSessionAt:
           lastSessionRaw != null ? DateTime.tryParse(lastSessionRaw) : null,
     );
@@ -108,6 +147,8 @@ class RestStatSummary {
         'sumActualRestMs': sumActualRestMs,
         'sumPlannedRestMs': sumPlannedRestMs,
         'plannedSampleCount': plannedSampleCount,
+        'sumActualRestDurationMs': sumActualRestDurationMs,
+        'sumSetCount': sumSetCount,
         if (lastSessionAt != null)
           'lastSessionAt': lastSessionAt!.toIso8601String(),
       };

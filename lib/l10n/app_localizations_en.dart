@@ -327,21 +327,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restStatsHeadline => 'Overall average';
 
   @override
-  String get restStatsHeroDescription => 'Planned vs. actual rest between sets';
+  String get restStatsHeroDescription => 'Average rest time across all equipment';
 
   @override
-  String get restStatsActualLabel => 'Avg. actual rest';
-
-  @override
-  String get restStatsPlannedLabel => 'Avg. planned rest';
+  String get restStatsActualLabel => 'Avg. rest';
 
   @override
   String restStatsSampleCount(num count) {
     return intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Based on $count training day',
-      other: 'Based on $count training days',
+      one: 'Based on $count session',
+      other: 'Based on $count sessions',
+    );
+  }
+
+  @override
+  String restStatsSetCount(num count) {
+    return intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '$count set recorded',
+      other: '$count sets recorded',
     );
   }
 

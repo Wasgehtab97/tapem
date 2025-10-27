@@ -327,21 +327,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get restStatsHeadline => 'Gesamtdurchschnitt';
 
   @override
-  String get restStatsHeroDescription => 'Geplanter vs. tatsächlicher Satz-Rest';
+  String get restStatsHeroDescription =>
+      'Durchschnittliche Satzpause über alle Geräte';
 
   @override
-  String get restStatsActualLabel => 'Ø tatsächliche Pause';
-
-  @override
-  String get restStatsPlannedLabel => 'Ø geplante Pause';
+  String get restStatsActualLabel => 'Ø Satzpause';
 
   @override
   String restStatsSampleCount(num count) {
     return intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Basierend auf $count Trainingstag',
-      other: 'Basierend auf $count Trainingstagen',
+      one: 'Basierend auf $count Session',
+      other: 'Basierend auf $count Sessions',
+    );
+  }
+
+  @override
+  String restStatsSetCount(num count) {
+    return intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '$count Satz insgesamt',
+      other: '$count Sätze insgesamt',
     );
   }
 
