@@ -1409,6 +1409,12 @@ abstract class AppLocalizations {
   /// **'Balance after day'**
   String get storySessionDailyXpResultingTotalLabel;
 
+  /// No description provided for @storySessionDailyXpLevelValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · {xp} XP'**
+  String storySessionDailyXpLevelValue(Object level, Object xp);
+
   /// No description provided for @storySessionDailyXpPenaltiesLabel.
   ///
   /// In en, this message translates to:

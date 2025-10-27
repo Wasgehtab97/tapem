@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
 import 'package:tapem/features/story_session/domain/models/story_daily_xp.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
@@ -220,13 +221,6 @@ class _StorySessionCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
                       _XpBanner(dailyXp: dailyXp, palette: palette),
-                      if (hasBreakdown) ...[
-                        const SizedBox(height: 24),
-                        _XpBreakdownSection(
-                          dailyXp: dailyXp,
-                          palette: palette,
-                        ),
-                      ],
                       const SizedBox(height: 24),
                       _StoryStatsRow(stats: stats, palette: palette),
                       const SizedBox(height: 30),
@@ -253,6 +247,13 @@ class _StorySessionCard extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(height: 28),
+                      if (hasBreakdown) ...[
+                        _XpBreakdownSection(
+                          dailyXp: dailyXp,
+                          palette: palette,
+                        ),
+                        const SizedBox(height: 28),
+                      ],
                       Row(
                         children: [
                           TextButton(
@@ -551,7 +552,6 @@ class _XpReconciliationFooter extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final format = NumberFormat.decimalPattern(loc.localeName);
     final theme = Theme.of(context);
-    final gross = dailyXp.xp;
     final penalties = dailyXp.penaltySum;
     final previous = dailyXp.previousTotalXp;
     final result = dailyXp.totalXp ??
@@ -564,16 +564,10 @@ class _XpReconciliationFooter extends StatelessWidget {
       if (previous != null)
         _XpSummaryTile(
           label: loc.storySessionDailyXpPreviousTotalLabel,
-          value: '${format.format(previous)} XP',
+          value: _formatLevelProgress(previous, format, loc),
           palette: palette,
           theme: theme.textTheme,
         ),
-      _XpSummaryTile(
-        label: loc.storySessionDailyXpGrossLabel,
-        value: '${format.format(gross)} XP',
-        palette: palette,
-        theme: theme.textTheme,
-      ),
       if (penalties != 0)
         _XpSummaryTile(
           label: loc.storySessionDailyXpPenaltiesLabel,
@@ -585,7 +579,7 @@ class _XpReconciliationFooter extends StatelessWidget {
       if (result != null)
         _XpSummaryTile(
           label: loc.storySessionDailyXpResultingTotalLabel,
-          value: '${format.format(result)} XP',
+          value: _formatLevelProgress(result, format, loc),
           palette: palette,
           theme: theme.textTheme,
         ),
@@ -685,6 +679,18 @@ String _formatSignedInt(int value, NumberFormat format) {
     return '-${format.format(value.abs())}';
   }
   return format.format(0);
+}
+
+String _formatLevelProgress(int totalXp, NumberFormat format, AppLocalizations loc) {
+  final safeTotal = totalXp < 0 ? 0 : totalXp;
+  var level = (safeTotal ~/ LevelService.xpPerLevel) + 1;
+  if (level > LevelService.maxLevel) {
+    level = LevelService.maxLevel;
+  }
+  final xpInLevel =
+      level >= LevelService.maxLevel ? 0 : safeTotal % LevelService.xpPerLevel;
+  final xpText = format.format(xpInLevel);
+  return loc.storySessionDailyXpLevelValue(level, xpText);
 }
 
 class _XpBreakdownRow extends StatelessWidget {

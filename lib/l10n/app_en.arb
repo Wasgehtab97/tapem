@@ -892,6 +892,18 @@
   "@storySessionDailyXpResultingTotalLabel": {
     "description": "Label for the resulting XP total in the session story dialog banner"
   },
+  "storySessionDailyXpLevelValue": "Level {level} · {xp} XP",
+  "@storySessionDailyXpLevelValue": {
+    "description": "Displays the level and XP within that level for the session story summary footer",
+    "placeholders": {
+      "level": {
+        "type": "int"
+      },
+      "xp": {
+        "type": "String"
+      }
+    }
+  },
   "storySessionDailyXpPenaltiesLabel": "Penalties",
   "@storySessionDailyXpPenaltiesLabel": {
     "description": "Label for the penalties summary in the session story dialog footer"

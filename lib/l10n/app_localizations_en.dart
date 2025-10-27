@@ -707,6 +707,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpResultingTotalLabel => 'Balance after day';
 
   @override
+  String storySessionDailyXpLevelValue(Object level, Object xp) {
+    return 'Level $level · $xp XP';
+  }
+
+  @override
   String get storySessionDailyXpPenaltiesLabel => 'Penalties';
 
   @override

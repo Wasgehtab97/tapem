@@ -884,6 +884,14 @@
   "@storySessionDailyXpPreviousTotalLabel": {"description": "Beschriftung für den vorherigen XP-Kontostand im Story-Dialog"},
   "storySessionDailyXpResultingTotalLabel": "Kontostand nach dem Tag",
   "@storySessionDailyXpResultingTotalLabel": {"description": "Beschriftung für den resultierenden XP-Kontostand im Story-Dialog"},
+  "storySessionDailyXpLevelValue": "Level {level} · {xp} XP",
+  "@storySessionDailyXpLevelValue": {
+    "description": "Zeigt Level und XP innerhalb dieses Levels im XP-Footer des Story-Dialogs",
+    "placeholders": {
+      "level": {"type": "int"},
+      "xp": {"type": "String"}
+    }
+  },
   "storySessionDailyXpPenaltiesLabel": "Strafen",
   "@storySessionDailyXpPenaltiesLabel": {"description": "Beschriftung für die Strafübersicht im Story-Dialog"},
   "storySessionDailyXpBreakdownTitle": "Aufschlüsselung deiner XP",
