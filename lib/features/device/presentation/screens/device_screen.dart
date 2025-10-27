@@ -455,6 +455,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             userId: auth.userId!,
                             showInLeaderboard:
                                 auth.showInLeaderboard ?? true,
+                            plannedRestSeconds: plannedEntry?.restInSeconds,
                           );
                           final sessionId = prov.lastSessionId;
                           if (!ok) {

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
+import 'package:tapem/core/providers/rest_stats_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
@@ -27,12 +29,22 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
       if (!prov.isLoading && prov.trainingDates.isEmpty) {
         prov.loadTrainingDates(context);
       }
+      final auth = context.read<AuthProvider>();
+      final restStats = context.read<RestStatsProvider>();
+      final gymId = auth.gymCode;
+      final userId = auth.userId;
+      if (gymId != null && userId != null) {
+        unawaited(
+          restStats.load(gymId: gymId, userId: userId),
+        );
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
+    final restStatsProv = context.watch<RestStatsProvider>();
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
@@ -46,6 +58,10 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     final avgTrainingDays = prov.averageTrainingDaysPerWeek;
     final favoriteExercise =
         prov.favoriteExerciseName ?? loc.profileStatsFavoriteExerciseFallback;
+    final restValue = restStatsProv.isLoading &&
+            restStatsProv.overallActualRestMs == null
+        ? '…'
+        : _formatRestDuration(restStatsProv.overallActualRestMs);
 
     String formatAverage(double value) {
       if (value == 0) {
@@ -86,6 +102,13 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
               ),
               _kpiRing(
                 context,
+                loc.profileStatsRestTimerLabel,
+                restValue,
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.restStats),
+              ),
+              _kpiRing(
+                context,
                 loc.profileStatsFavoriteExercise,
                 favoriteExercise,
                 onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
@@ -113,6 +136,20 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
         ),
       ),
     );
+  }
+
+  String _formatRestDuration(double? ms) {
+    if (ms == null || ms.isNaN || ms.isInfinite) {
+      return '—';
+    }
+    final duration = Duration(milliseconds: ms.round());
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60).abs();
+    final seconds = duration.inSeconds.remainder(60).abs();
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${duration.inMinutes}:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _kpiRing(

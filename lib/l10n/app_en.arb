@@ -375,6 +375,11 @@
     "description": "KPI label for average training days per week"
   },
 
+  "profileStatsRestTimerLabel": "Rest timer",
+  "@profileStatsRestTimerLabel": {
+    "description": "Label for the rest timer tile in profile statistics"
+  },
+
   "profileStatsFavoriteExercise": "Favourite exercise",
   "@profileStatsFavoriteExercise": {
     "description": "KPI label for favourite exercise"
@@ -393,6 +398,46 @@
   "profileStatsPowerliftingButton": "Powerlifting",
   "@profileStatsPowerliftingButton": {
     "description": "Button label that opens the powerlifting overview"
+  },
+
+  "restStatsTitle": "Set Pauses",
+  "@restStatsTitle": {
+    "description": "Title of the set pause statistics page"
+  },
+  "restStatsHeadline": "Overall average",
+  "@restStatsHeadline": {
+    "description": "Headline for the aggregated rest metric"
+  },
+  "restStatsHeroDescription": "Planned vs. actual rest between sets",
+  "@restStatsHeroDescription": {
+    "description": "Subtitle describing the rest comparison"
+  },
+  "restStatsActualLabel": "Avg. actual rest",
+  "@restStatsActualLabel": {
+    "description": "Label for the actual average rest value"
+  },
+  "restStatsPlannedLabel": "Avg. planned rest",
+  "@restStatsPlannedLabel": {
+    "description": "Label for the planned average rest value"
+  },
+  "restStatsSampleCount": "{count, plural, one {Based on # training day} other {Based on # training days}}",
+  "@restStatsSampleCount": {
+    "description": "Indicates how many training days are aggregated",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "restStatsErrorMessage": "Could not load set pauses.",
+  "@restStatsErrorMessage": {
+    "description": "Error message when rest statistics fail to load"
+  },
+  "restStatsReloadCta": "Reload",
+  "@restStatsReloadCta": {
+    "description": "Call-to-action to reload the rest statistics"
+  },
+  "restStatsEmptyMessage": "No set pauses recorded yet.",
+  "@restStatsEmptyMessage": {
+    "description": "Shown when there are no rest statistics"
   },
 
   "repsRequired": "reps?",

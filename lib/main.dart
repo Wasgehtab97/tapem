@@ -44,6 +44,7 @@ import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
+import 'package:tapem/core/providers/rest_stats_provider.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
@@ -95,6 +96,7 @@ import 'features/device/domain/usecases/create_exercise_usecase.dart';
 import 'features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_usecase.dart';
 import 'features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
+import 'features/rest_stats/data/rest_stats_service.dart';
 
 import 'features/report/data/repositories/report_repository_impl.dart';
 import 'features/report/domain/usecases/get_device_usage_stats.dart';
@@ -312,6 +314,9 @@ Future<void> main() async {
           create: (c) =>
               UpdateExerciseMuscleGroupsUseCase(c.read<ExerciseRepository>()),
         ),
+        Provider<RestStatsService>(
+          create: (_) => RestStatsService(firestore: FirebaseFirestore.instance),
+        ),
 
         // App state
         ChangeNotifierProvider(
@@ -467,6 +472,9 @@ Future<void> main() async {
           },
         ),
         ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
+        ChangeNotifierProvider(
+          create: (c) => RestStatsProvider(service: c.read<RestStatsService>()),
+        ),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
           create: (_) => ProfileProvider(),

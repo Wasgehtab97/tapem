@@ -375,6 +375,11 @@
     "description": "KPI-Bezeichnung für durchschnittliche Trainingstage je Woche"
   },
 
+  "profileStatsRestTimerLabel": "Satztimer",
+  "@profileStatsRestTimerLabel": {
+    "description": "Beschriftung der Satzpausen-Kachel in den Profilstatistiken"
+  },
+
   "profileStatsFavoriteExercise": "Lieblingsübung",
   "@profileStatsFavoriteExercise": {
     "description": "KPI-Bezeichnung für die Lieblingsübung"
@@ -393,6 +398,46 @@
   "profileStatsPowerliftingButton": "Powerlifting",
   "@profileStatsPowerliftingButton": {
     "description": "Button-Beschriftung, um die Powerlifting-Übersicht zu öffnen"
+  },
+
+  "restStatsTitle": "Satzpausen",
+  "@restStatsTitle": {
+    "description": "Titel der Satzpausen-Statistikseite"
+  },
+  "restStatsHeadline": "Gesamtdurchschnitt",
+  "@restStatsHeadline": {
+    "description": "Überschrift der Kennzahl auf der Satzpausen-Seite"
+  },
+  "restStatsHeroDescription": "Geplanter vs. tatsächlicher Satz-Rest",
+  "@restStatsHeroDescription": {
+    "description": "Beschreibungstext im Header der Satzpausen-Seite"
+  },
+  "restStatsActualLabel": "Ø tatsächliche Pause",
+  "@restStatsActualLabel": {
+    "description": "Label für die tatsächliche durchschnittliche Satzpause"
+  },
+  "restStatsPlannedLabel": "Ø geplante Pause",
+  "@restStatsPlannedLabel": {
+    "description": "Label für die geplante durchschnittliche Satzpause"
+  },
+  "restStatsSampleCount": "{count, plural, one {Basierend auf # Trainingstag} other {Basierend auf # Trainingstagen}}",
+  "@restStatsSampleCount": {
+    "description": "Beschreibt, auf wie vielen Trainingstagen die Statistik basiert",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "restStatsErrorMessage": "Satzpausen konnten nicht geladen werden.",
+  "@restStatsErrorMessage": {
+    "description": "Fehlermeldung beim Laden der Satzpausen"
+  },
+  "restStatsReloadCta": "Erneut laden",
+  "@restStatsReloadCta": {
+    "description": "Buttonbeschriftung zum Aktualisieren der Satzpausen"
+  },
+  "restStatsEmptyMessage": "Noch keine Satzpausen erfasst.",
+  "@restStatsEmptyMessage": {
+    "description": "Hinweistext, wenn keine Satzpausen vorliegen"
   },
 
   "repsRequired": "Wdh?",

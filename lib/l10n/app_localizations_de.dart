@@ -306,6 +306,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsAverageTrainingDaysPerWeek => 'Durchschnittliche Trainingstage/Woche';
 
   @override
+  String get profileStatsRestTimerLabel => 'Satztimer';
+
+  @override
   String get profileStatsFavoriteExercise => 'Lieblingsübung';
 
   @override
@@ -316,6 +319,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
+  String get restStatsTitle => 'Satzpausen';
+
+  @override
+  String get restStatsHeadline => 'Gesamtdurchschnitt';
+
+  @override
+  String get restStatsHeroDescription => 'Geplanter vs. tatsächlicher Satz-Rest';
+
+  @override
+  String get restStatsActualLabel => 'Ø tatsächliche Pause';
+
+  @override
+  String get restStatsPlannedLabel => 'Ø geplante Pause';
+
+  @override
+  String restStatsSampleCount(num count) {
+    return intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: 'Basierend auf $count Trainingstag',
+      other: 'Basierend auf $count Trainingstagen',
+    );
+  }
+
+  @override
+  String get restStatsErrorMessage => 'Satzpausen konnten nicht geladen werden.';
+
+  @override
+  String get restStatsReloadCta => 'Erneut laden';
+
+  @override
+  String get restStatsEmptyMessage => 'Noch keine Satzpausen erfasst.';
 
   @override
   String get repsRequired => 'Wdh?';
