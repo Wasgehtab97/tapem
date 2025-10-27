@@ -23,6 +23,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'app_router.dart';
@@ -256,6 +257,7 @@ Future<void> main() async {
   final reportRepo = ReportRepositoryImpl();
   final usageUC = GetDeviceUsageStats(reportRepo);
   final logsUC = GetAllLogTimestamps(reportRepo);
+  final sharedPrefs = await SharedPreferences.getInstance();
 
   runApp(
     MultiProvider(
@@ -312,7 +314,9 @@ Future<void> main() async {
         ),
 
         // App state
-        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AppProvider(preferences: sharedPrefs),
+        ),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
