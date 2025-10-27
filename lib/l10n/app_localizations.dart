@@ -641,6 +641,12 @@ abstract class AppLocalizations {
   /// **'Avg. training days per week'**
   String get profileStatsAverageTrainingDaysPerWeek;
 
+  /// Label for the rest timer tile in profile statistics
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer'**
+  String get profileStatsRestTimerLabel;
+
   /// KPI label for favourite exercise
   ///
   /// In en, this message translates to:
@@ -664,6 +670,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Powerlifting'**
   String get profileStatsPowerliftingButton;
+
+  /// Title of the set pause statistics page
+  ///
+  /// In en, this message translates to:
+  /// **'Set Pauses'**
+  String get restStatsTitle;
+
+  /// Headline for the aggregated rest metric
+  ///
+  /// In en, this message translates to:
+  /// **'Overall average'**
+  String get restStatsHeadline;
+
+  /// Subtitle describing the rest comparison
+  ///
+  /// In en, this message translates to:
+  /// **'Planned vs. actual rest between sets'**
+  String get restStatsHeroDescription;
+
+  /// Label for the actual average rest value
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. actual rest'**
+  String get restStatsActualLabel;
+
+  /// Label for the planned average rest value
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. planned rest'**
+  String get restStatsPlannedLabel;
+
+  /// Indicates how many training days are aggregated
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {Based on # training day} other {Based on # training days}}'**
+  String restStatsSampleCount(num count);
+
+  /// Error message when rest statistics fail to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load set pauses.'**
+  String get restStatsErrorMessage;
+
+  /// Call-to-action to reload the rest statistics
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get restStatsReloadCta;
+
+  /// Shown when there are no rest statistics
+  ///
+  /// In en, this message translates to:
+  /// **'No set pauses recorded yet.'**
+  String get restStatsEmptyMessage;
 
   /// Validation when reps are missing
   ///

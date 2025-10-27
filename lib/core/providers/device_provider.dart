@@ -34,6 +34,7 @@ import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import '../../main.dart';
 
 enum DeviceSetFieldFocus {
@@ -211,6 +212,7 @@ class DeviceProvider extends ChangeNotifier {
       'dropReps': '',
       'done': false,
       'isBodyweight': isBodyweight ?? _isBodyweightMode,
+      'completedAtMs': null,
     });
   }
 
@@ -749,6 +751,11 @@ class DeviceProvider extends ChangeNotifier {
     final current = (s['done'] == true || s['done'] == 'true');
     final toggledToDone = !current;
     s['done'] = toggledToDone;
+    if (toggledToDone) {
+      s['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
+    } else {
+      s.remove('completedAtMs');
+    }
     _sets[index] = Map<String, dynamic>.from(s);
     _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
     notifyListeners();
@@ -775,6 +782,7 @@ class DeviceProvider extends ChangeNotifier {
 
     final after = Map<String, dynamic>.from(s);
     after['done'] = true;
+    after['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
     _sets[index] = after;
     _log('☑️ [Provider] markSetDone($index)');
     notifyListeners();
@@ -792,6 +800,7 @@ class DeviceProvider extends ChangeNotifier {
 
     final after = Map<String, dynamic>.from(s);
     after['done'] = false;
+    after.remove('completedAtMs');
     _sets[index] = after;
     _log('⬜️ [Provider] markSetNotDone($index)');
     notifyListeners();
@@ -829,6 +838,7 @@ class DeviceProvider extends ChangeNotifier {
     if (idx == null) return null;
     final s = Map<String, dynamic>.from(_sets[idx]);
     s['done'] = true;
+    s['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
     _sets[idx] = s;
     _log('☑️ [Provider] completeNextFilledSet($idx)');
     notifyListeners();
@@ -840,12 +850,14 @@ class DeviceProvider extends ChangeNotifier {
 
   int completeAllFilledNotDone() {
     var count = 0;
+    final baseMs = DateTime.now().millisecondsSinceEpoch;
     for (var i = 0; i < _sets.length; i++) {
       final s = _sets[i];
       if (s['done'] == true || s['done'] == 'true') continue;
       if (!_isFilled(s)) continue;
       final after = Map<String, dynamic>.from(s);
       after['done'] = true;
+      after['completedAtMs'] = baseMs + count;
       _sets[i] = after;
       count++;
     }
@@ -1110,6 +1122,7 @@ class DeviceProvider extends ChangeNotifier {
     required String userId,
     required bool showInLeaderboard,
     bool autoFinalize = false,
+    int? plannedRestSeconds,
   }) async {
     final dayKey = logicDayKey(DateTime.now());
     if (_device == null) {
@@ -1160,6 +1173,22 @@ class DeviceProvider extends ChangeNotifier {
         return false;
       }
 
+      final completionTimes = <int>[];
+      for (final set in savedSets) {
+        final raw = set['completedAtMs'];
+        if (raw is int) {
+          completionTimes.add(raw);
+        } else if (raw is num) {
+          completionTimes.add(raw.toInt());
+        } else if (raw is String) {
+          final parsed = int.tryParse(raw);
+          if (parsed != null) {
+            completionTimes.add(parsed);
+          }
+        }
+      }
+      completionTimes.sort();
+
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
         'reps': savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
@@ -1197,6 +1226,16 @@ class DeviceProvider extends ChangeNotifier {
         return false;
       }
       final ts = Timestamp.now();
+      final endDate = ts.toDate();
+      double? averageRestMs;
+      if (completionTimes.isNotEmpty) {
+        final startMs = completionTimes.first;
+        final totalDurationMs =
+            math.max(0, endDate.millisecondsSinceEpoch - startMs);
+        averageRestMs = totalDurationMs / savedSets.length;
+      }
+      final plannedRestMs =
+          plannedRestSeconds != null ? plannedRestSeconds * 1000.0 : null;
       String tz;
       try {
         tz = await FlutterTimezone.getLocalTimezone();
@@ -1278,11 +1317,31 @@ class DeviceProvider extends ChangeNotifier {
       final durationService = _sessionDurationService;
       await durationService?.registerSession(
         sessionId: sessionId,
-        completedAt: ts.toDate(),
+        completedAt: endDate,
       );
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
+
+      final restStatsService = _getRestStatsService();
+      if (restStatsService != null && averageRestMs != null) {
+        try {
+          await restStatsService.recordSession(
+            gymId: gymId,
+            userId: userId,
+            deviceId: _device!.uid,
+            deviceName: _device!.name,
+            exerciseId: _device!.isMulti ? _currentExerciseId : null,
+            exerciseName: _lookupExerciseName(),
+            averageActualRestMs: averageRestMs,
+            plannedRestMs: plannedRestMs,
+            sessionDate: endDate,
+            setCount: savedSets.length,
+          );
+        } catch (e, st) {
+          _log('⚠️ [Provider] rest stats record error: $e', st);
+        }
+      }
       final dayKey = logicDayKey(DateTime.now());
       elogUi('SAVE_PERSIST_OK', {
         'uid': userId,
@@ -1465,6 +1524,30 @@ class DeviceProvider extends ChangeNotifier {
       secondaryMuscleGroupIds: secondaryMuscleGroupIds,
       muscleGroupRevision: DateTime.now().millisecondsSinceEpoch,
     );
+  }
+
+  RestStatsService? _getRestStatsService() {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return null;
+    try {
+      return Provider.of<RestStatsService>(ctx, listen: false);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _lookupExerciseName() {
+    if (!(_device?.isMulti ?? false)) return null;
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return null;
+    try {
+      final exProv = Provider.of<ExerciseProvider>(ctx, listen: false);
+      return exProv.exercises
+          .firstWhereOrNull((e) => e.id == _currentExerciseId)
+          ?.name;
+    } catch (_) {
+      return null;
+    }
   }
 
   _ResolvedMuscleAssignments _resolveMuscleAssignments({

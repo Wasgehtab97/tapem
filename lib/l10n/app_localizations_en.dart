@@ -306,6 +306,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsAverageTrainingDaysPerWeek => 'Avg. training days per week';
 
   @override
+  String get profileStatsRestTimerLabel => 'Rest timer';
+
+  @override
   String get profileStatsFavoriteExercise => 'Favourite exercise';
 
   @override
@@ -316,6 +319,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileStatsPowerliftingButton => 'Powerlifting';
+
+  @override
+  String get restStatsTitle => 'Set Pauses';
+
+  @override
+  String get restStatsHeadline => 'Overall average';
+
+  @override
+  String get restStatsHeroDescription => 'Planned vs. actual rest between sets';
+
+  @override
+  String get restStatsActualLabel => 'Avg. actual rest';
+
+  @override
+  String get restStatsPlannedLabel => 'Avg. planned rest';
+
+  @override
+  String restStatsSampleCount(num count) {
+    return intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: 'Based on $count training day',
+      other: 'Based on $count training days',
+    );
+  }
+
+  @override
+  String get restStatsErrorMessage => 'Could not load set pauses.';
+
+  @override
+  String get restStatsReloadCta => 'Reload';
+
+  @override
+  String get restStatsEmptyMessage => 'No set pauses recorded yet.';
 
   @override
   String get repsRequired => 'reps?';
