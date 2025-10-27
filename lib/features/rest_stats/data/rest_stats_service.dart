@@ -39,6 +39,10 @@ class RestStatsService {
     int? setCount,
   }) async {
     final doc = _collection(gymId, userId).doc(_docId(deviceId, exerciseId));
+    final normalizedSetCount = setCount ?? 0;
+    final totalRestDuration = normalizedSetCount > 0
+        ? averageActualRestMs * normalizedSetCount
+        : averageActualRestMs;
     final payload = <String, dynamic>{
       'deviceId': deviceId,
       'deviceName': deviceName,
@@ -46,14 +50,15 @@ class RestStatsService {
       'exerciseName': exerciseName ?? '',
       'sampleCount': FieldValue.increment(1),
       'sumActualRestMs': FieldValue.increment(averageActualRestMs),
+      'sumActualRestDurationMs': FieldValue.increment(totalRestDuration),
       'sumPlannedRestMs': FieldValue.increment(plannedRestMs ?? 0),
       'plannedSampleCount':
           FieldValue.increment(plannedRestMs != null ? 1 : 0),
       'lastSessionAt': Timestamp.fromDate(sessionDate),
       'updatedAt': FieldValue.serverTimestamp(),
     };
-    if (setCount != null) {
-      payload['sumSetCount'] = FieldValue.increment(setCount);
+    if (normalizedSetCount > 0) {
+      payload['sumSetCount'] = FieldValue.increment(normalizedSetCount);
     }
     await doc.set(payload, SetOptions(merge: true));
   }

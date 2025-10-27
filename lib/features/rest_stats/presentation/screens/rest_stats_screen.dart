@@ -59,9 +59,9 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
     final provider = context.watch<RestStatsProvider>();
     final brand = theme.extension<AppBrandTheme>();
     final outlineColor = brand?.outline ?? theme.colorScheme.secondary;
-    final plannedMs = provider.overallPlannedRestMs;
     final actualMs = provider.overallActualRestMs;
-    final diffMs = provider.overallDifferenceMs;
+    final totalSamples = provider.totalSampleCount;
+    final totalSets = provider.totalSetCount;
 
     Widget buildHeroCard() {
       return BrandGradientCard(
@@ -79,42 +79,44 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
+              _formatDuration(actualMs),
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: brand?.onBrand ?? theme.colorScheme.onPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
               loc.restStatsHeroDescription,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color:
                     (brand?.onBrand ?? theme.colorScheme.onPrimary).withOpacity(0.84),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                _RestStatPill(
-                  label: loc.restStatsActualLabel,
-                  value: _formatDuration(actualMs),
-                ),
-                if (plannedMs != null) ...[
-                  const SizedBox(width: AppSpacing.md),
-                  _RestStatPill(
-                    label: loc.restStatsPlannedLabel,
-                    value: _formatDuration(plannedMs),
-                  ),
+            const SizedBox(height: AppSpacing.md),
+            if (totalSamples > 0 || totalSets > 0)
+              Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  if (totalSamples > 0)
+                    Text(
+                      loc.restStatsSampleCount(totalSamples),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: (brand?.onBrand ?? theme.colorScheme.onPrimary)
+                            .withOpacity(0.9),
+                      ),
+                    ),
+                  if (totalSets > 0)
+                    Text(
+                      loc.restStatsSetCount(totalSets),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: (brand?.onBrand ?? theme.colorScheme.onPrimary)
+                            .withOpacity(0.9),
+                      ),
+                    ),
                 ],
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (diffMs != null)
-              _DifferenceChip(
-                diffMs: diffMs,
-                formatter: _formatDuration,
               ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              loc.restStatsSampleCount(provider.totalSampleCount),
-              style: theme.textTheme.labelMedium?.copyWith(
-                color:
-                    (brand?.onBrand ?? theme.colorScheme.onPrimary).withOpacity(0.9),
-              ),
-            ),
           ],
         ),
       );
@@ -167,13 +169,17 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
                 ),
               ),
             for (final stat in items) ...[
-              _RestStatTile(
+              _RestStatCard(
                 stat: stat,
                 formatter: _formatDuration,
                 outlineColor: outlineColor,
-                plannedLabel: loc.restStatsPlannedLabel,
                 actualLabel: loc.restStatsActualLabel,
-                sampleText: loc.restStatsSampleCount(stat.sampleCount),
+                sampleText: stat.sampleCount > 0
+                    ? loc.restStatsSampleCount(stat.sampleCount)
+                    : null,
+                setCountLabel: stat.sumSetCount > 0
+                    ? loc.restStatsSetCount(stat.sumSetCount)
+                    : null,
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -194,127 +200,27 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
   }
 }
 
-class _RestStatPill extends StatelessWidget {
-  const _RestStatPill({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = theme.colorScheme.onPrimaryContainer;
-    final background = theme.colorScheme.primaryContainer.withOpacity(0.85);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(color: color),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DifferenceChip extends StatelessWidget {
-  const _DifferenceChip({
-    required this.diffMs,
-    required this.formatter,
-  });
-
-  final double diffMs;
-  final String Function(double? ms) formatter;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isPositive = diffMs > 0;
-    final isNegative = diffMs < 0;
-    final colorScheme = theme.colorScheme;
-    Color background;
-    Color foreground;
-    if (isPositive) {
-      background = colorScheme.errorContainer;
-      foreground = colorScheme.onErrorContainer;
-    } else if (isNegative) {
-      background = colorScheme.secondaryContainer;
-      foreground = colorScheme.onSecondaryContainer;
-    } else {
-      background = colorScheme.surfaceVariant;
-      foreground = colorScheme.onSurfaceVariant;
-    }
-
-    final formatted = formatter(diffMs.abs());
-    final prefix = diffMs > 0 ? '+' : diffMs < 0 ? '−' : '';
-    return Container(
-      margin: const EdgeInsets.only(top: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-      ),
-      child: Text(
-        '${prefix.isEmpty ? '' : prefix}$formatted',
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _RestStatTile extends StatelessWidget {
-  const _RestStatTile({
+class _RestStatCard extends StatelessWidget {
+  const _RestStatCard({
     required this.stat,
     required this.formatter,
     required this.outlineColor,
-    required this.plannedLabel,
     required this.actualLabel,
-    required this.sampleText,
+    this.sampleText,
+    this.setCountLabel,
   });
 
   final RestStatSummary stat;
   final String Function(double? ms) formatter;
   final Color outlineColor;
-  final String plannedLabel;
   final String actualLabel;
-  final String sampleText;
+  final String? sampleText;
+  final String? setCountLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final actual = stat.averageActualRestMs;
-    final planned = stat.averagePlannedRestMs;
-    final diff =
-        actual != null && planned != null ? actual - planned : null;
+    final average = stat.effectiveAverageActualRestMs;
     final title = stat.exerciseName?.isNotEmpty == true
         ? '${stat.deviceName} — ${stat.exerciseName}'
         : stat.deviceName;
@@ -327,64 +233,45 @@ class _RestStatTile extends StatelessWidget {
       color: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: outlineColor,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '$actualLabel: ${formatter(actual)}',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  if (planned != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '$plannedLabel: ${formatter(planned)}',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    sampleText,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: outlineColor,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  formatter(actual),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: outlineColor,
-                  ),
-                ),
-                if (diff != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: _DifferenceChip(
-                      diffMs: diff,
-                      formatter: formatter,
-                    ),
-                  ),
-              ],
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '$actualLabel: ${formatter(average)}',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            const SizedBox(height: AppSpacing.xs),
+            if (sampleText != null || setCountLabel != null)
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  if (sampleText != null)
+                    Text(
+                      sampleText!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (setCountLabel != null)
+                    Text(
+                      setCountLabel!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
           ],
         ),
       ),

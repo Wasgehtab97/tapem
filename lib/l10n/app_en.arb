@@ -408,21 +408,24 @@
   "@restStatsHeadline": {
     "description": "Headline for the aggregated rest metric"
   },
-  "restStatsHeroDescription": "Planned vs. actual rest between sets",
+  "restStatsHeroDescription": "Average rest time across all equipment",
   "@restStatsHeroDescription": {
-    "description": "Subtitle describing the rest comparison"
+    "description": "Subtitle describing the aggregated rest insight"
   },
-  "restStatsActualLabel": "Avg. actual rest",
+  "restStatsActualLabel": "Avg. rest",
   "@restStatsActualLabel": {
-    "description": "Label for the actual average rest value"
+    "description": "Label for the average rest value"
   },
-  "restStatsPlannedLabel": "Avg. planned rest",
-  "@restStatsPlannedLabel": {
-    "description": "Label for the planned average rest value"
-  },
-  "restStatsSampleCount": "{count, plural, one {Based on # training day} other {Based on # training days}}",
+  "restStatsSampleCount": "{count, plural, one {Based on # session} other {Based on # sessions}}",
   "@restStatsSampleCount": {
-    "description": "Indicates how many training days are aggregated",
+    "description": "Helper text indicating how many sessions contribute to the metric",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "restStatsSetCount": "{count, plural, one {# set recorded} other {# sets recorded}}",
+  "@restStatsSetCount": {
+    "description": "Indicates how many sets are included in a stat",
     "placeholders": {
       "count": {}
     }

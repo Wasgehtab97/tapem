@@ -408,21 +408,24 @@
   "@restStatsHeadline": {
     "description": "Überschrift der Kennzahl auf der Satzpausen-Seite"
   },
-  "restStatsHeroDescription": "Geplanter vs. tatsächlicher Satz-Rest",
+  "restStatsHeroDescription": "Durchschnittliche Satzpause über alle Geräte",
   "@restStatsHeroDescription": {
     "description": "Beschreibungstext im Header der Satzpausen-Seite"
   },
-  "restStatsActualLabel": "Ø tatsächliche Pause",
+  "restStatsActualLabel": "Ø Satzpause",
   "@restStatsActualLabel": {
-    "description": "Label für die tatsächliche durchschnittliche Satzpause"
+    "description": "Label für die durchschnittliche Satzpause"
   },
-  "restStatsPlannedLabel": "Ø geplante Pause",
-  "@restStatsPlannedLabel": {
-    "description": "Label für die geplante durchschnittliche Satzpause"
-  },
-  "restStatsSampleCount": "{count, plural, one {Basierend auf # Trainingstag} other {Basierend auf # Trainingstagen}}",
+  "restStatsSampleCount": "{count, plural, one {Basierend auf # Session} other {Basierend auf # Sessions}}",
   "@restStatsSampleCount": {
-    "description": "Beschreibt, auf wie vielen Trainingstagen die Statistik basiert",
+    "description": "Hinweistext, wie viele Sessions in die Auswertung einfließen",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "restStatsSetCount": "{count, plural, one {# Satz insgesamt} other {# Sätze insgesamt}}",
+  "@restStatsSetCount": {
+    "description": "Anzahl der erfassten Sätze für eine Kennzahl",
     "placeholders": {
       "count": {}
     }

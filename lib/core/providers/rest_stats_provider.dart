@@ -35,37 +35,34 @@ class RestStatsProvider extends ChangeNotifier {
   bool get hasData => _stats.isNotEmpty;
 
   double? get overallActualRestMs {
-    final totalSamples = _stats.fold<int>(0, (acc, stat) => acc + stat.sampleCount);
+    final totalSets = totalSetCount;
+    if (totalSets > 0) {
+      final totalDuration = _stats.fold<double>(
+        0,
+        (acc, stat) => acc + stat.totalActualRestDurationMs,
+      );
+      if (totalDuration <= 0) {
+        return null;
+      }
+      return totalDuration / totalSets;
+    }
+    final totalSamples = totalSampleCount;
     if (totalSamples == 0) return null;
     final totalSum =
         _stats.fold<double>(0, (acc, stat) => acc + stat.sumActualRestMs);
     return totalSum / totalSamples;
   }
 
-  double? get overallPlannedRestMs {
-    final totalSamples =
-        _stats.fold<int>(0, (acc, stat) => acc + stat.plannedSampleCount);
-    if (totalSamples == 0) return null;
-    final totalSum =
-        _stats.fold<double>(0, (acc, stat) => acc + stat.sumPlannedRestMs);
-    if (totalSum <= 0) return null;
-    return totalSum / totalSamples;
-  }
-
-  double? get overallDifferenceMs {
-    final actual = overallActualRestMs;
-    final planned = overallPlannedRestMs;
-    if (actual == null || planned == null) return null;
-    return actual - planned;
-  }
-
   int get totalSampleCount =>
       _stats.fold<int>(0, (acc, stat) => acc + stat.sampleCount);
 
+  int get totalSetCount =>
+      _stats.fold<int>(0, (acc, stat) => acc + stat.sumSetCount);
+
   void _assignStats(List<RestStatSummary> stats, DateTime loadedAt) {
     stats.sort((a, b) {
-      final aValue = a.averageActualRestMs ?? 0;
-      final bValue = b.averageActualRestMs ?? 0;
+      final aValue = a.effectiveAverageActualRestMs ?? 0;
+      final bValue = b.effectiveAverageActualRestMs ?? 0;
       final valueComparison = bValue.compareTo(aValue);
       if (valueComparison != 0) {
         return valueComparison;

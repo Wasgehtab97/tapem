@@ -683,29 +683,29 @@ abstract class AppLocalizations {
   /// **'Overall average'**
   String get restStatsHeadline;
 
-  /// Subtitle describing the rest comparison
+  /// Subtitle describing the overall rest insight
   ///
   /// In en, this message translates to:
-  /// **'Planned vs. actual rest between sets'**
+  /// **'Average rest time across all equipment'**
   String get restStatsHeroDescription;
 
-  /// Label for the actual average rest value
+  /// Label for the average rest value
   ///
   /// In en, this message translates to:
-  /// **'Avg. actual rest'**
+  /// **'Avg. rest'**
   String get restStatsActualLabel;
 
-  /// Label for the planned average rest value
+  /// Helper text indicating how many sessions contribute to the metric
   ///
   /// In en, this message translates to:
-  /// **'Avg. planned rest'**
-  String get restStatsPlannedLabel;
-
-  /// Indicates how many training days are aggregated
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {Based on # training day} other {Based on # training days}}'**
+  /// **'{count, plural, one {Based on # session} other {Based on # sessions}}'**
   String restStatsSampleCount(num count);
+
+  /// Indicates how many sets are included in a stat
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {# set recorded} other {# sets recorded}}'**
+  String restStatsSetCount(num count);
 
   /// Error message when rest statistics fail to load
   ///
