@@ -974,7 +974,16 @@ class _StoryStatCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text(title, style: titleStyle),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: titleStyle,
+                maxLines: 1,
+                softWrap: false,
+              ),
+            ),
           ],
         ),
       ),
