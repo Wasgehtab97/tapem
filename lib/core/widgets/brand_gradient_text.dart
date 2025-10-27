@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/core/theme/design_tokens.dart';
 
-/// Text widget that renders its foreground using the global brand gradient.
+/// Text widget that applies the app's default typography without gradient effects.
 class BrandGradientText extends StatelessWidget {
   const BrandGradientText(
     this.text, {
@@ -25,24 +24,15 @@ class BrandGradientText extends StatelessWidget {
     final defaultStyle = DefaultTextStyle.of(context).style;
     final effectiveStyle = defaultStyle
         .merge(style)
-        .copyWith(color: Colors.white, decoration: TextDecoration.none);
+        .copyWith(decoration: TextDecoration.none);
 
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        final rect = bounds.isEmpty
-            ? const Rect.fromLTWH(0, 0, 1, 1)
-            : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
-        return AppGradients.brandGradient.createShader(rect);
-      },
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        text,
-        style: effectiveStyle,
-        textAlign: textAlign,
-        maxLines: maxLines,
-        overflow: overflow,
-        softWrap: softWrap,
-      ),
+    return Text(
+      text,
+      style: effectiveStyle,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
+      softWrap: softWrap,
     );
   }
 }
