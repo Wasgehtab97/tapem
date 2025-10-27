@@ -456,11 +456,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                    color: brandColor,
                   ) ??
                   TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                    color: brandColor,
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),

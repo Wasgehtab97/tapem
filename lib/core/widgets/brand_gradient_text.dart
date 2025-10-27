@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/core/theme/design_tokens.dart';
 
-/// Text widget that renders its foreground using the global brand gradient.
+import '../theme/app_brand_theme.dart';
+
+/// Text widget that renders its foreground using the global brand accent colour.
 class BrandGradientText extends StatelessWidget {
   const BrandGradientText(
     this.text, {
@@ -22,27 +23,24 @@ class BrandGradientText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final accentColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final defaultStyle = DefaultTextStyle.of(context).style;
     final effectiveStyle = defaultStyle
         .merge(style)
-        .copyWith(color: Colors.white, decoration: TextDecoration.none);
+        .copyWith(
+          color: accentColor,
+          decoration: TextDecoration.none,
+        );
 
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        final rect = bounds.isEmpty
-            ? const Rect.fromLTWH(0, 0, 1, 1)
-            : Rect.fromLTWH(0, 0, bounds.width, bounds.height);
-        return AppGradients.brandGradient.createShader(rect);
-      },
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        text,
-        style: effectiveStyle,
-        textAlign: textAlign,
-        maxLines: maxLines,
-        overflow: overflow,
-        softWrap: softWrap,
-      ),
+    return Text(
+      text,
+      style: effectiveStyle,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
+      softWrap: softWrap,
     );
   }
 }
