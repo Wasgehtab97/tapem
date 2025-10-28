@@ -12,7 +12,12 @@ class OnboardingFunnelRepository {
     final query = _firestore.collection('gyms').doc(gymId).collection('users');
     try {
       final aggregate = await query.count().get();
-      return aggregate.count;
+      final count = aggregate.count;
+      if (count != null) {
+        return count;
+      }
+      final snapshot = await query.get();
+      return snapshot.size;
     } catch (_) {
       final snapshot = await query.get();
       return snapshot.size;
@@ -50,7 +55,13 @@ class OnboardingFunnelRepository {
     int trainingDays;
     try {
       final aggregate = await trainingQuery.count().get();
-      trainingDays = aggregate.count;
+      final count = aggregate.count;
+      if (count != null) {
+        trainingDays = count;
+      } else {
+        final trainingSnapshot = await trainingQuery.get();
+        trainingDays = trainingSnapshot.size;
+      }
     } catch (_) {
       final trainingSnapshot = await trainingQuery.get();
       trainingDays = trainingSnapshot.size;
