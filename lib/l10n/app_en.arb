@@ -962,7 +962,7 @@
   "storySessionDailyXpComponentBaseSubtitle": "Training day #{day}",
   "storySessionDailyXpComponentComeback": "Comeback boost",
   "storySessionDailyXpComponentStreak": "Streak bonus",
-  "storySessionDailyXpComponentStreakSubtitle": "{streak, plural, one {Streak of # day} other {Streak of # days}}",
+  "storySessionDailyXpComponentStreakSubtitle": "{streak, plural, one {#-day streak} other {#-day streak}}",
   "storySessionDailyXpComponentMilestone": "Milestone reward",
   "storySessionDailyXpComponentMilestoneSubtitle": "Milestone day {day}",
   "storySessionDailyXpComponentUnknown": "Additional reward",

@@ -111,8 +111,8 @@ class XpEngineConfig {
     this.missedWeekPenalty = 50,
     this.comebackBonus = 25,
     this.fixedStreakBonuses = const {
-      3: 75,
-      7: 75,
+      3: 25,
+      7: 50,
     },
     this.repeatingStreakBonusStart = 20,
     this.repeatingStreakBonusStep = 10,

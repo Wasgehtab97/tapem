@@ -784,8 +784,8 @@ class AppLocalizationsDe extends AppLocalizations {
     return intl.Intl.pluralLogic(
       streak,
       locale: localeName,
-      one: 'Streak über $streak Tag',
-      other: 'Streak über $streak Tage',
+      one: '${streak}-er Streak',
+      other: '${streak}-er Streak',
     );
   }
 
