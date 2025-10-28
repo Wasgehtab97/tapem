@@ -123,7 +123,7 @@ class _OnboardingFunnelScreenState extends State<OnboardingFunnelScreen> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.search,
           maxLength: 4,
-          inputFormatters: const [
+          inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(4),
           ],
