@@ -683,7 +683,7 @@ abstract class AppLocalizations {
   /// **'Overall average'**
   String get restStatsHeadline;
 
-  /// Subtitle describing the overall rest insight
+  /// Subtitle describing the aggregated rest insight
   ///
   /// In en, this message translates to:
   /// **'Average rest time across all equipment'**
@@ -1439,43 +1439,43 @@ abstract class AppLocalizations {
   /// **'{xp} XP'**
   String storySessionDailyXpValue(Object xp);
 
-  /// No description provided for @storySessionDailyXpGrossLabel.
+  /// Label for the gross XP value in the session story dialog banner
   ///
   /// In en, this message translates to:
   /// **'Gross reward'**
   String get storySessionDailyXpGrossLabel;
 
-  /// No description provided for @storySessionDailyXpNetLabel.
+  /// Label for the net XP change in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Net XP change'**
+  /// **'XP earned'**
   String get storySessionDailyXpNetLabel;
 
-  /// No description provided for @storySessionDailyXpFloorAppliedNotice.
+  /// Hint shown when the XP floor was applied
   ///
   /// In en, this message translates to:
   /// **'Includes minimum balance adjustment'**
   String get storySessionDailyXpFloorAppliedNotice;
 
-  /// No description provided for @storySessionDailyXpPreviousTotalLabel.
+  /// Label for the previous XP total in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Balance before day'**
+  /// **'Before'**
   String get storySessionDailyXpPreviousTotalLabel;
 
-  /// No description provided for @storySessionDailyXpResultingTotalLabel.
+  /// Label for the resulting XP total in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Balance after day'**
+  /// **'Now'**
   String get storySessionDailyXpResultingTotalLabel;
 
-  /// No description provided for @storySessionDailyXpLevelValue.
+  /// Displays the level and XP within that level for the session story summary footer
   ///
   /// In en, this message translates to:
   /// **'Level {level} · {xp} XP'**
-  String storySessionDailyXpLevelValue(Object level, Object xp);
+  String storySessionDailyXpLevelValue(int level, String xp);
 
-  /// No description provided for @storySessionDailyXpPenaltiesLabel.
+  /// Label for the penalties summary in the session story dialog footer
   ///
   /// In en, this message translates to:
   /// **'Penalties'**
@@ -1484,7 +1484,7 @@ abstract class AppLocalizations {
   /// No description provided for @storySessionDailyXpBreakdownTitle.
   ///
   /// In en, this message translates to:
-  /// **"Today's XP breakdown"**
+  /// **'Today\'s XP breakdown'**
   String get storySessionDailyXpBreakdownTitle;
 
   /// No description provided for @storySessionDailyXpPenaltyTitle.
@@ -1503,7 +1503,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Training day #{day}'**
-  String storySessionDailyXpComponentBaseSubtitle(int day);
+  String storySessionDailyXpComponentBaseSubtitle(Object day);
 
   /// No description provided for @storySessionDailyXpComponentComeback.
   ///
@@ -1520,8 +1520,8 @@ abstract class AppLocalizations {
   /// No description provided for @storySessionDailyXpComponentStreakSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{streak, plural, one {Streak of # day} other {Streak of # days}}'**
-  String storySessionDailyXpComponentStreakSubtitle(int streak);
+  /// **'{streak, plural, one {#-day streak} other {#-day streak}}'**
+  String storySessionDailyXpComponentStreakSubtitle(num streak);
 
   /// No description provided for @storySessionDailyXpComponentMilestone.
   ///
@@ -1533,7 +1533,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Milestone day {day}'**
-  String storySessionDailyXpComponentMilestoneSubtitle(int day);
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day);
 
   /// No description provided for @storySessionDailyXpComponentUnknown.
   ///
@@ -1563,13 +1563,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{days, plural, one {# day without training} other {# days without training}}'**
-  String storySessionDailyXpPenaltyIdleDays(int days);
+  String storySessionDailyXpPenaltyIdleDays(num days);
 
   /// No description provided for @storySessionDailyXpPenaltyWeekLabel.
   ///
   /// In en, this message translates to:
   /// **'Week {week} without training'**
-  String storySessionDailyXpPenaltyWeekLabel(int week);
+  String storySessionDailyXpPenaltyWeekLabel(Object week);
 
   /// Heading above the badges list in the session story dialog
   ///

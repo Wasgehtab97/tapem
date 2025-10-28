@@ -334,22 +334,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restStatsSampleCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Based on $count session',
-      other: 'Based on $count sessions',
+      other: 'Based on # sessions',
+      one: 'Based on # session',
     );
+    return '$_temp0';
   }
 
   @override
   String restStatsSetCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '$count set recorded',
-      other: '$count sets recorded',
+      other: '# sets recorded',
+      one: '# set recorded',
     );
+    return '$_temp0';
   }
 
   @override
@@ -741,8 +743,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpNetLabel => 'XP earned';
 
   @override
-  String get storySessionDailyXpFloorAppliedNotice =>
-      'Includes minimum balance adjustment';
+  String get storySessionDailyXpFloorAppliedNotice => 'Includes minimum balance adjustment';
 
   @override
   String get storySessionDailyXpPreviousTotalLabel => 'Before';
@@ -751,7 +752,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpResultingTotalLabel => 'Now';
 
   @override
-  String storySessionDailyXpLevelValue(Object level, Object xp) {
+  String storySessionDailyXpLevelValue(int level, String xp) {
     return 'Level $level · $xp XP';
   }
 
@@ -759,7 +760,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpPenaltiesLabel => 'Penalties';
 
   @override
-  String get storySessionDailyXpBreakdownTitle => "Today's XP breakdown";
+  String get storySessionDailyXpBreakdownTitle => 'Today\'s XP breakdown';
 
   @override
   String get storySessionDailyXpPenaltyTitle => 'Penalties applied';
@@ -768,7 +769,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpComponentBase => 'Base reward';
 
   @override
-  String storySessionDailyXpComponentBaseSubtitle(int day) {
+  String storySessionDailyXpComponentBaseSubtitle(Object day) {
     return 'Training day #$day';
   }
 
@@ -779,20 +780,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpComponentStreak => 'Streak bonus';
 
   @override
-  String storySessionDailyXpComponentStreakSubtitle(int streak) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpComponentStreakSubtitle(num streak) {
+    String _temp0 = intl.Intl.pluralLogic(
       streak,
       locale: localeName,
-      one: '${streak}-day streak',
-      other: '${streak}-day streak',
+      other: '#-day streak',
+      one: '#-day streak',
     );
+    return '$_temp0';
   }
 
   @override
   String get storySessionDailyXpComponentMilestone => 'Milestone reward';
 
   @override
-  String storySessionDailyXpComponentMilestoneSubtitle(int day) {
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day) {
     return 'Milestone day $day';
   }
 
@@ -809,17 +811,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpPenaltyGeneric => 'Penalty';
 
   @override
-  String storySessionDailyXpPenaltyIdleDays(int days) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpPenaltyIdleDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      one: '$days day without training',
-      other: '$days days without training',
+      other: '# days without training',
+      one: '# day without training',
     );
+    return '$_temp0';
   }
 
   @override
-  String storySessionDailyXpPenaltyWeekLabel(int week) {
+  String storySessionDailyXpPenaltyWeekLabel(Object week) {
     return 'Week $week without training';
   }
 

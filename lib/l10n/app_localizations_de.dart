@@ -327,30 +327,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get restStatsHeadline => 'Gesamtdurchschnitt';
 
   @override
-  String get restStatsHeroDescription =>
-      'Durchschnittliche Satzpause über alle Geräte';
+  String get restStatsHeroDescription => 'Durchschnittliche Satzpause über alle Geräte';
 
   @override
   String get restStatsActualLabel => 'Ø Satzpause';
 
   @override
   String restStatsSampleCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Basierend auf $count Session',
-      other: 'Basierend auf $count Sessions',
+      other: 'Basierend auf # Sessions',
+      one: 'Basierend auf # Session',
     );
+    return '$_temp0';
   }
 
   @override
   String restStatsSetCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '$count Satz insgesamt',
-      other: '$count Sätze insgesamt',
+      other: '# Sätze insgesamt',
+      one: '# Satz insgesamt',
     );
+    return '$_temp0';
   }
 
   @override
@@ -742,8 +743,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpNetLabel => 'XP-Erhalt';
 
   @override
-  String get storySessionDailyXpFloorAppliedNotice =>
-      'Beinhaltet Anpassung auf das Mindestguthaben';
+  String get storySessionDailyXpFloorAppliedNotice => 'Beinhaltet Anpassung auf das Mindestguthaben';
 
   @override
   String get storySessionDailyXpPreviousTotalLabel => 'Vorher';
@@ -752,7 +752,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpResultingTotalLabel => 'Jetzt';
 
   @override
-  String storySessionDailyXpLevelValue(Object level, Object xp) {
+  String storySessionDailyXpLevelValue(int level, String xp) {
     return 'Level $level · $xp XP';
   }
 
@@ -769,7 +769,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpComponentBase => 'Grundbelohnung';
 
   @override
-  String storySessionDailyXpComponentBaseSubtitle(int day) {
+  String storySessionDailyXpComponentBaseSubtitle(Object day) {
     return 'Trainingstag #$day';
   }
 
@@ -780,20 +780,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpComponentStreak => 'Streak-Bonus';
 
   @override
-  String storySessionDailyXpComponentStreakSubtitle(int streak) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpComponentStreakSubtitle(num streak) {
+    String _temp0 = intl.Intl.pluralLogic(
       streak,
       locale: localeName,
-      one: '${streak}-er Streak',
-      other: '${streak}-er Streak',
+      other: '#-er Streak',
+      one: '#-er Streak',
     );
+    return '$_temp0';
   }
 
   @override
   String get storySessionDailyXpComponentMilestone => 'Meilenstein-Bonus';
 
   @override
-  String storySessionDailyXpComponentMilestoneSubtitle(int day) {
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day) {
     return 'Meilenstein-Tag $day';
   }
 
@@ -810,17 +811,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpPenaltyGeneric => 'Strafe';
 
   @override
-  String storySessionDailyXpPenaltyIdleDays(int days) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpPenaltyIdleDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      one: '$days trainingsfreier Tag',
-      other: '$days trainingsfreie Tage',
+      other: '# trainingsfreie Tage',
+      one: '# trainingsfreier Tag',
     );
+    return '$_temp0';
   }
 
   @override
-  String storySessionDailyXpPenaltyWeekLabel(int week) {
+  String storySessionDailyXpPenaltyWeekLabel(Object week) {
     return 'Woche $week ohne Training';
   }
 
