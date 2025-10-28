@@ -5,6 +5,7 @@ admin.initializeApp();
 const avatars = require('./avatars');
 const xp = require('./xp');
 const activity = require('./activity');
+const onboarding = require('./onboarding');
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
 exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
@@ -13,6 +14,7 @@ exports.onChallengeState = avatars.onChallengeState;
 exports.onEventParticipation = avatars.onEventParticipation;
 exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
+exports.assignMemberNumber = onboarding.assignMemberNumber;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')

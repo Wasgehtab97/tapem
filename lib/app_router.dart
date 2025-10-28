@@ -33,6 +33,7 @@ import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dar
 import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
 import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen.dart';
+import 'package:tapem/features/onboarding_funnel/presentation/screens/onboarding_funnel_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -75,12 +76,14 @@ class AppRouter {
   static const friendChat = '/friend_chat';
   static const creatine = '/creatine';
   static const restStats = '/rest_stats';
+  static const onboardingFunnel = '/onboarding_funnel';
 
   static const restrictedRoutesForMembers = {
     report,
     admin,
     affiliate,
     planOverview,
+    onboardingFunnel,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -144,6 +147,12 @@ class AppRouter {
 
       case restStats:
         return MaterialPageRoute(builder: (_) => const RestStatsScreen());
+
+      case onboardingFunnel:
+        final gymId = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => OnboardingFunnelScreen(gymId: gymId),
+        );
 
       case manageMuscleGroups:
         return MaterialPageRoute(

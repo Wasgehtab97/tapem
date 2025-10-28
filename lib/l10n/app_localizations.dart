@@ -2447,6 +2447,18 @@ abstract class AppLocalizations {
   /// **'View surveys'**
   String get reportViewSurveysTitle;
 
+  /// Action title to open the onboarding funnel
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding funnel'**
+  String get reportOnboardingFunnelTitle;
+
+  /// Subtitle describing the onboarding funnel card
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor new member activation'**
+  String get reportOnboardingFunnelSubtitle;
+
   /// Hint text for the device usage search field
   ///
   /// In en, this message translates to:
@@ -2506,6 +2518,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} sessions'**
   String reportDeviceUsageSessions(int count);
+
+  /// AppBar title for the onboarding funnel screen
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding funnel'**
+  String get onboardingFunnelTitle;
+
+  /// Label for the registered members count
+  ///
+  /// In en, this message translates to:
+  /// **'Registered app members'**
+  String get onboardingMembersCountLabel;
+
+  /// Error message shown when loading the member count fails
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't load the number of registered members."**
+  String get onboardingMembersCountError;
+
+  /// Label for the onboarding member search field
+  ///
+  /// In en, this message translates to:
+  /// **'Member number'**
+  String get onboardingSearchLabel;
+
+  /// Hint text for the onboarding search field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the four-digit member number'**
+  String get onboardingSearchHint;
+
+  /// CTA for the onboarding member search
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get onboardingSearchButton;
+
+  /// Validation error when the member number is missing or invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid four-digit member number.'**
+  String get onboardingSearchInvalidNumber;
+
+  /// Shown when no member matches the searched number
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't find a member with ID #{memberNumber}."**
+  String onboardingSearchNotFound(Object memberNumber);
+
+  /// Generic error message when the member lookup fails
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't load the member profile. Please try again."**
+  String get onboardingSearchError;
+
+  /// Title shown on the onboarding member card
+  ///
+  /// In en, this message translates to:
+  /// **'Member #{memberNumber}'**
+  String onboardingMemberCardTitle(Object memberNumber);
+
+  /// Title shown in the member details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Member #{memberNumber}'**
+  String onboardingMemberDetailsTitle(Object memberNumber);
+
+  /// Label for the member e-mail
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get onboardingMemberEmailLabel;
+
+  /// Label for the registration date
+  ///
+  /// In en, this message translates to:
+  /// **'Registered on'**
+  String get onboardingMemberRegisteredLabel;
+
+  /// Label for the onboarding assignment date
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding assigned'**
+  String get onboardingMemberAssignedLabel;
+
+  /// Label for the number of training days
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get onboardingMemberTrainingDaysLabel;
+
+  /// Formatted training day count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0 {No training days yet} one {# training day} other {# training days}}'**
+  String onboardingTrainingDays(int count);
+
+  /// Placeholder text when a date is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get onboardingDateUnknown;
 
   /// Dialog title asking to delete an exercise
   ///

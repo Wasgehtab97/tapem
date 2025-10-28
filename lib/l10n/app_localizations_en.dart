@@ -1293,6 +1293,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportViewSurveysTitle => 'View surveys';
 
   @override
+  String get reportOnboardingFunnelTitle => 'Onboarding funnel';
+
+  @override
+  String get reportOnboardingFunnelSubtitle => 'Monitor new member activation';
+
+  @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
 
   @override
@@ -1323,6 +1329,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String reportDeviceUsageSessions(int count) {
     return '$count sessions';
   }
+
+  @override
+  String get onboardingFunnelTitle => 'Onboarding funnel';
+
+  @override
+  String get onboardingMembersCountLabel => 'Registered app members';
+
+  @override
+  String get onboardingMembersCountError => "We couldn't load the number of registered members.";
+
+  @override
+  String get onboardingSearchLabel => 'Member number';
+
+  @override
+  String get onboardingSearchHint => 'Enter the four-digit member number';
+
+  @override
+  String get onboardingSearchButton => 'Search';
+
+  @override
+  String get onboardingSearchInvalidNumber => 'Please enter a valid four-digit member number.';
+
+  @override
+  String onboardingSearchNotFound(Object memberNumber) {
+    return "We couldn't find a member with ID #$memberNumber.";
+  }
+
+  @override
+  String get onboardingSearchError => "We couldn't load the member profile. Please try again.";
+
+  @override
+  String onboardingMemberCardTitle(Object memberNumber) {
+    return 'Member #$memberNumber';
+  }
+
+  @override
+  String onboardingMemberDetailsTitle(Object memberNumber) {
+    return 'Member #$memberNumber';
+  }
+
+  @override
+  String get onboardingMemberEmailLabel => 'E-mail';
+
+  @override
+  String get onboardingMemberRegisteredLabel => 'Registered on';
+
+  @override
+  String get onboardingMemberAssignedLabel => 'Onboarding assigned';
+
+  @override
+  String get onboardingMemberTrainingDaysLabel => 'Training days';
+
+  @override
+  String onboardingTrainingDays(int count) {
+    return intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'No training days yet',
+      one: '1 training day',
+      other: '$count training days',
+    );
+  }
+
+  @override
+  String get onboardingDateUnknown => 'Not available';
 
   @override
   String get exerciseDeleteTitle => 'Delete exercise';

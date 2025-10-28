@@ -11,8 +11,9 @@ import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
-import '../../../../core/logging/elog.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../app_router.dart';
 
 class ReportScreenNew extends StatelessWidget {
   final String gymId;
@@ -22,6 +23,8 @@ class ReportScreenNew extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reportProvider = context.watch<ReportProvider>();
+    final isAdmin =
+        context.select<AuthProvider, bool>((auth) => auth.isAdmin);
     if (reportProvider.shouldLoadReport(gymId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<ReportProvider>().loadReport(gymId);
@@ -92,6 +95,23 @@ class ReportScreenNew extends StatelessWidget {
                 variant: BrandActionTileVariant.gradient,
                 uiLogEvent: 'REPORT_CARD_RENDER',
               ),
+              if (isAdmin) ...[
+                const SizedBox(height: AppSpacing.sm),
+                BrandActionTile(
+                  leadingIcon: Icons.flag_outlined,
+                  title: loc.reportOnboardingFunnelTitle,
+                  subtitle: loc.reportOnboardingFunnelSubtitle,
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRouter.onboardingFunnel,
+                      arguments: gymId,
+                    );
+                  },
+                  variant: BrandActionTileVariant.gradient,
+                  uiLogEvent: 'REPORT_CARD_RENDER',
+                ),
+              ],
             ],
           ),
         ),
