@@ -1234,6 +1234,10 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportOnboardingFunnelTitle": "Onboarding funnel"
+  ,"@reportOnboardingFunnelTitle": {"description": "Action title to open the onboarding funnel"}
+  ,"reportOnboardingFunnelSubtitle": "Monitor new member activation"
+  ,"@reportOnboardingFunnelSubtitle": {"description": "Subtitle describing the onboarding funnel card"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"
@@ -1254,6 +1258,40 @@
   ,"@reportDeviceUsageError": {"description": "Message shown when fetching usage data fails"}
   ,"reportDeviceUsageSessions": "{count} sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip line with the number of sessions","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingFunnelTitle": "Onboarding funnel"
+  ,"@onboardingFunnelTitle": {"description": "AppBar title for the onboarding funnel screen"}
+  ,"onboardingMembersCountLabel": "Registered app members"
+  ,"@onboardingMembersCountLabel": {"description": "Label for the registered members count"}
+  ,"onboardingMembersCountError": "We couldn't load the number of registered members."
+  ,"@onboardingMembersCountError": {"description": "Error message shown when loading the member count fails"}
+  ,"onboardingSearchLabel": "Member number"
+  ,"@onboardingSearchLabel": {"description": "Label for the onboarding member search field"}
+  ,"onboardingSearchHint": "Enter the four-digit member number"
+  ,"@onboardingSearchHint": {"description": "Hint text for the onboarding search field"}
+  ,"onboardingSearchButton": "Search"
+  ,"@onboardingSearchButton": {"description": "CTA for the onboarding member search"}
+  ,"onboardingSearchInvalidNumber": "Please enter a valid four-digit member number."
+  ,"@onboardingSearchInvalidNumber": {"description": "Validation error when the member number is missing or invalid"}
+  ,"onboardingSearchNotFound": "We couldn't find a member with ID #{memberNumber}."
+  ,"@onboardingSearchNotFound": {"description": "Shown when no member matches the searched number","placeholders": {"memberNumber": {}}}
+  ,"onboardingSearchError": "We couldn't load the member profile. Please try again."
+  ,"@onboardingSearchError": {"description": "Generic error message when the member lookup fails"}
+  ,"onboardingMemberCardTitle": "Member #{memberNumber}"
+  ,"@onboardingMemberCardTitle": {"description": "Title shown on the onboarding member card","placeholders": {"memberNumber": {}}}
+  ,"onboardingMemberDetailsTitle": "Member #{memberNumber}"
+  ,"@onboardingMemberDetailsTitle": {"description": "Title shown in the member details sheet","placeholders": {"memberNumber": {}}}
+  ,"onboardingMemberEmailLabel": "E-mail"
+  ,"@onboardingMemberEmailLabel": {"description": "Label for the member e-mail"}
+  ,"onboardingMemberRegisteredLabel": "Registered on"
+  ,"@onboardingMemberRegisteredLabel": {"description": "Label for the registration date"}
+  ,"onboardingMemberAssignedLabel": "Onboarding assigned"
+  ,"@onboardingMemberAssignedLabel": {"description": "Label for the onboarding assignment date"}
+  ,"onboardingMemberTrainingDaysLabel": "Training days"
+  ,"@onboardingMemberTrainingDaysLabel": {"description": "Label for the number of training days"}
+  ,"onboardingTrainingDays": "{count, plural, =0 {No training days yet} one {# training day} other {# training days}}"
+  ,"@onboardingTrainingDays": {"description": "Formatted training day count","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingDateUnknown": "Not available"
+  ,"@onboardingDateUnknown": {"description": "Placeholder text when a date is missing"}
   ,"exerciseDeleteTitle": "Delete exercise"
   ,"@exerciseDeleteTitle": {"description": "Dialog title asking to delete an exercise"}
   ,"exerciseDeleteMessage": "Do you really want to delete the exercise \"{name}\"?"

@@ -63,6 +63,7 @@ import 'package:tapem/features/creatine/data/creatine_repository.dart';
 import 'package:tapem/features/creatine/providers/creatine_provider.dart';
 import 'package:tapem/features/friends/providers/friend_search_provider.dart';
 import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
+import 'package:tapem/features/onboarding_funnel/presentation/providers/onboarding_funnel_provider.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_highlights_listener.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
 import 'features/gym/data/sources/firestore_gym_source.dart';
@@ -541,6 +542,9 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) =>
               FeedbackProvider(firestore: FirebaseFirestore.instance),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OnboardingFunnelProvider(),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
       ],

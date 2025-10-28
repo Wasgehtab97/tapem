@@ -1220,6 +1220,10 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportOnboardingFunnelTitle": "Onboarding-Funnel"
+  ,"@reportOnboardingFunnelTitle": {"description": "Aktions-Titel zum Öffnen des Onboarding-Funnels"}
+  ,"reportOnboardingFunnelSubtitle": "Aktivierung neuer Mitglieder verfolgen"
+  ,"@reportOnboardingFunnelSubtitle": {"description": "Untertitel der Onboarding-Funnel-Kachel"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
   ,"reportUsageRange7Days": "Letzte 7 Tage"
@@ -1240,6 +1244,40 @@
   ,"@reportDeviceUsageError": {"description": "Hinweis, wenn das Laden der Nutzungsdaten fehlschlägt"}
   ,"reportDeviceUsageSessions": "{count} Sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip-Zeile mit der Anzahl an Sessions","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingFunnelTitle": "Onboarding-Funnel"
+  ,"@onboardingFunnelTitle": {"description": "AppBar-Titel für den Onboarding-Funnel"}
+  ,"onboardingMembersCountLabel": "Registrierte App-Mitglieder"
+  ,"@onboardingMembersCountLabel": {"description": "Label für die Anzahl der registrierten Mitglieder"}
+  ,"onboardingMembersCountError": "Die Anzahl der registrierten Mitglieder konnte nicht geladen werden."
+  ,"@onboardingMembersCountError": {"description": "Fehlermeldung, wenn der Mitgliederzähler nicht geladen werden kann"}
+  ,"onboardingSearchLabel": "Mitgliedsnummer"
+  ,"@onboardingSearchLabel": {"description": "Label für das Suchfeld im Onboarding-Funnel"}
+  ,"onboardingSearchHint": "Vierstellige Mitgliedsnummer eingeben"
+  ,"@onboardingSearchHint": {"description": "Hinweistext für das Suchfeld"}
+  ,"onboardingSearchButton": "Suchen"
+  ,"@onboardingSearchButton": {"description": "Schaltfläche für die Suche nach Mitgliedern"}
+  ,"onboardingSearchInvalidNumber": "Bitte gib eine gültige vierstellige Mitgliedsnummer ein."
+  ,"@onboardingSearchInvalidNumber": {"description": "Validierungsfehler bei ungültiger Mitgliedsnummer"}
+  ,"onboardingSearchNotFound": "Kein Mitglied mit der ID #{memberNumber} gefunden."
+  ,"@onboardingSearchNotFound": {"description": "Hinweis, wenn kein Mitglied gefunden wird","placeholders": {"memberNumber": {}}}
+  ,"onboardingSearchError": "Das Mitgliedsprofil konnte nicht geladen werden. Bitte versuche es erneut."
+  ,"@onboardingSearchError": {"description": "Allgemeiner Fehler bei der Mitgliedersuche"}
+  ,"onboardingMemberCardTitle": "Mitglied #{memberNumber}"
+  ,"@onboardingMemberCardTitle": {"description": "Titel auf der Mitgliedskarte","placeholders": {"memberNumber": {}}}
+  ,"onboardingMemberDetailsTitle": "Mitglied #{memberNumber}"
+  ,"@onboardingMemberDetailsTitle": {"description": "Titel im Detail-Dialog","placeholders": {"memberNumber": {}}}
+  ,"onboardingMemberEmailLabel": "E-Mail"
+  ,"@onboardingMemberEmailLabel": {"description": "Label für die E-Mail-Adresse"}
+  ,"onboardingMemberRegisteredLabel": "Registriert am"
+  ,"@onboardingMemberRegisteredLabel": {"description": "Label für das Registrierungsdatum"}
+  ,"onboardingMemberAssignedLabel": "Onboarding zugewiesen"
+  ,"@onboardingMemberAssignedLabel": {"description": "Label für das Datum der Onboarding-Zuweisung"}
+  ,"onboardingMemberTrainingDaysLabel": "Trainingstage"
+  ,"@onboardingMemberTrainingDaysLabel": {"description": "Label für die Anzahl der Trainingstage"}
+  ,"onboardingTrainingDays": "{count, plural, =0 {Noch keine Trainingstage} one {# Trainingstag} other {# Trainingstage}}"
+  ,"@onboardingTrainingDays": {"description": "Formatierte Anzeige der Trainingstage","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingDateUnknown": "Nicht verfügbar"
+  ,"@onboardingDateUnknown": {"description": "Platzhaltertext, wenn ein Datum fehlt"}
   ,"exerciseDeleteTitle": "Übung löschen"
   ,"@exerciseDeleteTitle": {"description": "Dialogtitel zum Löschen einer Übung"}
   ,"exerciseDeleteMessage": "Übung \"{name}\" wirklich löschen?"
