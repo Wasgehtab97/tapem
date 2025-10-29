@@ -1206,6 +1206,10 @@
   ,"@reportFeedbackOpenEntries": {"description": "Untertitel für offene Feedback-Einträge","placeholders": {"count": {"type": "int"}}}
   ,"reportFeedbackNoOpenEntries": "Kein offenes Feedback"
   ,"@reportFeedbackNoOpenEntries": {"description": "Untertitel wenn kein offenes Feedback vorhanden ist"}
+  ,"reportOnboardingFunnelTileTitle": "Onboarding-Funnel"
+  ,"@reportOnboardingFunnelTileTitle": {"description": "Titel der Onboarding-Funnel-Kachel im Report."}
+  ,"reportOnboardingFunnelTileSubtitle": "Mitgliedsnummern und Onboarding-Status prüfen."
+  ,"@reportOnboardingFunnelTileSubtitle": {"description": "Untertitel der Onboarding-Funnel-Kachel im Report."}
   ,"feedbackDialogTitle": "Feedback"
   ,"@feedbackDialogTitle": {"description": "Titel des Feedback-Dialogs"}
   ,"feedbackTooltip": "Feedback"
@@ -1240,6 +1244,40 @@
   ,"@reportDeviceUsageError": {"description": "Hinweis, wenn das Laden der Nutzungsdaten fehlschlägt"}
   ,"reportDeviceUsageSessions": "{count} Sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip-Zeile mit der Anzahl an Sessions","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingFunnelTitle": "Onboarding-Funnel"
+  ,"@onboardingFunnelTitle": {"description": "Titel des Onboarding-Funnel-Screens."}
+  ,"onboardingFunnelSubtitle": "Mitglieder über ihre vierstellige Nummer suchen."
+  ,"@onboardingFunnelSubtitle": {"description": "Untertitel unterhalb des Titels auf dem Onboarding-Funnel-Screen."}
+  ,"onboardingFunnelTotalMembersLabel": "Registrierte Mitglieder"
+  ,"@onboardingFunnelTotalMembersLabel": {"description": "Label für die KPI-Karte mit der Gesamtzahl der Mitglieder."}
+  ,"onboardingFunnelCountLoading": "Mitgliederzahl wird geladen..."
+  ,"@onboardingFunnelCountLoading": {"description": "Statusanzeige während die Mitgliederzahl geladen wird."}
+  ,"onboardingFunnelCountLabel": "{count, plural, one {{count} registriertes Mitglied} other {{count} registrierte Mitglieder}}"
+  ,"@onboardingFunnelCountLabel": {"description": "Beschreibung der Gesamtzahl der registrierten Mitglieder.","placeholders": {"count": {"type": "int"}}}
+  ,"onboardingFunnelSearchHint": "Mitgliedsnummer eingeben"
+  ,"@onboardingFunnelSearchHint": {"description": "Beschriftung des Suchfelds im Onboarding-Funnel."}
+  ,"onboardingFunnelSearchIdle": "Mitgliedsnummer eingeben, um die Suche zu starten."
+  ,"@onboardingFunnelSearchIdle": {"description": "Hinweistext bevor eine Suche gestartet wurde."}
+  ,"onboardingFunnelSearchNoResult": "Kein Mitglied mit dieser Nummer gefunden."
+  ,"@onboardingFunnelSearchNoResult": {"description": "Nachricht, wenn kein Mitglied gefunden wird."}
+  ,"onboardingFunnelSearchError": "Mitglied konnte nicht geladen werden. Bitte erneut versuchen."
+  ,"@onboardingFunnelSearchError": {"description": "Nachricht bei einem Fehler während der Suche."}
+  ,"onboardingFunnelMemberNumberLabel": "Mitglied #{memberNumber}"
+  ,"@onboardingFunnelMemberNumberLabel": {"description": "Überschrift mit der formatierten Mitgliedsnummer.","placeholders": {"memberNumber": {"type": "String"}}}
+  ,"onboardingFunnelRegistrationLabel": "Registriert"
+  ,"@onboardingFunnelRegistrationLabel": {"description": "Label für die Registrierungszeile."}
+  ,"onboardingFunnelRegistrationUnknown": "Registrierungsdatum nicht verfügbar"
+  ,"@onboardingFunnelRegistrationUnknown": {"description": "Fallback-Text, wenn kein Registrierungsdatum vorhanden ist."}
+  ,"onboardingFunnelFirstScanLabel": "Erster Scan"
+  ,"@onboardingFunnelFirstScanLabel": {"description": "Label für den Status des ersten Scans."}
+  ,"onboardingFunnelFirstScanComplete": "Erster Scan abgeschlossen"
+  ,"@onboardingFunnelFirstScanComplete": {"description": "Text, wenn der erste Scan abgeschlossen wurde."}
+  ,"onboardingFunnelFirstScanPending": "Erster Scan steht aus"
+  ,"@onboardingFunnelFirstScanPending": {"description": "Text, wenn der erste Scan noch aussteht."}
+  ,"onboardingFunnelTrainingDaysLabel": "Trainingstage"
+  ,"@onboardingFunnelTrainingDaysLabel": {"description": "Label für die Trainingstage-Zeile."}
+  ,"onboardingFunnelTrainingDays": "{count, plural, one {{count} Trainingstag} other {{count} Trainingstage}}"
+  ,"@onboardingFunnelTrainingDays": {"description": "Text zur Anzahl der absolvierten Trainingstage.","placeholders": {"count": {"type": "int"}}}
   ,"exerciseDeleteTitle": "Übung löschen"
   ,"@exerciseDeleteTitle": {"description": "Dialogtitel zum Löschen einer Übung"}
   ,"exerciseDeleteMessage": "Übung \"{name}\" wirklich löschen?"

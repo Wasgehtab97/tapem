@@ -535,7 +535,12 @@ service cloud.firestore {
         allow read: if inGym(gymId);
         allow create: if isAuthed() &&
                        request.auth.uid == userId &&
-                       request.resource.data.role == 'member';
+                       request.resource.data.keys().hasOnly(['role', 'createdAt', 'memberNumber']) &&
+                       request.resource.data.role == 'member' &&
+                       (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp) &&
+                       (!('memberNumber' in request.resource.data) ||
+                         (request.resource.data.memberNumber is string &&
+                          request.resource.data.memberNumber.matches('^\\d{4}$')));
         allow update, delete: if isAdmin(gymId);
       }
 

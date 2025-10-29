@@ -54,20 +54,19 @@ class FirestoreAuthSource {
     final gym = await _gymSource.getGymByCode(initialGymCode);
     if (gym == null) throw Exception('Gym code not found');
 
-    final now = DateTime.now();
-    final dto = UserDataDto(
-      userId: uid,
-      email: email,
-      emailLower: email.toLowerCase(),
-      userName: null,
-      userNameLower: null,
-      gymCodes: [gym.id],
-      showInLeaderboard: true,
-      publicProfile: false,
-      role: 'member',
-      createdAt: now,
-    );
-    await _firestore.collection('users').doc(uid).set(dto.toJson());
+    final usersRef = _firestore.collection('users').doc(uid);
+    await usersRef.set({
+      'email': email,
+      'emailLower': email.toLowerCase(),
+      'gymCodes': [gym.id],
+      'showInLeaderboard': true,
+      'publicProfile': false,
+      'role': 'member',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final createdUserSnapshot = await usersRef.get();
+    final dto = UserDataDto.fromDocument(createdUserSnapshot);
 
     // create gym membership so the user can access gym data
     await _firestore
@@ -77,7 +76,6 @@ class FirestoreAuthSource {
         .doc(uid)
         .set({
       'role': 'member',
-      'createdAt': now,
     });
 
     return dto;
