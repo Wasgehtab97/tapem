@@ -82,6 +82,12 @@ class DocumentSnapshotMock {
     if (!this.exists) return undefined;
     return deepClone(this._data);
   }
+
+  get(fieldPath) {
+    const data = this.data();
+    if (!data) return undefined;
+    return data[fieldPath];
+  }
 }
 
 class QuerySnapshotMock {
@@ -184,6 +190,7 @@ class TransactionMock {
 class FirestoreMock {
   constructor(store) {
     this._store = store;
+    this._transactionChain = Promise.resolve();
   }
 
   collection(collectionId) {
@@ -194,9 +201,10 @@ class FirestoreMock {
     return new DocumentReferenceMock(this, path.split('/'));
   }
 
-  async runTransaction(fn) {
-    const tx = new TransactionMock(this);
-    return fn(tx);
+  runTransaction(fn) {
+    const run = () => fn(new TransactionMock(this));
+    this._transactionChain = this._transactionChain.then(run, run);
+    return this._transactionChain;
   }
 
   _autoId() {

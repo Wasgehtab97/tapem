@@ -30,6 +30,11 @@ class UserDataDto {
 
   factory UserDataDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
+    final createdAtValue = data['createdAt'];
+    final createdAt = createdAtValue is Timestamp
+        ? createdAtValue.toDate()
+        : DateTime.now();
+
     return UserDataDto(
       userId: doc.id,
       email: data['email'] as String,
@@ -42,7 +47,7 @@ class UserDataDto {
       showInLeaderboard: data['showInLeaderboard'] as bool? ?? true,
       publicProfile: data['publicProfile'] as bool? ?? false,
       role: data['role'] as String,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: createdAt,
       avatarKey: data['avatarKey'] as String? ?? 'default',
     );
   }

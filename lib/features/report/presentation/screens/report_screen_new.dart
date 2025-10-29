@@ -8,6 +8,7 @@ import '../../../survey/presentation/screens/survey_overview_screen.dart';
 import '../../../survey/survey_provider.dart';
 import '../../../survey/survey.dart';
 import '../../../survey/presentation/widgets/create_survey_sheet.dart';
+import '../../../../app_router.dart';
 import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_action_tile.dart';
@@ -64,6 +65,21 @@ class ReportScreenNew extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => FeedbackOverviewScreen(gymId: gymId),
                     ),
+                  );
+                },
+                variant: BrandActionTileVariant.gradient,
+                uiLogEvent: 'REPORT_CARD_RENDER',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              BrandActionTile(
+                leadingIcon: Icons.group_add_outlined,
+                title: loc.reportOnboardingFunnelTileTitle,
+                subtitle: loc.reportOnboardingFunnelTileSubtitle,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRouter.onboardingFunnel,
+                    arguments: {'gymId': gymId},
                   );
                 },
                 variant: BrandActionTileVariant.gradient,

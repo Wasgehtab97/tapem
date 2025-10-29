@@ -1269,6 +1269,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportFeedbackNoOpenEntries => 'No open feedback';
 
   @override
+  String get reportOnboardingFunnelTileTitle => 'Onboarding funnel';
+
+  @override
+  String get reportOnboardingFunnelTileSubtitle => 'Look up member numbers and onboarding progress.';
+
+  @override
   String get feedbackDialogTitle => 'Feedback';
 
   @override
@@ -1319,6 +1325,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String reportDeviceUsageSessions(int count) {
     return '$count sessions';
+  }
+
+  @override
+  String get onboardingFunnelTitle => 'Onboarding funnel';
+
+  @override
+  String get onboardingFunnelSubtitle => 'Search for members by their four-digit number.';
+
+  @override
+  String get onboardingFunnelTotalMembersLabel => 'Registered members';
+
+  @override
+  String get onboardingFunnelCountLoading => 'Loading member count...';
+
+  @override
+  String onboardingFunnelCountLabel(int count) {
+    return intl.Intl.plural(
+      count,
+      one: '$count registered member',
+      other: '$count registered members',
+      locale: localeName,
+    );
+  }
+
+  @override
+  String get onboardingFunnelSearchHint => 'Enter member number';
+
+  @override
+  String get onboardingFunnelSearchIdle => 'Enter a member number to start searching.';
+
+  @override
+  String get onboardingFunnelSearchNoResult => 'No member found for this number.';
+
+  @override
+  String get onboardingFunnelSearchError => "We couldn't load this member. Please try again.";
+
+  @override
+  String onboardingFunnelMemberNumberLabel(String memberNumber) {
+    return 'Member #$memberNumber';
+  }
+
+  @override
+  String get onboardingFunnelRegistrationLabel => 'Registered';
+
+  @override
+  String get onboardingFunnelRegistrationUnknown => 'Registration date unavailable';
+
+  @override
+  String get onboardingFunnelFirstScanLabel => 'First scan';
+
+  @override
+  String get onboardingFunnelFirstScanComplete => 'First scan completed';
+
+  @override
+  String get onboardingFunnelFirstScanPending => 'Awaiting first scan';
+
+  @override
+  String get onboardingFunnelTrainingDaysLabel => 'Training days';
+
+  @override
+  String onboardingFunnelTrainingDays(int count) {
+    return intl.Intl.plural(
+      count,
+      one: '$count training day',
+      other: '$count training days',
+      locale: localeName,
+    );
   }
 
   @override

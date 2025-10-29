@@ -2405,6 +2405,18 @@ abstract class AppLocalizations {
   /// **'No open feedback'**
   String get reportFeedbackNoOpenEntries;
 
+  /// Title of the onboarding funnel navigation tile on the report screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding funnel'**
+  String get reportOnboardingFunnelTileTitle;
+
+  /// Subtitle of the onboarding funnel navigation tile on the report screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up member numbers and onboarding progress.'**
+  String get reportOnboardingFunnelTileSubtitle;
+
   /// Title of the feedback dialog
   ///
   /// In en, this message translates to:
@@ -2506,6 +2518,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} sessions'**
   String reportDeviceUsageSessions(int count);
+
+  /// Title of the onboarding funnel screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding funnel'**
+  String get onboardingFunnelTitle;
+
+  /// Subtitle shown below the onboarding funnel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for members by their four-digit number.'**
+  String get onboardingFunnelSubtitle;
+
+  /// Label for the total members KPI card.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered members'**
+  String get onboardingFunnelTotalMembersLabel;
+
+  /// Status text shown while the member count is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading member count...'**
+  String get onboardingFunnelCountLoading;
+
+  /// Description of the total registered members count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {{count} registered member} other {{count} registered members}}'**
+  String onboardingFunnelCountLabel(int count);
+
+  /// Label for the onboarding funnel search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter member number'**
+  String get onboardingFunnelSearchHint;
+
+  /// Message shown before a search has been triggered.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a member number to start searching.'**
+  String get onboardingFunnelSearchIdle;
+
+  /// Message shown when no member matches the search.
+  ///
+  /// In en, this message translates to:
+  /// **'No member found for this number.'**
+  String get onboardingFunnelSearchNoResult;
+
+  /// Message shown when the search fails with an error.
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't load this member. Please try again."**
+  String get onboardingFunnelSearchError;
+
+  /// Heading showing the formatted member number.
+  ///
+  /// In en, this message translates to:
+  /// **'Member #{memberNumber}'**
+  String onboardingFunnelMemberNumberLabel(String memberNumber);
+
+  /// Label for the registration date row.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered'**
+  String get onboardingFunnelRegistrationLabel;
+
+  /// Fallback text when no registration date is present.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration date unavailable'**
+  String get onboardingFunnelRegistrationUnknown;
+
+  /// Label for the first scan status row.
+  ///
+  /// In en, this message translates to:
+  /// **'First scan'**
+  String get onboardingFunnelFirstScanLabel;
+
+  /// Text indicating that the first scan was completed.
+  ///
+  /// In en, this message translates to:
+  /// **'First scan completed'**
+  String get onboardingFunnelFirstScanComplete;
+
+  /// Text indicating that the first scan is still pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting first scan'**
+  String get onboardingFunnelFirstScanPending;
+
+  /// Label for the training days row.
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get onboardingFunnelTrainingDaysLabel;
+
+  /// Text describing the total training days.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {{count} training day} other {{count} training days}}'**
+  String onboardingFunnelTrainingDays(int count);
 
   /// Dialog title asking to delete an exercise
   ///
