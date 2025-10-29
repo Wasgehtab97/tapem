@@ -72,6 +72,23 @@ service cloud.firestore {
       return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
     }
 
+    function isValidOnboardingSequencingWrite(gymId) {
+      let allowed = ['nextMemberNumber', 'lastAssignedNumber', 'updatedAt', 'limitReachedAt'];
+      return inGym(gymId) &&
+        resource != null && resource.data.keys().hasOnly(allowed) &&
+        request.resource.data.keys().hasOnly(allowed) &&
+        resource.data.nextMemberNumber is int &&
+        request.resource.data.nextMemberNumber is int &&
+        request.resource.data.nextMemberNumber == resource.data.nextMemberNumber + 1 &&
+        request.resource.data.lastAssignedNumber is string &&
+        request.resource.data.lastAssignedNumber.size() == 4 &&
+        request.resource.data.lastAssignedNumber.matches('^0*' + resource.data.nextMemberNumber + '$') &&
+        request.resource.data.updatedAt == request.time &&
+        (!('limitReachedAt' in resource.data) && !('limitReachedAt' in request.resource.data) ||
+          ('limitReachedAt' in resource.data) && ('limitReachedAt' in request.resource.data) &&
+            request.resource.data.limitReachedAt == resource.data.limitReachedAt);
+    }
+
     // Write must be performed by the owner within the gym
     function requestOwnerInGym(gymId) {
       return inGym(gymId) && request.resource.data.userId == request.auth.uid;
@@ -412,7 +429,8 @@ service cloud.firestore {
       // Branding / config
       match /config/{docId} {
         allow read: if isAuthed();
-        allow write: if isAdmin(gymId);
+        allow write: if isAdmin(gymId) ||
+          (docId == 'onboarding' && isValidOnboardingSequencingWrite(gymId));
       }
 
       // Avatar catalog per gym
