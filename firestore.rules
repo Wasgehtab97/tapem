@@ -76,10 +76,12 @@ service cloud.firestore {
       let allowed = ['nextMemberNumber', 'lastAssignedNumber', 'updatedAt', 'limitReachedAt'];
       let isCreation = resource == null;
       let requestData = request.resource.data;
-      let limitGuard = isCreation ||
-        (!('limitReachedAt' in resource.data) && !('limitReachedAt' in requestData) ||
-          ('limitReachedAt' in resource.data) && ('limitReachedAt' in requestData) &&
-            requestData.limitReachedAt == resource.data.limitReachedAt);
+      let requestHasLimit = 'limitReachedAt' in requestData;
+      let limitGuard = isCreation
+        ? !requestHasLimit
+        : ((!('limitReachedAt' in resource.data) && !requestHasLimit) ||
+            (('limitReachedAt' in resource.data) && requestHasLimit &&
+              requestData.limitReachedAt == resource.data.limitReachedAt));
 
       return inGym(gymId) &&
         requestData.keys().hasOnly(allowed) &&
