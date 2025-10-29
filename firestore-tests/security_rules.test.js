@@ -830,6 +830,43 @@ describe('Security Rules v1', function () {
       );
     });
 
+    it('allows creating the onboarding counter without a limit reached timestamp', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.collection('gyms').doc('G1').collection('config').doc('onboarding').delete();
+      });
+
+      const db = onboardingMember().firestore();
+      const onboardingRef = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+
+      await assertSucceeds(
+        onboardingRef.set({
+          nextMemberNumber: 1,
+          lastAssignedNumber: '0000',
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+      );
+    });
+
+    it('rejects creating the onboarding counter with a limit reached timestamp', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.collection('gyms').doc('G1').collection('config').doc('onboarding').delete();
+      });
+
+      const db = onboardingMember().firestore();
+      const onboardingRef = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+
+      await assertFails(
+        onboardingRef.set({
+          nextMemberNumber: 1,
+          lastAssignedNumber: '0000',
+          updatedAt: FieldValue.serverTimestamp(),
+          limitReachedAt: FieldValue.serverTimestamp(),
+        })
+      );
+    });
+
     it('allows a member to increment the onboarding counter by one', async () => {
       const db = onboardingMember().firestore();
       const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
