@@ -74,19 +74,27 @@ service cloud.firestore {
 
     function isValidOnboardingSequencingWrite(gymId) {
       let allowed = ['nextMemberNumber', 'lastAssignedNumber', 'updatedAt', 'limitReachedAt'];
+      let isCreation = resource == null;
+      let requestData = request.resource.data;
+      let limitGuard = isCreation ||
+        (!('limitReachedAt' in resource.data) && !('limitReachedAt' in requestData) ||
+          ('limitReachedAt' in resource.data) && ('limitReachedAt' in requestData) &&
+            requestData.limitReachedAt == resource.data.limitReachedAt);
+
       return inGym(gymId) &&
-        resource != null && resource.data.keys().hasOnly(allowed) &&
-        request.resource.data.keys().hasOnly(allowed) &&
-        resource.data.nextMemberNumber is int &&
-        request.resource.data.nextMemberNumber is int &&
-        request.resource.data.nextMemberNumber == resource.data.nextMemberNumber + 1 &&
-        request.resource.data.lastAssignedNumber is string &&
-        request.resource.data.lastAssignedNumber.size() == 4 &&
-        request.resource.data.lastAssignedNumber.matches('^0*' + resource.data.nextMemberNumber + '$') &&
-        request.resource.data.updatedAt == request.time &&
-        (!('limitReachedAt' in resource.data) && !('limitReachedAt' in request.resource.data) ||
-          ('limitReachedAt' in resource.data) && ('limitReachedAt' in request.resource.data) &&
-            request.resource.data.limitReachedAt == resource.data.limitReachedAt);
+        requestData.keys().hasOnly(allowed) &&
+        (isCreation || resource.data.keys().hasOnly(allowed)) &&
+        requestData.nextMemberNumber is int &&
+        requestData.lastAssignedNumber is string &&
+        requestData.lastAssignedNumber.size() == 4 &&
+        requestData.updatedAt == request.time &&
+        (!('limitReachedAt' in requestData) || requestData.limitReachedAt is timestamp) &&
+        (isCreation
+          ? requestData.lastAssignedNumber.matches('^0*' + (requestData.nextMemberNumber - 1) + '$')
+          : resource.data.nextMemberNumber is int &&
+            requestData.nextMemberNumber == resource.data.nextMemberNumber + 1 &&
+            requestData.lastAssignedNumber.matches('^0*' + resource.data.nextMemberNumber + '$')) &&
+        limitGuard;
     }
 
     // Write must be performed by the owner within the gym

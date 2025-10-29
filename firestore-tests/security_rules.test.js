@@ -799,6 +799,37 @@ describe('Security Rules v1', function () {
       );
     });
 
+    it('allows onboarding registration when the counter document is created in the transaction', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.collection('gyms').doc('G1').collection('config').doc('onboarding').delete();
+      });
+
+      const db = onboardingMember().firestore();
+      const onboardingRef = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+      const memberRef = db.collection('gyms').doc('G1').collection('users').doc('memberNew');
+
+      await assertSucceeds(
+        db.runTransaction(async (tx) => {
+          tx.set(onboardingRef, {
+            nextMemberNumber: 2,
+            lastAssignedNumber: '0001',
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          tx.set(
+            memberRef,
+            {
+              role: 'member',
+              createdAt: FieldValue.serverTimestamp(),
+              memberNumber: '0001',
+              onboardingAssignedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        })
+      );
+    });
+
     it('allows a member to increment the onboarding counter by one', async () => {
       const db = onboardingMember().firestore();
       const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
