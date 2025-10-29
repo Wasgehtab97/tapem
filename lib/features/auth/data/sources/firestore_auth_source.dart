@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/services/username_service.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
+import 'package:tapem/services/membership_service.dart';
 
 typedef ChangeUsernameRunner = Future<void> Function({
   required FirebaseFirestore firestore,
@@ -17,16 +18,20 @@ class FirestoreAuthSource {
   final FirebaseFirestore _firestore;
   final ChangeUsernameRunner _changeUsername;
   final FirestoreGymSource _gymSource;
+  final MembershipService _membership;
 
   FirestoreAuthSource({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     ChangeUsernameRunner? changeUsername,
     FirestoreGymSource? gymSource,
+    MembershipService? membership,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
         _changeUsername = changeUsername ?? changeUsernameTransaction,
-        _gymSource = gymSource ?? FirestoreGymSource();
+        _gymSource = gymSource ?? FirestoreGymSource(),
+        _membership =
+            membership ?? FirestoreMembershipService(firestore: firestore);
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -70,15 +75,11 @@ class FirestoreAuthSource {
     await _firestore.collection('users').doc(uid).set(dto.toJson());
 
     // create gym membership so the user can access gym data
-    await _firestore
-        .collection('gyms')
-        .doc(gym.id)
-        .collection('users')
-        .doc(uid)
-        .set({
-      'role': 'member',
-      'createdAt': now,
-    });
+    await _membership.ensureMembership(
+      gym.id,
+      uid,
+      createdAt: now,
+    );
 
     return dto;
   }
