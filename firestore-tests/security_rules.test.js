@@ -163,6 +163,8 @@ describe('Security Rules v1', function () {
   const friend = () => testEnv.authenticatedContext('user2', { gymId: 'G1', role: 'member' });
   const stranger = () => testEnv.authenticatedContext('user4', { gymId: 'G1', role: 'member' });
   const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'G2', role: 'admin' });
+  const onboardingMember = () =>
+    testEnv.authenticatedContext('memberNew', { gymId: 'G1', role: 'member' });
 
   describe('Firestore rules', () => {
     it('allows cross-gym device read when authenticated', async () => {
@@ -754,6 +756,120 @@ describe('Security Rules v1', function () {
           updatedAt: FieldValue.serverTimestamp(),
           lastReadAt: FieldValue.serverTimestamp(),
         })
+      );
+    });
+  });
+
+  describe('onboarding membership rules', () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db
+          .collection('gyms')
+          .doc('G1')
+          .collection('users')
+          .doc('memberNew')
+          .delete();
+        await db
+          .collection('gyms')
+          .doc('G1')
+          .collection('config')
+          .doc('onboarding')
+          .set({
+            nextMemberNumber: 1,
+            lastAssignedNumber: '0000',
+            updatedAt: new Date(0),
+          });
+      });
+    });
+
+    it('allows a member to create their own membership with onboarding fields', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('memberNew');
+      await assertSucceeds(
+        ref.set(
+          {
+            role: 'member',
+            createdAt: FieldValue.serverTimestamp(),
+            memberNumber: '0001',
+            onboardingAssignedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('allows a member to increment the onboarding counter by one', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+      await assertSucceeds(
+        ref.set(
+          {
+            nextMemberNumber: 2,
+            lastAssignedNumber: '0001',
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('rejects onboarding counter jumps larger than one', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+      await assertFails(
+        ref.set(
+          {
+            nextMemberNumber: 3,
+            lastAssignedNumber: '0001',
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('rejects onboarding counter updates with mismatched last number', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+      await assertFails(
+        ref.set(
+          {
+            nextMemberNumber: 2,
+            lastAssignedNumber: '0099',
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('blocks members from modifying other config documents', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('config').doc('branding');
+      await assertFails(
+        ref.set(
+          {
+            theme: 'dark',
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('rejects attempts to set the onboarding limit flag as a member', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('config').doc('onboarding');
+      await assertFails(
+        ref.set(
+          {
+            nextMemberNumber: 2,
+            lastAssignedNumber: '0001',
+            updatedAt: FieldValue.serverTimestamp(),
+            limitReachedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
       );
     });
   });
