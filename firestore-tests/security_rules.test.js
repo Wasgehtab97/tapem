@@ -799,6 +799,60 @@ describe('Security Rules v1', function () {
       );
     });
 
+    it('allows an onboarding member to read their membership record during registration', async () => {
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('memberNew');
+      await assertSucceeds(ref.get());
+    });
+
+    it('allows a member without a number to claim onboarding fields once', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.collection('gyms').doc('G1').collection('users').doc('memberNew').set({
+          role: 'member',
+        });
+      });
+
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('memberNew');
+
+      await assertSucceeds(
+        ref.set(
+          {
+            role: 'member',
+            createdAt: FieldValue.serverTimestamp(),
+            memberNumber: '0001',
+            onboardingAssignedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    });
+
+    it('blocks changing the member number after it has been assigned', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.collection('gyms').doc('G1').collection('users').doc('memberNew').set({
+          role: 'member',
+          memberNumber: '0001',
+          onboardingAssignedAt: new Date(0),
+        });
+      });
+
+      const db = onboardingMember().firestore();
+      const ref = db.collection('gyms').doc('G1').collection('users').doc('memberNew');
+
+      await assertFails(
+        ref.set(
+          {
+            role: 'member',
+            memberNumber: '0002',
+          },
+          { merge: true }
+        )
+      );
+    });
+
     it('allows onboarding registration when the counter document is created in the transaction', async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const db = context.firestore();

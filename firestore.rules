@@ -560,11 +560,41 @@ service cloud.firestore {
 
       // Users subcollection under gym
       match /users/{userId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) ||
+                     (isAuthed() && request.auth.uid == userId);
+
         allow create: if isAuthed() &&
                        request.auth.uid == userId &&
                        request.resource.data.role == 'member';
-        allow update, delete: if isAdmin(gymId);
+
+        allow update: if isAdmin(gymId) || (
+          isAuthed() &&
+          request.auth.uid == userId &&
+          request.resource.data.keys().hasOnly([
+            'role',
+            'createdAt',
+            'memberNumber',
+            'onboardingAssignedAt'
+          ]) &&
+          request.resource.data.role == 'member' &&
+          (!('createdAt' in request.resource.data) ||
+            request.resource.data.createdAt is timestamp ||
+            request.resource.data.createdAt == request.time) &&
+          (!('memberNumber' in request.resource.data) ||
+            (
+              request.resource.data.memberNumber is string &&
+              request.resource.data.memberNumber.size() == 4 &&
+              (
+                (!('memberNumber' in resource.data)) ||
+                resource.data.memberNumber == request.resource.data.memberNumber
+              )
+            )) &&
+          (!('onboardingAssignedAt' in request.resource.data) ||
+            request.resource.data.onboardingAssignedAt is timestamp ||
+            request.resource.data.onboardingAssignedAt == request.time)
+        );
+
+        allow delete: if isAdmin(gymId);
       }
 
       match /users/{userId}/rank/{document=**} {
