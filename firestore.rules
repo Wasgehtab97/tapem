@@ -42,6 +42,19 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(userId));
     }
 
+    function hasMembershipAfter(gymId) {
+      return existsAfter(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid));
+    }
+
+    function membershipRoleAfter(gymId) {
+      return getAfter(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role;
+    }
+
+    function isMemberOrAdminAfter(gymId) {
+      return hasMembershipAfter(gymId) &&
+        (membershipRoleAfter(gymId) == 'member' || membershipRoleAfter(gymId) == 'admin');
+    }
+
     // Admin for the given gym and user (based on membership doc)
     function isGymAdminFor(userId, gymId) {
       return isAuthed() &&
@@ -410,6 +423,22 @@ service cloud.firestore {
       allow write: if isAdmin(gymId);
 
       // Branding / config
+      match /config/onboarding {
+        allow read: if isAuthed();
+        allow create: if (isAdmin(gymId) || isGymAdmin(gymId) || isMemberOrAdminAfter(gymId)) &&
+          request.resource.data.keys().hasOnly(['nextMemberNumber']) &&
+          request.resource.data.nextMemberNumber is int &&
+          request.resource.data.nextMemberNumber >= 1 &&
+          request.resource.data.nextMemberNumber <= 9999;
+        allow update: if (isAdmin(gymId) || isGymAdmin(gymId) || isMemberOrAdminAfter(gymId)) &&
+          request.resource.data.keys().hasOnly(['nextMemberNumber']) &&
+          request.resource.data.nextMemberNumber is int &&
+          request.resource.data.nextMemberNumber == resource.data.nextMemberNumber + 1 &&
+          request.resource.data.nextMemberNumber >= 1 &&
+          request.resource.data.nextMemberNumber <= 9999;
+        allow delete: if false;
+      }
+
       match /config/{docId} {
         allow read: if isAuthed();
         allow write: if isAdmin(gymId);
@@ -541,7 +570,26 @@ service cloud.firestore {
                        (!('memberNumber' in request.resource.data) ||
                          (request.resource.data.memberNumber is string &&
                           request.resource.data.memberNumber.matches('^\\d{4}$')));
-        allow update, delete: if isAdmin(gymId);
+        allow update: if isAdmin(gymId) || (
+          request.auth.uid == userId &&
+          inGym(gymId) &&
+          request.resource.data.keys().hasOnly(['role', 'createdAt', 'memberNumber']) &&
+          request.resource.data.role == resource.data.role &&
+          (
+            (!('memberNumber' in resource.data) &&
+              request.resource.data.memberNumber is string &&
+              request.resource.data.memberNumber.matches('^\\d{4}$')) ||
+            ('memberNumber' in resource.data &&
+              request.resource.data.memberNumber == resource.data.memberNumber)
+          ) &&
+          (
+            (!('createdAt' in resource.data) &&
+              request.resource.data.createdAt is timestamp) ||
+            ('createdAt' in resource.data &&
+              request.resource.data.createdAt == resource.data.createdAt)
+          )
+        );
+        allow delete: if isAdmin(gymId);
       }
 
       match /users/{userId}/rank/{document=**} {

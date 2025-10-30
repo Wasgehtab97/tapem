@@ -899,5 +899,132 @@ describe('Security Rules v1', function () {
         ref.set({ userId: 'userB', xp: 0, level: 1, showInLeaderboard: true })
       );
     });
+
+    describe('gym membership onboarding', () => {
+      beforeEach(async () => {
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+          const db = context.firestore();
+          await db
+            .collection('gyms')
+            .doc('G1')
+            .collection('users')
+            .doc('userA')
+            .set({ role: 'member' });
+          await db
+            .collection('gyms')
+            .doc('G1')
+            .collection('config')
+            .doc('onboarding')
+            .set({ nextMemberNumber: 1 });
+        });
+      });
+
+      it('allows member to claim next member number in transaction', async () => {
+        const db = userA().firestore();
+        await assertSucceeds(
+          db.runTransaction(async (tx) => {
+            const userRef = db
+              .collection('gyms')
+              .doc('G1')
+              .collection('users')
+              .doc('userA');
+            const onboardingRef = db
+              .collection('gyms')
+              .doc('G1')
+              .collection('config')
+              .doc('onboarding');
+
+            const onboardingSnap = await tx.get(onboardingRef);
+            const next = onboardingSnap.exists
+              ? onboardingSnap.data().nextMemberNumber
+              : 1;
+
+            tx.set(onboardingRef, { nextMemberNumber: next + 1 }, { merge: true });
+            tx.set(
+              userRef,
+              {
+                role: 'member',
+                memberNumber: '0001',
+                createdAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          })
+        );
+      });
+
+      it('blocks skipping member number increments', async () => {
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+          const db = context.firestore();
+          await db
+            .collection('gyms')
+            .doc('G1')
+            .collection('config')
+            .doc('onboarding')
+            .set({ nextMemberNumber: 5 });
+        });
+
+        const db = userA().firestore();
+        await assertFails(
+          db.runTransaction(async (tx) => {
+            const userRef = db
+              .collection('gyms')
+              .doc('G1')
+              .collection('users')
+              .doc('userA');
+            const onboardingRef = db
+              .collection('gyms')
+              .doc('G1')
+              .collection('config')
+              .doc('onboarding');
+
+            await tx.get(userRef);
+            tx.set(onboardingRef, { nextMemberNumber: 10 }, { merge: true });
+            tx.set(
+              userRef,
+              {
+                role: 'member',
+                memberNumber: '0009',
+                createdAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          })
+        );
+      });
+
+      it('prevents member number changes after assignment', async () => {
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+          const db = context.firestore();
+          await db
+            .collection('gyms')
+            .doc('G1')
+            .collection('users')
+            .doc('userA')
+            .set({
+              role: 'member',
+              memberNumber: '0007',
+              createdAt: FieldValue.serverTimestamp(),
+            });
+        });
+
+        const db = userA().firestore();
+        const ref = db
+          .collection('gyms')
+          .doc('G1')
+          .collection('users')
+          .doc('userA');
+        await assertFails(
+          ref.set(
+            {
+              role: 'member',
+              memberNumber: '0008',
+              createdAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          )
+        );
+      });
+    });
   });
 });
