@@ -2,7 +2,7 @@
   "name": "tapem-functions",
   "version": "1.0.0",
   "engines": {
-    "node": "16"
+    "node": "14"
   },
   "dependencies": {
     "firebase-admin": "^11.10.1",
