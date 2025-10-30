@@ -61,7 +61,11 @@ void main() {
           .collection('config')
           .doc('onboarding')
           .get();
-      expect(onboarding.data()?['nextMemberNumber'], 3);
+      final onboardingData = onboarding.data();
+      expect(onboardingData?['nextMemberNumber'], 3);
+      expect(onboardingData?['lastAssignedNumber'], '0002');
+      expect(onboardingData?['lastAssignedUserId'], 'userB');
+      expect(onboardingData?['lastAssignedAt'], isA<Timestamp>());
     });
 
     test('throws when member number pool is exhausted', () async {

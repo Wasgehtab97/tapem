@@ -426,16 +426,48 @@ service cloud.firestore {
       match /config/onboarding {
         allow read: if isAuthed();
         allow create: if (isAdmin(gymId) || isGymAdmin(gymId) || isMemberOrAdminAfter(gymId)) &&
-          request.resource.data.keys().hasOnly(['nextMemberNumber']) &&
+          request.resource.data.keys().hasOnly([
+            'nextMemberNumber',
+            'lastAssignedNumber',
+            'lastAssignedUserId',
+            'lastAssignedAt',
+            'createdAt'
+          ]) &&
           request.resource.data.nextMemberNumber is int &&
           request.resource.data.nextMemberNumber >= 1 &&
-          request.resource.data.nextMemberNumber <= 9999;
+          request.resource.data.nextMemberNumber <= 9999 &&
+          (!('lastAssignedNumber' in request.resource.data) ||
+            (request.resource.data.lastAssignedNumber is string &&
+             request.resource.data.lastAssignedNumber.matches('^\\d{4}$'))) &&
+          (!('lastAssignedUserId' in request.resource.data) ||
+            request.resource.data.lastAssignedUserId is string) &&
+          (!('lastAssignedAt' in request.resource.data) ||
+            request.resource.data.lastAssignedAt is timestamp) &&
+          (!('createdAt' in request.resource.data) ||
+            request.resource.data.createdAt is timestamp);
         allow update: if (isAdmin(gymId) || isGymAdmin(gymId) || isMemberOrAdminAfter(gymId)) &&
-          request.resource.data.keys().hasOnly(['nextMemberNumber']) &&
+          request.resource.data.keys().hasOnly([
+            'nextMemberNumber',
+            'lastAssignedNumber',
+            'lastAssignedUserId',
+            'lastAssignedAt',
+            'createdAt'
+          ]) &&
           request.resource.data.nextMemberNumber is int &&
           request.resource.data.nextMemberNumber == resource.data.nextMemberNumber + 1 &&
           request.resource.data.nextMemberNumber >= 1 &&
-          request.resource.data.nextMemberNumber <= 9999;
+          request.resource.data.nextMemberNumber <= 9999 &&
+          (!('lastAssignedNumber' in request.resource.data) ||
+            (request.resource.data.lastAssignedNumber is string &&
+             request.resource.data.lastAssignedNumber.matches('^\\d{4}$'))) &&
+          (!('lastAssignedUserId' in request.resource.data) ||
+            request.resource.data.lastAssignedUserId is string) &&
+          (!('lastAssignedAt' in request.resource.data) ||
+            request.resource.data.lastAssignedAt is timestamp) &&
+          (!('createdAt' in request.resource.data) ||
+            request.resource.data.createdAt is timestamp) &&
+          (!('createdAt' in resource.data) ||
+            request.resource.data.createdAt == resource.data.createdAt);
         allow delete: if false;
       }
 

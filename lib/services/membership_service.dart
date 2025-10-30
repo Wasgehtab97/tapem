@@ -71,9 +71,16 @@ class FirestoreMembershipService implements MembershipService {
           throw StateError('Member number pool exhausted');
         }
 
+        final formattedNumber = _formatMemberNumber(nextMemberNumber);
+
         transaction.set(
           onboardingRef,
-          {'nextMemberNumber': nextMemberNumber + 1},
+          {
+            'nextMemberNumber': nextMemberNumber + 1,
+            'lastAssignedNumber': formattedNumber,
+            'lastAssignedUserId': uid,
+            'lastAssignedAt': FieldValue.serverTimestamp(),
+          },
           SetOptions(merge: true),
         );
 
@@ -83,7 +90,7 @@ class FirestoreMembershipService implements MembershipService {
             : 'member';
         final updates = <String, dynamic>{
           'role': role,
-          'memberNumber': _formatMemberNumber(nextMemberNumber),
+          'memberNumber': formattedNumber,
         };
 
         if (data == null || data['createdAt'] == null) {

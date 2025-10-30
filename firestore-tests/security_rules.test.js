@@ -938,13 +938,23 @@ describe('Security Rules v1', function () {
             const next = onboardingSnap.exists
               ? onboardingSnap.data().nextMemberNumber
               : 1;
+            const formatted = String(next).padStart(4, '0');
 
-            tx.set(onboardingRef, { nextMemberNumber: next + 1 }, { merge: true });
+            tx.set(
+              onboardingRef,
+              {
+                nextMemberNumber: next + 1,
+                lastAssignedNumber: formatted,
+                lastAssignedUserId: 'userA',
+                lastAssignedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
             tx.set(
               userRef,
               {
                 role: 'member',
-                memberNumber: '0001',
+                memberNumber: formatted,
                 createdAt: FieldValue.serverTimestamp(),
               },
               { merge: true }
