@@ -31,7 +31,9 @@ class FirestoreAuthSource {
         _changeUsername = changeUsername ?? changeUsernameTransaction,
         _gymSource = gymSource ?? FirestoreGymSource(),
         _membershipService = membershipService ??
-            FirestoreMembershipService(firestore: _firestore);
+            FirestoreMembershipService(
+              firestore: firestore ?? FirebaseFirestore.instance,
+            );
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
