@@ -13,7 +13,7 @@ void main() {
       service = FirestoreMembershipService(firestore: firestore);
     });
 
-    Future<DocumentSnapshot<Map<String, dynamic>>> _membershipSnap(
+    Future<DocumentSnapshot<Map<String, dynamic>>> membershipSnap(
       String gymId,
       String uid,
     ) {
@@ -34,7 +34,7 @@ void main() {
           .set({'role': 'member'});
 
       await service.ensureMembership('G1', 'userA');
-      final first = await _membershipSnap('G1', 'userA');
+      final first = await membershipSnap('G1', 'userA');
       final firstData = first.data();
 
       expect(firstData?['memberNumber'], '0001');
@@ -49,7 +49,7 @@ void main() {
           .set({'role': 'member'});
 
       await service.ensureMembership('G1', 'userB');
-      final second = await _membershipSnap('G1', 'userB');
+      final second = await membershipSnap('G1', 'userB');
       final secondData = second.data();
 
       expect(secondData?['memberNumber'], '0002');
@@ -91,7 +91,7 @@ void main() {
           .get();
       expect(onboarding.data()?['nextMemberNumber'], 10000);
 
-      final membership = await _membershipSnap('G1', 'userA');
+      final membership = await membershipSnap('G1', 'userA');
       expect(membership.data()?['memberNumber'], isNull);
     });
 
@@ -115,7 +115,7 @@ void main() {
 
       await service.ensureMembership('G1', 'userA');
 
-      final membership = await _membershipSnap('G1', 'userA');
+      final membership = await membershipSnap('G1', 'userA');
       expect(membership.data()?['memberNumber'], '0042');
 
       final onboarding = await firestore
