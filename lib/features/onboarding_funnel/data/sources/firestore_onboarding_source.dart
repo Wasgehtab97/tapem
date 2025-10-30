@@ -67,7 +67,12 @@ class FirestoreOnboardingSource {
   Future<int> _countQuery(Query<Map<String, dynamic>> query) async {
     try {
       final aggregate = await query.count().get();
-      return aggregate.count;
+      final count = aggregate.count;
+      if (count != null) {
+        return count;
+      }
+      final snapshot = await query.get();
+      return snapshot.docs.length;
     } on FirebaseException catch (error) {
       if (error.code == 'unimplemented') {
         final snapshot = await query.get();

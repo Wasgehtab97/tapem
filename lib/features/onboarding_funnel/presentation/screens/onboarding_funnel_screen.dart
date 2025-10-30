@@ -81,7 +81,7 @@ class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
               controller: _controller,
               maxLength: 4,
               keyboardType: TextInputType.number,
-              inputFormatters: const [
+              inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(4),
               ],

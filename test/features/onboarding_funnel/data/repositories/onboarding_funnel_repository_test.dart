@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:tapem/features/onboarding_funnel/data/repositories/onboarding_funnel_repository.dart';
@@ -76,7 +75,9 @@ void main() {
 
     test('wraps FirebaseException in repository exception for count', () async {
       final throwingRepository = OnboardingFunnelRepository(
-        source: _ThrowingSource(onCount: () => throw FirebaseException(code: 'internal')),
+        source: _ThrowingSource(
+          onCount: () => throw FirebaseException(code: 'internal', plugin: 'cloud_firestore'),
+        ),
       );
 
       expect(
@@ -87,7 +88,9 @@ void main() {
 
     test('wraps FirebaseException in repository exception for detail', () async {
       final throwingRepository = OnboardingFunnelRepository(
-        source: _ThrowingSource(onDetail: () => throw FirebaseException(code: 'internal')),
+        source: _ThrowingSource(
+          onDetail: () => throw FirebaseException(code: 'internal', plugin: 'cloud_firestore'),
+        ),
       );
 
       expect(

@@ -23,7 +23,7 @@ class RestStatsService {
     if (exerciseId == null || exerciseId.isEmpty) {
       return deviceId;
     }
-    return '${deviceId}__${exerciseId}';
+    return '$deviceId__$exerciseId';
   }
 
   Future<void> recordSession({
