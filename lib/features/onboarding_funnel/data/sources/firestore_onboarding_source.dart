@@ -66,7 +66,22 @@ class FirestoreOnboardingSource {
     final userCreatedAt = (userData?['createdAt'] as Timestamp?)?.toDate();
 
     final trainingQuery = userRef.collection('trainingDayXP');
-    final totalTrainingDays = await _countQuery(trainingQuery);
+    int totalTrainingDays;
+    try {
+      totalTrainingDays = await _countQuery(trainingQuery);
+    } on FirebaseException catch (error) {
+      if (error.code == 'permission-denied') {
+        developer.log(
+          'Permission denied when counting training days for userId=${summary.userId}. '
+          'Defaulting trainingDays to 0.',
+          name: _logTag,
+          error: error,
+        );
+        totalTrainingDays = 0;
+      } else {
+        rethrow;
+      }
+    }
     developer.log(
       'Resolved onboarding detail for userId=${summary.userId}: '
       'memberNumber=$sanitizedNumber, trainingDays=$totalTrainingDays',
