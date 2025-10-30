@@ -4,6 +4,7 @@ import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart'
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
+import 'package:tapem/services/membership_service.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
@@ -124,12 +125,17 @@ final List<String> calledEmails = <String>[];
 
 class _StubFirestoreAuthSource extends FirestoreAuthSource {
   _StubFirestoreAuthSource()
-      : super(
+      : _fakeFirestore = FakeFirebaseFirestore(),
+        super(
           auth: FakeFirebaseAuth(),
-          firestore: FakeFirebaseFirestore(),
+          firestore: _fakeFirestore,
           changeUsername: ({required firestore, required uid, required newUsername}) async {},
           gymSource: _FakeGymSource(),
+          membershipService: FirestoreMembershipService(firestore: _fakeFirestore),
         );
+
+  // ignore: unused_field
+  final FakeFirebaseFirestore _fakeFirestore;
 
   Future<UserDataDto> Function(String email, String password)? loginHandler;
   Future<UserDataDto> Function(String email, String password, String gymId)?

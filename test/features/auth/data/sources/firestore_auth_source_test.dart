@@ -4,6 +4,7 @@ import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/gym_config.dart';
+import 'package:tapem/services/membership_service.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
@@ -24,6 +25,7 @@ void main() {
         firestore: firestore,
         changeUsername: _changeUsername,
         gymSource: gymSource,
+        membershipService: FirestoreMembershipService(firestore: firestore),
       );
       gymSource.reset();
     });
@@ -70,6 +72,11 @@ void main() {
           .doc(dto.userId)
           .get();
       expect(membership.exists, isTrue);
+      final data = membership.data();
+      expect(data, isNotNull);
+      expect(data, containsPair('role', 'member'));
+      expect(data!['createdAt'], isA<Timestamp>());
+      expect(data['memberNumber'], isA<String>());
     });
 
     test('register throws when gym code not found', () {
