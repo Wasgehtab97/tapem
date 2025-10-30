@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "firebase-admin": "^11.10.1",
-    "firebase-functions": "^3.26.0"
+    "firebase-functions": "^3.24.0"
   },
   "devDependencies": {
     "firebase-functions-test": "^0.3.3",
