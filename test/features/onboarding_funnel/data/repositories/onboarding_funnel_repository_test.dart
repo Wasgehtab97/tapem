@@ -68,6 +68,18 @@ void main() {
       expect(detail.displayName, 'member');
     });
 
+    test('supports numeric memberNumber fields', () async {
+      await firestore.collection('gyms').doc('gymA').collection('users').doc('user1').set({
+        'role': 'member',
+        'memberNumber': 9,
+      });
+
+      final detail = await repository.findMemberByNumber('gymA', '0009');
+
+      expect(detail, isA<GymMemberDetail>());
+      expect(detail!.memberNumber, '0009');
+    });
+
     test('returns null when member not found', () async {
       final detail = await repository.findMemberByNumber('gymA', '0001');
       expect(detail, isNull);

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/models/gym_member_detail.dart';
 import '../../domain/models/gym_member_summary.dart';
+import '../../domain/utils/member_number_utils.dart';
+import '../../utils/onboarding_funnel_logger.dart';
 
 class FirestoreOnboardingSource {
   FirestoreOnboardingSource({FirebaseFirestore? firestore})
@@ -11,22 +13,82 @@ class FirestoreOnboardingSource {
 
   Future<int> countMembers(String gymId) async {
     final query = _firestore.collection('gyms').doc(gymId).collection('users');
-    return _countQuery(query);
+    logOnboardingFunnel(
+      'countMembers:start',
+      scope: 'OnboardingFunnel.FirestoreSource',
+      data: {'gymId': gymId},
+    );
+    final count = await _countQuery(
+      query,
+      debugName: 'gyms/$gymId/users',
+    );
+    logOnboardingFunnel(
+      'countMembers:success',
+      scope: 'OnboardingFunnel.FirestoreSource',
+      data: {'gymId': gymId, 'count': count},
+    );
+    return count;
   }
 
   Future<GymMemberDetail?> fetchMemberDetail(
     String gymId,
     String memberNumber,
   ) async {
-    final sanitizedNumber = _normalizeMemberNumber(memberNumber);
+    final normalized = normalizeMemberNumber(memberNumber);
+    logOnboardingFunnel(
+      'fetchMemberDetail:start',
+      scope: 'OnboardingFunnel.FirestoreSource',
+      data: {
+        'gymId': gymId,
+        'input': memberNumber,
+        'normalized': normalized,
+      },
+    );
+
+    if (normalized == null) {
+      logOnboardingFunnel(
+        'fetchMemberDetail:skip-empty',
+        scope: 'OnboardingFunnel.FirestoreSource',
+        data: {'gymId': gymId, 'input': memberNumber},
+      );
+      return null;
+    }
+
     final collection = _firestore.collection('gyms').doc(gymId).collection('users');
 
-    final membershipSnapshot = await collection
-        .where('memberNumber', isEqualTo: sanitizedNumber)
+    QuerySnapshot<Map<String, dynamic>> membershipSnapshot = await collection
+        .where('memberNumber', isEqualTo: normalized)
         .limit(1)
         .get();
 
     if (membershipSnapshot.docs.isEmpty) {
+      final numericMemberNumber = int.tryParse(normalized);
+      if (numericMemberNumber != null) {
+        logOnboardingFunnel(
+          'fetchMemberDetail:fallback-numeric-query',
+          scope: 'OnboardingFunnel.FirestoreSource',
+          data: {
+            'gymId': gymId,
+            'normalized': normalized,
+            'numeric': numericMemberNumber,
+          },
+        );
+        membershipSnapshot = await collection
+            .where('memberNumber', isEqualTo: numericMemberNumber)
+            .limit(1)
+            .get();
+      }
+    }
+
+    if (membershipSnapshot.docs.isEmpty) {
+      logOnboardingFunnel(
+        'fetchMemberDetail:not-found',
+        scope: 'OnboardingFunnel.FirestoreSource',
+        data: {
+          'gymId': gymId,
+          'normalized': normalized,
+        },
+      );
       return null;
     }
 
@@ -35,7 +97,7 @@ class FirestoreOnboardingSource {
     final createdAt = (membershipData['createdAt'] as Timestamp?)?.toDate();
     final summary = GymMemberSummary(
       userId: membershipDoc.id,
-      memberNumber: sanitizedNumber,
+      memberNumber: normalized,
       createdAt: createdAt,
     );
 
@@ -52,7 +114,21 @@ class FirestoreOnboardingSource {
     final userCreatedAt = (userData?['createdAt'] as Timestamp?)?.toDate();
 
     final trainingQuery = userRef.collection('trainingDayXP');
-    final totalTrainingDays = await _countQuery(trainingQuery);
+    final totalTrainingDays = await _countQuery(
+      trainingQuery,
+      debugName: 'users/${summary.userId}/trainingDayXP',
+    );
+
+    logOnboardingFunnel(
+      'fetchMemberDetail:success',
+      scope: 'OnboardingFunnel.FirestoreSource',
+      data: {
+        'gymId': gymId,
+        'userId': summary.userId,
+        'memberNumber': summary.memberNumber,
+        'trainingDays': totalTrainingDays,
+      },
+    );
 
     return GymMemberDetail(
       summary: summary,
@@ -64,33 +140,67 @@ class FirestoreOnboardingSource {
     );
   }
 
-  Future<int> _countQuery(Query<Map<String, dynamic>> query) async {
+  Future<int> _countQuery(
+    Query<Map<String, dynamic>> query, {
+    required String debugName,
+  }) async {
+    logOnboardingFunnel(
+      'countQuery:start',
+      scope: 'OnboardingFunnel.FirestoreSource',
+      data: {'query': debugName},
+    );
     try {
       final aggregate = await query.count().get();
       final count = aggregate.count;
       if (count != null) {
+        logOnboardingFunnel(
+          'countQuery:aggregate',
+          scope: 'OnboardingFunnel.FirestoreSource',
+          data: {
+            'query': debugName,
+            'count': count,
+          },
+        );
         return count;
       }
       final snapshot = await query.get();
-      return snapshot.docs.length;
-    } on FirebaseException catch (error) {
+      final fallbackCount = snapshot.docs.length;
+      logOnboardingFunnel(
+        'countQuery:aggregate-null-fallback',
+        scope: 'OnboardingFunnel.FirestoreSource',
+        data: {'query': debugName, 'count': fallbackCount},
+      );
+      return fallbackCount;
+    } on FirebaseException catch (error, stack) {
       if (error.code == 'unimplemented') {
         final snapshot = await query.get();
-        return snapshot.docs.length;
+        final fallbackCount = snapshot.docs.length;
+        logOnboardingFunnel(
+          'countQuery:fallback-unimplemented',
+          scope: 'OnboardingFunnel.FirestoreSource',
+          data: {'query': debugName, 'count': fallbackCount},
+        );
+        return fallbackCount;
       }
+      logOnboardingFunnel(
+        'countQuery:error',
+        scope: 'OnboardingFunnel.FirestoreSource',
+        data: {'query': debugName},
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
-    } on UnsupportedError {
+    } on UnsupportedError catch (error, stack) {
       final snapshot = await query.get();
-      return snapshot.docs.length;
+      final fallbackCount = snapshot.docs.length;
+      logOnboardingFunnel(
+        'countQuery:fallback-unsupported',
+        scope: 'OnboardingFunnel.FirestoreSource',
+        data: {'query': debugName, 'count': fallbackCount},
+        error: error,
+        stackTrace: stack,
+      );
+      return fallbackCount;
     }
-  }
-
-  String _normalizeMemberNumber(String value) {
-    final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitsOnly.isEmpty) {
-      return '0000';
-    }
-    final normalized = digitsOnly.padLeft(4, '0');
-    return normalized.substring(normalized.length - 4);
   }
 }

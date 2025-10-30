@@ -81,6 +81,7 @@ class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
               controller: _controller,
               maxLength: 4,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.search,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(4),
@@ -88,8 +89,15 @@ class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
               decoration: InputDecoration(
                 labelText: loc.onboardingFunnelSearchHint,
                 counterText: '',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () =>
+                      provider.submitSearch(widget.gymId, _controller.text),
+                ),
               ),
               onChanged: (value) => provider.searchMember(widget.gymId, value),
+              onSubmitted: (value) =>
+                  provider.submitSearch(widget.gymId, value),
             ),
             const SizedBox(height: 16),
             Expanded(

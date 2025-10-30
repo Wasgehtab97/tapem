@@ -33,7 +33,7 @@ void main() {
       expect(provider.errorMessage, isNotNull);
     });
 
-    test('searchMember ignores incomplete input', () async {
+    test('searchMember normalizes and searches partial input', () async {
       final repository = _FakeRepository(count: 1);
       final provider = OnboardingFunnelProvider(
         repository: repository,
@@ -41,8 +41,11 @@ void main() {
       );
 
       provider.searchMember('gymA', '12');
-      expect(provider.hasSearched, isFalse);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(provider.hasSearched, isTrue);
       expect(provider.selectedMember, isNull);
+      expect(repository.lastMemberNumber, '0012');
     });
 
     test('searchMember updates detail on success', () async {
@@ -101,6 +104,38 @@ void main() {
       expect(provider.hasSearched, isTrue);
       expect(provider.errorMessage, isNull);
     });
+
+    test('submitSearch reuses last normalized query when input empty', () async {
+      final repository = _FakeRepository();
+      final provider = OnboardingFunnelProvider(
+        repository: repository,
+        searchDebounce: Duration.zero,
+      );
+
+      provider.searchMember('gymA', '7');
+      await Future<void>.delayed(Duration.zero);
+
+      provider.submitSearch('gymA', '');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.lastMemberNumber, '0007');
+      expect(provider.hasSearched, isTrue);
+    });
+
+    test('searchMember clears state for empty value', () {
+      final repository = _FakeRepository();
+      final provider = OnboardingFunnelProvider(
+        repository: repository,
+        searchDebounce: Duration(milliseconds: 10),
+      );
+
+      provider.searchMember('gymA', '1234');
+      provider.searchMember('gymA', '');
+
+      expect(provider.hasSearched, isFalse);
+      expect(provider.selectedMember, isNull);
+      expect(provider.errorMessage, isNull);
+    });
   });
 }
 
@@ -120,6 +155,7 @@ class _FakeRepository extends OnboardingFunnelRepository {
   final GymMemberDetail? _detail;
   final bool _throwOnCount;
   final bool _throwOnSearch;
+  String? lastMemberNumber;
 
   @override
   Future<int> getMemberCount(String gymId) async {
@@ -134,6 +170,7 @@ class _FakeRepository extends OnboardingFunnelRepository {
     if (_throwOnSearch) {
       throw OnboardingFunnelException('search error');
     }
+    lastMemberNumber = memberNumber;
     return _detail;
   }
 }
