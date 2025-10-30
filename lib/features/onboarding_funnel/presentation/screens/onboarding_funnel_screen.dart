@@ -167,9 +167,13 @@ class _SearchResultSection extends StatelessWidget {
     }
 
     if (provider.errorMessage != null) {
+      final errorDetail = provider.errorMessage!.trim();
+      final detailedMessage = errorDetail.isEmpty
+          ? loc.onboardingFunnelSearchError
+          : '${loc.onboardingFunnelSearchError}\n$errorDetail';
       return Center(
         child: Text(
-          loc.onboardingFunnelSearchError,
+          detailedMessage,
           textAlign: TextAlign.center,
         ),
       );

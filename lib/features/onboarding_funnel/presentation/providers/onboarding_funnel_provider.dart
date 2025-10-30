@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
@@ -37,10 +38,23 @@ class OnboardingFunnelProvider extends ChangeNotifier {
     _isLoadingCount = true;
     _errorMessage = null;
     notifyListeners();
+    developer.log(
+      'Loading member count for gymId=$gymId',
+      name: _logTag,
+    );
     try {
       _memberCount = await _repository.getMemberCount(gymId);
+      developer.log(
+        'Successfully loaded member count: $_memberCount',
+        name: _logTag,
+      );
     } on OnboardingFunnelException catch (error) {
       _errorMessage = error.message;
+      developer.log(
+        'Failed to load member count: ${error.message}',
+        name: _logTag,
+        error: error,
+      );
     } finally {
       _isLoadingCount = false;
       notifyListeners();
@@ -49,6 +63,10 @@ class OnboardingFunnelProvider extends ChangeNotifier {
 
   void searchMember(String gymId, String query) {
     final sanitized = query.trim();
+    developer.log(
+      'Received search input="$query" sanitized="$sanitized"',
+      name: _logTag,
+    );
     _searchTimer?.cancel();
     if (sanitized.length < 4) {
       _isSearching = false;
@@ -56,6 +74,10 @@ class OnboardingFunnelProvider extends ChangeNotifier {
       _errorMessage = null;
       _selectedMember = null;
       notifyListeners();
+      developer.log(
+        'Search input too short (<4). Resetting state.',
+        name: _logTag,
+      );
       return;
     }
 
@@ -71,13 +93,33 @@ class OnboardingFunnelProvider extends ChangeNotifier {
     _isSearching = true;
     _errorMessage = null;
     notifyListeners();
+    developer.log(
+      'Performing search for member="$query" in gymId=$gymId',
+      name: _logTag,
+    );
     try {
       _selectedMember = await _repository.findMemberByNumber(gymId, query);
       _hasSearched = true;
+      if (_selectedMember == null) {
+        developer.log(
+          'Search completed with no result for member="$query"',
+          name: _logTag,
+        );
+      } else {
+        developer.log(
+          'Search successful for member="$query" -> userId=${_selectedMember!.summary.userId}',
+          name: _logTag,
+        );
+      }
     } on OnboardingFunnelException catch (error) {
       _errorMessage = error.message;
       _selectedMember = null;
       _hasSearched = true;
+      developer.log(
+        'Search failed for member="$query": ${error.message}',
+        name: _logTag,
+        error: error,
+      );
     } finally {
       _isSearching = false;
       notifyListeners();
@@ -89,4 +131,6 @@ class OnboardingFunnelProvider extends ChangeNotifier {
     _searchTimer?.cancel();
     super.dispose();
   }
+
+  static const String _logTag = 'OnboardingFunnelProvider';
 }
