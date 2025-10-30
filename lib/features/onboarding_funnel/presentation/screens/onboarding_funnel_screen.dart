@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -51,10 +53,18 @@ class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    developer.log(
+      'Onboarding funnel view initialized for gym=${widget.gymId}',
+      name: 'OnboardingFunnelScreen',
+    );
   }
 
   @override
   void dispose() {
+    developer.log(
+      'Disposing onboarding funnel view for gym=${widget.gymId}',
+      name: 'OnboardingFunnelScreen',
+    );
     _controller.dispose();
     super.dispose();
   }
@@ -89,7 +99,13 @@ class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
                 labelText: loc.onboardingFunnelSearchHint,
                 counterText: '',
               ),
-              onChanged: (value) => provider.searchMember(widget.gymId, value),
+              onChanged: (value) {
+                developer.log(
+                  'Search input changed value="$value"',
+                  name: 'OnboardingFunnelScreen',
+                );
+                provider.searchMember(widget.gymId, value);
+              },
             ),
             const SizedBox(height: 16),
             Expanded(

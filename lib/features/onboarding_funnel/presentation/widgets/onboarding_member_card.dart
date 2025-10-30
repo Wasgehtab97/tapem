@@ -13,7 +13,7 @@ class OnboardingMemberCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context).textTheme;
-    final registeredAt = detail.registeredAt;
+    final registeredAt = detail.registeredAt ?? detail.userCreatedAt;
     final registrationText = registeredAt != null
         ? DateFormat.yMMMMd(loc.localeName).format(registeredAt)
         : loc.onboardingFunnelRegistrationUnknown;

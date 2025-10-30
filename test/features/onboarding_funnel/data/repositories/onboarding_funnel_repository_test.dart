@@ -68,6 +68,25 @@ void main() {
       expect(detail.displayName, 'member');
     });
 
+    test('finds member when memberNumber stored as integer', () async {
+      await firestore.collection('gyms').doc('gymA').collection('users').doc('user2').set({
+        'role': 'member',
+        'memberNumber': 23,
+        'createdAt': Timestamp.fromDate(DateTime(2024, 2, 1)),
+      });
+      await firestore.collection('users').doc('user2').set({
+        'email': 'twentythree@example.com',
+        'createdAt': Timestamp.fromDate(DateTime(2024, 1, 20)),
+      });
+
+      final detail = await repository.findMemberByNumber('gymA', '0023');
+
+      expect(detail, isNotNull);
+      expect(detail!.summary.userId, 'user2');
+      expect(detail.memberNumber, '0023');
+      expect(detail.summary.createdAt, DateTime(2024, 2, 1));
+    });
+
     test('returns null when member not found', () async {
       final detail = await repository.findMemberByNumber('gymA', '0001');
       expect(detail, isNull);

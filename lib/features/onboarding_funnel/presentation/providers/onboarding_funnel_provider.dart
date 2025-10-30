@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
 import '../../data/repositories/onboarding_funnel_repository.dart';
 import '../../domain/models/gym_member_detail.dart';
+import '../../domain/utils/member_number_formatter.dart';
 
 class OnboardingFunnelProvider extends ChangeNotifier {
   OnboardingFunnelProvider({
@@ -37,10 +39,24 @@ class OnboardingFunnelProvider extends ChangeNotifier {
     _isLoadingCount = true;
     _errorMessage = null;
     notifyListeners();
+    developer.log(
+      'Loading member count for gym=$gymId',
+      name: 'OnboardingFunnelProvider',
+    );
     try {
       _memberCount = await _repository.getMemberCount(gymId);
+      developer.log(
+        'Member count loaded: ${_memberCount ?? 'null'}',
+        name: 'OnboardingFunnelProvider',
+      );
     } on OnboardingFunnelException catch (error) {
       _errorMessage = error.message;
+      developer.log(
+        'Failed to load member count',
+        name: 'OnboardingFunnelProvider',
+        level: 1000,
+        error: error,
+      );
     } finally {
       _isLoadingCount = false;
       notifyListeners();
@@ -48,36 +64,68 @@ class OnboardingFunnelProvider extends ChangeNotifier {
   }
 
   void searchMember(String gymId, String query) {
-    final sanitized = query.trim();
+    final digits = MemberNumberFormatter.digitsOnly(query);
+    developer.log(
+      'Received search query="$query" digits="$digits"',
+      name: 'OnboardingFunnelProvider',
+    );
     _searchTimer?.cancel();
-    if (sanitized.length < 4) {
+    if (digits.length < 4) {
       _isSearching = false;
       _hasSearched = false;
       _errorMessage = null;
       _selectedMember = null;
       notifyListeners();
+      developer.log(
+        'Search query ignored - not enough digits',
+        name: 'OnboardingFunnelProvider',
+        level: 800,
+      );
       return;
     }
 
     if (_searchDebounce <= Duration.zero) {
-      _performSearch(gymId, sanitized);
+      _performSearch(gymId, digits);
       return;
     }
 
-    _searchTimer = Timer(_searchDebounce, () => _performSearch(gymId, sanitized));
+    _searchTimer = Timer(_searchDebounce, () => _performSearch(gymId, digits));
   }
 
   Future<void> _performSearch(String gymId, String query) async {
     _isSearching = true;
     _errorMessage = null;
     notifyListeners();
+    final normalized = MemberNumberFormatter.normalize(query);
+    developer.log(
+      'Starting search for gym=$gymId number=$normalized',
+      name: 'OnboardingFunnelProvider',
+    );
     try {
-      _selectedMember = await _repository.findMemberByNumber(gymId, query);
+      _selectedMember = await _repository.findMemberByNumber(gymId, normalized);
       _hasSearched = true;
+      if (_selectedMember != null) {
+        developer.log(
+          'Search succeeded for number=$normalized userId=${_selectedMember!.summary.userId}',
+          name: 'OnboardingFunnelProvider',
+        );
+      } else {
+        developer.log(
+          'Search completed - no member found for number=$normalized',
+          name: 'OnboardingFunnelProvider',
+          level: 800,
+        );
+      }
     } on OnboardingFunnelException catch (error) {
       _errorMessage = error.message;
       _selectedMember = null;
       _hasSearched = true;
+      developer.log(
+        'Search failed for number=$normalized',
+        name: 'OnboardingFunnelProvider',
+        level: 1000,
+        error: error,
+      );
     } finally {
       _isSearching = false;
       notifyListeners();
