@@ -1262,6 +1262,8 @@
   ,"@reportMembersMemberNumberColumn": {"description": "Column header for the member number in the members report"}
   ,"reportMembersRoleColumn": "Role"
   ,"@reportMembersRoleColumn": {"description": "Column header for the role in the members report"}
+  ,"reportMembersTrainingDaysColumn": "Training days"
+  ,"@reportMembersTrainingDaysColumn": {"description": "Column header for the total number of training days in the members report"}
   ,"reportMembersCreatedAtColumn": "Created at"
   ,"@reportMembersCreatedAtColumn": {"description": "Column header for the created at timestamp in the members report"}
   ,"reportMembersLoadError": "We couldn't load the member list."
