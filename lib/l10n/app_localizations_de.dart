@@ -1318,6 +1318,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportMembersTitle => 'Mitglieder';
 
   @override
+  String get reportMembersUsageButton => 'Nutzung';
+
+  @override
+  String get reportMembersUsageTitle => 'Nutzung';
+
+  @override
+  String get reportMembersUsageDescription =>
+      'Anteil der registrierten Mitglieder nach dokumentierten Trainingstagen.';
+
+  @override
+  String get reportMembersUsageNoMembers =>
+      'Keine Mitglieder mit Mitgliedsnummer vorhanden.';
+
+  @override
+  String reportMembersUsageBucketSummary(
+    String label,
+    String percentage,
+    int count,
+    int total,
+  ) {
+    return '$label: $percentage% ($count von $total)';
+  }
+
+  @override
   String get reportMembersMemberNumberColumn => 'Mitgliedsnummer';
 
   @override

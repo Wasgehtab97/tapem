@@ -2501,6 +2501,41 @@ abstract class AppLocalizations {
   /// **'Members'**
   String get reportMembersTitle;
 
+  /// App bar action that opens the member usage overview
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get reportMembersUsageButton;
+
+  /// App bar title for the member usage overview
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get reportMembersUsageTitle;
+
+  /// Introductory copy for the member usage overview
+  ///
+  /// In en, this message translates to:
+  /// **'Share of registered members by logged training days.'**
+  String get reportMembersUsageDescription;
+
+  /// Hint text shown when no members with a membership number were found
+  ///
+  /// In en, this message translates to:
+  /// **'No members with a membership number available.'**
+  String get reportMembersUsageNoMembers;
+
+  /// Describes a usage bucket with share and counts
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {percentage}% ({count} of {total})'**
+  String reportMembersUsageBucketSummary(
+    String label,
+    String percentage,
+    int count,
+    int total,
+  );
+
   /// Column header for the member number in the members report
   ///
   /// In en, this message translates to:

@@ -6,6 +6,10 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
+import '../../data/training_day_repository.dart';
+import '../../domain/gym_member.dart';
+import 'report_members_usage_screen.dart';
+
 class ReportMembersScreen extends StatelessWidget {
   const ReportMembersScreen({super.key, required this.gymId});
 
@@ -23,6 +27,18 @@ class ReportMembersScreen extends StatelessWidget {
         title: Text(loc.reportMembersTitle),
         centerTitle: true,
         foregroundColor: brandColor,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReportMembersUsageScreen(gymId: gymId),
+                ),
+              );
+            },
+            child: Text(loc.reportMembersUsageButton),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -65,8 +81,8 @@ class _MembersTable extends StatelessWidget {
         }
 
         final members = snapshot.data?.docs
-                .map(_GymMember.fromSnapshot)
-                .whereType<_GymMember>()
+                .map(GymMember.fromSnapshot)
+                .whereType<GymMember>()
                 .where((member) => member.memberNumber.isNotEmpty)
                 .toList() ??
             [];
@@ -96,7 +112,7 @@ class _MembersTableContent extends StatefulWidget {
     required this.loc,
   });
 
-  final List<_GymMember> members;
+  final List<GymMember> members;
   final DateFormat dateFormat;
   final AppLocalizations loc;
 
@@ -107,6 +123,7 @@ class _MembersTableContent extends StatefulWidget {
 class _MembersTableContentState extends State<_MembersTableContent> {
   Future<Map<String, int>>? _trainingDayCountsFuture;
   List<String> _memberIds = const [];
+  final _trainingDayRepository = TrainingDayRepository();
 
   @override
   void initState() {
@@ -124,48 +141,16 @@ class _MembersTableContentState extends State<_MembersTableContent> {
     }
   }
 
-  void _scheduleTrainingDayLoad(List<_GymMember> members) {
+  void _scheduleTrainingDayLoad(List<GymMember> members) {
     final ids = _extractIds(members);
     _memberIds = ids;
-    _trainingDayCountsFuture =
-        ids.isEmpty ? Future.value(const {}) : _loadTrainingDayCounts(members);
+    _trainingDayCountsFuture = ids.isEmpty
+        ? Future.value(const {})
+        : _trainingDayRepository.fetchTrainingDayCounts(members);
   }
 
-  List<String> _extractIds(List<_GymMember> members) {
+  List<String> _extractIds(List<GymMember> members) {
     return members.map((member) => member.id).toList(growable: false);
-  }
-
-  Future<Map<String, int>> _loadTrainingDayCounts(
-    List<_GymMember> members,
-  ) async {
-    final firestore = FirebaseFirestore.instance;
-    final entries = await Future.wait(
-      members.map((member) async {
-        try {
-          final snapshot = await firestore
-              .collection('users')
-              .doc(member.id)
-              .collection('trainingDayXP')
-              .count()
-              .get();
-          return MapEntry(member.id, snapshot.count ?? 0);
-        } on FirebaseException catch (error, stackTrace) {
-          debugPrint(
-            'Failed to load training day count for ${member.id}: ${error.message ?? error.code}',
-          );
-          debugPrintStack(stackTrace: stackTrace);
-          return MapEntry(member.id, 0);
-        } catch (error, stackTrace) {
-          debugPrint(
-            'Failed to load training day count for ${member.id}: $error',
-          );
-          debugPrintStack(stackTrace: stackTrace);
-          return MapEntry(member.id, 0);
-        }
-      }),
-    );
-
-    return {for (final entry in entries) entry.key: entry.value};
   }
 
   @override
@@ -230,53 +215,6 @@ class _MembersTableContentState extends State<_MembersTableContent> {
         );
       },
     );
-  }
-}
-
-class _GymMember {
-  _GymMember({
-    required this.id,
-    required this.memberNumber,
-    required this.role,
-    required this.createdAt,
-  });
-
-  final String id;
-  final String memberNumber;
-  final String? role;
-  final DateTime? createdAt;
-
-  static _GymMember? fromSnapshot(
-    DocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
-    final data = snapshot.data();
-    if (data == null) {
-      return null;
-    }
-
-    final memberNumber = (data['memberNumber'] as String? ?? '').trim();
-    final role = data['role'] as String?;
-    final createdAt = _parseDateTime(data['createdAt']);
-
-    return _GymMember(
-      id: snapshot.id,
-      memberNumber: memberNumber,
-      role: role,
-      createdAt: createdAt,
-    );
-  }
-
-  static DateTime? _parseDateTime(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is String) {
-      return DateTime.tryParse(value);
-    }
-    return null;
   }
 }
 

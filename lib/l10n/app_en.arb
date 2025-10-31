@@ -1258,6 +1258,16 @@
   ,"@reportSurveysTitle": {"description": "App bar title for the surveys report screen"}
   ,"reportMembersTitle": "Members"
   ,"@reportMembersTitle": {"description": "App bar title for the members report screen"}
+  ,"reportMembersUsageButton": "Usage"
+  ,"@reportMembersUsageButton": {"description": "App bar action that opens the member usage overview"}
+  ,"reportMembersUsageTitle": "Usage"
+  ,"@reportMembersUsageTitle": {"description": "App bar title for the member usage overview"}
+  ,"reportMembersUsageDescription": "Share of registered members by logged training days."
+  ,"@reportMembersUsageDescription": {"description": "Introductory copy for the member usage overview"}
+  ,"reportMembersUsageNoMembers": "No members with a membership number available."
+  ,"@reportMembersUsageNoMembers": {"description": "Hint text when no members with a membership number were found"}
+  ,"reportMembersUsageBucketSummary": "{label}: {percentage}% ({count} of {total})"
+  ,"@reportMembersUsageBucketSummary": {"description": "Describes a usage bucket with share and counts","placeholders": {"label": {},"percentage": {},"count": {"type": "int"},"total": {"type": "int"}}}
   ,"reportMembersMemberNumberColumn": "Member number"
   ,"@reportMembersMemberNumberColumn": {"description": "Column header for the member number in the members report"}
   ,"reportMembersRoleColumn": "Role"
