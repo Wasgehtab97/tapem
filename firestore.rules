@@ -412,6 +412,16 @@ service cloud.firestore {
       }
 
       // Fallback for other user subcollections (owner-only)
+      match /trainingDayXP/{dayId} {
+        allow read: if isOwner(uid)
+          || (request.auth != null
+              && request.auth.token.gymId is string
+              && isAdmin(request.auth.token.gymId)
+              && isMember(uid, request.auth.token.gymId))
+          || isGlobalAdmin();
+        allow write: if isOwner(uid);
+      }
+
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
