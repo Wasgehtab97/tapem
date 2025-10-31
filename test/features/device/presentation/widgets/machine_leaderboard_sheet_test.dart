@@ -4,6 +4,7 @@ import 'package:tapem/features/device/domain/models/leaderboard_entry.dart';
 import 'package:tapem/features/device/domain/models/machine_attempt.dart';
 import 'package:tapem/features/device/domain/repositories/machine_attempt_repository.dart';
 import 'package:tapem/features/device/domain/services/leaderboard_service.dart';
+import 'package:tapem/features/device/domain/utils/leaderboard_time_utils.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 

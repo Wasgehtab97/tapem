@@ -70,44 +70,45 @@ class _MachineLeaderboardContent extends StatelessWidget {
               Container(
                 width: 48,
                 height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              loc.deviceLeaderboardTitle(title),
-              style: textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            if (isMulti)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  loc.deviceLeaderboardUnavailable,
-                  style: textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else ...[
-              _LeaderboardTabs(onTabChanged: (index) {
-                final notifier = context.read<DeviceLeaderboardNotifier>();
-                final period = LeaderboardPeriod.values[index];
-                notifier.setPeriod(period);
-              }),
-              const SizedBox(height: 12),
-              const _LeaderboardFilters(),
-              const SizedBox(height: 12),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _LeaderboardTab(period: LeaderboardPeriod.today),
-                    _LeaderboardTab(period: LeaderboardPeriod.week),
-                    _LeaderboardTab(period: LeaderboardPeriod.month),
-                  ],
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
+              const SizedBox(height: 12),
+              Text(
+                loc.deviceLeaderboardTitle(title),
+                style: textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              if (isMulti) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    loc.deviceLeaderboardUnavailable,
+                    style: textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ] else ...[
+                _LeaderboardTabs(onTabChanged: (index) {
+                  final notifier = context.read<DeviceLeaderboardNotifier>();
+                  final period = LeaderboardPeriod.values[index];
+                  notifier.setPeriod(period);
+                }),
+                const SizedBox(height: 12),
+                const _LeaderboardFilters(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _LeaderboardTab(period: LeaderboardPeriod.today),
+                      _LeaderboardTab(period: LeaderboardPeriod.week),
+                      _LeaderboardTab(period: LeaderboardPeriod.month),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
