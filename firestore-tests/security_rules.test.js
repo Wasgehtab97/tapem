@@ -393,6 +393,15 @@ describe('Security Rules v1', function () {
       await assertSucceeds(ref.get());
     });
 
+    it('allows gym admin to aggregate member training day XP entries', async () => {
+      const db = admin().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('trainingDayXP');
+      await assertSucceeds(ref.count().get());
+    });
+
     it('blocks admins from other gyms from reading training day XP entries', async () => {
       const db = adminB().firestore();
       const ref = db
@@ -401,6 +410,15 @@ describe('Security Rules v1', function () {
         .collection('trainingDayXP')
         .doc('2024-01-01');
       await assertFails(ref.get());
+    });
+
+    it('blocks admins from other gyms from aggregating training day XP entries', async () => {
+      const db = adminB().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('trainingDayXP');
+      await assertFails(ref.count().get());
     });
 
     it('blocks role escalation (membership_role_escalation)', async () => {
