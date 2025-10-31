@@ -42,6 +42,10 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(userId));
     }
 
+    function activeGymId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activeGymId;
+    }
+
     // Admin for the given gym and user (based on membership doc)
     function isGymAdminFor(userId, gymId) {
       return isAuthed() &&
@@ -300,7 +304,8 @@ service cloud.firestore {
           'avatarUrl',
           'avatarKey',
           'avatarUpdatedAt',
-          'equippedAvatarRef'
+          'equippedAvatarRef',
+          'activeGymId'
         ]);
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['avatarKey']) &&
@@ -413,18 +418,14 @@ service cloud.firestore {
 
       // Fallback for other user subcollections (owner-only)
       match /trainingDayXP/{dayId} {
-        allow read: if isOwner(uid)
-          || isGlobalAdmin()
-          || (isAuthed()
-              && request.auth.token.gymId is string
-              && isAdmin(request.auth.token.gymId)
-              && isMember(uid, request.auth.token.gymId));
-        allow get, list: if isOwner(uid)
-          || isGlobalAdmin()
-          || (isAuthed()
-              && request.auth.token.gymId is string
-              && isAdmin(request.auth.token.gymId)
-              && isMember(uid, request.auth.token.gymId));
+        // Owner, Global-Admin oder Admin des activeGymId, sofern Ziel-User dort Mitglied ist
+        allow read, get, list: if
+            isOwner(uid)
+            || isGlobalAdmin()
+            || (isAuthed()
+                && activeGymId() is string
+                && isAdmin(activeGymId())
+                && isMember(uid, activeGymId()));
         allow write: if isOwner(uid);
       }
 

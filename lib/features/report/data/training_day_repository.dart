@@ -3,6 +3,15 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/gym_member.dart';
 
+class TrainingDayAccessDenied implements Exception {
+  TrainingDayAccessDenied(this.userId);
+
+  final String userId;
+
+  @override
+  String toString() => 'TrainingDayAccessDenied(userId: $userId)';
+}
+
 class TrainingDayRepository {
   TrainingDayRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -19,25 +28,28 @@ class TrainingDayRepository {
     final entries = await Future.wait(
       members.map((member) async {
         try {
-          final snapshot = await _firestore
+          final aggregateQuery = _firestore
               .collection('users')
               .doc(member.id)
               .collection('trainingDayXP')
-              .count()
-              .get();
+              .count();
+          final snapshot = await aggregateQuery.get();
           return MapEntry(member.id, snapshot.count ?? 0);
         } on FirebaseException catch (error, stackTrace) {
+          if (error.code == 'permission-denied') {
+            throw TrainingDayAccessDenied(member.id);
+          }
           debugPrint(
             'Failed to load training day count for ${member.id}: ${error.message ?? error.code}',
           );
           debugPrintStack(stackTrace: stackTrace);
-          return MapEntry(member.id, 0);
+          rethrow;
         } catch (error, stackTrace) {
           debugPrint(
             'Failed to load training day count for ${member.id}: $error',
           );
           debugPrintStack(stackTrace: stackTrace);
-          return MapEntry(member.id, 0);
+          rethrow;
         }
       }),
     );
