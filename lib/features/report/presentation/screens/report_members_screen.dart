@@ -148,7 +148,7 @@ class _MembersTableContentState extends State<_MembersTableContent> {
               .collection('trainingDayXP')
               .count()
               .get();
-          return MapEntry(member.id, snapshot.count);
+          return MapEntry(member.id, snapshot.count ?? 0);
         } on FirebaseException catch (error, stackTrace) {
           debugPrint(
             'Failed to load training day count for ${member.id}: ${error.message ?? error.code}',
