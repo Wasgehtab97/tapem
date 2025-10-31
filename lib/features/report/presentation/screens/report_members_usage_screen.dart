@@ -313,8 +313,10 @@ class _UsageBarChart extends StatelessWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            tooltipBgColor: primary,
-            tooltipBorderRadius: BorderRadius.circular(AppRadius.card),
+            tooltipDecoration: BoxDecoration(
+              color: primary,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+            ),
             tooltipPadding: const EdgeInsets.all(AppSpacing.xs),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               if (groupIndex < 0 || groupIndex >= results.length) {
