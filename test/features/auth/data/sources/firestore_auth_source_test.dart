@@ -54,7 +54,7 @@ void main() {
       );
     });
 
-    test('register creates Firestore document and gym membership', () async {
+    test('register creates Firestore document and gym membership with member number', () async {
       gymSource.gyms['join-code'] = GymConfig(id: 'gym-42', code: 'join-code', name: 'Gym');
 
       final dto = await source.register('new@example.com', 'secret', 'join-code');
@@ -70,6 +70,36 @@ void main() {
           .doc(dto.userId)
           .get();
       expect(membership.exists, isTrue);
+      expect(membership.data(), containsPair('memberNumber', '0001'));
+
+      final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
+      expect(gymDoc.data(), containsPair('memberNumberCounter', 1));
+    });
+
+    test('register increments member number sequentially for same gym', () async {
+      gymSource.gyms['join-code'] = GymConfig(id: 'gym-42', code: 'join-code', name: 'Gym');
+
+      final first = await source.register('one@example.com', 'secret', 'join-code');
+      final second = await source.register('two@example.com', 'secret', 'join-code');
+
+      final firstMembership = await firestore
+          .collection('gyms')
+          .doc('gym-42')
+          .collection('users')
+          .doc(first.userId)
+          .get();
+      final secondMembership = await firestore
+          .collection('gyms')
+          .doc('gym-42')
+          .collection('users')
+          .doc(second.userId)
+          .get();
+
+      expect(firstMembership.data(), containsPair('memberNumber', '0001'));
+      expect(secondMembership.data(), containsPair('memberNumber', '0002'));
+
+      final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
+      expect(gymDoc.data(), containsPair('memberNumberCounter', 2));
     });
 
     test('register throws when gym code not found', () {
