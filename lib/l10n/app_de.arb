@@ -1244,6 +1244,16 @@
   ,"@reportSurveysTitle": {"description": "AppBar-Titel für den Umfragenbereich"}
   ,"reportMembersTitle": "Mitglieder"
   ,"@reportMembersTitle": {"description": "AppBar-Titel für den Mitgliederbericht"}
+  ,"reportMembersUsageButton": "Nutzung"
+  ,"@reportMembersUsageButton": {"description": "AppBar-Aktion, die die Nutzungsübersicht der Mitglieder öffnet"}
+  ,"reportMembersUsageTitle": "Nutzung"
+  ,"@reportMembersUsageTitle": {"description": "AppBar-Titel für die Nutzungsübersicht der Mitglieder"}
+  ,"reportMembersUsageDescription": "Anteil der registrierten Mitglieder nach dokumentierten Trainingstagen."
+  ,"@reportMembersUsageDescription": {"description": "Einleitungstext für die Nutzungsübersicht der Mitglieder"}
+  ,"reportMembersUsageNoMembers": "Keine Mitglieder mit Mitgliedsnummer vorhanden."
+  ,"@reportMembersUsageNoMembers": {"description": "Hinweistext, wenn keine Mitglieder mit Mitgliedsnummer gefunden wurden"}
+  ,"reportMembersUsageBucketSummary": "{label}: {percentage}% ({count} von {total})"
+  ,"@reportMembersUsageBucketSummary": {"description": "Beschreibung eines Nutzungsbereichs mit Anteil und Anzahl","placeholders": {"label": {},"percentage": {},"count": {"type": "int"},"total": {"type": "int"}}}
   ,"reportMembersMemberNumberColumn": "Mitgliedsnummer"
   ,"@reportMembersMemberNumberColumn": {"description": "Spaltenüberschrift für die Mitgliedsnummer im Mitgliederbericht"}
   ,"reportMembersRoleColumn": "Rolle"
