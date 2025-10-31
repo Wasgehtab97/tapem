@@ -213,7 +213,7 @@ class _UsageDistributionState extends State<_UsageDistribution> {
         final count = counts[member.id] ?? 0;
         return bucket.predicate(count);
       }).length;
-      final percentage = total == 0 ? 0 : (matched / total) * 100;
+      final percentage = total == 0 ? 0.0 : (matched / total) * 100;
       return _UsageBucketResult(
         label: bucket.label,
         percentage: percentage,
@@ -313,8 +313,8 @@ class _UsageBarChart extends StatelessWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            tooltipBgColor: primary,
-            tooltipRoundedRadius: AppRadius.card,
+            tooltipBackgroundColor: primary,
+            tooltipBorderRadius: BorderRadius.circular(AppRadius.card),
             tooltipPadding: const EdgeInsets.all(AppSpacing.xs),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               if (groupIndex < 0 || groupIndex >= results.length) {
