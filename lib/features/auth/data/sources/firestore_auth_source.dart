@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/services/username_service.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
+import 'package:tapem/services/member_number_utils.dart';
 
 typedef ChangeUsernameRunner = Future<void> Function({
   required FirebaseFirestore firestore,
@@ -69,15 +70,24 @@ class FirestoreAuthSource {
     );
     await _firestore.collection('users').doc(uid).set(dto.toJson());
 
-    // create gym membership so the user can access gym data
-    await _firestore
-        .collection('gyms')
-        .doc(gym.id)
-        .collection('users')
-        .doc(uid)
-        .set({
-      'role': 'member',
-      'createdAt': now,
+    await _firestore.runTransaction((tx) async {
+      final gymRef = _firestore.collection('gyms').doc(gym.id);
+      final membershipRef = gymRef.collection('users').doc(uid);
+
+      final gymSnap = await tx.get(gymRef);
+      final nextNumber = nextMemberNumber(gymSnap.data(), gymId: gym.id);
+      final memberNumber = formatMemberNumber(nextNumber);
+
+      updateMemberNumberCounter(tx, gymRef, nextNumber);
+      tx.set(
+        membershipRef,
+        {
+          'role': 'member',
+          'createdAt': now,
+          'memberNumber': memberNumber,
+        },
+        SetOptions(merge: true),
+      );
     });
 
     return dto;
