@@ -5,6 +5,7 @@ import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'report_feedback_screen.dart';
+import 'report_members_screen.dart';
 import 'report_surveys_screen.dart';
 import 'report_usage_screen.dart';
 
@@ -37,6 +38,18 @@ class ReportScreenNew extends StatelessWidget {
                 spacing: AppSpacing.md,
                 runSpacing: AppSpacing.md,
                 children: [
+                  _ReportNavigationCard(
+                    icon: Icons.groups_rounded,
+                    title: loc.reportMembersButtonTitle,
+                    subtitle: loc.reportMembersButtonSubtitle,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportMembersScreen(gymId: gymId),
+                        ),
+                      );
+                    },
+                  ),
                   _ReportNavigationCard(
                     icon: Icons.bar_chart_rounded,
                     title: loc.reportUsageButtonTitle,

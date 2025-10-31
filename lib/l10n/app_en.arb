@@ -1234,6 +1234,10 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportMembersButtonTitle": "Members"
+  ,"@reportMembersButtonTitle": {"description": "Navigation card title that opens the members report"}
+  ,"reportMembersButtonSubtitle": "View active member numbers"
+  ,"@reportMembersButtonSubtitle": {"description": "Subtitle explaining the members navigation card"}
   ,"reportUsageButtonTitle": "Usage"
   ,"@reportUsageButtonTitle": {"description": "Navigation card title that opens the usage report"}
   ,"reportUsageButtonSubtitle": "Visualize device usage data"
@@ -1252,6 +1256,20 @@
   ,"@reportFeedbackTitle": {"description": "App bar title for the feedback report screen"}
   ,"reportSurveysTitle": "Surveys"
   ,"@reportSurveysTitle": {"description": "App bar title for the surveys report screen"}
+  ,"reportMembersTitle": "Members"
+  ,"@reportMembersTitle": {"description": "App bar title for the members report screen"}
+  ,"reportMembersMemberNumberColumn": "Member number"
+  ,"@reportMembersMemberNumberColumn": {"description": "Column header for the member number in the members report"}
+  ,"reportMembersRoleColumn": "Role"
+  ,"@reportMembersRoleColumn": {"description": "Column header for the role in the members report"}
+  ,"reportMembersCreatedAtColumn": "Created at"
+  ,"@reportMembersCreatedAtColumn": {"description": "Column header for the created at timestamp in the members report"}
+  ,"reportMembersLoadError": "We couldn't load the member list."
+  ,"@reportMembersLoadError": {"description": "Message shown when the members report fails to load"}
+  ,"reportMembersRoleMember": "Member"
+  ,"@reportMembersRoleMember": {"description": "Display value for the member role in the members report"}
+  ,"reportMembersRoleAdmin": "Admin"
+  ,"@reportMembersRoleAdmin": {"description": "Display value for the admin role in the members report"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"

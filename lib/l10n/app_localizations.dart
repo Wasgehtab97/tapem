@@ -2447,6 +2447,18 @@ abstract class AppLocalizations {
   /// **'View surveys'**
   String get reportViewSurveysTitle;
 
+  /// Navigation card title that opens the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get reportMembersButtonTitle;
+
+  /// Subtitle explaining the members navigation card
+  ///
+  /// In en, this message translates to:
+  /// **'View active member numbers'**
+  String get reportMembersButtonSubtitle;
+
   /// Navigation card title that opens the usage report
   ///
   /// In en, this message translates to:
@@ -2482,6 +2494,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create and monitor member surveys'**
   String get reportSurveysButtonSubtitle;
+
+  /// App bar title for the members report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get reportMembersTitle;
+
+  /// Column header for the member number in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Member number'**
+  String get reportMembersMemberNumberColumn;
+
+  /// Column header for the role in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get reportMembersRoleColumn;
+
+  /// Column header for the created at timestamp in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Created at'**
+  String get reportMembersCreatedAtColumn;
+
+  /// Message shown when the members report fails to load
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't load the member list."**
+  String get reportMembersLoadError;
+
+  /// Display value for the member role in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get reportMembersRoleMember;
+
+  /// Display value for the admin role in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get reportMembersRoleAdmin;
 
   /// App bar title for the usage report screen
   ///
