@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -226,6 +225,8 @@ class _UsageDistributionState extends State<_UsageDistribution> {
 class _UsageBarChart extends StatelessWidget {
   const _UsageBarChart({required this.results});
 
+  static const _yAxisTicks = [100, 75, 50, 25, 0];
+
   final List<_UsageBucketResult> results;
 
   @override
@@ -233,101 +234,159 @@ class _UsageBarChart extends StatelessWidget {
     final theme = Theme.of(context);
     final surfaceVariant = theme.colorScheme.surfaceVariant;
     final primary = theme.colorScheme.primary;
+    final onPrimary = theme.colorScheme.onPrimary;
     final locale = Localizations.localeOf(context).toString();
     final tooltipFormat = NumberFormat.decimalPatternDigits(
       locale: locale,
       decimalDigits: 1,
     );
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: 100,
-        gridData: FlGridData(
-          show: true,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: surfaceVariant,
-            strokeWidth: 1,
-          ),
-          drawVerticalLine: false,
-        ),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 25,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: Text(
-                  '${value.toStringAsFixed(0)}%',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            ),
-          ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index < 0 || index >= results.length) {
-                  return const SizedBox.shrink();
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: Text(
-                    results[index].label,
-                    style: theme.textTheme.bodySmall,
+    return LayoutBuilder(
+      builder: (context, _) {
+        final gradientColors = [
+          primary.withOpacity(0.9),
+          primary.withOpacity(0.6),
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 40,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: _yAxisTicks.map((value) {
+                        return Text(
+                          '$value%',
+                          style: theme.textTheme.bodySmall,
+                        );
+                      }).toList(),
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-        barGroups: results.asMap().entries.map((entry) {
-          final index = entry.key;
-          final result = entry.value;
-          return BarChartGroupData(
-            x: index,
-            barRods: [
-              BarChartRodData(
-                toY: result.percentage,
-                width: 22,
-                gradient: LinearGradient(
-                  colors: [
-                    primary.withOpacity(0.9),
-                    primary.withOpacity(0.6),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.card),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: _yAxisTicks.map((value) {
+                              return Container(
+                                height: 1,
+                                color: surfaceVariant,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: results.map((result) {
+                              final heightFactor =
+                                  (result.percentage / 100).clamp(0.0, 1.0);
+                              final tooltipMessage =
+                                  '${result.label}\n${tooltipFormat.format(result.percentage)}%';
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.xs / 2,
+                                  ),
+                                  child: Tooltip(
+                                    message: tooltipMessage,
+                                    decoration: BoxDecoration(
+                                      color: primary,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card,
+                                      ),
+                                    ),
+                                    textStyle:
+                                        theme.textTheme.bodyMedium?.copyWith(
+                                      color: onPrimary,
+                                    ),
+                                    verticalOffset: AppSpacing.sm,
+                                    preferBelow: false,
+                                    child: _UsageBar(
+                                      heightFactor: heightFactor,
+                                      gradientColors: gradientColors,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-            showingTooltipIndicators: const [0],
-          );
-        }).toList(),
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchTooltipData: BarTouchTooltipData(
-            tooltipBgColor: primary,
-            tooltipRoundedRadius: AppRadius.card,
-            tooltipPadding: const EdgeInsets.all(AppSpacing.xs),
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              if (groupIndex < 0 || groupIndex >= results.length) {
-                return null;
-              }
-              final result = results[groupIndex];
-              final tooltipStyle =
-                  theme.textTheme.bodyMedium ?? const TextStyle();
-              return BarTooltipItem(
-                '${result.label}\n${tooltipFormat.format(result.percentage)}%',
-                tooltipStyle.copyWith(color: theme.colorScheme.onPrimary),
-              );
-            },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: theme.textTheme.bodySmall?.fontSize != null
+                  ? theme.textTheme.bodySmall!.fontSize! * 2
+                  : 28,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 40),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Row(
+                      children: results.map((result) {
+                        return Expanded(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Text(
+                              result.label,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _UsageBar extends StatelessWidget {
+  const _UsageBar({
+    required this.heightFactor,
+    required this.gradientColors,
+  });
+
+  final double heightFactor;
+  final List<Color> gradientColors;
+
+  @override
+  Widget build(BuildContext context) {
+    final clampedFactor = heightFactor.clamp(0.0, 1.0);
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        heightFactor: clampedFactor == 0 ? 0 : clampedFactor,
+        widthFactor: 1,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
         ),
       ),
