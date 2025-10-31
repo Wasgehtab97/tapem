@@ -401,7 +401,11 @@ Future<void> main() async {
                   ),
                   membership: m,
                 );
-            p.loadBrandingWithGym(auth.gymCode, auth.userId);
+            p.loadBrandingWithGym(
+              auth.gymCode,
+              auth.userId,
+              role: auth.role,
+            );
             return p;
           },
         ),
@@ -502,6 +506,7 @@ Future<void> main() async {
             unawaited(prov.updateContext(
               userId: auth.userId,
               gymId: gym.currentGymId,
+              role: auth.role,
             ));
             return prov;
           },

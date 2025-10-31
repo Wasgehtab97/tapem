@@ -38,19 +38,31 @@ class BrandingProvider extends ChangeNotifier {
   String? get error => _error;
   String? get gymId => _gymId;
 
-  Future<void> loadBranding(String gymId, String uid) async {
+  Future<void> loadBranding(
+    String gymId,
+    String uid, {
+    String? role,
+  }) async {
     _isLoading = true;
     _error = null;
     _gymId = gymId;
     notifyListeners();
     try {
-      await _membership.ensureMembership(gymId, uid);
+      await _membership.ensureMembership(
+        gymId,
+        uid,
+        desiredRole: role,
+      );
       try {
         _branding = await _source.getBranding(gymId);
       } on FirebaseException catch (e) {
         if (e.code == 'permission-denied') {
           _log('RULES_DENIED path=gyms/$gymId/config/branding op=read');
-          await _membership.ensureMembership(gymId, uid);
+          await _membership.ensureMembership(
+            gymId,
+            uid,
+            desiredRole: role,
+          );
           _log(
               'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/config/branding op=read');
           _branding = await _source.getBranding(gymId);
@@ -68,13 +80,13 @@ class BrandingProvider extends ChangeNotifier {
     }
   }
 
-  void loadBrandingWithGym(String? gymId, String? uid) {
+  void loadBrandingWithGym(String? gymId, String? uid, {String? role}) {
     if (gymId == null || gymId.isEmpty || uid == null) {
       _branding = null;
       _gymId = null;
       notifyListeners();
       return;
     }
-    loadBranding(gymId, uid);
+    loadBranding(gymId, uid, role: role);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,8 @@ import '../../data/sources/firestore_onboarding_source.dart';
 import '../providers/onboarding_funnel_provider.dart';
 import '../widgets/onboarding_member_card.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/membership_service.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class OnboardingFunnelScreen extends StatelessWidget {
   const OnboardingFunnelScreen({
@@ -29,7 +32,7 @@ class OnboardingFunnelScreen extends StatelessWidget {
           source: FirestoreOnboardingSource(),
         ),
         searchDebounce: searchDebounce,
-      )..loadMemberCount(gymId),
+      ),
       child: _OnboardingFunnelView(gymId: gymId),
     );
   }
@@ -46,17 +49,57 @@ class _OnboardingFunnelView extends StatefulWidget {
 
 class _OnboardingFunnelViewState extends State<_OnboardingFunnelView> {
   late final TextEditingController _controller;
+  late final MembershipService _membership;
+  Future<void>? _ensureFuture;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    _membership = FirestoreMembershipService();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureFuture ??= _ensureAccess();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OnboardingFunnelView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gymId != widget.gymId) {
+      _ensureFuture = _ensureAccess();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _ensureAccess() async {
+    final provider = context.read<OnboardingFunnelProvider>();
+    final auth = context.read<AuthProvider>();
+    final userId = auth.userId;
+    if (userId != null) {
+      try {
+        await _membership.ensureMembership(
+          widget.gymId,
+          userId,
+          desiredRole: auth.role,
+        );
+      } catch (error, stack) {
+        debugPrint('ONBOARDING_FUNNEL ensureMembership error: $error');
+        debugPrintStack(
+          label: 'OnboardingFunnel.ensureMembership',
+          stackTrace: stack,
+        );
+      }
+    }
+
+    await provider.loadMemberCount(widget.gymId);
   }
 
   @override

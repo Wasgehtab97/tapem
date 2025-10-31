@@ -39,6 +39,7 @@ class PowerliftingProvider extends ChangeNotifier {
 
   String? _userId;
   String? _activeGymId;
+  String? _activeRole;
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -89,14 +90,19 @@ class PowerliftingProvider extends ChangeNotifier {
   Future<void> updateContext({
     required String? userId,
     required String? gymId,
+    String? role,
   }) async {
     final normalizedGymId = (gymId ?? '').trim();
-    if (_userId == userId && _activeGymId == normalizedGymId) {
+    final normalizedRole = (role ?? '').trim();
+    if (_userId == userId &&
+        _activeGymId == normalizedGymId &&
+        _activeRole == (normalizedRole.isEmpty ? null : normalizedRole)) {
       return;
     }
 
     _userId = userId;
     _activeGymId = normalizedGymId.isEmpty ? null : normalizedGymId;
+    _activeRole = normalizedRole.isEmpty ? null : normalizedRole;
 
     if (_userId == null || _userId!.isEmpty || _activeGymId == null) {
       _clearState();
@@ -119,7 +125,11 @@ class PowerliftingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _membership.ensureMembership(gymId, uid);
+      await _membership.ensureMembership(
+        gymId,
+        uid,
+        desiredRole: _activeRole,
+      );
       final snapshot = await _firestore
           .collection('users')
           .doc(uid)
@@ -212,7 +222,11 @@ class PowerliftingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _membership.ensureMembership(normalizedGymId, uid);
+      await _membership.ensureMembership(
+        normalizedGymId,
+        uid,
+        desiredRole: _activeRole,
+      );
       await _firestore
           .collection('users')
           .doc(uid)
@@ -251,7 +265,11 @@ class PowerliftingProvider extends ChangeNotifier {
       return <Device>[];
     }
 
-    await _membership.ensureMembership(gymId, uid);
+    await _membership.ensureMembership(
+      gymId,
+      uid,
+      desiredRole: _activeRole,
+    );
     final devices = await _getDevicesForGym.execute(gymId);
     for (final device in devices) {
       _deviceCache['$gymId|${device.uid}'] = device;
@@ -280,7 +298,11 @@ class PowerliftingProvider extends ChangeNotifier {
 
     _loadingExercises.add(cacheKey);
     try {
-      await _membership.ensureMembership(gymId, uid);
+      await _membership.ensureMembership(
+        gymId,
+        uid,
+        desiredRole: _activeRole,
+      );
       final exercises =
           await _getExercisesForDevice.execute(gymId, deviceId, uid);
       exercises.sort((a, b) => a.name.compareTo(b.name));
@@ -313,7 +335,11 @@ class PowerliftingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _membership.ensureMembership(gymId, uid);
+      await _membership.ensureMembership(
+        gymId,
+        uid,
+        desiredRole: _activeRole,
+      );
       final collection = _firestore
           .collection('users')
           .doc(uid)

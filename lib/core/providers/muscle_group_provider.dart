@@ -105,6 +105,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     final userId = auth.userId;
+    final role = auth.role;
     if (gymId == null || userId == null) {
       _error = 'Benutzer nicht eingeloggt';
       notifyListeners();
@@ -119,7 +120,7 @@ class MuscleGroupProvider extends ChangeNotifier {
     }
 
     _activeLoad ??=
-        _performLoad(gymId: gymId, userId: userId).whenComplete(() {
+        _performLoad(gymId: gymId, userId: userId, role: role).whenComplete(() {
       _activeLoad = null;
     });
     return _activeLoad;
@@ -128,13 +129,18 @@ class MuscleGroupProvider extends ChangeNotifier {
   Future<void> _performLoad({
     required String gymId,
     required String userId,
+    required String? role,
   }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _membership.ensureMembership(gymId, userId);
+      await _membership.ensureMembership(
+        gymId,
+        userId,
+        desiredRole: role,
+      );
       List<MuscleGroup> groups;
       try {
         groups = await _getGroups.execute(gymId);
@@ -154,7 +160,11 @@ class MuscleGroupProvider extends ChangeNotifier {
       } on FirebaseException catch (e) {
         if (e.code == 'permission-denied') {
           debugPrint('RULES_DENIED path=gyms/$gymId/muscleGroups op=read');
-          await _membership.ensureMembership(gymId, userId);
+          await _membership.ensureMembership(
+            gymId,
+            userId,
+            desiredRole: role,
+          );
           debugPrint(
               'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/muscleGroups op=read');
           groups = await _getGroups.execute(gymId);

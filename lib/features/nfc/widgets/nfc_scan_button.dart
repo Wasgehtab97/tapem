@@ -78,7 +78,11 @@ class NfcScanButton extends StatelessWidget {
                 return;
               }
 
-              await membership.ensureMembership(gymId, authProv.userId!);
+              await membership.ensureMembership(
+                gymId,
+                authProv.userId!,
+                desiredRole: authProv.role,
+              );
 
               // Navigation basierend auf dev.isMulti
               if (dev.isMulti) {
