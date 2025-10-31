@@ -158,12 +158,27 @@ class _MembersTableContentState extends State<_MembersTableContent> {
     return FutureBuilder<Map<String, int>>(
       future: _trainingDayCountsFuture,
       builder: (context, snapshot) {
+        final error = snapshot.error;
+        final isAccessDenied = error is TrainingDayAccessDenied;
+
+        if (snapshot.hasError && !isAccessDenied) {
+          return Center(
+            child: Text(
+              widget.loc.reportMembersLoadError,
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
         final counts = snapshot.data ?? const <String, int>{};
         final isLoading = snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+        final table = SingleChildScrollView(
+          padding: EdgeInsets.only(
+            top: isAccessDenied ? AppSpacing.lg : 0,
+            bottom: AppSpacing.lg,
+          ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
@@ -213,7 +228,65 @@ class _MembersTableContentState extends State<_MembersTableContent> {
             ),
           ),
         );
+
+        if (!isAccessDenied) {
+          return table;
+        }
+
+        return Stack(
+          children: [
+            table,
+            const Positioned(
+              top: 0,
+              right: 0,
+              child: _AdminOnlyHint(),
+            ),
+          ],
+        );
       },
+    );
+  }
+}
+
+class _AdminOnlyHint extends StatelessWidget {
+  const _AdminOnlyHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(AppSpacing.sm),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Nur Admins dieses Gyms sehen Trainingstage.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

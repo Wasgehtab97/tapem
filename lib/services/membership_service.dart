@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:tapem/core/data/user_profile_service.dart';
+
 import 'member_number_utils.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
@@ -59,6 +61,7 @@ class FirestoreMembershipService implements MembershipService {
       });
       _ensured.add(key);
       _log('ENSURE_MEMBERSHIP success gymId=$gymId uid=$uid');
+      await UserProfileService.setActiveGym(gymId);
     } catch (e, st) {
       _log('ENSURE_MEMBERSHIP fail gymId=$gymId uid=$uid error=$e', st);
       rethrow;

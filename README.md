@@ -100,6 +100,12 @@ Die Dateien `pubspec.lock` und – sobald vorhanden – `ios/Podfile.lock` werde
 
 ---
 
+## Permissions & Adminsicht
+
+- App nutzt `users/{uid}.activeGymId` statt JWT-Claims.
+
+---
+
 ## Flavors
 
 Das Projekt sieht die Flavors **dev** und **prod** vor. Die jeweils zugehörige `.env`-Datei legt Firebase-IDs und weitere Einstellungen fest.
