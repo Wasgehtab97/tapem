@@ -2447,6 +2447,60 @@ abstract class AppLocalizations {
   /// **'View surveys'**
   String get reportViewSurveysTitle;
 
+  /// Navigation card title that opens the usage report
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get reportUsageButtonTitle;
+
+  /// Subtitle explaining the usage navigation card
+  ///
+  /// In en, this message translates to:
+  /// **'Visualize device usage data'**
+  String get reportUsageButtonSubtitle;
+
+  /// Navigation card title that opens the feedback report
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get reportFeedbackButtonTitle;
+
+  /// Subtitle explaining the feedback navigation card
+  ///
+  /// In en, this message translates to:
+  /// **'Review and manage gym feedback'**
+  String get reportFeedbackButtonSubtitle;
+
+  /// Navigation card title that opens the surveys report
+  ///
+  /// In en, this message translates to:
+  /// **'Surveys'**
+  String get reportSurveysButtonTitle;
+
+  /// Subtitle explaining the surveys navigation card
+  ///
+  /// In en, this message translates to:
+  /// **'Create and monitor member surveys'**
+  String get reportSurveysButtonSubtitle;
+
+  /// App bar title for the usage report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get reportUsageTitle;
+
+  /// App bar title for the feedback report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get reportFeedbackTitle;
+
+  /// App bar title for the surveys report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Surveys'**
+  String get reportSurveysTitle;
+
   /// Hint text for the device usage search field
   ///
   /// In en, this message translates to:

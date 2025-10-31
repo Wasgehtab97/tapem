@@ -1234,6 +1234,24 @@
   ,"@reportCreateSurveyTitle": {"description": "Action title to create a survey"}
   ,"reportViewSurveysTitle": "View surveys"
   ,"@reportViewSurveysTitle": {"description": "Action title to open the survey overview"}
+  ,"reportUsageButtonTitle": "Usage"
+  ,"@reportUsageButtonTitle": {"description": "Navigation card title that opens the usage report"}
+  ,"reportUsageButtonSubtitle": "Visualize device usage data"
+  ,"@reportUsageButtonSubtitle": {"description": "Subtitle explaining the usage navigation card"}
+  ,"reportFeedbackButtonTitle": "Feedback"
+  ,"@reportFeedbackButtonTitle": {"description": "Navigation card title that opens the feedback report"}
+  ,"reportFeedbackButtonSubtitle": "Review and manage gym feedback"
+  ,"@reportFeedbackButtonSubtitle": {"description": "Subtitle explaining the feedback navigation card"}
+  ,"reportSurveysButtonTitle": "Surveys"
+  ,"@reportSurveysButtonTitle": {"description": "Navigation card title that opens the surveys report"}
+  ,"reportSurveysButtonSubtitle": "Create and monitor member surveys"
+  ,"@reportSurveysButtonSubtitle": {"description": "Subtitle explaining the surveys navigation card"}
+  ,"reportUsageTitle": "Usage"
+  ,"@reportUsageTitle": {"description": "App bar title for the usage report screen"}
+  ,"reportFeedbackTitle": "Feedback"
+  ,"@reportFeedbackTitle": {"description": "App bar title for the feedback report screen"}
+  ,"reportSurveysTitle": "Surveys"
+  ,"@reportSurveysTitle": {"description": "App bar title for the surveys report screen"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"
