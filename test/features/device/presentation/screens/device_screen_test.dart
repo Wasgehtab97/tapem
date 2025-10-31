@@ -184,6 +184,9 @@ void main() {
         gymId: any(named: 'gymId'),
         userId: any(named: 'userId'),
         showInLeaderboard: any(named: 'showInLeaderboard'),
+        userName: any(named: 'userName'),
+        gender: any(named: 'gender'),
+        bodyWeightKg: any(named: 'bodyWeightKg'),
         autoFinalize: any(named: 'autoFinalize'),
       ),
     ).thenAnswer((_) async => true);

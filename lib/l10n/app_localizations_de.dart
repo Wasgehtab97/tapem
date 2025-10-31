@@ -657,6 +657,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsOptionTheme => 'App-Theme';
+  String get settingsBodyMetrics => 'Körperdaten';
+  String get settingsBodyMetricsDialogTitle => 'Körperdaten';
+  String get settingsGenderLabel => 'Geschlecht';
+  String get settingsGenderNone => 'Nicht gesetzt';
+  String get settingsGenderFemale => 'Weiblich';
+  String get settingsGenderMale => 'Männlich';
+  String get settingsGenderDiverse => 'Divers';
+  String get settingsBodyWeightLabel => 'Körpergewicht (kg)';
+  String get settingsBodyWeightHint => 'z. B. 82,5';
+  String get settingsBodyWeightError => 'Bitte ein gültiges Gewicht eingeben';
+  String get settingsBodyMetricsSaved => 'Körperdaten gespeichert.';
+  String get settingsBodyMetricsSaveError => 'Körperdaten konnten nicht gespeichert werden.';
+  String get settingsBodyMetricsSummaryEmpty => 'Nicht gesetzt';
+  String settingsBodyWeightSummary(String value) => '$value kg';
 
   @override
   String get settingsThemeDialogTitle => 'App-Theme auswählen';
@@ -714,6 +728,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get publicProfilePrivate => 'Privat';
+  String deviceLeaderboardTitle(String device) => 'King/Queen – $device';
+  String get deviceLeaderboardUnavailable => 'Für dieses Gerät nicht verfügbar.';
+  String get deviceLeaderboardTabToday => 'Heute';
+  String get deviceLeaderboardTabWeek => 'Woche';
+  String get deviceLeaderboardTabMonth => 'Monat';
+  String get deviceLeaderboardFilterAll => 'Alle';
+  String get deviceLeaderboardFilterFemale => 'w';
+  String get deviceLeaderboardFilterMale => 'm';
+  String get deviceLeaderboardFilterAbsolute => 'Absolut';
+  String get deviceLeaderboardFilterRelative => 'Relativ';
+  String get deviceLeaderboardError => 'Leaderboard konnte nicht geladen werden.';
+  String get deviceLeaderboardEmpty => 'Noch keine Einträge.';
+  String deviceLeaderboardRelativeValue(String value) => 'Relativ: ${value}×Körpergewicht';
+  String deviceLeaderboardRelativeScore(String value) => '${value}×KG';
+  String get deviceLeaderboardTooltip => 'King/Queen Leaderboard anzeigen';
 
   @override
   String get multiDeviceBannerText => 'Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.';

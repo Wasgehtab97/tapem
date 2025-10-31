@@ -543,6 +543,50 @@ service cloud.firestore {
         allow read, update, delete: if isAdmin(gymId);
       }
 
+      // Machine attempts (king/queen leaderboard)
+      match /machines/{machineId} {
+        allow read: if inGym(gymId);
+        allow write: if false;
+
+        match /attempts/{attemptId} {
+          allow read: if inGym(gymId);
+          allow create: if inGym(gymId) &&
+            request.auth.uid == request.resource.data.userId &&
+            request.resource.data.keys().hasOnly([
+              'gymId',
+              'machineId',
+              'userId',
+              'username',
+              'e1rm',
+              'reps',
+              'weight',
+              'createdAt',
+              'isMulti',
+              'gender',
+              'bodyWeightKg'
+            ]) &&
+            request.resource.data.gymId == gymId &&
+            request.resource.data.machineId == machineId &&
+            request.resource.data.isMulti == false &&
+            request.resource.data.username is string &&
+            request.resource.data.username.size() > 0 &&
+            request.resource.data.e1rm is number &&
+            request.resource.data.e1rm > 0 &&
+            (!('reps' in request.resource.data) ||
+              (request.resource.data.reps is int && request.resource.data.reps > 0)) &&
+            (!('weight' in request.resource.data) ||
+              (request.resource.data.weight is number && request.resource.data.weight > 0)) &&
+            (!('bodyWeightKg' in request.resource.data) ||
+              (request.resource.data.bodyWeightKg is number && request.resource.data.bodyWeightKg > 0)) &&
+            (!('gender' in request.resource.data) ||
+              ['m', 'w', 'divers'].hasAny([request.resource.data.gender])) &&
+            request.resource.data.createdAt == request.time &&
+            (let deviceDoc = get(/databases/$(database)/documents/gyms/$(gymId)/devices/$(machineId));
+              deviceDoc.data != null && deviceDoc.data.isMulti == false);
+          allow update, delete: if false;
+        }
+      }
+
       // Training plans
       match /trainingPlans/{planId}/{subdoc=**} {
         allow read, write: if inGym(gymId) && (

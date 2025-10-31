@@ -656,6 +656,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOptionTheme => 'Theme';
+  String get settingsBodyMetrics => 'Body metrics';
+  String get settingsBodyMetricsDialogTitle => 'Body metrics';
+  String get settingsGenderLabel => 'Gender';
+  String get settingsGenderNone => 'Not set';
+  String get settingsGenderFemale => 'Female';
+  String get settingsGenderMale => 'Male';
+  String get settingsGenderDiverse => 'Diverse';
+  String get settingsBodyWeightLabel => 'Body weight (kg)';
+  String get settingsBodyWeightHint => 'e.g. 82.5';
+  String get settingsBodyWeightError => 'Please enter a valid weight';
+  String get settingsBodyMetricsSaved => 'Body metrics saved.';
+  String get settingsBodyMetricsSaveError => 'Could not save body metrics.';
+  String get settingsBodyMetricsSummaryEmpty => 'Not set';
+  String settingsBodyWeightSummary(String value) => '$value kg';
 
   @override
   String get settingsThemeDialogTitle => 'Choose app theme';
@@ -713,6 +727,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get publicProfilePrivate => 'Private';
+  String deviceLeaderboardTitle(String device) => 'King/Queen – $device';
+  String get deviceLeaderboardUnavailable => 'Not available for this device.';
+  String get deviceLeaderboardTabToday => 'Today';
+  String get deviceLeaderboardTabWeek => 'Week';
+  String get deviceLeaderboardTabMonth => 'Month';
+  String get deviceLeaderboardFilterAll => 'All';
+  String get deviceLeaderboardFilterFemale => 'w';
+  String get deviceLeaderboardFilterMale => 'm';
+  String get deviceLeaderboardFilterAbsolute => 'Absolute';
+  String get deviceLeaderboardFilterRelative => 'Relative';
+  String get deviceLeaderboardError => 'Could not load leaderboard.';
+  String get deviceLeaderboardEmpty => 'No records yet.';
+  String deviceLeaderboardRelativeValue(String value) => 'Relative: ${value}×BW';
+  String deviceLeaderboardRelativeScore(String value) => '${value}×BW';
+  String get deviceLeaderboardTooltip => 'Show King/Queen leaderboard';
 
   @override
   String get multiDeviceBannerText => 'Multi-device mode: only daily XP and device statistics are counted. No XP per muscle group and no leaderboard update.';

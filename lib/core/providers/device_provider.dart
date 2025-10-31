@@ -17,6 +17,7 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
+import 'package:tapem/features/device/domain/utils/e1rm_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
@@ -1121,6 +1122,9 @@ class DeviceProvider extends ChangeNotifier {
     required String gymId,
     required String userId,
     required bool showInLeaderboard,
+    String? userName,
+    String? gender,
+    double? bodyWeightKg,
     bool autoFinalize = false,
     int? plannedRestSeconds,
   }) async {
@@ -1243,12 +1247,23 @@ class DeviceProvider extends ChangeNotifier {
         tz = DateTime.now().timeZoneName;
       }
       final batch = _firestore.batch();
+      final canWriteAttempts = showInLeaderboard && _device!.isMulti == false;
+      final attemptsCol = canWriteAttempts
+          ? _firestore
+              .collection('gyms')
+              .doc(gymId)
+              .collection('machines')
+              .doc(_device!.uid)
+              .collection('attempts')
+          : null;
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
         final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
         final weight = double.tryParse(weightStr) ?? 0;
         final isBw = set['isBodyweight'] == true;
+        final repsValue = int.parse(set['reps']!);
+        final setNumber = int.parse(set['number']);
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
           'userId': userId,
@@ -1256,8 +1271,8 @@ class DeviceProvider extends ChangeNotifier {
           'sessionId': sessionId,
           'timestamp': ts,
           'weight': weight,
-          'reps': int.parse(set['reps']!),
-          'setNumber': int.parse(set['number']),
+          'reps': repsValue,
+          'setNumber': setNumber,
           'note': _note,
           'tz': tz,
           if (isBw) 'isBodyweight': true,
@@ -1281,6 +1296,34 @@ class DeviceProvider extends ChangeNotifier {
           data['drops'] = dropEntriesForLog;
         }
         batch.set(ref, data);
+
+        if (canWriteAttempts && !isBw && weight > 0) {
+          final e1rm = calculateEpleyOneRepMax(
+            weightKg: weight,
+            reps: repsValue,
+          );
+          if (e1rm != null) {
+            final attemptRef = attemptsCol!.doc();
+            final trimmedName = userName?.trim();
+            final resolvedUsername =
+                (trimmedName == null || trimmedName.isEmpty) ? userId : trimmedName;
+            final attemptData = <String, dynamic>{
+              'gymId': gymId,
+              'machineId': _device!.uid,
+              'userId': userId,
+              'username': resolvedUsername,
+              'e1rm': e1rm,
+              'createdAt': FieldValue.serverTimestamp(),
+              'isMulti': false,
+              'reps': repsValue,
+              'weight': weight,
+              if (gender != null && gender.isNotEmpty) 'gender': gender,
+              if (bodyWeightKg != null && bodyWeightKg > 0)
+                'bodyWeightKg': bodyWeightKg,
+            };
+            batch.set(attemptRef, attemptData);
+          }
+        }
       }
 
       final noteRef = _firestore
