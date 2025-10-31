@@ -313,19 +313,19 @@ class _UsageBarChart extends StatelessWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            tooltipDecoration: BoxDecoration(
-              color: primary,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-            ),
+            tooltipBgColor: primary,
+            tooltipRoundedRadius: AppRadius.card,
             tooltipPadding: const EdgeInsets.all(AppSpacing.xs),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               if (groupIndex < 0 || groupIndex >= results.length) {
                 return null;
               }
               final result = results[groupIndex];
+              final tooltipStyle =
+                  theme.textTheme.bodyMedium ?? const TextStyle();
               return BarTooltipItem(
                 '${result.label}\n${tooltipFormat.format(result.percentage)}%',
-                theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimary),
+                tooltipStyle.copyWith(color: theme.colorScheme.onPrimary),
               );
             },
           ),
