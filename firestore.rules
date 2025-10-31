@@ -414,11 +414,11 @@ service cloud.firestore {
       // Fallback for other user subcollections (owner-only)
       match /trainingDayXP/{dayId} {
         allow read: if isOwner(uid)
-          || (request.auth != null
-              && resource.data.gymId is string
-              && sharesGym(uid, request.auth.uid)
-              && isAdmin(resource.data.gymId))
-          || isGlobalAdmin();
+          || isGlobalAdmin()
+          || (isAuthed()
+              && request.auth.token.gymId is string
+              && isAdmin(request.auth.token.gymId)
+              && isMember(uid, request.auth.token.gymId));
         allow write: if isOwner(uid);
       }
 

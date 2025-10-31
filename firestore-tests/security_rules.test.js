@@ -137,6 +137,12 @@ describe('Security Rules v1', function () {
         .doc('adminB')
         .set({ role: 'admin' });
       await db.collection('users').doc('userA').set({});
+      await db
+        .collection('users')
+        .doc('userA')
+        .collection('trainingDayXP')
+        .doc('2024-01-01')
+        .set({ xp: 100 });
       await db.collection('users').doc('userB').set({});
       await db.collection('publicProfiles').doc('userA').set({ username: 'Alice' });
       await db.collection('publicProfiles').doc('userB').set({ username: 'Bob' });
@@ -146,6 +152,12 @@ describe('Security Rules v1', function () {
         .collection('users')
         .doc('user3')
         .set({ role: 'member' });
+      await db
+        .collection('users')
+        .doc('user3')
+        .collection('trainingDayXP')
+        .doc('2024-01-01')
+        .set({ xp: 80 });
       await db
         .collection('gyms')
         .doc('G2')
@@ -369,6 +381,26 @@ describe('Security Rules v1', function () {
       const db = admin().firestore();
       const ref = db.collection('gyms').doc('G1').collection('users').doc('newUser');
       await assertSucceeds(ref.set({ role: 'member' }));
+    });
+
+    it('allows gym admin to read member training day XP entries', async () => {
+      const db = admin().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('trainingDayXP')
+        .doc('2024-01-01');
+      await assertSucceeds(ref.get());
+    });
+
+    it('blocks admins from other gyms from reading training day XP entries', async () => {
+      const db = adminB().firestore();
+      const ref = db
+        .collection('users')
+        .doc('userA')
+        .collection('trainingDayXP')
+        .doc('2024-01-01');
+      await assertFails(ref.get());
     });
 
     it('blocks role escalation (membership_role_escalation)', async () => {
