@@ -82,6 +82,22 @@ service cloud.firestore {
       return (inGym(gymId) && resource.data.userId == request.auth.uid) || isAdmin(gymId);
     }
 
+    function canIncrementMemberNumberCounter() {
+      let allowedKeys = resource.data.keys().concat(['memberNumberCounter']);
+      return isAuthed() &&
+        request.resource.data.keys().hasOnly(allowedKeys) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['memberNumberCounter']) &&
+        request.resource.data.memberNumberCounter is int &&
+        request.resource.data.memberNumberCounter <= 9999 &&
+        (
+          !('memberNumberCounter' in resource.data) && request.resource.data.memberNumberCounter >= 0 ||
+          (
+            resource.data.memberNumberCounter is int &&
+            request.resource.data.memberNumberCounter == resource.data.memberNumberCounter + 1
+          )
+        );
+    }
+
     // Owner or friend based on a given field
     function isOwnerOrFriend(field) {
       return (field in resource.data) &&
@@ -407,7 +423,8 @@ service cloud.firestore {
     match /gyms/{gymId} {
       // Public gym doc (non-sensitive fields only)
       allow read: if true;
-      allow write: if isAdmin(gymId);
+      allow create, delete: if isAdmin(gymId);
+      allow update: if isAdmin(gymId) || canIncrementMemberNumberCounter();
 
       // Branding / config
       match /config/{docId} {

@@ -37,8 +37,16 @@ describe('Security Rules v1', function () {
 
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
-      await db.collection('gyms').doc('G1').set({ code: 'G1', name: 'Gym 1' });
-      await db.collection('gyms').doc('G2').set({ code: 'G2', name: 'Gym 2' });
+      await db.collection('gyms').doc('G1').set({
+        code: 'G1',
+        name: 'Gym 1',
+        memberNumberCounter: 0,
+      });
+      await db.collection('gyms').doc('G2').set({
+        code: 'G2',
+        name: 'Gym 2',
+        memberNumberCounter: 0,
+      });
       await db.collection('gyms').doc('G1').collection('devices').doc('D1').set({ id: 1 });
       await db.collection('gyms').doc('G2').collection('devices').doc('D2').set({ id: 1 });
       await db.collection('gyms').doc('G1').collection('users').doc('userA').set({ role: 'member' });
@@ -163,6 +171,7 @@ describe('Security Rules v1', function () {
   const friend = () => testEnv.authenticatedContext('user2', { gymId: 'G1', role: 'member' });
   const stranger = () => testEnv.authenticatedContext('user4', { gymId: 'G1', role: 'member' });
   const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'G2', role: 'admin' });
+  const registrant = () => testEnv.authenticatedContext('registrant', {});
 
   describe('Firestore rules', () => {
     it('allows cross-gym device read when authenticated', async () => {
@@ -205,6 +214,47 @@ describe('Security Rules v1', function () {
         .collection('exercises')
         .doc('exNF');
       await assertFails(ref.get());
+    });
+
+    describe('gym membership registration', () => {
+      beforeEach(async () => {
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+          const adminDb = context.firestore();
+          await adminDb.collection('gyms').doc('G1').update({ memberNumberCounter: 0 });
+          await adminDb
+            .collection('gyms')
+            .doc('G1')
+            .collection('users')
+            .doc('registrant')
+            .delete();
+        });
+      });
+
+      it('allows registrant to increment counter and create membership', async () => {
+        const db = registrant().firestore();
+        const gymRef = db.collection('gyms').doc('G1');
+        await assertSucceeds(gymRef.update({ memberNumberCounter: 1 }));
+        await assertSucceeds(
+          gymRef.collection('users').doc('registrant').set({ role: 'member' })
+        );
+      });
+
+      it('blocks registrant from changing other fields or skipping values', async () => {
+        const db = registrant().firestore();
+        const gymRef = db.collection('gyms').doc('G1');
+        await assertFails(gymRef.update({ name: 'Overwritten Gym Name' }));
+        await assertFails(gymRef.update({ memberNumberCounter: 2 }));
+
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+          await context
+            .firestore()
+            .collection('gyms')
+            .doc('G1')
+            .update({ memberNumberCounter: 9999 });
+        });
+
+        await assertFails(gymRef.update({ memberNumberCounter: 10000 }));
+      });
     });
 
     it('allows admin to read custom exercise', async () => {
