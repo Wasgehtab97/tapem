@@ -1248,6 +1248,8 @@
   ,"@reportMembersMemberNumberColumn": {"description": "Spaltenüberschrift für die Mitgliedsnummer im Mitgliederbericht"}
   ,"reportMembersRoleColumn": "Rolle"
   ,"@reportMembersRoleColumn": {"description": "Spaltenüberschrift für die Rolle im Mitgliederbericht"}
+  ,"reportMembersTrainingDaysColumn": "Trainingstage"
+  ,"@reportMembersTrainingDaysColumn": {"description": "Spaltenüberschrift für die Gesamtzahl der Trainingstage im Mitgliederbericht"}
   ,"reportMembersCreatedAtColumn": "Erstellt am"
   ,"@reportMembersCreatedAtColumn": {"description": "Spaltenüberschrift für das Erstellungsdatum im Mitgliederbericht"}
   ,"reportMembersLoadError": "Mitglieder konnten nicht geladen werden."

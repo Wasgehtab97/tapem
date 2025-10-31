@@ -1323,6 +1323,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportMembersRoleColumn => 'Role';
 
   @override
+  String get reportMembersTrainingDaysColumn => 'Training days';
+
+  @override
   String get reportMembersCreatedAtColumn => 'Created at';
 
   @override

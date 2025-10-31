@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -78,6 +79,104 @@ class _MembersTable extends StatelessWidget {
 
         final dateFormat = DateFormat.yMMMd(loc.localeName).add_Hm();
 
+        return _MembersTableContent(
+          members: members,
+          dateFormat: dateFormat,
+          loc: loc,
+        );
+      },
+    );
+  }
+}
+
+class _MembersTableContent extends StatefulWidget {
+  const _MembersTableContent({
+    required this.members,
+    required this.dateFormat,
+    required this.loc,
+  });
+
+  final List<_GymMember> members;
+  final DateFormat dateFormat;
+  final AppLocalizations loc;
+
+  @override
+  State<_MembersTableContent> createState() => _MembersTableContentState();
+}
+
+class _MembersTableContentState extends State<_MembersTableContent> {
+  Future<Map<String, int>>? _trainingDayCountsFuture;
+  List<String> _memberIds = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleTrainingDayLoad(widget.members);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MembersTableContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(_memberIds, _extractIds(widget.members))) {
+      setState(() {
+        _scheduleTrainingDayLoad(widget.members);
+      });
+    }
+  }
+
+  void _scheduleTrainingDayLoad(List<_GymMember> members) {
+    final ids = _extractIds(members);
+    _memberIds = ids;
+    _trainingDayCountsFuture =
+        ids.isEmpty ? Future.value(const {}) : _loadTrainingDayCounts(members);
+  }
+
+  List<String> _extractIds(List<_GymMember> members) {
+    return members.map((member) => member.id).toList(growable: false);
+  }
+
+  Future<Map<String, int>> _loadTrainingDayCounts(
+    List<_GymMember> members,
+  ) async {
+    final firestore = FirebaseFirestore.instance;
+    final entries = await Future.wait(
+      members.map((member) async {
+        try {
+          final snapshot = await firestore
+              .collection('users')
+              .doc(member.id)
+              .collection('trainingDayXP')
+              .count()
+              .get();
+          return MapEntry(member.id, snapshot.count);
+        } on FirebaseException catch (error, stackTrace) {
+          debugPrint(
+            'Failed to load training day count for ${member.id}: ${error.message ?? error.code}',
+          );
+          debugPrintStack(stackTrace: stackTrace);
+          return MapEntry(member.id, 0);
+        } catch (error, stackTrace) {
+          debugPrint(
+            'Failed to load training day count for ${member.id}: $error',
+          );
+          debugPrintStack(stackTrace: stackTrace);
+          return MapEntry(member.id, 0);
+        }
+      }),
+    );
+
+    return {for (final entry in entries) entry.key: entry.value};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, int>>(
+      future: _trainingDayCountsFuture,
+      builder: (context, snapshot) {
+        final counts = snapshot.data ?? const <String, int>{};
+        final isLoading = snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData;
+
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: AppSpacing.lg),
           child: SingleChildScrollView(
@@ -89,24 +188,37 @@ class _MembersTable extends StatelessWidget {
               ),
               columns: [
                 DataColumn(
-                  label: Text(loc.reportMembersMemberNumberColumn),
+                  label: Text(widget.loc.reportMembersMemberNumberColumn),
                 ),
                 DataColumn(
-                  label: Text(loc.reportMembersRoleColumn),
+                  label: Text(widget.loc.reportMembersRoleColumn),
                 ),
                 DataColumn(
-                  label: Text(loc.reportMembersCreatedAtColumn),
+                  label: Text(widget.loc.reportMembersTrainingDaysColumn),
+                ),
+                DataColumn(
+                  label: Text(widget.loc.reportMembersCreatedAtColumn),
                 ),
               ],
-              rows: members
+              rows: widget.members
                   .map(
                     (member) => DataRow(
                       cells: [
                         DataCell(Text(member.memberNumber)),
-                        DataCell(Text(_formatRole(member.role, loc))),
+                        DataCell(Text(_formatRole(member.role, widget.loc))),
                         DataCell(
                           Text(
-                            _formatCreatedAt(member.createdAt, dateFormat),
+                            isLoading && !counts.containsKey(member.id)
+                                ? '…'
+                                : (counts[member.id] ?? 0).toString(),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            _formatCreatedAt(
+                              member.createdAt,
+                              widget.dateFormat,
+                            ),
                           ),
                         ),
                       ],
@@ -123,11 +235,13 @@ class _MembersTable extends StatelessWidget {
 
 class _GymMember {
   _GymMember({
+    required this.id,
     required this.memberNumber,
     required this.role,
     required this.createdAt,
   });
 
+  final String id;
   final String memberNumber;
   final String? role;
   final DateTime? createdAt;
@@ -145,6 +259,7 @@ class _GymMember {
     final createdAt = _parseDateTime(data['createdAt']);
 
     return _GymMember(
+      id: snapshot.id,
       memberNumber: memberNumber,
       role: role,
       createdAt: createdAt,

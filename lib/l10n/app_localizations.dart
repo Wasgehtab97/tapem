@@ -2513,6 +2513,12 @@ abstract class AppLocalizations {
   /// **'Role'**
   String get reportMembersRoleColumn;
 
+  /// Column header for the total number of training days in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get reportMembersTrainingDaysColumn;
+
   /// Column header for the created at timestamp in the members report
   ///
   /// In en, this message translates to:
