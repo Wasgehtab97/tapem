@@ -419,6 +419,12 @@ service cloud.firestore {
               && request.auth.token.gymId is string
               && isAdmin(request.auth.token.gymId)
               && isMember(uid, request.auth.token.gymId));
+        allow aggregate: if isOwner(uid)
+          || isGlobalAdmin()
+          || (isAuthed()
+              && request.auth.token.gymId is string
+              && isAdmin(request.auth.token.gymId)
+              && isMember(uid, request.auth.token.gymId));
         allow write: if isOwner(uid);
       }
 
