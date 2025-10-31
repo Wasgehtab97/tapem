@@ -1291,6 +1291,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportViewSurveysTitle => 'Umfragen ansehen';
 
   @override
+  String get reportMembersButtonTitle => 'Mitglieder';
+
+  @override
+  String get reportMembersButtonSubtitle => 'Aktive Mitgliedsnummern einsehen';
+
+  @override
   String get reportUsageButtonTitle => 'Nutzung';
 
   @override
@@ -1307,6 +1313,27 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportSurveysButtonSubtitle => 'Umfragen erstellen und auswerten';
+
+  @override
+  String get reportMembersTitle => 'Mitglieder';
+
+  @override
+  String get reportMembersMemberNumberColumn => 'Mitgliedsnummer';
+
+  @override
+  String get reportMembersRoleColumn => 'Rolle';
+
+  @override
+  String get reportMembersCreatedAtColumn => 'Erstellt am';
+
+  @override
+  String get reportMembersLoadError => 'Mitglieder konnten nicht geladen werden.';
+
+  @override
+  String get reportMembersRoleMember => 'Mitglied';
+
+  @override
+  String get reportMembersRoleAdmin => 'Admin';
 
   @override
   String get reportUsageTitle => 'Nutzung';

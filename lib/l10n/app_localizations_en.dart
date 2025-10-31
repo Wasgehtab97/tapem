@@ -1290,6 +1290,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportViewSurveysTitle => 'View surveys';
 
   @override
+  String get reportMembersButtonTitle => 'Members';
+
+  @override
+  String get reportMembersButtonSubtitle => 'View active member numbers';
+
+  @override
   String get reportUsageButtonTitle => 'Usage';
 
   @override
@@ -1306,6 +1312,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportSurveysButtonSubtitle => 'Create and monitor member surveys';
+
+  @override
+  String get reportMembersTitle => 'Members';
+
+  @override
+  String get reportMembersMemberNumberColumn => 'Member number';
+
+  @override
+  String get reportMembersRoleColumn => 'Role';
+
+  @override
+  String get reportMembersCreatedAtColumn => 'Created at';
+
+  @override
+  String get reportMembersLoadError => "We couldn't load the member list.";
+
+  @override
+  String get reportMembersRoleMember => 'Member';
+
+  @override
+  String get reportMembersRoleAdmin => 'Admin';
 
   @override
   String get reportUsageTitle => 'Usage';

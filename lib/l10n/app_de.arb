@@ -1220,6 +1220,10 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportMembersButtonTitle": "Mitglieder"
+  ,"@reportMembersButtonTitle": {"description": "Navigationskarte, die den Mitgliederbericht öffnet"}
+  ,"reportMembersButtonSubtitle": "Aktive Mitgliedsnummern einsehen"
+  ,"@reportMembersButtonSubtitle": {"description": "Untertitel der Navigationskarte für den Mitgliederbericht"}
   ,"reportUsageButtonTitle": "Nutzung"
   ,"@reportUsageButtonTitle": {"description": "Navigationskarte, die den Nutzungsbericht öffnet"}
   ,"reportUsageButtonSubtitle": "Gerätenutzungsdaten visualisieren"
@@ -1238,6 +1242,20 @@
   ,"@reportFeedbackTitle": {"description": "AppBar-Titel für den Feedback-Bereich"}
   ,"reportSurveysTitle": "Umfragen"
   ,"@reportSurveysTitle": {"description": "AppBar-Titel für den Umfragenbereich"}
+  ,"reportMembersTitle": "Mitglieder"
+  ,"@reportMembersTitle": {"description": "AppBar-Titel für den Mitgliederbericht"}
+  ,"reportMembersMemberNumberColumn": "Mitgliedsnummer"
+  ,"@reportMembersMemberNumberColumn": {"description": "Spaltenüberschrift für die Mitgliedsnummer im Mitgliederbericht"}
+  ,"reportMembersRoleColumn": "Rolle"
+  ,"@reportMembersRoleColumn": {"description": "Spaltenüberschrift für die Rolle im Mitgliederbericht"}
+  ,"reportMembersCreatedAtColumn": "Erstellt am"
+  ,"@reportMembersCreatedAtColumn": {"description": "Spaltenüberschrift für das Erstellungsdatum im Mitgliederbericht"}
+  ,"reportMembersLoadError": "Mitglieder konnten nicht geladen werden."
+  ,"@reportMembersLoadError": {"description": "Hinweis, wenn das Laden der Mitgliederliste fehlschlägt"}
+  ,"reportMembersRoleMember": "Mitglied"
+  ,"@reportMembersRoleMember": {"description": "Anzeigename für die Rolle Mitglied"}
+  ,"reportMembersRoleAdmin": "Admin"
+  ,"@reportMembersRoleAdmin": {"description": "Anzeigename für die Rolle Admin"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
   ,"reportUsageRange7Days": "Letzte 7 Tage"
