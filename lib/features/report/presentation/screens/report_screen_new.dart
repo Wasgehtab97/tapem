@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
-import '../widgets/device_usage_chart.dart';
-import '../../../feedback/presentation/screens/feedback_overview_screen.dart';
-import '../../../feedback/feedback_provider.dart';
-import '../../../survey/presentation/screens/survey_overview_screen.dart';
-import '../../../survey/survey_provider.dart';
-import '../../../survey/survey.dart';
-import '../../../survey/presentation/widgets/create_survey_sheet.dart';
-import '../../../../core/providers/report_provider.dart';
-import '../../../../core/theme/design_tokens.dart';
-import '../../../../core/widgets/brand_action_tile.dart';
-import '../../../../core/logging/elog.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'report_feedback_screen.dart';
+import 'report_surveys_screen.dart';
+import 'report_usage_screen.dart';
 
 class ReportScreenNew extends StatelessWidget {
   final String gymId;
@@ -21,76 +15,65 @@ class ReportScreenNew extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reportProvider = context.watch<ReportProvider>();
-    if (reportProvider.shouldLoadReport(gymId)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<ReportProvider>().loadReport(gymId);
-      });
-    }
-    final usageData = reportProvider.usageStats;
-    final feedbackProvider = context.watch<FeedbackProvider>();
     final loc = AppLocalizations.of(context)!;
-    if (!feedbackProvider.isLoading && feedbackProvider.entries.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<FeedbackProvider>().loadFeedback(gymId);
-      });
-    }
-    final int openCount = feedbackProvider.openEntries.length;
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(loc.reportTitle),
+        centerTitle: true,
+        foregroundColor: brandColor,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              DeviceUsageChart(
-                usageData: usageData,
-                state: reportProvider.state,
-                errorMessage: reportProvider.errorMessage,
-                usageRange: reportProvider.usageRange,
-                onRangeSelected: reportProvider.changeUsageRange,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              BrandActionTile(
-                leadingIcon: Icons.feedback_outlined,
-                title: loc.reportFeedbackCardTitle,
-                subtitle: openCount > 0
-                    ? loc.reportFeedbackOpenEntries(openCount)
-                    : loc.reportFeedbackNoOpenEntries,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FeedbackOverviewScreen(gymId: gymId),
-                    ),
-                  );
-                },
-                variant: BrandActionTileVariant.gradient,
-                uiLogEvent: 'REPORT_CARD_RENDER',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              BrandActionTile(
-                leadingIcon: Icons.add_circle_outline,
-                title: loc.reportCreateSurveyTitle,
-                onTap: () => _showCreateSurveyDialog(context),
-                variant: BrandActionTileVariant.gradient,
-                uiLogEvent: 'REPORT_CARD_RENDER',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              BrandActionTile(
-                leadingIcon: Icons.poll,
-                title: loc.reportViewSurveysTitle,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SurveyOverviewScreen(gymId: gymId),
-                    ),
-                  );
-                },
-                variant: BrandActionTileVariant.gradient,
-                uiLogEvent: 'REPORT_CARD_RENDER',
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
+                children: [
+                  _ReportNavigationCard(
+                    icon: Icons.bar_chart_rounded,
+                    title: loc.reportUsageButtonTitle,
+                    subtitle: loc.reportUsageButtonSubtitle,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportUsageScreen(gymId: gymId),
+                        ),
+                      );
+                    },
+                  ),
+                  _ReportNavigationCard(
+                    icon: Icons.feedback_outlined,
+                    title: loc.reportFeedbackButtonTitle,
+                    subtitle: loc.reportFeedbackButtonSubtitle,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportFeedbackScreen(gymId: gymId),
+                        ),
+                      );
+                    },
+                  ),
+                  _ReportNavigationCard(
+                    icon: Icons.poll,
+                    title: loc.reportSurveysButtonTitle,
+                    subtitle: loc.reportSurveysButtonSubtitle,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportSurveysScreen(gymId: gymId),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -99,11 +82,55 @@ class ReportScreenNew extends StatelessWidget {
     );
   }
 
-  void _showCreateSurveyDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => CreateSurveySheet(gymId: gymId),
+}
+
+class _ReportNavigationCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ReportNavigationCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: 180,
+      child: BrandGradientCard(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.lg,
+          horizontal: AppSpacing.md,
+        ),
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 36),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

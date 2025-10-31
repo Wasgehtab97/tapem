@@ -1220,6 +1220,24 @@
   ,"@reportCreateSurveyTitle": {"description": "Aktion zum Erstellen einer Umfrage"}
   ,"reportViewSurveysTitle": "Umfragen ansehen"
   ,"@reportViewSurveysTitle": {"description": "Aktion zum Öffnen der Umfragenübersicht"}
+  ,"reportUsageButtonTitle": "Nutzung"
+  ,"@reportUsageButtonTitle": {"description": "Navigationskarte, die den Nutzungsbericht öffnet"}
+  ,"reportUsageButtonSubtitle": "Gerätenutzungsdaten visualisieren"
+  ,"@reportUsageButtonSubtitle": {"description": "Untertitel der Navigationskarte für den Nutzungsbericht"}
+  ,"reportFeedbackButtonTitle": "Feedback"
+  ,"@reportFeedbackButtonTitle": {"description": "Navigationskarte, die den Feedback-Bereich öffnet"}
+  ,"reportFeedbackButtonSubtitle": "Feedback verwalten und beantworten"
+  ,"@reportFeedbackButtonSubtitle": {"description": "Untertitel der Navigationskarte für den Feedback-Bereich"}
+  ,"reportSurveysButtonTitle": "Umfragen"
+  ,"@reportSurveysButtonTitle": {"description": "Navigationskarte, die zum Umfragenbereich führt"}
+  ,"reportSurveysButtonSubtitle": "Umfragen erstellen und auswerten"
+  ,"@reportSurveysButtonSubtitle": {"description": "Untertitel der Navigationskarte für den Umfragenbereich"}
+  ,"reportUsageTitle": "Nutzung"
+  ,"@reportUsageTitle": {"description": "AppBar-Titel für den Nutzungsbericht"}
+  ,"reportFeedbackTitle": "Feedback"
+  ,"@reportFeedbackTitle": {"description": "AppBar-Titel für den Feedback-Bereich"}
+  ,"reportSurveysTitle": "Umfragen"
+  ,"@reportSurveysTitle": {"description": "AppBar-Titel für den Umfragenbereich"}
   ,"reportDeviceFilterHint": "Geräte oder Beschreibungen suchen"
   ,"@reportDeviceFilterHint": {"description": "Hinweistext für die Gerätesuche"}
   ,"reportUsageRange7Days": "Letzte 7 Tage"

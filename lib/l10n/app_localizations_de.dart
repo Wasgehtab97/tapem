@@ -1291,6 +1291,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportViewSurveysTitle => 'Umfragen ansehen';
 
   @override
+  String get reportUsageButtonTitle => 'Nutzung';
+
+  @override
+  String get reportUsageButtonSubtitle => 'Gerätenutzungsdaten visualisieren';
+
+  @override
+  String get reportFeedbackButtonTitle => 'Feedback';
+
+  @override
+  String get reportFeedbackButtonSubtitle => 'Feedback verwalten und beantworten';
+
+  @override
+  String get reportSurveysButtonTitle => 'Umfragen';
+
+  @override
+  String get reportSurveysButtonSubtitle => 'Umfragen erstellen und auswerten';
+
+  @override
+  String get reportUsageTitle => 'Nutzung';
+
+  @override
+  String get reportFeedbackTitle => 'Feedback';
+
+  @override
+  String get reportSurveysTitle => 'Umfragen';
+
+  @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
 
   @override

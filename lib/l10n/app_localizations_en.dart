@@ -1290,6 +1290,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportViewSurveysTitle => 'View surveys';
 
   @override
+  String get reportUsageButtonTitle => 'Usage';
+
+  @override
+  String get reportUsageButtonSubtitle => 'Visualize device usage data';
+
+  @override
+  String get reportFeedbackButtonTitle => 'Feedback';
+
+  @override
+  String get reportFeedbackButtonSubtitle => 'Review and manage gym feedback';
+
+  @override
+  String get reportSurveysButtonTitle => 'Surveys';
+
+  @override
+  String get reportSurveysButtonSubtitle => 'Create and monitor member surveys';
+
+  @override
+  String get reportUsageTitle => 'Usage';
+
+  @override
+  String get reportFeedbackTitle => 'Feedback';
+
+  @override
+  String get reportSurveysTitle => 'Surveys';
+
+  @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
 
   @override
