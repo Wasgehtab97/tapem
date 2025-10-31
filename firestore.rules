@@ -122,6 +122,11 @@ service cloud.firestore {
         chatMembers(conversationId).hasAny([request.auth.uid]);
     }
 
+    function isSingleDevice(gymId, machineId) {
+      let deviceDoc = get(/databases/$(database)/documents/gyms/$(gymId)/devices/$(machineId)).data;
+      return deviceDoc != null && deviceDoc.isMulti == false;
+    }
+
     function fieldEmpty(field) {
       return !(field in resource.data) || resource.data[field] == null || resource.data[field] == '';
     }
@@ -581,8 +586,7 @@ service cloud.firestore {
             (!('gender' in request.resource.data) ||
               ['m', 'w', 'divers'].hasAny([request.resource.data.gender])) &&
             request.resource.data.createdAt == request.time &&
-            (let deviceDoc = get(/databases/$(database)/documents/gyms/$(gymId)/devices/$(machineId));
-              deviceDoc.data != null && deviceDoc.data.isMulti == false);
+            isSingleDevice(gymId, machineId);
           allow update, delete: if false;
         }
       }
