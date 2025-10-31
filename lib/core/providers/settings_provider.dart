@@ -11,10 +11,14 @@ class SettingsProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _uid;
+  String? _gender;
+  double? _bodyWeightKg;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get creatineEnabled => _creatineEnabled ?? false;
+  String? get gender => _gender;
+  double? get bodyWeightKg => _bodyWeightKg;
 
   DocumentReference<Map<String, dynamic>> _doc(String uid) {
     return _firestore
@@ -43,6 +47,9 @@ class SettingsProvider extends ChangeNotifier {
         _creatineEnabled = false;
         updates['creatineEnabled'] = false;
       }
+      _gender = data != null ? data['gender'] as String? : null;
+      final bw = data != null ? data['bodyWeightKg'] : null;
+      _bodyWeightKg = bw is num ? bw.toDouble() : null;
       if (updates.isNotEmpty) {
         await ref.set(updates, SetOptions(merge: true));
       }
@@ -64,6 +71,48 @@ class SettingsProvider extends ChangeNotifier {
       await _doc(uid).set({'creatineEnabled': value}, SetOptions(merge: true));
     } catch (e) {
       _creatineEnabled = old;
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> setGender(String? value) async {
+    final uid = _uid;
+    if (uid == null) return;
+    final old = _gender;
+    _gender = value;
+    notifyListeners();
+    try {
+      await _doc(uid).set(
+        value == null || value.isEmpty
+            ? {'gender': FieldValue.delete()}
+            : {'gender': value},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      _gender = old;
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> setBodyWeightKg(double? value) async {
+    final uid = _uid;
+    if (uid == null) return;
+    final old = _bodyWeightKg;
+    _bodyWeightKg = value;
+    notifyListeners();
+    try {
+      await _doc(uid).set(
+        value == null
+            ? {'bodyWeightKg': FieldValue.delete()}
+            : {'bodyWeightKg': value},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      _bodyWeightKg = old;
       _error = e.toString();
       notifyListeners();
       rethrow;

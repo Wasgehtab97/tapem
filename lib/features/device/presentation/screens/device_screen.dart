@@ -12,6 +12,7 @@ import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -32,6 +33,7 @@ import 'package:tapem/ui/timer/session_timer_bar.dart';
 import '../models/session_set_vm.dart';
 import '../widgets/device_pager.dart';
 import '../widgets/last_session_card.dart';
+import '../widgets/machine_leaderboard_sheet.dart';
 import '../widgets/note_button_widget.dart';
 import '../widgets/session_navigation_controls.dart';
 import '../widgets/set_card.dart';
@@ -77,6 +79,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
+      await context.read<SettingsProvider>().load(auth.userId!);
       _dlog('loadDevice() → start');
       await context.read<DeviceProvider>().loadDevice(
         gymId: widget.gymId,
@@ -136,6 +139,24 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
   }
 
+  void _openLeaderboard(DeviceProvider prov, String? headerTitle) {
+    final device = prov.device;
+    if (device == null) {
+      return;
+    }
+    _closeKeyboard();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => MachineLeaderboardSheet(
+        gymId: widget.gymId,
+        machineId: device.uid,
+        isMulti: device.isMulti,
+        title: headerTitle ?? device.name,
+      ),
+    );
+  }
+
   String? _resolveExerciseTitle(
     BuildContext context,
     DeviceProvider prov, {
@@ -162,6 +183,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     DeviceProvider prov,
   ) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
     final accentColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final titleBase = theme.textTheme.titleLarge ??
@@ -222,9 +244,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
         duration: const Duration(milliseconds: 200),
         child: titleWidget,
       ),
-      actions: const [
-        NfcScanButton(),
-        SizedBox(width: 8),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.emoji_events_outlined),
+          tooltip: loc.deviceLeaderboardTooltip,
+          onPressed: prov.device == null
+              ? null
+              : () => _openLeaderboard(prov, headerTitle),
+        ),
+        const NfcScanButton(),
+        const SizedBox(width: 8),
       ],
       bottom: prov.device == null
           ? null
@@ -450,11 +479,16 @@ class _DeviceScreenState extends State<DeviceScreen> {
                             return;
                           }
                           elogUi('SAVE_STARTED', base);
+                          final settingsProv =
+                              context.read<SettingsProvider>();
                           final ok = await prov.saveWorkoutSession(
                             gymId: widget.gymId,
                             userId: auth.userId!,
                             showInLeaderboard:
                                 auth.showInLeaderboard ?? true,
+                            userName: auth.userName,
+                            gender: settingsProv.gender,
+                            bodyWeightKg: settingsProv.bodyWeightKg,
                             plannedRestSeconds: plannedEntry?.restInSeconds,
                           );
                           final sessionId = prov.lastSessionId;

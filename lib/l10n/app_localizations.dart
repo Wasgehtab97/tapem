@@ -1289,6 +1289,90 @@ abstract class AppLocalizations {
   /// **'Theme'**
   String get settingsOptionTheme;
 
+  /// Settings option to edit gender and body weight
+  ///
+  /// In en, this message translates to:
+  /// **'Body metrics'**
+  String get settingsBodyMetrics;
+
+  /// Title for the body metrics dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Body metrics'**
+  String get settingsBodyMetricsDialogTitle;
+
+  /// Label for the gender selector
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get settingsGenderLabel;
+
+  /// Option to clear the gender
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get settingsGenderNone;
+
+  /// Female gender
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get settingsGenderFemale;
+
+  /// Male gender
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get settingsGenderMale;
+
+  /// Diverse gender option
+  ///
+  /// In en, this message translates to:
+  /// **'Diverse'**
+  String get settingsGenderDiverse;
+
+  /// Label for the body weight field
+  ///
+  /// In en, this message translates to:
+  /// **'Body weight (kg)'**
+  String get settingsBodyWeightLabel;
+
+  /// Hint for the body weight field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 82.5'**
+  String get settingsBodyWeightHint;
+
+  /// Validation error when the weight is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid weight'**
+  String get settingsBodyWeightError;
+
+  /// Snackbar after saving body metrics
+  ///
+  /// In en, this message translates to:
+  /// **'Body metrics saved.'**
+  String get settingsBodyMetricsSaved;
+
+  /// Snackbar when saving body metrics fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save body metrics.'**
+  String get settingsBodyMetricsSaveError;
+
+  /// Summary text when no body metrics are stored
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get settingsBodyMetricsSummaryEmpty;
+
+  /// Formats the body weight summary
+  ///
+  /// In en, this message translates to:
+  /// **'{value} kg'**
+  String settingsBodyWeightSummary(String value);
+
   /// Title for the theme selection dialog
   ///
   /// In en, this message translates to:
@@ -1402,6 +1486,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get publicProfilePrivate;
+
+  /// Headline for the machine leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'King/Queen – {device}'**
+  String deviceLeaderboardTitle(String device);
+
+  /// Info text when leaderboard is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Not available for this device.'**
+  String get deviceLeaderboardUnavailable;
+
+  /// Tab label for today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get deviceLeaderboardTabToday;
+
+  /// Tab label for week
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get deviceLeaderboardTabWeek;
+
+  /// Tab label for month
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get deviceLeaderboardTabMonth;
+
+  /// Chip label for all genders
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get deviceLeaderboardFilterAll;
+
+  /// Chip label for female filter
+  ///
+  /// In en, this message translates to:
+  /// **'w'**
+  String get deviceLeaderboardFilterFemale;
+
+  /// Chip label for male filter
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get deviceLeaderboardFilterMale;
+
+  /// Chip label for absolute scores
+  ///
+  /// In en, this message translates to:
+  /// **'Absolute'**
+  String get deviceLeaderboardFilterAbsolute;
+
+  /// Chip label for relative scores
+  ///
+  /// In en, this message translates to:
+  /// **'Relative'**
+  String get deviceLeaderboardFilterRelative;
+
+  /// Error message when leaderboard fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load leaderboard.'**
+  String get deviceLeaderboardError;
+
+  /// Empty state for leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet.'**
+  String get deviceLeaderboardEmpty;
+
+  /// Subtitle showing the relative score
+  ///
+  /// In en, this message translates to:
+  /// **'Relative: {value}×BW'**
+  String deviceLeaderboardRelativeValue(String value);
+
+  /// Primary label for relative score
+  ///
+  /// In en, this message translates to:
+  /// **'{value}×BW'**
+  String deviceLeaderboardRelativeScore(String value);
+
+  /// Tooltip for the leaderboard icon
+  ///
+  /// In en, this message translates to:
+  /// **'Show King/Queen leaderboard'**
+  String get deviceLeaderboardTooltip;
 
   /// Banner text for multi-device
   ///
