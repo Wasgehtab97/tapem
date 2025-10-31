@@ -415,9 +415,9 @@ service cloud.firestore {
       match /trainingDayXP/{dayId} {
         allow read: if isOwner(uid)
           || (request.auth != null
-              && request.auth.token.gymId is string
-              && isAdmin(request.auth.token.gymId)
-              && isMember(uid, request.auth.token.gymId))
+              && resource.data.gymId is string
+              && sharesGym(uid, request.auth.uid)
+              && isAdmin(resource.data.gymId))
           || isGlobalAdmin();
         allow write: if isOwner(uid);
       }
