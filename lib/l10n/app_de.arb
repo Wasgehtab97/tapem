@@ -360,6 +360,16 @@
     "description": "Untertitel für den Statistik-Button auf der Profilseite"
   },
 
+  "profileCommunityButtonTitle": "Community",
+  "@profileCommunityButtonTitle": {
+    "description": "Button-Beschriftung auf der Profilseite zur Community"
+  },
+
+  "profileCommunityButtonSubtitle": "Gemeinschaftliche Meilensteine & Live-Ticker",
+  "@profileCommunityButtonSubtitle": {
+    "description": "Untertitel für den Community-Button auf der Profilseite"
+  },
+
   "profileStatsTitle": "Statistiken",
   "@profileStatsTitle": {
     "description": "Titel der Statistikseite im Profil"
@@ -1556,4 +1566,36 @@
   ,"@numericKeypadSemanticsIncrease": {"description": "Semantik-Label für den Erhöhen-Button"}
   ,"numericKeypadSemanticsHideKeyboard": "Tastatur ausblenden"
   ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantik-Label für den Button zum Ausblenden der Tastatur"}
+  ,"communityTitle": "Community"
+  ,"@communityTitle": {"description": "Titel der Community-Seite"}
+  ,"communityTabToday": "Heute"
+  ,"@communityTabToday": {"description": "Tab-Label für den Tageszeitraum"}
+  ,"communityTabWeek": "Woche"
+  ,"@communityTabWeek": {"description": "Tab-Label für den Wochenzeitraum"}
+  ,"communityTabMonth": "Monat"
+  ,"@communityTabMonth": {"description": "Tab-Label für den Monatszeitraum"}
+  ,"communityKpiReps": "Gesamt-Wiederholungen"
+  ,"@communityKpiReps": {"description": "KPI-Bezeichnung für die Gesamtzahl der Wiederholungen"}
+  ,"communityKpiVolume": "Gesamt-Volumen (kg)"
+  ,"@communityKpiVolume": {"description": "KPI-Bezeichnung für das Gesamtvolumen"}
+  ,"communityKpiWorkouts": "Workouts"
+  ,"@communityKpiWorkouts": {"description": "KPI-Bezeichnung für die Anzahl der Workouts"}
+  ,"communityEmptyState": "Noch keine Daten im ausgewählten Zeitraum."
+  ,"@communityEmptyState": {"description": "Text wenn im gewählten Zeitraum keine Community-Daten vorhanden sind"}
+  ,"communityErrorState": "Community-Daten konnten nicht geladen werden."
+  ,"@communityErrorState": {"description": "Fehlermeldung für die Community-Daten"}
+  ,"communityRetryButton": "Erneut versuchen"
+  ,"@communityRetryButton": {"description": "Beschriftung des Retry-Buttons auf der Community-Seite"}
+  ,"communityFeedTitle": "Live-Ticker"
+  ,"@communityFeedTitle": {"description": "Überschrift für den Live-Ticker"}
+  ,"communityFeedEmpty": "Noch keine Events."
+  ,"@communityFeedEmpty": {"description": "Text wenn der Live-Ticker leer ist"}
+  ,"communityFeedError": "Live-Ticker konnte nicht geladen werden."
+  ,"@communityFeedError": {"description": "Fehlermeldung für den Live-Ticker"}
+  ,"communityFeedAnonymous": "Jemand"
+  ,"@communityFeedAnonymous": {"description": "Fallback-Name wenn kein Benutzername vorhanden ist"}
+  ,"communityFeedRepsLabel": "{reps} Wdh."
+  ,"@communityFeedRepsLabel": {"description": "Formatierung für die Wiederholungen im Feed","placeholders": {"reps": {"type": "String"}}}
+  ,"communityFeedVolumeLabel": "{volume} kg"
+  ,"@communityFeedVolumeLabel": {"description": "Formatierung für das Volumen im Feed","placeholders": {"volume": {"type": "String"}}}
 }

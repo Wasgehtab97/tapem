@@ -24,6 +24,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
 import 'app_router.dart';
@@ -262,12 +263,14 @@ Future<void> main() async {
   final sharedPrefs = await SharedPreferences.getInstance();
 
   runApp(
-    MultiProvider(
-      providers: [
-        // NFC
-        Provider<NfcService>(create: (_) => NfcService()),
-        Provider<ReadNfcCode>(create: (c) => ReadNfcCode(c.read<NfcService>())),
-        Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
+    ProviderScope(
+      child: MultiProvider(
+        providers: [
+          // NFC
+          Provider<NfcService>(create: (_) => NfcService()),
+          Provider<ReadNfcCode>(
+              create: (c) => ReadNfcCode(c.read<NfcService>())),
+          Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
 
         // Device
         Provider<DeviceRepository>(
@@ -543,8 +546,9 @@ Future<void> main() async {
               FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
         ChangeNotifierProvider(create: (_) => RankProvider()),
-      ],
-      child: const MyApp(),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }

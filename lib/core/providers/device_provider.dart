@@ -11,6 +11,7 @@ import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -162,6 +163,7 @@ class DeviceProvider extends ChangeNotifier {
   final SessionDraftRepository _draftRepo;
   final DeviceRepository deviceRepository;
   final MembershipService _membership;
+  final CommunityStatsWriter _communityStatsWriter;
   XpProvider? _xpProvider;
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
@@ -241,6 +243,7 @@ class DeviceProvider extends ChangeNotifier {
     LogFn? log,
     SessionDraftRepository? draftRepo,
     required MembershipService membership,
+    CommunityStatsWriter? communityStatsWriter,
   }) : _firestore = firestore,
        deviceRepository =
            deviceRepository ??
@@ -255,7 +258,9 @@ class DeviceProvider extends ChangeNotifier {
            ),
        _log = log ?? _defaultLog,
        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
-       _membership = membership;
+       _membership = membership,
+       _communityStatsWriter =
+           communityStatsWriter ?? CommunityStatsWriter(firestore: firestore);
 
   void attachExternalServices({
     required XpProvider xpProvider,
@@ -1365,6 +1370,21 @@ class DeviceProvider extends ChangeNotifier {
 
       await deviceRepository.writeSessionSnapshot(gymId, snapshot);
       _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
+
+      try {
+        await _communityStatsWriter.recordSession(
+          gymId: gymId,
+          sessionId: sessionId,
+          userId: userId,
+          username: userName,
+          localTimestamp: now,
+          sets: savedSets,
+        );
+      } on CommunityStatsAlreadyAppliedException {
+        _log('ℹ️ [Provider] community stats already applied ($sessionId)');
+      } catch (e, st) {
+        _log('⚠️ [Provider] community stats write error: $e', st);
+      }
 
       final restStatsService = _getRestStatsService();
       if (restStatsService != null && averageRestMs != null) {

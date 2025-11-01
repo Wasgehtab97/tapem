@@ -631,6 +631,52 @@ service cloud.firestore {
         allow read, write: if ownerOrAdmin(gymId, userId);
       }
 
+      match /stats_daily/{day} {
+        allow read: if inGym(gymId);
+        allow create, update: if inGym(gymId) &&
+          request.resource.data.keys().hasOnly([
+            'date',
+            'dayKey',
+            'repsTotal',
+            'volumeTotal',
+            'trainingSessions'
+          ]) &&
+          request.resource.data.date is timestamp;
+        allow delete: if false;
+      }
+
+      match /stats_applied/{sessionId} {
+        allow create: if inGym(gymId) &&
+          request.resource.data.keys().hasOnly(['userId', 'createdAt']) &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.createdAt == request.time;
+        allow read, update, delete: if false;
+      }
+
+      match /feed_events/{eventId} {
+        allow read: if inGym(gymId);
+        allow create: if inGym(gymId) &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.keys().hasOnly([
+            'type',
+            'createdAt',
+            'userId',
+            'username',
+            'dayKey',
+            'reps',
+            'volume',
+            'deviceName',
+            'funnyText',
+            'avatarUrl'
+          ]) &&
+          ['session_summary', 'milestone']
+              .hasOnly([request.resource.data.type]) &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.reps is int &&
+          request.resource.data.volume is number;
+        allow update, delete: if false;
+      }
+
       // Fallback inside gyms
       match /{document=**} {
         allow read: if inGym(gymId);
