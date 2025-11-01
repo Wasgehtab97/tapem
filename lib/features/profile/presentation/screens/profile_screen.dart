@@ -853,6 +853,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: _ProfileActionButton(
+                    title: loc.profileStatsButtonLabel,
+                    subtitle: loc.profileStatsButtonSubtitle,
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: _ProfileStatsLeadingIcon(),
+                    ),
+                    trailing: const _ProfileStatsSparkline(),
+                    showChevron: false,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileStatsScreen(),
+                        ),
+                      );
+                    },
+                    uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
+                  child: _ProfileActionButton(
+                    title: loc.profileCommunityButtonTitle,
+                    subtitle: loc.profileCommunityButtonSubtitle,
+                    leading: const SizedBox.square(
+                      dimension: 48,
+                      child: _ProfileCommunityLeadingIcon(),
+                    ),
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRouter.community);
+                    },
+                    uiLogEvent: 'PROFILE_COMMUNITY_CARD_RENDER',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  width: double.infinity,
+                  child: _ProfileActionButton(
                     title: loc.surveyListTitle,
                     subtitle: loc.reportViewSurveysTitle,
                     leading: const SizedBox.square(
@@ -873,29 +912,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                     uiLogEvent: 'PROFILE_CARD_RENDER',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                SizedBox(
-                  width: double.infinity,
-                  child: _ProfileActionButton(
-                    title: loc.profileStatsButtonLabel,
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    leading: const SizedBox.square(
-                      dimension: 48,
-                      child: _ProfileStatsLeadingIcon(),
-                    ),
-                    trailing: const _ProfileStatsSparkline(),
-                    showChevron: false,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileStatsScreen(),
-                        ),
-                      );
-                    },
-                    uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
                   ),
                 ),
               ],
@@ -929,6 +945,41 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
         Icons.auto_graph,
         size: 28,
         color: brandColor,
+      ),
+    );
+  }
+}
+
+class _ProfileCommunityLeadingIcon extends StatelessWidget {
+  const _ProfileCommunityLeadingIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: borderColor),
+        color: backgroundColor,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.groups_2, color: brandColor, size: 26),
+          Positioned(
+            right: 6,
+            bottom: 6,
+            child: Icon(
+              Icons.celebration,
+              size: 16,
+              color: brandColor.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }

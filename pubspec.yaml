@@ -27,6 +27,7 @@ dependencies:
 
   # State-Management & Utilities
   provider: ^6.1.5
+  flutter_riverpod: ^2.5.1
   uuid: ^4.5.1
   csv: ^6.0.0
   googleapis: ^14.0.0 # nur falls wirklich benötigt

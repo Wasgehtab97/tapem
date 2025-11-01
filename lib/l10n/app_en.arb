@@ -360,6 +360,16 @@
     "description": "Subtitle for the statistics call-to-action on the profile screen"
   },
 
+  "profileCommunityButtonTitle": "Community",
+  "@profileCommunityButtonTitle": {
+    "description": "Button label on profile screen that opens the community page"
+  },
+
+  "profileCommunityButtonSubtitle": "Shared milestones & live ticker",
+  "@profileCommunityButtonSubtitle": {
+    "description": "Subtitle for the community call-to-action on the profile screen"
+  },
+
   "profileStatsTitle": "Statistics",
   "@profileStatsTitle": {
     "description": "Title of the profile statistics page"
@@ -1570,4 +1580,36 @@
   ,"@numericKeypadSemanticsIncrease": {"description": "Semantics label for the increase button"}
   ,"numericKeypadSemanticsHideKeyboard": "Hide keyboard"
   ,"@numericKeypadSemanticsHideKeyboard": {"description": "Semantics label for the hide keyboard button"}
+  ,"communityTitle": "Community"
+  ,"@communityTitle": {"description": "Title of the community screen"}
+  ,"communityTabToday": "Today"
+  ,"@communityTabToday": {"description": "Tab label for today's stats"}
+  ,"communityTabWeek": "Week"
+  ,"@communityTabWeek": {"description": "Tab label for weekly stats"}
+  ,"communityTabMonth": "Month"
+  ,"@communityTabMonth": {"description": "Tab label for monthly stats"}
+  ,"communityKpiReps": "Total reps"
+  ,"@communityKpiReps": {"description": "KPI label for total repetitions"}
+  ,"communityKpiVolume": "Total volume (kg)"
+  ,"@communityKpiVolume": {"description": "KPI label for total volume"}
+  ,"communityKpiWorkouts": "Workouts"
+  ,"@communityKpiWorkouts": {"description": "KPI label for number of workouts"}
+  ,"communityEmptyState": "No data yet for the selected period."
+  ,"@communityEmptyState": {"description": "Empty state message when no community stats are available"}
+  ,"communityErrorState": "We couldn't load the community stats."
+  ,"@communityErrorState": {"description": "Error message for community stats"}
+  ,"communityRetryButton": "Retry"
+  ,"@communityRetryButton": {"description": "Retry button label on community screen"}
+  ,"communityFeedTitle": "Live ticker"
+  ,"@communityFeedTitle": {"description": "Heading for the live ticker list"}
+  ,"communityFeedEmpty": "No recent events yet."
+  ,"@communityFeedEmpty": {"description": "Message shown when the feed has no entries"}
+  ,"communityFeedError": "Live ticker could not be loaded."
+  ,"@communityFeedError": {"description": "Error message for the live ticker"}
+  ,"communityFeedAnonymous": "Someone"
+  ,"@communityFeedAnonymous": {"description": "Fallback name when a feed event has no username"}
+  ,"communityFeedRepsLabel": "{reps} reps"
+  ,"@communityFeedRepsLabel": {"description": "Formats the reps portion of a feed entry","placeholders": {"reps": {"type": "String"}}}
+  ,"communityFeedVolumeLabel": "{volume} kg"
+  ,"@communityFeedVolumeLabel": {"description": "Formats the volume portion of a feed entry","placeholders": {"volume": {"type": "String"}}}
 }
