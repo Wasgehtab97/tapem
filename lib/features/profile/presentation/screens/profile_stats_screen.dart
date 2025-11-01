@@ -56,8 +56,7 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
 
     final totalTrainingDays = prov.totalTrainingDays;
     final avgTrainingDays = prov.averageTrainingDaysPerWeek;
-    final favoriteExercise =
-        prov.favoriteExerciseName ?? loc.profileStatsFavoriteExerciseFallback;
+    final favoriteExercise = prov.favoriteExerciseName;
     final restValue = restStatsProv.isLoading &&
             restStatsProv.overallActualRestMs == null
         ? '…'
@@ -155,28 +154,32 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
   Widget _kpiRing(
     BuildContext context,
     String label,
-    String value, {
+    String? value, {
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
+    final hasValue = value != null && value.trim().isNotEmpty;
+    final semanticsLabel = hasValue ? '$label: $value' : label;
     return _circularBrandCard(
       context,
-      semanticsLabel: '$label: $value',
+      semanticsLabel: semanticsLabel,
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: onBrandColor,
+          if (hasValue) ...[
+            Text(
+              value!,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: onBrandColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
+          ],
           Text(
             label,
             textAlign: TextAlign.center,
