@@ -160,8 +160,10 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
-    final hasValue = value != null && value.trim().isNotEmpty;
-    final semanticsLabel = hasValue ? '$label: $value' : label;
+    final trimmedValue = value?.trim();
+    final hasValue = trimmedValue != null && trimmedValue.isNotEmpty;
+    final displayValue = trimmedValue ?? '';
+    final semanticsLabel = hasValue ? '$label: $displayValue' : label;
     return _circularBrandCard(
       context,
       semanticsLabel: semanticsLabel,
@@ -171,7 +173,7 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
         children: [
           if (hasValue) ...[
             Text(
-              value!,
+              displayValue,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,

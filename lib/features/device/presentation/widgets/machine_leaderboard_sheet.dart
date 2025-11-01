@@ -29,7 +29,12 @@ class MachineLeaderboardSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.maybeOf<SettingsProvider>(context, listen: false);
+    SettingsProvider? settings;
+    try {
+      settings = Provider.of<SettingsProvider>(context, listen: false);
+    } on ProviderNotFoundException {
+      settings = null;
+    }
     final initialFilter = _resolveInitialGenderFilter(settings?.gender);
 
     return FractionallySizedBox(
