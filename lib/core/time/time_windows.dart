@@ -3,8 +3,9 @@ typedef TimeZoneOffsetResolver = Duration Function(DateTime localDate);
 
 /// Represents a half-open time window `[startUtc, endUtc)` in UTC.
 class TimeWindow {
-  TimeWindow({required this.startUtc, required this.endUtc})
-      : assert(!startUtc.isUtc || !endUtc.isUtc || !startUtc.isAfter(endUtc));
+  TimeWindow({required this.startUtc, required this.endUtc}) {
+    assert(!startUtc.isUtc || !endUtc.isUtc || !startUtc.isAfter(endUtc));
+  }
 
   final DateTime startUtc;
   final DateTime endUtc;

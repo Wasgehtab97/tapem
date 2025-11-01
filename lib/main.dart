@@ -22,7 +22,7 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
@@ -264,103 +264,103 @@ Future<void> main() async {
 
   runApp(
     riverpod.ProviderScope(
-      child: MultiProvider(
+      child: provider.MultiProvider(
         providers: [
           // NFC
-          Provider<NfcService>(create: (_) => NfcService()),
-          Provider<ReadNfcCode>(
+          provider.Provider<NfcService>(create: (_) => NfcService()),
+          provider.Provider<ReadNfcCode>(
               create: (c) => ReadNfcCode(c.read<NfcService>())),
-          Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
+          provider.Provider<WriteNfcTagUseCase>(create: (_) => WriteNfcTagUseCase()),
 
         // Device
-        Provider<DeviceRepository>(
+        provider.Provider<DeviceRepository>(
           create: (_) => DeviceRepositoryImpl(FirestoreDeviceSource()),
         ),
-        Provider<CreateDeviceUseCase>(
+        provider.Provider<CreateDeviceUseCase>(
           create: (c) => CreateDeviceUseCase(c.read<DeviceRepository>()),
         ),
-        Provider<GetDevicesForGym>(
+        provider.Provider<GetDevicesForGym>(
           create: (c) => GetDevicesForGym(c.read<DeviceRepository>()),
         ),
-        Provider<GetDeviceByNfcCode>(
+        provider.Provider<GetDeviceByNfcCode>(
           create: (c) => GetDeviceByNfcCode(c.read<DeviceRepository>()),
         ),
-        Provider<DeleteDeviceUseCase>(
+        provider.Provider<DeleteDeviceUseCase>(
           create: (c) => DeleteDeviceUseCase(c.read<DeviceRepository>()),
         ),
-        Provider<UpdateDeviceMuscleGroupsUseCase>(
+        provider.Provider<UpdateDeviceMuscleGroupsUseCase>(
           create: (c) =>
               UpdateDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
-        Provider<SetDeviceMuscleGroupsUseCase>(
+        provider.Provider<SetDeviceMuscleGroupsUseCase>(
           create: (c) =>
               SetDeviceMuscleGroupsUseCase(c.read<DeviceRepository>()),
         ),
 
         // Exercise
-        Provider<ExerciseRepository>(
+        provider.Provider<ExerciseRepository>(
           create: (_) => ExerciseRepositoryImpl(FirestoreExerciseSource()),
         ),
-        Provider<GetExercisesForDevice>(
+        provider.Provider<GetExercisesForDevice>(
           create: (c) => GetExercisesForDevice(c.read<ExerciseRepository>()),
         ),
-        Provider<CreateExerciseUseCase>(
+        provider.Provider<CreateExerciseUseCase>(
           create: (c) => CreateExerciseUseCase(c.read<ExerciseRepository>()),
         ),
-        Provider<DeleteExerciseUseCase>(
+        provider.Provider<DeleteExerciseUseCase>(
           create: (c) => DeleteExerciseUseCase(c.read<ExerciseRepository>()),
         ),
-        Provider<UpdateExerciseUseCase>(
+        provider.Provider<UpdateExerciseUseCase>(
           create: (c) => UpdateExerciseUseCase(c.read<ExerciseRepository>()),
         ),
-        Provider<UpdateExerciseMuscleGroupsUseCase>(
+        provider.Provider<UpdateExerciseMuscleGroupsUseCase>(
           create: (c) =>
               UpdateExerciseMuscleGroupsUseCase(c.read<ExerciseRepository>()),
         ),
-        Provider<RestStatsService>(
+        provider.Provider<RestStatsService>(
           create: (_) => RestStatsService(firestore: FirebaseFirestore.instance),
         ),
 
         // App state
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) => AppProvider(preferences: sharedPrefs),
         ),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (_) => FriendAlertsProvider()),
+        provider.ChangeNotifierProvider(create: (_) => AuthProvider()),
+        provider.ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
+        provider.ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        provider.ChangeNotifierProvider(create: (_) => FriendAlertsProvider()),
 
         // Friends feature
-        Provider<FriendsApi>(create: (_) => FriendsApi()),
-        Provider<FriendsSource>(
+        provider.Provider<FriendsApi>(create: (_) => FriendsApi()),
+        provider.Provider<FriendsSource>(
           create: (_) => FriendsSource(FirebaseFirestore.instance),
         ),
-        Provider<UserSearchSource>(
+        provider.Provider<UserSearchSource>(
           create: (_) => UserSearchSource(FirebaseFirestore.instance),
         ),
-        Provider<FriendChatApi>(create: (_) => FriendChatApi()),
-        Provider<FriendChatSource>(
+        provider.Provider<FriendChatApi>(create: (_) => FriendChatApi()),
+        provider.Provider<FriendChatSource>(
           create: (_) => FriendChatSource(FirebaseFirestore.instance),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) => FriendsProvider(
             c.read<FriendsSource>(),
             c.read<FriendsApi>(),
           ),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) => FriendChatSummaryProvider(
             c.read<FriendChatSource>(),
             c.read<FriendChatApi>(),
           ),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) => FriendSearchProvider(c.read<UserSearchSource>()),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) => FriendCalendarProvider(),
         ),
-        ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
+        provider.ChangeNotifierProxyProvider<FriendsProvider, FriendPresenceProvider>(
           create: (_) => FriendPresenceProvider(),
           update: (_, friends, prov) {
             prov ??= FriendPresenceProvider();
@@ -370,23 +370,23 @@ Future<void> main() async {
         ),
 
         // Numeric keypad
-        ChangeNotifierProvider<OverlayNumericKeypadController>(
+        provider.ChangeNotifierProvider<OverlayNumericKeypadController>(
           create: (_) => OverlayNumericKeypadController(),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) => SessionTimerService(),
         ),
 
         // Membership/Branding/Theme
-        Provider<MembershipService>(
+        provider.Provider<MembershipService>(
           create: (_) => FirestoreMembershipService(),
         ),
-        Provider(
+        provider.Provider(
           create: (_) => StorySessionService(
             firestore: FirebaseFirestore.instance,
           ),
         ),
-        ChangeNotifierProxyProvider2<
+        provider.ChangeNotifierProxyProvider2<
           AuthProvider,
           MembershipService,
           BrandingProvider
@@ -408,7 +408,7 @@ Future<void> main() async {
             return p;
           },
         ),
-        ChangeNotifierProxyProvider<AuthProvider, ThemePreferenceProvider>(
+        provider.ChangeNotifierProxyProvider<AuthProvider, ThemePreferenceProvider>(
           create: (_) => ThemePreferenceProvider(),
           update: (_, auth, provider) {
             final pref = provider ?? ThemePreferenceProvider();
@@ -416,7 +416,7 @@ Future<void> main() async {
             return pref;
           },
         ),
-        ChangeNotifierProxyProvider2<
+        provider.ChangeNotifierProxyProvider2<
             BrandingProvider, ThemePreferenceProvider, ThemeLoader>(
           create: (_) => ThemeLoader()..loadDefault(),
           update: (_, branding, themePref, loader) {
@@ -431,10 +431,10 @@ Future<void> main() async {
         ),
 
         // Restliche Provider
-        ChangeNotifierProvider(create: (_) => GymProvider()),
-        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
-        ChangeNotifierProvider(create: (_) => XpProvider()),
-        ChangeNotifierProxyProvider2<
+        provider.ChangeNotifierProvider(create: (_) => GymProvider()),
+        provider.ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        provider.ChangeNotifierProvider(create: (_) => XpProvider()),
+        provider.ChangeNotifierProxyProvider2<
             AuthProvider,
             BrandingProvider,
             WorkoutSessionDurationService>(
@@ -448,7 +448,7 @@ Future<void> main() async {
             return svc;
           },
         ),
-        ChangeNotifierProxyProvider4<
+        provider.ChangeNotifierProxyProvider4<
             MembershipService,
             XpProvider,
             ChallengeProvider,
@@ -474,12 +474,12 @@ Future<void> main() async {
             return prov;
           },
         ),
-        ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),
+        provider.ChangeNotifierProvider(
           create: (c) => RestStatsProvider(service: c.read<RestStatsService>()),
         ),
-        ChangeNotifierProvider(create: (_) => HistoryProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
+        provider.ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        provider.ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
           create: (_) => ProfileProvider(),
           update: (_, auth, provider) {
             final prov = provider ?? ProfileProvider();
@@ -487,7 +487,7 @@ Future<void> main() async {
             return prov;
           },
         ),
-        ChangeNotifierProxyProvider2<AuthProvider, GymProvider,
+        provider.ChangeNotifierProxyProvider2<AuthProvider, GymProvider,
             PowerliftingProvider>(
           create: (c) => PowerliftingProvider(
             firestore: FirebaseFirestore.instance,
@@ -509,18 +509,18 @@ Future<void> main() async {
             return prov;
           },
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) => CreatineProvider(repository: CreatineRepository()),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) =>
               MuscleGroupProvider(membership: c.read<MembershipService>()),
         ),
-        Provider(
+        provider.Provider(
           create: (_) =>
               ExerciseXpReassignmentService(firestore: FirebaseFirestore.instance),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) => ExerciseProvider(
             getEx: c.read<GetExercisesForDevice>(),
             createEx: c.read<CreateExerciseUseCase>(),
@@ -530,22 +530,22 @@ Future<void> main() async {
             xpReassignment: c.read<ExerciseXpReassignmentService>(),
           ),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (c) =>
               AllExercisesProvider(getEx: c.read<GetExercisesForDevice>()),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) =>
               ReportProvider(getUsageStats: usageUC, getLogTimestamps: logsUC),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) => SurveyProvider(firestore: FirebaseFirestore.instance),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (_) =>
               FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
-        ChangeNotifierProvider(create: (_) => RankProvider()),
+        provider.ChangeNotifierProvider(create: (_) => RankProvider()),
         ],
         child: const MyApp(),
       ),
