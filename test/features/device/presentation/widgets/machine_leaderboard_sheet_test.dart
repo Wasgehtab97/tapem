@@ -45,6 +45,22 @@ class _FakeLeaderboardService extends LeaderboardService {
   }
 }
 
+class _ErrorLeaderboardService extends LeaderboardService {
+  _ErrorLeaderboardService() : super(repository: _NoopRepository());
+
+  @override
+  Future<List<LeaderboardEntry>> loadLeaderboard({
+    required String gymId,
+    required String machineId,
+    required LeaderboardPeriod period,
+    LeaderboardGenderFilter genderFilter = LeaderboardGenderFilter.all,
+    LeaderboardScoreMode mode = LeaderboardScoreMode.absolute,
+    int limit = 3,
+  }) async {
+    throw Exception('failed');
+  }
+}
+
 LeaderboardEntry _buildEntry({
   required String id,
   required String username,
@@ -170,6 +186,58 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bob'), findsOneWidget);
+    });
+
+    testWidgets('shows empty state when no entries are available',
+        (tester) async {
+      final service = _FakeLeaderboardService(
+        absoluteEntries: const [],
+        relativeEntries: const [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MachineLeaderboardSheet(
+              gymId: 'gym',
+              machineId: 'machine',
+              isMulti: false,
+              title: 'Machine',
+              serviceOverride: service,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('No records yet.'), findsOneWidget);
+    });
+
+    testWidgets('shows error state when loading fails', (tester) async {
+      final service = _ErrorLeaderboardService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MachineLeaderboardSheet(
+              gymId: 'gym',
+              machineId: 'machine',
+              isMulti: false,
+              title: 'Machine',
+              serviceOverride: service,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Could not load leaderboard.'), findsOneWidget);
     });
   });
 }
