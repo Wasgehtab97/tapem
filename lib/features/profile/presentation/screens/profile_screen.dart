@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
@@ -44,9 +45,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final GlobalKey<FormState> _bodyMetricsFormKey = GlobalKey<FormState>();
+  late final TextEditingController _bodyWeightCtrl;
+  late final FocusNode _bodyWeightFocus;
+  SettingsProvider? _settingsProvider;
+
   @override
   void initState() {
     super.initState();
+    _bodyWeightCtrl = TextEditingController();
+    _bodyWeightFocus = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
@@ -57,6 +65,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<SettingsProvider>();
+    if (!identical(_settingsProvider, provider)) {
+      _settingsProvider?.removeListener(_onSettingsChanged);
+      _settingsProvider = provider;
+      _settingsProvider?.addListener(_onSettingsChanged);
+      _syncBodyMetricsFromSettings();
+    }
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) {
+      return;
+    }
+    _syncBodyMetricsFromSettings();
+  }
+
+  void _syncBodyMetricsFromSettings() {
+    final settings = _settingsProvider;
+    if (settings == null) {
+      return;
+    }
+    final target = settings.bodyWeightKg;
+    final formatted =
+        target != null && target > 0 ? target.toStringAsFixed(1) : '';
+    if (_bodyWeightCtrl.text != formatted) {
+      _bodyWeightCtrl.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _settingsProvider?.removeListener(_onSettingsChanged);
+    _bodyWeightCtrl.dispose();
+    _bodyWeightFocus.dispose();
+    super.dispose();
   }
 
   void _showLanguageDialog() {
@@ -377,119 +428,181 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return labels.join(' · ');
   }
 
-  Future<void> _showBodyMetricsDialog() async {
+  Future<void> _showBodyMetricsSheet() async {
     final loc = AppLocalizations.of(context)!;
-    final settingsProv = context.read<SettingsProvider>();
-    final controller = TextEditingController(
-      text: settingsProv.bodyWeightKg != null
-          ? settingsProv.bodyWeightKg!.toStringAsFixed(1)
-          : '',
-    );
-    final result = await showDialog<Map<String, dynamic>?>(
+    final settingsProv = _settingsProvider ?? context.read<SettingsProvider>();
+    _syncBodyMetricsFromSettings();
+    _bodyMetricsFormKey.currentState?.reset();
+
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
         String? selectedGender = settingsProv.gender;
-        String? error;
         return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: Text(loc.settingsBodyMetricsDialogTitle),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String?>(
-                  value: selectedGender,
-                  decoration: InputDecoration(labelText: loc.settingsGenderLabel),
-                  items: [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text(loc.settingsGenderNone),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'w',
-                      child: Text(loc.settingsGenderFemale),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'm',
-                      child: Text(loc.settingsGenderMale),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'divers',
-                      child: Text(loc.settingsGenderDiverse),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    selectedGender = value;
-                  }),
+          builder: (formContext, setState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.md,
+                  bottom:
+                      MediaQuery.of(sheetContext).viewInsets.bottom + AppSpacing.lg,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText: loc.settingsBodyWeightLabel,
-                    hintText: loc.settingsBodyWeightHint,
-                    errorText: error,
+                child: Form(
+                  key: _bodyMetricsFormKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          loc.settingsBodyMetricsDialogTitle,
+                          style: Theme.of(formContext).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        DropdownButtonFormField<String?>(
+                          value: selectedGender,
+                          decoration:
+                              InputDecoration(labelText: loc.settingsGenderLabel),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text(loc.settingsGenderNone),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'w',
+                              child: Text(loc.settingsGenderFemale),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'm',
+                              child: Text(loc.settingsGenderMale),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'divers',
+                              child: Text(loc.settingsGenderDiverse),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGender = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextFormField(
+                          key: const ValueKey('bodyWeightField'),
+                          controller: _bodyWeightCtrl,
+                          focusNode: _bodyWeightFocus,
+                          decoration: InputDecoration(
+                            labelText: loc.settingsBodyWeightLabel,
+                            hintText: loc.settingsBodyWeightHint,
+                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.,]'),
+                            ),
+                          ],
+                          validator: (value) {
+                            final raw = value?.trim();
+                            if (raw == null || raw.isEmpty) {
+                              return null;
+                            }
+                            final normalized = raw.replaceAll(',', '.');
+                            final parsed = double.tryParse(normalized);
+                            if (parsed == null || parsed <= 0 || parsed < 30 || parsed > 400) {
+                              return loc.settingsBodyWeightError;
+                            }
+                            return null;
+                          },
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            _handleBodyMetricsSubmit(
+                              sheetContext,
+                              selectedGender,
+                              loc,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                              child: Text(loc.commonCancel),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            FilledButton(
+                              onPressed: () => _handleBodyMetricsSubmit(
+                                sheetContext,
+                                selectedGender,
+                                loc,
+                              ),
+                              child: Text(loc.commonSave),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {
-                    error = null;
-                  }),
                 ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(loc.commonCancel),
               ),
-              TextButton(
-                onPressed: () {
-                  final raw = controller.text.trim().replaceAll(',', '.');
-                  double? weightValue;
-                  if (raw.isNotEmpty) {
-                    weightValue = double.tryParse(raw);
-                    if (weightValue == null || weightValue <= 0) {
-                      setState(() {
-                        error = loc.settingsBodyWeightError;
-                      });
-                      return;
-                    }
-                  }
-                  Navigator.pop(dialogContext, {
-                    'gender': selectedGender,
-                    'bodyWeight': weightValue,
-                  });
-                },
-                child: Text(loc.commonSave),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
-    controller.dispose();
+
     if (!mounted || result == null) {
       return;
     }
+
+    final newGender = result['gender'] as String?;
+    final newWeight = result['bodyWeight'] as double?;
+
     try {
-      final newGender = result['gender'] as String?;
-      final newWeight = result['bodyWeight'] as double?;
-      if (newGender != settingsProv.gender) {
-        await settingsProv.setGender(newGender);
-      }
-      if (newWeight != settingsProv.bodyWeightKg) {
-        await settingsProv.setBodyWeightKg(newWeight);
-      }
+      await settingsProv.updateProfile(
+        gender: newGender,
+        bodyWeightKg: newWeight,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.settingsBodyMetricsSaved)),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      elogError('PROFILE_BODY_METRICS_SAVE', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.settingsBodyMetricsSaveError)),
       );
     }
+  }
+
+  void _handleBodyMetricsSubmit(
+    BuildContext sheetContext,
+    String? selectedGender,
+    AppLocalizations loc,
+  ) {
+    final form = _bodyMetricsFormKey.currentState;
+    if (form == null) {
+      return;
+    }
+    if (!form.validate()) {
+      _bodyWeightFocus.requestFocus();
+      return;
+    }
+    final raw = _bodyWeightCtrl.text.trim();
+    final normalized = raw.replaceAll(',', '.');
+    final parsed = normalized.isEmpty ? null : double.parse(normalized);
+    Navigator.of(sheetContext).pop({
+      'gender': selectedGender,
+      'bodyWeight': parsed,
+    });
   }
 
   void _showSettingsDialog() {
@@ -525,7 +638,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SimpleDialogOption(
                 onPressed: () {
                   Navigator.pop(context);
-                  _showBodyMetricsDialog();
+                  _showBodyMetricsSheet();
                 },
                 child: Row(
                   children: [

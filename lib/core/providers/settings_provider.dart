@@ -78,41 +78,63 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setGender(String? value) async {
-    final uid = _uid;
-    if (uid == null) return;
-    final old = _gender;
-    _gender = value;
-    notifyListeners();
-    try {
-      await _doc(uid).set(
-        value == null || value.isEmpty
-            ? {'gender': FieldValue.delete()}
-            : {'gender': value},
-        SetOptions(merge: true),
-      );
-    } catch (e) {
-      _gender = old;
-      _error = e.toString();
-      notifyListeners();
-      rethrow;
-    }
+    await updateProfile(gender: value, bodyWeightKg: _bodyWeightKg);
   }
 
   Future<void> setBodyWeightKg(double? value) async {
+    await updateProfile(gender: _gender, bodyWeightKg: value);
+  }
+
+  Future<void> updateProfile({
+    String? gender,
+    double? bodyWeightKg,
+  }) async {
     final uid = _uid;
-    if (uid == null) return;
-    final old = _bodyWeightKg;
-    _bodyWeightKg = value;
+    if (uid == null) {
+      return;
+    }
+
+    final normalizedGender = gender;
+    final normalizedWeight = bodyWeightKg;
+    final genderChanged = _gender != normalizedGender;
+    final weightChanged = _bodyWeightKg != normalizedWeight;
+
+    if (!genderChanged && !weightChanged) {
+      return;
+    }
+
+    final previousGender = _gender;
+    final previousWeight = _bodyWeightKg;
+
+    _gender = normalizedGender;
+    _bodyWeightKg = normalizedWeight;
     notifyListeners();
+
+    final payload = <String, Object?>{};
+    if (genderChanged) {
+      if (normalizedGender == null || normalizedGender.isEmpty) {
+        payload['gender'] = FieldValue.delete();
+      } else {
+        payload['gender'] = normalizedGender;
+      }
+    }
+    if (weightChanged) {
+      if (normalizedWeight == null) {
+        payload['bodyWeightKg'] = FieldValue.delete();
+      } else {
+        payload['bodyWeightKg'] = normalizedWeight;
+      }
+    }
+
+    if (payload.isEmpty) {
+      return;
+    }
+
     try {
-      await _doc(uid).set(
-        value == null
-            ? {'bodyWeightKg': FieldValue.delete()}
-            : {'bodyWeightKg': value},
-        SetOptions(merge: true),
-      );
+      await _doc(uid).set(payload, SetOptions(merge: true));
     } catch (e) {
-      _bodyWeightKg = old;
+      _gender = previousGender;
+      _bodyWeightKg = previousWeight;
       _error = e.toString();
       notifyListeners();
       rethrow;

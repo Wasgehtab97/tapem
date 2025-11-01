@@ -25,8 +25,8 @@ class FirestoreMachineAttemptSource {
       if (scaled > queryLimit) {
         queryLimit = scaled;
       }
-      if (queryLimit > 60) {
-        queryLimit = 60;
+      if (queryLimit > 50) {
+        queryLimit = 50;
       }
     }
 
