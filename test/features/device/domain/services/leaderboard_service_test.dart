@@ -17,7 +17,16 @@ class _FakeRepository implements MachineAttemptRepository {
     LeaderboardGenderFilter genderFilter = LeaderboardGenderFilter.all,
     int limit = 3,
   }) async {
-    return _attempts;
+    return _attempts.where((attempt) {
+      switch (genderFilter) {
+        case LeaderboardGenderFilter.female:
+          return attempt.gender == 'w';
+        case LeaderboardGenderFilter.male:
+          return attempt.gender == 'm';
+        case LeaderboardGenderFilter.all:
+          return true;
+      }
+    }).toList();
   }
 }
 
@@ -26,6 +35,7 @@ MachineAttempt _attempt({
   required double e1rm,
   double? bodyWeight,
   bool isMulti = false,
+  String? gender,
 }) {
   return MachineAttempt(
     id: id,
@@ -37,6 +47,7 @@ MachineAttempt _attempt({
     createdAt: DateTime.utc(2024, 1, 1),
     isMulti: isMulti,
     bodyWeightKg: bodyWeight,
+    gender: gender,
   );
 }
 

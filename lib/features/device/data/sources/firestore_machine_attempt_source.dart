@@ -13,39 +13,40 @@ class FirestoreMachineAttemptSource {
     required String machineId,
     required DateTime startUtc,
     required DateTime endUtc,
-    String? gender,
     int limit = 3,
   }) async {
     // Firestore requires ordering on `createdAt` when range filters are used.
-    // To still surface the heaviest lifts for the leaderboard we fetch a
-    // slightly larger window and sort locally afterwards.
+    // We fetch a slightly larger window and perform further filtering and
+    // sorting on the client to avoid additional composite index requirements.
     var queryLimit = limit;
     if (limit > 0) {
-      final scaled = limit * 10;
+      final scaled = limit * 20;
       if (scaled > queryLimit) {
         queryLimit = scaled;
       }
-      if (queryLimit > 50) {
-        queryLimit = 50;
+      if (queryLimit > 100) {
+        queryLimit = 100;
       }
     }
 
-    Query<Map<String, dynamic>> query = _firestore
+    final effectiveLimit = queryLimit > 0 ? queryLimit : 50;
+
+    final query = _firestore
         .collection('gyms')
         .doc(gymId)
         .collection('machines')
         .doc(machineId)
         .collection('attempts')
-        .where('isMulti', isEqualTo: false)
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startUtc))
-        .where('createdAt', isLessThan: Timestamp.fromDate(endUtc))
+        .where(
+          'createdAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startUtc),
+        )
+        .where(
+          'createdAt',
+          isLessThan: Timestamp.fromDate(endUtc),
+        )
         .orderBy('createdAt', descending: true)
-        .orderBy('e1rm', descending: true)
-        .limit(queryLimit);
-
-    if (gender != null) {
-      query = query.where('gender', isEqualTo: gender);
-    }
+        .limit(effectiveLimit);
 
     final snap = await query.get();
     return snap.docs.map(MachineAttemptDto.fromDocument).toList();

@@ -18,27 +18,24 @@ class MachineAttemptRepositoryImpl implements MachineAttemptRepository {
     LeaderboardGenderFilter genderFilter = LeaderboardGenderFilter.all,
     int limit = 3,
   }) async {
-    String? gender;
-    switch (genderFilter) {
-      case LeaderboardGenderFilter.female:
-        gender = 'w';
-        break;
-      case LeaderboardGenderFilter.male:
-        gender = 'm';
-        break;
-      case LeaderboardGenderFilter.all:
-        gender = null;
-        break;
-    }
-
     final dtos = await _source.fetchAttempts(
       gymId: gymId,
       machineId: machineId,
       startUtc: range.startUtc,
       endUtc: range.endUtc,
-      gender: gender,
       limit: limit,
     );
-    return dtos.map((dto) => dto.toDomain()).toList();
+    final attempts = dtos.map((dto) => dto.toDomain()).where((attempt) {
+      switch (genderFilter) {
+        case LeaderboardGenderFilter.female:
+          return attempt.gender == 'w';
+        case LeaderboardGenderFilter.male:
+          return attempt.gender == 'm';
+        case LeaderboardGenderFilter.all:
+          return true;
+      }
+    }).toList();
+
+    return attempts;
   }
 }
