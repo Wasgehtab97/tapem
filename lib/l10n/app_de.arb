@@ -950,6 +950,16 @@
     "description": "Überschrift für das Geräte-Leaderboard",
     "placeholders": {"device": {"type": "String"}}
   },
+  "deviceLeaderboardTitleKing": "King – {device}",
+  "@deviceLeaderboardTitleKing": {
+    "description": "Überschrift, wenn nur das männliche Leaderboard gezeigt wird",
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "deviceLeaderboardTitleQueen": "Queen – {device}",
+  "@deviceLeaderboardTitleQueen": {
+    "description": "Überschrift, wenn nur das weibliche Leaderboard gezeigt wird",
+    "placeholders": {"device": {"type": "String"}}
+  },
   "deviceLeaderboardUnavailable": "Für dieses Gerät nicht verfügbar.",
   "@deviceLeaderboardUnavailable": {"description": "Hinweis, wenn kein Leaderboard verfügbar ist"},
   "deviceLeaderboardTabToday": "Heute",
@@ -964,6 +974,10 @@
   "@deviceLeaderboardFilterFemale": {"description": "Chip für weiblich"},
   "deviceLeaderboardFilterMale": "m",
   "@deviceLeaderboardFilterMale": {"description": "Chip für männlich"},
+  "deviceLeaderboardFilterGenderLabel": "Geschlecht",
+  "@deviceLeaderboardFilterGenderLabel": {"description": "Beschriftung für die Geschlechtsfilter"},
+  "deviceLeaderboardFilterScoreLabel": "Wertung",
+  "@deviceLeaderboardFilterScoreLabel": {"description": "Beschriftung für die Bewertungsart"},
   "deviceLeaderboardFilterAbsolute": "Absolut",
   "@deviceLeaderboardFilterAbsolute": {"description": "Chip für absolute Werte"},
   "deviceLeaderboardFilterRelative": "Relativ",

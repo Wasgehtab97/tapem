@@ -23,12 +23,15 @@ class LeaderboardService {
       return const [];
     }
     final range = resolveTimeRangeUtc(period);
+    final fetchLimit = limit <= 0
+        ? 0
+        : (limit * _fetchOversampleFactor).clamp(limit, _maxFetchLimit).toInt();
     final attempts = await _fetchAttempts(
       gymId: gymId,
       machineId: machineId,
       range: range,
       genderFilter: genderFilter,
-      limit: limit,
+      limit: fetchLimit,
     );
 
     final scored = attempts
@@ -40,9 +43,19 @@ class LeaderboardService {
         .where((entry) => entry.score.isFinite)
         .toList();
 
-    scored.sort((a, b) => b.score.compareTo(a.score));
+    final Map<String, _ScoredAttempt> bestByUser = {};
+    for (final entry in scored) {
+      final userId = entry.attempt.userId;
+      final previousBest = bestByUser[userId];
+      if (previousBest == null || entry.score > previousBest.score) {
+        bestByUser[userId] = entry;
+      }
+    }
 
-    return scored
+    final uniqueEntries = bestByUser.values.toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
+
+    return uniqueEntries
         .take(limit)
         .map((entry) => LeaderboardEntry(
               attempt: entry.attempt,
@@ -129,3 +142,6 @@ class _ScoredAttempt {
 
   const _ScoredAttempt(this.attempt, this.score);
 }
+
+const _fetchOversampleFactor = 4;
+const _maxFetchLimit = 60;

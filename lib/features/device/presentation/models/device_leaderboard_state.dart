@@ -45,8 +45,8 @@ class DeviceLeaderboardNotifier extends ChangeNotifier {
   final bool isMulti;
 
   LeaderboardPeriod _currentPeriod = LeaderboardPeriod.today;
-  LeaderboardGenderFilter _genderFilter = LeaderboardGenderFilter.all;
-  LeaderboardScoreMode _scoreMode = LeaderboardScoreMode.absolute;
+  LeaderboardGenderFilter _genderFilter;
+  LeaderboardScoreMode _scoreMode;
 
   final Map<LeaderboardPeriod, DeviceLeaderboardTabState> _tabs = {
     LeaderboardPeriod.today: const DeviceLeaderboardTabState.initial(),
@@ -59,7 +59,12 @@ class DeviceLeaderboardNotifier extends ChangeNotifier {
     required this.gymId,
     required this.machineId,
     required this.isMulti,
-  }) : _service = service;
+    LeaderboardGenderFilter initialGenderFilter =
+        LeaderboardGenderFilter.all,
+    LeaderboardScoreMode initialScoreMode = LeaderboardScoreMode.absolute,
+  })  : _service = service,
+        _genderFilter = initialGenderFilter,
+        _scoreMode = initialScoreMode;
 
   LeaderboardPeriod get currentPeriod => _currentPeriod;
   LeaderboardGenderFilter get genderFilter => _genderFilter;

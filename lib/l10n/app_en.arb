@@ -948,6 +948,16 @@
     "description": "Headline for the machine leaderboard",
     "placeholders": {"device": {"type": "String"}}
   },
+  "deviceLeaderboardTitleKing": "King – {device}",
+  "@deviceLeaderboardTitleKing": {
+    "description": "Headline when showing the male leaderboard",
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "deviceLeaderboardTitleQueen": "Queen – {device}",
+  "@deviceLeaderboardTitleQueen": {
+    "description": "Headline when showing the female leaderboard",
+    "placeholders": {"device": {"type": "String"}}
+  },
   "deviceLeaderboardUnavailable": "Not available for this device.",
   "@deviceLeaderboardUnavailable": {"description": "Info text when leaderboard is not available"},
   "deviceLeaderboardTabToday": "Today",
@@ -962,6 +972,10 @@
   "@deviceLeaderboardFilterFemale": {"description": "Chip label for female filter"},
   "deviceLeaderboardFilterMale": "m",
   "@deviceLeaderboardFilterMale": {"description": "Chip label for male filter"},
+  "deviceLeaderboardFilterGenderLabel": "Gender",
+  "@deviceLeaderboardFilterGenderLabel": {"description": "Label for the gender filter group"},
+  "deviceLeaderboardFilterScoreLabel": "Scoring",
+  "@deviceLeaderboardFilterScoreLabel": {"description": "Label for the score mode filter group"},
   "deviceLeaderboardFilterAbsolute": "Absolute",
   "@deviceLeaderboardFilterAbsolute": {"description": "Chip label for absolute scores"},
   "deviceLeaderboardFilterRelative": "Relative",
