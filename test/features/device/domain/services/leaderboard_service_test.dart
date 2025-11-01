@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tapem/features/device/domain/models/leaderboard_entry.dart';
 import 'package:tapem/features/device/domain/models/machine_attempt.dart';
 import 'package:tapem/features/device/domain/repositories/machine_attempt_repository.dart';
 import 'package:tapem/features/device/domain/services/leaderboard_service.dart';
