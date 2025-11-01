@@ -729,6 +729,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get publicProfilePrivate => 'Privat';
   String deviceLeaderboardTitle(String device) => 'King/Queen – $device';
+  String deviceLeaderboardTitleKing(String device) => 'King – $device';
+  String deviceLeaderboardTitleQueen(String device) => 'Queen – $device';
   String get deviceLeaderboardUnavailable => 'Für dieses Gerät nicht verfügbar.';
   String get deviceLeaderboardTabToday => 'Heute';
   String get deviceLeaderboardTabWeek => 'Woche';
@@ -736,6 +738,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deviceLeaderboardFilterAll => 'Alle';
   String get deviceLeaderboardFilterFemale => 'w';
   String get deviceLeaderboardFilterMale => 'm';
+  String get deviceLeaderboardFilterGenderLabel => 'Geschlecht';
+  String get deviceLeaderboardFilterScoreLabel => 'Wertung';
   String get deviceLeaderboardFilterAbsolute => 'Absolut';
   String get deviceLeaderboardFilterRelative => 'Relativ';
   String get deviceLeaderboardError => 'Leaderboard konnte nicht geladen werden.';

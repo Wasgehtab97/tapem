@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+
 import '../../data/repositories/machine_attempt_repository_impl.dart';
 import '../../domain/models/leaderboard_entry.dart';
 import '../../domain/services/leaderboard_service.dart';
 import '../../domain/utils/leaderboard_time_utils.dart';
 import '../models/device_leaderboard_state.dart';
-import 'package:tapem/l10n/app_localizations.dart';
 
 class MachineLeaderboardSheet extends StatelessWidget {
   final String gymId;
@@ -27,8 +29,11 @@ class MachineLeaderboardSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.maybeOf<SettingsProvider>(context, listen: false);
+    final initialFilter = _resolveInitialGenderFilter(settings?.gender);
+
     return FractionallySizedBox(
-      heightFactor: 0.8,
+      heightFactor: 0.85,
       child: ChangeNotifierProvider(
         create: (_) => DeviceLeaderboardNotifier(
           service: serviceOverride ??
@@ -38,6 +43,7 @@ class MachineLeaderboardSheet extends StatelessWidget {
           gymId: gymId,
           machineId: machineId,
           isMulti: isMulti,
+          initialGenderFilter: initialFilter,
         )..ensureLoaded(),
         child: _MachineLeaderboardContent(title: title, isMulti: isMulti),
       ),
@@ -59,57 +65,114 @@ class _MachineLeaderboardContent extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+
     return DefaultTabController(
       length: 3,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Container(
-                width: 48,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                loc.deviceLeaderboardTitle(title),
-                style: textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              if (isMulti) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    loc.deviceLeaderboardUnavailable,
-                    style: textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ] else ...[
-                _LeaderboardTabs(onTabChanged: (index) {
-                  final notifier = context.read<DeviceLeaderboardNotifier>();
-                  final period = LeaderboardPeriod.values[index];
-                  notifier.setPeriod(period);
-                }),
-                const SizedBox(height: 12),
-                const _LeaderboardFilters(),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _LeaderboardTab(period: LeaderboardPeriod.today),
-                      _LeaderboardTab(period: LeaderboardPeriod.week),
-                      _LeaderboardTab(period: LeaderboardPeriod.month),
-                    ],
-                  ),
-                ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                theme.colorScheme.surfaceVariant.withOpacity(0.95),
+                theme.colorScheme.surface,
               ],
-            ],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 56,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Consumer<DeviceLeaderboardNotifier>(
+                    builder: (context, notifier, _) {
+                      final resolvedTitle = _resolveLeaderboardTitle(
+                        loc,
+                        title,
+                        notifier.genderFilter,
+                      );
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: Text(
+                          resolvedTitle,
+                          key: ValueKey(resolvedTitle),
+                          style: textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ) ??
+                              TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  if (isMulti)
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 48,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              loc.deviceLeaderboardUnavailable,
+                              style: textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else ...[
+                    _LeaderboardTabs(onTabChanged: (index) {
+                      final notifier = context.read<DeviceLeaderboardNotifier>();
+                      final period = LeaderboardPeriod.values[index];
+                      notifier.setPeriod(period);
+                    }),
+                    const SizedBox(height: 18),
+                    const _LeaderboardFilters(),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: TabBarView(
+                        physics: const BouncingScrollPhysics(),
+                        children: const [
+                          _LeaderboardTab(period: LeaderboardPeriod.today),
+                          _LeaderboardTab(period: LeaderboardPeriod.week),
+                          _LeaderboardTab(period: LeaderboardPeriod.month),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -128,15 +191,33 @@ class _LeaderboardTabs extends StatelessWidget {
     final theme = Theme.of(context);
     return Consumer<DeviceLeaderboardNotifier>(
       builder: (context, notifier, _) {
-        return TabBar(
-          onTap: onTabChanged,
-          labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.textTheme.bodyMedium?.color,
-          tabs: [
-            Tab(text: loc.deviceLeaderboardTabToday),
-            Tab(text: loc.deviceLeaderboardTabWeek),
-            Tab(text: loc.deviceLeaderboardTabMonth),
-          ],
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withOpacity(0.75),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.08),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: TabBar(
+            onTap: onTabChanged,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicator: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: theme.colorScheme.primary.withOpacity(0.16),
+            ),
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+            labelStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+            tabs: [
+              Tab(text: loc.deviceLeaderboardTabToday),
+              Tab(text: loc.deviceLeaderboardTabWeek),
+              Tab(text: loc.deviceLeaderboardTabMonth),
+            ],
+          ),
         );
       },
     );
@@ -149,58 +230,89 @@ class _LeaderboardFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     return Consumer<DeviceLeaderboardNotifier>(
       builder: (context, notifier, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _FilterChip(
-                  label: loc.deviceLeaderboardFilterAll,
-                  selected: notifier.genderFilter == LeaderboardGenderFilter.all,
-                  onSelected: (_) =>
-                      notifier.setGenderFilter(LeaderboardGenderFilter.all),
-                ),
-                _FilterChip(
-                  label: loc.deviceLeaderboardFilterFemale,
-                  selected:
-                      notifier.genderFilter == LeaderboardGenderFilter.female,
-                  onSelected: (_) =>
-                      notifier.setGenderFilter(LeaderboardGenderFilter.female),
-                ),
-                _FilterChip(
-                  label: loc.deviceLeaderboardFilterMale,
-                  selected: notifier.genderFilter == LeaderboardGenderFilter.male,
-                  onSelected: (_) =>
-                      notifier.setGenderFilter(LeaderboardGenderFilter.male),
-                ),
-              ],
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withOpacity(0.78),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.08),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _FilterChip(
-                  label: loc.deviceLeaderboardFilterAbsolute,
-                  selected:
-                      notifier.scoreMode == LeaderboardScoreMode.absolute,
-                  onSelected: (_) =>
-                      notifier.setScoreMode(LeaderboardScoreMode.absolute),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                loc.deviceLeaderboardFilterGenderLabel,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-                _FilterChip(
-                  label: loc.deviceLeaderboardFilterRelative,
-                  selected:
-                      notifier.scoreMode == LeaderboardScoreMode.relative,
-                  onSelected: (_) =>
-                      notifier.setScoreMode(LeaderboardScoreMode.relative),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _FilterChip(
+                    label: loc.deviceLeaderboardFilterAll,
+                    icon: Icons.all_inclusive_rounded,
+                    selected: notifier.genderFilter == LeaderboardGenderFilter.all,
+                    onSelected: (_) =>
+                        notifier.setGenderFilter(LeaderboardGenderFilter.all),
+                  ),
+                  _FilterChip(
+                    label: loc.deviceLeaderboardFilterFemale,
+                    icon: Icons.female_rounded,
+                    selected:
+                        notifier.genderFilter == LeaderboardGenderFilter.female,
+                    onSelected: (_) =>
+                        notifier.setGenderFilter(LeaderboardGenderFilter.female),
+                  ),
+                  _FilterChip(
+                    label: loc.deviceLeaderboardFilterMale,
+                    icon: Icons.male_rounded,
+                    selected: notifier.genderFilter == LeaderboardGenderFilter.male,
+                    onSelected: (_) =>
+                        notifier.setGenderFilter(LeaderboardGenderFilter.male),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                loc.deviceLeaderboardFilterScoreLabel,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _FilterChip(
+                    label: loc.deviceLeaderboardFilterAbsolute,
+                    icon: Icons.fitness_center_rounded,
+                    selected:
+                        notifier.scoreMode == LeaderboardScoreMode.absolute,
+                    onSelected: (_) =>
+                        notifier.setScoreMode(LeaderboardScoreMode.absolute),
+                  ),
+                  _FilterChip(
+                    label: loc.deviceLeaderboardFilterRelative,
+                    icon: Icons.scale_rounded,
+                    selected:
+                        notifier.scoreMode == LeaderboardScoreMode.relative,
+                    onSelected: (_) =>
+                        notifier.setScoreMode(LeaderboardScoreMode.relative),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -211,19 +323,50 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final ValueChanged<bool> onSelected;
+  final IconData? icon;
 
   const _FilterChip({
     required this.label,
     required this.selected,
     required this.onSelected,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final foreground = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    final background = selected
+        ? theme.colorScheme.primary.withOpacity(0.18)
+        : theme.colorScheme.surfaceVariant.withOpacity(0.5);
+
     return ChoiceChip(
+      avatar: icon != null
+          ? Icon(
+              icon,
+              size: 18,
+              color: foreground,
+            )
+          : null,
       label: Text(label),
       selected: selected,
       onSelected: onSelected,
+      pressElevation: 0,
+      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w700,
+          ),
+      backgroundColor: background,
+      selectedColor: theme.colorScheme.primary.withOpacity(0.24),
+      side: BorderSide(
+        color: selected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.outline.withOpacity(0.25),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
@@ -280,59 +423,141 @@ class _LeaderboardEntries extends StatelessWidget {
     final dateFormat = DateFormat.yMd().add_Hm();
 
     final items = entries.asMap().entries.toList();
-    return ListView(
-      children: [
-        for (final item in items)
-          if (item.key == 0)
-            Card(
-              color: theme.colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: _LeaderboardEntryTile(
-                  entry: item.value,
-                  numberFormat: numberFormat,
-                  dateFormat: dateFormat,
-                  highlight: true,
-                  loc: loc,
-                  rank: item.key + 1,
-                ),
-              ),
-            )
-          else
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.secondaryContainer,
-                child: Text('${item.key + 1}'),
-              ),
-              title: _LeaderboardEntryTitle(
-                entry: item.value,
-                numberFormat: numberFormat,
-                loc: loc,
-              ),
-              subtitle: _LeaderboardEntrySubtitle(
-                entry: item.value,
-                dateFormat: dateFormat,
-                loc: loc,
-              ),
-            ),
-      ],
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 4, bottom: 24),
+      physics: const BouncingScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final entry = item.value;
+        final rank = item.key + 1;
+        if (index == 0) {
+          return _HighlightedLeaderboardCard(
+            entry: entry,
+            numberFormat: numberFormat,
+            dateFormat: dateFormat,
+            loc: loc,
+            theme: theme,
+          );
+        }
+        return _LeaderboardEntryCard(
+          entry: entry,
+          numberFormat: numberFormat,
+          dateFormat: dateFormat,
+          loc: loc,
+          rank: rank,
+        );
+      },
     );
   }
 }
 
-class _LeaderboardEntryTile extends StatelessWidget {
+class _HighlightedLeaderboardCard extends StatelessWidget {
   final LeaderboardEntry entry;
   final NumberFormat numberFormat;
   final DateFormat dateFormat;
-  final bool highlight;
   final AppLocalizations loc;
-  final int rank;
+  final ThemeData theme;
 
-  const _LeaderboardEntryTile({
+  const _HighlightedLeaderboardCard({
     required this.entry,
     required this.numberFormat,
     required this.dateFormat,
-    required this.highlight,
+    required this.loc,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onPrimary = theme.colorScheme.onPrimary;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primaryContainer,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.28),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: onPrimary.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.emoji_events_rounded,
+                  color: onPrimary,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _LeaderboardEntryTitle(
+                  entry: entry,
+                  numberFormat: numberFormat,
+                  loc: loc,
+                  highlight: true,
+                ),
+              ),
+              Text(
+                _formatPrimaryScore(entry, numberFormat, loc),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                      color: onPrimary,
+                      fontWeight: FontWeight.w800,
+                    ) ??
+                    TextStyle(
+                      color: onPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _LeaderboardEntrySubtitle(
+            entry: entry,
+            dateFormat: dateFormat,
+            loc: loc,
+            highlight: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderboardEntryCard extends StatelessWidget {
+  final LeaderboardEntry entry;
+  final NumberFormat numberFormat;
+  final DateFormat dateFormat;
+  final AppLocalizations loc;
+  final int rank;
+
+  const _LeaderboardEntryCard({
+    required this.entry,
+    required this.numberFormat,
+    required this.dateFormat,
     required this.loc,
     required this.rank,
   });
@@ -340,50 +565,102 @@ class _LeaderboardEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (highlight)
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Icon(
-                  Icons.emoji_events,
-                  color: theme.colorScheme.onPrimaryContainer,
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RankBadge(rank: rank),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _LeaderboardEntryTitle(
+                        entry: entry,
+                        numberFormat: numberFormat,
+                        loc: loc,
+                        highlight: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatPrimaryScore(entry, numberFormat, loc),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
                 ),
-              ),
-            if (!highlight)
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: CircleAvatar(
-                  backgroundColor: theme.colorScheme.secondaryContainer,
-                  child: Text('$rank'),
+                const SizedBox(height: 12),
+                _LeaderboardEntrySubtitle(
+                  entry: entry,
+                  dateFormat: dateFormat,
+                  loc: loc,
+                  highlight: false,
                 ),
-              ),
-            Expanded(
-              child: _LeaderboardEntryTitle(
-                entry: entry,
-                numberFormat: numberFormat,
-                loc: loc,
-              ),
+              ],
             ),
-            Text(
-              _formatPrimaryScore(entry, numberFormat, loc),
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankBadge extends StatelessWidget {
+  final int rank;
+
+  const _RankBadge({required this.rank});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.secondaryContainer,
+            theme.colorScheme.secondary.withOpacity(0.9),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        const SizedBox(height: 8),
-        _LeaderboardEntrySubtitle(
-          entry: entry,
-          dateFormat: dateFormat,
-          loc: loc,
-        ),
-      ],
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$rank',
+        style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.w800,
+            ) ??
+            TextStyle(
+              color: theme.colorScheme.onSecondaryContainer,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+      ),
     );
   }
 }
@@ -392,27 +669,40 @@ class _LeaderboardEntryTitle extends StatelessWidget {
   final LeaderboardEntry entry;
   final NumberFormat numberFormat;
   final AppLocalizations loc;
+  final bool highlight;
 
   const _LeaderboardEntryTitle({
     required this.entry,
     required this.numberFormat,
     required this.loc,
+    required this.highlight,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
+    final titleColor = highlight
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurface;
+    final secondaryColor = highlight
+        ? theme.colorScheme.onPrimary.withOpacity(0.85)
+        : theme.colorScheme.onSurfaceVariant;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           entry.attempt.username,
-          style: textTheme.titleMedium,
+          style: theme.textTheme.titleMedium?.copyWith(
+                color: titleColor,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         Text(
           '${numberFormat.format(entry.attempt.e1rm)} kg',
-          style: textTheme.bodyMedium,
+          style: theme.textTheme.bodyMedium?.copyWith(
+                color: secondaryColor,
+              ),
         ),
       ],
     );
@@ -423,11 +713,13 @@ class _LeaderboardEntrySubtitle extends StatelessWidget {
   final LeaderboardEntry entry;
   final DateFormat dateFormat;
   final AppLocalizations loc;
+  final bool highlight;
 
   const _LeaderboardEntrySubtitle({
     required this.entry,
     required this.dateFormat,
     required this.loc,
+    required this.highlight,
   });
 
   @override
@@ -446,7 +738,50 @@ class _LeaderboardEntrySubtitle extends StatelessWidget {
     }
     details.add(dateFormat.format(entry.attempt.createdAt.toLocal()));
 
-    return Text(details.join(' • '));
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: details
+          .map(
+            (detail) => _InfoPill(
+              label: detail,
+              highlight: highlight,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final String label;
+  final bool highlight;
+
+  const _InfoPill({required this.label, required this.highlight});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final background = highlight
+        ? theme.colorScheme.onPrimary.withOpacity(0.18)
+        : theme.colorScheme.surfaceVariant.withOpacity(0.6);
+    final foreground = highlight
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.bodySmall?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
   }
 }
 
@@ -460,4 +795,30 @@ String _formatPrimaryScore(
   }
   final ratio = entry.score;
   return loc.deviceLeaderboardRelativeScore(ratio.toStringAsFixed(2));
+}
+
+LeaderboardGenderFilter _resolveInitialGenderFilter(String? gender) {
+  switch (gender) {
+    case 'm':
+      return LeaderboardGenderFilter.male;
+    case 'w':
+      return LeaderboardGenderFilter.female;
+    default:
+      return LeaderboardGenderFilter.all;
+  }
+}
+
+String _resolveLeaderboardTitle(
+  AppLocalizations loc,
+  String device,
+  LeaderboardGenderFilter filter,
+) {
+  switch (filter) {
+    case LeaderboardGenderFilter.male:
+      return loc.deviceLeaderboardTitleKing(device);
+    case LeaderboardGenderFilter.female:
+      return loc.deviceLeaderboardTitleQueen(device);
+    case LeaderboardGenderFilter.all:
+      return loc.deviceLeaderboardTitle(device);
+  }
 }

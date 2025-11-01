@@ -1493,6 +1493,18 @@ abstract class AppLocalizations {
   /// **'King/Queen – {device}'**
   String deviceLeaderboardTitle(String device);
 
+  /// Headline when showing the male leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'King – {device}'**
+  String deviceLeaderboardTitleKing(String device);
+
+  /// Headline when showing the female leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'Queen – {device}'**
+  String deviceLeaderboardTitleQueen(String device);
+
   /// Info text when leaderboard is not available
   ///
   /// In en, this message translates to:
@@ -1534,6 +1546,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'m'**
   String get deviceLeaderboardFilterMale;
+
+  /// Label for the gender filter group
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get deviceLeaderboardFilterGenderLabel;
+
+  /// Label for the score mode filter group
+  ///
+  /// In en, this message translates to:
+  /// **'Scoring'**
+  String get deviceLeaderboardFilterScoreLabel;
 
   /// Chip label for absolute scores
   ///
