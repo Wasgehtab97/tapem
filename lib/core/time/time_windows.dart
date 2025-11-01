@@ -3,7 +3,7 @@ typedef TimeZoneOffsetResolver = Duration Function(DateTime localDate);
 
 /// Represents a half-open time window `[startUtc, endUtc)` in UTC.
 class TimeWindow {
-  const TimeWindow({required this.startUtc, required this.endUtc})
+  TimeWindow({required this.startUtc, required this.endUtc})
       : assert(!startUtc.isUtc || !endUtc.isUtc || !startUtc.isAfter(endUtc));
 
   final DateTime startUtc;

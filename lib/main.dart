@@ -24,7 +24,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
 import 'firebase_options.dart';
 import 'app_router.dart';
@@ -263,7 +263,7 @@ Future<void> main() async {
   final sharedPrefs = await SharedPreferences.getInstance();
 
   runApp(
-    ProviderScope(
+    riverpod.ProviderScope(
       child: MultiProvider(
         providers: [
           // NFC
