@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -19,21 +19,21 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedGymId = gymId ?? context.read<AuthProvider>().gymCode ?? '';
-    return ProviderScope(
+    return riverpod.ProviderScope(
       overrides: [communityGymIdProvider.overrideWithValue(resolvedGymId)],
       child: const _CommunityScreenBody(),
     );
   }
 }
 
-class _CommunityScreenBody extends ConsumerStatefulWidget {
+class _CommunityScreenBody extends riverpod.ConsumerStatefulWidget {
   const _CommunityScreenBody();
 
   @override
-  ConsumerState<_CommunityScreenBody> createState() => _CommunityScreenBodyState();
+  riverpod.ConsumerState<_CommunityScreenBody> createState() => _CommunityScreenBodyState();
 }
 
-class _CommunityScreenBodyState extends ConsumerState<_CommunityScreenBody>
+class _CommunityScreenBodyState extends riverpod.ConsumerState<_CommunityScreenBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _tabIndex = 0;
@@ -106,34 +106,34 @@ class _CommunityScreenBodyState extends ConsumerState<_CommunityScreenBody>
   }
 }
 
-class _CommunityKpiSection extends ConsumerWidget {
+class _CommunityKpiSection extends riverpod.ConsumerWidget {
   const _CommunityKpiSection({required this.tabIndex});
 
   final int tabIndex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
-    AsyncValue<CommunityStats> statsValue;
-    AutoDisposeProviderBase<AsyncValue<CommunityStats>> provider;
+    late final riverpod.AsyncValue<CommunityStats> statsValue;
+    late final VoidCallback onRetry;
 
     switch (tabIndex) {
       case 1:
         statsValue = ref.watch(communityWeekProvider);
-        provider = communityWeekProvider;
+        onRetry = () => ref.refresh(communityWeekProvider);
         break;
       case 2:
         statsValue = ref.watch(communityMonthProvider);
-        provider = communityMonthProvider;
+        onRetry = () => ref.refresh(communityMonthProvider);
         break;
       case 0:
       default:
         statsValue = ref.watch(communityTodayProvider);
-        provider = communityTodayProvider;
+        onRetry = () => ref.refresh(communityTodayProvider);
         break;
     }
 
@@ -211,7 +211,7 @@ class _CommunityKpiSection extends ConsumerWidget {
     Widget buildError(Object error, StackTrace? stackTrace) {
       return _CommunityErrorState(
         message: loc.communityErrorState,
-        onRetry: () => ref.refresh(provider),
+        onRetry: onRetry,
       );
     }
 
@@ -226,13 +226,13 @@ class _CommunityKpiSection extends ConsumerWidget {
   }
 }
 
-class _CommunityFeedSection extends ConsumerWidget {
+class _CommunityFeedSection extends riverpod.ConsumerWidget {
   const _CommunityFeedSection({required this.highlightColor});
 
   final Color highlightColor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final feed = ref.watch(communityFeedProvider);
@@ -397,8 +397,8 @@ class _CommunityFeedTile extends StatelessWidget {
         : '–';
     final parts = <String>[
       name,
-      '${loc.communityFeedRepsLabel(reps)}',
-      '${loc.communityFeedVolumeLabel(volume)}',
+      loc.communityFeedRepsLabel(reps),
+      loc.communityFeedVolumeLabel(volume),
       created,
     ];
     if (event.deviceName != null && event.deviceName!.isNotEmpty) {
