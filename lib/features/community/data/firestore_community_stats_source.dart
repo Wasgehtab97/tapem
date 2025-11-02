@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/models/community_stats.dart';
 import '../domain/models/feed_event.dart';
@@ -40,8 +41,46 @@ class FirestoreCommunityStatsSource {
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startUtc))
         .where('date', isLessThan: Timestamp.fromDate(endUtc))
         .orderBy('date');
-    final snap = await query.get();
-    return snap.docs.map(_mapStats).toList();
+    try {
+      final snap = await query.get();
+      return snap.docs.map(_mapStats).toList();
+    } on FirebaseException catch (e, st) {
+      debugPrint(
+        '[FirestoreCommunityStatsSource] loadStatsForRange error code=${e.code} message=${e.message}',
+      );
+      debugPrintStack(stackTrace: st);
+      rethrow;
+    }
+  }
+
+  Stream<List<CommunityStats>> streamStatsForRange({
+    required String gymId,
+    required DateTime startUtc,
+    required DateTime endUtc,
+  }) {
+    if (gymId.isEmpty) {
+      return Stream.value(const <CommunityStats>[]);
+    }
+    final collection = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('stats_daily');
+    final query = collection
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startUtc))
+        .where('date', isLessThan: Timestamp.fromDate(endUtc))
+        .orderBy('date');
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map(_mapStats).toList(growable: false);
+    }).handleError((error, stackTrace) {
+      if (error is FirebaseException) {
+        debugPrint(
+          '[FirestoreCommunityStatsSource] streamStatsForRange error code=${error.code} message=${error.message}',
+        );
+        debugPrintStack(stackTrace: stackTrace);
+      } else {
+        debugPrint('[FirestoreCommunityStatsSource] streamStatsForRange error $error');
+      }
+    });
   }
 
   Stream<List<FeedEvent>> streamFeed({
@@ -58,8 +97,17 @@ class FirestoreCommunityStatsSource {
         .orderBy('createdAt', descending: true)
         .limit(limit);
     return query.snapshots().map(
-          (snapshot) => snapshot.docs.map(_mapFeedEvent).toList(growable: false),
+      (snapshot) => snapshot.docs.map(_mapFeedEvent).toList(growable: false),
+    ).handleError((error, stackTrace) {
+      if (error is FirebaseException) {
+        debugPrint(
+          '[FirestoreCommunityStatsSource] streamFeed error code=${error.code} message=${error.message}',
         );
+        debugPrintStack(stackTrace: stackTrace);
+      } else {
+        debugPrint('[FirestoreCommunityStatsSource] streamFeed error $error');
+      }
+    });
   }
 
   CommunityStats _mapStats(
