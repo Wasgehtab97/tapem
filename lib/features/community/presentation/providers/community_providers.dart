@@ -60,5 +60,5 @@ final communityFeedProvider = StreamProvider.autoDispose<List<FeedEvent>>((ref) 
   if (gymId.isEmpty) {
     return Stream.value(const <FeedEvent>[]);
   }
-  return service.streamFeed(gymId: gymId, limit: 20);
+  return service.streamFeed(gymId, limit: 20);
 }, dependencies: [currentGymIdProvider, communityStatsServiceProvider]);
