@@ -25,6 +25,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'features/community/presentation/providers/community_providers.dart'
+    show currentGymIdProvider;
 
 import 'firebase_options.dart';
 import 'app_router.dart';
@@ -263,9 +265,8 @@ Future<void> main() async {
   final sharedPrefs = await SharedPreferences.getInstance();
 
   runApp(
-    riverpod.ProviderScope(
-      child: provider.MultiProvider(
-        providers: [
+    provider.MultiProvider(
+      providers: [
           // NFC
           provider.Provider<NfcService>(create: (_) => NfcService()),
           provider.Provider<ReadNfcCode>(
@@ -546,11 +547,25 @@ Future<void> main() async {
               FeedbackProvider(firestore: FirebaseFirestore.instance),
         ),
         provider.ChangeNotifierProvider(create: (_) => RankProvider()),
-        ],
-        child: const MyApp(),
-      ),
+      ],
+      child: const _RiverpodApp(),
     ),
   );
+}
+
+class _RiverpodApp extends StatelessWidget {
+  const _RiverpodApp();
+
+  @override
+  Widget build(BuildContext context) {
+    final gymId = context.watch<AuthProvider>().gymCode ?? '';
+    return riverpod.ProviderScope(
+      overrides: [
+        currentGymIdProvider.overrideWithValue(gymId),
+      ],
+      child: const MyApp(),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
