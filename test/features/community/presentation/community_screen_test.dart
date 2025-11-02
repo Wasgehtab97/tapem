@@ -26,7 +26,7 @@ Future<void> _pumpCommunityScreen(
           ),
         ),
         communityFeedProvider.overrideWithProvider(
-          (ref) => riverpod.StreamProvider.autoDispose(
+          riverpod.StreamProvider.autoDispose(
             (ref) => feedStream,
           ),
         ),
