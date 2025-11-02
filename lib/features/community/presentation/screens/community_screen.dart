@@ -126,7 +126,26 @@ class _CommunityContent extends StatelessWidget {
 
     final slivers = <Widget>[
       SliverPadding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.md,
+        ),
+        sliver: SliverToBoxAdapter(
+          child: _CommunityHeroHeader(
+            stats: stats,
+            accentColor: brandColor,
+          ),
+        ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          0,
+          AppSpacing.sm,
+          AppSpacing.md,
+        ),
         sliver: SliverToBoxAdapter(
           child: stats.hasData
               ? _CommunityKpiSection(stats: stats)
@@ -232,9 +251,11 @@ class _CommunityKpiSection extends StatelessWidget {
     );
 
     final volume = stats.totalVolumeKg;
-    final formattedVolume = volume % 1 == 0
-        ? numberFormat.format(volume.round())
-        : compactVolumeFormat.format(volume);
+    final formattedVolume = _formatCommunityVolume(
+      volume: volume,
+      numberFormat: numberFormat,
+      decimalFormat: compactVolumeFormat,
+    );
 
     final cards = [
       _CommunityKpiCard(
@@ -337,9 +358,7 @@ class _CommunityFeedCard extends StatelessWidget {
             highlightColor: highlightColor,
           );
         },
-        separatorBuilder: (_, __) => Divider(
-          color: theme.colorScheme.onSurface.withOpacity(0.05),
-        ),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
       );
     }
 
@@ -365,29 +384,49 @@ class _CommunityFeedCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            highlightColor.withOpacity(0.2),
+            theme.colorScheme.surface.withOpacity(0.9),
+          ],
+        ),
         borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        border: Border.all(color: highlightColor.withOpacity(0.22)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: highlightColor.withOpacity(0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.broadcast_on_home, color: highlightColor),
-              const SizedBox(width: AppSpacing.xs),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      highlightColor,
+                      highlightColor.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                child: const Icon(Icons.broadcast_on_home, color: Colors.black),
+              ),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 loc.communityFeedTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: highlightColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
             ],
@@ -420,16 +459,24 @@ class _CommunityKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final background = theme.colorScheme.surfaceVariant;
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        accentColor.withOpacity(0.26),
+        accentColor.withOpacity(0.08),
+      ],
+    );
     return Container(
       decoration: BoxDecoration(
-        color: background.withOpacity(0.85),
+        gradient: gradient,
         borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        border: Border.all(color: accentColor.withOpacity(0.22)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            color: accentColor.withOpacity(0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -438,10 +485,25 @@ class _CommunityKpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            backgroundColor: accentColor.withOpacity(0.12),
-            foregroundColor: accentColor,
-            child: Icon(icon),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  accentColor,
+                  accentColor.withOpacity(0.65),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.3),
+                  blurRadius: 14,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Icon(icon, color: Colors.black87),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -487,32 +549,93 @@ class _CommunityFeedTile extends StatelessWidget {
     final created = event.createdAt != null
         ? timeFormat.format(event.createdAt!.toLocal())
         : '–';
-    final parts = <String>[
-      name,
-      loc.communityFeedRepsLabel(reps),
-      loc.communityFeedVolumeLabel(volume),
-      created,
+    final detailPills = <Widget>[
+      if (event.deviceName != null && event.deviceName!.isNotEmpty)
+        _CommunityDetailPill(
+          text: event.deviceName!,
+          accentColor: highlightColor,
+          backgroundOpacity: 0.2,
+        ),
+      _CommunityDetailPill(
+        text: loc.communityFeedRepsLabel(reps),
+        accentColor: highlightColor,
+        backgroundOpacity: 0.14,
+      ),
+      _CommunityDetailPill(
+        text: loc.communityFeedVolumeLabel(volume),
+        accentColor: highlightColor,
+        backgroundOpacity: 0.14,
+      ),
     ];
-    if (event.deviceName != null && event.deviceName!.isNotEmpty) {
-      parts.insert(1, event.deviceName!);
-    }
+
     return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.bolt, color: highlightColor),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: highlightColor.withOpacity(0.12)),
+      ),
+      tileColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+      minLeadingWidth: 0,
+      leading: Container(
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [
+              highlightColor,
+              highlightColor.withOpacity(0.7),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: highlightColor.withOpacity(0.32),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.bolt, color: Colors.black87),
+      ),
       title: Text(
-        parts.join(' · '),
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
+        name,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
         ),
       ),
-      subtitle: event.funnyText == null || event.funnyText!.isEmpty
-          ? null
-          : Text(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: AppSpacing.xs / 2,
+            runSpacing: 6,
+            children: detailPills,
+          ),
+          if (event.funnyText != null && event.funnyText!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
               event.funnyText!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
               ),
             ),
+          ],
+        ],
+      ),
+      trailing: Text(
+        created,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurface.withOpacity(0.6),
+        ),
+      ),
+      visualDensity: VisualDensity.compact,
     );
   }
 }
@@ -582,4 +705,187 @@ class _CommunityFeedSkeleton extends StatelessWidget {
       }),
     );
   }
+}
+
+class _CommunityHeroHeader extends StatelessWidget {
+  const _CommunityHeroHeader({
+    required this.stats,
+    required this.accentColor,
+  });
+
+  final CommunityStats stats;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    final numberFormat = NumberFormat.decimalPattern(localeName);
+    final decimalFormat = NumberFormat.decimalPatternDigits(
+      locale: localeName,
+      decimalDigits: 1,
+    );
+    final formattedVolume = _formatCommunityVolume(
+      volume: stats.totalVolumeKg,
+      numberFormat: numberFormat,
+      decimalFormat: decimalFormat,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accentColor.withOpacity(0.38),
+            accentColor.withOpacity(0.16),
+            theme.colorScheme.surfaceVariant.withOpacity(0.5),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        border: Border.all(color: accentColor.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.25),
+            blurRadius: 26,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      accentColor,
+                      accentColor.withOpacity(0.75),
+                    ],
+                  ),
+                ),
+                child: const Icon(Icons.auto_awesome, color: Colors.black),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  loc.communityFeedTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            numberFormat.format(stats.totalReps),
+            style: theme.textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.2,
+                ) ??
+                theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            loc.communityKpiReps,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _CommunityDetailPill(
+                text:
+                    '${loc.communityKpiWorkouts}: ${numberFormat.format(stats.workoutCount)}',
+                accentColor: accentColor,
+                backgroundOpacity: 0.18,
+              ),
+              _CommunityDetailPill(
+                text: '${loc.communityKpiVolume}: $formattedVolume',
+                accentColor: accentColor,
+                backgroundOpacity: 0.18,
+                icon: Icons.fitness_center,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommunityDetailPill extends StatelessWidget {
+  const _CommunityDetailPill({
+    required this.text,
+    required this.accentColor,
+    this.icon,
+    this.backgroundOpacity = 0.16,
+  });
+
+  final String text;
+  final Color accentColor;
+  final IconData? icon;
+  final double backgroundOpacity;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm * 0.75,
+        vertical: AppSpacing.xs * 0.45,
+      ),
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(backgroundOpacity),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        border: Border.all(
+          color: accentColor.withOpacity(backgroundOpacity + 0.08),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: theme.colorScheme.onSurface,
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatCommunityVolume({
+  required double volume,
+  required NumberFormat numberFormat,
+  required NumberFormat decimalFormat,
+}) {
+  return volume % 1 == 0
+      ? numberFormat.format(volume.round())
+      : decimalFormat.format(volume);
 }
