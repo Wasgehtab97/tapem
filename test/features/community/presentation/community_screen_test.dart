@@ -158,7 +158,8 @@ void main() {
 
       expect(find.text('120'), findsWidgets);
       expect(find.textContaining('1,850'), findsWidgets);
-      expect(find.textContaining('Alice'), findsOneWidget);
+      expect(find.textContaining('30 reps'), findsOneWidget);
+      expect(find.textContaining('250 kg'), findsWidgets);
 
       await tester.tap(find.text('Week'));
       await tester.pump();
