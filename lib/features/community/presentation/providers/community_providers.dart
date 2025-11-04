@@ -46,6 +46,9 @@ final communityStatsProvider = StreamProvider.autoDispose
   if (gymId.isEmpty) {
     return Stream.value(CommunityStats.zero);
   }
+  if (period == CommunityPeriod.today) {
+    return service.streamToday(gymId);
+  }
   final range = periodToUtcRange(period);
   return service.streamRange(
     gymId: gymId,
