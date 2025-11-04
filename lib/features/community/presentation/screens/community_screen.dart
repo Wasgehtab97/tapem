@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
@@ -454,56 +456,90 @@ class _CommunityKpiCard extends StatelessWidget {
       ],
     );
     return Container(
+      constraints: const BoxConstraints(minHeight: 160),
       decoration: BoxDecoration(
         gradient: gradient,
         borderRadius: BorderRadius.circular(AppRadius.cardLg),
-        border: Border.all(color: accentColor.withOpacity(0.22)),
+        border: Border.all(color: accentColor.withOpacity(0.28)),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.2),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            color: accentColor.withOpacity(0.22),
+            blurRadius: 26,
+            offset: const Offset(0, 18),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  accentColor,
-                  accentColor.withOpacity(0.65),
-                ],
+          Positioned(
+            top: -48,
+            right: -36,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentColor.withOpacity(0.16),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.3),
-                  blurRadius: 14,
-                  offset: const Offset(0, 8),
+            ),
+          ),
+          Positioned(
+            bottom: -32,
+            left: -24,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentColor.withOpacity(0.12),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        accentColor,
+                        accentColor.withOpacity(0.7),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.36),
+                        blurRadius: 20,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.black.withOpacity(0.85)),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  value,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.74),
+                    letterSpacing: 0.2,
+                  ),
                 ),
               ],
-            ),
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            child: Icon(icon, color: Colors.black87),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],
@@ -529,7 +565,6 @@ class _CommunityFeedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final displayName = event.displayName;
     final reps = numberFormat.format(event.reps);
     final volume = numberFormat.format(event.volumeKg.round());
     final created = event.createdAt != null
@@ -554,76 +589,98 @@ class _CommunityFeedTile extends StatelessWidget {
       ),
     ];
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        side: BorderSide(color: highlightColor.withOpacity(0.12)),
-      ),
-      tileColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
-      minLeadingWidth: 0,
-      leading: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [
-              highlightColor,
-              highlightColor.withOpacity(0.7),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: highlightColor.withOpacity(0.32),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            highlightColor.withOpacity(0.32),
+            theme.colorScheme.surfaceVariant.withOpacity(0.4),
           ],
         ),
-        child: const Icon(Icons.bolt, color: Colors.black87),
-      ),
-      title: displayName == null
-          ? null
-          : Text(
-              displayName,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: AppSpacing.xs / 2,
-            runSpacing: 6,
-            children: detailPills,
+        border: Border.all(color: highlightColor.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: highlightColor.withOpacity(0.24),
+            blurRadius: 22,
+            offset: const Offset(0, 14),
           ),
-          if (event.funnyText != null && event.funnyText!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              event.funnyText!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
         ],
       ),
-      trailing: Text(
-        created,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
-        ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      highlightColor,
+                      highlightColor.withOpacity(0.7),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: highlightColor.withOpacity(0.3),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.bolt_rounded, color: Colors.black87),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.deviceName ?? loc.communityFeedTitle,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (event.funnyText != null && event.funnyText!.isNotEmpty)
+                      Text(
+                        event.funnyText!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.72),
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                created,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.65),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: detailPills,
+          ),
+        ],
       ),
-      visualDensity: VisualDensity.compact,
     );
   }
 }
