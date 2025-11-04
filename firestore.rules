@@ -669,8 +669,8 @@ service cloud.firestore {
             'funnyText',
             'avatarUrl'
           ]) &&
-          ['session_summary', 'milestone']
-              .hasOnly([request.resource.data.type]) &&
+          [request.resource.data.type]
+              .hasOnly(['session_summary', 'milestone']) &&
           request.resource.data.createdAt == request.time &&
           request.resource.data.reps is int &&
           request.resource.data.volume is number;
