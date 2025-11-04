@@ -529,7 +529,7 @@ class _CommunityFeedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final name = loc.communityFeedAnonymous;
+    final displayName = event.displayName;
     final reps = numberFormat.format(event.reps);
     final volume = numberFormat.format(event.volumeKg.round());
     final created = event.createdAt != null
@@ -587,12 +587,14 @@ class _CommunityFeedTile extends StatelessWidget {
         ),
         child: const Icon(Icons.bolt, color: Colors.black87),
       ),
-      title: Text(
-        name,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      title: displayName == null
+          ? null
+          : Text(
+              displayName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
