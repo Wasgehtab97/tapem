@@ -133,20 +133,6 @@ class _CommunityContent extends StatelessWidget {
           AppSpacing.md,
         ),
         sliver: SliverToBoxAdapter(
-          child: _CommunityHeroHeader(
-            stats: stats,
-            accentColor: brandColor,
-          ),
-        ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.sm,
-          0,
-          AppSpacing.sm,
-          AppSpacing.md,
-        ),
-        sliver: SliverToBoxAdapter(
           child: stats.hasData
               ? _CommunityKpiSection(stats: stats)
               : _CommunityPlaceholder(message: loc.communityEmptyState),
@@ -543,7 +529,7 @@ class _CommunityFeedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final name = event.displayName ?? loc.communityFeedAnonymous;
+    final name = loc.communityFeedAnonymous;
     final reps = numberFormat.format(event.reps);
     final volume = numberFormat.format(event.volumeKg.round());
     final created = event.createdAt != null
@@ -703,127 +689,6 @@ class _CommunityFeedSkeleton extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-class _CommunityHeroHeader extends StatelessWidget {
-  const _CommunityHeroHeader({
-    required this.stats,
-    required this.accentColor,
-  });
-
-  final CommunityStats stats;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
-    final localeName = Localizations.localeOf(context).toLanguageTag();
-    final numberFormat = NumberFormat.decimalPattern(localeName);
-    final decimalFormat = NumberFormat.decimalPatternDigits(
-      locale: localeName,
-      decimalDigits: 1,
-    );
-    final formattedVolume = _formatCommunityVolume(
-      volume: stats.totalVolumeKg,
-      numberFormat: numberFormat,
-      decimalFormat: decimalFormat,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accentColor.withOpacity(0.38),
-            accentColor.withOpacity(0.16),
-            theme.colorScheme.surfaceVariant.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.cardLg),
-        border: Border.all(color: accentColor.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(0.25),
-            blurRadius: 26,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      accentColor,
-                      accentColor.withOpacity(0.75),
-                    ],
-                  ),
-                ),
-                child: const Icon(Icons.auto_awesome, color: Colors.black),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  loc.communityFeedTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            numberFormat.format(stats.totalReps),
-            style: theme.textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.2,
-                ) ??
-                theme.textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            loc.communityKpiReps,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: [
-              _CommunityDetailPill(
-                text:
-                    '${loc.communityKpiWorkouts}: ${numberFormat.format(stats.workoutCount)}',
-                accentColor: accentColor,
-                backgroundOpacity: 0.18,
-              ),
-              _CommunityDetailPill(
-                text: '${loc.communityKpiVolume}: $formattedVolume',
-                accentColor: accentColor,
-                backgroundOpacity: 0.18,
-                icon: Icons.fitness_center,
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
