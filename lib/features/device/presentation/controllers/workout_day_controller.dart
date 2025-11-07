@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -111,7 +109,7 @@ class WorkoutDayController extends ChangeNotifier {
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
 
-  final Map<String, _SessionEntry> _sessions = LinkedHashMap();
+  final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
   String? _focusedSessionKey;
 
   void attachExternalServices({

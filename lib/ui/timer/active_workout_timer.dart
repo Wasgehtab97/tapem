@@ -20,6 +20,14 @@ class ActiveWorkoutTimer extends StatelessWidget {
     this.sessionKey,
   });
 
+  WorkoutDayController? _maybeReadWorkoutDayController(BuildContext context) {
+    try {
+      return Provider.of<WorkoutDayController>(context, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Selector<WorkoutSessionDurationService, bool>(
@@ -82,8 +90,7 @@ class ActiveWorkoutTimer extends StatelessWidget {
                   onTap: () async {
                     final key = sessionKey;
                     if (key != null) {
-                      final controller =
-                          Provider.maybeOf<WorkoutDayController>(context, listen: false);
+                      final controller = _maybeReadWorkoutDayController(context);
                       controller?.focusSession(key);
                     }
                     final dialogResult = await service.confirmStop(
@@ -93,8 +100,7 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     if (!context.mounted) return;
                     final resultKey = dialogResult.sessionKey;
                     if (resultKey != null && resultKey != key) {
-                      final controller =
-                          Provider.maybeOf<WorkoutDayController>(context, listen: false);
+                      final controller = _maybeReadWorkoutDayController(context);
                       controller?.focusSession(resultKey);
                     }
                     if (dialogResult.result == StopResult.save) {
