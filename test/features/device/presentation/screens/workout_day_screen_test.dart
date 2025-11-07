@@ -7,6 +7,7 @@ import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/services/membership_service.dart';
 
@@ -87,6 +88,55 @@ void main() {
 
   tearDown(() {
     controller.dispose();
+  });
+
+  testWidgets('tapping add button opens selector and adds session', (tester) async {
+    final observer = _InterceptingNavigatorObserver(
+      selection: const WorkoutDeviceSelection(
+        gymId: 'gym-1',
+        deviceId: 'device-2',
+        exerciseId: 'exercise-2',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
+          Provider<AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider<TrainingPlanProvider>.value(
+            value: trainingPlanProvider,
+          ),
+        ],
+        child: MaterialApp(
+          navigatorObservers: [observer],
+          home: const WorkoutDayScreen(
+            gymId: 'gym-1',
+            deviceId: 'device-1',
+            exerciseId: 'exercise-1',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(controller.activeSessions(), hasLength(1));
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(controller.activeSessions(), hasLength(2));
+    expect(
+      controller.activeSessions().where(
+            (session) =>
+                session.deviceId == 'device-2' &&
+                session.exerciseId == 'exercise-2',
+          ),
+      isNotEmpty,
+    );
   });
 
   testWidgets('closing a secondary screen keeps the shared session alive',
@@ -198,4 +248,21 @@ void main() {
     expect(find.byKey(ValueKey(firstSessionKey)), findsOneWidget);
     expect(find.byKey(ValueKey(newSessionKey)), findsOneWidget);
   });
+}
+
+class _InterceptingNavigatorObserver extends NavigatorObserver {
+  _InterceptingNavigatorObserver({required this.selection});
+
+  final WorkoutDeviceSelection selection;
+  bool _handled = false;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (_handled) return;
+    if (previousRoute != null && route is MaterialPageRoute<dynamic>) {
+      route.navigator?.pop(selection);
+      _handled = true;
+    }
+  }
 }

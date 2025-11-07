@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class WorkoutDayScreen extends StatefulWidget {
   const WorkoutDayScreen({
@@ -36,6 +39,43 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   String? _sessionKey;
   bool _isInitializing = true;
   bool _ownsSession = false;
+
+  Future<void> _handleAddSession() async {
+    final selection = await Navigator.of(context)
+        .push<WorkoutDeviceSelection>(
+      MaterialPageRoute(
+        builder: (routeContext) => GymScreen(
+          selectionMode: true,
+          onSelect: (result) => Navigator.of(routeContext).pop(result),
+        ),
+      ),
+    );
+    if (!mounted || selection == null) {
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final controller = context.read<WorkoutDayController>();
+    final session = controller.addOrFocusSession(
+      gymId: selection.gymId,
+      deviceId: selection.deviceId,
+      exerciseId: selection.exerciseId,
+      userId: auth.userId!,
+    );
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent + 120;
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+    if (_sessionKey == null) {
+      _sessionKey = session.key;
+    }
+  }
 
   @override
   void initState() {
@@ -113,6 +153,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         ),
     ];
 
+    final loc = AppLocalizations.of(context)!;
+
     if (_isInitializing) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -120,6 +162,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     }
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handleAddSession,
+        tooltip: loc.multiDeviceNewExercise,
+        child: const Icon(Icons.add),
+      ),
       body: SafeArea(
         child: sessions.isEmpty
             ? const SizedBox.shrink()

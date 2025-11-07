@@ -4,6 +4,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart' as auth;
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 
 import '../../../main.dart'; // für navigatorKey
@@ -44,6 +45,24 @@ class _GlobalNfcListenerState extends State<GlobalNfcListener> {
             arguments: {'gymId': gymId, 'deviceId': dev.uid},
           );
         } else {
+          final navContext = navigatorKey.currentContext;
+          if (navContext != null) {
+            try {
+              final controller =
+                  navContext.read<WorkoutDayController>();
+              final userId = _auth.userId;
+              if (userId != null) {
+                controller.addOrFocusSession(
+                  gymId: gymId,
+                  deviceId: dev.uid,
+                  exerciseId: dev.uid,
+                  userId: userId,
+                );
+              }
+            } on ProviderNotFoundException {
+              // ignore missing controller
+            }
+          }
           navigatorKey.currentState?.pushNamed(
             AppRouter.workoutDay,
             arguments: {

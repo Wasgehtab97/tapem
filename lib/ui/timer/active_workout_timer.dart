@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -23,6 +24,14 @@ class ActiveWorkoutTimer extends StatelessWidget {
   WorkoutDayController? _maybeReadWorkoutDayController(BuildContext context) {
     try {
       return Provider.of<WorkoutDayController>(context, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  AuthProvider? _maybeReadAuthProvider(BuildContext context) {
+    try {
+      return Provider.of<AuthProvider>(context, listen: false);
     } on ProviderNotFoundException {
       return null;
     }
@@ -110,6 +119,19 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     } else if (dialogResult.result == StopResult.resume &&
                         dialogResult.resumeTarget != null) {
                       final target = dialogResult.resumeTarget!;
+                      final controller =
+                          _maybeReadWorkoutDayController(context);
+                      final auth = _maybeReadAuthProvider(context);
+                      final userId = auth?.userId;
+                      if (controller != null && userId != null) {
+                        controller.addOrFocusSession(
+                          gymId: target.gymId,
+                          deviceId: target.deviceId,
+                          exerciseId:
+                              target.exerciseId ?? target.deviceId,
+                          userId: userId,
+                        );
+                      }
                       Navigator.of(context).pushNamed(
                         AppRouter.workoutDay,
                         arguments: {
