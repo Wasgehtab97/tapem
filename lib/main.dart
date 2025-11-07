@@ -36,7 +36,6 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
-import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
@@ -50,6 +49,7 @@ import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/rest_stats_provider.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart';
 import 'package:tapem/features/survey/survey_provider.dart';
 import 'package:tapem/features/friends/data/friends_api.dart';
@@ -89,6 +89,7 @@ import 'features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'features/device/domain/usecases/delete_device_usecase.dart';
 import 'features/device/domain/usecases/update_device_muscle_groups_usecase.dart';
 import 'features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
+import 'features/device/presentation/controllers/workout_day_controller.dart';
 
 import 'features/device/data/sources/firestore_exercise_source.dart';
 import 'features/device/data/repositories/exercise_repository_impl.dart';
@@ -454,25 +455,36 @@ Future<void> main() async {
             XpProvider,
             ChallengeProvider,
             WorkoutSessionDurationService,
-            DeviceProvider>(
-          create: (c) => DeviceProvider(
+            WorkoutDayController>(
+          create: (context) => WorkoutDayController(
             firestore: FirebaseFirestore.instance,
-            draftRepo: SessionDraftRepositoryImpl(),
-            membership: c.read<MembershipService>(),
+            membership: context.read<MembershipService>(),
+            deviceRepository: context.read<DeviceRepository>(),
+            getDevicesForGym: context.read<GetDevicesForGym>(),
+            communityStatsWriter: CommunityStatsWriter(
+              firestore: FirebaseFirestore.instance,
+            ),
+            createDraftRepository: () => SessionDraftRepositoryImpl(),
           ),
-          update: (_, membership, xp, challenge, duration, provider) {
-            final prov = provider ??
-                DeviceProvider(
+          update: (context, membership, xp, challenge, duration, controller) {
+            final ctrl = controller ??
+                WorkoutDayController(
                   firestore: FirebaseFirestore.instance,
-                  draftRepo: SessionDraftRepositoryImpl(),
                   membership: membership,
+                  deviceRepository: context.read<DeviceRepository>(),
+                  getDevicesForGym: context.read<GetDevicesForGym>(),
+                  communityStatsWriter: CommunityStatsWriter(
+                    firestore: FirebaseFirestore.instance,
+                  ),
+                  createDraftRepository: () => SessionDraftRepositoryImpl(),
                 );
-            prov.attachExternalServices(
+            ctrl.updateMembership(membership);
+            ctrl.attachExternalServices(
               xpProvider: xp,
               challengeProvider: challenge,
               sessionDurationService: duration,
             );
-            return prov;
+            return ctrl;
           },
         ),
         provider.ChangeNotifierProvider(create: (_) => TrainingPlanProvider()),

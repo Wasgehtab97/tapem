@@ -38,6 +38,7 @@ import '../widgets/note_button_widget.dart';
 import '../widgets/session_navigation_controls.dart';
 import '../widgets/set_card.dart';
 import '../../../training_plan/domain/models/exercise_entry.dart';
+import '../controllers/workout_day_controller.dart';
 
 void _dlog(String m) {}
 
@@ -65,6 +66,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   final _pagerKey = GlobalKey<DevicePagerState>();
   int _currentPagerIndex = 0;
   OverlayNumericKeypadController? _keypadController;
+  DeviceProvider? _sessionProvider;
+  String? _sessionKey;
 
   @override
   void didChangeDependencies() {
@@ -80,9 +83,22 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
+      final controller = context.read<WorkoutDayController>();
+      final session = controller.addOrFocusSession(
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
+        exerciseId: widget.exerciseId,
+        userId: auth.userId!,
+      );
+      if (mounted) {
+        setState(() {
+          _sessionProvider = session.provider;
+          _sessionKey = session.key;
+        });
+      }
       await context.read<SettingsProvider>().load(auth.userId!);
       _dlog('loadDevice() → start');
-      await context.read<DeviceProvider>().loadDevice(
+      await session.provider.loadDevice(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
@@ -466,242 +482,112 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     _keypadController?.close();
     _sectionScrollController.dispose();
     _setListController.dispose();
+    final key = _sessionKey;
+    if (key != null) {
+      context.read<WorkoutDayController>().closeSession(key);
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<DeviceProvider>();
-    final auth = context.watch<AuthProvider>();
-    prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
-    final locale = Localizations.localeOf(context).toString();
-    final loc = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final planProv = context.watch<TrainingPlanProvider>();
-    final plannedEntry = planProv.entryForDate(
-      widget.deviceId,
-      widget.exerciseId,
-      DateTime.now(),
-    );
-    _dlog(
-      'build() isLoading=${prov.isLoading} error=${prov.error} sets=${prov.sets.length}',
-    );
-
-    final sections = <Widget>[
-      _buildSessionHeader(context, prov),
-    ];
-
-    if (prov.isLoading) {
-      sections.add(
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 96),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    } else if (prov.error != null || prov.device == null) {
-      sections.add(
-        _buildErrorSection(
-          loc,
-          prov.error,
-          brandColor,
-        ),
-      );
-    } else {
-      sections.add(
-        _buildSessionSection(
-          context,
-          prov,
-          auth.userId!,
-          loc,
-          locale,
-          brandColor,
-          plannedEntry,
-        ),
+    final provider = _sessionProvider;
+    if (provider == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return WillPopScope(
-      onWillPop: () async {
-        _closeKeyboard();
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-        ),
-        floatingActionButtonLocation:
-            prov.isLoading || prov.device == null || prov.error != null
-                ? null
-                : FloatingActionButtonLocation.endFloat,
-        floatingActionButton:
-            prov.isLoading || prov.device == null || prov.error != null
-                ? null
-                : Padding(
-                    padding: const EdgeInsets.only(bottom: 72, right: 4),
-                    child: NoteButtonWidget(deviceId: widget.deviceId),
-                  ),
-        body: SafeArea(
-          child: Scrollbar(
-            controller: _sectionScrollController,
-            child: ListView.builder(
-              controller: _sectionScrollController,
-              padding: EdgeInsets.zero,
-              itemCount: sections.length,
-              itemBuilder: (context, index) => sections[index],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    return ChangeNotifierProvider<DeviceProvider>.value(
+      value: provider,
+      child: Builder(
+        builder: (context) {
+          final prov = context.watch<DeviceProvider>();
+          final auth = context.watch<AuthProvider>();
+          prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
+          final locale = Localizations.localeOf(context).toString();
+          final loc = AppLocalizations.of(context)!;
+          final theme = Theme.of(context);
+          final brandColor =
+              theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+          final planProv = context.watch<TrainingPlanProvider>();
+          final plannedEntry = planProv.entryForDate(
+            widget.deviceId,
+            widget.exerciseId,
+            DateTime.now(),
+          );
+          _dlog(
+            'build() isLoading=${prov.isLoading} error=${prov.error} sets=${prov.sets.length}',
+          );
 
-  Widget _buildSessionHeader(BuildContext context, DeviceProvider prov) {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
-    final accentColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final isMulti = prov.device?.isMulti ?? false;
-    final exercises = isMulti
-        ? context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises)
-        : null;
-    final headerTitle = _resolveExerciseTitle(
-      context,
-      prov,
-      exercises: exercises,
-    );
+          final sections = <Widget>[
+            _buildSessionHeader(context, prov),
+          ];
 
-    Widget titleWidget = const SizedBox.shrink();
-    final hasOutlineBranding = theme.extension<AppBrandTheme>() != null;
-    if (hasOutlineBranding) {
-      titleWidget = const _DeviceAppBarTimer();
-    } else if (headerTitle != null) {
-      final textTitle = Text(
-        headerTitle,
-        key: ValueKey(headerTitle),
-        style: (theme.textTheme.titleLarge ??
-                const TextStyle(fontSize: 20, fontWeight: FontWeight.w600))
-            .copyWith(color: accentColor),
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
-      if (prov.device != null) {
-        titleWidget = Hero(
-          tag: 'device-${prov.device!.uid}',
-          child: Material(
-            type: MaterialType.transparency,
-            child: textTitle,
-          ),
-        );
-      } else {
-        titleWidget = textTitle;
-      }
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                BackButton(color: accentColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: titleWidget,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.emoji_events_outlined),
-                  tooltip: loc.deviceLeaderboardTooltip,
-                  color: accentColor,
-                  onPressed: prov.device == null
-                      ? null
-                      : () => _openLeaderboard(
-                            prov,
-                            headerTitle,
-                          ),
-                ),
-                const SizedBox(width: 4),
-                const NfcScanButton(),
-              ],
-            ),
-            if (prov.device != null)
-              _DeviceAppBarFooter(
-                provider: prov,
-                gymId: widget.gymId,
-                deviceId: widget.deviceId,
-                exerciseId: widget.exerciseId,
-                closeKeyboard: _closeKeyboard,
+          if (prov.isLoading) {
+            sections.add(
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 96),
+                child: Center(child: CircularProgressIndicator()),
               ),
-            const Divider(height: 1),
-          ],
-        ),
-      ),
-    );
-  }
+            );
+          } else if (prov.error != null || prov.device == null) {
+            sections.add(
+              _buildErrorSection(
+                loc,
+                prov.error,
+                brandColor,
+              ),
+            );
+          } else {
+            sections.add(
+              _buildSessionSection(
+                context,
+                prov,
+                auth.userId!,
+                loc,
+                locale,
+                brandColor,
+                plannedEntry,
+              ),
+            );
+          }
 
-  Widget _buildErrorSection(
-    AppLocalizations loc,
-    String? error,
-    Color brandColor,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 64),
-      child: DefaultTextStyle.merge(
-        style: TextStyle(color: brandColor),
-        child: Center(
-          child: Text('${loc.errorPrefix}: ${error ?? loc.commonUnknown}'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSessionSection(
-    BuildContext context,
-    DeviceProvider prov,
-    String userId,
-    AppLocalizations loc,
-    String locale,
-    Color brandColor,
-    ExerciseEntry? plannedEntry,
-  ) {
-    final mq = MediaQuery.of(context);
-    final verticalInsets =
-        mq.padding.top + mq.padding.bottom + kToolbarHeight + 24;
-    final availableHeight = mq.size.height - verticalInsets;
-    final sectionHeight = availableHeight.isFinite && availableHeight > 0
-        ? availableHeight
-        : mq.size.height * 0.75;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: SizedBox(
-        height: sectionHeight,
-        child: DefaultTextStyle.merge(
-          style: TextStyle(color: brandColor),
-          child: DevicePager(
-            key: _pagerKey,
-            gymId: widget.gymId,
-            deviceId: prov.device!.uid,
-            userId: userId,
-            provider: prov,
-            onIndexChanged: _handlePagerIndexChanged,
-            editablePage: _buildEditablePage(
-              prov,
-              loc,
-              locale,
-              plannedEntry,
+          return WillPopScope(
+            onWillPop: () async {
+              _closeKeyboard();
+              return true;
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+              ),
+              floatingActionButtonLocation:
+                  prov.isLoading || prov.device == null || prov.error != null
+                      ? null
+                      : FloatingActionButtonLocation.endFloat,
+              floatingActionButton:
+                  prov.isLoading || prov.device == null || prov.error != null
+                      ? null
+                      : Padding(
+                          padding: const EdgeInsets.only(bottom: 72, right: 4),
+                          child: NoteButtonWidget(deviceId: widget.deviceId),
+                        ),
+              body: SafeArea(
+                child: Scrollbar(
+                  controller: _sectionScrollController,
+                  child: ListView.builder(
+                    controller: _sectionScrollController,
+                    padding: EdgeInsets.zero,
+                    itemCount: sections.length,
+                    itemBuilder: (context, index) => sections[index],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -6,10 +6,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -396,7 +397,9 @@ class OverlayNumericKeypad extends StatelessWidget {
                     gap: gap,
                     theme: theme,
                     onHide: () {
-                      Provider.of<DeviceProvider?>(context, listen: false)
+                      context
+                          .read<WorkoutDayController>()
+                          .focusedProvider
                           ?.clearFocus();
                       controller.close();
                     },
@@ -424,11 +427,19 @@ class OverlayNumericKeypad extends StatelessWidget {
     }
   }
 
+  static DeviceProvider? _activeProvider(BuildContext context) {
+    return context.read<WorkoutDayController>().focusedProvider;
+  }
+
   static void _navigateNext(
     BuildContext context,
     OverlayNumericKeypadController controller,
   ) {
-    final prov = context.read<DeviceProvider>();
+    final prov = _activeProvider(context);
+    if (prov == null) {
+      _haptic(context);
+      return;
+    }
     final focusedIndex = prov.focusedIndex;
     final focusedField = prov.focusedField;
 
@@ -534,7 +545,11 @@ class OverlayNumericKeypad extends StatelessWidget {
     BuildContext context,
     OverlayNumericKeypadController controller,
   ) {
-    final prov = context.read<DeviceProvider>();
+    final prov = _activeProvider(context);
+    if (prov == null) {
+      _haptic(context);
+      return;
+    }
     final focusedIndex = prov.focusedIndex;
     final focusedField = prov.focusedField;
 
@@ -619,7 +634,11 @@ class OverlayNumericKeypad extends StatelessWidget {
   }
 
   static void _addSet(BuildContext context) {
-    final prov = context.read<DeviceProvider>();
+    final prov = _activeProvider(context);
+    if (prov == null) {
+      _haptic(context);
+      return;
+    }
 
     elogUi('OVERLAY_ADD_SET', {
       'deviceId': prov.device?.uid,
@@ -636,7 +655,11 @@ class OverlayNumericKeypad extends StatelessWidget {
     BuildContext context,
     OverlayNumericKeypadController controller,
   ) {
-    final prov = context.read<DeviceProvider>();
+    final prov = _activeProvider(context);
+    if (prov == null) {
+      _haptic(context);
+      return;
+    }
     final focusedIndex = prov.focusedIndex;
     final focusedField = prov.focusedField;
     final dropIndex = prov.focusedDropIndex ?? 0;

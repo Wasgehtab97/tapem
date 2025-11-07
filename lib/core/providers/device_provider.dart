@@ -1885,6 +1885,7 @@ class DeviceProvider extends ChangeNotifier {
   void dispose() {
     _draftSaveTimer?.cancel();
     _autoFinalizeTimer?.cancel();
+    _prefetchTimer?.cancel();
     unawaited(_saveDraftNow());
     super.dispose();
   }

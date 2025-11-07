@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/device_provider.dart';
 import '../../../../core/providers/exercise_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 
 Future<ExerciseEntry?> showDeviceSelectionDialog(
   BuildContext context,
@@ -14,7 +15,14 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
 ) async {
   final gymId = context.read<AuthProvider>().gymCode!;
   final userId = context.read<AuthProvider>().userId!;
-  final deviceProv = context.read<DeviceProvider>();
+  final controller = context.read<WorkoutDayController>();
+  final session = controller.addOrFocusSession(
+    gymId: gymId,
+    deviceId: entry.deviceId.isNotEmpty ? entry.deviceId : '__plan__',
+    exerciseId: entry.exerciseId.isNotEmpty ? entry.exerciseId : '__plan__',
+    userId: userId,
+  );
+  final deviceProv = session.provider;
   await deviceProv.loadDevices(gymId, userId);
   final devices = List<Device>.from(deviceProv.devices)
     ..sort((a, b) => a.name.compareTo(b.name));
@@ -61,33 +69,36 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
     );
   }
 
-  return showDialog<ExerciseEntry>(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (ctx, setState) {
-          final lowerSearch = searchTerm.toLowerCase();
-          final filteredDevices = devices.where((device) {
-            final matchesSearch = lowerSearch.isEmpty ||
-                device.name.toLowerCase().contains(lowerSearch) ||
-                device.muscleGroups.any(
-                  (g) => g.toLowerCase().contains(lowerSearch),
-                );
-            final matchesGroup = selectedMuscleGroup == null ||
-                device.muscleGroups.contains(selectedMuscleGroup);
-            return matchesSearch && matchesGroup;
-          }).toList();
+  try {
+    return await showDialog<ExerciseEntry>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            final lowerSearch = searchTerm.toLowerCase();
+            final filteredDevices = devices.where((device) {
+              final matchesSearch = lowerSearch.isEmpty ||
+                  device.name.toLowerCase().contains(lowerSearch) ||
+                  device.muscleGroups.any(
+                    (g) => g.toLowerCase().contains(lowerSearch),
+                  );
+              final matchesGroup = selectedMuscleGroup == null ||
+                  device.muscleGroups.contains(selectedMuscleGroup);
+              return matchesSearch && matchesGroup;
+            }).toList();
 
-          return AlertDialog(
-            title: Text(
-              selectedDevice?.isMulti == true ? 'Übung wählen' : 'Gerät wählen',
-            ),
-            content: SizedBox(
-              width: 420,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            return AlertDialog(
+              title: Text(
+                selectedDevice?.isMulti == true
+                    ? 'Übung wählen'
+                    : 'Gerät wählen',
+              ),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   TextField(
                     controller: searchController,
                     decoration: const InputDecoration(
@@ -239,8 +250,11 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
               ),
             ],
           );
-        },
-      );
-    },
-  );
+          },
+        );
+      },
+    );
+  } finally {
+    controller.closeSession(session.key);
+  }
 }
