@@ -7,8 +7,13 @@ import 'package:tapem/core/providers/device_provider.dart';
 
 class NoteButtonWidget extends StatelessWidget {
   final String deviceId;
+  final Object? sessionIdentifier;
 
-  const NoteButtonWidget({Key? key, required this.deviceId}) : super(key: key);
+  const NoteButtonWidget({
+    Key? key,
+    required this.deviceId,
+    this.sessionIdentifier,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +24,7 @@ class NoteButtonWidget extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return FloatingActionButton.small(
-      heroTag: 'noteBtn_$deviceId',
+      heroTag: _resolveHeroTag(),
       tooltip: hasNote ? loc.noteEditTooltip : loc.noteAddTooltip,
       backgroundColor: scheme.surfaceVariant.withOpacity(0.92),
       foregroundColor: scheme.onSurfaceVariant,
@@ -30,6 +35,25 @@ class NoteButtonWidget extends StatelessWidget {
       ),
       onPressed: () => _openNoteModal(context, prov),
     );
+  }
+
+  String _resolveHeroTag() {
+    final identifier = sessionIdentifier;
+
+    if (identifier is String && identifier.isNotEmpty) {
+      return 'noteBtn_${deviceId}_$identifier';
+    }
+
+    if (identifier case (String sessionDeviceId, String? exerciseId)) {
+      final exercisePart = (exerciseId?.isNotEmpty ?? false) ? exerciseId! : 'default';
+      return 'noteBtn_${sessionDeviceId}_$exercisePart';
+    }
+
+    if (identifier != null) {
+      return 'noteBtn_${deviceId}_${identifier.hashCode}';
+    }
+
+    return 'noteBtn_$deviceId';
   }
 
   void _openNoteModal(BuildContext context, DeviceProvider prov) {

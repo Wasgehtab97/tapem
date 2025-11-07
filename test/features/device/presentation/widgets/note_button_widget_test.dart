@@ -21,15 +21,15 @@ void main() {
     when(() => provider.setNote(any())).thenAnswer((_) {});
   });
 
-  Widget buildApp() {
+  Widget buildApp(NoteButtonWidget fab) {
     return ChangeNotifierProvider<DeviceProvider>.value(
       value: provider,
       child: MaterialApp(
         locale: const Locale('de'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          floatingActionButton: NoteButtonWidget(deviceId: 'd1'),
+        home: Scaffold(
+          floatingActionButton: fab,
         ),
       ),
     );
@@ -38,7 +38,9 @@ void main() {
   testWidgets('saving a note forwards trimmed text to provider', (tester) async {
     when(() => provider.note).thenReturn('initial');
 
-    await tester.pumpWidget(buildApp());
+    await tester.pumpWidget(
+      buildApp(const NoteButtonWidget(deviceId: 'd1')),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(FloatingActionButton));
@@ -54,7 +56,9 @@ void main() {
   testWidgets('deleting a note clears provider value', (tester) async {
     when(() => provider.note).thenReturn('existing');
 
-    await tester.pumpWidget(buildApp());
+    await tester.pumpWidget(
+      buildApp(const NoteButtonWidget(deviceId: 'd1')),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(FloatingActionButton));
@@ -64,5 +68,39 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => provider.setNote('')).called(1);
+  });
+
+  testWidgets('hero tag includes session key when provided', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        const NoteButtonWidget(
+          deviceId: 'device',
+          sessionIdentifier: 'session-1',
+        ),
+      ),
+    );
+
+    final fab = tester.widget<FloatingActionButton>(
+      find.byType(FloatingActionButton),
+    );
+
+    expect(fab.heroTag, 'noteBtn_device_session-1');
+  });
+
+  testWidgets('hero tag includes tuple data when session key missing', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        const NoteButtonWidget(
+          deviceId: 'device',
+          sessionIdentifier: ('device', 'exercise'),
+        ),
+      ),
+    );
+
+    final fab = tester.widget<FloatingActionButton>(
+      find.byType(FloatingActionButton),
+    );
+
+    expect(fab.heroTag, 'noteBtn_device_exercise');
   });
 }

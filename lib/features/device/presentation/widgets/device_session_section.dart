@@ -329,7 +329,11 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         ),
       ],
       postFeedbackActions: [
-        NoteButtonWidget(deviceId: widget.deviceId),
+        NoteButtonWidget(
+          deviceId: widget.deviceId,
+          sessionIdentifier:
+              widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
+        ),
       ],
     );
   }
