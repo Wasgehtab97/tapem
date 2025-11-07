@@ -303,7 +303,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         deviceId: widget.deviceId,
         exerciseId: widget.exerciseId,
         onBeforeOpen: _closeKeyboard,
-        onSelection: (selection) {
+        onSelection: (selection) async {
           final auth = context.read<AuthProvider>();
           final controller = context.read<WorkoutDayController>();
           controller.addOrFocusSession(

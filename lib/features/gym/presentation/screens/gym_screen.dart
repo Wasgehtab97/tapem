@@ -13,7 +13,7 @@ import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
-import '../../device/presentation/models/workout_device_selection.dart';
+import '../../../device/presentation/models/workout_device_selection.dart';
 
 class GymScreen extends StatefulWidget {
   const GymScreen({
