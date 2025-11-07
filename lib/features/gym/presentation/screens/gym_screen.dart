@@ -169,7 +169,7 @@ class _GymScreenState extends State<GymScreen>
                                       );
                                     } else {
                                       nav.pushNamed(
-                                        AppRouter.device,
+                                        AppRouter.workoutDay,
                                         arguments: {
                                           'gymId': gymId,
                                           'deviceId': idStr,
