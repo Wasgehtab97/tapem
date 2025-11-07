@@ -86,11 +86,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
       body: SafeArea(
         child: sessions.isEmpty
             ? const SizedBox.shrink()
@@ -116,6 +111,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                       deviceId: session.deviceId,
                       exerciseId: session.exerciseId,
                       userId: session.userId,
+                      sessionKey: session.key,
                       plannedEntry: plannedEntry,
                       onCloseRequested: () => _handleCloseSession(session),
                     );
