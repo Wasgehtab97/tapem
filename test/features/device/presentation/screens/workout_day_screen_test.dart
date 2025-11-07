@@ -185,7 +185,7 @@ void main() {
 
     expect(controller.activeSessions(), hasLength(1));
 
-    await navigator.pop();
+    navigator.pop();
     await tester.pumpAndSettle();
 
     expect(controller.activeSessions(), hasLength(1));
