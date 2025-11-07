@@ -145,4 +145,57 @@ void main() {
       greaterThanOrEqualTo(2),
     );
   });
+
+  testWidgets(
+      'popping the workout screen keeps the session so new devices show prior cards',
+      (tester) async {
+    Future<void> pumpWorkoutScreen(String deviceId) async {
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<WorkoutDayController>.value(
+              value: controller,
+            ),
+            Provider<AuthProvider>.value(value: authProvider),
+            ChangeNotifierProvider<TrainingPlanProvider>.value(
+              value: trainingPlanProvider,
+            ),
+          ],
+          child: MaterialApp(
+            home: WorkoutDayScreen(
+              gymId: 'gym-1',
+              deviceId: deviceId,
+              exerciseId: 'exercise-1',
+              sessionBuilder: (context, session, plannedEntry) {
+                return Text('session-${session.key}', key: ValueKey(session.key));
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await pumpWorkoutScreen('device-1');
+
+    expect(controller.activeSessions(), hasLength(1));
+    final firstSessionKey = controller.activeSessions().first.key;
+    expect(find.byKey(ValueKey(firstSessionKey)), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    await pumpWorkoutScreen('device-2');
+
+    final activeSessions = controller.activeSessions();
+    expect(activeSessions, hasLength(2));
+    final sessionKeys = activeSessions.map((session) => session.key).toList();
+    expect(sessionKeys, contains(firstSessionKey));
+
+    final newSessionKey = sessionKeys.firstWhere((key) => key != firstSessionKey);
+    expect(find.byKey(ValueKey(firstSessionKey)), findsOneWidget);
+    expect(find.byKey(ValueKey(newSessionKey)), findsOneWidget);
+  });
 }

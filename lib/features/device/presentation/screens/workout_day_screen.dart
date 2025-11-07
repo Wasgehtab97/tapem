@@ -13,6 +13,7 @@ class WorkoutDayScreen extends StatefulWidget {
     required this.deviceId,
     required this.exerciseId,
     this.sessionBuilder,
+    this.closeSessionOnDispose = false,
   });
 
   final String gymId;
@@ -24,6 +25,7 @@ class WorkoutDayScreen extends StatefulWidget {
     ExerciseEntry? plannedEntry,
   )?
       sessionBuilder;
+  final bool closeSessionOnDispose;
 
   @override
   State<WorkoutDayScreen> createState() => _WorkoutDayScreenState();
@@ -72,7 +74,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   void dispose() {
     _scrollController.dispose();
     final key = _sessionKey;
-    if (key != null && _ownsSession) {
+    if (widget.closeSessionOnDispose && key != null && _ownsSession) {
       final controller = context.read<WorkoutDayController>();
       if (controller.sessionForKey(key) != null) {
         controller.closeSession(key);
@@ -84,6 +86,10 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   void _handleCloseSession(WorkoutDaySession session) {
     final controller = context.read<WorkoutDayController>();
     final closed = controller.closeSession(session.key);
+    if (closed && session.key == _sessionKey) {
+      _sessionKey = null;
+      _ownsSession = false;
+    }
     if (!mounted) return;
     if (closed && controller.activeSessions().isEmpty) {
       Navigator.of(context).maybePop();
