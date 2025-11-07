@@ -297,6 +297,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileStatsButtonSubtitle => 'Dive into your progress highlights';
 
   @override
+  String get profileCommunityButtonTitle => 'Community';
+
+  @override
+  String get profileCommunityButtonSubtitle => 'Shared milestones & live ticker';
+
+  @override
   String get profileStatsTitle => 'Statistics';
 
   @override
@@ -334,22 +340,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restStatsSampleCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Based on $count session',
-      other: 'Based on $count sessions',
+      other: 'Based on # sessions',
+      one: 'Based on # session',
     );
+    return '$_temp0';
   }
 
   @override
   String restStatsSetCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '$count set recorded',
-      other: '$count sets recorded',
+      other: '# sets recorded',
+      one: '# set recorded',
     );
+    return '$_temp0';
   }
 
   @override
@@ -656,20 +664,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOptionTheme => 'Theme';
+
+  @override
   String get settingsBodyMetrics => 'Body metrics';
+
+  @override
   String get settingsBodyMetricsDialogTitle => 'Body metrics';
+
+  @override
   String get settingsGenderLabel => 'Gender';
+
+  @override
   String get settingsGenderNone => 'Not set';
+
+  @override
   String get settingsGenderFemale => 'Female';
+
+  @override
   String get settingsGenderMale => 'Male';
+
+  @override
   String get settingsGenderDiverse => 'Diverse';
+
+  @override
   String get settingsBodyWeightLabel => 'Body weight (kg)';
+
+  @override
   String get settingsBodyWeightHint => 'e.g. 82.5';
+
+  @override
   String get settingsBodyWeightError => 'Please enter a valid weight';
+
+  @override
   String get settingsBodyMetricsSaved => 'Body metrics saved.';
+
+  @override
   String get settingsBodyMetricsSaveError => 'Could not save body metrics.';
+
+  @override
   String get settingsBodyMetricsSummaryEmpty => 'Not set';
-  String settingsBodyWeightSummary(String value) => '$value kg';
+
+  @override
+  String settingsBodyWeightSummary(String value) {
+    return '$value kg';
+  }
 
   @override
   String get settingsThemeDialogTitle => 'Choose app theme';
@@ -727,24 +765,72 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get publicProfilePrivate => 'Private';
-  String deviceLeaderboardTitle(String device) => 'King/Queen – $device';
-  String deviceLeaderboardTitleKing(String device) => 'King – $device';
-  String deviceLeaderboardTitleQueen(String device) => 'Queen – $device';
+
+  @override
+  String deviceLeaderboardTitle(String device) {
+    return 'King/Queen – $device';
+  }
+
+  @override
+  String deviceLeaderboardTitleKing(String device) {
+    return 'King – $device';
+  }
+
+  @override
+  String deviceLeaderboardTitleQueen(String device) {
+    return 'Queen – $device';
+  }
+
+  @override
   String get deviceLeaderboardUnavailable => 'Not available for this device.';
+
+  @override
   String get deviceLeaderboardTabToday => 'Today';
+
+  @override
   String get deviceLeaderboardTabWeek => 'Week';
+
+  @override
   String get deviceLeaderboardTabMonth => 'Month';
+
+  @override
   String get deviceLeaderboardFilterAll => 'All';
+
+  @override
   String get deviceLeaderboardFilterFemale => 'w';
+
+  @override
   String get deviceLeaderboardFilterMale => 'm';
+
+  @override
   String get deviceLeaderboardFilterGenderLabel => 'Gender';
+
+  @override
   String get deviceLeaderboardFilterScoreLabel => 'Scoring';
+
+  @override
   String get deviceLeaderboardFilterAbsolute => 'Absolute';
+
+  @override
   String get deviceLeaderboardFilterRelative => 'Relative';
+
+  @override
   String get deviceLeaderboardError => 'Could not load leaderboard.';
+
+  @override
   String get deviceLeaderboardEmpty => 'No records yet.';
-  String deviceLeaderboardRelativeValue(String value) => 'Relative: ${value}×BW';
-  String deviceLeaderboardRelativeScore(String value) => '${value}×BW';
+
+  @override
+  String deviceLeaderboardRelativeValue(String value) {
+    return 'Relative: $value×BW';
+  }
+
+  @override
+  String deviceLeaderboardRelativeScore(String value) {
+    return '$value×BW';
+  }
+
+  @override
   String get deviceLeaderboardTooltip => 'Show King/Queen leaderboard';
 
   @override
@@ -774,8 +860,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpNetLabel => 'XP earned';
 
   @override
-  String get storySessionDailyXpFloorAppliedNotice =>
-      'Includes minimum balance adjustment';
+  String get storySessionDailyXpFloorAppliedNotice => 'Includes minimum balance adjustment';
 
   @override
   String get storySessionDailyXpPreviousTotalLabel => 'Before';
@@ -784,7 +869,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpResultingTotalLabel => 'Now';
 
   @override
-  String storySessionDailyXpLevelValue(Object level, Object xp) {
+  String storySessionDailyXpLevelValue(int level, String xp) {
     return 'Level $level · $xp XP';
   }
 
@@ -792,7 +877,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpPenaltiesLabel => 'Penalties';
 
   @override
-  String get storySessionDailyXpBreakdownTitle => "Today's XP breakdown";
+  String get storySessionDailyXpBreakdownTitle => 'Today\'s XP breakdown';
 
   @override
   String get storySessionDailyXpPenaltyTitle => 'Penalties applied';
@@ -801,7 +886,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpComponentBase => 'Base reward';
 
   @override
-  String storySessionDailyXpComponentBaseSubtitle(int day) {
+  String storySessionDailyXpComponentBaseSubtitle(Object day) {
     return 'Training day #$day';
   }
 
@@ -812,20 +897,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpComponentStreak => 'Streak bonus';
 
   @override
-  String storySessionDailyXpComponentStreakSubtitle(int streak) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpComponentStreakSubtitle(num streak) {
+    String _temp0 = intl.Intl.pluralLogic(
       streak,
       locale: localeName,
-      one: '${streak}-day streak',
-      other: '${streak}-day streak',
+      other: '#-day streak',
+      one: '#-day streak',
     );
+    return '$_temp0';
   }
 
   @override
   String get storySessionDailyXpComponentMilestone => 'Milestone reward';
 
   @override
-  String storySessionDailyXpComponentMilestoneSubtitle(int day) {
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day) {
     return 'Milestone day $day';
   }
 
@@ -842,17 +928,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySessionDailyXpPenaltyGeneric => 'Penalty';
 
   @override
-  String storySessionDailyXpPenaltyIdleDays(int days) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpPenaltyIdleDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      one: '$days day without training',
-      other: '$days days without training',
+      other: '# days without training',
+      one: '# day without training',
     );
+    return '$_temp0';
   }
 
   @override
-  String storySessionDailyXpPenaltyWeekLabel(int week) {
+  String storySessionDailyXpPenaltyWeekLabel(Object week) {
     return 'Week $week without training';
   }
 
@@ -1347,6 +1434,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportSurveysButtonSubtitle => 'Create and monitor member surveys';
 
   @override
+  String get reportUsageTitle => 'Usage';
+
+  @override
+  String get reportFeedbackTitle => 'Feedback';
+
+  @override
+  String get reportSurveysTitle => 'Surveys';
+
+  @override
   String get reportMembersTitle => 'Members';
 
   @override
@@ -1356,20 +1452,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportMembersUsageTitle => 'Usage';
 
   @override
-  String get reportMembersUsageDescription =>
-      'Share of registered members by logged training days.';
+  String get reportMembersUsageDescription => 'Share of registered members by logged training days.';
 
   @override
-  String get reportMembersUsageNoMembers =>
-      'No members with a membership number available.';
+  String get reportMembersUsageNoMembers => 'No members with a membership number available.';
 
   @override
-  String reportMembersUsageBucketSummary(
-    String label,
-    String percentage,
-    int count,
-    int total,
-  ) {
+  String reportMembersUsageBucketSummary(Object label, Object percentage, int count, int total) {
     return '$label: $percentage% ($count of $total)';
   }
 
@@ -1386,22 +1475,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportMembersCreatedAtColumn => 'Created at';
 
   @override
-  String get reportMembersLoadError => "We couldn't load the member list.";
+  String get reportMembersLoadError => 'We couldn\'t load the member list.';
 
   @override
   String get reportMembersRoleMember => 'Member';
 
   @override
   String get reportMembersRoleAdmin => 'Admin';
-
-  @override
-  String get reportUsageTitle => 'Usage';
-
-  @override
-  String get reportFeedbackTitle => 'Feedback';
-
-  @override
-  String get reportSurveysTitle => 'Surveys';
 
   @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
@@ -1744,4 +1824,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Hide keyboard';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityTabToday => 'Today';
+
+  @override
+  String get communityTabWeek => 'Week';
+
+  @override
+  String get communityTabMonth => 'Month';
+
+  @override
+  String get communityKpiReps => 'Total reps';
+
+  @override
+  String get communityKpiVolume => 'Total volume (kg)';
+
+  @override
+  String get communityKpiWorkouts => 'Workouts';
+
+  @override
+  String get communityEmptyState => 'No data yet for the selected period.';
+
+  @override
+  String get communityErrorState => 'We couldn\'t load the community stats.';
+
+  @override
+  String get communityRetryButton => 'Retry';
+
+  @override
+  String get communityFeedTitle => 'Live ticker';
+
+  @override
+  String get communityFeedEmpty => 'No recent events yet.';
+
+  @override
+  String get communityFeedError => 'Live ticker could not be loaded.';
+
+  @override
+  String get communityFeedAnonymous => 'Someone';
+
+  @override
+  String communityFeedRepsLabel(String reps) {
+    return '$reps reps';
+  }
+
+  @override
+  String communityFeedVolumeLabel(String volume) {
+    return '$volume kg';
+  }
 }

@@ -623,6 +623,18 @@ abstract class AppLocalizations {
   /// **'Dive into your progress highlights'**
   String get profileStatsButtonSubtitle;
 
+  /// Button label on profile screen that opens the community page
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get profileCommunityButtonTitle;
+
+  /// Subtitle for the community call-to-action on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Shared milestones & live ticker'**
+  String get profileCommunityButtonSubtitle;
+
   /// Title of the profile statistics page
   ///
   /// In en, this message translates to:
@@ -683,7 +695,7 @@ abstract class AppLocalizations {
   /// **'Overall average'**
   String get restStatsHeadline;
 
-  /// Subtitle describing the overall rest insight
+  /// Subtitle describing the aggregated rest insight
   ///
   /// In en, this message translates to:
   /// **'Average rest time across all equipment'**
@@ -1637,43 +1649,43 @@ abstract class AppLocalizations {
   /// **'{xp} XP'**
   String storySessionDailyXpValue(Object xp);
 
-  /// No description provided for @storySessionDailyXpGrossLabel.
+  /// Label for the gross XP value in the session story dialog banner
   ///
   /// In en, this message translates to:
   /// **'Gross reward'**
   String get storySessionDailyXpGrossLabel;
 
-  /// No description provided for @storySessionDailyXpNetLabel.
+  /// Label for the net XP change in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Net XP change'**
+  /// **'XP earned'**
   String get storySessionDailyXpNetLabel;
 
-  /// No description provided for @storySessionDailyXpFloorAppliedNotice.
+  /// Hint shown when the XP floor was applied
   ///
   /// In en, this message translates to:
   /// **'Includes minimum balance adjustment'**
   String get storySessionDailyXpFloorAppliedNotice;
 
-  /// No description provided for @storySessionDailyXpPreviousTotalLabel.
+  /// Label for the previous XP total in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Balance before day'**
+  /// **'Before'**
   String get storySessionDailyXpPreviousTotalLabel;
 
-  /// No description provided for @storySessionDailyXpResultingTotalLabel.
+  /// Label for the resulting XP total in the session story dialog banner
   ///
   /// In en, this message translates to:
-  /// **'Balance after day'**
+  /// **'Now'**
   String get storySessionDailyXpResultingTotalLabel;
 
-  /// No description provided for @storySessionDailyXpLevelValue.
+  /// Displays the level and XP within that level for the session story summary footer
   ///
   /// In en, this message translates to:
   /// **'Level {level} · {xp} XP'**
-  String storySessionDailyXpLevelValue(Object level, Object xp);
+  String storySessionDailyXpLevelValue(int level, String xp);
 
-  /// No description provided for @storySessionDailyXpPenaltiesLabel.
+  /// Label for the penalties summary in the session story dialog footer
   ///
   /// In en, this message translates to:
   /// **'Penalties'**
@@ -1682,7 +1694,7 @@ abstract class AppLocalizations {
   /// No description provided for @storySessionDailyXpBreakdownTitle.
   ///
   /// In en, this message translates to:
-  /// **"Today's XP breakdown"**
+  /// **'Today\'s XP breakdown'**
   String get storySessionDailyXpBreakdownTitle;
 
   /// No description provided for @storySessionDailyXpPenaltyTitle.
@@ -1701,7 +1713,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Training day #{day}'**
-  String storySessionDailyXpComponentBaseSubtitle(int day);
+  String storySessionDailyXpComponentBaseSubtitle(Object day);
 
   /// No description provided for @storySessionDailyXpComponentComeback.
   ///
@@ -1718,8 +1730,8 @@ abstract class AppLocalizations {
   /// No description provided for @storySessionDailyXpComponentStreakSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{streak, plural, one {Streak of # day} other {Streak of # days}}'**
-  String storySessionDailyXpComponentStreakSubtitle(int streak);
+  /// **'{streak, plural, one {#-day streak} other {#-day streak}}'**
+  String storySessionDailyXpComponentStreakSubtitle(num streak);
 
   /// No description provided for @storySessionDailyXpComponentMilestone.
   ///
@@ -1731,7 +1743,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Milestone day {day}'**
-  String storySessionDailyXpComponentMilestoneSubtitle(int day);
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day);
 
   /// No description provided for @storySessionDailyXpComponentUnknown.
   ///
@@ -1761,13 +1773,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{days, plural, one {# day without training} other {# days without training}}'**
-  String storySessionDailyXpPenaltyIdleDays(int days);
+  String storySessionDailyXpPenaltyIdleDays(num days);
 
   /// No description provided for @storySessionDailyXpPenaltyWeekLabel.
   ///
   /// In en, this message translates to:
   /// **'Week {week} without training'**
-  String storySessionDailyXpPenaltyWeekLabel(int week);
+  String storySessionDailyXpPenaltyWeekLabel(Object week);
 
   /// Heading above the badges list in the session story dialog
   ///
@@ -2693,6 +2705,24 @@ abstract class AppLocalizations {
   /// **'Create and monitor member surveys'**
   String get reportSurveysButtonSubtitle;
 
+  /// App bar title for the usage report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get reportUsageTitle;
+
+  /// App bar title for the feedback report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get reportFeedbackTitle;
+
+  /// App bar title for the surveys report screen
+  ///
+  /// In en, this message translates to:
+  /// **'Surveys'**
+  String get reportSurveysTitle;
+
   /// App bar title for the members report screen
   ///
   /// In en, this message translates to:
@@ -2717,7 +2747,7 @@ abstract class AppLocalizations {
   /// **'Share of registered members by logged training days.'**
   String get reportMembersUsageDescription;
 
-  /// Hint text shown when no members with a membership number were found
+  /// Hint text when no members with a membership number were found
   ///
   /// In en, this message translates to:
   /// **'No members with a membership number available.'**
@@ -2727,12 +2757,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{label}: {percentage}% ({count} of {total})'**
-  String reportMembersUsageBucketSummary(
-    String label,
-    String percentage,
-    int count,
-    int total,
-  );
+  String reportMembersUsageBucketSummary(Object label, Object percentage, int count, int total);
 
   /// Column header for the member number in the members report
   ///
@@ -2761,7 +2786,7 @@ abstract class AppLocalizations {
   /// Message shown when the members report fails to load
   ///
   /// In en, this message translates to:
-  /// **"We couldn't load the member list."**
+  /// **'We couldn\'t load the member list.'**
   String get reportMembersLoadError;
 
   /// Display value for the member role in the members report
@@ -2775,24 +2800,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Admin'**
   String get reportMembersRoleAdmin;
-
-  /// App bar title for the usage report screen
-  ///
-  /// In en, this message translates to:
-  /// **'Usage'**
-  String get reportUsageTitle;
-
-  /// App bar title for the feedback report screen
-  ///
-  /// In en, this message translates to:
-  /// **'Feedback'**
-  String get reportFeedbackTitle;
-
-  /// App bar title for the surveys report screen
-  ///
-  /// In en, this message translates to:
-  /// **'Surveys'**
-  String get reportSurveysTitle;
 
   /// Hint text for the device usage search field
   ///
@@ -3405,6 +3412,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide keyboard'**
   String get numericKeypadSemanticsHideKeyboard;
+
+  /// Title of the community screen
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communityTitle;
+
+  /// Tab label for today's stats
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get communityTabToday;
+
+  /// Tab label for weekly stats
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get communityTabWeek;
+
+  /// Tab label for monthly stats
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get communityTabMonth;
+
+  /// KPI label for total repetitions
+  ///
+  /// In en, this message translates to:
+  /// **'Total reps'**
+  String get communityKpiReps;
+
+  /// KPI label for total volume
+  ///
+  /// In en, this message translates to:
+  /// **'Total volume (kg)'**
+  String get communityKpiVolume;
+
+  /// KPI label for number of workouts
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get communityKpiWorkouts;
+
+  /// Empty state message when no community stats are available
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet for the selected period.'**
+  String get communityEmptyState;
+
+  /// Error message for community stats
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the community stats.'**
+  String get communityErrorState;
+
+  /// Retry button label on community screen
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get communityRetryButton;
+
+  /// Heading for the live ticker list
+  ///
+  /// In en, this message translates to:
+  /// **'Live ticker'**
+  String get communityFeedTitle;
+
+  /// Message shown when the feed has no entries
+  ///
+  /// In en, this message translates to:
+  /// **'No recent events yet.'**
+  String get communityFeedEmpty;
+
+  /// Error message for the live ticker
+  ///
+  /// In en, this message translates to:
+  /// **'Live ticker could not be loaded.'**
+  String get communityFeedError;
+
+  /// Fallback name when a feed event has no username
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get communityFeedAnonymous;
+
+  /// Formats the reps portion of a feed entry
+  ///
+  /// In en, this message translates to:
+  /// **'{reps} reps'**
+  String communityFeedRepsLabel(String reps);
+
+  /// Formats the volume portion of a feed entry
+  ///
+  /// In en, this message translates to:
+  /// **'{volume} kg'**
+  String communityFeedVolumeLabel(String volume);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

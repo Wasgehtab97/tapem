@@ -297,6 +297,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileStatsButtonSubtitle => 'Entdecke deine Fortschritte';
 
   @override
+  String get profileCommunityButtonTitle => 'Community';
+
+  @override
+  String get profileCommunityButtonSubtitle => 'Gemeinschaftliche Meilensteine & Live-Ticker';
+
+  @override
   String get profileStatsTitle => 'Statistiken';
 
   @override
@@ -327,30 +333,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get restStatsHeadline => 'Gesamtdurchschnitt';
 
   @override
-  String get restStatsHeroDescription =>
-      'Durchschnittliche Satzpause über alle Geräte';
+  String get restStatsHeroDescription => 'Durchschnittliche Satzpause über alle Geräte';
 
   @override
   String get restStatsActualLabel => 'Ø Satzpause';
 
   @override
   String restStatsSampleCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: 'Basierend auf $count Session',
-      other: 'Basierend auf $count Sessions',
+      other: 'Basierend auf # Sessions',
+      one: 'Basierend auf # Session',
     );
+    return '$_temp0';
   }
 
   @override
   String restStatsSetCount(num count) {
-    return intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '$count Satz insgesamt',
-      other: '$count Sätze insgesamt',
+      other: '# Sätze insgesamt',
+      one: '# Satz insgesamt',
     );
+    return '$_temp0';
   }
 
   @override
@@ -657,20 +664,50 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsOptionTheme => 'App-Theme';
+
+  @override
   String get settingsBodyMetrics => 'Körperdaten';
+
+  @override
   String get settingsBodyMetricsDialogTitle => 'Körperdaten';
+
+  @override
   String get settingsGenderLabel => 'Geschlecht';
+
+  @override
   String get settingsGenderNone => 'Nicht gesetzt';
+
+  @override
   String get settingsGenderFemale => 'Weiblich';
+
+  @override
   String get settingsGenderMale => 'Männlich';
+
+  @override
   String get settingsGenderDiverse => 'Divers';
+
+  @override
   String get settingsBodyWeightLabel => 'Körpergewicht (kg)';
+
+  @override
   String get settingsBodyWeightHint => 'z. B. 82,5';
+
+  @override
   String get settingsBodyWeightError => 'Bitte ein gültiges Gewicht eingeben';
+
+  @override
   String get settingsBodyMetricsSaved => 'Körperdaten gespeichert.';
+
+  @override
   String get settingsBodyMetricsSaveError => 'Körperdaten konnten nicht gespeichert werden.';
+
+  @override
   String get settingsBodyMetricsSummaryEmpty => 'Nicht gesetzt';
-  String settingsBodyWeightSummary(String value) => '$value kg';
+
+  @override
+  String settingsBodyWeightSummary(String value) {
+    return '$value kg';
+  }
 
   @override
   String get settingsThemeDialogTitle => 'App-Theme auswählen';
@@ -728,24 +765,72 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get publicProfilePrivate => 'Privat';
-  String deviceLeaderboardTitle(String device) => 'King/Queen – $device';
-  String deviceLeaderboardTitleKing(String device) => 'King – $device';
-  String deviceLeaderboardTitleQueen(String device) => 'Queen – $device';
+
+  @override
+  String deviceLeaderboardTitle(String device) {
+    return 'King/Queen – $device';
+  }
+
+  @override
+  String deviceLeaderboardTitleKing(String device) {
+    return 'King – $device';
+  }
+
+  @override
+  String deviceLeaderboardTitleQueen(String device) {
+    return 'Queen – $device';
+  }
+
+  @override
   String get deviceLeaderboardUnavailable => 'Für dieses Gerät nicht verfügbar.';
+
+  @override
   String get deviceLeaderboardTabToday => 'Heute';
+
+  @override
   String get deviceLeaderboardTabWeek => 'Woche';
+
+  @override
   String get deviceLeaderboardTabMonth => 'Monat';
+
+  @override
   String get deviceLeaderboardFilterAll => 'Alle';
+
+  @override
   String get deviceLeaderboardFilterFemale => 'w';
+
+  @override
   String get deviceLeaderboardFilterMale => 'm';
+
+  @override
   String get deviceLeaderboardFilterGenderLabel => 'Geschlecht';
+
+  @override
   String get deviceLeaderboardFilterScoreLabel => 'Wertung';
+
+  @override
   String get deviceLeaderboardFilterAbsolute => 'Absolut';
+
+  @override
   String get deviceLeaderboardFilterRelative => 'Relativ';
+
+  @override
   String get deviceLeaderboardError => 'Leaderboard konnte nicht geladen werden.';
+
+  @override
   String get deviceLeaderboardEmpty => 'Noch keine Einträge.';
-  String deviceLeaderboardRelativeValue(String value) => 'Relativ: ${value}×Körpergewicht';
-  String deviceLeaderboardRelativeScore(String value) => '${value}×KG';
+
+  @override
+  String deviceLeaderboardRelativeValue(String value) {
+    return 'Relativ: $value×Körpergewicht';
+  }
+
+  @override
+  String deviceLeaderboardRelativeScore(String value) {
+    return '$value×KG';
+  }
+
+  @override
   String get deviceLeaderboardTooltip => 'King/Queen Leaderboard anzeigen';
 
   @override
@@ -775,8 +860,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpNetLabel => 'XP-Erhalt';
 
   @override
-  String get storySessionDailyXpFloorAppliedNotice =>
-      'Beinhaltet Anpassung auf das Mindestguthaben';
+  String get storySessionDailyXpFloorAppliedNotice => 'Beinhaltet Anpassung auf das Mindestguthaben';
 
   @override
   String get storySessionDailyXpPreviousTotalLabel => 'Vorher';
@@ -785,7 +869,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpResultingTotalLabel => 'Jetzt';
 
   @override
-  String storySessionDailyXpLevelValue(Object level, Object xp) {
+  String storySessionDailyXpLevelValue(int level, String xp) {
     return 'Level $level · $xp XP';
   }
 
@@ -802,7 +886,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpComponentBase => 'Grundbelohnung';
 
   @override
-  String storySessionDailyXpComponentBaseSubtitle(int day) {
+  String storySessionDailyXpComponentBaseSubtitle(Object day) {
     return 'Trainingstag #$day';
   }
 
@@ -813,20 +897,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpComponentStreak => 'Streak-Bonus';
 
   @override
-  String storySessionDailyXpComponentStreakSubtitle(int streak) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpComponentStreakSubtitle(num streak) {
+    String _temp0 = intl.Intl.pluralLogic(
       streak,
       locale: localeName,
-      one: '${streak}-er Streak',
-      other: '${streak}-er Streak',
+      other: '#-er Streak',
+      one: '#-er Streak',
     );
+    return '$_temp0';
   }
 
   @override
   String get storySessionDailyXpComponentMilestone => 'Meilenstein-Bonus';
 
   @override
-  String storySessionDailyXpComponentMilestoneSubtitle(int day) {
+  String storySessionDailyXpComponentMilestoneSubtitle(Object day) {
     return 'Meilenstein-Tag $day';
   }
 
@@ -843,17 +928,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storySessionDailyXpPenaltyGeneric => 'Strafe';
 
   @override
-  String storySessionDailyXpPenaltyIdleDays(int days) {
-    return intl.Intl.pluralLogic(
+  String storySessionDailyXpPenaltyIdleDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      one: '$days trainingsfreier Tag',
-      other: '$days trainingsfreie Tage',
+      other: '# trainingsfreie Tage',
+      one: '# trainingsfreier Tag',
     );
+    return '$_temp0';
   }
 
   @override
-  String storySessionDailyXpPenaltyWeekLabel(int week) {
+  String storySessionDailyXpPenaltyWeekLabel(Object week) {
     return 'Woche $week ohne Training';
   }
 
@@ -1348,6 +1434,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportSurveysButtonSubtitle => 'Umfragen erstellen und auswerten';
 
   @override
+  String get reportUsageTitle => 'Nutzung';
+
+  @override
+  String get reportFeedbackTitle => 'Feedback';
+
+  @override
+  String get reportSurveysTitle => 'Umfragen';
+
+  @override
   String get reportMembersTitle => 'Mitglieder';
 
   @override
@@ -1357,20 +1452,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportMembersUsageTitle => 'Nutzung';
 
   @override
-  String get reportMembersUsageDescription =>
-      'Anteil der registrierten Mitglieder nach dokumentierten Trainingstagen.';
+  String get reportMembersUsageDescription => 'Anteil der registrierten Mitglieder nach dokumentierten Trainingstagen.';
 
   @override
-  String get reportMembersUsageNoMembers =>
-      'Keine Mitglieder mit Mitgliedsnummer vorhanden.';
+  String get reportMembersUsageNoMembers => 'Keine Mitglieder mit Mitgliedsnummer vorhanden.';
 
   @override
-  String reportMembersUsageBucketSummary(
-    String label,
-    String percentage,
-    int count,
-    int total,
-  ) {
+  String reportMembersUsageBucketSummary(Object label, Object percentage, int count, int total) {
     return '$label: $percentage% ($count von $total)';
   }
 
@@ -1394,15 +1482,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportMembersRoleAdmin => 'Admin';
-
-  @override
-  String get reportUsageTitle => 'Nutzung';
-
-  @override
-  String get reportFeedbackTitle => 'Feedback';
-
-  @override
-  String get reportSurveysTitle => 'Umfragen';
 
   @override
   String get reportDeviceFilterHint => 'Geräte oder Beschreibungen suchen';
@@ -1745,4 +1824,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get numericKeypadSemanticsHideKeyboard => 'Tastatur ausblenden';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityTabToday => 'Heute';
+
+  @override
+  String get communityTabWeek => 'Woche';
+
+  @override
+  String get communityTabMonth => 'Monat';
+
+  @override
+  String get communityKpiReps => 'Gesamt-Wiederholungen';
+
+  @override
+  String get communityKpiVolume => 'Gesamt-Volumen (kg)';
+
+  @override
+  String get communityKpiWorkouts => 'Workouts';
+
+  @override
+  String get communityEmptyState => 'Noch keine Daten im ausgewählten Zeitraum.';
+
+  @override
+  String get communityErrorState => 'Community-Daten konnten nicht geladen werden.';
+
+  @override
+  String get communityRetryButton => 'Erneut versuchen';
+
+  @override
+  String get communityFeedTitle => 'Live-Ticker';
+
+  @override
+  String get communityFeedEmpty => 'Noch keine Events.';
+
+  @override
+  String get communityFeedError => 'Live-Ticker konnte nicht geladen werden.';
+
+  @override
+  String get communityFeedAnonymous => 'Jemand';
+
+  @override
+  String communityFeedRepsLabel(String reps) {
+    return '$reps Wdh.';
+  }
+
+  @override
+  String communityFeedVolumeLabel(String volume) {
+    return '$volume kg';
+  }
 }
