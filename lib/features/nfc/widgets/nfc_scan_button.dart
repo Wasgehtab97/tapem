@@ -10,7 +10,16 @@ import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class NfcScanButton extends StatelessWidget {
-  const NfcScanButton({super.key});
+  const NfcScanButton({
+    super.key,
+    this.deviceId,
+    this.exerciseId,
+    this.onBeforeOpen,
+  });
+
+  final String? deviceId;
+  final String? exerciseId;
+  final VoidCallback? onBeforeOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +41,7 @@ class NfcScanButton extends StatelessWidget {
         ),
       ),
       onPressed: () async {
+        onBeforeOpen?.call();
         // Alte Session beenden (falls offen)
         try {
           await NfcManager.instance.stopSession();
@@ -81,18 +91,23 @@ class NfcScanButton extends StatelessWidget {
               await membership.ensureMembership(gymId, authProv.userId!);
 
               // Navigation basierend auf dev.isMulti
+              final resolvedDeviceId = deviceId ?? dev.uid;
+              final resolvedExerciseId = exerciseId ?? dev.uid;
               if (dev.isMulti) {
                 Navigator.of(context).pushNamed(
                   AppRouter.exerciseList,
-                  arguments: {'gymId': gymId, 'deviceId': dev.uid},
+                  arguments: {
+                    'gymId': gymId,
+                    'deviceId': resolvedDeviceId,
+                  },
                 );
               } else {
                 Navigator.of(context).pushNamed(
                   AppRouter.workoutDay,
                   arguments: {
                     'gymId': gymId,
-                    'deviceId': dev.uid,
-                    'exerciseId': dev.uid,
+                    'deviceId': resolvedDeviceId,
+                    'exerciseId': resolvedExerciseId,
                   },
                 );
               }
