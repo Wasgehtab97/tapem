@@ -63,7 +63,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     );
     if (result != null && ex == null && mounted) {
       Navigator.of(context).pushReplacementNamed(
-        AppRouter.device,
+        AppRouter.workoutDay,
         arguments: {
           'gymId': widget.gymId,
           'deviceId': widget.deviceId,
@@ -247,7 +247,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             exercise: ex,
             onOpen: () {
               Navigator.of(context).pushNamed(
-                AppRouter.device,
+                AppRouter.workoutDay,
                 arguments: {
                   'gymId': widget.gymId,
                   'deviceId': widget.deviceId,

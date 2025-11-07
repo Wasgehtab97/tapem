@@ -45,7 +45,7 @@ class _GlobalNfcListenerState extends State<GlobalNfcListener> {
           );
         } else {
           navigatorKey.currentState?.pushNamed(
-            AppRouter.device,
+            AppRouter.workoutDay,
             arguments: {
               'gymId': gymId,
               'deviceId': dev.uid,

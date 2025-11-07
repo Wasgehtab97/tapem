@@ -88,7 +88,7 @@ class NfcScanButton extends StatelessWidget {
                 );
               } else {
                 Navigator.of(context).pushNamed(
-                  AppRouter.device,
+                  AppRouter.workoutDay,
                   arguments: {
                     'gymId': gymId,
                     'deviceId': dev.uid,

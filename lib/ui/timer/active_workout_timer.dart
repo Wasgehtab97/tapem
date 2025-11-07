@@ -83,7 +83,7 @@ class ActiveWorkoutTimer extends StatelessWidget {
                         dialogResult.resumeTarget != null) {
                       final target = dialogResult.resumeTarget!;
                       Navigator.of(context).pushNamed(
-                        AppRouter.device,
+                        AppRouter.workoutDay,
                         arguments: {
                           'gymId': target.gymId,
                           'deviceId': target.deviceId,

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
-import 'package:tapem/features/device/presentation/screens/device_screen.dart';
+import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
@@ -44,6 +44,7 @@ class AppRouter {
   static const splash = '/';
   static const auth = '/auth';
   static const home = '/home';
+  static const workoutDay = '/workout_day';
   static const device = '/device';
   static const exerciseList = '/exercise_list';
   static const history = '/history';
@@ -108,14 +109,31 @@ class AppRouter {
         );
 
       case device:
-        final args = settings.arguments as Map<String, String>;
+        return onGenerateRoute(
+          RouteSettings(
+            name: workoutDay,
+            arguments: settings.arguments,
+          ),
+        );
+
+      case workoutDay:
+        final rawArgs = settings.arguments;
+        final args = rawArgs is Map
+            ? Map<String, dynamic>.from(rawArgs as Map)
+            : <String, dynamic>{};
+        final gymId = args['gymId']?.toString() ?? '';
+        final deviceId = args['deviceId']?.toString() ?? '';
+        final exerciseId = args['exerciseId']?.toString() ?? '';
         return MaterialPageRoute(
-          builder:
-              (_) => DeviceScreen(
-                gymId: args['gymId']!,
-                deviceId: args['deviceId']!,
-                exerciseId: args['exerciseId']!,
-              ),
+          settings: RouteSettings(
+            name: workoutDay,
+            arguments: rawArgs,
+          ),
+          builder: (_) => WorkoutDayScreen(
+            gymId: gymId,
+            deviceId: deviceId,
+            exerciseId: exerciseId,
+          ),
         );
 
       case exerciseList:
