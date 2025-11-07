@@ -6,6 +6,8 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
+import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -15,11 +17,13 @@ class NfcScanButton extends StatelessWidget {
     this.deviceId,
     this.exerciseId,
     this.onBeforeOpen,
+    this.onSelection,
   });
 
   final String? deviceId;
   final String? exerciseId;
   final VoidCallback? onBeforeOpen;
+  final Future<void> Function(WorkoutDeviceSelection selection)? onSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -93,23 +97,49 @@ class NfcScanButton extends StatelessWidget {
               // Navigation basierend auf dev.isMulti
               final resolvedDeviceId = deviceId ?? dev.uid;
               final resolvedExerciseId = exerciseId ?? dev.uid;
+              final selectionHandler = onSelection;
               if (dev.isMulti) {
-                Navigator.of(context).pushNamed(
-                  AppRouter.exerciseList,
-                  arguments: {
-                    'gymId': gymId,
-                    'deviceId': resolvedDeviceId,
-                  },
-                );
+                if (selectionHandler != null) {
+                  final selection = await Navigator.of(context)
+                      .push<WorkoutDeviceSelection>(
+                    MaterialPageRoute(
+                      builder: (ctx) => ExerciseListScreen(
+                        gymId: gymId,
+                        deviceId: resolvedDeviceId,
+                        onSelect: (result) => Navigator.of(ctx).pop(result),
+                      ),
+                    ),
+                  );
+                  if (selection != null) {
+                    await selectionHandler(selection);
+                  }
+                } else {
+                  Navigator.of(context).pushNamed(
+                    AppRouter.exerciseList,
+                    arguments: {
+                      'gymId': gymId,
+                      'deviceId': resolvedDeviceId,
+                    },
+                  );
+                }
               } else {
-                Navigator.of(context).pushNamed(
-                  AppRouter.workoutDay,
-                  arguments: {
-                    'gymId': gymId,
-                    'deviceId': resolvedDeviceId,
-                    'exerciseId': resolvedExerciseId,
-                  },
+                final selection = WorkoutDeviceSelection(
+                  gymId: gymId,
+                  deviceId: resolvedDeviceId,
+                  exerciseId: resolvedExerciseId,
                 );
+                if (selectionHandler != null) {
+                  await selectionHandler(selection);
+                } else {
+                  Navigator.of(context).pushNamed(
+                    AppRouter.workoutDay,
+                    arguments: {
+                      'gymId': gymId,
+                      'deviceId': resolvedDeviceId,
+                      'exerciseId': resolvedExerciseId,
+                    },
+                  );
+                }
               }
             },
           );

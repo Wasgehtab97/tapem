@@ -13,6 +13,7 @@ import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet.dart';
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
@@ -21,8 +22,14 @@ import 'package:tapem/l10n/app_localizations.dart';
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
+  final ValueChanged<WorkoutDeviceSelection>? onSelect;
 
-  const ExerciseListScreen({super.key, required this.gymId, required this.deviceId});
+  const ExerciseListScreen({
+    super.key,
+    required this.gymId,
+    required this.deviceId,
+    this.onSelect,
+  });
 
   @override
   State<ExerciseListScreen> createState() => _ExerciseListScreenState();
@@ -62,14 +69,24 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       ),
     );
     if (result != null && ex == null && mounted) {
-      Navigator.of(context).pushReplacementNamed(
-        AppRouter.workoutDay,
-        arguments: {
-          'gymId': widget.gymId,
-          'deviceId': widget.deviceId,
-          'exerciseId': result.id,
-        },
+      final selection = WorkoutDeviceSelection(
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
+        exerciseId: result.id,
       );
+      final onSelect = widget.onSelect;
+      if (onSelect != null) {
+        onSelect(selection);
+      } else {
+        Navigator.of(context).pushReplacementNamed(
+          AppRouter.workoutDay,
+          arguments: {
+            'gymId': widget.gymId,
+            'deviceId': widget.deviceId,
+            'exerciseId': result.id,
+          },
+        );
+      }
     }
   }
 
@@ -246,14 +263,24 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
           return _ExerciseCard(
             exercise: ex,
             onOpen: () {
-              Navigator.of(context).pushNamed(
-                AppRouter.workoutDay,
-                arguments: {
-                  'gymId': widget.gymId,
-                  'deviceId': widget.deviceId,
-                  'exerciseId': ex.id,
-                },
+              final selection = WorkoutDeviceSelection(
+                gymId: widget.gymId,
+                deviceId: widget.deviceId,
+                exerciseId: ex.id,
               );
+              final onSelect = widget.onSelect;
+              if (onSelect != null) {
+                onSelect(selection);
+              } else {
+                Navigator.of(context).pushNamed(
+                  AppRouter.workoutDay,
+                  arguments: {
+                    'gymId': widget.gymId,
+                    'deviceId': widget.deviceId,
+                    'exerciseId': ex.id,
+                  },
+                );
+              }
             },
             onEdit: () => _openAdd(ex),
             onDelete: () => _deleteExercise(ex),

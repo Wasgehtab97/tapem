@@ -7,13 +7,23 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
+import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
+import '../../device/presentation/models/workout_device_selection.dart';
+
 class GymScreen extends StatefulWidget {
-  const GymScreen({super.key});
+  const GymScreen({
+    super.key,
+    this.onSelect,
+    this.selectionMode = false,
+  });
+
+  final ValueChanged<WorkoutDeviceSelection>? onSelect;
+  final bool selectionMode;
 
   @override
   State<GymScreen> createState() => _GymScreenState();
@@ -109,7 +119,19 @@ class _GymScreenState extends State<GymScreen>
     }
     final devices = _filtered(gymProv.devices);
 
+    PreferredSizeWidget? appBar;
+    if (widget.selectionMode) {
+      appBar = AppBar(
+        title: Text(loc.multiDeviceExerciseListTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      );
+    }
+
     return Scaffold(
+      appBar: appBar,
       body: DefaultTextStyle.merge(
         style: TextStyle(color: brandColor),
         child: SafeArea(
@@ -156,9 +178,36 @@ class _GymScreenState extends State<GymScreen>
                                 ),
                                 child: DeviceCard(
                                   device: d,
-                                  onTap: () {
+                                  onTap: () async {
                                     final nav = Navigator.of(context);
                                     final idStr = d.uid;
+                                    if (widget.onSelect != null) {
+                                      if (d.isMulti) {
+                                        final selection = await nav
+                                            .push<WorkoutDeviceSelection>(
+                                          MaterialPageRoute(
+                                            builder: (ctx) => ExerciseListScreen(
+                                              gymId: gymId,
+                                              deviceId: idStr,
+                                              onSelect: (result) =>
+                                                  Navigator.of(ctx).pop(result),
+                                            ),
+                                          ),
+                                        );
+                                        if (selection != null) {
+                                          widget.onSelect!(selection);
+                                        }
+                                      } else {
+                                        widget.onSelect!(
+                                          WorkoutDeviceSelection(
+                                            gymId: gymId,
+                                            deviceId: idStr,
+                                            exerciseId: idStr,
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
                                     if (d.isMulti) {
                                       nav.pushNamed(
                                         AppRouter.exerciseList,
