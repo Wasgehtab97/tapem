@@ -3,7 +3,6 @@ import 'package:flutter/material.dart' hide SearchBar;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -13,6 +12,8 @@ import 'package:tapem/ui/common/filter_chips_row.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/common/search_bar.dart';
 import 'package:tapem/ui/devices/device_card.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 
 class MuscleGroupAdminScreen extends StatefulWidget {
   const MuscleGroupAdminScreen({super.key});
@@ -27,6 +28,8 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   Set<String> _muscles = {};
   SortOrder _sort = SortOrder.az;
   Timer? _debounce;
+  DeviceProvider? _deviceProvider;
+  String? _sessionKey;
 
   @override
   void initState() {
@@ -34,7 +37,18 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final gymId = auth.gymCode ?? '';
-      context.read<DeviceProvider>().loadDevices(gymId, auth.userId!);
+      final controller = context.read<WorkoutDayController>();
+      final session = controller.addOrFocusSession(
+        gymId: gymId,
+        deviceId: '__muscle_admin__',
+        exerciseId: '__muscle_admin__',
+        userId: auth.userId!,
+      );
+      setState(() {
+        _deviceProvider = session.provider;
+        _sessionKey = session.key;
+      });
+      session.provider.loadDevices(gymId, auth.userId!);
       context.read<MuscleGroupProvider>().loadGroups(context);
     });
   }
@@ -43,6 +57,10 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
+    final key = _sessionKey;
+    if (key != null) {
+      context.read<WorkoutDayController>().closeSession(key);
+    }
     super.dispose();
   }
 
@@ -131,79 +149,93 @@ class _MuscleGroupAdminScreenState extends State<MuscleGroupAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final deviceProv = context.watch<DeviceProvider>();
-    final devices = _filtered(deviceProv.devices);
-    final loc = AppLocalizations.of(context)!;
+    final provider = _deviceProvider;
+    if (provider == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            title: Text(loc.muscleAdminTitle),
-            actions: [
-              IconButton(
-                tooltip: loc.resetFilters,
-                icon: const Icon(Icons.filter_alt_off),
-                onPressed: _resetFilters,
-              ),
-            ],
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SearchHeaderDelegate(
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                  children: [
-                    SearchBar(
-                      controller: _controller,
-                      onChanged: _onQuery,
-                      hint: loc.multiDeviceSearchHint,
-                    ),
-                    const SizedBox(height: 12),
-                    FilterChipsRow(
-                      sort: _sort,
-                      onSort: (v) => setState(() => _sort = v),
-                      muscleFilterIds: _muscles,
-                      onMuscleFilter: (v) => setState(() => _muscles = v),
-                      onReset: _resetFilters,
+    return ChangeNotifierProvider<DeviceProvider>.value(
+      value: provider,
+      child: Builder(
+        builder: (context) {
+          final deviceProv = context.watch<DeviceProvider>();
+          final devices = _filtered(deviceProv.devices);
+          final loc = AppLocalizations.of(context)!;
+
+          return Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  title: Text(loc.muscleAdminTitle),
+                  actions: [
+                    IconButton(
+                      tooltip: loc.resetFilters,
+                      icon: const Icon(Icons.filter_alt_off),
+                      onPressed: _resetFilters,
                     ),
                   ],
                 ),
-              ),
-              height: 120,
-            ),
-          ),
-          if (deviceProv.isLoading)
-            const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()))
-          else if (devices.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: Text(loc.gymNoDevices)),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (ctx, i) {
-                  final d = devices[i];
-                  return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: DeviceCard(
-                      device: d,
-                      onTap: () => _openAssignSheet(d),
-                      onAssignMuscles: () => _openAssignSheet(d),
-                      onResetMuscles: () => _resetAssignments(d),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SearchHeaderDelegate(
+                    child: Container(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      child: Column(
+                        children: [
+                          SearchBar(
+                            controller: _controller,
+                            onChanged: _onQuery,
+                            hint: loc.multiDeviceSearchHint,
+                          ),
+                          const SizedBox(height: 12),
+                          FilterChipsRow(
+                            sort: _sort,
+                            onSort: (v) => setState(() => _sort = v),
+                            muscleFilterIds: _muscles,
+                            onMuscleFilter: (v) => setState(() => _muscles = v),
+                            onReset: _resetFilters,
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                },
-                childCount: devices.length,
-              ),
+                    height: 120,
+                  ),
+                ),
+                if (deviceProv.isLoading)
+                  const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()))
+                else if (devices.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: Text(loc.gymNoDevices)),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) {
+                        final d = devices[i];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: DeviceCard(
+                            device: d,
+                            onTap: () => _openAssignSheet(d),
+                            onAssignMuscles: () => _openAssignSheet(d),
+                            onResetMuscles: () => _resetAssignments(d),
+                          ),
+                        );
+                      },
+                      childCount: devices.length,
+                    ),
+                  ),
+              ],
             ),
-        ],
+          );
+        },
       ),
     );
   }
