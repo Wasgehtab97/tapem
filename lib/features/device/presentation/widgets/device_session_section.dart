@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -22,15 +23,17 @@ import 'package:tapem/features/device/presentation/widgets/device_pager.dart';
 import 'package:tapem/features/device/presentation/widgets/last_session_card.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
 import 'package:tapem/features/device/presentation/widgets/note_button_widget.dart';
+import 'package:tapem/features/device/presentation/widgets/session_action_strip.dart';
 import 'package:tapem/features/device/presentation/widgets/session_navigation_controls.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
-import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart';
+import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
+    show
+        showFeedbackDialog;
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
-import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/ui/timer/session_timer_bar.dart';
 
 import '../../../training_plan/domain/models/exercise_entry.dart';
@@ -43,6 +46,7 @@ class DeviceSessionSection extends StatelessWidget {
     required this.deviceId,
     required this.exerciseId,
     required this.userId,
+    this.sessionKey,
     this.plannedEntry,
     this.onSessionSaved,
     this.onCloseRequested,
@@ -53,6 +57,7 @@ class DeviceSessionSection extends StatelessWidget {
   final String deviceId;
   final String exerciseId;
   final String userId;
+  final String? sessionKey;
   final ExerciseEntry? plannedEntry;
   final VoidCallback? onSessionSaved;
   final VoidCallback? onCloseRequested;
@@ -66,6 +71,7 @@ class DeviceSessionSection extends StatelessWidget {
         deviceId: deviceId,
         exerciseId: exerciseId,
         userId: userId,
+        sessionKey: sessionKey,
         plannedEntry: plannedEntry,
         onSessionSaved: onSessionSaved,
         onCloseRequested: onCloseRequested,
@@ -80,6 +86,7 @@ class _DeviceSessionSectionBody extends StatefulWidget {
     required this.deviceId,
     required this.exerciseId,
     required this.userId,
+    this.sessionKey,
     this.plannedEntry,
     this.onSessionSaved,
     this.onCloseRequested,
@@ -89,6 +96,7 @@ class _DeviceSessionSectionBody extends StatefulWidget {
   final String deviceId;
   final String exerciseId;
   final String userId;
+  final String? sessionKey;
   final ExerciseEntry? plannedEntry;
   final VoidCallback? onSessionSaved;
   final VoidCallback? onCloseRequested;
@@ -191,6 +199,52 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     );
   }
 
+  void _openHistory(DeviceProvider prov) {
+    _closeKeyboard();
+    final deviceProv = prov;
+    String? exerciseName;
+    if (deviceProv.device?.isMulti ?? false) {
+      final exProv = context.read<ExerciseProvider>();
+      exerciseName = exProv.exercises
+          .firstWhere(
+            (e) => e.id == widget.exerciseId,
+            orElse: () => Exercise(id: '', name: 'Unknown', userId: ''),
+          )
+          .name;
+    }
+    Navigator.of(context).pushNamed(
+      AppRouter.history,
+      arguments: {
+        'deviceId': widget.deviceId,
+        'deviceName': deviceProv.device?.name ?? widget.deviceId,
+        'deviceDescription': deviceProv.device?.description,
+        'isMulti': deviceProv.device?.isMulti ?? false,
+        if (deviceProv.device?.isMulti ?? false) 'exerciseId': widget.exerciseId,
+        if (deviceProv.device?.isMulti ?? false) 'exerciseName': exerciseName,
+      },
+    );
+  }
+
+  void _toggleBodyweight(DeviceProvider prov) {
+    prov.toggleBodyweightMode();
+    elogUi('bodyweight_toggle', {
+      'enabled': prov.isBodyweightMode,
+      'deviceId': widget.deviceId,
+      'exerciseId': widget.exerciseId,
+    });
+  }
+
+  void _handleFeedback() {
+    _closeKeyboard();
+    unawaited(
+      showFeedbackDialog(
+        context,
+        gymId: widget.gymId,
+        deviceId: widget.deviceId,
+      ),
+    );
+  }
+
   String? _resolveExerciseTitle(
     BuildContext context,
     DeviceProvider prov, {
@@ -220,148 +274,50 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final exercises = prov.device?.isMulti ?? false
         ? context.watch<ExerciseProvider>().exercises
         : null;
-    final title = _resolveExerciseTitle(context, prov, exercises: exercises);
-    final subtitle = prov.device?.isMulti == true && title != prov.device?.name
+    final resolvedTitle =
+        _resolveExerciseTitle(context, prov, exercises: exercises) ??
+            loc.newSessionTitle;
+    final subtitle = prov.device?.isMulti == true &&
+            resolvedTitle != prov.device?.name
         ? prov.device?.name
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title ?? loc.newSessionTitle,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ) ??
-                          const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    const ActiveWorkoutTimer(
-                      key: ValueKey('deviceSessionTimer'),
-                      padding: EdgeInsets.zero,
-                      compact: true,
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: loc.closeButton,
-                onPressed: () {
-                  _closeKeyboard();
-                  widget.onCloseRequested?.call();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
-            children: [
-              NfcScanButton(
-                deviceId: widget.deviceId,
-                exerciseId: widget.exerciseId,
-                onBeforeOpen: _closeKeyboard,
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.emoji_events_outlined),
-                    tooltip: loc.deviceLeaderboardTooltip,
-                    onPressed: prov.device == null
-                        ? null
-                        : () => _openLeaderboard(prov, title),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.history),
-                    tooltip: loc.deviceHistoryTooltip,
-                    onPressed: prov.device == null
-                        ? null
-                        : () {
-                            _closeKeyboard();
-                            final deviceProv = prov;
-                            String? exerciseName;
-                            if (deviceProv.device?.isMulti ?? false) {
-                              final exProv = context.read<ExerciseProvider>();
-                              exerciseName = exProv.exercises
-                                  .firstWhere(
-                                    (e) => e.id == widget.exerciseId,
-                                    orElse: () =>
-                                        Exercise(id: '', name: 'Unknown', userId: ''),
-                                  )
-                                  .name;
-                            }
-                            Navigator.of(context).pushNamed(
-                              AppRouter.history,
-                              arguments: {
-                                'deviceId': widget.deviceId,
-                                'deviceName': deviceProv.device?.name ?? widget.deviceId,
-                                'deviceDescription': deviceProv.device?.description,
-                                'isMulti': deviceProv.device?.isMulti ?? false,
-                                if (deviceProv.device?.isMulti ?? false)
-                                  'exerciseId': widget.exerciseId,
-                                if (deviceProv.device?.isMulti ?? false)
-                                  'exerciseName': exerciseName,
-                              },
-                            );
-                          },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.accessibility_new,
-                      color: prov.isBodyweightMode
-                          ? theme.colorScheme.primary
-                          : accentColor,
-                    ),
-                    tooltip: loc.bodyweightToggleTooltip,
-                    onPressed: () {
-                      prov.toggleBodyweightMode();
-                      elogUi('bodyweight_toggle', {
-                        'enabled': prov.isBodyweightMode,
-                        'deviceId': widget.deviceId,
-                        'exerciseId': widget.exerciseId,
-                      });
-                    },
-                  ),
-                  XpInfoButton(
-                    xp: prov.xp,
-                    level: prov.level,
-                    color: accentColor,
-                  ),
-                  FeedbackButton(
-                    gymId: widget.gymId,
-                    deviceId: widget.deviceId,
-                    color: accentColor,
-                  ),
-                  NoteButtonWidget(deviceId: widget.deviceId),
-                ],
-              ),
-            ],
-          ),
-        ],
+    return SessionActionStrip(
+      title: resolvedTitle,
+      subtitle: subtitle,
+      sessionKey: widget.sessionKey,
+      nfcButton: NfcScanButton(
+        deviceId: widget.deviceId,
+        exerciseId: widget.exerciseId,
+        onBeforeOpen: _closeKeyboard,
       ),
+      onClose: () {
+        _closeKeyboard();
+        widget.onCloseRequested?.call();
+      },
+      closeTooltip: loc.closeButton,
+      onOpenLeaderboard: prov.device == null
+          ? null
+          : () => _openLeaderboard(prov, resolvedTitle),
+      onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
+      onToggleBodyweight: () => _toggleBodyweight(prov),
+      onFeedback: () => _handleFeedback(),
+      isBodyweightMode: prov.isBodyweightMode,
+      accentColor: accentColor,
+      leaderboardTooltip: loc.deviceLeaderboardTooltip,
+      historyTooltip: loc.deviceHistoryTooltip,
+      bodyweightTooltip: loc.bodyweightToggleTooltip,
+      feedbackTooltip: loc.feedbackTooltip,
+      preFeedbackActions: [
+        XpInfoButton(
+          xp: prov.xp,
+          level: prov.level,
+          color: accentColor,
+        ),
+      ],
+      postFeedbackActions: [
+        NoteButtonWidget(deviceId: widget.deviceId),
+      ],
     );
   }
 

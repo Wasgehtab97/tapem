@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -10,8 +11,14 @@ import 'package:tapem/core/widgets/brand_outline.dart';
 class ActiveWorkoutTimer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final bool compact;
+  final String? sessionKey;
 
-  const ActiveWorkoutTimer({super.key, this.padding, this.compact = false});
+  const ActiveWorkoutTimer({
+    super.key,
+    this.padding,
+    this.compact = false,
+    this.sessionKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +80,23 @@ class ActiveWorkoutTimer extends StatelessWidget {
                 child: InkWell(
                   borderRadius: borderRadius,
                   onTap: () async {
-                    final dialogResult = await service.confirmStop(context);
+                    final key = sessionKey;
+                    if (key != null) {
+                      final controller =
+                          Provider.maybeOf<WorkoutDayController>(context, listen: false);
+                      controller?.focusSession(key);
+                    }
+                    final dialogResult = await service.confirmStop(
+                      context,
+                      sessionKey: key,
+                    );
                     if (!context.mounted) return;
+                    final resultKey = dialogResult.sessionKey;
+                    if (resultKey != null && resultKey != key) {
+                      final controller =
+                          Provider.maybeOf<WorkoutDayController>(context, listen: false);
+                      controller?.focusSession(resultKey);
+                    }
                     if (dialogResult.result == StopResult.save) {
                       await service.save();
                     } else if (dialogResult.result == StopResult.discard) {

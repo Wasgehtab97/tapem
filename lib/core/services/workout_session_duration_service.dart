@@ -41,8 +41,13 @@ class WorkoutSessionCompletionEvent {
 class StopDialogResult {
   final StopResult result;
   final ResumeSessionTarget? resumeTarget;
+  final String? sessionKey;
 
-  const StopDialogResult(this.result, {this.resumeTarget});
+  const StopDialogResult(
+    this.result, {
+    this.resumeTarget,
+    this.sessionKey,
+  });
 }
 
 class ResumeSessionTarget {
@@ -238,8 +243,16 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   /// [StopResult.discard] if it should be thrown away, [StopResult.resume]
   /// when the user wants to jump back to an unfinished session, or
   /// [StopResult.cancel] if the dialog was dismissed.
-  Future<StopDialogResult> confirmStop(BuildContext context) async {
-    if (!_isRunning) return const StopDialogResult(StopResult.cancel);
+  Future<StopDialogResult> confirmStop(
+    BuildContext context, {
+    String? sessionKey,
+  }) async {
+    if (!_isRunning) {
+      return StopDialogResult(
+        StopResult.cancel,
+        sessionKey: sessionKey,
+      );
+    }
     final elapsedDur = elapsed;
     final locale = Localizations.localeOf(context);
     final formatted = formatDuration(elapsedDur, locale: locale);
@@ -257,7 +270,10 @@ class WorkoutSessionDurationService extends ChangeNotifier {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(
-              const StopDialogResult(StopResult.cancel),
+              StopDialogResult(
+                StopResult.cancel,
+                sessionKey: sessionKey,
+              ),
             ),
             child: Text(loc.commonCancel),
           ),
@@ -269,6 +285,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
                     StopDialogResult(
                       StopResult.resume,
                       resumeTarget: resolvedTargets.first,
+                      sessionKey: sessionKey,
                     ),
                   );
                   return;
@@ -283,6 +300,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
                     StopDialogResult(
                       StopResult.resume,
                       resumeTarget: selection,
+                      sessionKey: sessionKey,
                     ),
                   );
                 }
@@ -291,21 +309,31 @@ class WorkoutSessionDurationService extends ChangeNotifier {
             ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(
-              const StopDialogResult(StopResult.discard),
+              StopDialogResult(
+                StopResult.discard,
+                sessionKey: sessionKey,
+              ),
             ),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(loc.commonDiscard),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(
-              const StopDialogResult(StopResult.save),
+              StopDialogResult(
+                StopResult.save,
+                sessionKey: sessionKey,
+              ),
             ),
             child: Text(loc.commonSave),
           ),
         ],
       ),
     );
-    return result ?? const StopDialogResult(StopResult.cancel);
+    return result ??
+        StopDialogResult(
+          StopResult.cancel,
+          sessionKey: sessionKey,
+        );
   }
 
   Future<List<ResumeSessionTarget>> _loadResumeTargets() async {
