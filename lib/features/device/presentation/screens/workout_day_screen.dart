@@ -12,11 +12,18 @@ class WorkoutDayScreen extends StatefulWidget {
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
+    this.sessionBuilder,
   });
 
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  final Widget Function(
+    BuildContext context,
+    WorkoutDaySession session,
+    ExerciseEntry? plannedEntry,
+  )?
+      sessionBuilder;
 
   @override
   State<WorkoutDayScreen> createState() => _WorkoutDayScreenState();
@@ -26,6 +33,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _sessionKey;
   bool _isInitializing = true;
+  bool _ownsSession = false;
 
   @override
   void initState() {
@@ -36,6 +44,13 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   Future<void> _ensureSession() async {
     final auth = context.read<AuthProvider>();
     final controller = context.read<WorkoutDayController>();
+    final contextKey = WorkoutDayController.contextKey(
+      gymId: widget.gymId,
+      deviceId: widget.deviceId,
+      exerciseId: widget.exerciseId,
+      userId: auth.userId!,
+    );
+    final alreadyExists = controller.sessionForKey(contextKey) != null;
     final session = controller.addOrFocusSession(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
@@ -46,6 +61,9 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       setState(() {
         _sessionKey = session.key;
         _isInitializing = false;
+        if (!alreadyExists) {
+          _ownsSession = true;
+        }
       });
     }
   }
@@ -54,7 +72,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   void dispose() {
     _scrollController.dispose();
     final key = _sessionKey;
-    if (key != null) {
+    if (key != null && _ownsSession) {
       final controller = context.read<WorkoutDayController>();
       if (controller.sessionForKey(key) != null) {
         controller.closeSession(key);
@@ -107,6 +125,14 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                   itemCount: sessions.length,
                   itemBuilder: (context, index) {
                     final session = sessions[index];
+                    final builder = widget.sessionBuilder;
+                    if (builder != null) {
+                      return builder(
+                        context,
+                        session,
+                        plannedEntries[index],
+                      );
+                    }
                     return DeviceSessionSection(
                       key: ValueKey(session.key),
                       provider: session.provider,
