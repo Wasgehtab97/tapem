@@ -78,6 +78,16 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   Widget build(BuildContext context) {
     final controller = context.watch<WorkoutDayController>();
     final sessions = controller.activeSessions();
+    final trainingPlanProvider = context.watch<TrainingPlanProvider>();
+    final currentDate = DateTime.now();
+    final List<ExerciseEntry?> plannedEntries = [
+      for (final session in sessions)
+        trainingPlanProvider.entryForDate(
+          session.deviceId,
+          session.exerciseId,
+          currentDate,
+        ),
+    ];
 
     if (_isInitializing) {
       return const Scaffold(
@@ -97,13 +107,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                   itemCount: sessions.length,
                   itemBuilder: (context, index) {
                     final session = sessions[index];
-                    final plannedEntry = context.select<TrainingPlanProvider, ExerciseEntry?>(
-                      (p) => p.entryForDate(
-                        session.deviceId,
-                        session.exerciseId,
-                        DateTime.now(),
-                      ),
-                    );
                     return DeviceSessionSection(
                       key: ValueKey(session.key),
                       provider: session.provider,
@@ -112,7 +115,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                       exerciseId: session.exerciseId,
                       userId: session.userId,
                       sessionKey: session.key,
-                      plannedEntry: plannedEntry,
+                      plannedEntry: plannedEntries[index],
                       onCloseRequested: () => _handleCloseSession(session),
                     );
                   },
