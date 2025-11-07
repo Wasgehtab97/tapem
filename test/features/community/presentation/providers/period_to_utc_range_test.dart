@@ -4,12 +4,12 @@ import 'package:tapem/features/community/presentation/providers/community_provid
 
 void main() {
   group('periodToUtcRange', () {
-    Duration _dstForwardResolver(DateTime date) {
+    Duration dstForwardResolver(DateTime date) {
       final pivot = DateTime(2024, 3, 31);
       return date.isBefore(pivot) ? const Duration(hours: 1) : const Duration(hours: 2);
     }
 
-    Duration _dstBackwardResolver(DateTime date) {
+    Duration dstBackwardResolver(DateTime date) {
       final pivot = DateTime(2024, 10, 27);
       return date.isBefore(pivot) ? const Duration(hours: 2) : const Duration(hours: 1);
     }
@@ -18,7 +18,7 @@ void main() {
       final range = periodToUtcRange(
         CommunityPeriod.today,
         now: DateTime(2024, 3, 31, 10),
-        offsetResolver: _dstForwardResolver,
+        offsetResolver: dstForwardResolver,
       );
 
       expect(range.start, DateTime.utc(2024, 3, 30, 23));
@@ -29,7 +29,7 @@ void main() {
       final range = periodToUtcRange(
         CommunityPeriod.week,
         now: DateTime(2024, 3, 31, 10),
-        offsetResolver: _dstForwardResolver,
+        offsetResolver: dstForwardResolver,
       );
 
       expect(range.start, DateTime.utc(2024, 3, 24, 23));
@@ -40,7 +40,7 @@ void main() {
       final range = periodToUtcRange(
         CommunityPeriod.today,
         now: DateTime(2024, 10, 27, 9),
-        offsetResolver: _dstBackwardResolver,
+        offsetResolver: dstBackwardResolver,
       );
 
       expect(range.start, DateTime.utc(2024, 10, 26, 22));
@@ -51,7 +51,7 @@ void main() {
       final range = periodToUtcRange(
         CommunityPeriod.month,
         now: DateTime(2024, 10, 27, 9),
-        offsetResolver: _dstBackwardResolver,
+        offsetResolver: dstBackwardResolver,
       );
 
       expect(range.start, DateTime.utc(2024, 9, 30, 22));

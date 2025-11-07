@@ -308,7 +308,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         _closeKeyboard();
         widget.onCloseRequested?.call();
       },
-      closeTooltip: loc.closeButton,
+      closeTooltip: loc.commonClose,
       onOpenLeaderboard: prov.device == null
           ? null
           : () => _openLeaderboard(prov, resolvedTitle),
@@ -365,8 +365,10 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
             child: Consumer<OverlayNumericKeypadController>(
               builder: (context, keypad, _) {
                 final mq = MediaQuery.of(context);
-                final bottomPad =
-                    max(0, keypad.keypadContentHeight + mq.padding.bottom + 16);
+                final bottomPad = max(
+                  0.0,
+                  keypad.keypadContentHeight + mq.padding.bottom + 16,
+                ).toDouble();
                 while (_setKeys.length < prov.sets.length) {
                   _setKeys.add(GlobalKey<SetCardState>());
                 }
@@ -664,7 +666,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
             Icon(Icons.error_outline, size: 48, color: outlineColor),
             const SizedBox(height: 12),
             Text(
-              prov.error ?? loc.deviceLoadingError,
+              prov.error ?? loc.deviceNotFound,
               textAlign: TextAlign.center,
             ),
           ],
