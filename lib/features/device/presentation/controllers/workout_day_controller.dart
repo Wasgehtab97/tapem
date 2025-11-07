@@ -78,6 +78,21 @@ class WorkoutDaySession {
   }
 }
 
+@immutable
+class SaveAllSessionsResult {
+  const SaveAllSessionsResult({
+    required this.attempted,
+    required this.saved,
+    required this.failedSessions,
+  });
+
+  final int attempted;
+  final int saved;
+  final Map<String, String?> failedSessions;
+
+  bool get hasFailures => failedSessions.isNotEmpty;
+}
+
 class WorkoutDayController extends ChangeNotifier {
   WorkoutDayController({
     required FirebaseFirestore firestore,
@@ -111,6 +126,7 @@ class WorkoutDayController extends ChangeNotifier {
 
   final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
   String? _focusedSessionKey;
+  bool _isSavingAll = false;
 
   void attachExternalServices({
     required XpProvider xpProvider,
@@ -198,6 +214,21 @@ class WorkoutDayController extends ChangeNotifier {
     return _sessions[key]?.snapshot;
   }
 
+  bool get isSaving =>
+      _isSavingAll || _sessions.values.any((entry) => entry.snapshot.isSaving);
+
+  bool get canSave {
+    if (_isSavingAll) return false;
+    for (final entry in _sessions.values) {
+      entry.refresh();
+      final snapshot = entry.snapshot;
+      if (snapshot.canSave && !snapshot.hasSessionToday && !snapshot.isSaving) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   DeviceProvider? providerForKey(String key) {
     return _sessions[key]?.provider;
   }
@@ -246,6 +277,65 @@ class WorkoutDayController extends ChangeNotifier {
       userId: userId,
     );
     return closeSession(key);
+  }
+
+  Future<SaveAllSessionsResult> saveAllSessions({
+    required String userId,
+    required bool showInLeaderboard,
+    String? userName,
+    String? gender,
+    double? bodyWeightKg,
+    Map<String, int?> plannedRestSecondsBySession = const {},
+  }) async {
+    if (_isSavingAll) {
+      return const SaveAllSessionsResult(
+        attempted: 0,
+        saved: 0,
+        failedSessions: <String, String?>{},
+      );
+    }
+
+    final entries = List<_SessionEntry>.from(_sessions.values);
+    var attempted = 0;
+    var saved = 0;
+    final failures = <String, String?>{};
+
+    _isSavingAll = true;
+    notifyListeners();
+    try {
+      for (final entry in entries) {
+        entry.refresh();
+        final snapshot = entry.snapshot;
+        if (!snapshot.canShowSaveAction) {
+          continue;
+        }
+        attempted++;
+        final provider = entry.provider;
+        final ok = await provider.saveWorkoutSession(
+          gymId: entry.gymId,
+          userId: userId,
+          showInLeaderboard: showInLeaderboard,
+          userName: userName,
+          gender: gender,
+          bodyWeightKg: bodyWeightKg,
+          plannedRestSeconds: plannedRestSecondsBySession[entry.key],
+        );
+        if (ok) {
+          saved++;
+        } else {
+          failures[entry.key] = provider.error;
+        }
+      }
+    } finally {
+      _isSavingAll = false;
+      notifyListeners();
+    }
+
+    return SaveAllSessionsResult(
+      attempted: attempted,
+      saved: saved,
+      failedSessions: failures,
+    );
   }
 
   @override
