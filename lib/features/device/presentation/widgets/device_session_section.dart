@@ -18,6 +18,7 @@ import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/device_pager.dart';
 import 'package:tapem/features/device/presentation/widgets/last_session_card.dart';
@@ -150,6 +151,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   }
 
   void _addSet() {
+    _focusSession();
     final prov = context.read<DeviceProvider>();
     prov.addSet();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -175,6 +177,13 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     _overlayKeypad.close();
   }
 
+  void _focusSession() {
+    final key = widget.sessionKey;
+    if (key != null) {
+      context.read<WorkoutDayController>().focusSession(key);
+    }
+  }
+
   void _handlePagerIndexChanged(int index) {
     if (_currentPagerIndex != index) {
       setState(() {
@@ -184,6 +193,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   }
 
   void _openLeaderboard(DeviceProvider prov, String? headerTitle) {
+    _focusSession();
     final device = prov.device;
     if (device == null) return;
     _closeKeyboard();
@@ -200,6 +210,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   }
 
   void _openHistory(DeviceProvider prov) {
+    _focusSession();
     _closeKeyboard();
     final deviceProv = prov;
     String? exerciseName;
@@ -226,6 +237,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   }
 
   void _toggleBodyweight(DeviceProvider prov) {
+    _focusSession();
     prov.toggleBodyweightMode();
     elogUi('bodyweight_toggle', {
       'enabled': prov.isBodyweightMode,
@@ -235,6 +247,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   }
 
   void _handleFeedback() {
+    _focusSession();
     _closeKeyboard();
     unawaited(
       showFeedbackDialog(
@@ -394,16 +407,21 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
                         _GroupedSetList(
                           sets: prov.sets,
                           setKeys: _setKeys,
+                          sessionKey: widget.sessionKey,
                           onRemove: (index, removed) {
+                            _focusSession();
                             context.read<DeviceProvider>().removeSet(index);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(loc.setRemoved),
                                 action: SnackBarAction(
                                   label: loc.undo,
-                                  onPressed: () => context
-                                      .read<DeviceProvider>()
-                                      .insertSetAt(index, removed),
+                                  onPressed: () {
+                                    _focusSession();
+                                    context
+                                        .read<DeviceProvider>()
+                                        .insertSetAt(index, removed);
+                                  },
                                 ),
                               ),
                             );
@@ -496,6 +514,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     AppLocalizations loc,
     ExerciseEntry? plannedEntry,
   ) async {
+    _focusSession();
     final auth = context.read<AuthProvider>();
     final base = {
       'uid': auth.userId!,
@@ -747,11 +766,13 @@ class _GroupedSetList extends StatelessWidget {
     required this.sets,
     required this.setKeys,
     required this.onRemove,
+    required this.sessionKey,
   });
 
   final List<Map<String, dynamic>> sets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
+  final String? sessionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -812,6 +833,7 @@ class _GroupedSetList extends StatelessWidget {
               index: entry.key,
               set: entry.value,
               innerRadius: innerRadius,
+              sessionKey: sessionKey,
             ),
           ),
         ],
@@ -824,6 +846,7 @@ class _GroupedSetList extends StatelessWidget {
     required int index,
     required Map<String, dynamic> set,
     required BorderRadius innerRadius,
+    required String? sessionKey,
   }) {
     return Dismissible(
       key: ValueKey('set-${set['number']}'),
@@ -849,6 +872,7 @@ class _GroupedSetList extends StatelessWidget {
         set: set,
         size: SetCardSize.dense,
         displayMode: SetCardDisplayMode.grouped,
+        sessionKey: sessionKey,
         groupedRadius: BorderRadius.only(
           topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
           topRight: index == 0 ? innerRadius.topRight : Radius.zero,

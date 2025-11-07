@@ -12,6 +12,7 @@ import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -158,6 +159,7 @@ class SetCard extends StatefulWidget {
   final bool readOnly;
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
+  final String? sessionKey;
   const SetCard({
     super.key,
     required this.index,
@@ -166,6 +168,7 @@ class SetCard extends StatefulWidget {
     this.readOnly = false,
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
+    this.sessionKey,
   });
 
   @override
@@ -210,6 +213,13 @@ class SetCardState extends State<SetCard> {
         _muteCtrls = false;
       },
     );
+  }
+
+  void _focusSession() {
+    final key = widget.sessionKey;
+    if (key != null) {
+      context.read<WorkoutDayController>().focusSession(key);
+    }
   }
 
   List<Map<String, String>> _dropMapsFromSet(Map<String, dynamic> set) {
@@ -335,6 +345,7 @@ class SetCardState extends State<SetCard> {
   }
 
   void _handleAddDrop() {
+    _focusSession();
     final prov = context.read<DeviceProvider>();
     final newIndex = prov.addDropToSet(widget.index);
     HapticFeedback.lightImpact();
@@ -424,6 +435,7 @@ class SetCardState extends State<SetCard> {
     );
     final prov = context.read<DeviceProvider>();
     if (notifyFocus) {
+      _focusSession();
       _lastFocusRequestId = prov.requestFocus(
         index: widget.index,
         field: field,
@@ -563,6 +575,7 @@ class SetCardState extends State<SetCard> {
         final next = !_showExtras;
         setState(() => _showExtras = next);
         if (next && _dropWeightCtrls.isEmpty) {
+          _focusSession();
           context.read<DeviceProvider>().ensureDropSlot(widget.index);
         }
       };
@@ -575,6 +588,7 @@ class SetCardState extends State<SetCard> {
           widget.index,
           'tap: toggle done via provider',
         );
+        _focusSession();
         final prov = context.read<DeviceProvider>();
         final ok = prov.toggleSetDone(widget.index);
         elogUi('SET_DONE_TAP', {
