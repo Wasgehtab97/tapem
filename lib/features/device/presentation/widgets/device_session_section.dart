@@ -16,16 +16,13 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
-import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
-import 'package:tapem/features/device/presentation/widgets/device_pager.dart';
 import 'package:tapem/features/device/presentation/widgets/last_session_card.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
 import 'package:tapem/features/device/presentation/widgets/note_button_widget.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_strip.dart';
-import 'package:tapem/features/device/presentation/widgets/session_navigation_controls.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show
@@ -108,10 +105,7 @@ class _DeviceSessionSectionBody extends StatefulWidget {
 
 class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   final _formKey = GlobalKey<FormState>();
-  final _setListController = ScrollController();
   final List<GlobalKey<SetCardState>> _setKeys = [];
-  final _pagerKey = GlobalKey<DevicePagerState>();
-  int _currentPagerIndex = 0;
   OverlayNumericKeypadController? _keypadController;
   bool _didLoad = false;
 
@@ -181,14 +175,6 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final key = widget.sessionKey;
     if (key != null) {
       context.read<WorkoutDayController>().focusSession(key);
-    }
-  }
-
-  void _handlePagerIndexChanged(int index) {
-    if (_currentPagerIndex != index) {
-      setState(() {
-        _currentPagerIndex = index;
-      });
     }
   }
 
@@ -365,163 +351,146 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
       exercises: exercises,
     );
 
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(8),
-          child: SessionTimerBar(
+    return Consumer<OverlayNumericKeypadController>(
+      builder: (context, keypad, _) {
+        final mq = MediaQuery.of(context);
+        final bottomPad = max(
+          0.0,
+          keypad.keypadContentHeight + mq.padding.bottom + 12,
+        ).toDouble();
+        while (_setKeys.length < prov.sets.length) {
+          _setKeys.add(GlobalKey<SetCardState>());
+        }
+        if (_setKeys.length > prov.sets.length) {
+          _setKeys.removeRange(prov.sets.length, _setKeys.length);
+        }
+        final lastSnap =
+            prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+        final lastSets = lastSnap != null
+            ? mapSnapshotToVM(lastSnap)
+            : mapLegacySetsToVM(prov.lastSessionSets);
+        final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
+        final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+
+        final children = <Widget>[
+          const SizedBox(height: 8),
+          const SessionTimerBar(
             initialDuration: Duration(seconds: 90),
           ),
-        ),
-        Expanded(
-          child: Form(
-            key: _formKey,
-            child: Consumer<OverlayNumericKeypadController>(
-              builder: (context, keypad, _) {
-                final mq = MediaQuery.of(context);
-                final bottomPad = max(
-                  0.0,
-                  keypad.keypadContentHeight + mq.padding.bottom + 16,
-                ).toDouble();
-                while (_setKeys.length < prov.sets.length) {
-                  _setKeys.add(GlobalKey<SetCardState>());
-                }
-                if (_setKeys.length > prov.sets.length) {
-                  _setKeys.removeRange(prov.sets.length, _setKeys.length);
-                }
-                final lastSnap =
-                    prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
-                final lastSets = lastSnap != null
-                    ? mapSnapshotToVM(lastSnap)
-                    : mapLegacySetsToVM(prov.lastSessionSets);
-                final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
-                final lastNote = lastSnap?.note ?? prov.lastSessionNote;
-                final itemCount = 1 + prov.sessionSnapshots.length;
-                final canGoOlder = _currentPagerIndex < itemCount - 1;
-                final canGoNewer = _currentPagerIndex > 0;
+          const SizedBox(height: 12),
+        ];
 
-                return ListView(
-                  controller: _setListController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-                  children: [
-                    if (plannedEntry != null)
-                      _PlannedTable(entry: plannedEntry)
-                    else ...[
-                      Center(
-                        child: Text(
-                          exerciseTitle ?? loc.newSessionTitle,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ).copyWith(color: outlineColor),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (prov.sets.isNotEmpty)
-                        _GroupedSetList(
-                          sets: prov.sets,
-                          setKeys: _setKeys,
-                          sessionKey: widget.sessionKey,
-                          onRemove: (index, removed) {
-                            _focusSession();
-                            context.read<DeviceProvider>().removeSet(index);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(loc.setRemoved),
-                                action: SnackBarAction(
-                                  label: loc.undo,
-                                  onPressed: () {
-                                    _focusSession();
-                                    context
-                                        .read<DeviceProvider>()
-                                        .insertSetAt(index, removed);
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      if (prov.sets.isNotEmpty) const SizedBox(height: 12),
-                      Center(
-                        child: SessionNavigationControls(
-                          onPrevious: canGoOlder
-                              ? () => _pagerKey.currentState?.goToPreviousSession()
-                              : null,
-                          onNext: canGoNewer
-                              ? () => _pagerKey.currentState?.goToNextSession()
-                              : null,
-                          center: _AddSetButton(
-                            label: loc.addSetButton,
-                            onPressed: _addSet,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if ((FF.showLastSessionOnDevicePage ||
-                            FF.runtimeShowLastSessionOnDevicePage) &&
-                        lastDate != null &&
-                        lastSets.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Builder(
-                        builder: (context) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onHorizontalDragEnd: (d) {
-                                final v = d.primaryVelocity ?? 0;
-                                if (v > 250) {
-                                  _pagerKey.currentState?.goToPreviousSession();
-                                } else if (v < -250) {
-                                  _pagerKey.currentState?.goToNextSession();
-                                }
-                              },
-                              child: LastSessionCard(
-                                date: lastDate,
-                                sets: lastSets,
-                                note: lastNote,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
+        if (plannedEntry != null) {
+          children.add(_PlannedTable(entry: plannedEntry));
+        } else {
+          final titleStyle = theme.textTheme.titleMedium?.copyWith(
+                color: outlineColor,
+                fontWeight: FontWeight.bold,
+              ) ??
+              TextStyle(
+                color: outlineColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              );
+          children.add(
+            Center(
+              child: Text(
+                exerciseTitle ?? loc.newSessionTitle,
+                textAlign: TextAlign.center,
+                style: titleStyle,
+              ),
+            ),
+          );
+        }
+
+        if (prov.sets.isNotEmpty) {
+          children.add(const SizedBox(height: 12));
+          children.add(
+            _GroupedSetList(
+              sets: prov.sets,
+              setKeys: _setKeys,
+              sessionKey: widget.sessionKey,
+              onRemove: (index, removed) {
+                _focusSession();
+                context.read<DeviceProvider>().removeSet(index);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(loc.setRemoved),
+                    action: SnackBarAction(
+                      label: loc.undo,
+                      onPressed: () {
+                        _focusSession();
+                        context
+                            .read<DeviceProvider>()
+                            .insertSetAt(index, removed);
+                      },
+                    ),
+                  ),
                 );
               },
             ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: SizedBox(
-                width: double.infinity,
-                child: BrandOutlineButton(
-                  onPressed: prov.hasSessionToday || prov.isSaving
-                      ? null
-                      : () => _saveSession(prov, loc, plannedEntry),
-                  child: prov.isSaving
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
-                          ),
-                        )
-                      : Text(loc.saveButton),
-                ),
-              ),
+          );
+        }
+
+        children.add(const SizedBox(height: 12));
+        children.add(
+          Align(
+            alignment: Alignment.center,
+            child: _AddSetButton(
+              label: loc.addSetButton,
+              onPressed: _addSet,
             ),
           ),
-        ),
-      ],
+        );
+
+        if ((FF.showLastSessionOnDevicePage ||
+                FF.runtimeShowLastSessionOnDevicePage) &&
+            lastDate != null &&
+            lastSets.isNotEmpty) {
+          children.add(const SizedBox(height: 16));
+          children.add(
+            LastSessionCard(
+              date: lastDate,
+              sets: lastSets,
+              note: lastNote,
+            ),
+          );
+        }
+
+        if (widget.onSessionSaved != null) {
+          children.add(const SizedBox(height: 16));
+          children.add(
+            FilledButton(
+              onPressed: prov.hasSessionToday || prov.isSaving
+                  ? null
+                  : () => _saveSession(prov, loc, plannedEntry),
+              child: prov.isSaving
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
+                      ),
+                    )
+                  : Text(loc.saveButton),
+            ),
+          );
+        }
+
+        children.add(SizedBox(height: bottomPad));
+
+        return Form(
+          key: _formKey,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -637,29 +606,6 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     widget.onSessionSaved?.call();
   }
 
-  Widget _buildPager(
-    BuildContext context,
-    DeviceProvider prov,
-    AppLocalizations loc,
-    ExerciseEntry? plannedEntry,
-  ) {
-    final editablePage = _buildEditablePage(prov, loc, plannedEntry);
-    final mq = MediaQuery.of(context);
-    final height = max(480.0, min(720.0, mq.size.height * 0.7));
-    return SizedBox(
-      height: height,
-      child: DevicePager(
-        key: _pagerKey,
-        editablePage: editablePage,
-        provider: prov,
-        gymId: widget.gymId,
-        deviceId: widget.deviceId,
-        userId: widget.userId,
-        onIndexChanged: _handlePagerIndexChanged,
-      ),
-    );
-  }
-
   Widget _buildContent(BuildContext context, DeviceProvider prov) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -697,14 +643,13 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           ),
         );
 
-    return _buildPager(context, prov, loc, plannedEntry);
+    return _buildEditablePage(prov, loc, plannedEntry);
   }
 
   @override
   void dispose() {
     FocusManager.instance.primaryFocus?.unfocus();
     _keypadController?.close();
-    _setListController.dispose();
     super.dispose();
   }
 
@@ -714,18 +659,26 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final auth = context.watch<AuthProvider>();
     prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(
+    final theme = Theme.of(context);
+    final borderColor =
+        (theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.outline)
+            .withOpacity(0.2);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: borderColor),
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context, prov),
           const Divider(height: 1),
-          _buildContent(context, prov),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildContent(context, prov),
+          ),
         ],
       ),
     );
