@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -364,158 +363,145 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
       exercises: exercises,
     );
 
-    return Consumer<OverlayNumericKeypadController>(
-      builder: (context, keypad, _) {
-        final mq = MediaQuery.of(context);
-        final bottomPad = max(
-          0.0,
-          keypad.keypadContentHeight + mq.padding.bottom + 12,
-        ).toDouble();
-        while (_setKeys.length < prov.sets.length) {
-          _setKeys.add(GlobalKey<SetCardState>());
-        }
-        if (_setKeys.length > prov.sets.length) {
-          _setKeys.removeRange(prov.sets.length, _setKeys.length);
-        }
-        final lastSnap =
-            prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
-        final lastSets = lastSnap != null
-            ? mapSnapshotToVM(lastSnap)
-            : mapLegacySetsToVM(prov.lastSessionSets);
-        final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
-        final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+    while (_setKeys.length < prov.sets.length) {
+      _setKeys.add(GlobalKey<SetCardState>());
+    }
+    if (_setKeys.length > prov.sets.length) {
+      _setKeys.removeRange(prov.sets.length, _setKeys.length);
+    }
+    final lastSnap =
+        prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+    final lastSets = lastSnap != null
+        ? mapSnapshotToVM(lastSnap)
+        : mapLegacySetsToVM(prov.lastSessionSets);
+    final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
+    final lastNote = lastSnap?.note ?? prov.lastSessionNote;
 
-        final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
+    final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
 
-        final children = <Widget>[
-          const SizedBox(height: 12),
-        ];
+    final children = <Widget>[
+      const SizedBox(height: 12),
+    ];
 
-        if (plannedEntry != null) {
-          children.add(const SizedBox(height: 8));
-          children.add(_PlannedTable(entry: plannedEntry));
-        }
+    if (plannedEntry != null) {
+      children.add(const SizedBox(height: 8));
+      children.add(_PlannedTable(entry: plannedEntry));
+    }
 
-        children.add(const SizedBox(height: 8));
-        children.add(
-          SessionActionStrip(
-            onOpenLeaderboard: prov.device == null
-                ? null
-                : () => _openLeaderboard(prov, resolvedTitle),
-            onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
-            onToggleBodyweight: () => _toggleBodyweight(prov),
-            onFeedback: () => _handleFeedback(),
-            isBodyweightMode: prov.isBodyweightMode,
-            accentColor: accentColor,
-            leaderboardTooltip: loc.deviceLeaderboardTooltip,
-            historyTooltip: loc.deviceHistoryTooltip,
-            bodyweightTooltip: loc.bodyweightToggleTooltip,
-            feedbackTooltip: loc.feedbackTooltip,
-            preFeedbackActions: [
-              XpInfoButton(
-                xp: prov.xp,
-                level: prov.level,
-                color: accentColor,
-              ),
-            ],
-            postFeedbackActions: [
-              NoteButtonWidget(
-                deviceId: widget.deviceId,
-                sessionIdentifier:
-                    widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
-              ),
-            ],
+    children.add(const SizedBox(height: 8));
+    children.add(
+      SessionActionStrip(
+        onOpenLeaderboard: prov.device == null
+            ? null
+            : () => _openLeaderboard(prov, resolvedTitle),
+        onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
+        onToggleBodyweight: () => _toggleBodyweight(prov),
+        onFeedback: () => _handleFeedback(),
+        isBodyweightMode: prov.isBodyweightMode,
+        accentColor: accentColor,
+        leaderboardTooltip: loc.deviceLeaderboardTooltip,
+        historyTooltip: loc.deviceHistoryTooltip,
+        bodyweightTooltip: loc.bodyweightToggleTooltip,
+        feedbackTooltip: loc.feedbackTooltip,
+        preFeedbackActions: [
+          XpInfoButton(
+            xp: prov.xp,
+            level: prov.level,
+            color: accentColor,
           ),
-        );
+        ],
+        postFeedbackActions: [
+          NoteButtonWidget(
+            deviceId: widget.deviceId,
+            sessionIdentifier:
+                widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
+          ),
+        ],
+      ),
+    );
 
-        if (prov.sets.isNotEmpty) {
-          children.add(const SizedBox(height: 6));
-          children.add(
-            _GroupedSetList(
-              sets: prov.sets,
-              setKeys: _setKeys,
-              sessionKey: widget.sessionKey,
-              onRemove: (index, removed) {
-                _focusSession();
-                context.read<DeviceProvider>().removeSet(index);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(loc.setRemoved),
-                    action: SnackBarAction(
-                      label: loc.undo,
-                      onPressed: () {
-                        _focusSession();
-                        context
-                            .read<DeviceProvider>()
-                            .insertSetAt(index, removed);
-                      },
-                    ),
+    if (prov.sets.isNotEmpty) {
+      children.add(const SizedBox(height: 6));
+      children.add(
+        _GroupedSetList(
+          sets: prov.sets,
+          setKeys: _setKeys,
+          sessionKey: widget.sessionKey,
+          onRemove: (index, removed) {
+            _focusSession();
+            context.read<DeviceProvider>().removeSet(index);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(loc.setRemoved),
+                action: SnackBarAction(
+                  label: loc.undo,
+                  onPressed: () {
+                    _focusSession();
+                    context.read<DeviceProvider>().insertSetAt(index, removed);
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    children.add(const SizedBox(height: 8));
+    children.add(
+      Align(
+        alignment: Alignment.center,
+        child: _AddSetButton(
+          label: loc.addSetButton,
+          onPressed: _addSet,
+        ),
+      ),
+    );
+
+    if ((FF.showLastSessionOnDevicePage ||
+            FF.runtimeShowLastSessionOnDevicePage) &&
+        lastDate != null &&
+        lastSets.isNotEmpty) {
+      children.add(const SizedBox(height: 12));
+      children.add(
+        LastSessionCard(
+          date: lastDate,
+          sets: lastSets,
+          note: lastNote,
+        ),
+      );
+    }
+
+    if (widget.onSessionSaved != null) {
+      children.add(const SizedBox(height: 12));
+      children.add(
+        FilledButton(
+          onPressed: prov.hasSessionToday || prov.isSaving
+              ? null
+              : () => _saveSession(prov, loc, plannedEntry),
+          child: prov.isSaving
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
                   ),
-                );
-              },
-            ),
-          );
-        }
+                )
+              : Text(loc.saveButton),
+        ),
+      );
+    }
 
-        children.add(const SizedBox(height: 8));
-        children.add(
-          Align(
-            alignment: Alignment.center,
-            child: _AddSetButton(
-              label: loc.addSetButton,
-              onPressed: _addSet,
-            ),
-          ),
-        );
-
-        if ((FF.showLastSessionOnDevicePage ||
-                FF.runtimeShowLastSessionOnDevicePage) &&
-            lastDate != null &&
-            lastSets.isNotEmpty) {
-          children.add(const SizedBox(height: 12));
-          children.add(
-            LastSessionCard(
-              date: lastDate,
-              sets: lastSets,
-              note: lastNote,
-            ),
-          );
-        }
-
-        if (widget.onSessionSaved != null) {
-          children.add(const SizedBox(height: 12));
-          children.add(
-            FilledButton(
-              onPressed: prov.hasSessionToday || prov.isSaving
-                  ? null
-                  : () => _saveSession(prov, loc, plannedEntry),
-              child: prov.isSaving
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
-                      ),
-                    )
-                  : Text(loc.saveButton),
-            ),
-          );
-        }
-
-        children.add(SizedBox(height: bottomPad));
-
-        return Form(
-          key: _formKey,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
-          ),
-        );
-      },
+    return Form(
+      key: _formKey,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
     );
   }
 
@@ -709,10 +695,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         children: [
           _buildHeader(context, prov),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: wrappedContent,
-          ),
+          wrappedContent,
         ],
       ),
     );

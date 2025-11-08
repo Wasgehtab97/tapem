@@ -9,6 +9,7 @@ import 'package:tapem/features/device/presentation/widgets/device_session_sectio
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -216,67 +217,77 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       body: SafeArea(
         child: Scrollbar(
           controller: _scrollController,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              if (sessions.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      loc.multiDeviceNewExercise,
-                      style: Theme.of(context).textTheme.titleMedium,
+          child: Consumer<OverlayNumericKeypadController>(
+            builder: (context, keypadController, _) {
+              final bottomSpacerHeight = keypadController.keypadContentHeight +
+                  MediaQuery.of(context).padding.bottom +
+                  12;
+              return CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  if (sessions.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Text(
+                          loc.multiDeviceNewExercise,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                    )
+                  else ...[
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 16),
                     ),
-                  ),
-                )
-              else ...[
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 16),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final session = sessions[index];
-                        final builder = widget.sessionBuilder;
-                        final displayIndex = index + 1;
-                        if (builder != null) {
-                          return builder(
-                            context,
-                            session,
-                            plannedEntries[index],
-                          );
-                        }
-                        return DeviceSessionSection(
-                          key: ValueKey(session.key),
-                          provider: session.provider,
-                          gymId: session.gymId,
-                          deviceId: session.deviceId,
-                          exerciseId: session.exerciseId,
-                          userId: session.userId,
-                          displayIndex: displayIndex,
-                          sessionKey: session.key,
-                          plannedEntry: plannedEntries[index],
-                          onCloseRequested: () => _handleCloseSession(session),
-                        );
-                      },
-                      childCount: sessions.length,
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final session = sessions[index];
+                            final builder = widget.sessionBuilder;
+                            final displayIndex = index + 1;
+                            if (builder != null) {
+                              return builder(
+                                context,
+                                session,
+                                plannedEntries[index],
+                              );
+                            }
+                            return DeviceSessionSection(
+                              key: ValueKey(session.key),
+                              provider: session.provider,
+                              gymId: session.gymId,
+                              deviceId: session.deviceId,
+                              exerciseId: session.exerciseId,
+                              userId: session.userId,
+                              displayIndex: displayIndex,
+                              sessionKey: session.key,
+                              plannedEntry: plannedEntries[index],
+                              onCloseRequested: () => _handleCloseSession(session),
+                            );
+                          },
+                          childCount: sessions.length,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _SaveAllButton(
-                    isSaving: controller.isSaving,
-                    canSave: controller.canSave,
-                    onPressed: () => _handleSaveAllSessions(
-                      sessions,
-                      plannedEntries,
+                    SliverToBoxAdapter(
+                      child: _SaveAllButton(
+                        isSaving: controller.isSaving,
+                        canSave: controller.canSave,
+                        onPressed: () => _handleSaveAllSessions(
+                          sessions,
+                          plannedEntries,
+                        ),
+                      ),
                     ),
+                  ],
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: bottomSpacerHeight),
                   ),
-                ),
-              ],
-            ],
+                ],
+              );
+            },
           ),
         ),
       ),
