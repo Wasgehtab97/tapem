@@ -688,6 +688,15 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final borderColor =
         (theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.outline)
             .withOpacity(0.2);
+    final hasScrollableParent = Scrollable.maybeOf(context) != null;
+    final content = _buildContent(context, prov);
+    final Widget wrappedContent = hasScrollableParent
+        ? IntrinsicHeight(child: content)
+        : ShrinkWrappingScrollView(
+            padding: EdgeInsets.zero,
+            clipBehavior: Clip.none,
+            child: content,
+          );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -702,7 +711,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _buildContent(context, prov),
+            child: wrappedContent,
           ),
         ],
       ),
