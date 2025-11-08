@@ -286,6 +286,68 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     final controller = context.read<WorkoutDayController>();
     final auth = context.read<AuthProvider>();
     final settings = context.read<SettingsProvider>();
+
+    final confirmFinish = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Trainingstag abschließen?'),
+        content: const Text(
+            'Möchtest du alle offenen Sessions speichern und den Trainingstag beenden?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(loc.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(loc.saveButton),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmFinish != true) {
+      return;
+    }
+
+    final sessionsByKey = {
+      for (final session in sessions) session.key: session,
+    };
+    final sessionsWithPendingSets = <WorkoutDaySession>[
+      for (final session in sessions)
+        if (session.provider.getSetCounts().filledNotDone > 0) session,
+    ];
+
+    if (sessionsWithPendingSets.isNotEmpty) {
+      final confirmCompleteAll = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(loc.notAllSetsConfirmed),
+          content: const Text(
+            'Es wurden noch nicht alle Sätze abgehakt. Möchtest du alle offenen Sätze abhaken und fortfahren?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(loc.cancelButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(loc.confirmAllSets),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted || confirmCompleteAll != true) {
+        return;
+      }
+
+      for (final session in sessionsWithPendingSets) {
+        session.provider.completeAllFilledNotDone();
+      }
+    }
+
     await settings.load(auth.userId!);
 
     final plannedRest = <String, int?>{
@@ -303,28 +365,56 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     );
 
     if (!mounted) return;
-    if (result.attempted == 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(loc.noCompletedSets)));
-      return;
+
+    if (result.saved > 0) {
+      for (final key in result.savedSessionKeys) {
+        final session = sessionsByKey[key];
+        if (session == null) continue;
+        final closed = controller.closeSession(key);
+        if (closed && key == _sessionKey) {
+          _sessionKey = null;
+          _ownsSession = false;
+        }
+      }
+      if (controller.activeSessions().isEmpty) {
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
+      } else {
+        setState(() {});
+      }
     }
 
-    if (result.hasFailures) {
+    String? message;
+    if (result.attempted == 0) {
+      message = loc.noCompletedSets;
+    } else if (result.saved == 0) {
       final firstError = result.failedSessions.values.firstWhere(
         (error) => error != null && error.isNotEmpty,
         orElse: () => null,
       );
-      final message = firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-      return;
+      message = firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
+    } else {
+      final savedText = result.saved == result.attempted
+          ? loc.sessionSaved
+          : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
+      if (!result.hasFailures) {
+        message = savedText;
+      } else {
+        final firstError = result.failedSessions.values.firstWhere(
+          (error) => error != null && error.isNotEmpty,
+          orElse: () => null,
+        );
+        final failureText =
+            firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
+        message = '$savedText\n$failureText';
+      }
     }
 
-    final savedText = result.saved == 1
-        ? loc.sessionSaved
-        : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(savedText)));
+    if (message != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 }
 

@@ -84,11 +84,13 @@ class SaveAllSessionsResult {
     required this.attempted,
     required this.saved,
     required this.failedSessions,
+    this.savedSessionKeys = const <String>[],
   });
 
   final int attempted;
   final int saved;
   final Map<String, String?> failedSessions;
+  final List<String> savedSessionKeys;
 
   bool get hasFailures => failedSessions.isNotEmpty;
 }
@@ -299,6 +301,7 @@ class WorkoutDayController extends ChangeNotifier {
     var attempted = 0;
     var saved = 0;
     final failures = <String, String?>{};
+    final savedKeys = <String>[];
 
     _isSavingAll = true;
     notifyListeners();
@@ -322,6 +325,7 @@ class WorkoutDayController extends ChangeNotifier {
         );
         if (ok) {
           saved++;
+          savedKeys.add(entry.key);
         } else {
           failures[entry.key] = provider.error;
         }
@@ -331,11 +335,27 @@ class WorkoutDayController extends ChangeNotifier {
       notifyListeners();
     }
 
-    return SaveAllSessionsResult(
+    final result = SaveAllSessionsResult(
       attempted: attempted,
       saved: saved,
       failedSessions: failures,
+      savedSessionKeys: List.unmodifiable(savedKeys),
     );
+
+    final durationService = _sessionDurationService;
+    if (durationService != null && result.attempted > 0) {
+      try {
+        if (result.saved > 0) {
+          await durationService.save();
+        } else {
+          await durationService.discard();
+        }
+      } catch (_) {
+        // Ignore timer persistence failures; saving the workout is more important.
+      }
+    }
+
+    return result;
   }
 
   @override
