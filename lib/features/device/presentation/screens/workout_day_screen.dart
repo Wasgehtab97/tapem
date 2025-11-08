@@ -197,25 +197,36 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        centerTitle: false,
+        centerTitle: true,
         titleSpacing: 0,
+        toolbarHeight: kToolbarHeight + 20,
         title: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(loc.multiDeviceExerciseListTitle,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            ActiveWorkoutTimer(
-              key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
-              compact: true,
-              padding: EdgeInsets.zero,
-              sessionKey: _sessionKey,
+            Text(
+              loc.multiDeviceExerciseListTitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ActiveWorkoutTimer(
+                key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
+                compact: true,
+                padding: EdgeInsets.zero,
+                sessionKey: _sessionKey,
+              ),
             ),
           ],
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(8),
+          child: SizedBox(height: 8),
         ),
         actions: [
           Padding(

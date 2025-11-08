@@ -2,17 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class NoteButtonWidget extends StatelessWidget {
   final String deviceId;
-  final Object? sessionIdentifier;
-
   const NoteButtonWidget({
     Key? key,
     required this.deviceId,
-    this.sessionIdentifier,
   }) : super(key: key);
 
   @override
@@ -21,39 +19,15 @@ class NoteButtonWidget extends StatelessWidget {
     final prov = context.watch<DeviceProvider>();
     final hasNote = prov.note.isNotEmpty;
 
-    final scheme = Theme.of(context).colorScheme;
-
-    return FloatingActionButton.small(
-      heroTag: _resolveHeroTag(),
+    return IconButton(
       tooltip: hasNote ? loc.noteEditTooltip : loc.noteAddTooltip,
-      backgroundColor: scheme.surfaceVariant.withOpacity(0.92),
-      foregroundColor: scheme.onSurfaceVariant,
-      shape: const CircleBorder(),
-      child: Icon(
-        hasNote ? Icons.info : Icons.info_outline,
-        size: 18,
-      ),
+      icon: Icon(hasNote ? Icons.info : Icons.info_outline),
       onPressed: () => _openNoteModal(context, prov),
+      style: sessionActionButtonStyle(
+        context,
+        isActive: hasNote,
+      ),
     );
-  }
-
-  String _resolveHeroTag() {
-    final identifier = sessionIdentifier;
-
-    if (identifier is String && identifier.isNotEmpty) {
-      return 'noteBtn_${deviceId}_$identifier';
-    }
-
-    if (identifier case (String sessionDeviceId, String? exerciseId)) {
-      final exercisePart = (exerciseId?.isNotEmpty ?? false) ? exerciseId! : 'default';
-      return 'noteBtn_${sessionDeviceId}_$exercisePart';
-    }
-
-    if (identifier != null) {
-      return 'noteBtn_${deviceId}_${identifier.hashCode}';
-    }
-
-    return 'noteBtn_$deviceId';
   }
 
   void _openNoteModal(BuildContext context, DeviceProvider prov) {

@@ -21,6 +21,7 @@ import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/last_session_card.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
 import 'package:tapem/features/device/presentation/widgets/note_button_widget.dart';
+import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_strip.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
@@ -381,15 +382,11 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
 
     final children = <Widget>[
       const SizedBox(height: 12),
-    ];
-
-    if (plannedEntry != null) {
-      children.add(const SizedBox(height: 8));
-      children.add(_PlannedTable(entry: plannedEntry));
-    }
-
-    children.add(const SizedBox(height: 8));
-    children.add(
+      if (plannedEntry != null) ...[
+        const SizedBox(height: 8),
+        _PlannedTable(entry: plannedEntry),
+      ],
+      const SizedBox(height: 8),
       SessionActionStrip(
         onOpenLeaderboard: prov.device == null
             ? null
@@ -398,7 +395,6 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         onToggleBodyweight: () => _toggleBodyweight(prov),
         onFeedback: () => _handleFeedback(),
         isBodyweightMode: prov.isBodyweightMode,
-        accentColor: accentColor,
         leaderboardTooltip: loc.deviceLeaderboardTooltip,
         historyTooltip: loc.deviceHistoryTooltip,
         bodyweightTooltip: loc.bodyweightToggleTooltip,
@@ -407,22 +403,17 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           XpInfoButton(
             xp: prov.xp,
             level: prov.level,
-            color: accentColor,
+            buttonStyle: sessionActionButtonStyle(context),
           ),
         ],
         postFeedbackActions: [
           NoteButtonWidget(
             deviceId: widget.deviceId,
-            sessionIdentifier:
-                widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
           ),
         ],
       ),
-    );
-
-    if (prov.sets.isNotEmpty) {
-      children.add(const SizedBox(height: 6));
-      children.add(
+      if (prov.sets.isNotEmpty) ...[
+        const SizedBox(height: 6),
         _GroupedSetList(
           sets: prov.sets,
           setKeys: _setKeys,
@@ -444,11 +435,8 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
             );
           },
         ),
-      );
-    }
-
-    children.add(const SizedBox(height: 8));
-    children.add(
+      ],
+      const SizedBox(height: 8),
       Align(
         alignment: Alignment.center,
         child: _AddSetButton(
@@ -456,25 +444,19 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           onPressed: _addSet,
         ),
       ),
-    );
-
-    if ((FF.showLastSessionOnDevicePage ||
-            FF.runtimeShowLastSessionOnDevicePage) &&
-        lastDate != null &&
-        lastSets.isNotEmpty) {
-      children.add(const SizedBox(height: 12));
-      children.add(
+      if ((FF.showLastSessionOnDevicePage ||
+              FF.runtimeShowLastSessionOnDevicePage) &&
+          lastDate != null &&
+          lastSets.isNotEmpty) ...[
+        const SizedBox(height: 12),
         LastSessionCard(
           date: lastDate,
           sets: lastSets,
           note: lastNote,
         ),
-      );
-    }
-
-    if (widget.onSessionSaved != null) {
-      children.add(const SizedBox(height: 12));
-      children.add(
+      ],
+      if (widget.onSessionSaved != null) ...[
+        const SizedBox(height: 12),
         FilledButton(
           onPressed: prov.hasSessionToday || prov.isSaving
               ? null
@@ -490,8 +472,8 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
                 )
               : Text(loc.saveButton),
         ),
-      );
-    }
+      ],
+    ];
 
     return Form(
       key: _formKey,
@@ -499,6 +481,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: children,
         ),
       ),
