@@ -182,6 +182,10 @@ class SetCardState extends State<SetCard> {
   final List<TextEditingController> _dropRepsCtrls = [];
   late final FocusNode _weightFocus;
   late final FocusNode _repsFocus;
+  final GlobalKey _weightFieldKey = GlobalKey();
+  final GlobalKey _repsFieldKey = GlobalKey();
+  final List<GlobalKey> _dropWeightKeys = [];
+  final List<GlobalKey> _dropRepsKeys = [];
   final List<FocusNode> _dropWeightFocuses = [];
   final List<FocusNode> _dropRepsFocuses = [];
   final List<VoidCallback?> _dropWeightListeners = [];
@@ -279,6 +283,8 @@ class SetCardState extends State<SetCard> {
     _dropRepsCtrls.add(repsCtrl);
     _dropWeightFocuses.add(weightFocus);
     _dropRepsFocuses.add(repsFocus);
+    _dropWeightKeys.add(GlobalKey());
+    _dropRepsKeys.add(GlobalKey());
     if (!widget.readOnly) {
       void weightListener() => _handleDropWeightChanged(weightCtrl);
       void repsListener() => _handleDropRepsChanged(repsCtrl);
@@ -297,6 +303,8 @@ class SetCardState extends State<SetCard> {
     final repsCtrl = _dropRepsCtrls.removeAt(index);
     final weightFocus = _dropWeightFocuses.removeAt(index);
     final repsFocus = _dropRepsFocuses.removeAt(index);
+    _dropWeightKeys.removeAt(index);
+    _dropRepsKeys.removeAt(index);
     final weightListener = _dropWeightListeners.removeAt(index);
     final repsListener = _dropRepsListeners.removeAt(index);
     if (weightListener != null) weightCtrl.removeListener(weightListener);
@@ -358,6 +366,7 @@ class SetCardState extends State<SetCard> {
           allowDecimal: true,
           field: DeviceSetFieldFocus.dropWeight,
           dropIndex: newIndex,
+          targetKey: _dropWeightKeys[newIndex],
         );
       }
     });
@@ -428,6 +437,7 @@ class SetCardState extends State<SetCard> {
     required DeviceSetFieldFocus field,
     bool notifyFocus = true,
     int? dropIndex,
+    GlobalKey? targetKey,
   }) {
     _slog(
       widget.index,
@@ -449,11 +459,21 @@ class SetCardState extends State<SetCard> {
       controller,
       allowDecimal: allowDecimal,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final targetContext = targetKey?.currentContext ?? focusNode.context;
+      if (targetContext == null) return;
+      Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.4,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    });
     controller.selection = TextSelection.collapsed(offset: controller.text.length);
     if (focusNode.canRequestFocus) {
       focusNode.requestFocus();
     }
-    // Hinweis: ensureVisible nach dem Öffnen separat aufrufen (DeviceScreen macht das).
   }
 
   void focusWeight() {
@@ -462,6 +482,7 @@ class SetCardState extends State<SetCard> {
       _weightFocus,
       allowDecimal: true,
       field: DeviceSetFieldFocus.weight,
+      targetKey: _weightFieldKey,
     );
   }
 
@@ -524,6 +545,7 @@ class SetCardState extends State<SetCard> {
               allowDecimal: true,
               field: focusField,
               notifyFocus: false,
+              targetKey: _weightFieldKey,
             );
             break;
           case DeviceSetFieldFocus.reps:
@@ -533,6 +555,7 @@ class SetCardState extends State<SetCard> {
               allowDecimal: false,
               field: focusField,
               notifyFocus: false,
+              targetKey: _repsFieldKey,
             );
             break;
           case DeviceSetFieldFocus.dropWeight:
@@ -545,6 +568,7 @@ class SetCardState extends State<SetCard> {
                 field: focusField,
                 notifyFocus: false,
                 dropIndex: dropIndex,
+                targetKey: _dropWeightKeys[dropIndex],
               );
             }
             break;
@@ -558,6 +582,7 @@ class SetCardState extends State<SetCard> {
                 field: focusField,
                 notifyFocus: false,
                 dropIndex: dropIndex,
+                targetKey: _dropRepsKeys[dropIndex],
               );
             }
             break;
@@ -610,8 +635,10 @@ class SetCardState extends State<SetCard> {
         _DropRowConfig(
           weightController: _dropWeightCtrls[i],
           weightFocus: _dropWeightFocuses[i],
+          weightKey: _dropWeightKeys[i],
           repsController: _dropRepsCtrls[i],
           repsFocus: _dropRepsFocuses[i],
+          repsKey: _dropRepsKeys[i],
           onTapWeight: widget.readOnly
               ? null
               : () => _openKeypad(
@@ -620,6 +647,7 @@ class SetCardState extends State<SetCard> {
                     allowDecimal: true,
                     field: DeviceSetFieldFocus.dropWeight,
                     dropIndex: i,
+                    targetKey: _dropWeightKeys[i],
                   ),
           onTapReps: widget.readOnly
               ? null
@@ -629,6 +657,7 @@ class SetCardState extends State<SetCard> {
                     allowDecimal: false,
                     field: DeviceSetFieldFocus.dropReps,
                     dropIndex: i,
+                    targetKey: _dropRepsKeys[i],
                   ),
           validator: (_) => _validateDrop(i),
           showAddButton: canMutateDrops && i == _dropWeightCtrls.length - 1,
@@ -665,8 +694,10 @@ class SetCardState extends State<SetCard> {
       loc: loc,
       weightController: _weightCtrl,
       weightFocus: _weightFocus,
+      weightFieldKey: _weightFieldKey,
       repsController: _repsCtrl,
       repsFocus: _repsFocus,
+      repsFieldKey: _repsFieldKey,
       onToggleExtras: toggleExtras,
       onToggleDone: toggleDone,
       onTapWeight:
@@ -677,6 +708,7 @@ class SetCardState extends State<SetCard> {
                     _weightFocus,
                     allowDecimal: true,
                     field: DeviceSetFieldFocus.weight,
+                    targetKey: _weightFieldKey,
                   ),
       onTapReps:
           widget.readOnly
@@ -686,6 +718,7 @@ class SetCardState extends State<SetCard> {
                     _repsFocus,
                     allowDecimal: false,
                     field: DeviceSetFieldFocus.reps,
+                    targetKey: _repsFieldKey,
                   ),
       dropRows: dropRows,
       padding: contentPadding,
@@ -730,8 +763,10 @@ class SetRowContent extends StatelessWidget {
   final AppLocalizations loc;
   final TextEditingController weightController;
   final FocusNode weightFocus;
+  final Key weightFieldKey;
   final TextEditingController repsController;
   final FocusNode repsFocus;
+  final Key repsFieldKey;
   final VoidCallback? onToggleExtras;
   final VoidCallback? onToggleDone;
   final VoidCallback? onTapWeight;
@@ -753,8 +788,10 @@ class SetRowContent extends StatelessWidget {
     required this.loc,
     required this.weightController,
     required this.weightFocus,
+    required this.weightFieldKey,
     required this.repsController,
     required this.repsFocus,
+    required this.repsFieldKey,
     required this.onToggleExtras,
     required this.onToggleDone,
     required this.onTapWeight,
@@ -821,42 +858,48 @@ class SetRowContent extends StatelessWidget {
           ),
           SizedBox(width: dense ? 6 : 8),
           Expanded(
-            child: _InputPill(
-              controller: weightController,
-              focusNode: weightFocus,
-              label: weightLabel,
-              readOnly: done || readOnly,
-              tokens: tokens,
-              dense: dense,
-              onTap: onTapWeight,
-              validator: (v) {
-                if (v == null || v.isEmpty) return null;
-                if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                  return loc.numberInvalid;
-                }
-                return null;
-              },
-              showLabel: false,
-              placeholder: weightLabel,
+            child: KeyedSubtree(
+              key: weightFieldKey,
+              child: _InputPill(
+                controller: weightController,
+                focusNode: weightFocus,
+                label: weightLabel,
+                readOnly: done || readOnly,
+                tokens: tokens,
+                dense: dense,
+                onTap: onTapWeight,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return null;
+                  if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                    return loc.numberInvalid;
+                  }
+                  return null;
+                },
+                showLabel: false,
+                placeholder: weightLabel,
+              ),
             ),
           ),
           SizedBox(width: dense ? 6 : 8),
           Expanded(
-            child: _InputPill(
-              controller: repsController,
-              focusNode: repsFocus,
-              label: repsLabel,
-              readOnly: done || readOnly,
-              tokens: tokens,
-              dense: dense,
-              onTap: onTapReps,
-              validator: (v) {
-                if (v == null || v.isEmpty) return null;
-                if (int.tryParse(v) == null) return loc.intRequired;
-                return null;
-              },
-              showLabel: false,
-              placeholder: repsLabel,
+            child: KeyedSubtree(
+              key: repsFieldKey,
+              child: _InputPill(
+                controller: repsController,
+                focusNode: repsFocus,
+                label: repsLabel,
+                readOnly: done || readOnly,
+                tokens: tokens,
+                dense: dense,
+                onTap: onTapReps,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return null;
+                  if (int.tryParse(v) == null) return loc.intRequired;
+                  return null;
+                },
+                showLabel: false,
+                placeholder: repsLabel,
+              ),
             ),
           ),
           SizedBox(width: dense ? 6 : 8),
@@ -925,29 +968,35 @@ class SetRowContent extends StatelessWidget {
                     ),
                     SizedBox(
                       width: fieldWidth,
-                      child: _InputPill(
-                        controller: drop.weightController,
-                        focusNode: drop.weightFocus,
-                        label: loc.dropKgFieldLabel,
-                        readOnly: readOnly || done,
-                        tokens: tokens,
-                        dense: true,
-                        onTap: drop.onTapWeight,
-                        validator: drop.validator,
+                      child: KeyedSubtree(
+                        key: drop.weightKey,
+                        child: _InputPill(
+                          controller: drop.weightController,
+                          focusNode: drop.weightFocus,
+                          label: loc.dropKgFieldLabel,
+                          readOnly: readOnly || done,
+                          tokens: tokens,
+                          dense: true,
+                          onTap: drop.onTapWeight,
+                          validator: drop.validator,
+                        ),
                       ),
                     ),
                     SizedBox(width: fieldGap),
                     SizedBox(
                       width: fieldWidth,
-                      child: _InputPill(
-                        controller: drop.repsController,
-                        focusNode: drop.repsFocus,
-                        label: loc.dropRepsFieldLabel,
-                        readOnly: readOnly || done,
-                        tokens: tokens,
-                        dense: true,
-                        onTap: drop.onTapReps,
-                        validator: drop.validator,
+                      child: KeyedSubtree(
+                        key: drop.repsKey,
+                        child: _InputPill(
+                          controller: drop.repsController,
+                          focusNode: drop.repsFocus,
+                          label: loc.dropRepsFieldLabel,
+                          readOnly: readOnly || done,
+                          tokens: tokens,
+                          dense: true,
+                          onTap: drop.onTapReps,
+                          validator: drop.validator,
+                        ),
                       ),
                     ),
                     if (hasAddButton) ...[
@@ -996,8 +1045,10 @@ class SetRowContent extends StatelessWidget {
 class _DropRowConfig {
   final TextEditingController weightController;
   final FocusNode weightFocus;
+  final Key weightKey;
   final TextEditingController repsController;
   final FocusNode repsFocus;
+  final Key repsKey;
   final VoidCallback? onTapWeight;
   final VoidCallback? onTapReps;
   final FormFieldValidator<String>? validator;
@@ -1007,8 +1058,10 @@ class _DropRowConfig {
   const _DropRowConfig({
     required this.weightController,
     required this.weightFocus,
+    required this.weightKey,
     required this.repsController,
     required this.repsFocus,
+    required this.repsKey,
     this.onTapWeight,
     this.onTapReps,
     this.validator,
