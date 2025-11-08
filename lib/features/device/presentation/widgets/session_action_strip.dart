@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 class SessionActionStrip extends StatelessWidget {
   const SessionActionStrip({
     super.key,
-    required this.title,
-    this.subtitle,
-    this.onClose,
-    this.sessionKey,
-    this.nfcButton,
     this.onOpenLeaderboard,
     this.onOpenHistory,
     this.onToggleBodyweight,
@@ -21,14 +15,8 @@ class SessionActionStrip extends StatelessWidget {
     this.feedbackTooltip,
     this.preFeedbackActions = const <Widget>[],
     this.postFeedbackActions = const <Widget>[],
-    this.closeTooltip,
   });
 
-  final String title;
-  final String? subtitle;
-  final VoidCallback? onClose;
-  final String? sessionKey;
-  final Widget? nfcButton;
   final VoidCallback? onOpenLeaderboard;
   final VoidCallback? onOpenHistory;
   final VoidCallback? onToggleBodyweight;
@@ -41,89 +29,46 @@ class SessionActionStrip extends StatelessWidget {
   final String? feedbackTooltip;
   final List<Widget> preFeedbackActions;
   final List<Widget> postFeedbackActions;
-  final String? closeTooltip;
 
   @override
   Widget build(BuildContext context) {
-    final timerKey = sessionKey != null
-        ? ValueKey('deviceSessionTimer-$sessionKey')
-        : const ValueKey('deviceSessionTimer');
+    final actions = _buildActions(context);
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final iconButtonTheme = IconButtonTheme.of(context);
+    final compactStyle = iconButtonTheme.style?.copyWith(
+          padding: MaterialStateProperty.all(const EdgeInsets.all(4)),
+          visualDensity: MaterialStateProperty.all(VisualDensity.compact),
+          tapTargetSize: MaterialStateProperty.all(MaterialTapTargetSize.shrinkWrap),
+          minimumSize: MaterialStateProperty.all(const Size.square(36)),
+        ) ??
+        IconButton.styleFrom(
+          padding: const EdgeInsets.all(4),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size.square(36),
+        );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ) ??
-                          const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    ActiveWorkoutTimer(
-                      key: timerKey,
-                      padding: EdgeInsets.zero,
-                      compact: true,
-                      sessionKey: sessionKey,
-                    ),
-                  ],
-                ),
-              ),
-              if (onClose != null)
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: closeTooltip,
-                  onPressed: onClose,
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
-            children: [
-              if (nfcButton != null) nfcButton!,
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: _buildActions(context),
-              ),
-            ],
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: IconButtonTheme(
+        data: IconButtonThemeData(style: compactStyle),
+        child: Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: actions,
+        ),
       ),
     );
   }
 
   List<Widget> _buildActions(BuildContext context) {
     final actions = <Widget>[];
-    void addSpacing() {
-      if (actions.isNotEmpty) {
-        actions.add(const SizedBox(width: 4));
-      }
-    }
 
     if (onOpenLeaderboard != null) {
-      addSpacing();
       actions.add(
         IconButton(
           icon: const Icon(Icons.emoji_events_outlined),
@@ -134,7 +79,6 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     if (onOpenHistory != null) {
-      addSpacing();
       actions.add(
         IconButton(
           icon: const Icon(Icons.history),
@@ -145,7 +89,6 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     if (onToggleBodyweight != null) {
-      addSpacing();
       actions.add(
         IconButton(
           icon: Icon(
@@ -159,12 +102,10 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     for (final widget in preFeedbackActions) {
-      addSpacing();
       actions.add(widget);
     }
 
     if (onFeedback != null) {
-      addSpacing();
       actions.add(
         IconButton(
           icon: Icon(Icons.feedback_outlined, color: accentColor),
@@ -175,7 +116,6 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     for (final widget in postFeedbackActions) {
-      addSpacing();
       actions.add(widget);
     }
 

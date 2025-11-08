@@ -27,12 +27,10 @@ import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show
         showFeedbackDialog;
-import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
-import 'package:tapem/ui/timer/session_timer_bar.dart';
 
 import '../../../training_plan/domain/models/exercise_entry.dart';
 
@@ -268,8 +266,6 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   Widget _buildHeader(BuildContext context, DeviceProvider prov) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final accentColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final exercises = prov.device?.isMulti ?? false
         ? context.watch<ExerciseProvider>().exercises
         : null;
@@ -281,56 +277,52 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         ? prov.device?.name
         : null;
 
-    return SessionActionStrip(
-      title: resolvedTitle,
-      subtitle: subtitle,
-      sessionKey: widget.sessionKey,
-      nfcButton: NfcScanButton(
-        deviceId: widget.deviceId,
-        exerciseId: widget.exerciseId,
-        onBeforeOpen: _closeKeyboard,
-        onSelection: (selection) async {
-          final auth = context.read<AuthProvider>();
-          final controller = context.read<WorkoutDayController>();
-          controller.addOrFocusSession(
-            gymId: selection.gymId,
-            deviceId: selection.deviceId,
-            exerciseId: selection.exerciseId,
-            userId: auth.userId!,
-          );
-        },
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+          color: theme.textTheme.bodySmall?.color?.withOpacity(0.72),
+        ) ??
+        TextStyle(
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+          fontSize: 12,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(resolvedTitle, style: titleStyle),
+                if (subtitle != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(subtitle, style: subtitleStyle),
+                  ),
+              ],
+            ),
+          ),
+          if (widget.onCloseRequested != null)
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: loc.commonClose,
+              visualDensity: VisualDensity.compact,
+              onPressed: () {
+                _closeKeyboard();
+                widget.onCloseRequested?.call();
+              },
+            ),
+        ],
       ),
-      onClose: () {
-        _closeKeyboard();
-        widget.onCloseRequested?.call();
-      },
-      closeTooltip: loc.commonClose,
-      onOpenLeaderboard: prov.device == null
-          ? null
-          : () => _openLeaderboard(prov, resolvedTitle),
-      onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
-      onToggleBodyweight: () => _toggleBodyweight(prov),
-      onFeedback: () => _handleFeedback(),
-      isBodyweightMode: prov.isBodyweightMode,
-      accentColor: accentColor,
-      leaderboardTooltip: loc.deviceLeaderboardTooltip,
-      historyTooltip: loc.deviceHistoryTooltip,
-      bodyweightTooltip: loc.bodyweightToggleTooltip,
-      feedbackTooltip: loc.feedbackTooltip,
-      preFeedbackActions: [
-        XpInfoButton(
-          xp: prov.xp,
-          level: prov.level,
-          color: accentColor,
-        ),
-      ],
-      postFeedbackActions: [
-        NoteButtonWidget(
-          deviceId: widget.deviceId,
-          sessionIdentifier:
-              widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
-        ),
-      ],
     );
   }
 
@@ -341,6 +333,8 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   ) {
     final theme = Theme.of(context);
     final outlineColor =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    final accentColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final exercises = prov.device?.isMulti ?? false
         ? context.watch<ExerciseProvider>().exercises
@@ -372,39 +366,56 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
         final lastNote = lastSnap?.note ?? prov.lastSessionNote;
 
+        final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
+        final resolvedSubtitle = prov.device?.isMulti == true &&
+                resolvedTitle != prov.device?.name
+            ? prov.device?.name
+            : null;
+
         final children = <Widget>[
           const SizedBox(height: 8),
-          const SessionTimerBar(
-            initialDuration: Duration(seconds: 90),
-          ),
-          const SizedBox(height: 12),
+          _SectionHeadline(title: resolvedTitle, subtitle: resolvedSubtitle),
         ];
 
         if (plannedEntry != null) {
+          children.add(const SizedBox(height: 8));
           children.add(_PlannedTable(entry: plannedEntry));
-        } else {
-          final titleStyle = theme.textTheme.titleMedium?.copyWith(
-                color: outlineColor,
-                fontWeight: FontWeight.bold,
-              ) ??
-              TextStyle(
-                color: outlineColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              );
-          children.add(
-            Center(
-              child: Text(
-                exerciseTitle ?? loc.newSessionTitle,
-                textAlign: TextAlign.center,
-                style: titleStyle,
-              ),
-            ),
-          );
         }
 
+        children.add(const SizedBox(height: 8));
+        children.add(
+          SessionActionStrip(
+            onOpenLeaderboard: prov.device == null
+                ? null
+                : () => _openLeaderboard(prov, resolvedTitle),
+            onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
+            onToggleBodyweight: () => _toggleBodyweight(prov),
+            onFeedback: () => _handleFeedback(),
+            isBodyweightMode: prov.isBodyweightMode,
+            accentColor: accentColor,
+            leaderboardTooltip: loc.deviceLeaderboardTooltip,
+            historyTooltip: loc.deviceHistoryTooltip,
+            bodyweightTooltip: loc.bodyweightToggleTooltip,
+            feedbackTooltip: loc.feedbackTooltip,
+            preFeedbackActions: [
+              XpInfoButton(
+                xp: prov.xp,
+                level: prov.level,
+                color: accentColor,
+              ),
+            ],
+            postFeedbackActions: [
+              NoteButtonWidget(
+                deviceId: widget.deviceId,
+                sessionIdentifier:
+                    widget.sessionKey ?? (widget.deviceId, widget.exerciseId),
+              ),
+            ],
+          ),
+        );
+
         if (prov.sets.isNotEmpty) {
-          children.add(const SizedBox(height: 12));
+          children.add(const SizedBox(height: 6));
           children.add(
             _GroupedSetList(
               sets: prov.sets,
@@ -432,7 +443,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           );
         }
 
-        children.add(const SizedBox(height: 12));
+        children.add(const SizedBox(height: 8));
         children.add(
           Align(
             alignment: Alignment.center,
@@ -447,7 +458,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
                 FF.runtimeShowLastSessionOnDevicePage) &&
             lastDate != null &&
             lastSets.isNotEmpty) {
-          children.add(const SizedBox(height: 16));
+          children.add(const SizedBox(height: 12));
           children.add(
             LastSessionCard(
               date: lastDate,
@@ -458,7 +469,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         }
 
         if (widget.onSessionSaved != null) {
-          children.add(const SizedBox(height: 16));
+          children.add(const SizedBox(height: 12));
           children.add(
             FilledButton(
               onPressed: prov.hasSessionToday || prov.isSaving
@@ -483,7 +494,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         return Form(
           key: _formKey,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,
@@ -676,7 +687,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           _buildHeader(context, prov),
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 8),
             child: _buildContent(context, prov),
           ),
         ],
@@ -726,6 +737,48 @@ class _AddSetButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionHeadline extends StatelessWidget {
+  const _SectionHeadline({
+    required this.title,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.72),
+        ) ??
+        TextStyle(
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+          fontSize: 12,
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title, style: titleStyle),
+        if (subtitle != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(subtitle!, style: subtitleStyle),
+          ),
+      ],
     );
   }
 }
