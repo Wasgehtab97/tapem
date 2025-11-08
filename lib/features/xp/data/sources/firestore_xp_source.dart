@@ -72,18 +72,87 @@ class FirestoreXpSource {
       }
     }
 
+    final dailyOutcome = await _processDailyXp(
+      existingDaysSnap: existingDaysSnap,
+      existingDayDoc: existingDayDoc,
+      trainingDayCollection: dayCollection,
+      penaltyCollection: penaltyCollection,
+      statsRef: statsRef,
+      sessionDay: sessionDay,
+      dayKey: dayKey,
+      timeZone: timeZone,
+      traceId: traceId,
+    );
+
+    final leaderboardResult = await _rankSource.addXp(
+      gymId: gymId,
+      userId: userId,
+      deviceId: deviceId,
+      sessionId: sessionId,
+      showInLeaderboard: showInLeaderboard,
+      isMulti: isMulti,
+      exerciseId: exerciseId,
+      traceId: traceId,
+    );
+
+    if (leaderboardResult == DeviceXpResult.okAdded ||
+        leaderboardResult == DeviceXpResult.okAddedNoLeaderboard) {
+      await _applyMuscleXp(
+        statsRef: statsRef,
+        primaryMuscleGroupIds: primaryMuscleGroupIds,
+        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+        traceId: traceId,
+      );
+    }
+
+    final deviceResult = !dailyOutcome.newlyCredited &&
+            (leaderboardResult == DeviceXpResult.okAdded ||
+                leaderboardResult == DeviceXpResult.okAddedNoLeaderboard)
+        ? DeviceXpResult.okAddedNoLeaderboard
+        : leaderboardResult;
+
+    XpTrace.log('FS_OUT', {
+      'result': deviceResult.name,
+      'traceId': traceId,
+      'xpDelta': dailyOutcome.xpDelta,
+      'dayXp': dailyOutcome.dayXp ?? 0,
+      'penaltiesWritten': dailyOutcome.penalties.length,
+    });
+
+    return SessionXpAward(
+      result: deviceResult,
+      totalXp: dailyOutcome.totalXp,
+      dayXp: dailyOutcome.dayXp,
+      xpDelta: dailyOutcome.xpDelta,
+      components: dailyOutcome.components,
+      penalties: dailyOutcome.penalties,
+    );
+  }
+
+  Future<_DailyXpOutcome> _processDailyXp({
+    required QuerySnapshot<Map<String, dynamic>> existingDaysSnap,
+    required QueryDocumentSnapshot<Map<String, dynamic>>? existingDayDoc,
+    required CollectionReference<Map<String, dynamic>> trainingDayCollection,
+    required CollectionReference<Map<String, dynamic>> penaltyCollection,
+    required DocumentReference<Map<String, dynamic>> statsRef,
+    required DateTime sessionDay,
+    required String dayKey,
+    required String timeZone,
+    required String traceId,
+  }) async {
     if (existingDayDoc != null) {
       final statsSnap = await statsRef.get();
       final totalXp = (statsSnap.data()?['dailyXP'] as num?)?.toInt();
-      final components = _deserializeComponents(existingDayDoc.data()['components']);
-      final xp = (existingDayDoc.data()['xp'] as num?)?.toInt() ?? 0;
+      final components =
+          _deserializeComponents(existingDayDoc.data()['components']);
+      final xp = (existingDayDoc.data()['xp'] as num?)?.toInt();
       XpTrace.log('FS_SKIP', {
         'reason': 'alreadyCredited',
         'dayKey': dayKey,
         'traceId': traceId,
       });
-      return SessionXpAward(
-        result: DeviceXpResult.alreadyToday,
+      return _DailyXpOutcome(
+        newlyCredited: false,
         totalXp: totalXp,
         dayXp: xp,
         xpDelta: 0,
@@ -134,7 +203,7 @@ class FirestoreXpSource {
         .toList();
 
     await _applyLedgerUpdates(
-      trainingDayCollection: dayCollection,
+      trainingDayCollection: trainingDayCollection,
       existingTrainingDocs: existingDaysSnap.docs,
       penaltyCollection: penaltyCollection,
       existingPenaltyDocs: existingPenaltySnap.docs,
@@ -147,40 +216,12 @@ class FirestoreXpSource {
       traceId: traceId,
     );
 
-    final leaderboardResult = await _rankSource.addXp(
-      gymId: gymId,
-      userId: userId,
-      deviceId: deviceId,
-      sessionId: sessionId,
-      showInLeaderboard: showInLeaderboard,
-      isMulti: isMulti,
-      exerciseId: exerciseId,
-      traceId: traceId,
-    );
-
-    if (leaderboardResult == DeviceXpResult.okAdded ||
-        leaderboardResult == DeviceXpResult.okAddedNoLeaderboard) {
-      await _applyMuscleXp(
-        statsRef: statsRef,
-        primaryMuscleGroupIds: primaryMuscleGroupIds,
-        secondaryMuscleGroupIds: secondaryMuscleGroupIds,
-        traceId: traceId,
-      );
-    }
-
     final xpDelta = nextLedger.totalXp - previousLedger.totalXp;
-    final components = dayEvent.components.map((component) => component.toJson()).toList();
+    final components =
+        dayEvent.components.map((component) => component.toJson()).toList();
 
-    XpTrace.log('FS_OUT', {
-      'result': leaderboardResult.name,
-      'traceId': traceId,
-      'xpDelta': xpDelta,
-      'dayXp': dayEvent.xpDelta,
-      'penaltiesWritten': newPenaltySummaries.length,
-    });
-
-    return SessionXpAward(
-      result: leaderboardResult,
+    return _DailyXpOutcome(
+      newlyCredited: true,
       totalXp: nextLedger.totalXp,
       dayXp: dayEvent.xpDelta,
       xpDelta: xpDelta,
@@ -775,4 +816,22 @@ class FirestoreXpSource {
       return xp;
     });
   }
+}
+
+class _DailyXpOutcome {
+  const _DailyXpOutcome({
+    required this.newlyCredited,
+    required this.totalXp,
+    required this.dayXp,
+    required this.xpDelta,
+    required this.components,
+    required this.penalties,
+  });
+
+  final bool newlyCredited;
+  final int? totalXp;
+  final int? dayXp;
+  final int xpDelta;
+  final List<Map<String, dynamic>> components;
+  final List<Map<String, dynamic>> penalties;
 }
