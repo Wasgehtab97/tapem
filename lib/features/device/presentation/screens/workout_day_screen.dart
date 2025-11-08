@@ -146,7 +146,17 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       _ownsSession = false;
     }
     if (!mounted) return;
-    if (closed && controller.activeSessions().isEmpty) {
+    if (!closed) {
+      setState(() {});
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final userId = auth.userId;
+    final activeGymId = auth.gymCode ?? session.gymId;
+    final remaining = (userId == null)
+        ? const <WorkoutDaySession>[]
+        : controller.sessionsFor(userId: userId, gymId: activeGymId);
+    if (remaining.isEmpty) {
       Navigator.of(context).maybePop();
     } else {
       setState(() {});
@@ -156,7 +166,12 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<WorkoutDayController>();
-    final sessions = controller.activeSessions();
+    final auth = context.watch<AuthProvider>();
+    final activeGymId = auth.gymCode ?? widget.gymId;
+    final userId = auth.userId;
+    final sessions = (userId == null)
+        ? const <WorkoutDaySession>[]
+        : controller.sessionsFor(userId: userId, gymId: activeGymId);
     final trainingPlanProvider = context.watch<TrainingPlanProvider>();
     final currentDate = DateTime.now();
     final List<ExerciseEntry?> plannedEntries = [
@@ -371,8 +386,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         sessions[i].key: plannedEntries[i]?.restInSeconds,
     };
 
+    final activeGymId = auth.gymCode ?? widget.gymId;
+
     final result = await controller.saveAllSessions(
       userId: auth.userId!,
+      gymId: activeGymId,
       showInLeaderboard: auth.showInLeaderboard ?? true,
       userName: auth.userName,
       gender: settings.gender,
@@ -392,7 +410,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           _ownsSession = false;
         }
       }
-      if (controller.activeSessions().isEmpty) {
+      final remaining = controller.sessionsFor(
+        userId: auth.userId!,
+        gymId: activeGymId,
+      );
+      if (remaining.isEmpty) {
         if (mounted) {
           Navigator.of(context).maybePop();
         }
