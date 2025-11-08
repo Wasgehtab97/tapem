@@ -42,6 +42,7 @@ class DeviceSessionSection extends StatelessWidget {
     required this.deviceId,
     required this.exerciseId,
     required this.userId,
+    this.displayIndex = 1,
     this.sessionKey,
     this.plannedEntry,
     this.onSessionSaved,
@@ -53,6 +54,7 @@ class DeviceSessionSection extends StatelessWidget {
   final String deviceId;
   final String exerciseId;
   final String userId;
+  final int displayIndex;
   final String? sessionKey;
   final ExerciseEntry? plannedEntry;
   final VoidCallback? onSessionSaved;
@@ -67,6 +69,7 @@ class DeviceSessionSection extends StatelessWidget {
         deviceId: deviceId,
         exerciseId: exerciseId,
         userId: userId,
+        displayIndex: displayIndex,
         sessionKey: sessionKey,
         plannedEntry: plannedEntry,
         onSessionSaved: onSessionSaved,
@@ -82,6 +85,7 @@ class _DeviceSessionSectionBody extends StatefulWidget {
     required this.deviceId,
     required this.exerciseId,
     required this.userId,
+    required this.displayIndex,
     this.sessionKey,
     this.plannedEntry,
     this.onSessionSaved,
@@ -92,6 +96,7 @@ class _DeviceSessionSectionBody extends StatefulWidget {
   final String deviceId;
   final String exerciseId;
   final String userId;
+  final int displayIndex;
   final String? sessionKey;
   final ExerciseEntry? plannedEntry;
   final VoidCallback? onSessionSaved;
@@ -272,54 +277,68 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final resolvedTitle =
         _resolveExerciseTitle(context, prov, exercises: exercises) ??
             loc.newSessionTitle;
-    final subtitle = prov.device?.isMulti == true &&
-            resolvedTitle != prov.device?.name
-        ? prov.device?.name
-        : null;
-
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
         ) ??
         const TextStyle(
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
         );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-          color: theme.textTheme.bodySmall?.color?.withOpacity(0.72),
-        ) ??
-        TextStyle(
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-          fontSize: 12,
-        );
+
+    final counts = prov.getSetCounts();
+    final canClose = widget.onCloseRequested != null && counts.done == 0;
+    final badgeBackground = theme.colorScheme.secondaryContainer;
+    final badgeForeground = theme.colorScheme.onSecondaryContainer;
+
+    final showClose = widget.onCloseRequested != null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(resolvedTitle, style: titleStyle),
-                if (subtitle != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(subtitle, style: subtitleStyle),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: badgeBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              widget.displayIndex.toString(),
+              style: theme.textTheme.titleSmall?.copyWith(
+                    color: badgeForeground,
+                    fontWeight: FontWeight.w600,
+                  ) ??
+                  TextStyle(
+                    color: badgeForeground,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-              ],
             ),
           ),
-          if (widget.onCloseRequested != null)
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              resolvedTitle,
+              textAlign: TextAlign.center,
+              style: titleStyle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (showClose) const SizedBox(width: 12),
+          if (showClose)
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: loc.commonClose,
               visualDensity: VisualDensity.compact,
-              onPressed: () {
-                _closeKeyboard();
-                widget.onCloseRequested?.call();
-              },
+              onPressed: canClose
+                  ? () {
+                      _closeKeyboard();
+                      widget.onCloseRequested?.call();
+                    }
+                  : null,
             ),
         ],
       ),
@@ -367,14 +386,9 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         final lastNote = lastSnap?.note ?? prov.lastSessionNote;
 
         final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
-        final resolvedSubtitle = prov.device?.isMulti == true &&
-                resolvedTitle != prov.device?.name
-            ? prov.device?.name
-            : null;
 
         final children = <Widget>[
-          const SizedBox(height: 8),
-          _SectionHeadline(title: resolvedTitle, subtitle: resolvedSubtitle),
+          const SizedBox(height: 12),
         ];
 
         if (plannedEntry != null) {
@@ -676,7 +690,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
             .withOpacity(0.2);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: borderColor),
@@ -737,48 +751,6 @@ class _AddSetButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SectionHeadline extends StatelessWidget {
-  const _SectionHeadline({
-    required this.title,
-    this.subtitle,
-  });
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ) ??
-        const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.72),
-        ) ??
-        TextStyle(
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-          fontSize: 12,
-        );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(title, style: titleStyle),
-        if (subtitle != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(subtitle!, style: subtitleStyle),
-          ),
-      ],
     );
   }
 }

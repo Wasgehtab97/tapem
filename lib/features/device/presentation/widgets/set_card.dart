@@ -465,7 +465,7 @@ class SetCardState extends State<SetCard> {
       if (targetContext == null) return;
       Scrollable.ensureVisible(
         targetContext,
-        alignment: 0.4,
+        alignment: 0.5,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
       );

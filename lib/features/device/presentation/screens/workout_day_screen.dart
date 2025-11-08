@@ -230,6 +230,9 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                   ),
                 )
               else ...[
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 16),
+                ),
                 SliverPadding(
                   padding: const EdgeInsets.only(bottom: 24),
                   sliver: SliverList(
@@ -237,6 +240,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                       (context, index) {
                         final session = sessions[index];
                         final builder = widget.sessionBuilder;
+                        final displayIndex = index + 1;
                         if (builder != null) {
                           return builder(
                             context,
@@ -251,6 +255,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                           deviceId: session.deviceId,
                           exerciseId: session.exerciseId,
                           userId: session.userId,
+                          displayIndex: displayIndex,
                           sessionKey: session.key,
                           plannedEntry: plannedEntries[index],
                           onCloseRequested: () => _handleCloseSession(session),
