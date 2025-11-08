@@ -227,6 +227,20 @@ class WorkoutDayController extends ChangeNotifier {
     return List.unmodifiable(_sessions.values.map((entry) => entry.snapshot));
   }
 
+  List<WorkoutDaySession> sessionsFor({
+    required String userId,
+    required String gymId,
+  }) {
+    if (userId.isEmpty || gymId.isEmpty) {
+      return const <WorkoutDaySession>[];
+    }
+    return List.unmodifiable(
+      _sessions.values
+          .where((entry) => entry.userId == userId && entry.gymId == gymId)
+          .map((entry) => entry.snapshot),
+    );
+  }
+
   WorkoutDaySession? sessionForKey(String key) {
     return _sessions[key]?.snapshot;
   }
@@ -298,6 +312,7 @@ class WorkoutDayController extends ChangeNotifier {
 
   Future<SaveAllSessionsResult> saveAllSessions({
     required String userId,
+    required String gymId,
     required bool showInLeaderboard,
     String? userName,
     String? gender,
@@ -317,12 +332,17 @@ class WorkoutDayController extends ChangeNotifier {
     var saved = 0;
     final failures = <String, String?>{};
     final savedKeys = <String>[];
+    final staleKeys = <String>[];
 
     _isSavingAll = true;
     notifyListeners();
     try {
       for (final entry in entries) {
         entry.refresh();
+        if (entry.userId != userId || entry.gymId != gymId) {
+          staleKeys.add(entry.key);
+          continue;
+        }
         final snapshot = entry.snapshot;
         if (!snapshot.canShowSaveAction) {
           continue;
@@ -348,6 +368,12 @@ class WorkoutDayController extends ChangeNotifier {
     } finally {
       _isSavingAll = false;
       notifyListeners();
+    }
+
+    if (staleKeys.isNotEmpty) {
+      for (final key in staleKeys) {
+        closeSession(key);
+      }
     }
 
     final result = SaveAllSessionsResult(
