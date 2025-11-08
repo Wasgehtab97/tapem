@@ -9,6 +9,7 @@ import 'package:tapem/features/device/presentation/widgets/device_session_sectio
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class WorkoutDayScreen extends StatefulWidget {
@@ -178,25 +179,26 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            final selection = await _openGymSelection();
-            if (!mounted || selection == null) {
-              return;
-            }
-            _handleSelection(selection);
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(loc.multiDeviceNewExercise),
+        centerTitle: true,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(loc.multiDeviceExerciseListTitle),
+            const SizedBox(height: 4),
+            const ActiveWorkoutTimer(
+              compact: true,
+              padding: EdgeInsets.zero,
+            ),
+          ],
+        ),
         actions: [
           NfcScanButton(
             onSelection: (selection) async {
               _handleSelection(selection);
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _handleAddSession,
-            tooltip: loc.multiDeviceNewExercise,
           ),
         ],
       ),
