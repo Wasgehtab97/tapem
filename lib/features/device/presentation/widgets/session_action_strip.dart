@@ -39,10 +39,10 @@ class SessionActionStrip extends StatelessWidget {
 
     final iconButtonTheme = IconButtonTheme.of(context);
     final compactStyle = iconButtonTheme.style?.copyWith(
-          padding: MaterialStateProperty.all(const EdgeInsets.all(4)),
-          visualDensity: MaterialStateProperty.all(VisualDensity.compact),
-          tapTargetSize: MaterialStateProperty.all(MaterialTapTargetSize.shrinkWrap),
-          minimumSize: MaterialStateProperty.all(const Size.square(36)),
+          padding: WidgetStateProperty.all(const EdgeInsets.all(4)),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: WidgetStateProperty.all(const Size.square(36)),
         ) ??
         IconButton.styleFrom(
           padding: const EdgeInsets.all(4),
