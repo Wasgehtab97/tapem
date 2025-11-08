@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'session_action_button_style.dart';
+
 class SessionActionStrip extends StatelessWidget {
   const SessionActionStrip({
     super.key,
@@ -8,7 +10,6 @@ class SessionActionStrip extends StatelessWidget {
     this.onToggleBodyweight,
     this.onFeedback,
     required this.isBodyweightMode,
-    required this.accentColor,
     this.leaderboardTooltip,
     this.historyTooltip,
     this.bodyweightTooltip,
@@ -22,7 +23,6 @@ class SessionActionStrip extends StatelessWidget {
   final VoidCallback? onToggleBodyweight;
   final VoidCallback? onFeedback;
   final bool isBodyweightMode;
-  final Color accentColor;
   final String? leaderboardTooltip;
   final String? historyTooltip;
   final String? bodyweightTooltip;
@@ -37,30 +37,13 @@ class SessionActionStrip extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final iconButtonTheme = IconButtonTheme.of(context);
-    final compactStyle = iconButtonTheme.style?.copyWith(
-          padding: WidgetStateProperty.all(const EdgeInsets.all(4)),
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          minimumSize: WidgetStateProperty.all(const Size.square(36)),
-        ) ??
-        IconButton.styleFrom(
-          padding: const EdgeInsets.all(4),
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          minimumSize: const Size.square(36),
-        );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: IconButtonTheme(
-        data: IconButtonThemeData(style: compactStyle),
-        child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: actions,
-        ),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: actions,
       ),
     );
   }
@@ -69,36 +52,31 @@ class SessionActionStrip extends StatelessWidget {
     final actions = <Widget>[];
 
     if (onOpenLeaderboard != null) {
-      actions.add(
-        IconButton(
-          icon: const Icon(Icons.emoji_events_outlined),
-          tooltip: leaderboardTooltip,
-          onPressed: onOpenLeaderboard,
-        ),
-      );
+      actions.add(_buildIconButton(
+        context,
+        icon: Icons.emoji_events_outlined,
+        tooltip: leaderboardTooltip,
+        onPressed: onOpenLeaderboard,
+      ));
     }
 
     if (onOpenHistory != null) {
-      actions.add(
-        IconButton(
-          icon: const Icon(Icons.history),
-          tooltip: historyTooltip,
-          onPressed: onOpenHistory,
-        ),
-      );
+      actions.add(_buildIconButton(
+        context,
+        icon: Icons.history,
+        tooltip: historyTooltip,
+        onPressed: onOpenHistory,
+      ));
     }
 
     if (onToggleBodyweight != null) {
-      actions.add(
-        IconButton(
-          icon: Icon(
-            Icons.accessibility_new,
-            color: isBodyweightMode ? Theme.of(context).colorScheme.primary : accentColor,
-          ),
-          tooltip: bodyweightTooltip,
-          onPressed: onToggleBodyweight,
-        ),
-      );
+      actions.add(_buildIconButton(
+        context,
+        icon: Icons.accessibility_new,
+        tooltip: bodyweightTooltip,
+        onPressed: onToggleBodyweight,
+        isActive: isBodyweightMode,
+      ));
     }
 
     for (final widget in preFeedbackActions) {
@@ -106,13 +84,12 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     if (onFeedback != null) {
-      actions.add(
-        IconButton(
-          icon: Icon(Icons.feedback_outlined, color: accentColor),
-          tooltip: feedbackTooltip,
-          onPressed: onFeedback,
-        ),
-      );
+      actions.add(_buildIconButton(
+        context,
+        icon: Icons.feedback_outlined,
+        tooltip: feedbackTooltip,
+        onPressed: onFeedback,
+      ));
     }
 
     for (final widget in postFeedbackActions) {
@@ -120,5 +97,23 @@ class SessionActionStrip extends StatelessWidget {
     }
 
     return actions;
+  }
+
+  Widget _buildIconButton(
+    BuildContext context, {
+    required IconData icon,
+    required String? tooltip,
+    required VoidCallback? onPressed,
+    bool isActive = false,
+  }) {
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: sessionActionButtonStyle(
+        context,
+        isActive: isActive,
+      ),
+    );
   }
 }

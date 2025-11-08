@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
+import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class XpInfoButton extends StatelessWidget {
   final int xp;
   final int level;
   final Color? color;
+  final ButtonStyle? buttonStyle;
 
   const XpInfoButton({
     Key? key,
     required this.xp,
     required this.level,
     this.color,
+    this.buttonStyle,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final iconColor = color ?? Theme.of(context).iconTheme.color;
+    final style = buttonStyle ?? sessionActionButtonStyle(
+      context,
+      foregroundColor: color,
+    );
     return IconButton(
-      icon: Icon(Icons.auto_awesome, color: iconColor),
+      icon: const Icon(Icons.auto_awesome),
       tooltip: loc.xpInfoTooltip,
       onPressed: () => _showInfo(context),
+      style: style,
     );
   }
 
