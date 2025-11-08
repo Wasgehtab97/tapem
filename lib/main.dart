@@ -450,11 +450,12 @@ Future<void> main() async {
             return svc;
           },
         ),
-        provider.ChangeNotifierProxyProvider4<
+        provider.ChangeNotifierProxyProvider5<
             MembershipService,
             XpProvider,
             ChallengeProvider,
             WorkoutSessionDurationService,
+            AuthProvider,
             WorkoutDayController>(
           create: (context) => WorkoutDayController(
             firestore: FirebaseFirestore.instance,
@@ -466,7 +467,8 @@ Future<void> main() async {
             ),
             createDraftRepository: () => SessionDraftRepositoryImpl(),
           ),
-          update: (context, membership, xp, challenge, duration, controller) {
+          update:
+              (context, membership, xp, challenge, duration, auth, controller) {
             final ctrl = controller ??
                 WorkoutDayController(
                   firestore: FirebaseFirestore.instance,
@@ -479,6 +481,7 @@ Future<void> main() async {
                   createDraftRepository: () => SessionDraftRepositoryImpl(),
                 );
             ctrl.updateMembership(membership);
+            ctrl.setActiveUser(auth.userId);
             ctrl.attachExternalServices(
               xpProvider: xp,
               challengeProvider: challenge,

@@ -127,8 +127,23 @@ class WorkoutDayController extends ChangeNotifier {
   WorkoutSessionDurationService? _sessionDurationService;
 
   final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
+  String? _activeUserId;
   String? _focusedSessionKey;
   bool _isSavingAll = false;
+
+  void setActiveUser(String? userId) {
+    if (_activeUserId == userId) {
+      return;
+    }
+    for (final entry in _sessions.values) {
+      entry.dispose();
+    }
+    _sessions.clear();
+    _focusedSessionKey = null;
+    _isSavingAll = false;
+    _activeUserId = userId;
+    notifyListeners();
+  }
 
   void attachExternalServices({
     required XpProvider xpProvider,
@@ -364,6 +379,9 @@ class WorkoutDayController extends ChangeNotifier {
       entry.dispose();
     }
     _sessions.clear();
+    _focusedSessionKey = null;
+    _isSavingAll = false;
+    _activeUserId = null;
     super.dispose();
   }
 
