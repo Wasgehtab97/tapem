@@ -181,24 +181,35 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 0,
         title: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(loc.multiDeviceExerciseListTitle),
+            Text(loc.multiDeviceExerciseListTitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            const ActiveWorkoutTimer(
+            ActiveWorkoutTimer(
+              key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
               compact: true,
               padding: EdgeInsets.zero,
+              sessionKey: _sessionKey,
             ),
           ],
         ),
         actions: [
-          NfcScanButton(
-            onSelection: (selection) async {
-              _handleSelection(selection);
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: NfcScanButton(
+              onBeforeOpen: () => FocusManager.instance.primaryFocus?.unfocus(),
+              onSelection: (selection) async {
+                _handleSelection(selection);
+              },
+            ),
           ),
         ],
       ),

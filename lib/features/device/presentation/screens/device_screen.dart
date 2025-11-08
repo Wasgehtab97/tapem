@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/exercise_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
+import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/timer/active_workout_timer.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
 
 class DeviceScreen extends StatefulWidget {
   const DeviceScreen({
@@ -93,20 +99,135 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: DeviceSessionSection(
-          provider: session.provider,
-          gymId: session.gymId,
-          deviceId: session.deviceId,
-          exerciseId: session.exerciseId,
-          userId: session.userId,
-          sessionKey: session.key,
-          plannedEntry: null,
-          onSessionSaved: _handleSessionSaved,
-          onCloseRequested: _handleCloseRequested,
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: session.provider,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: _buildAppBar(context, session),
+          body: SafeArea(
+            child: DeviceSessionSection(
+              provider: session.provider,
+              gymId: session.gymId,
+              deviceId: session.deviceId,
+              exerciseId: session.exerciseId,
+              userId: session.userId,
+              sessionKey: session.key,
+              plannedEntry: null,
+              onSessionSaved: _handleSessionSaved,
+              onCloseRequested: _handleCloseRequested,
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    WorkoutDaySession session,
+  ) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final provider = session.provider;
+    final device = provider.device;
+    final exercises = (device?.isMulti ?? false)
+        ? context.watch<ExerciseProvider>().exercises
+        : null;
+    final resolvedTitle = _resolveExerciseTitle(
+          provider,
+          exercises: exercises,
+          exerciseId: session.exerciseId,
+        ) ??
+        loc.newSessionTitle;
+    final subtitle = device?.isMulti == true && resolvedTitle != device?.name
+        ? device?.name
+        : null;
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+          color: theme.textTheme.bodySmall?.color?.withOpacity(0.72),
+        ) ??
+        TextStyle(
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+          fontSize: 12,
+        );
+
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      titleSpacing: 0,
+      centerTitle: false,
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(resolvedTitle, style: titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (subtitle != null)
+            Text(
+              subtitle,
+              style: subtitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 4),
+          ActiveWorkoutTimer(
+            key: ValueKey('deviceScreenTimer-${session.key}'),
+            compact: true,
+            padding: EdgeInsets.zero,
+            sessionKey: session.key,
+          ),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: NfcScanButton(
+            deviceId: session.deviceId,
+            exerciseId: session.exerciseId,
+            onBeforeOpen: () => FocusManager.instance.primaryFocus?.unfocus(),
+            onSelection: (selection) async {
+              final auth = context.read<AuthProvider>();
+              final controller = context.read<WorkoutDayController>();
+              controller.addOrFocusSession(
+                gymId: selection.gymId,
+                deviceId: selection.deviceId,
+                exerciseId: selection.exerciseId,
+                userId: auth.userId!,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _resolveExerciseTitle(
+    DeviceProvider provider, {
+    List<Exercise>? exercises,
+    required String exerciseId,
+  }) {
+    final device = provider.device;
+    if (device == null) {
+      return null;
+    }
+    if (!device.isMulti) {
+      return device.name;
+    }
+    final availableExercises = exercises;
+    if (availableExercises == null) {
+      return device.name;
+    }
+    final match = availableExercises.where((exercise) => exercise.id == exerciseId);
+    if (match.isNotEmpty) {
+      return match.first.name;
+    }
+    return device.name;
   }
 }
