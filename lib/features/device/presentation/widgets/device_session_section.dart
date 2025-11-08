@@ -692,7 +692,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final content = _buildContent(context, prov);
     final Widget wrappedContent = hasScrollableParent
         ? IntrinsicHeight(child: content)
-        : ShrinkWrappingScrollView(
+        : SingleChildScrollView(
             padding: EdgeInsets.zero,
             clipBehavior: Clip.none,
             child: content,
