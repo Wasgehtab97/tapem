@@ -1613,6 +1613,12 @@ abstract class AppLocalizations {
   /// **'Show King/Queen leaderboard'**
   String get deviceLeaderboardTooltip;
 
+  /// Label for the previous session values shown on a set card
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get setCardPreviousLabel;
+
   /// Banner text for multi-device
   ///
   /// In en, this message translates to:

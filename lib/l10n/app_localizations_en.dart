@@ -834,6 +834,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceLeaderboardTooltip => 'Show King/Queen leaderboard';
 
   @override
+  String get setCardPreviousLabel => 'Previous';
+
+  @override
   String get multiDeviceBannerText => 'Multi-device mode: only daily XP and device statistics are counted. No XP per muscle group and no leaderboard update.';
 
   @override

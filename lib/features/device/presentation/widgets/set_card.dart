@@ -7,12 +7,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -160,6 +163,7 @@ class SetCard extends StatefulWidget {
   final SetCardDisplayMode displayMode;
   final BorderRadiusGeometry? groupedRadius;
   final String? sessionKey;
+  final SessionSetVM? previousSet;
   const SetCard({
     super.key,
     required this.index,
@@ -169,6 +173,7 @@ class SetCard extends StatefulWidget {
     this.displayMode = SetCardDisplayMode.standalone,
     this.groupedRadius,
     this.sessionKey,
+    this.previousSet,
   });
 
   @override
@@ -692,6 +697,7 @@ class SetCardState extends State<SetCard> {
       filled: filled,
       isBodyweightMode: prov.isBodyweightMode,
       loc: loc,
+      previousSet: widget.previousSet,
       weightController: _weightCtrl,
       weightFocus: _weightFocus,
       weightFieldKey: _weightFieldKey,
@@ -761,6 +767,7 @@ class SetRowContent extends StatelessWidget {
   final bool filled;
   final bool isBodyweightMode;
   final AppLocalizations loc;
+  final SessionSetVM? previousSet;
   final TextEditingController weightController;
   final FocusNode weightFocus;
   final Key weightFieldKey;
@@ -786,6 +793,7 @@ class SetRowContent extends StatelessWidget {
     required this.filled,
     required this.isBodyweightMode,
     required this.loc,
+    this.previousSet,
     required this.weightController,
     required this.weightFocus,
     required this.weightFieldKey,
@@ -928,6 +936,21 @@ class SetRowContent extends StatelessWidget {
         ],
       ),
     );
+
+    if (previousSet != null) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(top: dense ? 4 : 6),
+          child: _PreviousSetSummary(
+            previous: previousSet!,
+            tokens: tokens,
+            dense: dense,
+            leadingWidth: leadingWidth,
+            loc: loc,
+          ),
+        ),
+      );
+    }
     if (showExtras) {
       children.add(SizedBox(height: dense ? 6 : 9));
       for (var i = 0; i < dropRows.length; i++) {
@@ -1039,6 +1062,159 @@ class SetRowContent extends StatelessWidget {
       width: double.infinity,
       child: body,
     );
+  }
+}
+
+class _PreviousSetSummary extends StatelessWidget {
+  final SessionSetVM previous;
+  final SetCardTheme tokens;
+  final bool dense;
+  final double leadingWidth;
+  final AppLocalizations loc;
+
+  const _PreviousSetSummary({
+    required this.previous,
+    required this.tokens,
+    required this.dense,
+    required this.leadingWidth,
+    required this.loc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = GoogleFonts.inter(
+      fontSize: dense ? 11 : 12,
+      fontWeight: FontWeight.w500,
+      color: tokens.chipFg.withOpacity(0.88),
+    );
+    final labelStyle = textStyle.copyWith(fontWeight: FontWeight.w600);
+    final background = Color.alphaBlend(
+      tokens.cardFill.withOpacity(0.65),
+      Theme.of(context).colorScheme.surface,
+    );
+
+    final drops = previous.drops;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: leadingWidth),
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: dense ? 10 : 12,
+                  vertical: dense ? 4 : 6,
+                ),
+                decoration: BoxDecoration(
+                  color: background,
+                  borderRadius: BorderRadius.circular(dense ? 12 : 14),
+                  border: Border.all(
+                    color: tokens.chipBorder.withOpacity(0.35),
+                    width: 0.5,
+                  ),
+                ),
+                child: RichText(
+                  text: TextSpan(
+                    style: textStyle,
+                    children: [
+                      TextSpan(
+                        text: '${loc.setCardPreviousLabel}: ',
+                        style: labelStyle,
+                      ),
+                      TextSpan(
+                        text: '${_weightDescription(previous, loc)} × ${previous.reps}',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (drops.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(
+              top: dense ? 4 : 6,
+              left: leadingWidth,
+            ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final drop in drops)
+                  _PreviousDropChip(
+                    drop: drop,
+                    tokens: tokens,
+                    dense: dense,
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _weightDescription(SessionSetVM s, AppLocalizations loc) {
+    if (!s.isBodyweight) {
+      return '${_formatNumber(s.kg)} kg';
+    }
+    if (s.kg == 0) {
+      return loc.bodyweight;
+    }
+    return loc.bodyweightPlus(_formatNumber(s.kg));
+  }
+
+  String _formatNumber(num value) {
+    final formatter = NumberFormat('0.##');
+    return formatter.format(value);
+  }
+}
+
+class _PreviousDropChip extends StatelessWidget {
+  final DropEntry drop;
+  final SetCardTheme tokens;
+  final bool dense;
+
+  const _PreviousDropChip({
+    required this.drop,
+    required this.tokens,
+    required this.dense,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = GoogleFonts.inter(
+      fontSize: dense ? 10 : 11,
+      fontWeight: FontWeight.w500,
+      color: tokens.chipFg.withOpacity(0.82),
+    );
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 8 : 10,
+        vertical: dense ? 4 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.cardFill,
+        borderRadius: BorderRadius.circular(dense ? 11 : 12),
+        border: Border.all(
+          color: tokens.chipBorder.withOpacity(0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        '${_formatNumber(drop.kg)} kg × ${drop.reps}',
+        style: textStyle,
+      ),
+    );
+  }
+
+  String _formatNumber(num value) {
+    final formatter = NumberFormat('0.##');
+    return formatter.format(value);
   }
 }
 
