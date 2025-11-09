@@ -20,12 +20,17 @@ class CommunityStatsWriter {
     required String? avatarUrl,
     required DateTime localTimestamp,
     required List<Map<String, dynamic>> sets,
+    int? setCount,
+    int? exerciseCount,
   }) async {
     if (gymId.isEmpty || sessionId.isEmpty || userId.isEmpty) {
       return;
     }
 
     final totals = _aggregate(sets);
+    final effectiveSetCount = setCount ?? sets.length;
+    final effectiveExerciseCount =
+        exerciseCount ?? _resolveExerciseCount(sets, effectiveSetCount);
     final localDay = DateTime(localTimestamp.year, localTimestamp.month,
         localTimestamp.day);
     final dayKey = logicDayKey(localDay);
@@ -60,8 +65,8 @@ class CommunityStatsWriter {
         'repsTotal': FieldValue.increment(totals.reps),
         'volumeTotal': FieldValue.increment(totals.volume),
         'trainingSessions': FieldValue.increment(1),
-        'exerciseTotal': FieldValue.increment(totals.exerciseCount),
-        'setTotal': FieldValue.increment(totals.setCount),
+        'exerciseTotal': FieldValue.increment(effectiveExerciseCount),
+        'setTotal': FieldValue.increment(effectiveSetCount),
       });
 
       final feedData = <String, dynamic>{
@@ -76,35 +81,44 @@ class CommunityStatsWriter {
   _CommunityTotals _aggregate(List<Map<String, dynamic>> sets) {
     var reps = 0;
     var volume = 0.0;
-    var setCount = 0;
-    final exerciseIds = <String>{};
     for (final set in sets) {
       final setReps = _parseReps(set['reps']);
       reps += setReps;
-      if (setReps > 0) {
-        setCount++;
-      }
       if (!_isBodyweight(set['isBodyweight'])) {
         final weight = _parseWeight(set['weight']);
         if (weight > 0 && setReps > 0) {
           volume += weight * setReps;
         }
       }
+    }
+    final normalizedVolume = double.parse(volume.toStringAsFixed(2));
+    return _CommunityTotals(
+      reps: reps,
+      volume: normalizedVolume,
+    );
+  }
+
+  int _resolveExerciseCount(
+    List<Map<String, dynamic>> sets,
+    int setCount,
+  ) {
+    if (setCount <= 0) {
+      return 0;
+    }
+
+    final exerciseIds = <String>{};
+    for (final set in sets) {
       final exerciseId = _parseExerciseId(set['exerciseId']);
       if (exerciseId != null) {
         exerciseIds.add(exerciseId);
       }
     }
-    final normalizedVolume = double.parse(volume.toStringAsFixed(2));
-    final exerciseCount = exerciseIds.isEmpty
-        ? (setCount > 0 ? 1 : 0)
-        : exerciseIds.length;
-    return _CommunityTotals(
-      reps: reps,
-      volume: normalizedVolume,
-      setCount: setCount,
-      exerciseCount: exerciseCount,
-    );
+
+    if (exerciseIds.isEmpty) {
+      return 1;
+    }
+
+    return exerciseIds.length;
   }
 
   int _parseReps(dynamic raw) {
@@ -149,12 +163,8 @@ class _CommunityTotals {
   const _CommunityTotals({
     required this.reps,
     required this.volume,
-    required this.setCount,
-    required this.exerciseCount,
   });
 
   final int reps;
   final double volume;
-  final int setCount;
-  final int exerciseCount;
 }

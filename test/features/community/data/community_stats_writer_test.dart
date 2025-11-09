@@ -120,5 +120,46 @@ void main() {
       expect(aggregatedStatsData['exerciseTotal'], 2);
       expect(aggregatedStatsData['setTotal'], 4);
     });
+
+    test('uses provided counts when reps parsing fails', () async {
+      final invalidSets = [
+        {
+          'reps': 'NaN',
+          'weight': 'unknown',
+          'isBodyweight': false,
+          'exerciseId': '  ',
+        },
+        {
+          'reps': '',
+          'exerciseId': null,
+        },
+      ];
+
+      await writer.recordSession(
+        gymId: 'gym1',
+        sessionId: 's3',
+        userId: 'user2',
+        username: 'Bob',
+        avatarUrl: null,
+        localTimestamp: DateTime(2024, 11, 2, 9, 30),
+        sets: invalidSets,
+        setCount: invalidSets.length,
+        exerciseCount: 1,
+      );
+
+      final stats = await firestore
+          .collection('gyms')
+          .doc('gym1')
+          .collection('stats_daily')
+          .doc('2024-11-02')
+          .get();
+      final statsData = stats.data()!;
+
+      expect(statsData['repsTotal'], 0);
+      expect(statsData['volumeTotal'], closeTo(0, 0.001));
+      expect(statsData['trainingSessions'], 1);
+      expect(statsData['setTotal'], invalidSets.length);
+      expect(statsData['exerciseTotal'], 1);
+    });
   });
 }
