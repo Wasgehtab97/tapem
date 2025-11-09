@@ -121,6 +121,8 @@ class FirestoreCommunityStatsSource {
     final reps = (data['repsTotal'] as num?)?.toInt() ?? 0;
     final volume = (data['volumeTotal'] as num?)?.toDouble() ?? 0;
     final sessions = (data['trainingSessions'] as num?)?.toInt() ?? 0;
+    final exercises = (data['exerciseTotal'] as num?)?.toInt() ?? 0;
+    final sets = (data['setTotal'] as num?)?.toInt() ?? 0;
     final ts = data['date'];
     DateTime? date;
     if (ts is Timestamp) {
@@ -128,9 +130,11 @@ class FirestoreCommunityStatsSource {
     }
     final resolvedDayKey = (data['dayKey'] as String?) ?? doc.id;
     return CommunityStats(
+      totalSessions: sessions,
+      totalExercises: exercises,
+      totalSets: sets,
       totalReps: reps,
       totalVolumeKg: volume,
-      workoutCount: sessions,
       dayKey: resolvedDayKey,
       date: date,
     );
@@ -141,12 +145,7 @@ class FirestoreCommunityStatsSource {
     if (data == null) {
       return FeedEvent(
         type: FeedEventType.daySummary,
-        dayKey: '',
-        reps: 0,
-        volumeKg: 0,
-        sessionCount: 0,
-        exerciseCount: 0,
-        setCount: 0,
+        dayKey: _extractDayKey(doc.id),
       );
     }
     final created = data['createdAt'];
@@ -155,27 +154,19 @@ class FirestoreCommunityStatsSource {
       createdAt = created.toDate();
     }
     final typeString = data['type'] as String?;
-    final rawVolume = (data['volume'] as num?)?.toDouble() ?? 0;
-    final normalizedVolume = double.parse(rawVolume.toStringAsFixed(2));
     final eventType = feedEventTypeFromString(typeString);
-    final reps = (data['reps'] as num?)?.toInt();
-    final sessionCount = (data['sessionCount'] as num?)?.toInt();
-    final exerciseCount = (data['exerciseCount'] as num?)?.toInt();
-    final setCount = (data['setCount'] as num?)?.toInt();
     return FeedEvent(
       type: eventType,
       createdAt: createdAt,
-      userId: data['userId'] as String?,
-      username: data['username'] as String?,
-      dayKey: (data['dayKey'] as String?) ?? '',
-      reps: reps ?? 0,
-      volumeKg: normalizedVolume,
-      sessionCount: sessionCount ?? 0,
-      exerciseCount: exerciseCount ?? 0,
-      setCount: setCount ?? 0,
-      deviceName: data['deviceName'] as String?,
-      funnyText: data['funnyText'] as String?,
-      avatarUrl: data['avatarUrl'] as String?,
+      dayKey: (data['dayKey'] as String?) ?? _extractDayKey(doc.id),
     );
   }
+}
+
+String _extractDayKey(String docId) {
+  final separatorIndex = docId.indexOf('_');
+  if (separatorIndex <= 0) {
+    return docId;
+  }
+  return docId.substring(0, separatorIndex);
 }

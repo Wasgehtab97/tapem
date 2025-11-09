@@ -128,9 +128,22 @@ class _CommunityContent extends StatelessWidget {
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.sm,
-          AppSpacing.sm,
+          AppSpacing.md,
           AppSpacing.sm,
           AppSpacing.md,
+        ),
+        sliver: SliverToBoxAdapter(
+          child: stats.hasData
+              ? _CommunityKpiSection(stats: stats, accentColor: brandColor)
+              : _CommunityPlaceholder(message: loc.communityEmptyState),
+        ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          0,
+          AppSpacing.sm,
+          AppSpacing.lg,
         ),
         sliver: SliverToBoxAdapter(
           child: _CommunityFeedCard(
@@ -138,14 +151,6 @@ class _CommunityContent extends StatelessWidget {
             feedValue: feedValue,
             onRetry: onRetryFeed,
           ),
-        ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.lg),
-        sliver: SliverToBoxAdapter(
-          child: stats.hasData
-              ? _CommunityKpiSection(stats: stats)
-              : _CommunityPlaceholder(message: loc.communityEmptyState),
         ),
       ),
     ];
@@ -217,165 +222,147 @@ class _CommunityScrollableError extends StatelessWidget {
   }
 }
 
-class _CommunityKpiSection extends StatefulWidget {
-  const _CommunityKpiSection({required this.stats});
+
+class _CommunityKpiSection extends StatelessWidget {
+  const _CommunityKpiSection({required this.stats, required this.accentColor});
 
   final CommunityStats stats;
-
-  @override
-  State<_CommunityKpiSection> createState() => _CommunityKpiSectionState();
-}
-
-class _CommunityKpiSectionState extends State<_CommunityKpiSection> {
-  late final PageController _pageController;
-  double _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.82);
-    _pageController.addListener(_handlePageChange);
-  }
-
-  void _handlePageChange() {
-    final page = _pageController.page;
-    if (page != null && mounted) {
-      setState(() {
-        _currentPage = page;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _pageController
-      ..removeListener(_handlePageChange)
-      ..dispose();
-    super.dispose();
-  }
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-
     final localeName = Localizations.localeOf(context).toLanguageTag();
     final numberFormat = NumberFormat.decimalPattern(localeName);
-    final compactVolumeFormat = NumberFormat.decimalPatternDigits(
+    final decimalFormat = NumberFormat.decimalPatternDigits(
       locale: localeName,
       decimalDigits: 1,
     );
 
-    final stats = widget.stats;
-    final volume = stats.totalVolumeKg;
-    final formattedVolume = _formatCommunityVolume(
-      volume: volume,
-      numberFormat: numberFormat,
-      decimalFormat: compactVolumeFormat,
-    );
-
-    final cardData = [
-      _CommunityKpiDescriptor(
-        icon: Icons.repeat,
+    final metrics = [
+      _CommunityMetric(
+        label: loc.communityKpiSessions,
+        value: numberFormat.format(stats.totalSessions),
+      ),
+      _CommunityMetric(
+        label: loc.communityKpiExercises,
+        value: numberFormat.format(stats.totalExercises),
+      ),
+      _CommunityMetric(
+        label: loc.communityKpiSets,
+        value: numberFormat.format(stats.totalSets),
+      ),
+      _CommunityMetric(
         label: loc.communityKpiReps,
         value: numberFormat.format(stats.totalReps),
       ),
-      _CommunityKpiDescriptor(
-        icon: Icons.fitness_center,
+      _CommunityMetric(
         label: loc.communityKpiVolume,
-        value: formattedVolume,
-      ),
-      _CommunityKpiDescriptor(
-        icon: Icons.celebration,
-        label: loc.communityKpiWorkouts,
-        value: numberFormat.format(stats.workoutCount),
+        value: _formatCommunityVolume(
+          volume: stats.totalVolumeKg,
+          numberFormat: numberFormat,
+          decimalFormat: decimalFormat,
+        ),
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-        if (isWide) {
-          return ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 200),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < cardData.length; i++)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: i == cardData.length - 1 ? 0 : AppSpacing.sm,
-                      ),
-                      child: _CommunityKpiCard(
-                        icon: cardData[i].icon,
-                        label: cardData[i].label,
-                        value: cardData[i].value,
-                        accentColor: brandColor,
-                        isActive: true,
-                      ),
-                    ),
-                  ),
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        border: Border.all(color: accentColor.withOpacity(0.25)),
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.25),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            loc.communityKpiHeadline,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
-          );
-        }
+          ),
+          const SizedBox(height: AppSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final maxWidth = constraints.maxWidth;
+              final columns = maxWidth >= 900
+                  ? 5
+                  : maxWidth >= 620
+                      ? 3
+                      : 2;
+              final itemWidth = (maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+              return Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: metrics
+                    .map(
+                      (metric) => SizedBox(
+                        width: itemWidth.clamp(140.0, maxWidth).toDouble(),
+                        child: _CommunityMetricTile(
+                          metric: metric,
+                          accentColor: accentColor,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 210,
-              child: PageView.builder(
-                controller: _pageController,
-                clipBehavior: Clip.none,
-                physics: const BouncingScrollPhysics(),
-                itemCount: cardData.length,
-                itemBuilder: (context, index) {
-                  final descriptor = cardData[index];
-                  final progress = (_currentPage - index).abs().clamp(0.0, 1.0);
-                  final scale = 1 - (progress * 0.08);
-                  final horizontalPadding = index == 0 || index == cardData.length - 1
-                      ? AppSpacing.sm
-                      : AppSpacing.xs;
-                  return Transform.scale(
-                    scale: scale,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding / 2),
-                      child: _CommunityKpiCard(
-                        icon: descriptor.icon,
-                        label: descriptor.label,
-                        value: descriptor.value,
-                        accentColor: brandColor,
-                        isActive: progress < 0.5,
-                      ),
-                    ),
-                  );
-                },
-              ),
+class _CommunityMetric {
+  const _CommunityMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+class _CommunityMetricTile extends StatelessWidget {
+  const _CommunityMetricTile({required this.metric, required this.accentColor});
+
+  final _CommunityMetric metric;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: accentColor.withOpacity(0.28)),
+        color: accentColor.withOpacity(0.08),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            metric.value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < cardData.length; i++)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOut,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    height: 6,
-                    width: (_currentPage - i).abs() < 0.5 ? 26 : 10,
-                    decoration: BoxDecoration(
-                      color: brandColor.withOpacity((_currentPage - i).abs() < 0.5 ? 0.9 : 0.35),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-              ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            metric.label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.72),
+              letterSpacing: 0.2,
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -395,9 +382,6 @@ class _CommunityFeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final numberFormat = NumberFormat.decimalPattern(localeTag);
-    final decimalFormat = NumberFormat('#,##0.##', localeTag);
     final dateFormat = DateFormat.yMMMd(loc.localeName);
 
     Widget buildBody(List<FeedEvent> events) {
@@ -421,8 +405,6 @@ class _CommunityFeedCard extends StatelessWidget {
           final event = events[index];
           return _CommunityFeedTile(
             event: event,
-            numberFormat: numberFormat,
-            decimalFormat: decimalFormat,
             dateFormat: dateFormat,
             highlightColor: highlightColor,
           );
@@ -667,18 +649,15 @@ class _CommunityKpiCard extends StatelessWidget {
   }
 }
 
+
 class _CommunityFeedTile extends StatelessWidget {
   const _CommunityFeedTile({
     required this.event,
-    required this.numberFormat,
-    required this.decimalFormat,
     required this.dateFormat,
     required this.highlightColor,
   });
 
   final FeedEvent event;
-  final NumberFormat numberFormat;
-  final NumberFormat decimalFormat;
   final DateFormat dateFormat;
   final Color highlightColor;
 
@@ -686,199 +665,62 @@ class _CommunityFeedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final reps = numberFormat.format(event.reps);
-    final volume = _formatCommunityVolume(
-      volume: event.volumeKg,
-      numberFormat: numberFormat,
-      decimalFormat: decimalFormat,
-    );
-    final sessions = numberFormat.format(event.sessionCount);
-    final exercises = numberFormat.format(event.exerciseCount);
-    final sets = numberFormat.format(event.setCount);
-    final actor = event.displayName ?? loc.communityFeedAnonymous;
     final eventDate = _resolveEventDate()?.toLocal();
-    final created = eventDate != null ? dateFormat.format(eventDate) : '–';
-
-    final detailPills = <Widget>[];
-    if (event.type == FeedEventType.daySummary) {
-      if (event.sessionCount > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedSessionsLabel(sessions),
-            accentColor: highlightColor,
-            icon: Icons.calendar_today,
-            backgroundOpacity: 0.18,
-          ),
-        );
-      }
-      if (event.exerciseCount > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedExercisesLabel(exercises),
-            accentColor: highlightColor,
-            icon: Icons.sports_martial_arts,
-            backgroundOpacity: 0.18,
-          ),
-        );
-      }
-      if (event.setCount > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedSetsLabel(sets),
-            accentColor: highlightColor,
-            icon: Icons.list_alt,
-            backgroundOpacity: 0.16,
-          ),
-        );
-      }
-      if (event.reps > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedRepsLabel(reps),
-            accentColor: highlightColor,
-            icon: Icons.repeat,
-            backgroundOpacity: 0.16,
-          ),
-        );
-      }
-      if (event.volumeKg > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedVolumeLabel(volume),
-            accentColor: highlightColor,
-            icon: Icons.monitor_weight,
-            backgroundOpacity: 0.16,
-          ),
-        );
-      }
-    } else {
-      if (event.reps > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedRepsLabel(reps),
-            accentColor: highlightColor,
-            icon: Icons.repeat,
-            backgroundOpacity: 0.16,
-          ),
-        );
-      }
-      if (event.volumeKg > 0) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: loc.communityFeedVolumeLabel(volume),
-            accentColor: highlightColor,
-            icon: Icons.fitness_center,
-            backgroundOpacity: 0.16,
-          ),
-        );
-      }
-      if (event.deviceName != null && event.deviceName!.isNotEmpty) {
-        detailPills.add(
-          _CommunityDetailPill(
-            text: event.deviceName!,
-            accentColor: highlightColor,
-            icon: Icons.watch,
-            backgroundOpacity: 0.2,
-          ),
-        );
-      }
-    }
-
-    final headline = actor;
+    final createdLabel = eventDate != null ? dateFormat.format(eventDate) : '–';
+    final headline = loc.communityFeedTrainingDayHeadline;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            highlightColor.withOpacity(0.24),
-            theme.colorScheme.surfaceVariant.withOpacity(0.55),
-          ],
-        ),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: highlightColor.withOpacity(0.18)),
-        boxShadow: [
-          BoxShadow(
-            color: highlightColor.withOpacity(0.28),
-            blurRadius: 18,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: highlightColor.withOpacity(0.1),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      highlightColor,
-                      highlightColor.withOpacity(0.7),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: highlightColor.withOpacity(0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.auto_graph, color: Colors.black87),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      headline,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (detailPills.isNotEmpty)
-                      Wrap(
-                        spacing: AppSpacing.xs / 2,
-                        runSpacing: 6,
-                        children: detailPills,
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                created,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.65),
-                ),
-              ),
-            ],
-          ),
-          if (event.funnyText != null && event.funnyText!.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              event.funnyText!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-                fontStyle: FontStyle.italic,
-              ),
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: highlightColor.withOpacity(0.85),
             ),
-          ],
+            child: Icon(
+              event.type == FeedEventType.milestone
+                  ? Icons.emoji_events
+                  : Icons.calendar_today,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  headline,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  createdLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -998,58 +840,6 @@ class _CommunityFeedSkeleton extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-class _CommunityDetailPill extends StatelessWidget {
-  const _CommunityDetailPill({
-    required this.text,
-    required this.accentColor,
-    this.icon,
-    this.backgroundOpacity = 0.16,
-  });
-
-  final String text;
-  final Color accentColor;
-  final IconData? icon;
-  final double backgroundOpacity;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm * 0.75,
-        vertical: AppSpacing.xs * 0.45,
-      ),
-      decoration: BoxDecoration(
-        color: accentColor.withOpacity(backgroundOpacity),
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        border: Border.all(
-          color: accentColor.withOpacity(backgroundOpacity + 0.08),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              size: 14,
-              color: theme.colorScheme.onSurface,
-            ),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            text,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

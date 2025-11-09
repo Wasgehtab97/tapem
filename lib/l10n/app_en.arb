@@ -1590,12 +1590,18 @@
   ,"@communityTabWeek": {"description": "Tab label for weekly stats"}
   ,"communityTabMonth": "Month"
   ,"@communityTabMonth": {"description": "Tab label for monthly stats"}
-  ,"communityKpiReps": "Total reps"
+  ,"communityKpiHeadline": "Community totals"
+  ,"@communityKpiHeadline": {"description": "Headline for the community KPI section"}
+  ,"communityKpiSessions": "Sessions"
+  ,"@communityKpiSessions": {"description": "KPI label for total sessions"}
+  ,"communityKpiExercises": "Exercises"
+  ,"@communityKpiExercises": {"description": "KPI label for total exercises"}
+  ,"communityKpiSets": "Sets"
+  ,"@communityKpiSets": {"description": "KPI label for total sets"}
+  ,"communityKpiReps": "Reps"
   ,"@communityKpiReps": {"description": "KPI label for total repetitions"}
-  ,"communityKpiVolume": "Total volume (kg)"
+  ,"communityKpiVolume": "Volume (kg)"
   ,"@communityKpiVolume": {"description": "KPI label for total volume"}
-  ,"communityKpiWorkouts": "Workouts"
-  ,"@communityKpiWorkouts": {"description": "KPI label for number of workouts"}
   ,"communityEmptyState": "No data yet for the selected period."
   ,"@communityEmptyState": {"description": "Empty state message when no community stats are available"}
   ,"communityErrorState": "We couldn't load the community stats."
@@ -1608,16 +1614,6 @@
   ,"@communityFeedEmpty": {"description": "Message shown when the feed has no entries"}
   ,"communityFeedError": "Live ticker could not be loaded."
   ,"@communityFeedError": {"description": "Error message for the live ticker"}
-  ,"communityFeedAnonymous": "Someone"
-  ,"@communityFeedAnonymous": {"description": "Fallback name when a feed event has no username"}
-  ,"communityFeedRepsLabel": "{reps} reps"
-  ,"@communityFeedRepsLabel": {"description": "Formats the reps portion of a feed entry","placeholders": {"reps": {"type": "String"}}}
-  ,"communityFeedVolumeLabel": "{volume} kg"
-  ,"@communityFeedVolumeLabel": {"description": "Formats the volume portion of a feed entry","placeholders": {"volume": {"type": "String"}}}
-  ,"communityFeedSessionsLabel": "{count} sessions"
-  ,"@communityFeedSessionsLabel": {"description": "Formats the session count chip in the community feed","placeholders": {"count": {"type": "String"}}}
-  ,"communityFeedExercisesLabel": "{count} exercises"
-  ,"@communityFeedExercisesLabel": {"description": "Formats the exercise count chip in the community feed","placeholders": {"count": {"type": "String"}}}
-  ,"communityFeedSetsLabel": "{count} sets"
-  ,"@communityFeedSetsLabel": {"description": "Formats the set count chip in the community feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedTrainingDayHeadline": "Training day completed"
+  ,"@communityFeedTrainingDayHeadline": {"description": "Headline shown for anonymized training day feed entries"}
 }

@@ -14,8 +14,7 @@ void main() {
       writer = CommunityStatsWriter(firestore: firestore);
     });
 
-    test('aggregates sessions per user and day into a single feed document',
-        () async {
+    test('aggregates stats per day and keeps feed entry anonymized', () async {
       final firstSets = [
         {
           'reps': 10,
@@ -51,15 +50,22 @@ void main() {
       final firstTimestamp = firstData['createdAt'] as Timestamp?;
 
       expect(firstData['type'], 'day_summary');
-      expect(firstData['userId'], 'user1');
-      expect(firstData['username'], 'Alice');
-      expect(firstData['avatarUrl'], 'https://example.com/avatar.png');
-      expect(firstData['reps'], 18);
-      expect(firstData['volume'], closeTo(940, 0.001));
-      expect(firstData['sessionCount'], 1);
-      expect(firstData['exerciseCount'], 1);
-      expect(firstData['setCount'], 2);
+      expect(firstData['dayKey'], '2024-11-01');
+      expect(firstData.keys.toSet(), equals({'type', 'dayKey', 'createdAt'}));
       expect(firstTimestamp, isNotNull);
+
+      final firstStats = await firestore
+          .collection('gyms')
+          .doc('gym1')
+          .collection('stats_daily')
+          .doc('2024-11-01')
+          .get();
+      final firstStatsData = firstStats.data()!;
+      expect(firstStatsData['repsTotal'], 18);
+      expect(firstStatsData['volumeTotal'], closeTo(940, 0.001));
+      expect(firstStatsData['trainingSessions'], 1);
+      expect(firstStatsData['exerciseTotal'], 1);
+      expect(firstStatsData['setTotal'], 2);
 
       final secondSets = [
         {
@@ -93,16 +99,26 @@ void main() {
       final aggregatedData = aggregatedDoc.data()!;
       final updatedTimestamp = aggregatedData['createdAt'] as Timestamp?;
 
-      expect(aggregatedData['reps'], 44);
-      expect(aggregatedData['volume'], closeTo(1420, 0.001));
-      expect(aggregatedData['sessionCount'], 2);
-      expect(aggregatedData['exerciseCount'], 2);
-      expect(aggregatedData['setCount'], 4);
+      expect(aggregatedData['dayKey'], '2024-11-01');
+      expect(aggregatedData.keys.toSet(), equals({'type', 'dayKey', 'createdAt'}));
       expect(updatedTimestamp, isNotNull);
       expect(
         updatedTimestamp!.millisecondsSinceEpoch,
         greaterThanOrEqualTo(firstTimestamp!.millisecondsSinceEpoch),
       );
+
+      final aggregatedStats = await firestore
+          .collection('gyms')
+          .doc('gym1')
+          .collection('stats_daily')
+          .doc('2024-11-01')
+          .get();
+      final aggregatedStatsData = aggregatedStats.data()!;
+      expect(aggregatedStatsData['repsTotal'], 44);
+      expect(aggregatedStatsData['volumeTotal'], closeTo(1420, 0.001));
+      expect(aggregatedStatsData['trainingSessions'], 2);
+      expect(aggregatedStatsData['exerciseTotal'], 2);
+      expect(aggregatedStatsData['setTotal'], 4);
     });
   });
 }

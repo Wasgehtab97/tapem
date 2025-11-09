@@ -30,10 +30,6 @@ class CommunityStatsWriter {
         localTimestamp.day);
     final dayKey = logicDayKey(localDay);
     final utcMidnight = localDay.toUtc();
-    final trimmedUsername = username?.trim();
-
-    final sanitizedAvatar = avatarUrl?.trim();
-
     final gymRef = _firestore.collection('gyms').doc(gymId);
     final appliedRef = gymRef.collection('stats_applied').doc(sessionId);
     final statsRef = gymRef.collection('stats_daily').doc(dayKey);
@@ -64,25 +60,15 @@ class CommunityStatsWriter {
         'repsTotal': FieldValue.increment(totals.reps),
         'volumeTotal': FieldValue.increment(totals.volume),
         'trainingSessions': FieldValue.increment(1),
+        'exerciseTotal': FieldValue.increment(totals.exerciseCount),
+        'setTotal': FieldValue.increment(totals.setCount),
       });
 
       final feedData = <String, dynamic>{
         'type': 'day_summary',
         'createdAt': FieldValue.serverTimestamp(),
-        'userId': userId,
         'dayKey': dayKey,
-        'reps': FieldValue.increment(totals.reps),
-        'volume': FieldValue.increment(totals.volume),
-        'sessionCount': FieldValue.increment(1),
-        'exerciseCount': FieldValue.increment(totals.exerciseCount),
-        'setCount': FieldValue.increment(totals.setCount),
       };
-      if (trimmedUsername != null && trimmedUsername.isNotEmpty) {
-        feedData['username'] = trimmedUsername;
-      }
-      if (sanitizedAvatar != null && sanitizedAvatar.isNotEmpty) {
-        feedData['avatarUrl'] = sanitizedAvatar;
-      }
       transaction.set(feedRef, feedData, SetOptions(merge: true));
     });
   }

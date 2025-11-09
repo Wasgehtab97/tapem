@@ -1578,10 +1578,18 @@
   ,"@communityTabMonth": {"description": "Tab-Label für den Monatszeitraum"}
   ,"communityKpiReps": "Gesamt-Wiederholungen"
   ,"@communityKpiReps": {"description": "KPI-Bezeichnung für die Gesamtzahl der Wiederholungen"}
-  ,"communityKpiVolume": "Gesamt-Volumen (kg)"
+  ,"communityKpiHeadline": "Community-Gesamtwerte"
+  ,"@communityKpiHeadline": {"description": "Überschrift für den Community-KPI-Block"}
+  ,"communityKpiSessions": "Einheiten"
+  ,"@communityKpiSessions": {"description": "KPI-Bezeichnung für die Anzahl der Trainingseinheiten"}
+  ,"communityKpiExercises": "Übungen"
+  ,"@communityKpiExercises": {"description": "KPI-Bezeichnung für die Anzahl der Übungen"}
+  ,"communityKpiSets": "Sätze"
+  ,"@communityKpiSets": {"description": "KPI-Bezeichnung für die Anzahl der Sätze"}
+  ,"communityKpiReps": "Wiederholungen"
+  ,"@communityKpiReps": {"description": "KPI-Bezeichnung für die Anzahl der Wiederholungen"}
+  ,"communityKpiVolume": "Volumen (kg)"
   ,"@communityKpiVolume": {"description": "KPI-Bezeichnung für das Gesamtvolumen"}
-  ,"communityKpiWorkouts": "Workouts"
-  ,"@communityKpiWorkouts": {"description": "KPI-Bezeichnung für die Anzahl der Workouts"}
   ,"communityEmptyState": "Noch keine Daten im ausgewählten Zeitraum."
   ,"@communityEmptyState": {"description": "Text wenn im gewählten Zeitraum keine Community-Daten vorhanden sind"}
   ,"communityErrorState": "Community-Daten konnten nicht geladen werden."
@@ -1594,16 +1602,6 @@
   ,"@communityFeedEmpty": {"description": "Text wenn der Live-Ticker leer ist"}
   ,"communityFeedError": "Live-Ticker konnte nicht geladen werden."
   ,"@communityFeedError": {"description": "Fehlermeldung für den Live-Ticker"}
-  ,"communityFeedAnonymous": "Jemand"
-  ,"@communityFeedAnonymous": {"description": "Fallback-Name wenn kein Benutzername vorhanden ist"}
-  ,"communityFeedRepsLabel": "{reps} Wdh."
-  ,"@communityFeedRepsLabel": {"description": "Formatierung für die Wiederholungen im Feed","placeholders": {"reps": {"type": "String"}}}
-  ,"communityFeedVolumeLabel": "{volume} kg"
-  ,"@communityFeedVolumeLabel": {"description": "Formatierung für das Volumen im Feed","placeholders": {"volume": {"type": "String"}}}
-  ,"communityFeedSessionsLabel": "{count} Trainingseinheiten"
-  ,"@communityFeedSessionsLabel": {"description": "Formatierung für den Session-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
-  ,"communityFeedExercisesLabel": "{count} Übungen"
-  ,"@communityFeedExercisesLabel": {"description": "Formatierung für den Übungs-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
-  ,"communityFeedSetsLabel": "{count} Sätze"
-  ,"@communityFeedSetsLabel": {"description": "Formatierung für den Satz-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedTrainingDayHeadline": "Trainingstag abgeschlossen"
+  ,"@communityFeedTrainingDayHeadline": {"description": "Überschrift für anonymisierte Trainingstage im Feed"}
 }

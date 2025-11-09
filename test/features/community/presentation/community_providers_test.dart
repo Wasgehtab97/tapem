@@ -73,7 +73,13 @@ void main() {
           .read(communityStatsProvider(CommunityPeriod.today).future);
 
       service.emitToday(
-        const CommunityStats(totalReps: 7, totalVolumeKg: 15, workoutCount: 2),
+        const CommunityStats(
+          totalSessions: 2,
+          totalExercises: 5,
+          totalSets: 9,
+          totalReps: 7,
+          totalVolumeKg: 15,
+        ),
       );
 
       final stats = await future;
@@ -88,7 +94,13 @@ void main() {
           .read(communityStatsProvider(CommunityPeriod.week).future);
 
       service.emitRange(
-        const CommunityStats(totalReps: 3, totalVolumeKg: 8, workoutCount: 1),
+        const CommunityStats(
+          totalSessions: 1,
+          totalExercises: 2,
+          totalSets: 4,
+          totalReps: 3,
+          totalVolumeKg: 8,
+        ),
       );
 
       final stats = await future;
