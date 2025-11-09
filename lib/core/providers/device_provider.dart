@@ -1456,6 +1456,8 @@ class DeviceProvider extends ChangeNotifier {
           avatarUrl: null,
           localTimestamp: now,
           sets: savedSets,
+          setCount: savedSets.length,
+          exerciseCount: savedSets.isEmpty ? 0 : 1,
         );
       } on CommunityStatsAlreadyAppliedException {
         _log('ℹ️ [Provider] community stats already applied ($sessionId)');
