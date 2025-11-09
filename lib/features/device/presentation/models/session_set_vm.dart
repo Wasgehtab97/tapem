@@ -33,6 +33,13 @@ List<SessionSetVM> mapSnapshotToVM(DeviceSessionSnapshot snap) {
 List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
   final vm = <SessionSetVM>[];
   var ordinal = 1;
+
+  String normalize(dynamic value) {
+    final text = (value ?? '').toString().trim();
+    if (text.toLowerCase() == 'null') return '';
+    return text;
+  }
+
   for (final s in sets) {
     final drops = <DropEntry>[];
     final rawDrops = s['drops'];
@@ -40,8 +47,8 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
       for (final drop in rawDrops) {
         if (drop is Map) {
           final map = Map<String, dynamic>.from(drop);
-          final weightText = (map['weight'] ?? map['kg'] ?? '').toString().trim();
-          final repsText = (map['reps'] ?? map['wdh'] ?? '').toString().trim();
+          final weightText = normalize(map['weight'] ?? map['kg']);
+          final repsText = normalize(map['reps'] ?? map['wdh']);
           if (weightText.isEmpty || repsText.isEmpty) continue;
           final weight =
               num.tryParse(weightText.replaceAll(',', '.')) ?? 0;
@@ -51,8 +58,8 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
         }
       }
     } else {
-      final dropWeight = (s['dropWeight'] ?? '').toString().trim();
-      final dropReps = (s['dropReps'] ?? '').toString().trim();
+      final dropWeight = normalize(s['dropWeight']);
+      final dropReps = normalize(s['dropReps']);
       if (dropWeight.isNotEmpty && dropReps.isNotEmpty) {
         drops.add(
           DropEntry(
@@ -62,27 +69,34 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
         );
       }
     }
-    final weightSource =
-        (s['weight'] ?? s['kg'])?.toString() ?? '';
-    final weightText = weightSource.trim();
+
+    final weightText = normalize(s['weight'] ?? s['kg']);
     final kg = weightText.isEmpty
         ? null
         : num.tryParse(weightText.replaceAll(',', '.'));
 
-    final repsSource =
-        (s['reps'] ?? s['wdh'])?.toString() ?? '';
-    final repsText = repsSource.trim();
+    final repsText = normalize(s['reps'] ?? s['wdh']);
     final reps = repsText.isEmpty
         ? null
         : int.tryParse(repsText.replaceAll(',', '.'));
+
+    final raw = s['isBodyweight'];
+    final isBodyweight =
+        raw is bool ? raw : raw?.toString().toLowerCase() == 'true';
 
     if (kg == null && reps == null && drops.isEmpty) {
       continue;
     }
 
-    final raw = s['isBodyweight'];
-    final isBodyweight =
-        raw is bool ? raw : raw?.toString().toLowerCase() == 'true';
+    final shouldSkip = drops.isEmpty &&
+        (kg ?? 0) <= 0 &&
+        (reps ?? 0) <= 0 &&
+        !(isBodyweight && (reps ?? 0) > 0);
+
+    if (shouldSkip) {
+      continue;
+    }
+
     vm.add(SessionSetVM(
       ordinal: ordinal++,
       kg: kg ?? 0,
