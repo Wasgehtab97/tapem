@@ -472,31 +472,44 @@ class DeviceProvider extends ChangeNotifier {
     if (shouldPersistDraft) {
       await _saveDraftNow();
     }
+    final isSameGym = _currentGymId == gymId;
     _currentGymId = gymId;
     _currentUserId = userId;
     _lastActivityMs = null;
 
     try {
       await _membership.ensureMembership(gymId, userId);
-      List<Device> devices;
-      try {
-        devices = await _getDevicesForGym.execute(gymId);
-      } on FirebaseException catch (e) {
-        if (e.code == 'permission-denied') {
-          _log('RULES_DENIED path=gyms/$gymId/devices op=read');
-          await _membership.ensureMembership(gymId, userId);
-          _log(
-            'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read',
-          );
-          devices = await _getDevicesForGym.execute(gymId);
-        } else {
-          rethrow;
-        }
+
+      Device? deviceCandidate;
+      if (isSameGym) {
+        deviceCandidate =
+            _devices.firstWhereOrNull((device) => device.uid == deviceId);
       }
-      _device = devices.firstWhere(
-        (d) => d.uid == deviceId,
-        orElse: () => throw Exception('Device not found'),
-      );
+
+      if (!isSameGym || _devices.isEmpty || deviceCandidate == null) {
+        List<Device> devices;
+        try {
+          devices = await _getDevicesForGym.execute(gymId);
+        } on FirebaseException catch (e) {
+          if (e.code == 'permission-denied') {
+            _log('RULES_DENIED path=gyms/$gymId/devices op=read');
+            await _membership.ensureMembership(gymId, userId);
+            _log(
+              'RETRY_AFTER_ENSURE_MEMBERSHIP path=gyms/$gymId/devices op=read',
+            );
+            devices = await _getDevicesForGym.execute(gymId);
+          } else {
+            rethrow;
+          }
+        }
+        _devices = devices;
+        deviceCandidate = _devices.firstWhere(
+          (d) => d.uid == deviceId,
+          orElse: () => throw Exception('Device not found'),
+        );
+      }
+
+      _device = deviceCandidate;
       _currentExerciseId = exerciseId;
 
       final newKey = buildDraftKey(
