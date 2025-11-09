@@ -1841,13 +1841,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communityTabMonth => 'Month';
 
   @override
-  String get communityKpiReps => 'Total reps';
+  String get communityKpiHeadline => 'Community totals';
 
   @override
-  String get communityKpiVolume => 'Total volume (kg)';
+  String get communityKpiSessions => 'Sessions';
 
   @override
-  String get communityKpiWorkouts => 'Workouts';
+  String get communityKpiExercises => 'Exercises';
+
+  @override
+  String get communityKpiSets => 'Sets';
+
+  @override
+  String get communityKpiReps => 'Reps';
+
+  @override
+  String get communityKpiVolume => 'Volume (kg)';
 
   @override
   String get communityEmptyState => 'No data yet for the selected period.';
@@ -1868,30 +1877,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communityFeedError => 'Live ticker could not be loaded.';
 
   @override
-  String get communityFeedAnonymous => 'Someone';
-
-  @override
-  String communityFeedRepsLabel(String reps) {
-    return '$reps reps';
-  }
-
-  @override
-  String communityFeedVolumeLabel(String volume) {
-    return '$volume kg';
-  }
-
-  @override
-  String communityFeedSessionsLabel(String count) {
-    return '$count sessions';
-  }
-
-  @override
-  String communityFeedExercisesLabel(String count) {
-    return '$count exercises';
-  }
-
-  @override
-  String communityFeedSetsLabel(String count) {
-    return '$count sets';
-  }
+  String get communityFeedTrainingDayHeadline => 'Training day completed';
 }

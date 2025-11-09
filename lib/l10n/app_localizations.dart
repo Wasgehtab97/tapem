@@ -3443,23 +3443,41 @@ abstract class AppLocalizations {
   /// **'Month'**
   String get communityTabMonth;
 
+  /// Headline for the community KPI section
+  ///
+  /// In en, this message translates to:
+  /// **'Community totals'**
+  String get communityKpiHeadline;
+
+  /// KPI label for total sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get communityKpiSessions;
+
+  /// KPI label for total exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises'**
+  String get communityKpiExercises;
+
+  /// KPI label for total sets
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get communityKpiSets;
+
   /// KPI label for total repetitions
   ///
   /// In en, this message translates to:
-  /// **'Total reps'**
+  /// **'Reps'**
   String get communityKpiReps;
 
   /// KPI label for total volume
   ///
   /// In en, this message translates to:
-  /// **'Total volume (kg)'**
+  /// **'Volume (kg)'**
   String get communityKpiVolume;
-
-  /// KPI label for number of workouts
-  ///
-  /// In en, this message translates to:
-  /// **'Workouts'**
-  String get communityKpiWorkouts;
 
   /// Empty state message when no community stats are available
   ///
@@ -3497,41 +3515,11 @@ abstract class AppLocalizations {
   /// **'Live ticker could not be loaded.'**
   String get communityFeedError;
 
-  /// Fallback name when a feed event has no username
+  /// Headline shown for anonymized training day feed entries
   ///
   /// In en, this message translates to:
-  /// **'Someone'**
-  String get communityFeedAnonymous;
-
-  /// Formats the reps portion of a feed entry
-  ///
-  /// In en, this message translates to:
-  /// **'{reps} reps'**
-  String communityFeedRepsLabel(String reps);
-
-  /// Formats the volume portion of a feed entry
-  ///
-  /// In en, this message translates to:
-  /// **'{volume} kg'**
-  String communityFeedVolumeLabel(String volume);
-
-  /// Formats the session count chip in the community feed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} sessions'**
-  String communityFeedSessionsLabel(String count);
-
-  /// Formats the exercise count chip in the community feed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} exercises'**
-  String communityFeedExercisesLabel(String count);
-
-  /// Formats the set count chip in the community feed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} sets'**
-  String communityFeedSetsLabel(String count);
+  /// **'Training day completed'**
+  String get communityFeedTrainingDayHeadline;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

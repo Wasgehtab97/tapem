@@ -140,17 +140,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
         'type',
         'createdAt',
-        'userId',
-        'username',
-        'avatarUrl',
-        'dayKey',
-        'reps',
-        'volume',
-        'sessionCount',
-        'exerciseCount',
-        'setCount',
-        'deviceName',
-        'funnyText'
+        'dayKey'
       ]);
     }
 
@@ -673,7 +663,9 @@ service cloud.firestore {
             'dayKey',
             'repsTotal',
             'volumeTotal',
-            'trainingSessions'
+            'trainingSessions',
+            'exerciseTotal',
+            'setTotal'
           ]) &&
           request.resource.data.date is timestamp;
         allow delete: if false;
@@ -690,66 +682,18 @@ service cloud.firestore {
       match /feed_events/{eventId} {
         allow read: if inGym(gymId);
         allow create: if inGym(gymId) &&
-          request.resource.data.userId == request.auth.uid &&
           isFeedEventId(eventId, request.resource.data.dayKey, request.auth.uid) &&
           isFeedEventAllowedKeys(request.resource.data) &&
-          ['day_summary', 'session_summary', 'milestone']
-              .hasAny([request.resource.data.type]) &&
+          ['day_summary', 'milestone'].hasAny([request.resource.data.type]) &&
           request.resource.data.createdAt == request.time &&
-          request.resource.data.dayKey is string &&
-          optionalStringField(request.resource.data, 'username') &&
-          optionalStringField(request.resource.data, 'avatarUrl') &&
-          optionalStringField(request.resource.data, 'deviceName') &&
-          optionalStringField(request.resource.data, 'funnyText') &&
-          optionalIntField(request.resource.data, 'sessionCount') &&
-          optionalIntField(request.resource.data, 'exerciseCount') &&
-          optionalIntField(request.resource.data, 'setCount') &&
-          optionalIntField(request.resource.data, 'reps') &&
-          optionalNumberField(request.resource.data, 'volume') &&
-          (request.resource.data.type != 'day_summary' || (
-            request.resource.data.keys().hasAll([
-              'reps',
-              'volume',
-              'sessionCount',
-              'exerciseCount',
-              'setCount'
-            ])
-          ));
+          request.resource.data.dayKey is string;
         allow update: if inGym(gymId) &&
-          resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == request.auth.uid &&
           isFeedEventId(eventId, resource.data.dayKey, request.auth.uid) &&
           isFeedEventAllowedKeys(request.resource.data) &&
-          ['day_summary', 'session_summary', 'milestone']
-              .hasAny([request.resource.data.type]) &&
+          ['day_summary', 'milestone'].hasAny([request.resource.data.type]) &&
           request.resource.data.dayKey == resource.data.dayKey &&
-          request.resource.data.createdAt == request.time &&
-          optionalStringField(request.resource.data, 'username') &&
-          optionalStringField(request.resource.data, 'avatarUrl') &&
-          optionalStringField(request.resource.data, 'deviceName') &&
-          optionalStringField(request.resource.data, 'funnyText') &&
-          optionalIntField(request.resource.data, 'sessionCount') &&
-          optionalIntField(request.resource.data, 'exerciseCount') &&
-          optionalIntField(request.resource.data, 'setCount') &&
-          optionalIntField(request.resource.data, 'reps') &&
-          optionalNumberField(request.resource.data, 'volume') &&
-          (request.resource.data.type != 'day_summary' || (
-            request.resource.data.keys().hasAll([
-              'reps',
-              'volume',
-              'sessionCount',
-              'exerciseCount',
-              'setCount'
-            ])
-          )) &&
-          (!('reps' in resource.data) || request.resource.data.reps >= resource.data.reps) &&
-          (!('volume' in resource.data) || request.resource.data.volume >= resource.data.volume) &&
-          (!('sessionCount' in resource.data) ||
-            request.resource.data.sessionCount >= resource.data.sessionCount) &&
-          (!('exerciseCount' in resource.data) ||
-            request.resource.data.exerciseCount >= resource.data.exerciseCount) &&
-          (!('setCount' in resource.data) ||
-            request.resource.data.setCount >= resource.data.setCount);
+          request.resource.data.type == resource.data.type &&
+          request.resource.data.createdAt == request.time;
         allow delete: if false;
       }
 

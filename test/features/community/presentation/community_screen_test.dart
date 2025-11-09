@@ -137,44 +137,38 @@ void main() {
 
       statsController.add(
         const CommunityStats(
+          totalSessions: 4,
+          totalExercises: 6,
+          totalSets: 18,
           totalReps: 120,
           totalVolumeKg: 1850,
-          workoutCount: 4,
         ),
       );
       feedController.add([
         FeedEvent(
           type: FeedEventType.daySummary,
           createdAt: DateTime.utc(2024, 11, 1, 8, 30),
-          userId: 'u1',
-          username: 'Alice',
           dayKey: '2024-11-01',
-          reps: 30,
-          volumeKg: 250,
-          sessionCount: 1,
-          exerciseCount: 1,
-          setCount: 4,
         ),
       ]);
 
       await tester.pump();
 
-      expect(find.text('120'), findsWidgets);
-      expect(find.textContaining('1,850'), findsWidgets);
-      expect(find.text('Alice'), findsOneWidget);
-      expect(find.textContaining('Nov'), findsWidgets);
       final context = tester.element(find.byType(CommunityScreen));
       final loc = AppLocalizations.of(context)!;
-      expect(find.text(loc.communityFeedSessionsLabel('1')), findsOneWidget);
-      expect(find.text(loc.communityFeedExercisesLabel('1')), findsOneWidget);
-      expect(find.text(loc.communityFeedSetsLabel('4')), findsOneWidget);
-      expect(find.text(loc.communityFeedRepsLabel('30')), findsOneWidget);
-      expect(find.text(loc.communityFeedVolumeLabel('250')), findsWidgets);
+      expect(find.text(loc.communityKpiHeadline), findsOneWidget);
+      expect(find.text(loc.communityKpiSessions), findsOneWidget);
+      expect(find.text(loc.communityKpiExercises), findsOneWidget);
+      expect(find.text(loc.communityKpiSets), findsOneWidget);
+      expect(find.text(loc.communityKpiReps), findsOneWidget);
+      expect(find.text(loc.communityKpiVolume), findsOneWidget);
+      expect(find.text(loc.communityFeedTrainingDayHeadline), findsOneWidget);
+      expect(find.textContaining('Nov'), findsWidgets);
 
       await tester.tap(find.text('Week'));
       await tester.pump();
 
-      expect(find.textContaining('120'), findsWidgets);
+      expect(find.textContaining('1,850'), findsWidgets);
     });
 
     testWidgets('does not overflow when constrained and showing errors', (tester) async {
