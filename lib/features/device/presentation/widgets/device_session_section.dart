@@ -372,7 +372,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
         prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
     late final List<SessionSetVM> lastSets;
     DateTime? lastDate;
-    late final String lastNote;
+    late final String? lastNote;
     if (snapshot != null && snapshot.sets.isNotEmpty) {
       lastSets = mapSnapshotToVM(snapshot);
       lastDate = snapshot.createdAt;
