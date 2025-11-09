@@ -21,7 +21,7 @@ void main() {
     when(() => provider.setNote(any())).thenAnswer((_) {});
   });
 
-  Widget buildApp(NoteButtonWidget fab) {
+  Widget buildApp(NoteButtonWidget button) {
     return ChangeNotifierProvider<DeviceProvider>.value(
       value: provider,
       child: MaterialApp(
@@ -29,7 +29,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          floatingActionButton: fab,
+          floatingActionButton: button,
         ),
       ),
     );
@@ -43,7 +43,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byType(IconButton));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), ' new note ');
@@ -61,7 +61,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byType(IconButton));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.delete));
@@ -70,37 +70,33 @@ void main() {
     verify(() => provider.setNote('')).called(1);
   });
 
-  testWidgets('hero tag includes session key when provided', (tester) async {
+  testWidgets('uses add tooltip when no note is present', (tester) async {
+    when(() => provider.note).thenReturn('');
+
     await tester.pumpWidget(
-      buildApp(
-        const NoteButtonWidget(
-          deviceId: 'device',
-          sessionIdentifier: 'session-1',
-        ),
-      ),
+      buildApp(const NoteButtonWidget(deviceId: 'device')),
     );
+    await tester.pumpAndSettle();
 
-    final fab = tester.widget<FloatingActionButton>(
-      find.byType(FloatingActionButton),
-    );
+    final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+    final context = tester.element(find.byType(NoteButtonWidget));
+    final loc = AppLocalizations.of(context)!;
 
-    expect(fab.heroTag, 'noteBtn_device_session-1');
+    expect(iconButton.tooltip, loc.noteAddTooltip);
   });
 
-  testWidgets('hero tag includes tuple data when session key missing', (tester) async {
+  testWidgets('uses edit tooltip when note exists', (tester) async {
+    when(() => provider.note).thenReturn('hello');
+
     await tester.pumpWidget(
-      buildApp(
-        const NoteButtonWidget(
-          deviceId: 'device',
-          sessionIdentifier: ('device', 'exercise'),
-        ),
-      ),
+      buildApp(const NoteButtonWidget(deviceId: 'device')),
     );
+    await tester.pumpAndSettle();
 
-    final fab = tester.widget<FloatingActionButton>(
-      find.byType(FloatingActionButton),
-    );
+    final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+    final context = tester.element(find.byType(NoteButtonWidget));
+    final loc = AppLocalizations.of(context)!;
 
-    expect(fab.heroTag, 'noteBtn_device_exercise');
+    expect(iconButton.tooltip, loc.noteEditTooltip);
   });
 }

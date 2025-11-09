@@ -55,14 +55,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     );
   }
 
-  Future<void> _handleAddSession() async {
-    final selection = await _openGymSelection();
-    if (!mounted || selection == null) {
-      return;
-    }
-    _handleSelection(selection);
-  }
-
   void _handleSelection(WorkoutDeviceSelection selection) {
     final auth = context.read<AuthProvider>();
     final controller = context.read<WorkoutDayController>();
@@ -75,9 +67,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     if (!mounted) return;
     setState(() {});
     _scrollToLatest();
-    if (_sessionKey == null) {
-      _sessionKey = session.key;
-    }
+    _sessionKey ??= session.key;
   }
 
   void _scrollToLatest() {
@@ -419,38 +409,36 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       }
     }
 
-    String? message;
-    if (result.attempted == 0) {
-      message = loc.noCompletedSets;
-    } else if (result.saved == 0) {
-      final firstError = result.failedSessions.values.firstWhere(
-        (error) => error != null && error.isNotEmpty,
-        orElse: () => null,
-      );
-      message = firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-    } else {
-      final savedText = result.saved == result.attempted
-          ? loc.sessionSaved
-          : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
-      if (!result.hasFailures) {
-        message = savedText;
-      } else {
+      final message = () {
+        if (result.attempted == 0) {
+          return loc.noCompletedSets;
+        }
+        if (result.saved == 0) {
+          final firstError = result.failedSessions.values.firstWhere(
+            (error) => error != null && error.isNotEmpty,
+            orElse: () => null,
+          );
+          return firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
+        }
+        final savedText = result.saved == result.attempted
+            ? loc.sessionSaved
+            : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
+        if (!result.hasFailures) {
+          return savedText;
+        }
         final firstError = result.failedSessions.values.firstWhere(
           (error) => error != null && error.isNotEmpty,
           orElse: () => null,
         );
         final failureText =
             firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-        message = '$savedText\n$failureText';
-      }
-    }
+        return '$savedText\n$failureText';
+      }();
 
-    if (message != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     }
   }
-}
 
 class _SaveAllButton extends StatelessWidget {
   const _SaveAllButton({

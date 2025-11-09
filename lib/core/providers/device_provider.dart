@@ -1131,7 +1131,7 @@ class DeviceProvider extends ChangeNotifier {
     bool autoFinalize = false,
     int? plannedRestSeconds,
   }) async {
-    int _parseRepsValue(dynamic raw) {
+    int parseRepsValue(dynamic raw) {
       final normalized = (raw ?? '').toString().trim();
       if (normalized.isEmpty) {
         return 0;
@@ -1139,7 +1139,7 @@ class DeviceProvider extends ChangeNotifier {
       return int.tryParse(normalized) ?? 0;
     }
 
-    double _parseWeightValue(dynamic raw) {
+    double parseWeightValue(dynamic raw) {
       final normalized = (raw ?? '')
           .toString()
           .replaceAll(',', '.')
@@ -1150,7 +1150,7 @@ class DeviceProvider extends ChangeNotifier {
       return double.tryParse(normalized) ?? 0;
     }
 
-    bool _isBodyweightValue(dynamic raw) {
+    bool isBodyweightValue(dynamic raw) {
       if (raw is bool) {
         return raw;
       }
@@ -1207,13 +1207,13 @@ class DeviceProvider extends ChangeNotifier {
         if (!done) {
           return false;
         }
-        final reps = _parseRepsValue(s['reps']);
+        final reps = parseRepsValue(s['reps']);
         if (reps <= 0) {
           return false;
         }
-        final isBodyweight = _isBodyweightValue(s['isBodyweight']);
+        final isBodyweight = isBodyweightValue(s['isBodyweight']);
         if (!isBodyweight) {
-          final weight = _parseWeightValue(s['weight']);
+          final weight = parseWeightValue(s['weight']);
           if (weight <= 0) {
             return false;
           }
@@ -1245,9 +1245,8 @@ class DeviceProvider extends ChangeNotifier {
 
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
-        'reps': savedSets.map((s) => _parseRepsValue(s['reps'])).toList(),
-        'weights':
-            savedSets.map((s) => _parseWeightValue(s['weight'])).toList(),
+        'reps': savedSets.map((s) => parseRepsValue(s['reps'])).toList(),
+        'weights': savedSets.map((s) => parseWeightValue(s['weight'])).toList(),
       });
 
       final now = DateTime.now();
@@ -1308,9 +1307,9 @@ class DeviceProvider extends ChangeNotifier {
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
-        final weight = _parseWeightValue(set['weight']);
-        final isBw = _isBodyweightValue(set['isBodyweight']);
-        final repsValue = _parseRepsValue(set['reps']);
+        final weight = parseWeightValue(set['weight']);
+        final isBw = isBodyweightValue(set['isBodyweight']);
+        final repsValue = parseRepsValue(set['reps']);
         final setNumber = int.parse(set['number']);
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
@@ -1388,14 +1387,15 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: _device!.isMulti ? _currentExerciseId : null,
       );
 
-      final snapshot = _buildSnapshot(
-        sessionId: sessionId,
-        device: _device!,
-        exerciseId: _currentExerciseId,
-        userId: userId,
-        primaryMuscleGroupIds: assignments.primary,
-        secondaryMuscleGroupIds: assignments.secondary,
-      );
+        final snapshot = _buildSnapshot(
+          sessionId: sessionId,
+          device: _device!,
+          exerciseId: _currentExerciseId,
+          userId: userId,
+          primaryMuscleGroupIds: assignments.primary,
+          secondaryMuscleGroupIds: assignments.secondary,
+          sets: savedSets,
+        );
 
       await batch.commit();
       _log('📚 [Provider] logs stored session=$sessionId');
@@ -1588,6 +1588,7 @@ class DeviceProvider extends ChangeNotifier {
     required String userId,
     required List<String> primaryMuscleGroupIds,
     required List<String> secondaryMuscleGroupIds,
+    required List<Map<String, dynamic>> sets,
   }) {
     return DeviceSessionSnapshot(
       sessionId: sessionId,
@@ -1596,7 +1597,7 @@ class DeviceProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       userId: userId,
       note: _note,
-      sets: _sets
+      sets: sets
           .map(
             (s) {
               final drops = <DropEntry>[];
@@ -1610,14 +1611,15 @@ class DeviceProvider extends ChangeNotifier {
                   drops.add(DropEntry(kg: kg, reps: reps));
                 }
               }
+              final weight = double.tryParse(
+                    s['weight']?.toString().replaceAll(',', '.') ?? '',
+                  ) ??
+                  0;
+              final repsValue = int.tryParse(s['reps']?.toString() ?? '') ?? 0;
               return SetEntry(
-                kg:
-                    num.tryParse(
-                      s['weight']?.toString().replaceAll(',', '.') ?? '0',
-                    ) ??
-                    0,
-                reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
-                done: s['done'] == true || s['done'] == 'true',
+                kg: weight,
+                reps: repsValue,
+                done: true,
                 drops: drops,
                 isBodyweight: s['isBodyweight'] == true,
               );

@@ -26,12 +26,12 @@ void main() {
       source = FirestoreXpSource(firestore: firestore);
     });
 
-    Future<Map<String, dynamic>> _fetchStats() async {
-      final snap = await firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('users')
-          .doc(userId)
+      Future<Map<String, dynamic>> fetchStats() async {
+        final snap = await firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(userId)
           .collection('rank')
           .doc('stats')
           .get();
@@ -106,7 +106,7 @@ void main() {
       expect(dayDoc.exists, isTrue);
       expect(dayDoc.data()!['xp'], LevelService.xpPerSession);
 
-      final stats = await _fetchStats();
+        final stats = await fetchStats();
       expect(stats['dailyXP'], LevelService.xpPerSession);
       expect(stats['chestXP'], LevelService.xpPerSession * 2);
 
