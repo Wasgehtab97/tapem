@@ -85,12 +85,9 @@ class SetCardTheme {
       softenedSurface,
     );
     final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
-    final strokeActive = Color.alphaBlend(
-      scheme.primary.withOpacity(isDark ? 0.5 : 0.4),
-      stroke,
-    );
+    final strokeActive = scheme.onSurface.withOpacity(isDark ? 0.55 : 0.6);
     final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
-    final glowActive = scheme.primary.withOpacity(isDark ? 0.28 : 0.2);
+    final glowActive = scheme.onSurface.withOpacity(isDark ? 0.24 : 0.18);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1095,63 +1092,97 @@ class _PreviousSetSummary extends StatelessWidget {
 
     final drops = previous.drops;
 
+    double resolveMaxContentWidth(BoxConstraints constraints) {
+      final available = constraints.maxWidth.isFinite
+          ? math.max(0.0, constraints.maxWidth - leadingWidth)
+          : double.infinity;
+      final maxPreferred = dense ? 220.0 : 260.0;
+      if (available.isInfinite) return maxPreferred;
+      return math.max(0.0, math.min(available, maxPreferred));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: leadingWidth),
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: dense ? 10 : 12,
-                  vertical: dense ? 4 : 6,
-                ),
-                decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: BorderRadius.circular(dense ? 12 : 14),
-                  border: Border.all(
-                    color: tokens.chipBorder.withOpacity(0.35),
-                    width: 0.5,
-                  ),
-                ),
-                child: RichText(
-                  text: TextSpan(
-                    style: textStyle,
-                    children: [
-                      TextSpan(
-                        text: '${loc.setCardPreviousLabel}: ',
-                        style: labelStyle,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final maxContentWidth = resolveMaxContentWidth(constraints);
+            if (maxContentWidth == 0) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: EdgeInsetsDirectional.only(start: leadingWidth),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxContentWidth),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dense ? 10 : 12,
+                      vertical: dense ? 4 : 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: background,
+                      borderRadius: BorderRadius.circular(dense ? 12 : 14),
+                      border: Border.all(
+                        color: tokens.chipBorder.withOpacity(0.35),
+                        width: 0.5,
                       ),
-                      TextSpan(
-                        text: '${_weightDescription(previous, loc)} × ${previous.reps}',
+                    ),
+                    child: RichText(
+                      text: TextSpan(
+                        style: textStyle,
+                        children: [
+                          TextSpan(
+                            text: '${loc.setCardPreviousLabel}: ',
+                            style: labelStyle,
+                          ),
+                          TextSpan(
+                            text:
+                                '${_weightDescription(previous, loc)} × ${previous.reps}',
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
         if (drops.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(
-              top: dense ? 4 : 6,
-              left: leadingWidth,
-            ),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                for (final drop in drops)
-                  _PreviousDropChip(
-                    drop: drop,
-                    tokens: tokens,
-                    dense: dense,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final maxContentWidth = resolveMaxContentWidth(constraints);
+              if (maxContentWidth == 0) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: EdgeInsets.only(
+                  top: dense ? 4 : 6,
+                  left: leadingWidth,
+                ),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxContentWidth),
+                    child: Wrap(
+                      alignment: WrapAlignment.start,
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final drop in drops)
+                          _PreviousDropChip(
+                            drop: drop,
+                            tokens: tokens,
+                            dense: dense,
+                          ),
+                      ],
+                    ),
                   ),
-              ],
-            ),
+                ),
+              );
+            },
           ),
       ],
     );
