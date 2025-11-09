@@ -529,9 +529,7 @@ class DeviceProvider extends ChangeNotifier {
       await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
 
       final lastSessionFuture =
-          (FF.showLastSessionOnDevicePage || FF.runtimeShowLastSessionOnDevicePage)
-              ? _loadLastSession(gymId, deviceId, exerciseId, userId)
-              : Future<bool>.value(false);
+          _loadLastSession(gymId, deviceId, exerciseId, userId);
       final changeFlags = await Future.wait<bool>([
         lastSessionFuture,
         _loadUserNote(gymId, deviceId, userId),
