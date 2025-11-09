@@ -1091,31 +1091,20 @@ class _PreviousSetSummary extends StatelessWidget {
     );
 
     final drops = previous.drops;
-
-    double resolveMaxContentWidth(BoxConstraints constraints) {
-      final available = constraints.maxWidth.isFinite
-          ? math.max(0.0, constraints.maxWidth - leadingWidth)
-          : double.infinity;
-      final maxPreferred = dense ? 220.0 : 260.0;
-      if (available.isInfinite) return maxPreferred;
-      return math.max(0.0, math.min(available, maxPreferred));
-    }
+    final maxPreferredWidth = dense ? 220.0 : 260.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final maxContentWidth = resolveMaxContentWidth(constraints);
-            if (maxContentWidth == 0) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: EdgeInsetsDirectional.only(start: leadingWidth),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: leadingWidth),
+            Flexible(
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxContentWidth),
+                  constraints: BoxConstraints(maxWidth: maxPreferredWidth),
                   child: Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: dense ? 10 : 12,
@@ -1147,42 +1136,41 @@ class _PreviousSetSummary extends StatelessWidget {
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
         if (drops.isNotEmpty)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final maxContentWidth = resolveMaxContentWidth(constraints);
-              if (maxContentWidth == 0) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: EdgeInsets.only(
-                  top: dense ? 4 : 6,
-                  left: leadingWidth,
-                ),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxContentWidth),
-                    child: Wrap(
-                      alignment: WrapAlignment.start,
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        for (final drop in drops)
-                          _PreviousDropChip(
-                            drop: drop,
-                            tokens: tokens,
-                            dense: dense,
-                          ),
-                      ],
+          Padding(
+            padding: EdgeInsets.only(
+              top: dense ? 4 : 6,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: leadingWidth),
+                Flexible(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxPreferredWidth),
+                      child: Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          for (final drop in drops)
+                            _PreviousDropChip(
+                              drop: drop,
+                              tokens: tokens,
+                              dense: dense,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
       ],
     );
