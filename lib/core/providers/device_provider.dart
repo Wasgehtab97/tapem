@@ -1453,6 +1453,7 @@ class DeviceProvider extends ChangeNotifier {
           sessionId: sessionId,
           userId: userId,
           username: userName,
+          avatarUrl: null,
           localTimestamp: now,
           sets: savedSets,
         );

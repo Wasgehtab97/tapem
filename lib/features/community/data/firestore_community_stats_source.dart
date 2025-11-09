@@ -140,10 +140,13 @@ class FirestoreCommunityStatsSource {
     final data = doc.data();
     if (data == null) {
       return FeedEvent(
-        type: FeedEventType.sessionSummary,
+        type: FeedEventType.daySummary,
         dayKey: '',
         reps: 0,
         volumeKg: 0,
+        sessionCount: 0,
+        exerciseCount: 0,
+        setCount: 0,
       );
     }
     final created = data['createdAt'];
@@ -151,14 +154,25 @@ class FirestoreCommunityStatsSource {
     if (created is Timestamp) {
       createdAt = created.toDate();
     }
+    final typeString = data['type'] as String?;
+    final rawVolume = (data['volume'] as num?)?.toDouble() ?? 0;
+    final normalizedVolume = double.parse(rawVolume.toStringAsFixed(2));
+    final eventType = feedEventTypeFromString(typeString);
+    final reps = (data['reps'] as num?)?.toInt();
+    final sessionCount = (data['sessionCount'] as num?)?.toInt();
+    final exerciseCount = (data['exerciseCount'] as num?)?.toInt();
+    final setCount = (data['setCount'] as num?)?.toInt();
     return FeedEvent(
-      type: feedEventTypeFromString(data['type'] as String?),
+      type: eventType,
       createdAt: createdAt,
       userId: data['userId'] as String?,
       username: data['username'] as String?,
       dayKey: (data['dayKey'] as String?) ?? '',
-      reps: (data['reps'] as num?)?.toInt() ?? 0,
-      volumeKg: (data['volume'] as num?)?.toDouble() ?? 0,
+      reps: reps ?? 0,
+      volumeKg: normalizedVolume,
+      sessionCount: sessionCount ?? 0,
+      exerciseCount: exerciseCount ?? 0,
+      setCount: setCount ?? 0,
       deviceName: data['deviceName'] as String?,
       funnyText: data['funnyText'] as String?,
       avatarUrl: data['avatarUrl'] as String?,

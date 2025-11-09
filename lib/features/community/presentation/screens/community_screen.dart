@@ -395,10 +395,10 @@ class _CommunityFeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final numberFormat = NumberFormat.decimalPattern(
-      Localizations.localeOf(context).toLanguageTag(),
-    );
-    final timeFormat = DateFormat.Hm(loc.localeName);
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final numberFormat = NumberFormat.decimalPattern(localeTag);
+    final decimalFormat = NumberFormat('#,##0.##', localeTag);
+    final dateFormat = DateFormat.yMMMd(loc.localeName);
 
     Widget buildBody(List<FeedEvent> events) {
       if (events.isEmpty) {
@@ -422,7 +422,8 @@ class _CommunityFeedCard extends StatelessWidget {
           return _CommunityFeedTile(
             event: event,
             numberFormat: numberFormat,
-            timeFormat: timeFormat,
+            decimalFormat: decimalFormat,
+            dateFormat: dateFormat,
             highlightColor: highlightColor,
           );
         },
@@ -670,13 +671,15 @@ class _CommunityFeedTile extends StatelessWidget {
   const _CommunityFeedTile({
     required this.event,
     required this.numberFormat,
-    required this.timeFormat,
+    required this.decimalFormat,
+    required this.dateFormat,
     required this.highlightColor,
   });
 
   final FeedEvent event;
   final NumberFormat numberFormat;
-  final DateFormat timeFormat;
+  final NumberFormat decimalFormat;
+  final DateFormat dateFormat;
   final Color highlightColor;
 
   @override
@@ -684,34 +687,104 @@ class _CommunityFeedTile extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final reps = numberFormat.format(event.reps);
-    final volume = numberFormat.format(event.volumeKg.round());
-    final created = event.createdAt != null
-        ? timeFormat.format(event.createdAt!.toLocal())
-        : '–';
+    final volume = _formatCommunityVolume(
+      volume: event.volumeKg,
+      numberFormat: numberFormat,
+      decimalFormat: decimalFormat,
+    );
+    final sessions = numberFormat.format(event.sessionCount);
+    final exercises = numberFormat.format(event.exerciseCount);
+    final sets = numberFormat.format(event.setCount);
+    final actor = event.displayName ?? loc.communityFeedAnonymous;
+    final eventDate = _resolveEventDate()?.toLocal();
+    final created = eventDate != null ? dateFormat.format(eventDate) : '–';
 
-    final headline = '${loc.communityFeedRepsLabel(reps)} • ${loc.communityFeedVolumeLabel(volume)}';
+    final detailPills = <Widget>[];
+    if (event.type == FeedEventType.daySummary) {
+      if (event.sessionCount > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedSessionsLabel(sessions),
+            accentColor: highlightColor,
+            icon: Icons.calendar_today,
+            backgroundOpacity: 0.18,
+          ),
+        );
+      }
+      if (event.exerciseCount > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedExercisesLabel(exercises),
+            accentColor: highlightColor,
+            icon: Icons.sports_martial_arts,
+            backgroundOpacity: 0.18,
+          ),
+        );
+      }
+      if (event.setCount > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedSetsLabel(sets),
+            accentColor: highlightColor,
+            icon: Icons.list_alt,
+            backgroundOpacity: 0.16,
+          ),
+        );
+      }
+      if (event.reps > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedRepsLabel(reps),
+            accentColor: highlightColor,
+            icon: Icons.repeat,
+            backgroundOpacity: 0.16,
+          ),
+        );
+      }
+      if (event.volumeKg > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedVolumeLabel(volume),
+            accentColor: highlightColor,
+            icon: Icons.monitor_weight,
+            backgroundOpacity: 0.16,
+          ),
+        );
+      }
+    } else {
+      if (event.reps > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedRepsLabel(reps),
+            accentColor: highlightColor,
+            icon: Icons.repeat,
+            backgroundOpacity: 0.16,
+          ),
+        );
+      }
+      if (event.volumeKg > 0) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: loc.communityFeedVolumeLabel(volume),
+            accentColor: highlightColor,
+            icon: Icons.fitness_center,
+            backgroundOpacity: 0.16,
+          ),
+        );
+      }
+      if (event.deviceName != null && event.deviceName!.isNotEmpty) {
+        detailPills.add(
+          _CommunityDetailPill(
+            text: event.deviceName!,
+            accentColor: highlightColor,
+            icon: Icons.watch,
+            backgroundOpacity: 0.2,
+          ),
+        );
+      }
+    }
 
-    final detailPills = <Widget>[
-      _CommunityDetailPill(
-        text: loc.communityFeedRepsLabel(reps),
-        accentColor: highlightColor,
-        icon: Icons.repeat,
-        backgroundOpacity: 0.16,
-      ),
-      if (event.deviceName != null && event.deviceName!.isNotEmpty)
-        _CommunityDetailPill(
-          text: event.deviceName!,
-          accentColor: highlightColor,
-          icon: Icons.watch,
-          backgroundOpacity: 0.2,
-        ),
-      _CommunityDetailPill(
-        text: loc.communityFeedVolumeLabel(volume),
-        accentColor: highlightColor,
-        icon: Icons.fitness_center,
-        backgroundOpacity: 0.16,
-      ),
-    ];
+    final headline = actor;
 
     return Container(
       decoration: BoxDecoration(
@@ -809,6 +882,16 @@ class _CommunityFeedTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  DateTime? _resolveEventDate() {
+    if (event.createdAt != null) {
+      return event.createdAt;
+    }
+    if (event.dayKey.isNotEmpty) {
+      return DateTime.tryParse(event.dayKey);
+    }
+    return null;
   }
 }
 

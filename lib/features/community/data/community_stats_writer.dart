@@ -17,6 +17,7 @@ class CommunityStatsWriter {
     required String sessionId,
     required String userId,
     required String? username,
+    required String? avatarUrl,
     required DateTime localTimestamp,
     required List<Map<String, dynamic>> sets,
   }) async {
@@ -31,10 +32,13 @@ class CommunityStatsWriter {
     final utcMidnight = localDay.toUtc();
     final trimmedUsername = username?.trim();
 
+    final sanitizedAvatar = avatarUrl?.trim();
+
     final gymRef = _firestore.collection('gyms').doc(gymId);
     final appliedRef = gymRef.collection('stats_applied').doc(sessionId);
     final statsRef = gymRef.collection('stats_daily').doc(dayKey);
-    final feedRef = gymRef.collection('feed_events').doc();
+    final feedRef =
+        gymRef.collection('feed_events').doc('${dayKey}_$userId');
 
     await _firestore.runTransaction((transaction) async {
       final appliedSnap = await transaction.get(appliedRef);
@@ -62,36 +66,59 @@ class CommunityStatsWriter {
         'trainingSessions': FieldValue.increment(1),
       });
 
-      final feedData = {
-        'type': 'session_summary',
+      final feedData = <String, dynamic>{
+        'type': 'day_summary',
         'createdAt': FieldValue.serverTimestamp(),
         'userId': userId,
         'dayKey': dayKey,
-        'reps': totals.reps,
-        'volume': totals.volume,
+        'reps': FieldValue.increment(totals.reps),
+        'volume': FieldValue.increment(totals.volume),
+        'sessionCount': FieldValue.increment(1),
+        'exerciseCount': FieldValue.increment(totals.exerciseCount),
+        'setCount': FieldValue.increment(totals.setCount),
       };
       if (trimmedUsername != null && trimmedUsername.isNotEmpty) {
         feedData['username'] = trimmedUsername;
       }
-      transaction.set(feedRef, feedData);
+      if (sanitizedAvatar != null && sanitizedAvatar.isNotEmpty) {
+        feedData['avatarUrl'] = sanitizedAvatar;
+      }
+      transaction.set(feedRef, feedData, SetOptions(merge: true));
     });
   }
 
   _CommunityTotals _aggregate(List<Map<String, dynamic>> sets) {
     var reps = 0;
     var volume = 0.0;
+    var setCount = 0;
+    final exerciseIds = <String>{};
     for (final set in sets) {
       final setReps = _parseReps(set['reps']);
       reps += setReps;
+      if (setReps > 0) {
+        setCount++;
+      }
       if (!_isBodyweight(set['isBodyweight'])) {
         final weight = _parseWeight(set['weight']);
         if (weight > 0 && setReps > 0) {
           volume += weight * setReps;
         }
       }
+      final exerciseId = _parseExerciseId(set['exerciseId']);
+      if (exerciseId != null) {
+        exerciseIds.add(exerciseId);
+      }
     }
     final normalizedVolume = double.parse(volume.toStringAsFixed(2));
-    return _CommunityTotals(reps: reps, volume: normalizedVolume);
+    final exerciseCount = exerciseIds.isEmpty
+        ? (setCount > 0 ? 1 : 0)
+        : exerciseIds.length;
+    return _CommunityTotals(
+      reps: reps,
+      volume: normalizedVolume,
+      setCount: setCount,
+      exerciseCount: exerciseCount,
+    );
   }
 
   int _parseReps(dynamic raw) {
@@ -120,11 +147,28 @@ class CommunityStatsWriter {
     }
     return false;
   }
+
+  String? _parseExerciseId(dynamic raw) {
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return null;
+  }
 }
 
 class _CommunityTotals {
-  const _CommunityTotals({required this.reps, required this.volume});
+  const _CommunityTotals({
+    required this.reps,
+    required this.volume,
+    required this.setCount,
+    required this.exerciseCount,
+  });
 
   final int reps;
   final double volume;
+  final int setCount;
+  final int exerciseCount;
 }
