@@ -372,11 +372,13 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     }
     final lastSnap =
         prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
-    final lastSets = lastSnap != null
+    final hasSnapshotSets =
+        lastSnap != null && lastSnap.sets.isNotEmpty;
+    final lastSets = hasSnapshotSets
         ? mapSnapshotToVM(lastSnap)
         : mapLegacySetsToVM(prov.lastSessionSets);
-    final lastDate = lastSnap?.createdAt ?? prov.lastSessionDate;
-    final lastNote = lastSnap?.note ?? prov.lastSessionNote;
+    final lastDate = hasSnapshotSets ? lastSnap!.createdAt : prov.lastSessionDate;
+    final lastNote = hasSnapshotSets ? lastSnap!.note : prov.lastSessionNote;
 
     final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
 
