@@ -1879,4 +1879,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String communityFeedVolumeLabel(String volume) {
     return '$volume kg';
   }
+
+  @override
+  String communityFeedSessionsLabel(String count) {
+    return '$count Trainingseinheiten';
+  }
+
+  @override
+  String communityFeedExercisesLabel(String count) {
+    return '$count Übungen';
+  }
+
+  @override
+  String communityFeedSetsLabel(String count) {
+    return '$count Sätze';
+  }
 }

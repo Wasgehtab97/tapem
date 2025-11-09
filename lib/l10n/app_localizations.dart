@@ -3514,6 +3514,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{volume} kg'**
   String communityFeedVolumeLabel(String volume);
+
+  /// Formats the session count chip in the community feed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions'**
+  String communityFeedSessionsLabel(String count);
+
+  /// Formats the exercise count chip in the community feed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} exercises'**
+  String communityFeedExercisesLabel(String count);
+
+  /// Formats the set count chip in the community feed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sets'**
+  String communityFeedSetsLabel(String count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

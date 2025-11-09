@@ -144,13 +144,16 @@ void main() {
       );
       feedController.add([
         FeedEvent(
-          type: FeedEventType.sessionSummary,
+          type: FeedEventType.daySummary,
           createdAt: DateTime.utc(2024, 11, 1, 8, 30),
           userId: 'u1',
           username: 'Alice',
           dayKey: '2024-11-01',
           reps: 30,
           volumeKg: 250,
+          sessionCount: 1,
+          exerciseCount: 1,
+          setCount: 4,
         ),
       ]);
 
@@ -158,8 +161,15 @@ void main() {
 
       expect(find.text('120'), findsWidgets);
       expect(find.textContaining('1,850'), findsWidgets);
-      expect(find.textContaining('30 reps'), findsOneWidget);
-      expect(find.textContaining('250 kg'), findsWidgets);
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.textContaining('Nov'), findsWidgets);
+      final context = tester.element(find.byType(CommunityScreen));
+      final loc = AppLocalizations.of(context)!;
+      expect(find.text(loc.communityFeedSessionsLabel('1')), findsOneWidget);
+      expect(find.text(loc.communityFeedExercisesLabel('1')), findsOneWidget);
+      expect(find.text(loc.communityFeedSetsLabel('4')), findsOneWidget);
+      expect(find.text(loc.communityFeedRepsLabel('30')), findsOneWidget);
+      expect(find.text(loc.communityFeedVolumeLabel('250')), findsWidgets);
 
       await tester.tap(find.text('Week'));
       await tester.pump();

@@ -1600,4 +1600,10 @@
   ,"@communityFeedRepsLabel": {"description": "Formatierung für die Wiederholungen im Feed","placeholders": {"reps": {"type": "String"}}}
   ,"communityFeedVolumeLabel": "{volume} kg"
   ,"@communityFeedVolumeLabel": {"description": "Formatierung für das Volumen im Feed","placeholders": {"volume": {"type": "String"}}}
+  ,"communityFeedSessionsLabel": "{count} Trainingseinheiten"
+  ,"@communityFeedSessionsLabel": {"description": "Formatierung für den Session-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedExercisesLabel": "{count} Übungen"
+  ,"@communityFeedExercisesLabel": {"description": "Formatierung für den Übungs-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedSetsLabel": "{count} Sätze"
+  ,"@communityFeedSetsLabel": {"description": "Formatierung für den Satz-Chip im Community-Feed","placeholders": {"count": {"type": "String"}}}
 }

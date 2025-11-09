@@ -136,6 +136,40 @@ service cloud.firestore {
       return fieldEmpty('userId') && fieldEmpty('ownerId') && fieldEmpty('createdBy');
     }
 
+    function isFeedEventAllowedKeys(data) {
+      return data.keys().hasOnly([
+        'type',
+        'createdAt',
+        'userId',
+        'username',
+        'avatarUrl',
+        'dayKey',
+        'reps',
+        'volume',
+        'sessionCount',
+        'exerciseCount',
+        'setCount',
+        'deviceName',
+        'funnyText'
+      ]);
+    }
+
+    function isFeedEventId(eventId, dayKey, userId) {
+      return eventId == dayKey + '_' + userId;
+    }
+
+    function optionalStringField(data, field) {
+      return !(field in data) || data[field] is string;
+    }
+
+    function optionalIntField(data, field) {
+      return !(field in data) || data[field] is int;
+    }
+
+    function optionalNumberField(data, field) {
+      return !(field in data) || data[field] is number;
+    }
+
     // ─────────────────────────
     // Activity stream (server only)
     // ─────────────────────────
@@ -657,24 +691,66 @@ service cloud.firestore {
         allow read: if inGym(gymId);
         allow create: if inGym(gymId) &&
           request.resource.data.userId == request.auth.uid &&
-          request.resource.data.keys().hasOnly([
-            'type',
-            'createdAt',
-            'userId',
-            'username',
-            'dayKey',
-            'reps',
-            'volume',
-            'deviceName',
-            'funnyText',
-            'avatarUrl'
-          ]) &&
-          [request.resource.data.type]
-              .hasOnly(['session_summary', 'milestone']) &&
+          isFeedEventId(eventId, request.resource.data.dayKey, request.auth.uid) &&
+          isFeedEventAllowedKeys(request.resource.data) &&
+          ['day_summary', 'session_summary', 'milestone']
+              .hasAny([request.resource.data.type]) &&
           request.resource.data.createdAt == request.time &&
-          request.resource.data.reps is int &&
-          request.resource.data.volume is number;
-        allow update, delete: if false;
+          request.resource.data.dayKey is string &&
+          optionalStringField(request.resource.data, 'username') &&
+          optionalStringField(request.resource.data, 'avatarUrl') &&
+          optionalStringField(request.resource.data, 'deviceName') &&
+          optionalStringField(request.resource.data, 'funnyText') &&
+          optionalIntField(request.resource.data, 'sessionCount') &&
+          optionalIntField(request.resource.data, 'exerciseCount') &&
+          optionalIntField(request.resource.data, 'setCount') &&
+          optionalIntField(request.resource.data, 'reps') &&
+          optionalNumberField(request.resource.data, 'volume') &&
+          (request.resource.data.type != 'day_summary' || (
+            request.resource.data.keys().hasAll([
+              'reps',
+              'volume',
+              'sessionCount',
+              'exerciseCount',
+              'setCount'
+            ])
+          ));
+        allow update: if inGym(gymId) &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid &&
+          isFeedEventId(eventId, resource.data.dayKey, request.auth.uid) &&
+          isFeedEventAllowedKeys(request.resource.data) &&
+          ['day_summary', 'session_summary', 'milestone']
+              .hasAny([request.resource.data.type]) &&
+          request.resource.data.dayKey == resource.data.dayKey &&
+          request.resource.data.createdAt == request.time &&
+          optionalStringField(request.resource.data, 'username') &&
+          optionalStringField(request.resource.data, 'avatarUrl') &&
+          optionalStringField(request.resource.data, 'deviceName') &&
+          optionalStringField(request.resource.data, 'funnyText') &&
+          optionalIntField(request.resource.data, 'sessionCount') &&
+          optionalIntField(request.resource.data, 'exerciseCount') &&
+          optionalIntField(request.resource.data, 'setCount') &&
+          optionalIntField(request.resource.data, 'reps') &&
+          optionalNumberField(request.resource.data, 'volume') &&
+          (request.resource.data.type != 'day_summary' || (
+            request.resource.data.keys().hasAll([
+              'reps',
+              'volume',
+              'sessionCount',
+              'exerciseCount',
+              'setCount'
+            ])
+          )) &&
+          (!('reps' in resource.data) || request.resource.data.reps >= resource.data.reps) &&
+          (!('volume' in resource.data) || request.resource.data.volume >= resource.data.volume) &&
+          (!('sessionCount' in resource.data) ||
+            request.resource.data.sessionCount >= resource.data.sessionCount) &&
+          (!('exerciseCount' in resource.data) ||
+            request.resource.data.exerciseCount >= resource.data.exerciseCount) &&
+          (!('setCount' in resource.data) ||
+            request.resource.data.setCount >= resource.data.setCount);
+        allow delete: if false;
       }
 
       // Fallback inside gyms

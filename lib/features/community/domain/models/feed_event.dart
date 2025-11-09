@@ -1,12 +1,13 @@
-enum FeedEventType { sessionSummary, milestone }
+enum FeedEventType { daySummary, milestone }
 
 FeedEventType feedEventTypeFromString(String? type) {
   switch (type) {
     case 'milestone':
       return FeedEventType.milestone;
+    case 'day_summary':
     case 'session_summary':
     default:
-      return FeedEventType.sessionSummary;
+      return FeedEventType.daySummary;
   }
 }
 
@@ -16,6 +17,9 @@ class FeedEvent {
     required this.dayKey,
     required this.reps,
     required this.volumeKg,
+    required this.sessionCount,
+    required this.exerciseCount,
+    required this.setCount,
     this.createdAt,
     this.userId,
     this.username,
@@ -31,6 +35,9 @@ class FeedEvent {
   final String dayKey;
   final int reps;
   final double volumeKg;
+  final int sessionCount;
+  final int exerciseCount;
+  final int setCount;
   final String? deviceName;
   final String? funnyText;
   final String? avatarUrl;

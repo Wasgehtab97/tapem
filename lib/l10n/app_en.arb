@@ -1614,4 +1614,10 @@
   ,"@communityFeedRepsLabel": {"description": "Formats the reps portion of a feed entry","placeholders": {"reps": {"type": "String"}}}
   ,"communityFeedVolumeLabel": "{volume} kg"
   ,"@communityFeedVolumeLabel": {"description": "Formats the volume portion of a feed entry","placeholders": {"volume": {"type": "String"}}}
+  ,"communityFeedSessionsLabel": "{count} sessions"
+  ,"@communityFeedSessionsLabel": {"description": "Formats the session count chip in the community feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedExercisesLabel": "{count} exercises"
+  ,"@communityFeedExercisesLabel": {"description": "Formats the exercise count chip in the community feed","placeholders": {"count": {"type": "String"}}}
+  ,"communityFeedSetsLabel": "{count} sets"
+  ,"@communityFeedSetsLabel": {"description": "Formats the set count chip in the community feed","placeholders": {"count": {"type": "String"}}}
 }
