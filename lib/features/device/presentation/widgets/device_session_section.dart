@@ -436,7 +436,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           },
         ),
       ],
-      const SizedBox(height: 8),
+      if (prov.sets.isEmpty) const SizedBox(height: 8),
       Align(
         alignment: Alignment.center,
         child: _AddSetButton(
@@ -668,7 +668,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           );
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: borderColor),
