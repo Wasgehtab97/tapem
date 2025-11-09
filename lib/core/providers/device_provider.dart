@@ -1131,6 +1131,38 @@ class DeviceProvider extends ChangeNotifier {
     bool autoFinalize = false,
     int? plannedRestSeconds,
   }) async {
+    int _parseRepsValue(dynamic raw) {
+      final normalized = (raw ?? '').toString().trim();
+      if (normalized.isEmpty) {
+        return 0;
+      }
+      return int.tryParse(normalized) ?? 0;
+    }
+
+    double _parseWeightValue(dynamic raw) {
+      final normalized = (raw ?? '')
+          .toString()
+          .replaceAll(',', '.')
+          .trim();
+      if (normalized.isEmpty) {
+        return 0;
+      }
+      return double.tryParse(normalized) ?? 0;
+    }
+
+    bool _isBodyweightValue(dynamic raw) {
+      if (raw is bool) {
+        return raw;
+      }
+      if (raw is String) {
+        final normalized = raw.trim().toLowerCase();
+        if (normalized == 'true') {
+          return true;
+        }
+      }
+      return false;
+    }
+
     final dayKey = logicDayKey(DateTime.now());
     if (_device == null) {
       final traceId = XpTrace.buildTraceId(
@@ -1170,9 +1202,24 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final savedSets = _sets
-          .where((s) => (s['done'] == true || s['done'] == 'true'))
-          .toList();
+      final savedSets = _sets.where((s) {
+        final done = s['done'] == true || s['done'] == 'true';
+        if (!done) {
+          return false;
+        }
+        final reps = _parseRepsValue(s['reps']);
+        if (reps <= 0) {
+          return false;
+        }
+        final isBodyweight = _isBodyweightValue(s['isBodyweight']);
+        if (!isBodyweight) {
+          final weight = _parseWeightValue(s['weight']);
+          if (weight <= 0) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
       if (savedSets.isEmpty) {
         _error = 'Keine abgeschlossenen Sätze.';
         _log('⚠️ [Provider] save aborted: no completed sets');
@@ -1198,10 +1245,9 @@ class DeviceProvider extends ChangeNotifier {
 
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
-        'reps': savedSets.map((s) => int.tryParse(s['reps'] ?? '0') ?? 0).toList(),
-        'weights': savedSets
-            .map((s) => double.tryParse(s['weight']?.replaceAll(',', '.') ?? '0') ?? 0)
-            .toList(),
+        'reps': savedSets.map((s) => _parseRepsValue(s['reps'])).toList(),
+        'weights':
+            savedSets.map((s) => _parseWeightValue(s['weight'])).toList(),
       });
 
       final now = DateTime.now();
@@ -1262,10 +1308,9 @@ class DeviceProvider extends ChangeNotifier {
 
       for (final set in savedSets) {
         final ref = logsCol.doc();
-        final weightStr = (set['weight'] ?? '').toString().replaceAll(',', '.');
-        final weight = double.tryParse(weightStr) ?? 0;
-        final isBw = set['isBodyweight'] == true;
-        final repsValue = int.parse(set['reps']!);
+        final weight = _parseWeightValue(set['weight']);
+        final isBw = _isBodyweightValue(set['isBodyweight']);
+        final repsValue = _parseRepsValue(set['reps']);
         final setNumber = int.parse(set['number']);
         final data = <String, dynamic>{
           'deviceId': _device!.uid,
