@@ -80,12 +80,15 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
       continue;
     }
 
+    final raw = s['isBodyweight'];
+    final isBodyweight =
+        raw is bool ? raw : raw?.toString().toLowerCase() == 'true';
     vm.add(SessionSetVM(
       ordinal: ordinal++,
       kg: kg ?? 0,
       reps: reps ?? 0,
       drops: drops,
-      isBodyweight: (s['isBodyweight'] ?? 'false') == 'true',
+      isBodyweight: isBodyweight,
     ));
   }
   return vm;
