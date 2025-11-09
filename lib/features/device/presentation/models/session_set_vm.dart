@@ -40,30 +40,50 @@ List<SessionSetVM> mapLegacySetsToVM(List<Map<String, dynamic>> sets) {
       for (final drop in rawDrops) {
         if (drop is Map) {
           final map = Map<String, dynamic>.from(drop);
-          final weightText = (map['weight'] ?? map['kg'] ?? '').toString();
-          final repsText = (map['reps'] ?? map['wdh'] ?? '').toString();
+          final weightText = (map['weight'] ?? map['kg'] ?? '').toString().trim();
+          final repsText = (map['reps'] ?? map['wdh'] ?? '').toString().trim();
           if (weightText.isEmpty || repsText.isEmpty) continue;
-          final weight = num.tryParse(weightText.replaceAll(',', '.')) ?? 0;
-          final reps = int.tryParse(repsText) ?? 0;
+          final weight =
+              num.tryParse(weightText.replaceAll(',', '.')) ?? 0;
+          final reps =
+              int.tryParse(repsText.replaceAll(',', '.')) ?? 0;
           drops.add(DropEntry(kg: weight, reps: reps));
         }
       }
     } else {
-      final dropWeight = (s['dropWeight'] ?? '').toString();
-      final dropReps = (s['dropReps'] ?? '').toString();
+      final dropWeight = (s['dropWeight'] ?? '').toString().trim();
+      final dropReps = (s['dropReps'] ?? '').toString().trim();
       if (dropWeight.isNotEmpty && dropReps.isNotEmpty) {
         drops.add(
           DropEntry(
             kg: num.tryParse(dropWeight.replaceAll(',', '.')) ?? 0,
-            reps: int.tryParse(dropReps) ?? 0,
+            reps: int.tryParse(dropReps.replaceAll(',', '.')) ?? 0,
           ),
         );
       }
     }
+    final weightSource =
+        (s['weight'] ?? s['kg'])?.toString() ?? '';
+    final weightText = weightSource.trim();
+    final kg = weightText.isEmpty
+        ? null
+        : num.tryParse(weightText.replaceAll(',', '.'));
+
+    final repsSource =
+        (s['reps'] ?? s['wdh'])?.toString() ?? '';
+    final repsText = repsSource.trim();
+    final reps = repsText.isEmpty
+        ? null
+        : int.tryParse(repsText.replaceAll(',', '.'));
+
+    if (kg == null && reps == null && drops.isEmpty) {
+      continue;
+    }
+
     vm.add(SessionSetVM(
       ordinal: ordinal++,
-      kg: num.tryParse(s['weight']?.toString() ?? '0') ?? 0,
-      reps: int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+      kg: kg ?? 0,
+      reps: reps ?? 0,
       drops: drops,
       isBodyweight: (s['isBodyweight'] ?? 'false') == 'true',
     ));
