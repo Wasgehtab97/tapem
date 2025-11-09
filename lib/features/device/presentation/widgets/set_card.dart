@@ -89,10 +89,10 @@ class SetCardTheme {
       softenedSurface,
     );
     final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
-    final strokeActive = blendWithBlack(softenedSurface, isDark ? 0.86 : 0.68);
+    const activeStrokeBase = Colors.black;
+    final strokeActive = activeStrokeBase.withOpacity(isDark ? 0.9 : 0.82);
     final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
-    final glowActive = blendWithBlack(softenedSurface, isDark ? 0.86 : 0.68)
-        .withOpacity(isDark ? 0.35 : 0.28);
+    final glowActive = activeStrokeBase.withOpacity(isDark ? 0.35 : 0.28);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
