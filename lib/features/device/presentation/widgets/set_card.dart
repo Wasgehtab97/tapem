@@ -68,6 +68,10 @@ class SetCardTheme {
       return Color.alphaBlend(overlay.withOpacity(opacity), base);
     }
 
+    Color blendWithBlack(Color base, double strength) {
+      return Color.alphaBlend(Colors.black.withOpacity(strength), base);
+    }
+
     final surface = theme.canvasColor;
     final softenedSurface = tint(surface, scheme.surface, isDark ? 0.75 : 0.95);
     final quietBase = tint(softenedSurface, scheme.primary, isDark ? 0.06 : 0.04);
@@ -85,9 +89,10 @@ class SetCardTheme {
       softenedSurface,
     );
     final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
-    final strokeActive = scheme.onSurface.withOpacity(isDark ? 0.55 : 0.6);
+    final strokeActive = blendWithBlack(softenedSurface, isDark ? 0.86 : 0.68);
     final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
-    final glowActive = scheme.onSurface.withOpacity(isDark ? 0.24 : 0.18);
+    final glowActive = blendWithBlack(softenedSurface, isDark ? 0.86 : 0.68)
+        .withOpacity(isDark ? 0.35 : 0.28);
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
