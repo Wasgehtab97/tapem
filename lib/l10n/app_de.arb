@@ -1008,6 +1008,8 @@
   },
   "deviceLeaderboardTooltip": "King/Queen Leaderboard anzeigen",
   "@deviceLeaderboardTooltip": {"description": "Tooltip für den Leaderboard-Button"},
+  "setCardPreviousLabel": "Vorher",
+  "@setCardPreviousLabel": {"description": "Label für die Werte der letzten Session auf der Satzkarte"},
   "multiDeviceBannerText": "Mehrgeräte-Modus: Es werden nur Tages-XP & Gerätestatistiken gezählt. Keine XP pro Muskelgruppe und kein Leaderboard-Update.",
   "@multiDeviceBannerText": {"description": "Hinweisbanner für Mehrgeräte"},
   "multiDeviceBannerOk": "OK",

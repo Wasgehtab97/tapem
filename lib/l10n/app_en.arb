@@ -1006,6 +1006,8 @@
   },
   "deviceLeaderboardTooltip": "Show King/Queen leaderboard",
   "@deviceLeaderboardTooltip": {"description": "Tooltip for the leaderboard icon"},
+  "setCardPreviousLabel": "Previous",
+  "@setCardPreviousLabel": {"description": "Label for the previous session values shown on a set card"},
   "multiDeviceBannerText": "Multi-device mode: only daily XP and device statistics are counted. No XP per muscle group and no leaderboard update.",
   "@multiDeviceBannerText": {"description": "Banner text for multi-device"},
   "multiDeviceBannerOk": "OK",

@@ -418,6 +418,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
           sets: prov.sets,
           setKeys: _setKeys,
           sessionKey: widget.sessionKey,
+          previousSets: lastSets,
           onRemove: (index, removed) {
             _focusSession();
             context.read<DeviceProvider>().removeSet(index);
@@ -736,12 +737,14 @@ class _GroupedSetList extends StatelessWidget {
     required this.setKeys,
     required this.onRemove,
     required this.sessionKey,
+    required this.previousSets,
   });
 
   final List<Map<String, dynamic>> sets;
   final List<GlobalKey<SetCardState>> setKeys;
   final void Function(int index, Map<String, dynamic> removed) onRemove;
   final String? sessionKey;
+  final List<SessionSetVM> previousSets;
 
   @override
   Widget build(BuildContext context) {
@@ -803,6 +806,9 @@ class _GroupedSetList extends StatelessWidget {
               set: entry.value,
               innerRadius: innerRadius,
               sessionKey: sessionKey,
+              previous: entry.key < previousSets.length
+                  ? previousSets[entry.key]
+                  : null,
             ),
           ),
         ],
@@ -816,6 +822,7 @@ class _GroupedSetList extends StatelessWidget {
     required Map<String, dynamic> set,
     required BorderRadius innerRadius,
     required String? sessionKey,
+    SessionSetVM? previous,
   }) {
     return Dismissible(
       key: ValueKey('set-${set['number']}'),
@@ -842,6 +849,7 @@ class _GroupedSetList extends StatelessWidget {
         size: SetCardSize.dense,
         displayMode: SetCardDisplayMode.grouped,
         sessionKey: sessionKey,
+        previousSet: previous,
         groupedRadius: BorderRadius.only(
           topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
           topRight: index == 0 ? innerRadius.topRight : Radius.zero,
