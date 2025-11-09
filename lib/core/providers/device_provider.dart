@@ -539,14 +539,31 @@ class DeviceProvider extends ChangeNotifier {
       _snapshotsLoading = false;
       notifyListeners();
 
-      await loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
+      final snapshotsFuture =
+          loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
+
+      var lastSessionChanged = false;
+      var noteChanged = false;
+      var xpChanged = false;
 
       final lastSessionFuture =
-          _loadLastSession(gymId, deviceId, exerciseId, userId);
-      final changeFlags = await Future.wait<bool>([
+          _loadLastSession(gymId, deviceId, exerciseId, userId).then((changed) {
+        lastSessionChanged = changed;
+      });
+      final userNoteFuture =
+          _loadUserNote(gymId, deviceId, userId).then((changed) {
+        noteChanged = changed;
+      });
+      final userXpFuture =
+          _loadUserXp(gymId, deviceId, userId).then((changed) {
+        xpChanged = changed;
+      });
+
+      await Future.wait<void>([
+        snapshotsFuture,
         lastSessionFuture,
-        _loadUserNote(gymId, deviceId, userId),
-        _loadUserXp(gymId, deviceId, userId),
+        userNoteFuture,
+        userXpFuture,
       ]);
       final draftChanged = await _restoreDraft();
       _loadedContextKey = _buildContextKey(
@@ -555,7 +572,10 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: exerciseId,
         userId: userId,
       );
-      if (draftChanged || changeFlags.any((changed) => changed)) {
+      if (draftChanged ||
+          lastSessionChanged ||
+          noteChanged ||
+          xpChanged) {
         notifyListeners();
       }
       _log(
