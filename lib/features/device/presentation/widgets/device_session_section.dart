@@ -353,8 +353,6 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     final theme = Theme.of(context);
     final outlineColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final accentColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final exercises = prov.device?.isMulti ?? false
         ? context.watch<ExerciseProvider>().exercises
         : null;
@@ -370,15 +368,20 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     if (_setKeys.length > prov.sets.length) {
       _setKeys.removeRange(prov.sets.length, _setKeys.length);
     }
-    final lastSnap =
+    final snapshot =
         prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
-    final hasSnapshotSets =
-        lastSnap != null && lastSnap.sets.isNotEmpty;
-    final lastSets = hasSnapshotSets
-        ? mapSnapshotToVM(lastSnap)
-        : mapLegacySetsToVM(prov.lastSessionSets);
-    final lastDate = hasSnapshotSets ? lastSnap!.createdAt : prov.lastSessionDate;
-    final lastNote = hasSnapshotSets ? lastSnap!.note : prov.lastSessionNote;
+    late final List<SessionSetVM> lastSets;
+    DateTime? lastDate;
+    late final String lastNote;
+    if (snapshot != null && snapshot.sets.isNotEmpty) {
+      lastSets = mapSnapshotToVM(snapshot);
+      lastDate = snapshot.createdAt;
+      lastNote = snapshot.note;
+    } else {
+      lastSets = mapLegacySetsToVM(prov.lastSessionSets);
+      lastDate = prov.lastSessionDate;
+      lastNote = prov.lastSessionNote;
+    }
 
     final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
 

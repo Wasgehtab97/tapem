@@ -68,10 +68,6 @@ class SetCardTheme {
       return Color.alphaBlend(overlay.withOpacity(opacity), base);
     }
 
-    Color blendWithBlack(Color base, double strength) {
-      return Color.alphaBlend(Colors.black.withOpacity(strength), base);
-    }
-
     final surface = theme.canvasColor;
     final softenedSurface = tint(surface, scheme.surface, isDark ? 0.75 : 0.95);
     final quietBase = tint(softenedSurface, scheme.primary, isDark ? 0.06 : 0.04);
