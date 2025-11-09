@@ -199,30 +199,15 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         ),
         centerTitle: true,
         titleSpacing: 0,
-        toolbarHeight: kToolbarHeight + 20,
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              loc.multiDeviceExerciseListTitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: ActiveWorkoutTimer(
-                key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
-                compact: true,
-                padding: EdgeInsets.zero,
-                sessionKey: _sessionKey,
-              ),
-            ),
-          ],
+        toolbarHeight: kToolbarHeight + 8,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ActiveWorkoutTimer(
+            key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
+            compact: true,
+            padding: EdgeInsets.zero,
+            sessionKey: _sessionKey,
+          ),
         ),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(8),
