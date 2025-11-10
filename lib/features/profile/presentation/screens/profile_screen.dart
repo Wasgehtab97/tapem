@@ -882,6 +882,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       dimension: 48,
                       child: _ProfileCommunityLeadingIcon(),
                     ),
+                    trailing: const _ProfileCommunityHighlight(),
+                    showChevron: false,
                     onTap: () {
                       Navigator.pushNamed(context, AppRouter.community);
                     },
@@ -898,6 +900,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       dimension: 48,
                       child: _ProfileSurveyLeadingIcon(),
                     ),
+                    trailing: const _ProfileSurveyHighlight(),
+                    showChevron: false,
                     onTap: () {
                       final gymId = context.read<GymProvider>().currentGymId;
                       final userId = context.read<AuthProvider>().userId ?? '';
@@ -985,6 +989,148 @@ class _ProfileCommunityLeadingIcon extends StatelessWidget {
   }
 }
 
+const double _profileHighlightHeight = 40;
+const double _profileHighlightWidth = 44;
+
+class _ProfileCommunityHighlight extends StatelessWidget {
+  const _ProfileCommunityHighlight();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final onBrand = brandTheme?.onBrand ?? theme.colorScheme.onPrimary;
+    final shadow = brandTheme?.shadow ??
+        const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+        ];
+    final capsulePadding = AppSpacing.xs * 0.5;
+    final accentInset = AppSpacing.xs / 4;
+    final loc = AppLocalizations.of(context)!;
+
+    return Semantics(
+      container: true,
+      label: '${loc.profileCommunityButtonTitle} highlight',
+      child: SizedBox(
+        height: _profileHighlightHeight,
+        width: _profileHighlightWidth,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            boxShadow: shadow,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(capsulePadding),
+            child: ExcludeSemantics(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.groups_3,
+                      size: 22,
+                      color: onBrand.withOpacity(0.9),
+                    ),
+                  ),
+                  Positioned(
+                    top: accentInset,
+                    right: accentInset,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: onBrand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSurveyHighlight extends StatelessWidget {
+  const _ProfileSurveyHighlight();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final shadow = brandTheme?.shadow ??
+        const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+        ];
+    final capsulePadding = AppSpacing.xs * 0.5;
+    final strokePadding = AppSpacing.xs / 4;
+    final accentInset = AppSpacing.xs / 4;
+    final innerPadding = capsulePadding - strokePadding / 2;
+    final bubbleColor = theme.colorScheme.onSurface.withOpacity(0.75);
+    final loc = AppLocalizations.of(context)!;
+
+    return Semantics(
+      container: true,
+      label: '${loc.surveyListTitle} highlight',
+      child: SizedBox(
+        height: _profileHighlightHeight,
+        width: _profileHighlightWidth,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            boxShadow: shadow,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(strokePadding),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(innerPadding),
+                child: ExcludeSemantics(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.forum_outlined,
+                          size: 22,
+                          color: bubbleColor,
+                        ),
+                      ),
+                      Positioned(
+                        top: accentInset,
+                        right: accentInset,
+                        child: ShaderMask(
+                          shaderCallback: (rect) => gradient.createShader(rect),
+                          blendMode: BlendMode.srcIn,
+                          child: Icon(
+                            Icons.task_alt,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileSurveyLeadingIcon extends StatelessWidget {
   const _ProfileSurveyLeadingIcon();
 
@@ -1024,32 +1170,40 @@ class _ProfileStatsSparkline extends StatelessWidget {
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final barColor = Color.lerp(brandColor, Colors.white, 0.15) ?? brandColor;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: List.generate(_bars.length, (index) {
-        final target = _bars[index];
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: target),
-          duration: Duration(milliseconds: 500 + index * 90),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1.5),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: barColor.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(AppRadius.button),
-                ),
-                child: SizedBox(
-                  width: 6,
-                  height: value,
-                ),
-              ),
+    return SizedBox(
+      height: _profileHighlightHeight,
+      width: _profileHighlightWidth,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        alignment: Alignment.bottomCenter,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(_bars.length, (index) {
+            final target = _bars[index];
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: target),
+              duration: Duration(milliseconds: 500 + index * 90),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: barColor.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                    child: SizedBox(
+                      width: 6,
+                      height: value,
+                    ),
+                  ),
+                );
+              },
             );
-          },
-        );
-      }),
+          }),
+        ),
+      ),
     );
   }
 }
