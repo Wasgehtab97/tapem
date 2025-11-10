@@ -300,7 +300,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileCommunityButtonTitle => 'Community';
 
   @override
-  String get profileCommunityButtonSubtitle => 'Gemeinschaftliche Meilensteine & Live-Ticker';
+  String get profileCommunityButtonSubtitle => 'Community Meilensteine';
 
   @override
   String get profileStatsTitle => 'Statistiken';
