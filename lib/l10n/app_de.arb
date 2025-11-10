@@ -365,7 +365,7 @@
     "description": "Button-Beschriftung auf der Profilseite zur Community"
   },
 
-  "profileCommunityButtonSubtitle": "Gemeinschaftliche Meilensteine & Live-Ticker",
+  "profileCommunityButtonSubtitle": "Community Meilensteine",
   "@profileCommunityButtonSubtitle": {
     "description": "Untertitel für den Community-Button auf der Profilseite"
   },
