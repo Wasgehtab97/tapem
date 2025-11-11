@@ -73,9 +73,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   void _scrollToLatest() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      final target = _scrollController.position.maxScrollExtent + 120;
       _scrollController.animateTo(
-        target,
+        0.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -247,7 +246,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                           (context, index) {
                             final session = sessions[index];
                             final builder = widget.sessionBuilder;
-                            final displayIndex = index + 1;
+                            final displayIndex = sessions.length - index;
                             if (builder != null) {
                               return builder(
                                 context,

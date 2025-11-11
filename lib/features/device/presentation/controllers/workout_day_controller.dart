@@ -234,10 +234,11 @@ class WorkoutDayController extends ChangeNotifier {
     if (userId.isEmpty || gymId.isEmpty) {
       return const <WorkoutDaySession>[];
     }
+    final matchingEntries = _sessions.values
+        .where((entry) => entry.userId == userId && entry.gymId == gymId)
+        .toList();
     return List.unmodifiable(
-      _sessions.values
-          .where((entry) => entry.userId == userId && entry.gymId == gymId)
-          .map((entry) => entry.snapshot),
+      matchingEntries.reversed.map((entry) => entry.snapshot),
     );
   }
 
