@@ -16,6 +16,7 @@ class SessionActionStrip extends StatelessWidget {
     this.feedbackTooltip,
     this.preFeedbackActions = const <Widget>[],
     this.postFeedbackActions = const <Widget>[],
+    this.trailing,
   });
 
   final VoidCallback? onOpenLeaderboard;
@@ -29,21 +30,40 @@ class SessionActionStrip extends StatelessWidget {
   final String? feedbackTooltip;
   final List<Widget> preFeedbackActions;
   final List<Widget> postFeedbackActions;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final actions = _buildActions(context);
-    if (actions.isEmpty) {
+    final trailing = this.trailing;
+
+    if (actions.isEmpty && trailing == null) {
       return const SizedBox.shrink();
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: actions,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: actions.isEmpty
+                ? const SizedBox.shrink()
+                : Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: actions,
+                  ),
+          ),
+          if (trailing != null) ...[
+            if (actions.isNotEmpty) const SizedBox(width: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: trailing,
+            ),
+          ],
+        ],
       ),
     );
   }
