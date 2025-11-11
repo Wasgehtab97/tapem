@@ -23,6 +23,7 @@ import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_s
 import 'package:tapem/features/device/presentation/widgets/note_button_widget.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_strip.dart';
+import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show
@@ -111,15 +112,39 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
   final List<GlobalKey<SetCardState>> _setKeys = [];
   OverlayNumericKeypadController? _keypadController;
   bool _didLoad = false;
+  late final GlobalKey<SessionRestTimerState> _restTimerKey;
+  late final SessionRestTimer _restTimer;
 
   OverlayNumericKeypadController get _overlayKeypad =>
       _keypadController ?? context.read<OverlayNumericKeypadController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _restTimerKey = GlobalKey<SessionRestTimerState>();
+    _restTimer = SessionRestTimer(
+      key: _restTimerKey,
+      initialSeconds: widget.plannedEntry?.restInSeconds,
+    );
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _keypadController ??= context.read<OverlayNumericKeypadController>();
     _ensureSessionLoaded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DeviceSessionSectionBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.plannedEntry?.restInSeconds !=
+        oldWidget.plannedEntry?.restInSeconds) {
+      final restSeconds = widget.plannedEntry?.restInSeconds;
+      if (restSeconds != null) {
+        _restTimerKey.currentState?.applyInitialSeconds(restSeconds);
+      }
+    }
   }
 
   Future<void> _ensureSessionLoaded() async {
@@ -416,6 +441,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
             deviceId: widget.deviceId,
           ),
         ],
+        trailing: _restTimer,
       ),
       if (prov.sets.isNotEmpty) ...[
         const SizedBox(height: 6),
