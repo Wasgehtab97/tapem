@@ -231,7 +231,7 @@ void main() {
     expect(size.height, lessThanOrEqualTo(48));
   });
 
-  testWidgets('session rest timer duration selector opens inline menu',
+  testWidgets('session rest timer duration selector opens duration sheet',
       (tester) async {
     var interactionCount = 0;
 
@@ -253,16 +253,18 @@ void main() {
     await tester.tap(find.byTooltip('Select rest duration'));
     await tester.pumpAndSettle();
 
+    expect(interactionCount, 1);
+    expect(find.text('Select rest duration'), findsOneWidget);
     expect(find.text('60s'), findsOneWidget);
     expect(find.text('90s'), findsWidgets);
     expect(find.text('120s'), findsOneWidget);
     expect(find.text('150s'), findsOneWidget);
     expect(find.text('180s'), findsOneWidget);
-    expect(interactionCount, greaterThanOrEqualTo(1));
 
-    await tester.tap(find.text('120s').last);
+    await tester.tap(find.text('120s'));
     await tester.pumpAndSettle();
 
-    expect(interactionCount, greaterThanOrEqualTo(2));
+    expect(interactionCount, 2);
+    expect(find.text('02:00'), findsOneWidget);
   });
 }

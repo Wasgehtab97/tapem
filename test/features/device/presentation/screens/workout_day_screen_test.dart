@@ -12,6 +12,7 @@ import 'package:tapem/features/device/presentation/screens/workout_day_screen.da
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 import '../../../../features/auth/helpers/fake_firestore.dart';
 
@@ -178,6 +179,35 @@ void main() {
     await tester.pump();
 
     expect(find.byType(SessionRestTimer), findsOneWidget);
+    expect(find.byTooltip('Select rest duration'), findsOneWidget);
+
+    final appBar = tester.widget<AppBar>(find.byType(AppBar));
+    final padding = appBar.title as Padding;
+    final row = padding.child as Row;
+    final children = row.children;
+    expect(children.whereType<ActiveWorkoutTimer>(), hasLength(1));
+    expect(children.whereType<SessionRestTimer>(), hasLength(1));
+
+    final activeIndex =
+        children.indexWhere((child) => child is ActiveWorkoutTimer);
+    final restIndex =
+        children.indexWhere((child) => child is SessionRestTimer);
+    expect(activeIndex, isNot(-1));
+    expect(restIndex, isNot(-1));
+    expect(restIndex, greaterThan(activeIndex));
+    expect(children[restIndex - 1], isA<SizedBox>());
+
+    final actions = appBar.actions ?? const <Widget>[];
+    final timersInActions = actions.where((widget) {
+      if (widget is SessionRestTimer) {
+        return true;
+      }
+      if (widget is Padding) {
+        return widget.child is SessionRestTimer;
+      }
+      return false;
+    });
+    expect(timersInActions, isEmpty);
   });
 
   testWidgets('closing a secondary screen keeps the shared session alive',
