@@ -335,11 +335,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
   void _handleTimerInteraction() {
     FocusManager.instance.primaryFocus?.unfocus();
-    final keypad = Provider.maybeOf<OverlayNumericKeypadController>(
-      context,
-      listen: false,
-    );
-    keypad?.close();
+    final keypad = context.read<OverlayNumericKeypadController>();
+    keypad.close();
   }
 
   Future<void> _handleSaveAllSessions(
