@@ -6,6 +6,7 @@ import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
+import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
@@ -43,6 +44,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   String? _sessionKey;
   bool _isInitializing = true;
   bool _ownsSession = false;
+  final GlobalKey<SessionRestTimerState> _restTimerKey =
+      GlobalKey<SessionRestTimerState>();
 
   Future<WorkoutDeviceSelection?> _openGymSelection() {
     return Navigator.of(context).push<WorkoutDeviceSelection>(
@@ -180,6 +183,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       );
     }
 
+    final restSeconds = _resolveRestSeconds(sessions, plannedEntries);
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -203,6 +208,14 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           child: SizedBox(height: 8),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SessionRestTimer(
+              key: _restTimerKey,
+              initialSeconds: restSeconds,
+              onInteraction: _handleTimerInteraction,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: NfcScanButton(
@@ -292,6 +305,41 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         ),
       ),
     );
+  }
+
+  int? _resolveRestSeconds(
+    List<WorkoutDaySession> sessions,
+    List<ExerciseEntry?> plannedEntries,
+  ) {
+    if (sessions.isEmpty) {
+      return null;
+    }
+    final key = _sessionKey;
+    if (key != null) {
+      final index = sessions.indexWhere((session) => session.key == key);
+      if (index != -1) {
+        final rest = plannedEntries[index]?.restInSeconds;
+        if (rest != null) {
+          return rest;
+        }
+      }
+    }
+    for (final entry in plannedEntries) {
+      final rest = entry?.restInSeconds;
+      if (rest != null) {
+        return rest;
+      }
+    }
+    return null;
+  }
+
+  void _handleTimerInteraction() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final keypad = Provider.maybeOf<OverlayNumericKeypadController>(
+      context,
+      listen: false,
+    );
+    keypad?.close();
   }
 
   Future<void> _handleSaveAllSessions(

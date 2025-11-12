@@ -165,7 +165,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('multiple session cards render independent rest timers',
+  testWidgets('device session section no longer renders rest timer',
       (tester) async {
     final firstProvider = _MockDeviceProvider();
     final secondProvider = _MockDeviceProvider();
@@ -196,38 +196,59 @@ void main() {
       secondPlan: secondPlan,
     );
 
-    expect(find.text('90s'), findsOneWidget);
-    expect(find.text('150s'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Select rest duration').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('60s'), findsOneWidget);
-    expect(find.text('90s'), findsWidgets);
-    expect(find.text('120s'), findsOneWidget);
-    expect(find.text('150s'), findsWidgets);
-    expect(find.text('180s'), findsOneWidget);
-
-    await tester.tap(find.text('180s').last);
-    await tester.pumpAndSettle();
-
-    expect(find.text('180s'), findsOneWidget);
-    expect(find.text('150s'), findsOneWidget);
+    expect(find.byType(SessionRestTimer), findsNothing);
   });
 
-  testWidgets('session rest timer shows circular progress and durations',
+  testWidgets('session rest timer toggles play and pause states',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: SessionRestTimer(initialSeconds: 90),
+          body: Center(
+            child: SessionRestTimer(initialSeconds: 90),
+          ),
         ),
       ),
     );
+
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('90s'), findsOneWidget);
+    expect(find.text('01:30'), findsOneWidget);
+    expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.pause), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.pause));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+
+    final size = tester.getSize(find.byType(SessionRestTimer));
+    expect(size.height, lessThanOrEqualTo(48));
+  });
+
+  testWidgets('session rest timer duration selector opens inline menu',
+      (tester) async {
+    var interactionCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SessionRestTimer(
+              initialSeconds: 90,
+              onInteraction: () => interactionCount++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
 
     await tester.tap(find.byTooltip('Select rest duration'));
     await tester.pumpAndSettle();
@@ -237,5 +258,11 @@ void main() {
     expect(find.text('120s'), findsOneWidget);
     expect(find.text('150s'), findsOneWidget);
     expect(find.text('180s'), findsOneWidget);
+    expect(interactionCount, greaterThanOrEqualTo(1));
+
+    await tester.tap(find.text('120s').last);
+    await tester.pumpAndSettle();
+
+    expect(interactionCount, greaterThanOrEqualTo(2));
   });
 }
