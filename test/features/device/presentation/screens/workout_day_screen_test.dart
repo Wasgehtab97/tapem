@@ -9,6 +9,8 @@ import 'package:tapem/core/providers/training_plan_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
+import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
+import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
 import 'package:tapem/services/membership_service.dart';
 
 import '../../../../features/auth/helpers/fake_firestore.dart';
@@ -137,6 +139,45 @@ void main() {
           ),
       isNotEmpty,
     );
+  });
+
+  testWidgets('workout day screen renders single rest timer in header',
+      (tester) async {
+    when(() => trainingPlanProvider.entryForDate(any(), any(), any())).thenReturn(
+      ExerciseEntry(
+        deviceId: 'device-1',
+        exerciseId: 'exercise-1',
+        exerciseName: 'Exercise',
+        setType: 'work',
+        totalSets: 0,
+        workSets: 0,
+        restInSeconds: 75,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
+          Provider<AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider<TrainingPlanProvider>.value(
+            value: trainingPlanProvider,
+          ),
+        ],
+        child: const MaterialApp(
+          home: WorkoutDayScreen(
+            gymId: 'gym-1',
+            deviceId: 'device-1',
+            exerciseId: 'exercise-1',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(SessionRestTimer), findsOneWidget);
   });
 
   testWidgets('closing a secondary screen keeps the shared session alive',

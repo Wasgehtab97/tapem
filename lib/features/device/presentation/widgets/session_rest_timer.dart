@@ -8,9 +8,11 @@ class SessionRestTimer extends StatefulWidget {
   const SessionRestTimer({
     super.key,
     this.initialSeconds,
+    this.onInteraction,
   });
 
   final int? initialSeconds;
+  final VoidCallback? onInteraction;
 
   @override
   SessionRestTimerState createState() => SessionRestTimerState();
@@ -69,13 +71,13 @@ class SessionRestTimerState extends State<SessionRestTimer> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 64,
-          height: 64,
+          width: 40,
+          height: 40,
           child: ValueListenableBuilder<Duration>(
             valueListenable: _service.remaining,
             builder: (context, remaining, _) {
@@ -89,67 +91,66 @@ class SessionRestTimerState extends State<SessionRestTimer> {
               final displayMinutes = remaining.inMinutes;
               final timeLabel =
                   '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
+              final textStyle =
+                  theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontFeatures: const [
+                          FontFeature.tabularFigures(),
+                        ],
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      );
               return Stack(
                 alignment: Alignment.center,
                 children: [
                   CircularProgressIndicator(
                     value: progress,
-                    strokeWidth: 4,
+                    strokeWidth: 3,
                   ),
-                  Positioned.fill(
-                    child: Center(
-                      child: Text(
-                        timeLabel,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ) ??
-                            TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 12,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _service.running,
-                    builder: (context, isRunning, _) {
-                      return Semantics(
-                        button: true,
-                        label: isRunning
-                            ? 'Stop rest timer'
-                            : 'Start rest timer',
-                        child: IconButton(
-                          iconSize: 22,
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            isRunning ? Icons.stop : Icons.play_arrow,
-                          ),
-                          tooltip:
-                              isRunning ? 'Stop rest timer' : 'Start rest timer',
-                          onPressed: () {
-                            if (isRunning) {
-                              _service.stop();
-                            } else {
-                              _service.start();
-                            }
-                          },
-                        ),
-                      );
-                    },
+                  Text(
+                    timeLabel,
+                    style: textStyle,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               );
             },
           ),
         ),
-        const SizedBox(height: 4),
-        _DurationSelector(service: _service),
+        const SizedBox(width: 8),
+        ValueListenableBuilder<bool>(
+          valueListenable: _service.running,
+          builder: (context, isRunning, _) {
+            return Semantics(
+              button: true,
+              label:
+                  isRunning ? 'Pause rest timer' : 'Start rest timer',
+              child: IconButton(
+                iconSize: 22,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
+                tooltip:
+                    isRunning ? 'Pause rest timer' : 'Start rest timer',
+                onPressed: () {
+                  widget.onInteraction?.call();
+                  if (isRunning) {
+                    _service.stop();
+                  } else {
+                    _service.start();
+                  }
+                },
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        _DurationSelector(
+          service: _service,
+          onInteraction: widget.onInteraction,
+        ),
       ],
     );
   }
@@ -158,9 +159,11 @@ class SessionRestTimerState extends State<SessionRestTimer> {
 class _DurationSelector extends StatelessWidget {
   const _DurationSelector({
     required this.service,
+    this.onInteraction,
   });
 
   final SessionTimerService service;
+  final VoidCallback? onInteraction;
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +175,7 @@ class _DurationSelector extends StatelessWidget {
         final selectedSeconds = service.selectedDuration.inSeconds;
         return PopupMenuButton<int>(
           tooltip: 'Select rest duration',
+          onOpened: onInteraction,
           onSelected: (seconds) {
             final index = durations.indexOf(seconds);
             if (index == -1) {
@@ -179,6 +183,7 @@ class _DurationSelector extends StatelessWidget {
             }
             final delta = index - service.selectedIndex;
             if (delta != 0) {
+              onInteraction?.call();
               service.changeDuration(delta);
             }
           },
@@ -192,11 +197,13 @@ class _DurationSelector extends StatelessWidget {
             ];
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceVariant,
               borderRadius: BorderRadius.circular(16),
             ),
+            alignment: Alignment.center,
+            height: 32,
             child: Text(
               '${selectedSeconds}s',
               style: theme.textTheme.labelSmall,
