@@ -196,11 +196,23 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         toolbarHeight: kToolbarHeight + 8,
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: ActiveWorkoutTimer(
-            key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
-            compact: true,
-            padding: EdgeInsets.zero,
-            sessionKey: _sessionKey,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ActiveWorkoutTimer(
+                key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
+                compact: true,
+                padding: EdgeInsets.zero,
+                sessionKey: _sessionKey,
+              ),
+              const SizedBox(width: 12),
+              SessionRestTimer(
+                key: _restTimerKey,
+                initialSeconds: restSeconds,
+                onInteraction: _handleTimerInteraction,
+              ),
+            ],
           ),
         ),
         bottom: const PreferredSize(
@@ -208,14 +220,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           child: SizedBox(height: 8),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: SessionRestTimer(
-              key: _restTimerKey,
-              initialSeconds: restSeconds,
-              onInteraction: _handleTimerInteraction,
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: NfcScanButton(

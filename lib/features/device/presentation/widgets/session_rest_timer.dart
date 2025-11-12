@@ -75,51 +75,6 @@ class SessionRestTimerState extends State<SessionRestTimer> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: ValueListenableBuilder<Duration>(
-            valueListenable: _service.remaining,
-            builder: (context, remaining, _) {
-              final totalMillis = _service.total.inMilliseconds;
-              final progress = totalMillis == 0
-                  ? 0.0
-                  : 1 -
-                      (remaining.inMilliseconds / totalMillis)
-                          .clamp(0.0, 1.0);
-              final displaySeconds = remaining.inSeconds % 60;
-              final displayMinutes = remaining.inMinutes;
-              final timeLabel =
-                  '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
-              final textStyle =
-                  theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontFeatures: const [
-                          FontFeature.tabularFigures(),
-                        ],
-                      ) ??
-                      TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                      );
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 3,
-                  ),
-                  Text(
-                    timeLabel,
-                    style: textStyle,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
         ValueListenableBuilder<bool>(
           valueListenable: _service.running,
           builder: (context, isRunning, _) {
@@ -147,70 +102,110 @@ class SessionRestTimerState extends State<SessionRestTimer> {
           },
         ),
         const SizedBox(width: 8),
-        _DurationSelector(
-          service: _service,
-          onInteraction: widget.onInteraction,
+        Tooltip(
+          message: 'Select rest duration',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: () => _handleTimerTap(context),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: ValueListenableBuilder<Duration>(
+                  valueListenable: _service.remaining,
+                  builder: (context, remaining, _) {
+                    final totalMillis = _service.total.inMilliseconds;
+                    final progress = totalMillis == 0
+                        ? 0.0
+                        : 1 -
+                            (remaining.inMilliseconds / totalMillis)
+                                .clamp(0.0, 1.0);
+                    final displaySeconds = remaining.inSeconds % 60;
+                    final displayMinutes = remaining.inMinutes;
+                    final timeLabel =
+                        '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
+                    final textStyle =
+                        theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ) ??
+                            TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            );
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 3,
+                        ),
+                        Text(
+                          timeLabel,
+                          style: textStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-}
 
-class _DurationSelector extends StatelessWidget {
-  const _DurationSelector({
-    required this.service,
-    this.onInteraction,
-  });
-
-  final SessionTimerService service;
-  final VoidCallback? onInteraction;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final durations = service.availableDurations;
-    return AnimatedBuilder(
-      animation: service,
-      builder: (context, _) {
-        final selectedSeconds = service.selectedDuration.inSeconds;
-        return PopupMenuButton<int>(
-          tooltip: 'Select rest duration',
-          onOpened: onInteraction,
-          onSelected: (seconds) {
-            final index = durations.indexOf(seconds);
-            if (index == -1) {
-              return;
-            }
-            final delta = index - service.selectedIndex;
-            if (delta != 0) {
-              onInteraction?.call();
-              service.changeDuration(delta);
-            }
-          },
-          itemBuilder: (context) {
-            return [
-              for (final seconds in durations)
-                PopupMenuItem<int>(
-                  value: seconds,
-                  child: Text('${seconds}s'),
+  Future<void> _handleTimerTap(BuildContext context) async {
+    widget.onInteraction?.call();
+    final durations = _service.availableDurations;
+    final selectedDuration = _service.selectedDuration.inSeconds;
+    final chosenSeconds = await showModalBottomSheet<int>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Select rest duration',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-            ];
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            height: 32,
-            child: Text(
-              '${selectedSeconds}s',
-              style: theme.textTheme.labelSmall,
-            ),
+              ),
+              for (final seconds in durations)
+                ListTile(
+                  title: Text('${seconds}s'),
+                  trailing: seconds == selectedDuration
+                      ? const Icon(Icons.check)
+                      : null,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop(seconds);
+                  },
+                ),
+              const SizedBox(height: 12),
+            ],
           ),
         );
       },
     );
+
+    if (!mounted || chosenSeconds == null) {
+      return;
+    }
+    final index = durations.indexOf(chosenSeconds);
+    if (index == -1) {
+      return;
+    }
+    final delta = index - _service.selectedIndex;
+    if (delta != 0) {
+      widget.onInteraction?.call();
+      _service.changeDuration(delta);
+    }
   }
 }
