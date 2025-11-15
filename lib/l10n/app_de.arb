@@ -1544,12 +1544,8 @@
   ,"@selectGymTitle": {"description": "AppBar-Titel der Gym-Auswahl"}
   ,"sessionStopTitle": "Training beenden?"
   ,"@sessionStopTitle": {"description": "Dialogtitel beim Beenden des Trainings"}
-  ,"sessionStopMessage": "Dauer: {duration}. Möchtest du die Zeit speichern oder verwerfen?"
-  ,"@sessionStopMessage": {"description": "Dialogtext ob die aufgezeichnete Zeit gespeichert werden soll","placeholders": {"duration": {}}}
-  ,"sessionStopResumeAction": "Zurück zur Übung"
-  ,"@sessionStopResumeAction": {"description": "Schaltfläche um zu einer offenen Session zurückzukehren"}
-  ,"sessionStopResumeSelectionTitle": "Session auswählen"
-  ,"@sessionStopResumeSelectionTitle": {"description": "Titel für die Auswahl mehrerer offener Sessions"}
+  ,"sessionStopMessage": "Dauer: {duration}. Möchtest du die Zeit weiterlaufen lassen oder verwerfen?"
+  ,"@sessionStopMessage": {"description": "Dialogtext ob die aufgezeichnete Zeit weiterlaufen soll oder verworfen wird","placeholders": {"duration": {}}}
   ,"numericKeypadSemanticsDigit": "Taste {digit}"
   ,"@numericKeypadSemanticsDigit": {"description": "Semantik-Label für eine Zahlentaste","placeholders": {"digit": {}}}
   ,"numericKeypadSemanticsDecimal": "Dezimaltrennzeichen"

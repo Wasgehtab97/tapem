@@ -1558,12 +1558,8 @@
   ,"@selectGymTitle": {"description": "AppBar title of the gym selection screen"}
   ,"sessionStopTitle": "End workout?"
   ,"@sessionStopTitle": {"description": "Dialog title asking to end the workout"}
-  ,"sessionStopMessage": "Duration: {duration}. Do you want to save or discard the time?"
-  ,"@sessionStopMessage": {"description": "Dialog body asking whether to save the tracked duration","placeholders": {"duration": {}}}
-  ,"sessionStopResumeAction": "Back to exercise"
-  ,"@sessionStopResumeAction": {"description": "Action button label to resume an unfinished session"}
-  ,"sessionStopResumeSelectionTitle": "Choose a session"
-  ,"@sessionStopResumeSelectionTitle": {"description": "Title shown when the user has to pick from multiple unfinished sessions"}
+  ,"sessionStopMessage": "Duration: {duration}. Do you want to keep it running or discard the time?"
+  ,"@sessionStopMessage": {"description": "Dialog body asking whether to keep the timer running or discard the tracked duration","placeholders": {"duration": {}}}
   ,"numericKeypadSemanticsDigit": "Key {digit}"
   ,"@numericKeypadSemanticsDigit": {"description": "Semantics label for a digit key","placeholders": {"digit": {}}}
   ,"numericKeypadSemanticsDecimal": "Decimal separator"

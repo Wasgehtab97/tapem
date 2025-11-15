@@ -3347,23 +3347,12 @@ abstract class AppLocalizations {
   /// **'End workout?'**
   String get sessionStopTitle;
 
-  /// Dialog body asking whether to save the tracked duration
+  /// Dialog body asking whether to keep the timer running or discard the
+  /// tracked duration
   ///
   /// In en, this message translates to:
-  /// **'Duration: {duration}. Do you want to save or discard the time?'**
+  /// **'Duration: {duration}. Do you want to keep it running or discard the time?'**
   String sessionStopMessage(Object duration);
-
-  /// Action button label to resume an unfinished session
-  ///
-  /// In en, this message translates to:
-  /// **'Back to exercise'**
-  String get sessionStopResumeAction;
-
-  /// Title shown when the user has to pick from multiple unfinished sessions
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a session'**
-  String get sessionStopResumeSelectionTitle;
 
   /// Semantics label for a digit key
   ///
