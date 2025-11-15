@@ -45,6 +45,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       deviceId: widget.deviceId,
       exerciseId: widget.exerciseId,
       userId: auth.userId!,
+      autoFinalizeEnabled: true,
     );
     if (mounted) {
       setState(() {
@@ -200,6 +201,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 deviceId: selection.deviceId,
                 exerciseId: selection.exerciseId,
                 userId: auth.userId!,
+                autoFinalizeEnabled: true,
               );
             },
           ),

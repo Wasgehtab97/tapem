@@ -182,6 +182,7 @@ class WorkoutDayController extends ChangeNotifier {
     required String deviceId,
     required String exerciseId,
     required String userId,
+    bool autoFinalizeEnabled = false,
   }) {
     final key = contextKey(
       gymId: gymId,
@@ -206,6 +207,7 @@ class WorkoutDayController extends ChangeNotifier {
       draftRepo: _createDraftRepository(),
       membership: _membership,
       communityStatsWriter: _communityStatsWriter,
+      autoFinalizeEnabled: autoFinalizeEnabled,
     );
     final entry = _SessionEntry(
       key: key,

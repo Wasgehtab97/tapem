@@ -196,6 +196,7 @@ class DeviceProvider extends ChangeNotifier {
   String? _currentGymId;
   String? _currentUserId;
   bool _showInLeaderboardPreference = true;
+  bool _autoFinalizeEnabled;
   String? _loadedContextKey;
   String? _pendingContextKey;
   Future<void>? _inFlightLoad;
@@ -244,7 +245,8 @@ class DeviceProvider extends ChangeNotifier {
     SessionDraftRepository? draftRepo,
     required MembershipService membership,
     CommunityStatsWriter? communityStatsWriter,
-  }) : _firestore = firestore,
+    bool autoFinalizeEnabled = true,
+  })  : _firestore = firestore,
        deviceRepository =
            deviceRepository ??
            DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
@@ -260,7 +262,8 @@ class DeviceProvider extends ChangeNotifier {
        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl(),
        _membership = membership,
        _communityStatsWriter =
-           communityStatsWriter ?? CommunityStatsWriter(firestore: firestore);
+           communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
+       _autoFinalizeEnabled = autoFinalizeEnabled;
 
   void attachExternalServices({
     required XpProvider xpProvider,
@@ -995,6 +998,7 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void _scheduleAutoFinalize() {
+    if (!_autoFinalizeEnabled) return;
     final last = _lastActivityMs;
     if (last == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -1013,6 +1017,7 @@ class DeviceProvider extends ChangeNotifier {
   Future<void> _handleAutoFinalizeTimer() async {
     _autoFinalizeTimer?.cancel();
     _autoFinalizeTimer = null;
+    if (!_autoFinalizeEnabled) return;
     if (_device == null) return;
     if (_currentGymId == null || _currentUserId == null) return;
     if (!_hasCompletedSets()) return;
@@ -1043,6 +1048,7 @@ class DeviceProvider extends ChangeNotifier {
       updatedAt: now,
       note: _note,
       showInLeaderboard: _showInLeaderboardPreference,
+      autoFinalizeEnabled: _autoFinalizeEnabled,
       sets: [
         for (var i = 0; i < _sets.length; i++)
           () {
@@ -1096,6 +1102,11 @@ class DeviceProvider extends ChangeNotifier {
       _currentUserId ??= draft.userId;
     }
     _showInLeaderboardPreference = draft.showInLeaderboard;
+    _autoFinalizeEnabled = draft.autoFinalizeEnabled;
+    if (!_autoFinalizeEnabled) {
+      _autoFinalizeTimer?.cancel();
+      _autoFinalizeTimer = null;
+    }
     final newSets = [
       for (var i = 0; i < draft.sets.length; i++)
         _withNormalizedDrops({
@@ -1122,7 +1133,9 @@ class DeviceProvider extends ChangeNotifier {
     }
     _lastActivityMs = draft.updatedAt;
     _scheduleAutoFinalize();
-    if (now - draft.updatedAt >= draft.ttlMs && _hasCompletedSets()) {
+    if (_autoFinalizeEnabled &&
+        now - draft.updatedAt >= draft.ttlMs &&
+        _hasCompletedSets()) {
       unawaited(_handleAutoFinalizeTimer());
     }
     return changed;
