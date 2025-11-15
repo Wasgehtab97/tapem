@@ -8,15 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../drafts/session_draft.dart';
-import '../drafts/session_draft_repository.dart';
-import '../drafts/session_draft_repository_impl.dart';
-
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
 import 'workout_timer_telemetry.dart';
 
-enum StopResult { save, discard, cancel, resume }
+enum StopResult { discard, cancel }
 
 class WorkoutSessionCompletionEvent {
   final String gymId;
@@ -40,35 +36,12 @@ class WorkoutSessionCompletionEvent {
 
 class StopDialogResult {
   final StopResult result;
-  final ResumeSessionTarget? resumeTarget;
   final String? sessionKey;
 
   const StopDialogResult(
     this.result, {
-    this.resumeTarget,
     this.sessionKey,
   });
-}
-
-class ResumeSessionTarget {
-  final String gymId;
-  final String deviceId;
-  final String? exerciseId;
-  final String title;
-
-  const ResumeSessionTarget({
-    required this.gymId,
-    required this.deviceId,
-    required this.title,
-    this.exerciseId,
-  });
-
-  ResumeSessionTarget copyWith({String? title}) => ResumeSessionTarget(
-        gymId: gymId,
-        deviceId: deviceId,
-        exerciseId: exerciseId,
-        title: title ?? this.title,
-      );
 }
 
 class WorkoutSessionDurationService extends ChangeNotifier {
@@ -81,7 +54,6 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   final Uuid _uuid = const Uuid();
   final WorkoutTimerTelemetry? _telemetry;
   final Duration _autoStopDelay;
-  final SessionDraftRepository _draftRepo;
   SharedPreferences? _prefs;
 
   bool _isRunning = false;
@@ -101,12 +73,10 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   WorkoutSessionDurationService({
     FirebaseFirestore? firestore,
     WorkoutTimerTelemetry? telemetry,
-    SessionDraftRepository? draftRepo,
     Duration autoStopDelay = _defaultAutoStopDelay,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _telemetry = telemetry,
-        _autoStopDelay = autoStopDelay,
-        _draftRepo = draftRepo ?? SessionDraftRepositoryImpl() {
+        _autoStopDelay = autoStopDelay {
     _init();
   }
 
@@ -237,12 +207,11 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _scheduleAutoStop();
   }
 
-  /// Prompts the user whether to save or discard the current session.
+  /// Prompts the user whether to discard the current session or keep it
+  /// running.
   ///
-  /// Returns [StopResult.save] if the user chooses to persist the duration,
-  /// [StopResult.discard] if it should be thrown away, [StopResult.resume]
-  /// when the user wants to jump back to an unfinished session, or
-  /// [StopResult.cancel] if the dialog was dismissed.
+  /// Returns [StopResult.discard] if the user chooses to throw away the
+  /// duration, and [StopResult.cancel] if the dialog was dismissed.
   Future<StopDialogResult> confirmStop(
     BuildContext context, {
     String? sessionKey,
@@ -257,11 +226,6 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final locale = Localizations.localeOf(context);
     final formatted = formatDuration(elapsedDur, locale: locale);
     final loc = AppLocalizations.of(context)!;
-    final resumeTargets = await _loadResumeTargets();
-    final resolvedTargets = resumeTargets.length > 1
-        ? await _populateResumeTargetTitles(resumeTargets)
-        : resumeTargets;
-
     final result = await showDialog<StopDialogResult>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -277,36 +241,6 @@ class WorkoutSessionDurationService extends ChangeNotifier {
             ),
             child: Text(loc.commonCancel),
           ),
-          if (resolvedTargets.isNotEmpty)
-            TextButton(
-              onPressed: () async {
-                if (resolvedTargets.length == 1) {
-                  Navigator.of(ctx).pop(
-                    StopDialogResult(
-                      StopResult.resume,
-                      resumeTarget: resolvedTargets.first,
-                      sessionKey: sessionKey,
-                    ),
-                  );
-                  return;
-                }
-                final selection = await _showResumeSelectionDialog(
-                  ctx,
-                  loc,
-                  resolvedTargets,
-                );
-                if (selection != null) {
-                  Navigator.of(ctx).pop(
-                    StopDialogResult(
-                      StopResult.resume,
-                      resumeTarget: selection,
-                      sessionKey: sessionKey,
-                    ),
-                  );
-                }
-              },
-              child: Text(loc.sessionStopResumeAction),
-            ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(
               StopDialogResult(
@@ -317,15 +251,6 @@ class WorkoutSessionDurationService extends ChangeNotifier {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(loc.commonDiscard),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(
-              StopDialogResult(
-                StopResult.save,
-                sessionKey: sessionKey,
-              ),
-            ),
-            child: Text(loc.commonSave),
-          ),
         ],
       ),
     );
@@ -334,91 +259,6 @@ class WorkoutSessionDurationService extends ChangeNotifier {
           StopResult.cancel,
           sessionKey: sessionKey,
         );
-  }
-
-  Future<List<ResumeSessionTarget>> _loadResumeTargets() async {
-    final uid = _uid;
-    final gymId = _gymId;
-    if (uid == null || gymId == null) {
-      return const <ResumeSessionTarget>[];
-    }
-    final drafts = await _draftRepo.getAll();
-    final filtered = drafts.values.where(
-      (draft) =>
-          draft.userId == uid &&
-          draft.gymId == gymId &&
-          draft.sets.any((set) => set.done),
-    );
-    final sorted = filtered.toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return [
-      for (final draft in sorted)
-        ResumeSessionTarget(
-          gymId: draft.gymId,
-          deviceId: draft.deviceId,
-          exerciseId: draft.exerciseId,
-          title: draft.exerciseId ?? draft.deviceId,
-        ),
-    ];
-  }
-
-  Future<List<ResumeSessionTarget>> _populateResumeTargetTitles(
-    List<ResumeSessionTarget> targets,
-  ) async {
-    final gymId = _gymId;
-    if (gymId == null) return targets;
-    return Future.wait(targets.map((target) async {
-      String? title;
-      try {
-        final deviceDoc = await _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .doc(target.deviceId)
-            .get();
-        final deviceData = deviceDoc.data();
-        final deviceName = deviceData?['name'] as String?;
-        String? exerciseName;
-        if (target.exerciseId != null) {
-          final exerciseDoc = await deviceDoc.reference
-              .collection('exercises')
-              .doc(target.exerciseId)
-              .get();
-          exerciseName = exerciseDoc.data()?['name'] as String?;
-        }
-        final parts = [deviceName, exerciseName]
-            .where((value) => value?.trim().isNotEmpty == true)
-            .map((value) => value!)
-            .toList();
-        if (parts.isNotEmpty) {
-          title = parts.join(' — ');
-        }
-      } catch (_) {
-        // ignore lookup errors and fall back to defaults
-      }
-      title ??= target.exerciseId ?? target.deviceId;
-      return target.copyWith(title: title);
-    }));
-  }
-
-  Future<ResumeSessionTarget?> _showResumeSelectionDialog(
-    BuildContext context,
-    AppLocalizations loc,
-    List<ResumeSessionTarget> targets,
-  ) {
-    return showDialog<ResumeSessionTarget>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(loc.sessionStopResumeSelectionTitle),
-        children: [
-          for (final target in targets)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop(target),
-              child: Text(target.title),
-            ),
-        ],
-      ),
-    );
   }
 
   Future<void> save({DateTime? endTime, String? sessionId}) async {

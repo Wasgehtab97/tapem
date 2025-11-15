@@ -1790,14 +1790,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionStopMessage(Object duration) {
-    return 'Duration: $duration. Do you want to save or discard the time?';
+    return 'Duration: $duration. Do you want to keep it running or discard the time?';
   }
-
-  @override
-  String get sessionStopResumeAction => 'Back to exercise';
-
-  @override
-  String get sessionStopResumeSelectionTitle => 'Choose a session';
 
   @override
   String numericKeypadSemanticsDigit(Object digit) {
