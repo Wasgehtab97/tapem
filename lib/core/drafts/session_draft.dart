@@ -97,6 +97,7 @@ class SessionDraft {
   final List<SetDraft> sets;
   final bool showInLeaderboard;
   final int? version;
+  final bool autoFinalizeEnabled;
 
   SessionDraft({
     required this.deviceId,
@@ -111,6 +112,7 @@ class SessionDraft {
     this.sets = const [],
     this.showInLeaderboard = true,
     this.version,
+    this.autoFinalizeEnabled = true,
   });
 
   factory SessionDraft.fromJson(Map<String, dynamic> json) => SessionDraft(
@@ -128,6 +130,7 @@ class SessionDraft {
             .toList(),
         showInLeaderboard: json['showInLeaderboard'] as bool? ?? true,
         version: json['version'] as int?,
+        autoFinalizeEnabled: json['autoFinalizeEnabled'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -143,6 +146,7 @@ class SessionDraft {
         'sets': sets.map((e) => e.toJson()).toList(),
         if (!showInLeaderboard) 'showInLeaderboard': false,
         if (version != null) 'version': version,
+        'autoFinalizeEnabled': autoFinalizeEnabled,
       };
 
   String encode() => jsonEncode(toJson());
