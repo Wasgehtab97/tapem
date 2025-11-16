@@ -3407,8 +3407,7 @@ abstract class AppLocalizations {
   /// **'End workout?'**
   String get sessionStopTitle;
 
-  /// Dialog body asking whether to keep the timer running or discard the
-  /// tracked duration
+  /// Dialog body asking whether to keep the timer running or discard the tracked duration
   ///
   /// In en, this message translates to:
   /// **'Duration: {duration}. Do you want to keep it running or discard the time?'**
