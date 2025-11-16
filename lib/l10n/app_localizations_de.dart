@@ -660,7 +660,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDialogTitle => 'Einstellungen';
 
   @override
+  String get settingsScreenTitle => 'Einstellungen';
+
+  @override
+  String get settingsSectionPersonalization => 'Personalisierung';
+
+  @override
+  String get settingsSectionHealthTracking => 'Gesundheit & Tracking';
+
+  @override
+  String get settingsSectionVisibilityAccount => 'Sichtbarkeit & Konto';
+
+  @override
+  String get settingsSectionLegal => 'Rechtliches';
+
+  @override
   String get settingsOptionLanguage => 'Sprache';
+
+  @override
+  String get settingsLanguageSystemDefault => 'Systemsprache';
 
   @override
   String get settingsOptionTheme => 'App-Theme';
@@ -767,6 +785,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsOptionChangeUsername => 'Nutzername wechseln';
 
   @override
+  String settingsUsernameCurrent(String username) {
+    return 'Aktueller Nutzername: $username';
+  }
+
+  @override
   String get settingsCreatineTracker => 'Kreatin-Tracker';
 
   @override
@@ -786,6 +809,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Kreatin-Tracker deaktiviert.';
+
+  @override
+  String get settingsLegalImprint => 'Impressum';
+
+  @override
+  String get settingsLegalPrivacy => 'Datenschutz';
+
+  @override
+  String get settingsLegalPlaceholderDescription => 'Bald verfügbar.';
+
+  @override
+  String settingsLegalPlaceholder(String label) {
+    return 'Link zu $label folgt in Kürze.';
+  }
 
   @override
   String get publicProfileDialogTitle => 'Profil-Sichtbarkeit';

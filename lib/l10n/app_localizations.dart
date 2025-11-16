@@ -1289,11 +1289,47 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settingsDialogTitle;
 
+  /// Title for the dedicated settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsScreenTitle;
+
+  /// Heading for personalization settings
+  ///
+  /// In en, this message translates to:
+  /// **'Personalization'**
+  String get settingsSectionPersonalization;
+
+  /// Heading for health and tracking settings
+  ///
+  /// In en, this message translates to:
+  /// **'Health & tracking'**
+  String get settingsSectionHealthTracking;
+
+  /// Heading for visibility/account settings
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility & account'**
+  String get settingsSectionVisibilityAccount;
+
+  /// Heading for legal links
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get settingsSectionLegal;
+
   /// Settings option to change language
   ///
   /// In en, this message translates to:
   /// **'Language'**
   String get settingsOptionLanguage;
+
+  /// Label for system default language option
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get settingsLanguageSystemDefault;
 
   /// Settings option to change the app theme
   ///
@@ -1499,6 +1535,12 @@ abstract class AppLocalizations {
   /// **'Change username'**
   String get settingsOptionChangeUsername;
 
+  /// Shows the currently selected username
+  ///
+  /// In en, this message translates to:
+  /// **'Current username: {username}'**
+  String settingsUsernameCurrent(String username);
+
   /// Settings option for creatine tracker
   ///
   /// In en, this message translates to:
@@ -1540,6 +1582,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creatine tracker disabled.'**
   String get settingsCreatineSavedDisabled;
+
+  /// Label for the imprint placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Imprint'**
+  String get settingsLegalImprint;
+
+  /// Label for the privacy placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get settingsLegalPrivacy;
+
+  /// Helper text for upcoming legal links
+  ///
+  /// In en, this message translates to:
+  /// **'Link will be added soon.'**
+  String get settingsLegalPlaceholderDescription;
+
+  /// Snackbar text for placeholder legal links
+  ///
+  /// In en, this message translates to:
+  /// **'Link to {label} coming soon.'**
+  String settingsLegalPlaceholder(String label);
 
   /// Title for public profile dialog
   ///
