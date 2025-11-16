@@ -34,6 +34,7 @@ import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.d
 import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
 import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen.dart';
 import 'package:tapem/features/community/presentation/screens/community_screen.dart';
+import 'package:tapem/features/settings/presentation/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
@@ -78,6 +79,7 @@ class AppRouter {
   static const creatine = '/creatine';
   static const restStats = '/rest_stats';
   static const community = '/community';
+  static const settings = '/settings';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -167,6 +169,9 @@ class AppRouter {
 
       case community:
         return MaterialPageRoute(builder: (_) => const CommunityScreen());
+
+      case settings:
+        return SettingsScreen.route();
 
       case manageMuscleGroups:
         return MaterialPageRoute(

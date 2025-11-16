@@ -1,0 +1,732 @@
+// lib/features/settings/presentation/screens/settings_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/providers/app_provider.dart' as app;
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/providers/theme_preference_provider.dart';
+import 'package:tapem/core/theme/brand_theme_preset.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/features/profile/presentation/widgets/change_username_sheet.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  static Route<dynamic> route() {
+    return MaterialPageRoute(builder: (_) => const SettingsScreen());
+  }
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final GlobalKey<FormState> _bodyMetricsFormKey = GlobalKey<FormState>();
+  late final TextEditingController _bodyWeightCtrl;
+  late final FocusNode _bodyWeightFocus;
+  SettingsProvider? _settingsProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _bodyWeightCtrl = TextEditingController();
+    _bodyWeightFocus = FocusNode();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<SettingsProvider>();
+    if (!identical(_settingsProvider, provider)) {
+      _settingsProvider?.removeListener(_onSettingsChanged);
+      _settingsProvider = provider;
+      _settingsProvider?.addListener(_onSettingsChanged);
+      _syncBodyMetricsFromSettings();
+    }
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) {
+      return;
+    }
+    _syncBodyMetricsFromSettings();
+  }
+
+  void _syncBodyMetricsFromSettings() {
+    final settings = _settingsProvider;
+    if (settings == null) {
+      return;
+    }
+    final target = settings.bodyWeightKg;
+    final formatted =
+        target != null && target > 0 ? target.toStringAsFixed(1) : '';
+    if (_bodyWeightCtrl.text != formatted) {
+      _bodyWeightCtrl.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _settingsProvider?.removeListener(_onSettingsChanged);
+    _bodyWeightCtrl.dispose();
+    _bodyWeightFocus.dispose();
+    super.dispose();
+  }
+
+  void _showLanguageDialog() {
+    final appProv = context.read<app.AppProvider>();
+    final loc = AppLocalizations.of(context)!;
+    final currentLocale = appProv.locale ?? Localizations.localeOf(context);
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(loc.languageDialogTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<Locale>(
+              title: Text(loc.germanLanguage),
+              value: const Locale('de'),
+              groupValue: currentLocale,
+              onChanged: (l) {
+                appProv.setLocale(l!);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<Locale>(
+              title: Text(loc.englishLanguage),
+              value: const Locale('en'),
+              groupValue: currentLocale,
+              onChanged: (l) {
+                appProv.setLocale(l!);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<Locale?>(
+              title: Text(loc.settingsLanguageSystemDefault),
+              value: null,
+              groupValue: appProv.locale,
+              onChanged: (_) {
+                appProv.resetLocale();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(loc.cancelButton),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyDialog() {
+    final authProv = context.read<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
+    final current = authProv.showInLeaderboard ?? true;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(loc.publicProfileDialogTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<bool>(
+              title: Text(loc.publicProfilePublic),
+              value: true,
+              groupValue: current,
+              onChanged: (v) {
+                if (v == null) return;
+                authProv.setShowInLeaderboard(v);
+                authProv.setPublicProfile(v);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<bool>(
+              title: Text(loc.publicProfilePrivate),
+              value: false,
+              groupValue: current,
+              onChanged: (v) {
+                if (v == null) return;
+                authProv.setShowInLeaderboard(v);
+                authProv.setPublicProfile(v);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(loc.cancelButton),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreatineSheet() {
+    final loc = AppLocalizations.of(context)!;
+    final settingsProv = context.read<SettingsProvider>();
+    final enabled = settingsProv.creatineEnabled;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(loc.settingsCreatineEnable),
+              trailing: enabled ? const Icon(Icons.check) : null,
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await settingsProv.setCreatineEnabled(true);
+                  elogUi('settings_set_creatine_enabled', {'enabled': true});
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.settingsCreatineSavedEnabled)),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.commonSaveError)),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              title: Text(loc.settingsCreatineDisable),
+              trailing: enabled ? null : const Icon(Icons.check),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await settingsProv.setCreatineEnabled(false);
+                  elogUi('settings_set_creatine_enabled', {'enabled': false});
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.settingsCreatineSavedDisabled)),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.commonSaveError)),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _themeOptionLabel(AppLocalizations loc, BrandThemeId id) {
+    switch (id) {
+      case BrandThemeId.mintTurquoise:
+        return loc.settingsThemeMintTurquoise;
+      case BrandThemeId.magentaViolet:
+        return loc.settingsThemeMagentaViolet;
+      case BrandThemeId.redOrange:
+        return loc.settingsThemeRedOrange;
+      case BrandThemeId.blackWhite:
+        return loc.settingsThemeBlackWhite;
+      case BrandThemeId.azureSapphire:
+        return loc.settingsThemeAzureSapphire;
+      case BrandThemeId.amberSunset:
+        return loc.settingsThemeAmberSunset;
+      case BrandThemeId.forestEmerald:
+        return loc.settingsThemeForestEmerald;
+      case BrandThemeId.royalPlum:
+        return loc.settingsThemeRoyalPlum;
+      case BrandThemeId.neonLime:
+        return loc.settingsThemeNeonLime;
+      case BrandThemeId.copperBronze:
+        return loc.settingsThemeCopperBronze;
+      case BrandThemeId.arcticSky:
+        return loc.settingsThemeArcticSky;
+      case BrandThemeId.emberInferno:
+        return loc.settingsThemeEmberInferno;
+      case BrandThemeId.cyberGrape:
+        return loc.settingsThemeCyberGrape;
+      case BrandThemeId.citrusPunch:
+        return loc.settingsThemeCitrusPunch;
+    }
+  }
+
+  String _currentThemeLabel(
+    AppLocalizations loc,
+    ThemePreferenceProvider themePref,
+    String? gymId,
+  ) {
+    final override = themePref.override;
+    if (override == null) {
+      final manual = themePref.manualDefaultForGym(gymId);
+      if (manual == null) {
+        return loc.settingsThemeDefault;
+      }
+      return '${loc.settingsThemeDefault} · ${_themeOptionLabel(loc, manual)}';
+    }
+    return _themeOptionLabel(loc, override);
+  }
+
+  void _showThemeDialog() {
+    final loc = AppLocalizations.of(context)!;
+    final auth = context.read<AuthProvider>();
+    final themePref = context.read<ThemePreferenceProvider>();
+    final gymId = auth.gymCode;
+    final manualDefault = themePref.manualDefaultForGym(gymId);
+    final additionalOptions = themePref
+        .availableForGym(gymId)
+        .where((id) => manualDefault == null || id != manualDefault)
+        .toList();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final selected = dialogContext.watch<ThemePreferenceProvider>().override;
+        return SimpleDialog(
+          title: Text(loc.settingsThemeDialogTitle),
+          children: [
+            RadioListTile<BrandThemeId?>(
+              value: null,
+              groupValue: selected,
+              onChanged: (_) => _onThemeSelected(dialogContext, null),
+              title: Text(loc.settingsThemeDefault),
+              subtitle: manualDefault != null
+                  ? Text(_themeOptionLabel(loc, manualDefault))
+                  : null,
+            ),
+            for (final option in additionalOptions)
+              RadioListTile<BrandThemeId?>(
+                value: option,
+                groupValue: selected,
+                onChanged: (_) => _onThemeSelected(dialogContext, option),
+                title: Text(_themeOptionLabel(loc, option)),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _onThemeSelected(
+    BuildContext dialogContext,
+    BrandThemeId? id,
+  ) async {
+    Navigator.pop(dialogContext);
+    try {
+      await context.read<ThemePreferenceProvider>().setTheme(id);
+    } catch (_) {
+      if (!mounted) return;
+      final loc = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.settingsThemeSaveError)),
+      );
+    }
+  }
+
+  String? _genderLabel(AppLocalizations loc, String? gender) {
+    switch (gender) {
+      case 'm':
+        return loc.settingsGenderMale;
+      case 'w':
+        return loc.settingsGenderFemale;
+      case 'divers':
+        return loc.settingsGenderDiverse;
+    }
+    return null;
+  }
+
+  String _bodyMetricsSummary(AppLocalizations loc) {
+    final settings = context.read<SettingsProvider>();
+    final labels = <String>[];
+    final genderLabel = _genderLabel(loc, settings.gender);
+    if (genderLabel != null) {
+      labels.add(genderLabel);
+    }
+    final weight = settings.bodyWeightKg;
+    if (weight != null && weight > 0) {
+      labels.add(loc.settingsBodyWeightSummary(weight.toStringAsFixed(1)));
+    }
+    if (labels.isEmpty) {
+      return loc.settingsBodyMetricsSummaryEmpty;
+    }
+    return labels.join(' · ');
+  }
+
+  Future<void> _showBodyMetricsSheet() async {
+    final loc = AppLocalizations.of(context)!;
+    final settingsProv = _settingsProvider ?? context.read<SettingsProvider>();
+    _syncBodyMetricsFromSettings();
+    _bodyMetricsFormKey.currentState?.reset();
+
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        String? selectedGender = settingsProv.gender;
+        return StatefulBuilder(
+          builder: (formContext, setState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.md,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
+                      AppSpacing.lg,
+                ),
+                child: Form(
+                  key: _bodyMetricsFormKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          loc.settingsBodyMetricsDialogTitle,
+                          style: Theme.of(formContext).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        DropdownButtonFormField<String?>(
+                          value: selectedGender,
+                          decoration: InputDecoration(
+                            labelText: loc.settingsGenderLabel,
+                          ),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text(loc.settingsGenderNone),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'w',
+                              child: Text(loc.settingsGenderFemale),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'm',
+                              child: Text(loc.settingsGenderMale),
+                            ),
+                            DropdownMenuItem<String?>(
+                              value: 'divers',
+                              child: Text(loc.settingsGenderDiverse),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGender = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextFormField(
+                          key: const ValueKey('bodyWeightField'),
+                          controller: _bodyWeightCtrl,
+                          focusNode: _bodyWeightFocus,
+                          decoration: InputDecoration(
+                            labelText: loc.settingsBodyWeightLabel,
+                            hintText: loc.settingsBodyWeightHint,
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: false,
+                          ),
+                          validator: (value) {
+                            final raw = value?.trim() ?? '';
+                            if (raw.isEmpty) {
+                              return null;
+                            }
+                            final normalized = raw.replaceAll(',', '.');
+                            final parsed = double.tryParse(normalized);
+                            if (parsed == null || parsed <= 0 || parsed > 500) {
+                              return loc.settingsBodyWeightError;
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (_) {
+                            _handleBodyMetricsSubmit(
+                                sheetContext, selectedGender, loc);
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        FilledButton(
+                          onPressed: () => _handleBodyMetricsSubmit(
+                            sheetContext,
+                            selectedGender,
+                            loc,
+                          ),
+                          child: Text(loc.commonOk),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    try {
+      await settingsProv.updateProfile(
+        gender: result['gender'] as String?,
+        bodyWeightKg: result['bodyWeight'] as double?,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.settingsBodyMetricsSaved)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.settingsBodyMetricsSaveError)),
+      );
+    }
+  }
+
+  void _handleBodyMetricsSubmit(
+    BuildContext sheetContext,
+    String? selectedGender,
+    AppLocalizations loc,
+  ) {
+    final form = _bodyMetricsFormKey.currentState;
+    if (form == null) {
+      return;
+    }
+    if (!form.validate()) {
+      _bodyWeightFocus.requestFocus();
+      return;
+    }
+    final raw = _bodyWeightCtrl.text.trim();
+    final normalized = raw.replaceAll(',', '.');
+    final parsed = normalized.isEmpty ? null : double.parse(normalized);
+    Navigator.of(sheetContext).pop({
+      'gender': selectedGender,
+      'bodyWeight': parsed,
+    });
+  }
+
+  void _showLegalPlaceholder(String label) {
+    final loc = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loc.settingsLegalPlaceholder(label)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final auth = context.watch<AuthProvider>();
+    final settings = context.watch<SettingsProvider>();
+    final themePref = context.watch<ThemePreferenceProvider>();
+    final appProv = context.watch<app.AppProvider>();
+    final locale = appProv.locale ?? Localizations.localeOf(context);
+    final languageLabel = _languageLabel(loc, appProv.locale, locale);
+    final themeLabel = _currentThemeLabel(loc, themePref, auth.gymCode);
+    final bodySummary = _bodyMetricsSummary(loc);
+    final creatineStatus =
+        settings.creatineEnabled ? loc.settingsCreatineEnabled : loc.settingsCreatineDisabled;
+    final privacyLabel =
+        (auth.publicProfile ?? auth.showInLeaderboard ?? true)
+            ? loc.publicProfilePublic
+            : loc.publicProfilePrivate;
+    final username = auth.userName ?? loc.genericUser;
+
+    final localeName = locale.countryCode != null && locale.countryCode!.isNotEmpty
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(loc.settingsScreenTitle),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          _SettingsSection(
+            title: loc.settingsSectionPersonalization,
+            children: [
+              _SettingsTile(
+                icon: Icons.language,
+                title: loc.settingsOptionLanguage,
+                subtitle: languageLabel,
+                onTap: _showLanguageDialog,
+              ),
+              _SettingsTile(
+                icon: Icons.palette,
+                title: loc.settingsOptionTheme,
+                subtitle: themeLabel,
+                onTap: _showThemeDialog,
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: loc.settingsSectionHealthTracking,
+            children: [
+              _SettingsTile(
+                icon: Icons.monitor_weight,
+                title: loc.settingsBodyMetrics,
+                subtitle: bodySummary,
+                onTap: _showBodyMetricsSheet,
+              ),
+              _SettingsTile(
+                icon: Icons.health_and_safety,
+                title: loc.settingsCreatineTracker,
+                subtitle: creatineStatus,
+                onTap: () {
+                  elogUi('settings_open_creatine', {});
+                  _showCreatineSheet();
+                },
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: loc.settingsSectionVisibilityAccount,
+            children: [
+              _SettingsTile(
+                icon: Icons.visibility,
+                title: loc.settingsOptionPublicProfile,
+                subtitle: privacyLabel,
+                onTap: _showPrivacyDialog,
+              ),
+              _SettingsTile(
+                icon: Icons.person,
+                title: loc.settingsOptionChangeUsername,
+                subtitle: loc.settingsUsernameCurrent(username),
+                onTap: () => showChangeUsernameSheet(context),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: loc.settingsSectionLegal,
+            children: [
+              _SettingsTile(
+                icon: Icons.gavel,
+                title: loc.settingsLegalImprint,
+                subtitle: loc.settingsLegalPlaceholderDescription,
+                onTap: () => _showLegalPlaceholder(loc.settingsLegalImprint),
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip,
+                title: loc.settingsLegalPrivacy,
+                subtitle: loc.settingsLegalPlaceholderDescription,
+                onTap: () => _showLegalPlaceholder(loc.settingsLegalPrivacy),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            DateFormat.yMMMMd(localeName).format(DateTime.now()),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+
+  String _languageLabel(
+    AppLocalizations loc,
+    Locale? selected,
+    Locale fallback,
+  ) {
+    final locale = selected ?? fallback;
+    switch (locale.languageCode) {
+      case 'de':
+        return loc.germanLanguage;
+      case 'en':
+        return loc.englishLanguage;
+      default:
+        return loc.settingsLanguageSystemDefault;
+    }
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.children,
+  });
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ...children.map((child) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: child,
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        leading: Icon(icon, color: theme.colorScheme.primary),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}

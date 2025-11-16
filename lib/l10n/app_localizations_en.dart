@@ -660,7 +660,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDialogTitle => 'Settings';
 
   @override
+  String get settingsScreenTitle => 'Settings';
+
+  @override
+  String get settingsSectionPersonalization => 'Personalization';
+
+  @override
+  String get settingsSectionHealthTracking => 'Health & tracking';
+
+  @override
+  String get settingsSectionVisibilityAccount => 'Visibility & account';
+
+  @override
+  String get settingsSectionLegal => 'Legal';
+
+  @override
   String get settingsOptionLanguage => 'Language';
+
+  @override
+  String get settingsLanguageSystemDefault => 'System default';
 
   @override
   String get settingsOptionTheme => 'Theme';
@@ -767,6 +785,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOptionChangeUsername => 'Change username';
 
   @override
+  String settingsUsernameCurrent(String username) {
+    return 'Current username: $username';
+  }
+
+  @override
   String get settingsCreatineTracker => 'Creatine tracker';
 
   @override
@@ -786,6 +809,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCreatineSavedDisabled => 'Creatine tracker disabled.';
+
+  @override
+  String get settingsLegalImprint => 'Imprint';
+
+  @override
+  String get settingsLegalPrivacy => 'Privacy policy';
+
+  @override
+  String get settingsLegalPlaceholderDescription => 'Link will be added soon.';
+
+  @override
+  String settingsLegalPlaceholder(String label) {
+    return 'Link to $label coming soon.';
+  }
 
   @override
   String get publicProfileDialogTitle => 'Profile visibility';
