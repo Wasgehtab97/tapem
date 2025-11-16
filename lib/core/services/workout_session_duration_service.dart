@@ -114,11 +114,20 @@ class WorkoutSessionDurationService extends ChangeNotifier {
   Stream<Duration> get tickStream => _tickCtrl.stream;
   Stream<WorkoutSessionCompletionEvent> get completionStream =>
       _completionCtrl.stream;
-  Duration get elapsed =>
-      _startEpochMs != null
-          ? Duration(milliseconds:
-              DateTime.now().millisecondsSinceEpoch - _startEpochMs!)
-          : Duration.zero;
+  Duration get elapsed {
+    if (_startEpochMs == null) {
+      return Duration.zero;
+    }
+    final referenceMs =
+        _ticker == null && _lastActivityEpochMs != null
+            ? _lastActivityEpochMs!
+            : DateTime.now().millisecondsSinceEpoch;
+    var diff = referenceMs - _startEpochMs!;
+    if (diff < 0) {
+      diff = 0;
+    }
+    return Duration(milliseconds: diff);
+  }
 
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -225,6 +234,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _lastSessionId = sessionId;
     _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
     await _persistState();
+    _ensureTickerRunning();
     _scheduleAutoStop();
   }
 
@@ -234,6 +244,7 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     if (!_isRunning || _startEpochMs == null) return;
     _lastActivityEpochMs = completedAt.millisecondsSinceEpoch;
     await _persistState();
+    _ensureTickerRunning();
     _scheduleAutoStop();
   }
 
@@ -428,7 +439,10 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final uid = _uid!;
     final gymId = _gymId!;
     final start = DateTime.fromMillisecondsSinceEpoch(_startEpochMs!);
-    final end = endTime ?? DateTime.now();
+    final end = endTime ??
+        (_lastActivityEpochMs != null
+            ? DateTime.fromMillisecondsSinceEpoch(_lastActivityEpochMs!)
+            : DateTime.now());
     var durationMs = end.millisecondsSinceEpoch - _startEpochMs!;
     if (durationMs < 0) {
       durationMs = 0;
@@ -555,6 +569,14 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _ticker = null;
   }
 
+  void _ensureTickerRunning() {
+    if (!_isRunning) return;
+    if (_ticker != null && (_ticker?.isActive ?? false)) {
+      return;
+    }
+    _startTicker();
+  }
+
   Future<void> _ensurePrefs() async {
     _prefs ??= await SharedPreferences.getInstance();
   }
@@ -593,11 +615,9 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     if (!_isRunning || _lastActivityEpochMs == null) return;
     _autoStopTimer?.cancel();
     if (_autoStopDelay <= Duration.zero) {
-      unawaited(_autoFinalize());
+      _handleAutoStopTimeout();
     } else {
-      _autoStopTimer = Timer(_autoStopDelay, () {
-        unawaited(_autoFinalize());
-      });
+      _autoStopTimer = Timer(_autoStopDelay, _handleAutoStopTimeout);
     }
   }
 
@@ -607,22 +627,22 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final target = _lastActivityEpochMs! + _autoStopDelay.inMilliseconds;
     final remainingMs = target - nowMs;
     if (remainingMs <= 0) {
-      unawaited(_autoFinalize());
+      _handleAutoStopTimeout();
     } else {
       _autoStopTimer?.cancel();
-      _autoStopTimer = Timer(Duration(milliseconds: remainingMs), () {
-        unawaited(_autoFinalize());
-      });
+      _autoStopTimer =
+          Timer(Duration(milliseconds: remainingMs), _handleAutoStopTimeout);
     }
   }
 
-  Future<void> _autoFinalize() async {
+  void _handleAutoStopTimeout() {
     if (!_isRunning || _startEpochMs == null || _lastActivityEpochMs == null) {
       return;
     }
-    final end = DateTime.fromMillisecondsSinceEpoch(_lastActivityEpochMs!);
-    final sid = _firstSessionId ?? _lastSessionId;
-    await save(endTime: end, sessionId: sid);
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
+    _stopTicker();
+    _tickCtrl.add(elapsed);
   }
 
   @override
