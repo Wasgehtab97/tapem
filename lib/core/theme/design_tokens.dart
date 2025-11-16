@@ -214,6 +214,81 @@ class ClubAktivTones {
   }
 }
 
+/// Supporting palettes for built-in manual brand themes.
+class PresetBrandColors {
+  PresetBrandColors._();
+
+  /// Cool azure palette with a deep sapphire accent.
+  static const Color azurePrimary = Color(0xFF1E88E5);
+  static const Color azureSecondary = Color(0xFF0D47A1);
+  static const Color azureGradientStart = Color(0xFF42A5F5);
+  static const Color azureGradientEnd = Color(0xFF0D47A1);
+  static const Color azureFocus = Color(0xFF64B5F6);
+
+  /// Warm amber/orange gradient reminiscent of sunsets.
+  static const Color amberPrimary = Color(0xFFFF6F61);
+  static const Color amberSecondary = Color(0xFFFFA726);
+  static const Color amberGradientStart = Color(0xFFFF8A65);
+  static const Color amberGradientEnd = Color(0xFFFFB74D);
+  static const Color amberFocus = Color(0xFFFF7043);
+
+  /// Lush forest greens.
+  static const Color forestPrimary = Color(0xFF2E7D32);
+  static const Color forestSecondary = Color(0xFF66BB6A);
+  static const Color forestGradientStart = Color(0xFF1B5E20);
+  static const Color forestGradientEnd = Color(0xFF66BB6A);
+  static const Color forestFocus = Color(0xFF43A047);
+
+  /// Regal purples.
+  static const Color royalPrimary = Color(0xFF8E24AA);
+  static const Color royalSecondary = Color(0xFFBA68C8);
+  static const Color royalGradientStart = Color(0xFF6A1B9A);
+  static const Color royalGradientEnd = Color(0xFFCE93D8);
+  static const Color royalFocus = Color(0xFFAB47BC);
+
+  /// High-energy neon lime palette.
+  static const Color neonPrimary = Color(0xFFAEEA00);
+  static const Color neonSecondary = Color(0xFF64DD17);
+  static const Color neonGradientStart = Color(0xFFC6FF00);
+  static const Color neonGradientEnd = Color(0xFF64DD17);
+  static const Color neonFocus = Color(0xFF76FF03);
+
+  /// Copper and bronze metals.
+  static const Color copperPrimary = Color(0xFF8D5524);
+  static const Color copperSecondary = Color(0xFFD8903B);
+  static const Color copperGradientStart = Color(0xFFB66A2E);
+  static const Color copperGradientEnd = Color(0xFFF4A259);
+  static const Color copperFocus = Color(0xFFF4A259);
+
+  /// Bright arctic blues.
+  static const Color arcticPrimary = Color(0xFF4FC3F7);
+  static const Color arcticSecondary = Color(0xFF81D4FA);
+  static const Color arcticGradientStart = Color(0xFF81D4FA);
+  static const Color arcticGradientEnd = Color(0xFFE1F5FE);
+  static const Color arcticFocus = Color(0xFF29B6F6);
+
+  /// Fiery ember palette.
+  static const Color emberPrimary = Color(0xFFFF7043);
+  static const Color emberSecondary = Color(0xFFD84315);
+  static const Color emberGradientStart = Color(0xFFFF8A65);
+  static const Color emberGradientEnd = Color(0xFFD84315);
+  static const Color emberFocus = Color(0xFFFF5722);
+
+  /// Neon cyber grape palette.
+  static const Color cyberPrimary = Color(0xFF7E57C2);
+  static const Color cyberSecondary = Color(0xFF311B92);
+  static const Color cyberGradientStart = Color(0xFF9575CD);
+  static const Color cyberGradientEnd = Color(0xFF4527A0);
+  static const Color cyberFocus = Color(0xFFB39DDB);
+
+  /// Vibrant citrus yellows and oranges.
+  static const Color citrusPrimary = Color(0xFFFFD54F);
+  static const Color citrusSecondary = Color(0xFFFFB300);
+  static const Color citrusGradientStart = Color(0xFFFFF176);
+  static const Color citrusGradientEnd = Color(0xFFFFB74D);
+  static const Color citrusFocus = Color(0xFFFFC107);
+}
+
 /// Standard spacing values based on an 8px grid.
 class AppSpacing {
   static const double xs = 8.0;
