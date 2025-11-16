@@ -329,6 +329,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return loc.settingsThemeRedOrange;
       case BrandThemeId.blackWhite:
         return loc.settingsThemeBlackWhite;
+      case BrandThemeId.azureSapphire:
+        return loc.settingsThemeAzureSapphire;
+      case BrandThemeId.amberSunset:
+        return loc.settingsThemeAmberSunset;
+      case BrandThemeId.forestEmerald:
+        return loc.settingsThemeForestEmerald;
+      case BrandThemeId.royalPlum:
+        return loc.settingsThemeRoyalPlum;
+      case BrandThemeId.neonLime:
+        return loc.settingsThemeNeonLime;
+      case BrandThemeId.copperBronze:
+        return loc.settingsThemeCopperBronze;
+      case BrandThemeId.arcticSky:
+        return loc.settingsThemeArcticSky;
+      case BrandThemeId.emberInferno:
+        return loc.settingsThemeEmberInferno;
+      case BrandThemeId.cyberGrape:
+        return loc.settingsThemeCyberGrape;
+      case BrandThemeId.citrusPunch:
+        return loc.settingsThemeCitrusPunch;
     }
   }
 

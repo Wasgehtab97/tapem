@@ -1421,6 +1421,66 @@ abstract class AppLocalizations {
   /// **'Black/White'**
   String get settingsThemeBlackWhite;
 
+  /// Name of the azure & sapphire theme
+  ///
+  /// In en, this message translates to:
+  /// **'Azure & Sapphire'**
+  String get settingsThemeAzureSapphire;
+
+  /// Name of the amber sunset theme
+  ///
+  /// In en, this message translates to:
+  /// **'Amber Sunset'**
+  String get settingsThemeAmberSunset;
+
+  /// Name of the forest & emerald theme
+  ///
+  /// In en, this message translates to:
+  /// **'Forest & Emerald'**
+  String get settingsThemeForestEmerald;
+
+  /// Name of the royal plum theme
+  ///
+  /// In en, this message translates to:
+  /// **'Royal Plum'**
+  String get settingsThemeRoyalPlum;
+
+  /// Name of the neon lime theme
+  ///
+  /// In en, this message translates to:
+  /// **'Neon Lime'**
+  String get settingsThemeNeonLime;
+
+  /// Name of the copper & bronze theme
+  ///
+  /// In en, this message translates to:
+  /// **'Copper & Bronze'**
+  String get settingsThemeCopperBronze;
+
+  /// Name of the arctic sky theme
+  ///
+  /// In en, this message translates to:
+  /// **'Arctic Sky'**
+  String get settingsThemeArcticSky;
+
+  /// Name of the ember inferno theme
+  ///
+  /// In en, this message translates to:
+  /// **'Ember Inferno'**
+  String get settingsThemeEmberInferno;
+
+  /// Name of the cyber grape theme
+  ///
+  /// In en, this message translates to:
+  /// **'Cyber Grape'**
+  String get settingsThemeCyberGrape;
+
+  /// Name of the citrus punch theme
+  ///
+  /// In en, this message translates to:
+  /// **'Citrus Punch'**
+  String get settingsThemeCitrusPunch;
+
   /// Error shown when saving the theme failed
   ///
   /// In en, this message translates to:

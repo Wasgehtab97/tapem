@@ -728,6 +728,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeBlackWhite => 'Black/White';
 
   @override
+  String get settingsThemeAzureSapphire => 'Azure & Sapphire';
+
+  @override
+  String get settingsThemeAmberSunset => 'Amber Sunset';
+
+  @override
+  String get settingsThemeForestEmerald => 'Forest & Emerald';
+
+  @override
+  String get settingsThemeRoyalPlum => 'Royal Plum';
+
+  @override
+  String get settingsThemeNeonLime => 'Neon Lime';
+
+  @override
+  String get settingsThemeCopperBronze => 'Copper & Bronze';
+
+  @override
+  String get settingsThemeArcticSky => 'Arctic Sky';
+
+  @override
+  String get settingsThemeEmberInferno => 'Ember Inferno';
+
+  @override
+  String get settingsThemeCyberGrape => 'Cyber Grape';
+
+  @override
+  String get settingsThemeCitrusPunch => 'Citrus Punch';
+
+  @override
   String get settingsThemeSaveError => 'Could not save theme.';
 
   @override
