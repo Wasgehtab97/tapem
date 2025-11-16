@@ -9,28 +9,65 @@ class SelectGymScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gyms = context.watch<AuthProvider>().gymCodes ?? [];
+    final auth = context.watch<AuthProvider>();
+    final gyms = auth.gymCodes ?? [];
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final error = auth.error;
+
+    Widget body;
+    if (auth.isLoading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else {
+      body = Column(
+        children: [
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '${loc.errorPrefix}: $error',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          Expanded(
+            child: ListView.separated(
+              itemCount: gyms.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (ctx, i) {
+                final code = gyms[i];
+                return ListTile(
+                  title: Text(code),
+                  onTap: () async {
+                    try {
+                      await context.read<AuthProvider>().switchGym(code);
+                      if (!context.mounted) return;
+                      Navigator.of(context)
+                          .pushReplacementNamed(AppRouter.home, arguments: 1);
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      final latestError =
+                          context.read<AuthProvider>().error ?? loc.errorPrefix;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${loc.errorPrefix}: $latestError'),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(loc.selectGymTitle)),
-      body: ListView.separated(
-        itemCount: gyms.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (ctx, i) {
-          final code = gyms[i];
-          return ListTile(
-            title: Text(code),
-            onTap: () async {
-              await context.read<AuthProvider>().selectGym(code);
-              if (context.mounted) {
-                Navigator.of(
-                  context,
-                ).pushReplacementNamed(AppRouter.home, arguments: 1);
-              }
-            },
-          );
-        },
-      ),
+      body: body,
     );
   }
 }

@@ -29,8 +29,9 @@ void main() {
 
     test('forceRefreshIdToken requests a forced token refresh', () async {
       final before = user.tokenRequests;
-      await manager.forceRefreshIdToken(user);
+      final claims = await manager.forceRefreshIdToken(user);
       expect(user.tokenRequests, greaterThan(before));
+      expect(claims, containsPair('role', 'admin'));
     });
 
     test('getIdTokenClaims returns claims from IdTokenResult', () async {

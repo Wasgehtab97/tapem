@@ -1,9 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
+import 'package:tapem/core/data/user_profile_service.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tapem/features/auth/domain/services/firebase_auth_manager.dart';
@@ -17,6 +18,9 @@ import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
+import 'package:tapem/services/membership_service.dart';
+
+typedef ActiveGymSetter = Future<void> Function(String gymId);
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
@@ -31,6 +35,8 @@ class AuthProvider extends ChangeNotifier {
   final ResetPasswordUseCase _resetPasswordUC;
   final FirebaseAuthManager _authManager;
   final SessionDraftRepository _sessionDraftRepository;
+  final MembershipService _membershipService;
+  final ActiveGymSetter _setActiveGym;
 
   UserData? _user;
   bool _isLoading = false;
@@ -50,6 +56,8 @@ class AuthProvider extends ChangeNotifier {
     required ResetPasswordUseCase resetPasswordUseCase,
     required FirebaseAuthManager authManager,
     required SessionDraftRepository sessionDraftRepository,
+    required MembershipService membershipService,
+    required ActiveGymSetter setActiveGym,
   })  : _loginUC = loginUseCase,
         _registerUC = registerUseCase,
         _logoutUC = logoutUseCase,
@@ -61,7 +69,9 @@ class AuthProvider extends ChangeNotifier {
         _checkUsernameUC = checkUsernameUseCase,
         _resetPasswordUC = resetPasswordUseCase,
         _authManager = authManager,
-        _sessionDraftRepository = sessionDraftRepository {
+        _sessionDraftRepository = sessionDraftRepository,
+        _membershipService = membershipService,
+        _setActiveGym = setActiveGym {
     _loadCurrentUser();
   }
 
@@ -69,10 +79,14 @@ class AuthProvider extends ChangeNotifier {
     AuthRepository? repo,
     FirebaseAuthManager? authManager,
     SessionDraftRepository? sessionDraftRepository,
+    MembershipService? membershipService,
+    ActiveGymSetter? setActiveGym,
   }) {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
         sessionDraftRepository ?? SessionDraftRepositoryImpl();
+    final resolvedMembership = membershipService ?? FirestoreMembershipService();
+    final resolvedSetActiveGym = setActiveGym ?? UserProfileService.setActiveGym;
     return AuthProvider._(
       loginUseCase:
           LoginUseCase(repo: repo, authManager: resolvedAuthManager),
@@ -89,6 +103,8 @@ class AuthProvider extends ChangeNotifier {
       resetPasswordUseCase: ResetPasswordUseCase(repo),
       authManager: resolvedAuthManager,
       sessionDraftRepository: resolvedSessionDraftRepo,
+      membershipService: resolvedMembership,
+      setActiveGym: resolvedSetActiveGym,
     );
   }
 
@@ -316,12 +332,46 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Wählt ein Gym aus und speichert die Auswahl persistent
-  Future<void> selectGym(String code) async {
-    if (_user == null || !_user!.gymCodes.contains(code)) return;
-    _selectedGymCode = code;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selectedGymCode', code);
-    notifyListeners();
+  Future<void> switchGym(String gymId) async {
+    if (_user == null) return;
+    if (!_user!.gymCodes.contains(gymId)) {
+      _error = 'invalid_gym_code';
+      notifyListeners();
+      return;
+    }
+    final fbUser = _authManager.currentUser;
+    if (fbUser == null) {
+      _error = 'missing_firebase_user';
+      notifyListeners();
+      throw StateError('No authenticated Firebase user available');
+    }
+
+    if (_selectedGymCode == gymId) {
+      return;
+    }
+
+    _setLoading(true);
+    _error = null;
+    try {
+      await _membershipService.ensureMembership(gymId, fbUser.uid);
+      await _setActiveGym(gymId);
+      await _authManager.forceRefreshIdToken(fbUser);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedGymCode', gymId);
+      _selectedGymCode = gymId;
+    } catch (e) {
+      _error = (e is fb_auth.FirebaseAuthException)
+          ? e.message
+          : e.toString();
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  @Deprecated('Use switchGym instead')
+  Future<void> selectGym(String code) {
+    return switchGym(code);
   }
 
   void _setLoading(bool v) {

@@ -7,7 +7,7 @@ abstract class FirebaseAuthManager {
 
   Future<void> reloadUser(fb_auth.User user);
 
-  Future<void> forceRefreshIdToken(fb_auth.User user);
+  Future<Map<String, dynamic>> forceRefreshIdToken(fb_auth.User user);
 
   Future<Map<String, dynamic>> getIdTokenClaims(fb_auth.User user);
 }
@@ -25,8 +25,9 @@ class DefaultFirebaseAuthManager implements FirebaseAuthManager {
   Future<void> reloadUser(fb_auth.User user) => user.reload();
 
   @override
-  Future<void> forceRefreshIdToken(fb_auth.User user) async {
-    await user.getIdToken(true);
+  Future<Map<String, dynamic>> forceRefreshIdToken(fb_auth.User user) async {
+    final result = await user.getIdTokenResult(true);
+    return result.claims ?? {};
   }
 
   @override
