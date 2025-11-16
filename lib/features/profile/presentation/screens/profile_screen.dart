@@ -70,6 +70,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showProfileXpSheet(AuthProvider auth) {
+    final xpProvider = context.read<XpProvider>();
+    final profile = PublicProfile(
+      uid: auth.userId ?? '',
+      username: auth.userName ?? auth.userEmail ?? 'Tapem',
+      primaryGymCode: auth.gymCode,
+      avatarKey: auth.avatarKey,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: DailyXpCard(
+              profile: profile,
+              level: xpProvider.dailyLevel,
+              xpInLevel: xpProvider.dailyLevelXp,
+              totalXp: xpProvider.statsDailyXp,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();

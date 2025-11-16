@@ -170,7 +170,7 @@ class AppRouter {
       case community:
         return MaterialPageRoute(builder: (_) => const CommunityScreen());
 
-      case settings:
+      case AppRouter.settings:
         return SettingsScreen.route();
 
       case manageMuscleGroups:

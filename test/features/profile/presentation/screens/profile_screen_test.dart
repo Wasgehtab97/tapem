@@ -56,12 +56,14 @@ void main() {
     when(() => authProvider.setAvatarKey(any())).thenAnswer((_) async {});
 
     when(() => friendAlertsProvider.showBadge).thenReturn(false);
-    when(() => friendAlertsProvider.listen(any())).thenReturn(null);
+    when(() => friendAlertsProvider.listen(any()))
+        .thenAnswer((_) => Future.value());
 
     when(() => xpProvider.dailyLevel).thenReturn(1);
     when(() => xpProvider.dailyLevelXp).thenReturn(50);
     when(() => xpProvider.statsDailyXp).thenReturn(200);
-    when(() => xpProvider.watchStatsDailyXp(any(), any())).thenReturn(null);
+    when(() => xpProvider.watchStatsDailyXp(any(), any()))
+        .thenAnswer((_) => Future.value());
 
     when(() => gymProvider.currentGymId).thenReturn('gym-1');
   });
