@@ -163,7 +163,7 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   FakeFirebaseAuthManager({
     fb_auth.User? currentUser,
     Future<void> Function(fb_auth.User user)? onReload,
-    Future<void> Function(fb_auth.User user)? onForceRefresh,
+    Future<Map<String, dynamic>> Function(fb_auth.User user)? onForceRefresh,
     Future<Map<String, dynamic>> Function(fb_auth.User user)? onGetClaims,
   })  : _currentUser = currentUser,
         _onReload = onReload,
@@ -172,7 +172,7 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
 
   fb_auth.User? _currentUser;
   final Future<void> Function(fb_auth.User user)? _onReload;
-  final Future<void> Function(fb_auth.User user)? _onForceRefresh;
+  final Future<Map<String, dynamic>> Function(fb_auth.User user)? _onForceRefresh;
   final Future<Map<String, dynamic>> Function(fb_auth.User user)? _onGetClaims;
 
   int reloadCalls = 0;
@@ -195,13 +195,13 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
   }
 
   @override
-  Future<void> forceRefreshIdToken(fb_auth.User user) {
+  Future<Map<String, dynamic>> forceRefreshIdToken(fb_auth.User user) {
     forceRefreshCalls++;
     final handler = _onForceRefresh;
     if (handler != null) {
       return handler(user);
     }
-    return Future.value();
+    return Future.value(const {});
   }
 
   @override

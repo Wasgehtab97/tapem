@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
+import 'package:tapem/services/membership_service.dart';
 
 import 'helpers/fakes.dart';
 
@@ -22,6 +23,21 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sessionRepo = FakeSessionDraftRepository();
     });
+
+    AuthProvider buildProvider({
+      required FakeAuthRepository repo,
+      FakeFirebaseAuthManager? authManager,
+      MembershipService? membershipService,
+      Future<void> Function(String gymId)? onSetActiveGym,
+    }) {
+      return AuthProvider(
+        repo: repo,
+        authManager: authManager ?? FakeFirebaseAuthManager(),
+        sessionDraftRepository: sessionRepo,
+        membershipService: membershipService ?? _FakeMembershipService(),
+        setActiveGym: onSetActiveGym ?? (_) async {},
+      );
+    }
 
     test('initial load fetches user, syncs profile flags and persists gym', () async {
       var storedUser = UserData(
@@ -59,10 +75,9 @@ void main() {
         onGetClaims: (_) async => {'role': 'coach'},
       );
 
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
         authManager: manager,
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -109,10 +124,9 @@ void main() {
       final manager = FakeFirebaseAuthManager(
         currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
         authManager: manager,
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -135,10 +149,9 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
         authManager: FakeFirebaseAuthManager(),
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -179,10 +192,9 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: successRepo,
         authManager: FakeFirebaseAuthManager(),
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -201,10 +213,9 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider2 = AuthProvider(
+      final provider2 = buildProvider(
         repo: failingRepo,
         authManager: FakeFirebaseAuthManager(),
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -232,10 +243,10 @@ void main() {
         onIsUsernameAvailable: (_) async => true,
         onSendPasswordResetEmail: (_) async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -270,10 +281,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -291,10 +302,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final providerTaken = AuthProvider(
+      final providerTaken = buildProvider(
         repo: takenRepo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -314,10 +325,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final providerError = AuthProvider(
+      final providerError = buildProvider(
         repo: errorRepo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -350,10 +361,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -373,10 +384,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final providerError = AuthProvider(
+      final providerError = buildProvider(
         repo: errorRepo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -410,10 +421,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -440,10 +451,10 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final providerFail = AuthProvider(
+      final providerFail = buildProvider(
         repo: failingRepo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: FakeFirebaseAuthManager(
+            currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
       );
       await _pumpEventQueue();
 
@@ -467,10 +478,9 @@ void main() {
         onIsUsernameAvailable: (_) async => true,
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final provider = buildProvider(
         repo: repo,
         authManager: FakeFirebaseAuthManager(),
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -489,10 +499,9 @@ void main() {
         onIsUsernameAvailable: (_) async => true,
         onLogout: () async {},
       );
-      final providerFail = AuthProvider(
+      final providerFail = buildProvider(
         repo: failingRepo,
         authManager: FakeFirebaseAuthManager(),
-        sessionDraftRepository: sessionRepo,
       );
       await _pumpEventQueue();
 
@@ -500,7 +509,7 @@ void main() {
       expect(providerFail.error, 'bad');
     });
 
-    test('selectGym persists valid gym code and ignores invalid ones', () async {
+    test('switchGym ensures membership, updates profile and persists gym code', () async {
       var storedUser = UserData(
         id: 'uid',
         email: 'user@example.com',
@@ -520,20 +529,96 @@ void main() {
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
-      final provider = AuthProvider(
+      final membership = _FakeMembershipService();
+      final activeGymCalls = <String>[];
+      final manager = FakeFirebaseAuthManager(
+        currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+      );
+      final provider = buildProvider(
         repo: repo,
-        authManager: FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid', email: 'user@example.com')),
-        sessionDraftRepository: sessionRepo,
+        authManager: manager,
+        membershipService: membership,
+        onSetActiveGym: (gymId) async => activeGymCalls.add(gymId),
       );
       await _pumpEventQueue();
 
-      await provider.selectGym('gym2');
+      await provider.switchGym('gym2');
+
       expect(provider.gymCode, 'gym2');
+      expect(membership.ensureCalls, 1);
+      expect(membership.lastGymId, 'gym2');
+      expect(membership.lastUid, storedUser.id);
+      expect(manager.forceRefreshCalls, 1);
+      expect(activeGymCalls, ['gym2']);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym2');
+    });
 
-      await provider.selectGym('unknown');
-      expect(provider.gymCode, 'gym2');
+    test('switchGym reports membership errors and keeps previous selection', () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final membership = _FakeMembershipService(
+        onEnsure: (_, __) => Future<void>.error(Exception('membership failed')),
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+      );
+      var activeGymCalls = 0;
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+        onSetActiveGym: (_) async => activeGymCalls++,
+      );
+      await _pumpEventQueue();
+
+      await expectLater(
+        provider.switchGym('gym2'),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(provider.error, contains('membership failed'));
+      expect(provider.gymCode, 'gym1');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), 'gym1');
+      expect(activeGymCalls, 0);
     });
   });
+}
+
+class _FakeMembershipService implements MembershipService {
+  _FakeMembershipService({this.onEnsure});
+
+  final Future<void> Function(String gymId, String uid)? onEnsure;
+  int ensureCalls = 0;
+  String? lastGymId;
+  String? lastUid;
+
+  @override
+  Future<void> ensureMembership(String gymId, String uid) async {
+    ensureCalls++;
+    lastGymId = gymId;
+    lastUid = uid;
+    final handler = onEnsure;
+    if (handler != null) {
+      await handler(gymId, uid);
+    }
+  }
 }
