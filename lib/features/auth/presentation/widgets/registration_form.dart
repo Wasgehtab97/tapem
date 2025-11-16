@@ -9,7 +9,9 @@ import 'package:tapem/features/gym/data/repositories/gym_repository_impl.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 
 class RegistrationForm extends StatefulWidget {
-  const RegistrationForm({Key? key}) : super(key: key);
+  final ValidateGymCode? gymValidator;
+
+  const RegistrationForm({Key? key, this.gymValidator}) : super(key: key);
 
   @override
   State<RegistrationForm> createState() => _RegistrationFormState();
@@ -27,6 +29,14 @@ class _RegistrationFormState extends State<RegistrationForm> {
   Timer? _lockTimer;
   static const _maxAttempts = 3;
   static const _lockDuration = Duration(seconds: 30);
+  late final ValidateGymCode _validateGymCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _validateGymCode = widget.gymValidator ??
+        ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
+  }
 
   @override
   void dispose() {
@@ -41,10 +51,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
     _formKey.currentState!.save();
     setState(() => _gymError = null);
 
-    final validator = ValidateGymCode(GymRepositoryImpl(FirestoreGymSource()));
-
     try {
-      await validator.execute(_gymCode);
+      await _validateGymCode.execute(_gymCode);
     } on GymNotFoundException {
       if (!mounted) return;
       setState(() {
@@ -74,17 +82,32 @@ class _RegistrationFormState extends State<RegistrationForm> {
     }
 
     final authProv = context.read<AuthProvider>();
-    await authProv.register(_email, _password, _gymCode);
-    if (authProv.error != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(authProv.error!)));
+    final loc = AppLocalizations.of(context)!;
+    final result = await authProv.register(_email, _password, _gymCode);
+    if (!mounted) return;
+
+    if (!result.success || authProv.error != null) {
+      final message = authProv.error ?? '${loc.errorPrefix}: unknown';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
       return;
     }
 
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    if (result.missingMembership) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.missingMembershipError)),
+      );
+    }
+
+    final needsGymSelection =
+        result.requiresGymSelection || (authProv.gymCodes?.length ?? 0) > 1;
+    final hasGymSelected = authProv.gymCode != null;
+    if (needsGymSelection || !hasGymSelected) {
+      Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    }
   }
 
   @override

@@ -130,9 +130,10 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider.login('login@example.com', 'secret');
+      final result = await provider.login('login@example.com', 'secret');
       await _pumpEventQueue();
 
+      expect(result.success, isTrue);
       expect(provider.userEmail, 'login@example.com');
       expect(provider.error, isNull);
     });
@@ -155,7 +156,8 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider.login('user@example.com', 'wrong');
+      final result = await provider.login('user@example.com', 'wrong');
+      expect(result.success, isFalse);
       expect(provider.error, contains('invalid'));
       expect(provider.isLoading, isFalse);
     });
@@ -198,8 +200,10 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider.register('new@example.com', 'secret', 'gym');
+      final registerResult =
+          await provider.register('new@example.com', 'secret', 'gym');
       await _pumpEventQueue();
+      expect(registerResult.success, isTrue);
       expect(provider.userEmail, 'new@example.com');
 
       final failingRepo = FakeAuthRepository(
@@ -219,7 +223,9 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider2.register('user@example.com', 'secret', 'gym');
+      final failingResult =
+          await provider2.register('user@example.com', 'secret', 'gym');
+      expect(failingResult.success, isFalse);
       expect(provider2.error, contains('fail'));
     });
 

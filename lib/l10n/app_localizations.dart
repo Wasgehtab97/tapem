@@ -395,6 +395,24 @@ abstract class AppLocalizations {
   /// **'Gym code required.'**
   String get gymCodeRequired;
 
+  /// Error when no membership exists for the account
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't find an active membership for your account. Please contact your gym or support."**
+  String get missingMembershipError;
+
+  /// Error when a gym outside of the user's account is selected
+  ///
+  /// In en, this message translates to:
+  /// **"This gym isn't linked to your account."**
+  String get invalidGymSelectionError;
+
+  /// Error when membership sync fails
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't sync your membership. Please try again."**
+  String get membershipSyncError;
+
   /// Message when there are no devices in the gym
   ///
   /// In en, this message translates to:

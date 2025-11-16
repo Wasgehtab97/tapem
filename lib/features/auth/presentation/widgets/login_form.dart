@@ -19,20 +19,35 @@ class _LoginFormState extends State<LoginForm> {
 
   Future<void> _submit() async {
     final authProv = context.read<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    await authProv.login(_email, _password);
-    if (authProv.error != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(authProv.error!)));
+    final result = await authProv.login(_email, _password);
+    if (!mounted) return;
+
+    if (!result.success || authProv.error != null) {
+      final message = authProv.error ?? '${loc.errorPrefix}: unknown';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
       return;
     }
 
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    if (result.missingMembership) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.missingMembershipError)),
+      );
+    }
+
+    final needsGymSelection =
+        result.requiresGymSelection || (authProv.gymCodes?.length ?? 0) > 1;
+    final hasGymSelected = authProv.gymCode != null;
+    if (needsGymSelection || !hasGymSelected) {
+      Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    }
   }
 
   @override
