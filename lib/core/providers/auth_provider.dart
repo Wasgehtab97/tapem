@@ -22,6 +22,32 @@ import 'package:tapem/services/membership_service.dart';
 
 typedef ActiveGymSetter = Future<void> Function(String gymId);
 
+class AuthResult {
+  final bool success;
+  final bool requiresGymSelection;
+  final bool missingMembership;
+  final String? error;
+
+  const AuthResult({
+    required this.success,
+    this.requiresGymSelection = false,
+    this.missingMembership = false,
+    this.error,
+  });
+
+  const AuthResult.success({
+    bool requiresGymSelection = false,
+    bool missingMembership = false,
+  }) : this(
+          success: true,
+          requiresGymSelection: requiresGymSelection,
+          missingMembership: missingMembership,
+        );
+
+  const AuthResult.failure({String? error})
+      : this(success: false, error: error);
+}
+
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
   final RegisterUseCase _registerUC;
@@ -190,20 +216,38 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  AuthResult _resolveAuthResult() {
+    final user = _user;
+    if (user == null) {
+      return AuthResult.failure(error: _error);
+    }
+
+    final requiresGymSelection =
+        (user.gymCodes.length > 1) || _selectedGymCode == null;
+    final missingMembership = user.gymCodes.isEmpty;
+
+    return AuthResult.success(
+      requiresGymSelection: requiresGymSelection,
+      missingMembership: missingMembership,
+    );
+  }
+
+  Future<AuthResult> login(String email, String password) async {
     _setLoading(true);
     _error = null;
     try {
       await _loginUC.execute(email, password);
       await _loadCurrentUser();
+      return _resolveAuthResult();
     } catch (e) {
       _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
       _user = null;
       _setLoading(false);
+      return AuthResult.failure(error: _error);
     }
   }
 
-  Future<void> register(
+  Future<AuthResult> register(
     String email,
     String password,
     String initialGymCode,
@@ -223,10 +267,12 @@ class AuthProvider extends ChangeNotifier {
         }
         notifyListeners();
       }
+      return _resolveAuthResult();
     } catch (e) {
       _error = (e is fb_auth.FirebaseAuthException) ? e.message : e.toString();
       _user = null;
       _setLoading(false);
+      return AuthResult.failure(error: _error);
     }
   }
 
@@ -360,9 +406,9 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
     } catch (e) {
-      _error = (e is fb_auth.FirebaseAuthException)
+      _error = e is fb_auth.FirebaseAuthException
           ? e.message
-          : e.toString();
+          : 'membership_sync_failed';
       rethrow;
     } finally {
       _setLoading(false);

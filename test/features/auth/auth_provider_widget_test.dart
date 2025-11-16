@@ -5,11 +5,15 @@ import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
+import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
+import 'package:tapem/features/gym/domain/models/gym_config.dart';
+import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class _MockAuthProvider extends Mock with ChangeNotifier implements AuthProvider {}
+class _MockValidateGymCode extends Mock implements ValidateGymCode {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +52,8 @@ void main() {
 
       when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
       when(() => authProvider.error).thenAnswer((_) => error);
+      when(() => authProvider.gymCodes).thenReturn(const <String>['G1']);
+      when(() => authProvider.gymCode).thenReturn('G1');
       when(() => authProvider.login(any(), any())).thenAnswer((invocation) async {
         isLoading = true;
         authProvider.notifyListeners();
@@ -55,6 +61,7 @@ void main() {
         isLoading = false;
         error = null;
         authProvider.notifyListeners();
+        return const AuthResult.success();
       });
 
       await tester.pumpWidget(
@@ -81,6 +88,8 @@ void main() {
 
       when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
       when(() => authProvider.error).thenAnswer((_) => error);
+      when(() => authProvider.gymCodes).thenReturn(const <String>['G1']);
+      when(() => authProvider.gymCode).thenReturn('G1');
       when(() => authProvider.login(any(), any())).thenAnswer((_) async {
         isLoading = true;
         authProvider.notifyListeners();
@@ -88,6 +97,7 @@ void main() {
         isLoading = false;
         error = 'Invalid credentials';
         authProvider.notifyListeners();
+        return const AuthResult.failure(error: 'Invalid credentials');
       });
 
       await tester.pumpWidget(
@@ -113,6 +123,41 @@ void main() {
       expect(find.text('Invalid credentials'), findsOneWidget);
     });
 
+    testWidgets('routes to select gym when gym selection is required', (tester) async {
+      var isLoading = false;
+      String? error;
+      String? pushedRoute;
+
+      when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
+      when(() => authProvider.error).thenAnswer((_) => error);
+      when(() => authProvider.gymCodes).thenReturn(const <String>['G1', 'G2']);
+      when(() => authProvider.gymCode).thenReturn(null);
+      when(() => authProvider.login(any(), any())).thenAnswer((_) async {
+        isLoading = true;
+        authProvider.notifyListeners();
+        await Future<void>.value();
+        isLoading = false;
+        authProvider.notifyListeners();
+        return const AuthResult.success(requiresGymSelection: true);
+      });
+
+      await tester.pumpWidget(
+        buildLoginApp(
+          provider: authProvider,
+          onRoutePushed: (route) => pushedRoute = route,
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'user@example.com');
+      await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(pushedRoute, AppRouter.selectGym);
+    });
+
     testWidgets('shows loading indicator when provider is loading', (tester) async {
       when(() => authProvider.isLoading).thenReturn(true);
       when(() => authProvider.error).thenReturn(null);
@@ -135,6 +180,114 @@ void main() {
       final ElevatedButton button = tester.widget(buttonFinder);
       expect(button.onPressed, isNull);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+  });
+
+  group('RegistrationForm widget tests', () {
+    late _MockAuthProvider authProvider;
+    late _MockValidateGymCode validator;
+
+    setUp(() {
+      authProvider = _MockAuthProvider();
+      validator = _MockValidateGymCode();
+      when(() => validator.execute(any())).thenAnswer(
+        (_) async => GymConfig(id: 'gym', code: 'GYM', name: 'Gym'),
+      );
+    });
+
+    Widget buildRegistrationApp({
+      required _MockAuthProvider provider,
+      required ValidateGymCode gymValidator,
+      required void Function(String? routeName) onRoutePushed,
+    }) {
+      return ChangeNotifierProvider<AuthProvider>.value(
+        value: provider,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: RegistrationForm(gymValidator: gymValidator),
+          ),
+          onGenerateRoute: (settings) {
+            onRoutePushed(settings.name);
+            return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+          },
+        ),
+      );
+    }
+
+    testWidgets('routes to select gym when multiple gyms exist', (tester) async {
+      var isLoading = false;
+      String? error;
+      String? pushedRoute;
+
+      when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
+      when(() => authProvider.error).thenAnswer((_) => error);
+      when(() => authProvider.gymCodes).thenReturn(const <String>['G1', 'G2']);
+      when(() => authProvider.gymCode).thenReturn(null);
+      when(() => authProvider.register(any(), any(), any())).thenAnswer((_) async {
+        isLoading = true;
+        authProvider.notifyListeners();
+        await Future<void>.value();
+        isLoading = false;
+        authProvider.notifyListeners();
+        return const AuthResult.success(requiresGymSelection: true);
+      });
+
+      await tester.pumpWidget(
+        buildRegistrationApp(
+          provider: authProvider,
+          gymValidator: validator,
+          onRoutePushed: (route) => pushedRoute = route,
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'new@example.com');
+      await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+      await tester.enterText(find.byType(TextFormField).at(2), 'GYM');
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Register'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(pushedRoute, AppRouter.selectGym);
+    });
+
+    testWidgets('routes to home when registration has single gym', (tester) async {
+      var isLoading = false;
+      String? error;
+      String? pushedRoute;
+
+      when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
+      when(() => authProvider.error).thenAnswer((_) => error);
+      when(() => authProvider.gymCodes).thenReturn(const <String>['G1']);
+      when(() => authProvider.gymCode).thenReturn('G1');
+      when(() => authProvider.register(any(), any(), any())).thenAnswer((_) async {
+        isLoading = true;
+        authProvider.notifyListeners();
+        await Future<void>.value();
+        isLoading = false;
+        authProvider.notifyListeners();
+        return const AuthResult.success();
+      });
+
+      await tester.pumpWidget(
+        buildRegistrationApp(
+          provider: authProvider,
+          gymValidator: validator,
+          onRoutePushed: (route) => pushedRoute = route,
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'new@example.com');
+      await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+      await tester.enterText(find.byType(TextFormField).at(2), 'GYM');
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Register'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(pushedRoute, AppRouter.home);
     });
   });
 

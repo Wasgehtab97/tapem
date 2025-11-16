@@ -177,6 +177,21 @@
     "description": "Validierung, wenn Gym-Code fehlt"
   },
 
+  "missingMembershipError": "Wir konnten keine aktive Mitgliedschaft für dein Konto finden. Bitte kontaktiere dein Gym oder den Support.",
+  "@missingMembershipError": {
+    "description": "Fehlermeldung, wenn dem Nutzer keine Mitgliedschaft zugewiesen ist"
+  },
+
+  "invalidGymSelectionError": "Dieses Gym ist nicht mit deinem Konto verknüpft.",
+  "@invalidGymSelectionError": {
+    "description": "Fehlermeldung, wenn ein ungültiges Gym ausgewählt wird"
+  },
+
+  "membershipSyncError": "Deine Mitgliedschaft konnte nicht synchronisiert werden. Bitte versuche es erneut.",
+  "@membershipSyncError": {
+    "description": "Fehlermeldung bei Problemen während der Membership-Synchronisierung"
+  },
+
   "gymNoDevices": "Keine Geräte gefunden.",
   "@gymNoDevices": {
     "description": "Meldung, wenn im Gym keine Geräte vorhanden sind"

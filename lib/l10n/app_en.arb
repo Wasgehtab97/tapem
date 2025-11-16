@@ -177,6 +177,21 @@
     "description": "Validation when gym code is blank"
   },
 
+  "missingMembershipError": "We couldn't find an active membership for your account. Please contact your gym or support.",
+  "@missingMembershipError": {
+    "description": "Error message when the user has no gym membership assigned"
+  },
+
+  "invalidGymSelectionError": "This gym isn't linked to your account.",
+  "@invalidGymSelectionError": {
+    "description": "Error when the user selects a gym that is not part of their account"
+  },
+
+  "membershipSyncError": "We couldn't sync your membership. Please try again.",
+  "@membershipSyncError": {
+    "description": "Error shown when membership synchronization fails"
+  },
+
   "gymNoDevices": "No devices found.",
   "@gymNoDevices": {
     "description": "Message when there are no devices in the gym"
