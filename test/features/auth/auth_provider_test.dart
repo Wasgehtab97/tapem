@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/services/membership_service.dart';
 
@@ -29,6 +30,7 @@ void main() {
       FakeFirebaseAuthManager? authManager,
       MembershipService? membershipService,
       Future<void> Function(String gymId)? onSetActiveGym,
+      GymScopedStateController? gymStateController,
     }) {
       return AuthProvider(
         repo: repo,
@@ -36,6 +38,8 @@ void main() {
         sessionDraftRepository: sessionRepo,
         membershipService: membershipService ?? _FakeMembershipService(),
         setActiveGym: onSetActiveGym ?? (_) async {},
+        gymScopedStateController:
+            gymStateController ?? GymScopedStateController(),
       );
     }
 
@@ -540,11 +544,13 @@ void main() {
       final manager = FakeFirebaseAuthManager(
         currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
       );
+      final resetController = _RecordingGymScopedStateController();
       final provider = buildProvider(
         repo: repo,
         authManager: manager,
         membershipService: membership,
         onSetActiveGym: (gymId) async => activeGymCalls.add(gymId),
+        gymStateController: resetController,
       );
       await _pumpEventQueue();
 
@@ -556,6 +562,7 @@ void main() {
       expect(membership.lastUid, storedUser.id);
       expect(manager.forceRefreshCalls, 1);
       expect(activeGymCalls, ['gym2']);
+      expect(resetController.resetCalls, 1);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym2');
     });
@@ -607,6 +614,16 @@ void main() {
       expect(activeGymCalls, 0);
     });
   });
+}
+
+class _RecordingGymScopedStateController extends GymScopedStateController {
+  int resetCalls = 0;
+
+  @override
+  void resetGymScopedState() {
+    resetCalls++;
+    super.resetGymScopedState();
+  }
 }
 
 class _FakeMembershipService implements MembershipService {

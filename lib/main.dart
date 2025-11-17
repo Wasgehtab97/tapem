@@ -36,6 +36,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/core/providers/history_provider.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/exercise_provider.dart';
@@ -327,7 +328,14 @@ Future<void> main() async {
         provider.ChangeNotifierProvider(
           create: (_) => AppProvider(preferences: sharedPrefs),
         ),
-        provider.ChangeNotifierProvider(create: (_) => AuthProvider()),
+        provider.ChangeNotifierProvider(
+          create: (_) => GymScopedStateController(),
+        ),
+        provider.ChangeNotifierProvider(
+          create: (context) => AuthProvider(
+            gymScopedStateController: context.read<GymScopedStateController>(),
+          ),
+        ),
         provider.ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
         provider.ChangeNotifierProvider(create: (_) => SettingsProvider()),
         provider.ChangeNotifierProvider(create: (_) => FriendAlertsProvider()),
@@ -397,7 +405,7 @@ Future<void> main() async {
             source: FirestoreGymSource(firestore: FirebaseFirestore.instance),
             membership: c.read<MembershipService>(),
           ),
-          update: (_, auth, m, prov) {
+          update: (context, auth, m, prov) {
             final p =
                 prov ??
                 BrandingProvider(
@@ -406,6 +414,9 @@ Future<void> main() async {
                   ),
                   membership: m,
                 );
+            p.registerGymScopedResettable(
+              context.read<GymScopedStateController>(),
+            );
             p.loadBrandingWithGym(auth.gymCode, auth.userId);
             return p;
           },
@@ -433,7 +444,21 @@ Future<void> main() async {
         ),
 
         // Restliche Provider
-        provider.ChangeNotifierProvider(create: (_) => GymProvider()),
+        provider.ChangeNotifierProxyProvider2<
+            AuthProvider, GymScopedStateController, GymProvider>(
+          create: (_) => GymProvider(),
+          update: (_, auth, controller, gym) {
+            final prov = gym ?? GymProvider();
+            prov.registerGymScopedResettable(controller);
+            final gymId = auth.gymCode;
+            if (gymId == null || gymId.isEmpty) {
+              prov.resetGymScopedState();
+            } else if (prov.lastRequestedGymId != gymId) {
+              unawaited(prov.loadGymData(gymId));
+            }
+            return prov;
+          },
+        ),
         provider.ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         provider.ChangeNotifierProvider(create: (_) => XpProvider()),
         provider.ChangeNotifierProxyProvider2<
@@ -487,6 +512,9 @@ Future<void> main() async {
               challengeProvider: challenge,
               sessionDurationService: duration,
             );
+            ctrl.registerGymScopedResettable(
+              context.read<GymScopedStateController>(),
+            );
             return ctrl;
           },
         ),
@@ -517,6 +545,9 @@ Future<void> main() async {
               getDevicesForGym: context.read<GetDevicesForGym>(),
               getExercisesForDevice: context.read<GetExercisesForDevice>(),
               membership: context.read<MembershipService>(),
+            );
+            prov.registerGymScopedResettable(
+              context.read<GymScopedStateController>(),
             );
             unawaited(prov.updateContext(
               userId: auth.userId,
