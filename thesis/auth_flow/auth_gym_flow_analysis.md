@@ -8,8 +8,36 @@
   2. Die Gym-Liste eines Users (`UserData.gymCodes`) ist autoritativ und enthält nur Gyms, denen der Nutzer bereits beitreten darf.
   3. Persistenter Gym-Kontext (SharedPreferences-Key `selectedGymCode`) wird ausschließlich von `AuthProvider` gesetzt.
 
-## 2. IST-Flows
-### 2.1 Login (`AuthProvider.login`)
+## 2. IST-Flow App-Start
+### 2.1 `main.dart` Bootstrapping
+1. `lib/main.dart` initialisiert Firebase, Messaging und App-weite Services bevor `runApp` ausgeführt wird.
+2. SharedPreferences werden vor dem `runApp`-Call geladen (`final sharedPrefs = await SharedPreferences.getInstance();`).
+3. `runApp` registriert alle Provider via `MultiProvider`; die ersten Einträge setzen Infrastruktur (`NfcService`, Device-/Exercise-Repositories), anschließend folgen Applikationszustände.
+
+### 2.2 `SplashScreen`
+1. `SplashScreen` (`lib/features/splash/presentation/screens/splash_screen.dart`) wird als Initialroute geladen.
+2. `initState` ruft `_navigateNext`, wartet mindestens 800 ms und pollt `AuthProvider.isLoading`, bis `_loadCurrentUser()` abgeschlossen ist.
+3. Routing-Entscheidung:
+   - Logged-in & mehrere Gyms → `AppRouter.selectGym`.
+   - Logged-in & genau ein Gym → `AppRouter.home` (argument 1).
+   - Nicht eingeloggt → `AppRouter.auth`.
+
+### 2.3 Provider-Lade-Reihenfolge
+1. Zentrale Reihenfolge in `main.dart`:
+   - `GymScopedStateController` wird vor `AuthProvider` erstellt.
+   - `AuthProvider` erhält den Controller via `context.read<GymScopedStateController>()` und startet sofort `_loadCurrentUser()` im Konstruktor.
+   - Nach Auth folgen abhängige ProxyProvider (z. B. `BrandingProvider`, `GymProvider`, `ThemePreferenceProvider`, `ThemeLoader`), die in `update` auf `auth.gymCode` und `auth.userId` zugreifen und sich beim `GymScopedStateController` registrieren.
+2. Konsequenz: Bereits während des Splash-Screens sind Provider-Instanzen vorhanden und reagieren auf Auth-Änderungen.
+
+### 2.4 Laden von `activeGymId` & Claims
+1. `_loadCurrentUser()` (`lib/core/providers/auth_provider.dart`) ruft `FirebaseAuthManager.currentUser` und anschließend `getIdTokenClaims`, um Rollen-Claims einzulesen.
+2. `GetCurrentUserUseCase` liefert `UserData`; Claims überschreiben das lokale `role`-Feld.
+3. `SharedPreferences`-Key `selectedGymCode` wird geprüft:
+   - Wenn vorhanden und in `gymCodes`, setzt `_selectedGymCode` → aktives Gym ist damit synchron zur Persistenz (`activeGymId`).
+   - Fallback: erstes Element aus `gymCodes`, inklusive Persistierung.
+4. Diese Auswahl bestimmt, welchen Gym-Kontext abhängige Provider in ihren `update`-Hooks laden.
+
+## 3. IST-Flow Login (`AuthProvider.login`)
 1. UI triggert `login(email, password)`; `AuthProvider` setzt `_isLoading=true`.
 2. `LoginUseCase` meldet bei Firebase Auth an und ruft `_loadCurrentUser()`.
 3. `_loadCurrentUser()` lädt Claims (für Rolle), anschließend `GetCurrentUserUseCase` für `UserData`.
@@ -21,7 +49,7 @@
 
 **Annahmen:** Nutzer besitzt mindestens eine Rolle oder Claim, der dem UI signalisieren kann, ob zusätzliche Berechtigungen bestehen (impliziert durch `role`-Feld).
 
-### 2.2 Registrierung (`AuthProvider.register`)
+## 4. IST-Flow Registrierung (`AuthProvider.register`)
 1. `RegisterUseCase` erstellt Konto (inkl. initialem Gym-Code) und ruft `_loadCurrentUser()`.
 2. Falls Backend noch kein `UserData` liefert, nutzt der Provider das vom UseCase zurückgegebene Objekt.
 3. Persistenter Gym-Code wird auf das erste Element von `registeredUser.gymCodes` gesetzt.
@@ -29,7 +57,7 @@
 
 **Annahmen:** `RegisterUseCase` stellt sicher, dass der initiale Gym-Code gültig ist und `gymCodes` mindestens einen Eintrag besitzt.
 
-### 2.3 Gym-Wechsel (`AuthProvider.switchGym`)
+## 5. IST-Flow Gym-Wechsel (`AuthProvider.switchGym`)
 1. Preconditions: `_user` muss gesetzt sein, `gymId` muss in `user.gymCodes` enthalten sein; sonst Fehler `invalid_gym_code`.
 2. Firebase User (`_authManager.currentUser`) muss existieren, andernfalls `StateError`.
 3. Bei identischem Gym-Code erfolgt ein früher Exit (kein Netzwerkcall).
@@ -45,21 +73,23 @@
 - `ensureMembership` ist idempotent (Zwischenspeicher `_ensured` verhindert Mehrfach-Transactions pro Session).
 - Alle gym-gebundenen Provider registrieren sich über `GymScopedStateController`, sodass `resetGymScopedState()` genügt.
 
-### 2.4 Logout
+## 6. IST-Flow Logout
 1. `LogoutUseCase` meldet bei Firebase ab.
 2. `GymScopedStateController.resetGymScopedState()` läuft, `_user` sowie `_selectedGymCode` werden geleert, SharedPreferences-Eintrag gelöscht.
 3. `SessionDraftRepository.deleteAll()` entfernt gymspezifische Entwürfe.
 
 **Annahmen:** Nach Logout dürfen keine Restdaten (Drafts, gym code) im Speicher verbleiben.
 
-## 3. Identifizierte Probleme & Risiken
+## 7. Identifizierte Probleme & Risiken
 1. **Fehlende Gym-Zuordnung bei Mehrfach-Mitgliedschaft:** `requiresGymSelection` flaggt nur das UI, jedoch gibt es keinen dedizierten Flow, der Nutzer zwingt, vor Nutzung eines gym-spezifischen Features eine Auswahl zu treffen. Gefahr inkonsistenter Zustände bei Feature-Aufrufen ohne Kontext.
 2. **Fehlerpropagation bei `switchGym`:** `_error` wird gesetzt, Exception rethrown; UI muss sowohl auf Exception als auch auf Provider-Error lauschen → potenziell doppelte Fehlerpfade.
 3. **Persistenter Cache `_ensured`:** `FirestoreMembershipService` hält `_ensured` nur in-memory. App-Restarts verlieren die Information → unnötige Transactions bleiben möglich.
 4. **GymScopedStateController-Kopplung:** Alle gym-abhängigen Provider müssen manuell registriert werden. Fehlende Registrierung führt zu stale data nach `switchGym` oder Logout.
 5. **Token-Refresh ohne UI-Signal:** Nach `forceRefreshIdToken` gibt es kein Event, das UI informiert, dass Claims aktualisiert wurden. Abhängige Module müssen Polling betreiben oder rely on Firebase intern.
+6. **App-Start ohne verbindlichen Gym-Check:** `SplashScreen` prüft nur Anzahl der `gymCodes`, aber nicht, ob `_selectedGymCode` leer ist oder `MembershipService.ensureMembership` für das gespeicherte Gym lief. Fehlkonfigurierte `SharedPreferences` können dazu führen, dass Provider mit einem ungültigen Kontext booten.
+7. **Unklare Fehleroberfläche beim Claims-Laden:** Scheitert `getIdTokenClaims`, beendet `_loadCurrentUser` frühzeitig mit `_error`, während `SplashScreen` weiterpollt und schließlich `AppRouter.auth` wählt. Nutzer sehen keinen Hinweis, dass Claims fehlten; Risiko für Softlocks bei Netzwerkproblemen direkt zum App-Start.
 
-## 4. SOLL-Architektur & Sequenzen
+## 8. SOLL-Architektur & Sequenzen
 ### 4.1 Zielbild
 - Zentraler **Auth-&-Gym-Orchestrator** (`AuthProvider` bleibt, erhält aber klar definierte Ausgabesignale):
   - Liefert strukturierte Events (`AuthState`, `GymContextChanged`) statt impliziter Flags.
@@ -92,7 +122,9 @@
 - **Registrierungs-Check:** Dev-Tooling/Test, das sicherstellt, dass jeder Provider mit Gym-Bezug `GymScopedResettable` implementiert.
 - **Persistentes Membership-Caching:** Erweiterung von `MembershipService` um lokale Persistenz (z. B. SharedPreferences Flag pro `gymId|uid`).
 
-## 5. Referenzen
+## 9. Referenzen
+- `lib/main.dart` – Initialisierung von Firebase, Provider-Hierarchie, `runApp`.
+- `lib/features/splash/presentation/screens/splash_screen.dart` – Splash-Flow & Routing-Entscheidungen.
 - `lib/core/providers/auth_provider.dart` – Implementiert `AuthResult`, Login/Register/Logout/SwitchGym-Logik.
 - `lib/services/membership_service.dart` – Firestore-Transaction zur Mitgliedschaftssicherung.
 - `lib/core/providers/gym_scoped_resettable.dart` – Definition von `GymScopedStateController` und Reset-Interface.
