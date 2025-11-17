@@ -102,12 +102,13 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   Future<void> resetPassword(String email) async {}
 
   @override
-  Future<void> switchGym(String code) async {
+  Future<auth.GymSwitchResult> switchGym(String code) async {
     _gymCode = code;
+    return const auth.GymSwitchResult.success();
   }
 
   @override
-  Future<void> selectGym(String code) => switchGym(code);
+  Future<auth.GymSwitchResult> selectGym(String code) => switchGym(code);
 }
 
 void main() {
