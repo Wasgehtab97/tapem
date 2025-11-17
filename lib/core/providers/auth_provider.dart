@@ -47,22 +47,29 @@ class AuthResult {
   final bool success;
   final bool requiresGymSelection;
   final bool missingMembership;
+  final GymContextStatus gymContextStatus;
   final String? error;
 
   const AuthResult({
     required this.success,
     this.requiresGymSelection = false,
     this.missingMembership = false,
+    this.gymContextStatus = GymContextStatus.unknown,
     this.error,
   });
 
   const AuthResult.success({
     bool requiresGymSelection = false,
     bool missingMembership = false,
+    GymContextStatus? gymContextStatus,
   }) : this(
           success: true,
           requiresGymSelection: requiresGymSelection,
           missingMembership: missingMembership,
+          gymContextStatus: gymContextStatus ??
+              (requiresGymSelection
+                  ? GymContextStatus.missingSelection
+                  : GymContextStatus.ready),
         );
 
   const AuthResult.failure({String? error})
@@ -293,13 +300,15 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       return AuthResult.failure(error: _error);
     }
 
+    final currentGymContextStatus = gymContextStatus;
     final requiresGymSelection =
-        gymContextStatus == GymContextStatus.missingSelection;
+        currentGymContextStatus == GymContextStatus.missingSelection;
     final missingMembership = user.gymCodes.isEmpty;
 
     return AuthResult.success(
       requiresGymSelection: requiresGymSelection,
       missingMembership: missingMembership,
+      gymContextStatus: currentGymContextStatus,
     );
   }
 
@@ -564,10 +573,14 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
               ? claimGym
               : null;
 
+      final hasMultipleGyms = currentUser.gymCodes.length > 1;
       String? resolvedGym = normalizedFirestoreGym ??
           normalizedStoredGym ??
-          normalizedClaimGym ??
-          (currentUser.gymCodes.isNotEmpty ? currentUser.gymCodes.first : null);
+          normalizedClaimGym;
+
+      if (resolvedGym == null && currentUser.gymCodes.isNotEmpty) {
+        resolvedGym = hasMultipleGyms ? null : currentUser.gymCodes.first;
+      }
 
       if (resolvedGym == null) {
         _selectedGymCode = null;

@@ -40,10 +40,13 @@ class _LoginFormState extends State<LoginForm> {
       );
     }
 
-    if (authProv.gymContextStatus == GymContextStatus.ready) {
-      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
-    } else {
+    final requiresGymSelection = result.requiresGymSelection ||
+        result.gymContextStatus == GymContextStatus.missingSelection;
+
+    if (requiresGymSelection) {
       Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
     }
   }
 
