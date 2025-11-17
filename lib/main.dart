@@ -336,6 +336,9 @@ Future<void> main() async {
             gymScopedStateController: context.read<GymScopedStateController>(),
           ),
         ),
+        provider.ProxyProvider<AuthProvider, GymContextState>(
+          update: (_, auth, __) => auth,
+        ),
         provider.ChangeNotifierProvider(create: (_) => AvatarInventoryProvider()),
         provider.ChangeNotifierProvider(create: (_) => SettingsProvider()),
         provider.ChangeNotifierProvider(create: (_) => FriendAlertsProvider()),

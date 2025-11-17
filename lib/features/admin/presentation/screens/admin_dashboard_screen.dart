@@ -66,7 +66,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _loadDevices() async {
     if (!mounted) return;
     setState(() => _loading = true);
-    final gymId = context.read<AuthProvider>().gymCode!;
+    final gymId = context.read<AuthProvider>().gymCode;
+    if (gymId == null) {
+      if (!mounted) return;
+      setState(() {
+        _devices = const [];
+        _loading = false;
+      });
+      return;
+    }
     final devices = await _getUC.execute(gymId);
     if (!mounted) return;
     setState(() {
@@ -89,8 +97,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _showCreateDialog() {
-    final gymId = context.read<AuthProvider>().gymCode!;
     final loc = AppLocalizations.of(context)!;
+    final gymId = context.read<AuthProvider>().gymCode;
+    if (gymId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.invalidGymSelectionError)),
+      );
+      return;
+    }
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final newUid = _uuid.v4();

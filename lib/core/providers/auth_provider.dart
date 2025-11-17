@@ -25,6 +25,19 @@ import 'package:tapem/services/membership_service.dart';
 
 typedef ActiveGymSetter = Future<void> Function(String gymId);
 
+enum GymContextStatus {
+  unknown,
+  loading,
+  missingSelection,
+  ready,
+}
+
+abstract class GymContextState {
+  GymContextStatus get gymContextStatus;
+
+  String? get gymCode;
+}
+
 class AuthResult {
   final bool success;
   final bool requiresGymSelection;
@@ -51,7 +64,7 @@ class AuthResult {
       : this(success: false, error: error);
 }
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends ChangeNotifier implements GymContextState {
   final LoginUseCase _loginUC;
   final RegisterUseCase _registerUC;
   final LogoutUseCase _logoutUC;
@@ -157,7 +170,18 @@ class AuthProvider extends ChangeNotifier {
   List<String>? get gymCodes => _user?.gymCodes;
 
   /// Ausgewählter Gym-Code (wird in SharedPreferences gespeichert)
+  @override
   String? get gymCode => _selectedGymCode;
+
+  @override
+  GymContextStatus get gymContextStatus {
+    if (!isLoggedIn) {
+      return _isLoading ? GymContextStatus.loading : GymContextStatus.unknown;
+    }
+    return (_selectedGymCode?.isNotEmpty ?? false)
+        ? GymContextStatus.ready
+        : GymContextStatus.missingSelection;
+  }
 
   /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
@@ -233,7 +257,7 @@ class AuthProvider extends ChangeNotifier {
     }
 
     final requiresGymSelection =
-        (user.gymCodes.length > 1) || _selectedGymCode == null;
+        gymContextStatus == GymContextStatus.missingSelection;
     final missingMembership = user.gymCodes.isEmpty;
 
     return AuthResult.success(

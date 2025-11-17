@@ -45,10 +45,14 @@ class _BrandingScreenState extends State<BrandingScreen> {
   }
 
   Future<void> _save() async {
-    final gymId = context.read<AuthProvider>().gymCode!;
+    final loc = AppLocalizations.of(context)!;
+    final gymId = context.read<AuthProvider>().gymCode;
+    if (gymId == null) {
+      setState(() => _error = loc.invalidGymSelectionError);
+      return;
+    }
     final primary = _primaryCtrl.text.replaceAll('#', '');
     final accent = _accentCtrl.text.replaceAll('#', '');
-    final loc = AppLocalizations.of(context)!;
 
     if (!_hexReg.hasMatch(primary) ||
         !_hexReg.hasMatch(accent) ||

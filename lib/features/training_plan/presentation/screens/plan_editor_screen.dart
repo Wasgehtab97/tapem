@@ -7,6 +7,7 @@ import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/split_day.dart';
 import '../widgets/device_selection_dialog.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class PlanEditorScreen extends StatelessWidget {
   const PlanEditorScreen({super.key});
@@ -37,7 +38,14 @@ class PlanEditorScreen extends StatelessWidget {
                 onPressed: prov.isSaving
                     ? null
                     : () async {
-                        final gymId = context.read<AuthProvider>().gymCode!;
+                        final loc = AppLocalizations.of(context)!;
+                        final gymId = context.read<AuthProvider>().gymCode;
+                        if (gymId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(loc.invalidGymSelectionError)),
+                          );
+                          return;
+                        }
                         await prov.saveCurrentPlan(gymId);
                         if (context.mounted) {
                           final msg = prov.error ?? 'Plan gespeichert';

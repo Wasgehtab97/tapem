@@ -29,12 +29,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Weiterleiten
     if (authProv.isLoggedIn) {
-      if ((authProv.gymCodes?.length ?? 0) > 1) {
-        Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
+      if (authProv.gymContextStatus == GymContextStatus.ready) {
+        Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
       } else {
-        Navigator.of(
-          context,
-        ).pushReplacementNamed(AppRouter.home, arguments: 1);
+        Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
       }
     } else {
       Navigator.of(context).pushReplacementNamed(AppRouter.auth);

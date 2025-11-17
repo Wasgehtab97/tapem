@@ -5,6 +5,7 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
@@ -108,8 +109,15 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
 
     final dayIdx = headerMap['tag']!;
     final repsIdx = headerMap['reps']!;
+    final loc = AppLocalizations.of(context)!;
     final prov = context.read<TrainingPlanProvider>();
-    final userId = context.read<AuthProvider>().userId!;
+    final userId = context.read<AuthProvider>().userId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.invalidGymSelectionError)),
+      );
+      return;
+    }
 
     final dayNumbers = <int>{};
     for (var row in data.skip(1)) {
@@ -164,7 +172,13 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       prov.addExercise(targetIndex, entry);
     }
     _assignDevices(context).then((_) async {
-      final gymId = context.read<AuthProvider>().gymCode!;
+      final gymId = context.read<AuthProvider>().gymCode;
+      if (gymId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.invalidGymSelectionError)),
+        );
+        return;
+      }
       await prov.saveCurrentPlan(gymId);
       if (context.mounted) Navigator.pop(context);
     });
