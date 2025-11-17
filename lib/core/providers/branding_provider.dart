@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
 import 'package:tapem/services/membership_service.dart';
@@ -15,7 +16,8 @@ void _defaultLog(String message, [StackTrace? stack]) {
   }
 }
 
-class BrandingProvider extends ChangeNotifier {
+class BrandingProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final FirestoreGymSource _source;
   final LogFn _log;
   final MembershipService _membership;
@@ -70,11 +72,24 @@ class BrandingProvider extends ChangeNotifier {
 
   void loadBrandingWithGym(String? gymId, String? uid) {
     if (gymId == null || gymId.isEmpty || uid == null) {
-      _branding = null;
-      _gymId = null;
-      notifyListeners();
+      resetGymScopedState();
       return;
     }
     loadBranding(gymId, uid);
+  }
+
+  @override
+  void resetGymScopedState() {
+    _branding = null;
+    _gymId = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
   }
 }

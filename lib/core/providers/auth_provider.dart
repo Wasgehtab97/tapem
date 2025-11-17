@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/core/data/user_profile_service.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
-import 'package:tapem/core/data/user_profile_service.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tapem/features/auth/domain/services/firebase_auth_manager.dart';
@@ -63,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
   final SessionDraftRepository _sessionDraftRepository;
   final MembershipService _membershipService;
   final ActiveGymSetter _setActiveGym;
+  final GymScopedStateController? _gymScopedStateController;
 
   UserData? _user;
   bool _isLoading = false;
@@ -84,6 +86,7 @@ class AuthProvider extends ChangeNotifier {
     required SessionDraftRepository sessionDraftRepository,
     required MembershipService membershipService,
     required ActiveGymSetter setActiveGym,
+    GymScopedStateController? gymScopedStateController,
   })  : _loginUC = loginUseCase,
         _registerUC = registerUseCase,
         _logoutUC = logoutUseCase,
@@ -97,7 +100,8 @@ class AuthProvider extends ChangeNotifier {
         _authManager = authManager,
         _sessionDraftRepository = sessionDraftRepository,
         _membershipService = membershipService,
-        _setActiveGym = setActiveGym {
+        _setActiveGym = setActiveGym,
+        _gymScopedStateController = gymScopedStateController {
     _loadCurrentUser();
   }
 
@@ -107,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
     SessionDraftRepository? sessionDraftRepository,
     MembershipService? membershipService,
     ActiveGymSetter? setActiveGym,
+    GymScopedStateController? gymScopedStateController,
   }) {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
@@ -131,6 +136,7 @@ class AuthProvider extends ChangeNotifier {
       sessionDraftRepository: resolvedSessionDraftRepo,
       membershipService: resolvedMembership,
       setActiveGym: resolvedSetActiveGym,
+      gymScopedStateController: gymScopedStateController,
     );
   }
 
@@ -281,6 +287,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _logoutUC.execute();
     } finally {
+      _gymScopedStateController?.resetGymScopedState();
       _user = null;
       _selectedGymCode = null;
       final prefs = await SharedPreferences.getInstance();
@@ -400,6 +407,7 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     try {
       await _membershipService.ensureMembership(gymId, fbUser.uid);
+      _gymScopedStateController?.resetGymScopedState();
       await _setActiveGym(gymId);
       await _authManager.forceRefreshIdToken(fbUser);
       final prefs = await SharedPreferences.getInstance();

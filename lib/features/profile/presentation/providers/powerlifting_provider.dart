@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
@@ -18,7 +19,8 @@ enum PowerliftingMetric {
   e1rm,
 }
 
-class PowerliftingProvider extends ChangeNotifier {
+class PowerliftingProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   PowerliftingProvider({
     required FirebaseFirestore firestore,
     required GetDevicesForGym getDevicesForGym,
@@ -83,6 +85,7 @@ class PowerliftingProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposeLogSubscriptions();
+    disposeGymScopedRegistration();
     super.dispose();
   }
 
@@ -104,6 +107,13 @@ class PowerliftingProvider extends ChangeNotifier {
     }
 
     await loadAssignments();
+  }
+
+  @override
+  void resetGymScopedState() {
+    _userId = null;
+    _activeGymId = null;
+    _clearState();
   }
 
   Future<void> loadAssignments() async {

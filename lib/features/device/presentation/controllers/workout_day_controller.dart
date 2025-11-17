@@ -5,6 +5,7 @@ import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/community/data/community_stats_writer.dart';
@@ -95,7 +96,8 @@ class SaveAllSessionsResult {
   bool get hasFailures => failedSessions.isNotEmpty;
 }
 
-class WorkoutDayController extends ChangeNotifier {
+class WorkoutDayController extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   WorkoutDayController({
     required FirebaseFirestore firestore,
     required MembershipService membership,
@@ -166,6 +168,17 @@ class WorkoutDayController extends ChangeNotifier {
     if (!identical(_membership, membership)) {
       _membership = membership;
     }
+  }
+
+  @override
+  void resetGymScopedState() {
+    for (final entry in _sessions.values) {
+      entry.dispose();
+    }
+    _sessions.clear();
+    _focusedSessionKey = null;
+    _isSavingAll = false;
+    notifyListeners();
   }
 
   static String contextKey({
@@ -411,6 +424,7 @@ class WorkoutDayController extends ChangeNotifier {
     _focusedSessionKey = null;
     _isSavingAll = false;
     _activeUserId = null;
+    disposeGymScopedRegistration();
     super.dispose();
   }
 
