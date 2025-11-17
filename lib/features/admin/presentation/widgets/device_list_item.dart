@@ -25,7 +25,10 @@ class DeviceListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final writeUC = context.read<WriteNfcTagUseCase>();
     final deleteUC = context.read<DeleteDeviceUseCase>();
-    final gymId = context.read<AuthProvider>().gymCode!;
+    final gymId = context.read<AuthProvider>().gymCode;
+    if (gymId == null) {
+      return const SizedBox.shrink();
+    }
     final loc = AppLocalizations.of(context)!;
 
     final theme = Theme.of(context);

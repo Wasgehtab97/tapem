@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/training_plan_provider.dart';
@@ -37,6 +38,14 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
     }
   }
 
+  void _showMissingGymMessage(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final message = loc?.invalidGymSelectionError ?? 'Gym-Auswahl fehlt';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +74,11 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
-                      final gymId = context.read<AuthProvider>().gymCode!;
+                      final gymId = context.read<AuthProvider>().gymCode;
+                      if (gymId == null) {
+                        _showMissingGymMessage(context);
+                        return;
+                      }
                       if (value == 'rename') {
                         final newName = await _askRename(context, plan.name);
                         if (newName != null) {
@@ -129,7 +142,11 @@ class _PlanOverviewScreenState extends State<PlanOverviewScreen> {
             onPressed: () async {
               final cfg = await _askConfig(context);
               if (cfg != null && context.mounted) {
-                final userId = context.read<AuthProvider>().userId!;
+                final userId = context.read<AuthProvider>().userId;
+                if (userId == null) {
+                  _showMissingGymMessage(context);
+                  return;
+                }
                 context.read<TrainingPlanProvider>().createNewPlan(
                       cfg.name,
                       userId,

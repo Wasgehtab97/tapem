@@ -39,6 +39,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
+import 'package:tapem/core/widgets/gym_context_guard.dart';
 import 'main.dart';
 
 class AppRouter {
@@ -107,7 +108,9 @@ class AppRouter {
       case home:
         final initialIndex = settings.arguments as int? ?? 0;
         return MaterialPageRoute(
-          builder: (_) => HomeScreen(initialIndex: initialIndex),
+          builder: (_) => GymContextGuard(
+            child: HomeScreen(initialIndex: initialIndex),
+          ),
         );
 
       case device:
@@ -162,7 +165,9 @@ class AppRouter {
         );
 
       case report:
-        return MaterialPageRoute(builder: (_) => const ReportScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(child: ReportScreen()),
+        );
 
       case restStats:
         return MaterialPageRoute(builder: (_) => const RestStatsScreen());
@@ -182,17 +187,33 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const BrandingScreen());
 
       case admin:
-        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminDashboardScreen(),
+          ),
+        );
 
       case manageChallenges:
-        return MaterialPageRoute(builder: (_) => const ChallengeAdminScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: ChallengeAdminScreen(),
+          ),
+        );
 
       case adminSymbols:
-        return MaterialPageRoute(builder: (_) => const AdminSymbolsScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminSymbolsScreen(),
+          ),
+        );
 
       case userSymbols:
         final uid = settings.arguments as String? ?? '';
-        return MaterialPageRoute(builder: (_) => UserSymbolsScreen(uid: uid));
+        return MaterialPageRoute(
+          builder: (_) => GymContextGuard(
+            child: UserSymbolsScreen(uid: uid),
+          ),
+        );
 
       case affiliate:
         return MaterialPageRoute(builder: (_) => const AffiliateScreen());
@@ -221,7 +242,11 @@ class AppRouter {
         );
 
       case planOverview:
-        return MaterialPageRoute(builder: (_) => const PlanOverviewScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: PlanOverviewScreen(),
+          ),
+        );
 
       case resetPassword:
         final code = settings.arguments as String;

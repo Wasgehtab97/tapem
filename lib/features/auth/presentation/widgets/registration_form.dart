@@ -100,13 +100,10 @@ class _RegistrationFormState extends State<RegistrationForm> {
       );
     }
 
-    final needsGymSelection =
-        result.requiresGymSelection || (authProv.gymCodes?.length ?? 0) > 1;
-    final hasGymSelected = authProv.gymCode != null;
-    if (needsGymSelection || !hasGymSelected) {
-      Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
-    } else {
+    if (authProv.gymContextStatus == GymContextStatus.ready) {
       Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
     }
   }
 

@@ -13,8 +13,11 @@ Future<ExerciseEntry?> showDeviceSelectionDialog(
   BuildContext context,
   ExerciseEntry entry,
 ) async {
-  final gymId = context.read<AuthProvider>().gymCode!;
-  final userId = context.read<AuthProvider>().userId!;
+  final gymId = context.read<AuthProvider>().gymCode;
+  final userId = context.read<AuthProvider>().userId;
+  if (gymId == null || userId == null) {
+    return null;
+  }
   final controller = context.read<WorkoutDayController>();
   final session = controller.addOrFocusSession(
     gymId: gymId,

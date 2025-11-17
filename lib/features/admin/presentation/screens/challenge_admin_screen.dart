@@ -60,7 +60,11 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
       return;
     }
 
-    final gymId = context.read<AuthProvider>().gymCode!;
+    final gymId = context.read<AuthProvider>().gymCode;
+    if (gymId == null) {
+      setState(() => _error = loc.invalidGymSelectionError);
+      return;
+    }
     final year = DateTime.now().year;
     DateTime start;
     DateTime end;
