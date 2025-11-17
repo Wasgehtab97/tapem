@@ -89,38 +89,62 @@
 6. **App-Start ohne verbindlichen Gym-Check:** `SplashScreen` prüft nur Anzahl der `gymCodes`, aber nicht, ob `_selectedGymCode` leer ist oder `MembershipService.ensureMembership` für das gespeicherte Gym lief. Fehlkonfigurierte `SharedPreferences` können dazu führen, dass Provider mit einem ungültigen Kontext booten.
 7. **Unklare Fehleroberfläche beim Claims-Laden:** Scheitert `getIdTokenClaims`, beendet `_loadCurrentUser` frühzeitig mit `_error`, während `SplashScreen` weiterpollt und schließlich `AppRouter.auth` wählt. Nutzer sehen keinen Hinweis, dass Claims fehlten; Risiko für Softlocks bei Netzwerkproblemen direkt zum App-Start.
 
-## 8. SOLL-Architektur & Sequenzen
-### 4.1 Zielbild
-- Zentraler **Auth-&-Gym-Orchestrator** (`AuthProvider` bleibt, erhält aber klar definierte Ausgabesignale):
-  - Liefert strukturierte Events (`AuthState`, `GymContextChanged`) statt impliziter Flags.
-  - Bindet `GymScopedStateController` als Pflicht-Abhängigkeit ein, sodass Registrierungen typisiert geprüft werden können.
-- **GymContextGuard** im UI-Router stellt sicher, dass vor Eintritt in gym-gebundene Screens ein gültiger Kontext vorhanden ist (Nutzen von `AuthResult.requiresGymSelection`).
-- **MembershipSyncService** kapselt `ensureMembership`, `setActiveGym`, Token-Refresh in eigene Sequenz, erlaubt Retry/Telemetry.
+## 8. SOLL-Zustand
+### 8.1 Prinzipien
+- `AuthProvider` fungiert als klarer Orchestrator für Authentifizierung **und** aktiven Gym-Kontext und veröffentlicht Ereignisse (`AuthState`, `GymContextChanged`), die von `GymScopedStateController`, `MembershipService` und UI-Router konsumiert werden.
+- `MembershipService` bleibt die einzige Stelle, an der Mitgliedschaftsprüfungen und `setActiveGym`-Persistierung passieren; alle Flows rufen ihn explizit auf, bevor sie `GymScopedStateController.resetGymScopedState()` auslösen.
+- `GymScopedStateController` erhält verpflichtende Registrierungen aller gym-sensitiven Provider (Compile-Time Assertion). Dadurch wird jede Kontextänderung automatisch propagiert.
+- App-Router-Schichten setzen konsequent Guard-Komponenten ein (z. B. `GymContextGuard`), die `AuthProvider`-Signale auswerten und Navigation nur bei konsistentem Kontext erlauben.
+- Annahme: `AuthResult` wird um strukturierte Statusfelder erweitert (`authStatus`, `gymContextStatus`), damit UI-Logik keine Provider-Interna lesen muss.
 
-### 4.2 Sequenz: Login mit Mehrfach-Gym
-1. UI → `AuthProvider.login`.
-2. Nach `_loadCurrentUser` emittiert Provider `AuthState.authenticated` + `GymContextStatus.pendingSelection`.
-3. Router blockiert gym-spezifische Navigation, öffnet `SelectGymScreen` (`features/gym/presentation/screens/select_gym_screen.dart`).
-4. Nutzer wählt Gym → `switchGym` → `MembershipSyncService` → Erfolg → `GymContextStatus.ready`.
-5. `GymScopedStateController` broadcastet Reset; abhängige Provider laden Daten für neues Gym.
+### 8.2 Auth-Flow (App-Start, Login, Registrierung, Logout)
+#### App-Start
+| Schritt | Beschreibung |
+| --- | --- |
+| Initialisierung | `main.dart` lädt SharedPreferences, initialisiert Firebase und erstellt `AuthProvider` + `GymScopedStateController`. `AuthProvider` liest synchron `selectedGymCode` und startet `_loadCurrentUser()`.
+| Datenladen | `_loadCurrentUser()` ruft `FirebaseAuthManager.currentUser`, Claims sowie `GetCurrentUserUseCase`. Parallel registriert `GymScopedStateController` alle `GymScopedResettable` Provider, damit spätere Resets möglich sind.
+| Konsistenz-Checks | `AuthProvider` vergleicht gespeicherten Gym-Code mit `UserData.gymCodes`. Bei Abweichungen fordert er `MembershipService.ensureMembership` für den gespeicherten Code an; bei Fehler → markiert Kontext als „invalid“.
+| Fallbacks | Falls kein gültiger Code vorhanden ist, erzwingt der Provider `GymContextStatus.pendingSelection` und navigiert via Router auf den Gym-Auswahl-Screen.
 
-### 4.3 Sequenz: Fehler beim Gym-Wechsel
-1. Nutzer löst `switchGym('gymX')` aus.
-2. `MembershipSyncService` ruft `ensureMembership` → Firestore-Fehler.
-3. Service mappt Fehler auf strukturierten Typ (`MembershipSyncError`), kein Side-Effect auf `_selectedGymCode`.
-4. UI erhält `GymContextChangeFailed` Event (inkl. Ursache), zeigt Retry-Option; `_error` wird nicht für UI-Logik recycelt.
+#### Login
+| Schritt | Beschreibung |
+| --- | --- |
+| Initialisierung | UI ruft `AuthProvider.login`. Provider setzt `_isLoading` und erstellt ein Login-Event, sodass UI Spinners zeigen kann.
+| Datenladen | Nach `LoginUseCase` wird `_loadCurrentUser()` erneut ausgeführt (Claims + `UserData`). `MembershipService` validiert den zuletzt persistierten Gym-Code.
+| Konsistenz-Checks | `AuthProvider` prüft, ob `gymCodes` ≥ 1. Bei Mehrfachzugehörigkeit wird `requiresGymSelection` gesetzt, ansonsten wird automatisch `switchGym` für den einzigen Code angestoßen.
+| Fallbacks | Auth-Fehler landen in `AuthResult.failure`. Annahme: UI besitzt Retry-Logik und zeigt `GymContextGuard`, bis `GymContextStatus.ready` ist.
 
-### 4.4 Sequenz: Logout
-1. UI → `AuthProvider.logout`.
-2. Provider emittiert `AuthState.loading`, ruft `LogoutUseCase`.
-3. Nach Erfolg: `GymScopedStateController.reset`, `SessionDraftRepository.deleteAll`, SharedPreferences purge.
-4. UI erhält `AuthState.loggedOut`, Router entfernt geschützte Routen.
+#### Registrierung
+| Schritt | Beschreibung |
+| --- | --- |
+| Initialisierung | `AuthProvider.register` ruft `RegisterUseCase` und übergibt den ausgewählten Start-Gym-Code.
+| Datenladen | Nach erfolgreichem Backend-Call wird der aus dem UseCase zurückgegebene `UserData` sofort in `_user` gesetzt; `MembershipService.ensureMembership` bestätigt den initialen Gym.
+| Konsistenz-Checks | `AuthProvider` legt `selectedGymCode` in SharedPreferences ab und prüft, ob Claims bereits den erwarteten `role`-Wert enthalten; ansonsten markiert er `AuthState` als „limited“ und fordert späteren Claim-Refresh an.
+| Fallbacks | Sollte das Backend keinen Gym-Code zurückgeben, wird `AuthProvider` den Flow abbrechen (`AuthResult.failure`) und die UI auffordern, erneut zu starten. Annahme: Registrierung kann clientseitig nicht ohne Gym abgeschlossen werden.
 
-### 4.5 Maßnahmen zur Problembehebung
-- **Validierung vor Feature-Zugriff:** `GymContextGuard` zwingt Auswahl sobald `requiresGymSelection=true`.
-- **Einheitliches Error-Handling:** Einführung eigener Error-Typen statt `_error` String; UI konsumiert Streams/ChangeNotifiers.
-- **Registrierungs-Check:** Dev-Tooling/Test, das sicherstellt, dass jeder Provider mit Gym-Bezug `GymScopedResettable` implementiert.
-- **Persistentes Membership-Caching:** Erweiterung von `MembershipService` um lokale Persistenz (z. B. SharedPreferences Flag pro `gymId|uid`).
+#### Logout
+| Schritt | Beschreibung |
+| --- | --- |
+| Initialisierung | UI ruft `AuthProvider.logout`, Provider emittiert `AuthState.loading` und sperrt weitere Auth-Operationen.
+| Datenladen | `LogoutUseCase` meldet Firebase ab; `MembershipService` räumt etwaige lokale Membership-Caches (z. B. `_ensured`) auf.
+| Konsistenz-Checks | `GymScopedStateController.resetGymScopedState()` wird ausgeführt, `SessionDraftRepository.deleteAll()` löscht Drafts, und SharedPreferences wird von `selectedGymCode` befreit.
+| Fallbacks | Scheitert der Logout-Call, bleibt der vorherige Zustand bestehen, und der Provider liefert `AuthResult.failure` mit retryable Flag. Annahme: UI zeigt einen Dialog, bis Logout bestätigt ist.
+
+### 8.3 Gym-Wechsel
+| Phase | Beschreibung |
+| --- | --- |
+| Vorbereitung | `AuthProvider.switchGym(gymId)` prüft synchron, ob `_user` gesetzt ist und `gymId` zu `UserData.gymCodes` gehört. Danach wird `MembershipService.ensureMembership(gymId, uid)` aufgerufen.
+| MembershipSync | `MembershipService` führt Transaction, aktualisiert `UserProfileService.setActiveGym` und ruft `FirebaseAuthManager.forceRefreshIdToken`. Erst nach erfolgreichem Abschluss werden `SharedPreferences` aktualisiert.
+| State-Reset | `GymScopedStateController.resetGymScopedState()` invalidiert registrierte Provider (`BrandingProvider`, `GymProvider`, Trainings-Feature-Stores). Jeder Provider lädt Gym-Daten neu.
+| Abschluss | `AuthProvider` emittiert `GymContextChanged`-Event. UI prüft `GymContextStatus.ready` und entsperrt gym-spezifische Screens. Bei Fehlern wird ein detaillierter `GymContextChangeFailed`-Typ mitgeliefert, damit UI fallbacken kann.
+- Annahme: `MembershipService` erhält Persistenz für `_ensured`, damit App-Restarts nicht erneut Transactions pro Gym auslösen.
+
+### 8.4 Fehler- und Edge-Cases
+- **Fehlende Claims beim App-Start:** `AuthProvider` kennzeichnet den Zustand mit `AuthState.degraded` und fordert `FirebaseAuthManager.forceRefreshIdToken`. `GymScopedStateController` verhindert in diesem Zustand das Laden sensibler Provider.
+- **Ungültiger persistierter Gym-Code:** `MembershipService.ensureMembership` liefert `membership_missing`. `AuthProvider` entfernt den Code aus SharedPreferences und setzt `GymContextStatus.pendingSelection`, während UI den Auswahl-Screen öffnet.
+- **Timeout bei `switchGym`:** Bei Netzwerk-Timeout sendet der Provider ein Recoverable-Event. UI kann Retry oder `AuthProvider.logout` anbieten, falls keine stabile Verbindung besteht.
+- **Logout während laufendem Gym-Wechsel:** `AuthProvider.logout` überprüft, ob `switchGym` aktiv ist. Erst nach Abbruch/Abschluss wird `GymScopedStateController.reset` ausgeführt, um partielle Zustände zu vermeiden.
+- **Mehrere Gyms ohne Mitgliedschaft:** Falls `gymCodes` leer, aber `selectedGymCode` gesetzt ist, behandelt der Provider den Zustand als Sicherheitsverletzung, löscht lokale Daten und zwingt einen vollständigen Re-Login. Annahme: Backend liefert niemals `gymCodes` leer für aktive Accounts, außer Membership wurde entzogen.
 
 ## 9. Referenzen
 - `lib/main.dart` – Initialisierung von Firebase, Provider-Hierarchie, `runApp`.
