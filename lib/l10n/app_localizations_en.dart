@@ -177,15 +177,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gymCodeRequired => 'Gym code required.';
 
   @override
-  String get missingMembershipError =>
-      "We couldn't find an active membership for your account. Please contact your gym or support.";
+  String get missingMembershipError => 'We couldn\'t find an active membership for your account. Please contact your gym or support.';
 
   @override
-  String get invalidGymSelectionError => "This gym isn't linked to your account.";
+  String get invalidGymSelectionError => 'This gym isn\'t linked to your account.';
 
   @override
-  String get membershipSyncError =>
-      "We couldn't sync your membership. Please try again.";
+  String get membershipSyncError => 'We couldn\'t sync your membership. Please try again.';
 
   @override
   String get gymNoDevices => 'No devices found.';

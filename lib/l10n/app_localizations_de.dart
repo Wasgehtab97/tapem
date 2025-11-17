@@ -177,16 +177,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get gymCodeRequired => 'Gym-Code erforderlich.';
 
   @override
-  String get missingMembershipError =>
-      'Wir konnten keine aktive Mitgliedschaft für dein Konto finden. Bitte kontaktiere dein Gym oder den Support.';
+  String get missingMembershipError => 'Wir konnten keine aktive Mitgliedschaft für dein Konto finden. Bitte kontaktiere dein Gym oder den Support.';
 
   @override
-  String get invalidGymSelectionError =>
-      'Dieses Gym ist nicht mit deinem Konto verknüpft.';
+  String get invalidGymSelectionError => 'Dieses Gym ist nicht mit deinem Konto verknüpft.';
 
   @override
-  String get membershipSyncError =>
-      'Deine Mitgliedschaft konnte nicht synchronisiert werden. Bitte versuche es erneut.';
+  String get membershipSyncError => 'Deine Mitgliedschaft konnte nicht synchronisiert werden. Bitte versuche es erneut.';
 
   @override
   String get gymNoDevices => 'Keine Geräte gefunden.';
