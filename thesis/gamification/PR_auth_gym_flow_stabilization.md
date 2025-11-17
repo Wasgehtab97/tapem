@@ -6,6 +6,12 @@ Stabilisierung des Authentifizierungs- und Gym-Claiming-Flows nach dem refactor 
 
 # Kurzfassung des Prompts
 Der Prompt forderte eine strukturierte Dokumentation (Titel, Kontext, Prompt-Zusammenfassung, Ziele, Dateiübersicht, Ergebnis-Bullets, Hinweise) sowie eine klare Beschreibung der Änderungen rund um `AuthResult`, `switchGym`, `GymScopedStateController`, UI und Tests inkl. Dateireferenzen.
+Zuerst ist eine kurze IST-Analyse erforderlich, die Auth-Flow-Instabilitäten und fehlende Gym-Persistenz benennt.
+Darauf folgt eine SOLL-Definition mit klarer Zielarchitektur für `AuthResult`, Gym-Controller und die UI-Zustände.
+Im Implementierungsteil müssen die Anpassungen am Auth- und Gym-Controller beschrieben werden, inklusive Token-Refresh, Membership-Prüfung und Reset-Mechanik.
+UI-Anpassungen sind hervorzuheben, insbesondere neue Lade-, Fehler- und Navigationspfade im Select-Gym-Screen.
+Tests decken Unit- und Widget-Szenarien ab, die Membership-Sync, Fehlerfälle und Navigation prüfen.
+Abschließend fordert der Prompt explizite Dokumentationspflichten, um Dateibezüge, Hinweise für die Masterarbeit und Nachverfolgung festzuhalten.
 
 # Ziele
 1. Persistente Gym-Auswahl mit Membership-Validierung und Token-Refresh sicherstellen.
