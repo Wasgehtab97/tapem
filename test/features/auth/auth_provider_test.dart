@@ -8,6 +8,7 @@ import 'package:tapem/features/auth/domain/models/user_data.dart';
 import 'package:tapem/services/membership_service.dart';
 
 import 'helpers/fakes.dart';
+import 'helpers/fake_firestore.dart';
 
 Future<void> _pumpEventQueue() async {
   await Future<void>.delayed(Duration.zero);
@@ -31,6 +32,7 @@ void main() {
       MembershipService? membershipService,
       Future<void> Function(String gymId)? onSetActiveGym,
       GymScopedStateController? gymStateController,
+      FakeFirebaseFirestore? firestore,
     }) {
       return AuthProvider(
         repo: repo,
@@ -40,6 +42,7 @@ void main() {
         setActiveGym: onSetActiveGym ?? (_) async {},
         gymScopedStateController:
             gymStateController ?? GymScopedStateController(),
+        firestore: firestore,
       );
     }
 
@@ -89,6 +92,96 @@ void main() {
       expect(provider.role, 'coach');
       expect(provider.publicProfile, isTrue);
       expect(publicProfileUpdated, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), 'gym1');
+    });
+
+    test('initial load syncs active gym when firestore differs from prefs',
+        () async {
+      SharedPreferences.setMockInitialValues({'selectedGymCode': 'gym1'});
+      final firestore = FakeFirebaseFirestore();
+      await firestore.seedDocument('users/uid', {'activeGymId': 'gym2'});
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final activeGymCalls = <String>[];
+      final manager = FakeFirebaseAuthManager(
+        currentUser:
+            FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+        onGetClaims: (_) async => {'role': 'member', 'gymId': 'gym1'},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        onSetActiveGym: (gymId) async => activeGymCalls.add(gymId),
+        firestore: firestore,
+      );
+      await _pumpEventQueue();
+
+      expect(provider.gymCode, 'gym2');
+      expect(activeGymCalls, isEmpty);
+      expect(manager.forceRefreshCalls, 1);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), 'gym2');
+    });
+
+    test('initial load writes missing firestore active gym from stored pref',
+        () async {
+      SharedPreferences.setMockInitialValues({'selectedGymCode': 'gym1'});
+      final firestore = FakeFirebaseFirestore();
+      await firestore.seedDocument('users/uid', {});
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final activeGymCalls = <String>[];
+      final manager = FakeFirebaseAuthManager(
+        currentUser:
+            FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+        onGetClaims: (_) async => {'role': 'member', 'gymId': 'gym2'},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        onSetActiveGym: (gymId) async => activeGymCalls.add(gymId),
+        firestore: firestore,
+      );
+      await _pumpEventQueue();
+
+      expect(provider.gymCode, 'gym1');
+      expect(activeGymCalls, ['gym1']);
+      expect(manager.forceRefreshCalls, 1);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
     });
