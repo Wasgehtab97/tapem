@@ -22,6 +22,11 @@ import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/services/membership_service.dart';
 
 typedef ActiveGymSetter = Future<void> Function(String gymId);
+typedef AuthErrorLogger = void Function(
+  Object error,
+  StackTrace stackTrace, {
+  String? reason,
+});
 
 class AuthResult {
   final bool success;
@@ -49,6 +54,37 @@ class AuthResult {
       : this(success: false, error: error);
 }
 
+enum GymSwitchRequiredAction {
+  none,
+  selectDifferentGym,
+  reauthenticate,
+  retry,
+}
+
+class GymSwitchResult {
+  final bool success;
+  final GymSwitchRequiredAction requiredAction;
+  final String? error;
+
+  const GymSwitchResult._({
+    required this.success,
+    required this.requiredAction,
+    this.error,
+  });
+
+  const GymSwitchResult.success()
+      : this._(success: true, requiredAction: GymSwitchRequiredAction.none);
+
+  const GymSwitchResult.failure({
+    GymSwitchRequiredAction requiredAction = GymSwitchRequiredAction.none,
+    String? error,
+  }) : this._(
+          success: false,
+          requiredAction: requiredAction,
+          error: error,
+        );
+}
+
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUC;
   final RegisterUseCase _registerUC;
@@ -65,6 +101,7 @@ class AuthProvider extends ChangeNotifier {
   final MembershipService _membershipService;
   final ActiveGymSetter _setActiveGym;
   final GymScopedStateController? _gymScopedStateController;
+  final AuthErrorLogger? _errorLogger;
 
   UserData? _user;
   bool _isLoading = false;
@@ -87,6 +124,7 @@ class AuthProvider extends ChangeNotifier {
     required MembershipService membershipService,
     required ActiveGymSetter setActiveGym,
     GymScopedStateController? gymScopedStateController,
+    AuthErrorLogger? errorLogger,
   })  : _loginUC = loginUseCase,
         _registerUC = registerUseCase,
         _logoutUC = logoutUseCase,
@@ -101,7 +139,8 @@ class AuthProvider extends ChangeNotifier {
         _sessionDraftRepository = sessionDraftRepository,
         _membershipService = membershipService,
         _setActiveGym = setActiveGym,
-        _gymScopedStateController = gymScopedStateController {
+        _gymScopedStateController = gymScopedStateController,
+        _errorLogger = errorLogger {
     _loadCurrentUser();
   }
 
@@ -112,6 +151,7 @@ class AuthProvider extends ChangeNotifier {
     MembershipService? membershipService,
     ActiveGymSetter? setActiveGym,
     GymScopedStateController? gymScopedStateController,
+    AuthErrorLogger? errorLogger,
   }) {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
@@ -137,6 +177,7 @@ class AuthProvider extends ChangeNotifier {
       membershipService: resolvedMembership,
       setActiveGym: resolvedSetActiveGym,
       gymScopedStateController: gymScopedStateController,
+      errorLogger: errorLogger,
     );
   }
 
@@ -193,8 +234,7 @@ class AuthProvider extends ChangeNotifier {
               );
             } catch (e, st) {
               _error = e.toString();
-              debugPrintStack(
-                  label: 'AuthProvider._loadCurrentUser', stackTrace: st);
+              _logError('AuthProvider._loadCurrentUser', e, st);
             }
           }
           _user = currentUser.copyWith(
@@ -385,22 +425,34 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Wählt ein Gym aus und speichert die Auswahl persistent
-  Future<void> switchGym(String gymId) async {
-    if (_user == null) return;
+  Future<GymSwitchResult> switchGym(String gymId) async {
+    if (_user == null) {
+      _error = 'not_authenticated';
+      return const GymSwitchResult.failure(
+        requiredAction: GymSwitchRequiredAction.reauthenticate,
+        error: 'not_authenticated',
+      );
+    }
     if (!_user!.gymCodes.contains(gymId)) {
       _error = 'invalid_gym_code';
       notifyListeners();
-      return;
+      return const GymSwitchResult.failure(
+        requiredAction: GymSwitchRequiredAction.selectDifferentGym,
+        error: 'invalid_gym_code',
+      );
     }
     final fbUser = _authManager.currentUser;
     if (fbUser == null) {
       _error = 'missing_firebase_user';
       notifyListeners();
-      throw StateError('No authenticated Firebase user available');
+      return const GymSwitchResult.failure(
+        requiredAction: GymSwitchRequiredAction.reauthenticate,
+        error: 'missing_firebase_user',
+      );
     }
 
     if (_selectedGymCode == gymId) {
-      return;
+      return const GymSwitchResult.success();
     }
 
     _setLoading(true);
@@ -417,48 +469,79 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
       _gymScopedStateController?.resetGymScopedState();
+      return const GymSwitchResult.success();
     } catch (e, st) {
       _error = e is fb_auth.FirebaseAuthException
           ? e.message
           : 'membership_sync_failed';
       if (activeGymUpdated) {
-        try {
-          if (previousGymCode != null) {
-            await _setActiveGym(previousGymCode);
-            await _authManager.forceRefreshIdToken(fbUser);
-            prefs ??= await SharedPreferences.getInstance();
-            await prefs.setString('selectedGymCode', previousGymCode);
-          } else {
-            prefs ??= await SharedPreferences.getInstance();
-            await prefs.remove('selectedGymCode');
-          }
-          _selectedGymCode = previousGymCode;
-        } catch (restoreError, restoreStack) {
-          debugPrint(
-              'AuthProvider.switchGym: failed to restore previous gym: $restoreError');
-          debugPrintStack(
-            label: 'AuthProvider.switchGym.restore',
-            stackTrace: restoreStack,
-          );
-        }
+        await _restorePreviousGym(
+          previousGymCode,
+          fbUser,
+          prefs,
+        );
       }
-      debugPrintStack(
-        label: 'AuthProvider.switchGym',
-        stackTrace: st,
+      _logError('AuthProvider.switchGym', e, st);
+      return GymSwitchResult.failure(
+        requiredAction: _mapRequiredAction(_error),
+        error: _error,
       );
-      rethrow;
     } finally {
       _setLoading(false);
     }
   }
 
+  Future<void> _restorePreviousGym(
+    String? previousGymCode,
+    fb_auth.User fbUser,
+    SharedPreferences? prefs,
+  ) async {
+    try {
+      if (previousGymCode != null) {
+        await _setActiveGym(previousGymCode);
+        await _authManager.forceRefreshIdToken(fbUser);
+        prefs ??= await SharedPreferences.getInstance();
+        await prefs.setString('selectedGymCode', previousGymCode);
+      } else {
+        prefs ??= await SharedPreferences.getInstance();
+        await prefs.remove('selectedGymCode');
+      }
+      _selectedGymCode = previousGymCode;
+    } catch (restoreError, restoreStack) {
+      _logError('AuthProvider.switchGym.restore', restoreError, restoreStack);
+    }
+  }
+
+  GymSwitchRequiredAction _mapRequiredAction(String? errorCode) {
+    switch (errorCode) {
+      case 'invalid_gym_code':
+        return GymSwitchRequiredAction.selectDifferentGym;
+      case 'missing_firebase_user':
+      case 'not_authenticated':
+        return GymSwitchRequiredAction.reauthenticate;
+      case 'membership_sync_failed':
+        return GymSwitchRequiredAction.retry;
+      default:
+        return GymSwitchRequiredAction.none;
+    }
+  }
+
   @Deprecated('Use switchGym instead')
-  Future<void> selectGym(String code) {
+  Future<GymSwitchResult> selectGym(String code) {
     return switchGym(code);
   }
 
   void _setLoading(bool v) {
     _isLoading = v;
     notifyListeners();
+  }
+
+  void _logError(String reason, Object error, StackTrace stackTrace) {
+    debugPrint('[$reason] $error');
+    debugPrintStack(label: reason, stackTrace: stackTrace);
+    final logger = _errorLogger;
+    if (logger != null) {
+      logger(error, stackTrace, reason: reason);
+    }
   }
 }

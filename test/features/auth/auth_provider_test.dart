@@ -554,8 +554,10 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider.switchGym('gym2');
+      final result = await provider.switchGym('gym2');
 
+      expect(result.success, isTrue);
+      expect(result.requiredAction, GymSwitchRequiredAction.none);
       expect(provider.gymCode, 'gym2');
       expect(membership.ensureCalls, 1);
       expect(membership.lastGymId, 'gym2');
@@ -602,12 +604,12 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await expectLater(
-        provider.switchGym('gym2'),
-        throwsA(isA<Exception>()),
-      );
+      final result = await provider.switchGym('gym2');
 
-      expect(provider.error, contains('membership failed'));
+      expect(result.success, isFalse);
+      expect(result.requiredAction, GymSwitchRequiredAction.retry);
+      expect(result.error, 'membership_sync_failed');
+      expect(provider.error, 'membership_sync_failed');
       expect(provider.gymCode, 'gym1');
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
@@ -653,17 +655,84 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await expectLater(
-        provider.switchGym('gym2'),
-        throwsA(isA<Exception>()),
-      );
+      final result = await provider.switchGym('gym2');
 
+      expect(result.success, isFalse);
+      expect(result.requiredAction, GymSwitchRequiredAction.retry);
+      expect(result.error, 'membership_sync_failed');
       expect(provider.gymCode, 'gym1');
-      expect(provider.error, contains('setActiveGym failed'));
+      expect(provider.error, 'membership_sync_failed');
       expect(resetController.resetCalls, 0);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
       expect(activeGymCalls, ['gym2']);
+    });
+
+    test('switchGym fails with invalid code without throwing', () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager:
+            FakeFirebaseAuthManager(currentUser: FakeFirebaseUser(uid: 'uid')),
+      );
+      await _pumpEventQueue();
+
+      final result = await provider.switchGym('gym2');
+
+      expect(result.success, isFalse);
+      expect(result.error, 'invalid_gym_code');
+      expect(result.requiredAction, GymSwitchRequiredAction.selectDifferentGym);
+    });
+
+    test('switchGym reports missing firebase user via result', () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(currentUser: null),
+      );
+      await _pumpEventQueue();
+
+      final result = await provider.switchGym('gym2');
+
+      expect(result.success, isFalse);
+      expect(result.error, 'missing_firebase_user');
+      expect(result.requiredAction, GymSwitchRequiredAction.reauthenticate);
     });
   });
 }

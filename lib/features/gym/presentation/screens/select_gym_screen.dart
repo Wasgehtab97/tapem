@@ -34,26 +34,23 @@ class _SelectGymScreenState extends State<SelectGymScreen> {
       _claimingGymCode = code;
       _localErrorMessage = null;
     });
-    try {
-      await context.read<AuthProvider>().switchGym(code);
-      if (!mounted) return;
-      Navigator.of(context)
-          .pushReplacementNamed(AppRouter.home, arguments: 1);
-    } catch (_) {
-      if (!mounted) return;
+    final result = await context.read<AuthProvider>().switchGym(code);
+    if (!mounted) return;
+    if (result.success) {
+      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+    } else {
       final loc = AppLocalizations.of(context)!;
-      final latestError = _mapError(loc, context.read<AuthProvider>().error) ??
+      final latestError = _mapError(loc, result.error) ??
           loc.membershipSyncError;
       setState(() => _localErrorMessage = latestError);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(latestError)),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _claimingGymCode = null;
-        });
-      }
+    }
+    if (mounted) {
+      setState(() {
+        _claimingGymCode = null;
+      });
     }
   }
 
@@ -64,7 +61,7 @@ class _SelectGymScreenState extends State<SelectGymScreen> {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    final errorMessage = _localErrorMessage ?? _mapError(loc, auth.error);
+    final errorMessage = _localErrorMessage;
     final isInitialLoading = auth.isLoading && _claimingGymCode == null && gyms.isEmpty;
 
     Widget body;
