@@ -575,6 +575,20 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         return;
       }
 
+      try {
+        await _membershipService.ensureMembership(resolvedGym, fbUser.uid);
+      } catch (error, stackTrace) {
+        _error = 'membership_sync_failed';
+        _selectedGymCode = null;
+        await prefs.remove('selectedGymCode');
+        _logError(
+          error,
+          stackTrace,
+          context: 'activeGymSync.ensureMembership',
+        );
+        return;
+      }
+
       final inconsistencies = <String, String?>{};
       if (normalizedFirestoreGym != null &&
           normalizedFirestoreGym != resolvedGym) {
