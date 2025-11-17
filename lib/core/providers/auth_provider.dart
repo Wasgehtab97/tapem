@@ -405,18 +405,47 @@ class AuthProvider extends ChangeNotifier {
 
     _setLoading(true);
     _error = null;
+    final previousGymCode = _selectedGymCode;
+    var activeGymUpdated = false;
+    SharedPreferences? prefs;
     try {
       await _membershipService.ensureMembership(gymId, fbUser.uid);
-      _gymScopedStateController?.resetGymScopedState();
       await _setActiveGym(gymId);
+      activeGymUpdated = true;
       await _authManager.forceRefreshIdToken(fbUser);
-      final prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
-    } catch (e) {
+      _gymScopedStateController?.resetGymScopedState();
+    } catch (e, st) {
       _error = e is fb_auth.FirebaseAuthException
           ? e.message
           : 'membership_sync_failed';
+      if (activeGymUpdated) {
+        try {
+          if (previousGymCode != null) {
+            await _setActiveGym(previousGymCode);
+            await _authManager.forceRefreshIdToken(fbUser);
+            prefs ??= await SharedPreferences.getInstance();
+            await prefs.setString('selectedGymCode', previousGymCode);
+          } else {
+            prefs ??= await SharedPreferences.getInstance();
+            await prefs.remove('selectedGymCode');
+          }
+          _selectedGymCode = previousGymCode;
+        } catch (restoreError, restoreStack) {
+          debugPrint(
+              'AuthProvider.switchGym: failed to restore previous gym: $restoreError');
+          debugPrintStack(
+            label: 'AuthProvider.switchGym.restore',
+            stackTrace: restoreStack,
+          );
+        }
+      }
+      debugPrintStack(
+        label: 'AuthProvider.switchGym',
+        stackTrace: st,
+      );
       rethrow;
     } finally {
       _setLoading(false);

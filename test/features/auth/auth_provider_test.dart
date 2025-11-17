@@ -613,6 +613,58 @@ void main() {
       expect(prefs.getString('selectedGymCode'), 'gym1');
       expect(activeGymCalls, 0);
     });
+
+    test('switchGym keeps gym state intact when setActiveGym fails', () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser:
+            FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+      );
+      final activeGymCalls = <String>[];
+      final resetController = _RecordingGymScopedStateController();
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        onSetActiveGym: (gymId) async {
+          activeGymCalls.add(gymId);
+          if (gymId == 'gym2') {
+            throw Exception('setActiveGym failed');
+          }
+        },
+        gymStateController: resetController,
+      );
+      await _pumpEventQueue();
+
+      await expectLater(
+        provider.switchGym('gym2'),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(provider.gymCode, 'gym1');
+      expect(provider.error, contains('setActiveGym failed'));
+      expect(resetController.resetCalls, 0);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), 'gym1');
+      expect(activeGymCalls, ['gym2']);
+    });
   });
 }
 
