@@ -647,8 +647,9 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await provider.switchGym('gym2');
+      final result = await provider.switchGym('gym2');
 
+      expect(result.success, isTrue);
       expect(provider.gymCode, 'gym2');
       expect(membership.ensureCalls, 1);
       expect(membership.lastGymId, 'gym2');
@@ -695,12 +696,12 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await expectLater(
-        provider.switchGym('gym2'),
-        throwsA(isA<Exception>()),
-      );
+      final result = await provider.switchGym('gym2');
 
-      expect(provider.error, contains('membership failed'));
+      expect(result.success, isFalse);
+      expect(result.errorCode, 'membership_sync_failed');
+      expect(result.requiresMembershipAction, isTrue);
+      expect(provider.error, 'membership_sync_failed');
       expect(provider.gymCode, 'gym1');
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
@@ -746,17 +747,88 @@ void main() {
       );
       await _pumpEventQueue();
 
-      await expectLater(
-        provider.switchGym('gym2'),
-        throwsA(isA<Exception>()),
-      );
+      final result = await provider.switchGym('gym2');
 
+      expect(result.success, isFalse);
+      expect(result.errorCode, contains('setActiveGym failed'));
+      expect(result.requiresMembershipAction, isFalse);
       expect(provider.gymCode, 'gym1');
       expect(provider.error, contains('setActiveGym failed'));
       expect(resetController.resetCalls, 0);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
       expect(activeGymCalls, ['gym2']);
+    });
+
+    test('switchGym returns reauth requirement when firebase user missing',
+        () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: FakeFirebaseAuthManager(),
+      );
+      await _pumpEventQueue();
+
+      final result = await provider.switchGym('gym2');
+
+      expect(result.success, isFalse);
+      expect(result.requiresReauthentication, isTrue);
+      expect(result.errorCode, 'missing_firebase_user');
+    });
+
+    test('switchGym returns validation error when gym code unknown', () async {
+      final storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+      );
+      await _pumpEventQueue();
+
+      final result = await provider.switchGym('unknown');
+
+      expect(result.success, isFalse);
+      expect(result.errorCode, 'invalid_gym_code');
+      expect(result.requiresReauthentication, isFalse);
+      expect(result.requiresMembershipAction, isFalse);
     });
   });
 }
