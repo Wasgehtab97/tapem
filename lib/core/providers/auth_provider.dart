@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
@@ -65,6 +67,7 @@ class AuthProvider extends ChangeNotifier {
   final MembershipService _membershipService;
   final ActiveGymSetter _setActiveGym;
   final GymScopedStateController? _gymScopedStateController;
+  final FirebaseFirestore _firestore;
 
   UserData? _user;
   bool _isLoading = false;
@@ -87,6 +90,7 @@ class AuthProvider extends ChangeNotifier {
     required MembershipService membershipService,
     required ActiveGymSetter setActiveGym,
     GymScopedStateController? gymScopedStateController,
+    FirebaseFirestore? firestore,
   })  : _loginUC = loginUseCase,
         _registerUC = registerUseCase,
         _logoutUC = logoutUseCase,
@@ -101,7 +105,8 @@ class AuthProvider extends ChangeNotifier {
         _sessionDraftRepository = sessionDraftRepository,
         _membershipService = membershipService,
         _setActiveGym = setActiveGym,
-        _gymScopedStateController = gymScopedStateController {
+        _gymScopedStateController = gymScopedStateController,
+        _firestore = firestore ?? FirebaseFirestore.instance {
     _loadCurrentUser();
   }
 
@@ -112,6 +117,7 @@ class AuthProvider extends ChangeNotifier {
     MembershipService? membershipService,
     ActiveGymSetter? setActiveGym,
     GymScopedStateController? gymScopedStateController,
+    FirebaseFirestore? firestore,
   }) {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
@@ -137,6 +143,7 @@ class AuthProvider extends ChangeNotifier {
       membershipService: resolvedMembership,
       setActiveGym: resolvedSetActiveGym,
       gymScopedStateController: gymScopedStateController,
+      firestore: firestore,
     );
   }
 
@@ -200,14 +207,11 @@ class AuthProvider extends ChangeNotifier {
           _user = currentUser.copyWith(
             role: claims['role'] as String? ?? currentUser.role,
           );
-          final prefs = await SharedPreferences.getInstance();
-          final stored = prefs.getString('selectedGymCode');
-          if (stored != null && currentUser.gymCodes.contains(stored)) {
-            _selectedGymCode = stored;
-          } else if (currentUser.gymCodes.isNotEmpty) {
-            _selectedGymCode = currentUser.gymCodes.first;
-            await prefs.setString('selectedGymCode', _selectedGymCode!);
-          }
+          await _syncActiveGymSelection(
+            currentUser: _user!,
+            fbUser: fbUser,
+            claims: claims,
+          );
         }
       } else {
         _user = null;
@@ -460,5 +464,89 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool v) {
     _isLoading = v;
     notifyListeners();
+  }
+
+  Future<void> _syncActiveGymSelection({
+    required UserData currentUser,
+    required fb_auth.User fbUser,
+    required Map<String, dynamic> claims,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('selectedGymCode');
+      final doc = await _firestore.collection('users').doc(currentUser.id).get();
+      final data = doc.data();
+      final firestoreActiveGym = data?['activeGymId'];
+      String? normalizedFirestoreGym =
+          (firestoreActiveGym is String &&
+                  currentUser.gymCodes.contains(firestoreActiveGym))
+              ? firestoreActiveGym
+              : null;
+      final normalizedStoredGym =
+          (stored != null && currentUser.gymCodes.contains(stored))
+              ? stored
+              : null;
+      final claimGym = claims['gymId'];
+      final normalizedClaimGym =
+          (claimGym is String && currentUser.gymCodes.contains(claimGym))
+              ? claimGym
+              : null;
+
+      String? resolvedGym = normalizedFirestoreGym ??
+          normalizedStoredGym ??
+          normalizedClaimGym ??
+          (currentUser.gymCodes.isNotEmpty ? currentUser.gymCodes.first : null);
+
+      if (resolvedGym == null) {
+        _selectedGymCode = null;
+        await prefs.remove('selectedGymCode');
+        return;
+      }
+
+      final inconsistencies = <String, String?>{};
+      if (normalizedFirestoreGym != null &&
+          normalizedFirestoreGym != resolvedGym) {
+        inconsistencies['firestore'] = normalizedFirestoreGym;
+      }
+      if (normalizedStoredGym != null &&
+          normalizedStoredGym != resolvedGym) {
+        inconsistencies['sharedPreferences'] = normalizedStoredGym;
+      }
+      if (normalizedClaimGym != null && normalizedClaimGym != resolvedGym) {
+        inconsistencies['claims'] = normalizedClaimGym;
+      }
+
+      if (inconsistencies.isNotEmpty) {
+        final payload = <String, dynamic>{
+          'resolved': resolvedGym,
+          'firestore': normalizedFirestoreGym,
+          'sharedPreferences': normalizedStoredGym,
+          'claims': normalizedClaimGym,
+          'inconsistencies': inconsistencies,
+        };
+        debugPrint('AuthProvider.activeGymSync: ${jsonEncode(payload)}');
+      }
+
+      if (normalizedStoredGym != resolvedGym) {
+        await prefs.setString('selectedGymCode', resolvedGym);
+      }
+
+      var shouldRefreshClaims = false;
+      if (normalizedFirestoreGym != resolvedGym) {
+        await _setActiveGym(resolvedGym);
+        shouldRefreshClaims = true;
+      } else if (normalizedClaimGym != resolvedGym) {
+        shouldRefreshClaims = true;
+      }
+
+      if (shouldRefreshClaims) {
+        await _authManager.forceRefreshIdToken(fbUser);
+      }
+
+      _selectedGymCode = resolvedGym;
+    } catch (e, st) {
+      debugPrint('AuthProvider.activeGymSync.error: $e');
+      debugPrintStack(label: 'AuthProvider.activeGymSync', stackTrace: st);
+    }
   }
 }
