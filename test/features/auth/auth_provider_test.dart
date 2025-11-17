@@ -33,6 +33,7 @@ void main() {
       Future<void> Function(String gymId)? onSetActiveGym,
       GymScopedStateController? gymStateController,
       FakeFirebaseFirestore? firestore,
+      AuthErrorLogger? errorLogger,
     }) {
       return AuthProvider(
         repo: repo,
@@ -43,6 +44,7 @@ void main() {
         gymScopedStateController:
             gymStateController ?? GymScopedStateController(),
         firestore: firestore,
+        errorLogger: errorLogger,
       );
     }
 
@@ -94,6 +96,147 @@ void main() {
       expect(publicProfileUpdated, isTrue);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), 'gym1');
+    });
+
+    test('initial load ensures membership for resolved gym selection', () async {
+      SharedPreferences.setMockInitialValues({});
+      final firestore = FakeFirebaseFirestore();
+      await firestore.seedDocument('users/uid', {'activeGymId': 'gym1'});
+      final membership = _FakeMembershipService();
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser:
+            FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+        onGetClaims: (_) async => {'role': 'member', 'gymId': 'gym1'},
+      );
+
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+        firestore: firestore,
+      );
+      await _pumpEventQueue();
+
+      expect(provider.gymCode, 'gym1');
+      expect(membership.ensureCalls, 1);
+      expect(membership.lastGymId, 'gym1');
+      expect(membership.lastUid, storedUser.id);
+    });
+
+    test('login ensures membership when gym selection is synced', () async {
+      SharedPreferences.setMockInitialValues({});
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onLogin: (email, _) async => storedUser.copyWith(email: email),
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final membership = _FakeMembershipService();
+      final manager = FakeFirebaseAuthManager(
+        onGetClaims: (_) async => {'role': 'member', 'gymId': 'gym1'},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+      );
+      await _pumpEventQueue();
+      expect(membership.ensureCalls, 0);
+
+      manager.currentUserSetter =
+          FakeFirebaseUser(uid: storedUser.id, email: storedUser.email);
+
+      final result = await provider.login('login@example.com', 'secret');
+      await _pumpEventQueue();
+
+      expect(result.success, isTrue);
+      expect(membership.ensureCalls, 1);
+      expect(membership.lastGymId, 'gym1');
+      expect(membership.lastUid, storedUser.id);
+    });
+
+    test('initial load falls back when membership sync fails', () async {
+      SharedPreferences.setMockInitialValues({'selectedGymCode': 'gym1'});
+      final firestore = FakeFirebaseFirestore();
+      await firestore.seedDocument('users/uid', {'activeGymId': 'gym1'});
+      final loggedContexts = <String?>[];
+      final membership = _FakeMembershipService(
+        onEnsure: (_, __) => Future<void>.error(Exception('fail ensure')),
+      );
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final manager = FakeFirebaseAuthManager(
+        currentUser:
+            FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+        onGetClaims: (_) async => {'role': 'member', 'gymId': 'gym1'},
+      );
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+        firestore: firestore,
+        errorLogger: (error, stackTrace, {context}) {
+          loggedContexts.add(context);
+        },
+      );
+      await _pumpEventQueue();
+
+      expect(provider.gymCode, isNull);
+      expect(provider.gymContextStatus, GymContextStatus.missingSelection);
+      expect(provider.error, 'membership_sync_failed');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), isNull);
+      expect(loggedContexts, contains('activeGymSync.ensureMembership'));
     });
 
     test('initial load syncs active gym when firestore differs from prefs',
