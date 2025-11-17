@@ -239,6 +239,8 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   String? get error => _error;
 
+  Future<void> reloadCurrentUser() => _loadCurrentUser();
+
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
     _error = null;
