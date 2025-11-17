@@ -320,6 +320,7 @@ void main() {
       var isLoading = false;
       when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
       when(() => authProvider.isLoggedIn).thenReturn(false);
+      when(() => authProvider.error).thenReturn(null);
       when(() => authProvider.gymCodes).thenReturn(const <String>[]);
 
       String? pushedRoute;
@@ -339,6 +340,7 @@ void main() {
     testWidgets('navigates to select gym when multiple gyms available', (tester) async {
       when(() => authProvider.isLoading).thenReturn(false);
       when(() => authProvider.isLoggedIn).thenReturn(true);
+      when(() => authProvider.error).thenReturn(null);
       when(() => authProvider.gymCodes).thenReturn(const <String>['G1', 'G2']);
 
       String? pushedRoute;
@@ -358,6 +360,7 @@ void main() {
     testWidgets('navigates to home when single gym available', (tester) async {
       when(() => authProvider.isLoading).thenReturn(false);
       when(() => authProvider.isLoggedIn).thenReturn(true);
+      when(() => authProvider.error).thenReturn(null);
       when(() => authProvider.gymCodes).thenReturn(const <String>['G1']);
 
       String? pushedRoute;
@@ -372,6 +375,65 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(pushedRoute, AppRouter.home);
+    });
+
+    testWidgets('shows error state with retry when claim error occurs', (tester) async {
+      when(() => authProvider.isLoading).thenReturn(false);
+      when(() => authProvider.isLoggedIn).thenReturn(false);
+      when(() => authProvider.error).thenReturn('claim-error');
+      when(() => authProvider.reloadCurrentUser()).thenAnswer((_) async {});
+
+      String? pushedRoute;
+      await tester.pumpWidget(
+        buildSplashApp(
+          provider: authProvider,
+          onRoutePushed: (route) => pushedRoute = route,
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 801));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fehler beim Laden deines Accounts'), findsOneWidget);
+      expect(find.textContaining('claim-error'), findsOneWidget);
+      expect(find.text('Erneut versuchen'), findsOneWidget);
+      expect(pushedRoute, isNull);
+    });
+
+    testWidgets('retry button triggers reload and navigation once resolved',
+        (tester) async {
+      var isLoading = false;
+      String? currentError = 'claim-error';
+
+      when(() => authProvider.isLoading).thenAnswer((_) => isLoading);
+      when(() => authProvider.isLoggedIn).thenReturn(false);
+      when(() => authProvider.error).thenAnswer((_) => currentError);
+      when(() => authProvider.reloadCurrentUser()).thenAnswer((_) async {
+        isLoading = true;
+        authProvider.notifyListeners();
+        await Future<void>.value();
+        isLoading = false;
+        currentError = null;
+        authProvider.notifyListeners();
+      });
+
+      String? pushedRoute;
+      await tester.pumpWidget(
+        buildSplashApp(
+          provider: authProvider,
+          onRoutePushed: (route) => pushedRoute = route,
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 801));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Erneut versuchen'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      verify(() => authProvider.reloadCurrentUser()).called(1);
+      expect(pushedRoute, AppRouter.auth);
     });
   });
 
