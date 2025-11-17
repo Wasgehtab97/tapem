@@ -142,6 +142,48 @@ void main() {
       expect(membership.lastUid, storedUser.id);
     });
 
+    test('initial load does not auto select gym when multi gym selection missing',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final membership = _FakeMembershipService();
+      final manager = FakeFirebaseAuthManager(
+        currentUser: FakeFirebaseUser(uid: storedUser.id, email: storedUser.email),
+        onGetClaims: (_) async => <String, dynamic>{},
+      );
+
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+      );
+      await _pumpEventQueue();
+
+      expect(provider.gymCode, isNull);
+      expect(provider.gymContextStatus, GymContextStatus.missingSelection);
+      expect(membership.ensureCalls, 0);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selectedGymCode'), isNull);
+    });
+
     test('login ensures membership when gym selection is synced', () async {
       SharedPreferences.setMockInitialValues({});
       var storedUser = UserData(
@@ -186,6 +228,54 @@ void main() {
       expect(membership.ensureCalls, 1);
       expect(membership.lastGymId, 'gym1');
       expect(membership.lastUid, storedUser.id);
+    });
+
+    test('login result flags missing gym selection for multi gym users', () async {
+      SharedPreferences.setMockInitialValues({});
+      var storedUser = UserData(
+        id: 'uid',
+        email: 'user@example.com',
+        gymCodes: const ['gym1', 'gym2'],
+        showInLeaderboard: true,
+        publicProfile: true,
+        role: 'member',
+        createdAt: DateTime(2023, 4, 1),
+      );
+      final repo = FakeAuthRepository(
+        onLogin: (email, _) async => storedUser.copyWith(email: email),
+        onGetCurrentUser: () async => storedUser,
+        onSetPublicProfile: (_, __) async {},
+        onSetShowInLeaderboard: (_, __) async {},
+        onSetAvatarKey: (_, __) async {},
+        onSetUsername: (_, __) async {},
+        onIsUsernameAvailable: (_) async => true,
+        onSendPasswordResetEmail: (_) async {},
+        onLogout: () async {},
+      );
+      final membership = _FakeMembershipService();
+      final manager = FakeFirebaseAuthManager(
+        onGetClaims: (_) async => <String, dynamic>{},
+      );
+
+      final provider = buildProvider(
+        repo: repo,
+        authManager: manager,
+        membershipService: membership,
+      );
+      await _pumpEventQueue();
+      expect(membership.ensureCalls, 0);
+
+      manager.currentUserSetter =
+          FakeFirebaseUser(uid: storedUser.id, email: storedUser.email);
+
+      final result = await provider.login('login@example.com', 'secret');
+      await _pumpEventQueue();
+
+      expect(result.success, isTrue);
+      expect(result.requiresGymSelection, isTrue);
+      expect(result.gymContextStatus, GymContextStatus.missingSelection);
+      expect(provider.gymCode, isNull);
+      expect(membership.ensureCalls, 0);
     });
 
     test('initial load falls back when membership sync fails', () async {
