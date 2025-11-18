@@ -30,8 +30,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     ref.listen<AuthViewState>(
       authViewStateProvider,
       (previous, next) => _handleAuthState(next),
-      fireImmediately: true,
     );
+    _handleAuthState(ref.read(authViewStateProvider));
   }
 
   void _handleAuthState(AuthViewState state) {
