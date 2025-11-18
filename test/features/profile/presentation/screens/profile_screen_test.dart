@@ -12,7 +12,7 @@ import 'package:tapem/features/friends/providers/friend_alerts_provider.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/features/settings/presentation/screens/settings_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/main.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 
 import '../../../../helpers/fake_settings_provider.dart';
 

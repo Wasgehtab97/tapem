@@ -7,7 +7,7 @@ import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dar
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 
-import '../../../main.dart'; // für navigatorKey
+import '../../../bootstrap/navigation.dart';
 
 class GlobalNfcListener extends StatefulWidget {
   final Widget child;

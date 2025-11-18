@@ -11,7 +11,7 @@ import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 import 'package:tapem/features/nfc/widgets/global_nfc_listener.dart';
-import 'package:tapem/main.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 
 class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
