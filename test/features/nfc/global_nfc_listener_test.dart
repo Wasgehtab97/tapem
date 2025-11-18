@@ -24,6 +24,15 @@ class _FakeRoute extends Fake implements Route<dynamic> {}
 class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   String? _gymCode;
 
+  auth.GymContextStatus get _resolvedStatus {
+    if (!isLoggedIn) {
+      return auth.GymContextStatus.unknown;
+    }
+    return (_gymCode?.isNotEmpty ?? false)
+        ? auth.GymContextStatus.ready
+        : auth.GymContextStatus.missingSelection;
+  }
+
   void setGymCode(String? code) {
     _gymCode = code;
     notifyListeners();
@@ -52,6 +61,9 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   String? get gymCode => _gymCode;
 
   @override
+  auth.GymContextStatus get gymContextStatus => _resolvedStatus;
+
+  @override
   String? get userId => null;
 
   @override
@@ -73,15 +85,37 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   String? get error => null;
 
   @override
-  Future<void> login(String email, String password) async {}
+  Future<auth.AuthResult> login(String email, String password) async {
+    return auth.AuthResult.success(
+      gymContextStatus: _resolvedStatus,
+      requiresGymSelection:
+          _resolvedStatus == auth.GymContextStatus.missingSelection,
+      missingMembership: false,
+    );
+  }
 
   @override
-  Future<void> register(String email, String password, String initialGymCode) async {}
+  Future<auth.AuthResult> register(
+    String email,
+    String password,
+    String initialGymCode,
+  ) async {
+    setGymCode(initialGymCode);
+    return auth.AuthResult.success(
+      gymContextStatus: _resolvedStatus,
+      requiresGymSelection:
+          _resolvedStatus == auth.GymContextStatus.missingSelection,
+      missingMembership: false,
+    );
+  }
 
   @override
   Future<void> logout() async {
     _gymCode = null;
   }
+
+  @override
+  Future<void> reloadCurrentUser() async {}
 
   @override
   Future<bool> setUsername(String username) async => true;
