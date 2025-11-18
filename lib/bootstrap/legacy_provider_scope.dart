@@ -16,6 +16,7 @@ import '../core/providers/branding_provider.dart';
 import '../core/providers/challenge_provider.dart';
 import '../core/providers/exercise_provider.dart';
 import '../core/providers/gym_provider.dart';
+import '../core/providers/gym_context_state_adapter.dart';
 import '../core/providers/gym_scoped_resettable.dart';
 import '../core/providers/history_provider.dart';
 import '../core/providers/muscle_group_provider.dart';
@@ -99,7 +100,14 @@ class LegacyProviderScope extends ConsumerWidget {
       providers: [
         provider.Provider<SharedPreferences>.value(value: sharedPrefs),
         provider.ChangeNotifierProvider<AuthProvider>.value(value: auth),
-        provider.Provider<GymContextState>.value(value: auth),
+        provider.ChangeNotifierProxyProvider<AuthProvider, GymContextStateAdapter>(
+          create: (_) => GymContextStateAdapter(),
+          update: (_, authProvider, adapter) {
+            final resolved = adapter ?? GymContextStateAdapter();
+            resolved.updateFrom(authProvider);
+            return resolved;
+          },
+        ),
         provider.ChangeNotifierProvider<GymProvider>.value(value: gym),
         provider.ChangeNotifierProvider<BrandingProvider>.value(value: branding),
         provider.Provider<MembershipService>.value(value: membership),
