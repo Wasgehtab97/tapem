@@ -35,12 +35,12 @@ import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.da
 import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen.dart';
 import 'package:tapem/features/community/presentation/screens/community_screen.dart';
 import 'package:tapem/features/settings/presentation/screens/settings_screen.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
 import 'package:tapem/core/widgets/gym_context_guard.dart';
-import 'main.dart';
+import 'bootstrap/navigation.dart';
+import 'bootstrap/providers.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -90,9 +90,9 @@ class AppRouter {
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final authProvider = navigatorKey.currentContext?.read<AuthProvider>();
+    final authState = _readAuthState();
     final isRestricted = FF.limitTabsForMembers &&
-        !(authProvider?.isAdmin ?? false) &&
+        !(authState?.isAdmin ?? false) &&
         restrictedRoutesForMembers.contains(settings.name);
     if (isRestricted) {
       return MaterialPageRoute(builder: (_) => const HomeScreen());
@@ -324,6 +324,19 @@ class AppRouter {
                 body: Center(child: Text('Seite nicht gefunden')),
               ),
         );
+ }
+
+  static AuthViewState? _readAuthState() {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      return null;
+    }
+    try {
+      final container = ProviderScope.containerOf(context);
+      return container.read(authViewStateProvider);
+    } catch (_) {
+      return null;
     }
   }
+}
 }
