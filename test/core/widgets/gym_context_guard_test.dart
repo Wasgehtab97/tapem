@@ -35,11 +35,14 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ChangeNotifierProvider<GymContextState>.value(
+        ChangeNotifierProvider<_FakeGymContext>.value(
           value: fake,
-          child: const MaterialApp(
-            home: GymContextGuard(
-              child: Text('protected'),
+          child: Provider<GymContextState>.value(
+            value: fake,
+            child: const MaterialApp(
+              home: GymContextGuard(
+                child: Text('protected'),
+              ),
             ),
           ),
         ),
@@ -52,16 +55,19 @@ void main() {
       final fake = _FakeGymContext(status: GymContextStatus.missingSelection);
 
       await tester.pumpWidget(
-        ChangeNotifierProvider<GymContextState>.value(
+        ChangeNotifierProvider<_FakeGymContext>.value(
           value: fake,
-          child: MaterialApp(
-            initialRoute: '/guarded',
-            routes: {
-              '/guarded': (_) => const GymContextGuard(
-                    child: Text('protected'),
-                  ),
-              AppRouter.selectGym: (_) => const Text('SelectGym'),
-            },
+          child: Provider<GymContextState>.value(
+            value: fake,
+            child: MaterialApp(
+              initialRoute: '/guarded',
+              routes: {
+                '/guarded': (_) => const GymContextGuard(
+                      child: Text('protected'),
+                    ),
+                AppRouter.selectGym: (_) => const Text('SelectGym'),
+              },
+            ),
           ),
         ),
       );
