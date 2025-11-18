@@ -22,13 +22,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   bool _isRetrying = false;
   bool _didNavigate = false;
   Timer? _navigationTimer;
-  late final ProviderSubscription<AuthViewState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _startedAt = DateTime.now();
-    _authSubscription = ref.listen<AuthViewState>(
+    ref.listen<AuthViewState>(
       authViewStateProvider,
       (previous, next) => _handleAuthState(next),
       fireImmediately: true,
@@ -104,7 +103,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   void dispose() {
-    _authSubscription.close();
     _navigationTimer?.cancel();
     super.dispose();
   }
