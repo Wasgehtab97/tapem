@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../bootstrap/providers.dart';
+
 import '../../../../core/time/time_windows.dart';
 import '../../data/firestore_community_stats_source.dart';
 import '../../domain/models/community_stats.dart';
@@ -16,7 +18,8 @@ class UtcRange {
 }
 
 final currentGymIdProvider = Provider<String>((ref) {
-  throw UnimplementedError('Provide at app root');
+  final authState = ref.watch(authViewStateProvider);
+  return authState.gymCode ?? '';
 });
 
 final communityStatsServiceProvider = Provider<CommunityStatsService>((ref) {
