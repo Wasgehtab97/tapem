@@ -1,64 +1,89 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/app_router.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'dart:async';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../app_router.dart';
+import '../../../../bootstrap/providers.dart';
+import '../../application/splash_flow.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  static const _minimumDisplay = Duration(milliseconds: 800);
+
+  DateTime? _startedAt;
   String? _errorMessage;
   bool _isRetrying = false;
+  bool _didNavigate = false;
+  Timer? _navigationTimer;
+  late final ProviderSubscription<AuthViewState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    _navigateNext();
+    _startedAt = DateTime.now();
+    _authSubscription = ref.listen<AuthViewState>(
+      authViewStateProvider,
+      (previous, next) => _handleAuthState(next),
+      fireImmediately: true,
+    );
   }
 
-  Future<void> _navigateNext({bool skipSplashDelay = false}) async {
-    final authProv = context.read<AuthProvider>();
-
-    // Mindestens 800 ms anzeigen
-    if (!skipSplashDelay) {
-      await Future.delayed(const Duration(milliseconds: 800));
-    }
-
-    // Warten, bis currentUser geladen ist
-    while (authProv.isLoading) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      if (!mounted) return;
-    }
-
-    if (!mounted) return;
-
-    final error = authProv.error;
-    if (error != null && !authProv.isLoggedIn) {
+  void _handleAuthState(AuthViewState state) {
+    if (!mounted || _didNavigate) return;
+    if (state.hasError && !state.isLoggedIn) {
       setState(() {
-        _errorMessage = error;
+        _errorMessage = state.error;
       });
       return;
     }
-
-    if (_errorMessage != null) {
+    if (_errorMessage != null && (!state.hasError || state.isLoggedIn)) {
       setState(() {
         _errorMessage = null;
       });
     }
-
-    // Weiterleiten
-    if (authProv.isLoggedIn) {
-      if (authProv.gymContextStatus == GymContextStatus.ready) {
-        Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
-      } else {
-        Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
-      }
-    } else {
-      Navigator.of(context).pushReplacementNamed(AppRouter.auth);
+    final destination = resolveSplashDestination(state);
+    if (destination == null || _didNavigate) {
+      return;
     }
+    _scheduleNavigation(destination);
+  }
+
+  void _scheduleNavigation(SplashDestination destination) {
+    final startedAt = _startedAt;
+    if (startedAt == null) {
+      _navigate(destination);
+      return;
+    }
+    final elapsed = DateTime.now().difference(startedAt);
+    final remaining = _minimumDisplay - elapsed;
+    final delay = remaining.isNegative ? Duration.zero : remaining;
+    _navigationTimer?.cancel();
+    _navigationTimer = Timer(delay, () {
+      if (mounted) {
+        _navigate(destination);
+      }
+    });
+  }
+
+  void _navigate(SplashDestination destination) {
+    if (_didNavigate || !mounted) return;
+    _didNavigate = true;
+    final routeName = switch (destination) {
+      SplashDestination.auth => AppRouter.auth,
+      SplashDestination.selectGym => AppRouter.selectGym,
+      SplashDestination.home => AppRouter.home,
+    };
+    Navigator.of(context).pushReplacementNamed(
+      routeName,
+      arguments: destination == SplashDestination.home ? 1 : null,
+    );
   }
 
   Future<void> _retryLoadUser() async {
@@ -66,10 +91,8 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() {
       _isRetrying = true;
     });
-
     try {
-      final authProv = context.read<AuthProvider>();
-      await authProv.reloadCurrentUser();
+      await ref.read(authControllerProvider).reloadCurrentUser();
     } finally {
       if (mounted) {
         setState(() {
@@ -77,9 +100,13 @@ class _SplashScreenState extends State<SplashScreen> {
         });
       }
     }
+  }
 
-    if (!mounted) return;
-    await _navigateNext(skipSplashDelay: true);
+  @override
+  void dispose() {
+    _authSubscription.close();
+    _navigationTimer?.cancel();
+    super.dispose();
   }
 
   @override
