@@ -324,7 +324,8 @@ class AppRouter {
                 body: Center(child: Text('Seite nicht gefunden')),
               ),
         );
- }
+    }
+  }
 
   static AuthViewState? _readAuthState() {
     final context = navigatorKey.currentContext;
@@ -338,5 +339,4 @@ class AppRouter {
       return null;
     }
   }
-}
 }
