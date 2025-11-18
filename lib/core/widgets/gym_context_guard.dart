@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/gym_context_state_adapter.dart';
 
 class GymContextGuard extends StatefulWidget {
   const GymContextGuard({super.key, required this.child, this.loadingFallback});
@@ -18,7 +18,7 @@ class _GymContextGuardState extends State<GymContextGuard> {
 
   @override
   Widget build(BuildContext context) {
-    final gymContext = context.watch<GymContextState>();
+    final gymContext = context.watch<GymContextStateAdapter>();
     final status = gymContext.gymContextStatus;
     _maybeRedirect(status);
 

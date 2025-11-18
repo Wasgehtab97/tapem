@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/gym_context_state_adapter.dart';
 import 'package:tapem/core/widgets/gym_context_guard.dart';
 
 class _FakeGymContext extends ChangeNotifier implements GymContextState {
@@ -37,8 +38,13 @@ void main() {
       await tester.pumpWidget(
         ChangeNotifierProvider<_FakeGymContext>.value(
           value: fake,
-          child: Provider<GymContextState>.value(
-            value: fake,
+          child: ChangeNotifierProxyProvider<_FakeGymContext, GymContextStateAdapter>(
+            create: (_) => GymContextStateAdapter(),
+            update: (_, source, adapter) {
+              final resolved = adapter ?? GymContextStateAdapter();
+              resolved.updateFrom(source);
+              return resolved;
+            },
             child: const MaterialApp(
               home: GymContextGuard(
                 child: Text('protected'),
@@ -57,8 +63,13 @@ void main() {
       await tester.pumpWidget(
         ChangeNotifierProvider<_FakeGymContext>.value(
           value: fake,
-          child: Provider<GymContextState>.value(
-            value: fake,
+          child: ChangeNotifierProxyProvider<_FakeGymContext, GymContextStateAdapter>(
+            create: (_) => GymContextStateAdapter(),
+            update: (_, source, adapter) {
+              final resolved = adapter ?? GymContextStateAdapter();
+              resolved.updateFrom(source);
+              return resolved;
+            },
             child: MaterialApp(
               initialRoute: '/guarded',
               routes: {
