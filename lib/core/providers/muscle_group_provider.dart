@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 
-import "../../main.dart";
+import '../../bootstrap/navigation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/gym_provider.dart';
 import '../../features/muscle_group/data/repositories/muscle_group_repository_impl.dart';

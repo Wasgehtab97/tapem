@@ -37,7 +37,7 @@ import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
-import '../../main.dart';
+import '../../bootstrap/navigation.dart';
 
 enum DeviceSetFieldFocus {
   weight,
