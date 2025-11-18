@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_context_state_adapter.dart';
 
 class GymContextGuard extends StatefulWidget {
