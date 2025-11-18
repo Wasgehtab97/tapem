@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
@@ -34,6 +35,31 @@ void main() {
       await provider.loadGymData('gymB');
       expect(provider.gym?.name, 'Gym gymB');
       expect(provider.devices.single.uid, 'gymB-device');
+    });
+
+    test('reset controller clears state and dispose unregisters', () async {
+      final controller = _RecordingGymScopedStateController();
+      final provider = GymProvider(
+        getGymById: _FakeGetGymById((id) async => GymConfig(
+          id: id,
+          code: 'code_$id',
+          name: 'Gym $id',
+        )),
+        getDevicesForGym: _FakeGetDevicesForGym((id) async => [
+          Device(uid: '$id-device', id: 1, name: 'Device $id'),
+        ]),
+      );
+      provider.registerGymScopedResettable(controller);
+
+      await provider.loadGymData('gymA');
+      expect(provider.devices, isNotEmpty);
+
+      controller.resetGymScopedState();
+      expect(provider.devices, isEmpty);
+      expect(provider.gym, isNull);
+
+      provider.dispose();
+      expect(controller.unregisterCalls, 1);
     });
   });
 }
@@ -132,4 +158,14 @@ class _FakeDeviceRepository implements DeviceRepository {
 
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;
+}
+
+class _RecordingGymScopedStateController extends GymScopedStateController {
+  int unregisterCalls = 0;
+
+  @override
+  void unregister(GymScopedResettable resettable) {
+    unregisterCalls++;
+    super.unregister(resettable);
+  }
 }

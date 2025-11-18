@@ -3,36 +3,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import '../../app_router.dart';
 import '../../bootstrap/legacy_provider_scope.dart';
 import '../../bootstrap/navigation.dart';
-import '../../bootstrap/providers.dart';
 import '../../core/providers/app_provider.dart';
 import '../../core/theme/theme_loader.dart';
-import '../../features/community/presentation/providers/community_providers.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/numeric_keypad/overlay_numeric_keypad.dart';
 import '../app/global_listener_host.dart';
 
-class TapemApp extends ConsumerWidget {
+class TapemApp extends StatelessWidget {
   const TapemApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ProviderScope(
-      overrides: [
-        currentGymIdProvider.overrideWith((innerRef) {
-          final authState = innerRef.watch(authViewStateProvider);
-          return authState.gymCode ?? '';
-        }),
-      ],
-      child: const LegacyProviderScope(
-        child: TapemMaterialApp(),
-      ),
+  Widget build(BuildContext context) {
+    return const LegacyProviderScope(
+      child: TapemMaterialApp(),
     );
   }
 }

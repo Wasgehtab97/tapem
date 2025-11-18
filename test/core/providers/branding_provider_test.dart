@@ -30,6 +30,19 @@ void main() {
       expect(provider.branding?.primaryColor, '#222222');
       expect(membership.ensureCalls, 2);
     });
+
+    test('unregisters from controller on dispose', () {
+      final controller = _RecordingGymScopedStateController();
+      final provider = BrandingProvider(
+        source: _FakeBrandingSource({}),
+        membership: _RecordingMembershipService(),
+      );
+      provider.registerGymScopedResettable(controller);
+      expect(controller.registerCalls, 1);
+
+      provider.dispose();
+      expect(controller.unregisterCalls, 1);
+    });
   });
 }
 
@@ -49,5 +62,22 @@ class _RecordingMembershipService implements MembershipService {
   @override
   Future<void> ensureMembership(String gymId, String uid) async {
     ensureCalls++;
+  }
+}
+
+class _RecordingGymScopedStateController extends GymScopedStateController {
+  int registerCalls = 0;
+  int unregisterCalls = 0;
+
+  @override
+  void register(GymScopedResettable resettable) {
+    registerCalls++;
+    super.register(resettable);
+  }
+
+  @override
+  void unregister(GymScopedResettable resettable) {
+    unregisterCalls++;
+    super.unregister(resettable);
   }
 }
