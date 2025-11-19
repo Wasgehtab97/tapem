@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/drafts/session_draft_repository_impl.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/challenge_provider.dart';
+import '../../../core/providers/firebase_provider.dart';
 import '../../../core/providers/gym_scoped_resettable.dart';
 import '../../../core/providers/xp_provider.dart';
 import '../../../core/services/workout_session_duration_service.dart';

@@ -1,8 +1,8 @@
 // lib/features/device/providers/device_riverpod.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/firebase_provider.dart';
 import '../data/repositories/device_repository_impl.dart';
 import '../data/repositories/exercise_repository_impl.dart';
 import '../data/sources/firestore_device_source.dart';
@@ -21,10 +21,6 @@ import '../domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../domain/usecases/update_device_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_usecase.dart';
-
-final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
 
 final deviceRepositoryProvider = Provider<DeviceRepository>((ref) {
   final firestore = ref.watch(firebaseFirestoreProvider);

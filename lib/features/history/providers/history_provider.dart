@@ -9,7 +9,7 @@ import 'package:tapem/features/history/data/repositories/history_repository_impl
 import 'package:tapem/features/history/data/sources/firestore_history_source.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
-import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/core/providers/firebase_provider.dart';
 
 class ChartPoint {
   final DateTime date;

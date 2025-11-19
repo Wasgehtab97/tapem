@@ -1,59 +1,89 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../data/user_search_source.dart';
 import '../domain/models/public_profile.dart';
+import 'friends_data_providers.dart';
 import 'friends_provider.dart';
 
-class FriendSearchProvider extends ChangeNotifier {
-  FriendSearchProvider(this._source);
+class FriendSearchState {
+  const FriendSearchState({
+    this.query = '',
+    this.results = const [],
+    this.loading = false,
+    this.error,
+  });
 
-  final UserSearchSource _source;
+  final String query;
+  final List<PublicProfile> results;
+  final bool loading;
+  final String? error;
 
-  String query = '';
-  List<PublicProfile> results = [];
-  bool loading = false;
-  String? error;
+  FriendSearchState copyWith({
+    String? query,
+    List<PublicProfile>? results,
+    bool? loading,
+    String? error,
+    bool clearError = false,
+  }) {
+    return FriendSearchState(
+      query: query ?? this.query,
+      results: results ?? this.results,
+      loading: loading ?? this.loading,
+      error: clearError ? null : error ?? this.error,
+    );
+  }
+}
 
+class FriendSearchNotifier extends Notifier<FriendSearchState> {
   Timer? _debounce;
-  StreamSubscription? _sub;
+  StreamSubscription<List<PublicProfile>>? _sub;
+  late UserSearchSource _source;
+
+  @override
+  FriendSearchState build() {
+    _source = ref.watch(userSearchSourceProvider);
+    ref.onDispose(() {
+      _debounce?.cancel();
+      _sub?.cancel();
+    });
+    return const FriendSearchState();
+  }
 
   void updateQuery(String value) {
-    query = value;
+    state = state.copyWith(query: value, clearError: true);
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), _startSearch);
   }
 
   void _startSearch() {
     _sub?.cancel();
-    final q = query.trim().toLowerCase();
+    final q = state.query.trim().toLowerCase();
     if (kDebugMode) {
       debugPrint('[FriendSearch] search start "$q"');
     }
     if (q.length < 2) {
-      results = [];
-      loading = false;
-      error = null;
-      notifyListeners();
+      state = state.copyWith(
+        results: const [],
+        loading: false,
+        clearError: true,
+      );
       return;
     }
-    loading = true;
-    error = null;
-    notifyListeners();
+    state = state.copyWith(loading: true, clearError: true);
     _sub = _source.streamByUsernamePrefix(q).listen((res) {
-      results = res;
-      loading = false;
-      notifyListeners();
+      state = state.copyWith(results: res, loading: false);
     }, onError: (e) {
-      error = e.toString();
+      state = state.copyWith(error: e.toString(), loading: false);
       if (kDebugMode) {
         debugPrint('[FriendSearch] error $e');
       }
-      loading = false;
-      notifyListeners();
     });
   }
 
-  FriendSearchCta ctaFor(String uid, FriendsProvider friends) {
+  FriendSearchCta ctaFor(String uid, FriendsState friends) {
     if (friends.isSelf(uid)) return FriendSearchCta.self;
     if (friends.isFriend(uid)) return FriendSearchCta.friend;
     if (friends.hasIncomingPending(uid)) {
@@ -63,13 +93,6 @@ class FriendSearchProvider extends ChangeNotifier {
       return FriendSearchCta.outgoingPending;
     }
     return FriendSearchCta.none;
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _sub?.cancel();
-    super.dispose();
   }
 }
 
@@ -81,3 +104,7 @@ enum FriendSearchCta {
   none,
 }
 
+final friendSearchProvider =
+    NotifierProvider<FriendSearchNotifier, FriendSearchState>(
+  FriendSearchNotifier.new,
+);

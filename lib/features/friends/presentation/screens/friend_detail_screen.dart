@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../data/user_search_source.dart';
-import '../../domain/models/public_profile.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FriendDetailScreen extends StatefulWidget {
+import '../../domain/models/public_profile.dart';
+import '../../providers/friends_riverpod.dart';
+
+class FriendDetailScreen extends ConsumerStatefulWidget {
   const FriendDetailScreen({required this.uid, Key? key}) : super(key: key);
   final String uid;
   static Route<void> route(String uid) =>
       MaterialPageRoute(builder: (_) => FriendDetailScreen(uid: uid));
   @override
-  State<FriendDetailScreen> createState() => _FriendDetailScreenState();
+  ConsumerState<FriendDetailScreen> createState() => _FriendDetailScreenState();
 }
 
-class _FriendDetailScreenState extends State<FriendDetailScreen> {
+class _FriendDetailScreenState extends ConsumerState<FriendDetailScreen> {
   PublicProfile? _profile;
 
   @override
@@ -22,7 +23,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final src = context.read<UserSearchSource>();
+    final src = ref.read(userSearchSourceProvider);
     try {
       final p = await src.getProfile(widget.uid);
       if (mounted) {

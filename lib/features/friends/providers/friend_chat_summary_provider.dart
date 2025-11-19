@@ -1,64 +1,98 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/auth_providers.dart';
 import '../data/friend_chat_api.dart';
 import '../data/friend_chat_source.dart';
 import '../domain/models/friend_chat_summary.dart';
+import 'friends_data_providers.dart';
 
-class FriendChatSummaryProvider extends ChangeNotifier {
-  FriendChatSummaryProvider(this._source, this._api);
+class FriendChatSummaryState {
+  const FriendChatSummaryState({
+    this.selfUid,
+    this.summaries = const <String, FriendChatSummary>{},
+  });
 
-  final FriendChatSource _source;
-  final FriendChatApi _api;
-
-  StreamSubscription<List<FriendChatSummary>>? _sub;
-  Map<String, FriendChatSummary> _summaries = {};
-  String? _selfUid;
-
-  Map<String, FriendChatSummary> get summaries => Map.unmodifiable(_summaries);
+  final String? selfUid;
+  final Map<String, FriendChatSummary> summaries;
 
   int get unreadCount =>
-      _summaries.values.where((element) => element.hasUnread).length;
+      summaries.values.where((element) => element.hasUnread).length;
 
-  void listen(String uid) {
-    if (_selfUid == uid && _sub != null) {
-      return;
-    }
-    _sub?.cancel();
-    _selfUid = uid;
-    _sub = _source.watchSummaries(uid).listen((event) {
-      _summaries = {for (final s in event) s.friendUid: s};
-      notifyListeners();
-    });
+  FriendChatSummary? summaryFor(String friendUid) => summaries[friendUid];
+
+  FriendChatSummaryState copyWith({
+    String? selfUid,
+    Map<String, FriendChatSummary>? summaries,
+  }) {
+    return FriendChatSummaryState(
+      selfUid: selfUid ?? this.selfUid,
+      summaries: summaries ?? this.summaries,
+    );
+  }
+}
+
+class FriendChatSummaryNotifier extends Notifier<FriendChatSummaryState> {
+  StreamSubscription<List<FriendChatSummary>>? _sub;
+  late FriendChatSource _source;
+  late FriendChatApi _api;
+
+  @override
+  FriendChatSummaryState build() {
+    _source = ref.watch(friendChatSourceProvider);
+    _api = ref.watch(friendChatApiProvider);
+
+    ref.onDispose(() => _sub?.cancel());
+
+    ref.listen<AuthViewState>(
+      authViewStateProvider,
+      (previous, next) {
+        final userChanged = previous?.userId != next.userId;
+        final gymChanged = previous?.gymCode != next.gymCode;
+        final uid = next.userId;
+        if (!next.isLoggedIn || uid == null || uid.isEmpty) {
+          _sub?.cancel();
+          _sub = null;
+          state = const FriendChatSummaryState();
+          return;
+        }
+        if (userChanged || gymChanged || state.selfUid != uid) {
+          _listen(uid);
+        }
+      },
+      fireImmediately: true,
+    );
+
+    return const FriendChatSummaryState();
   }
 
-  FriendChatSummary? summaryFor(String friendUid) => _summaries[friendUid];
-
   Future<void> markRead(String friendUid) async {
-    final summary = _summaries[friendUid];
+    final summary = state.summaries[friendUid];
     if (summary != null && !summary.hasUnread) {
       return;
     }
-    try {
-      await _api.markConversationRead(friendUid);
-      if (summary != null) {
-        _summaries = {
-          ..._summaries,
-          friendUid: summary.copyWith(hasUnread: false),
-        };
-        notifyListeners();
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[FriendChat] markRead failed: $e');
-      }
+    await _api.markConversationRead(friendUid);
+    if (summary != null) {
+      final nextSummaries = Map<String, FriendChatSummary>.from(state.summaries);
+      nextSummaries[friendUid] = summary.copyWith(hasUnread: false);
+      state = state.copyWith(summaries: nextSummaries);
     }
   }
 
-  @override
-  void dispose() {
+  void _listen(String uid) {
     _sub?.cancel();
-    super.dispose();
+    state = FriendChatSummaryState(selfUid: uid);
+    _sub = _source.watchSummaries(uid).listen((event) {
+      final next = {
+        for (final summary in event) summary.friendUid: summary,
+      };
+      state = state.copyWith(summaries: next);
+    });
   }
 }
+
+final friendChatSummaryProvider =
+    NotifierProvider<FriendChatSummaryNotifier, FriendChatSummaryState>(
+  FriendChatSummaryNotifier.new,
+);

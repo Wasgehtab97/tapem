@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import '../../providers/friends_provider.dart';
-import '../../providers/friend_alerts_provider.dart';
-import '../../providers/friend_search_provider.dart';
-import '../../providers/friend_presence_provider.dart';
-import '../../providers/friend_chat_summary_provider.dart';
-import '../../data/user_search_source.dart';
+import '../../providers/friends_riverpod.dart';
 import '../../domain/models/public_profile.dart';
 import '../widgets/friend_list_tile.dart';
 
-class FriendsHomeScreen extends StatefulWidget {
+class FriendsHomeScreen extends ConsumerStatefulWidget {
   const FriendsHomeScreen({Key? key}) : super(key: key);
   static Route<void> route() =>
       MaterialPageRoute(builder: (_) => const FriendsHomeScreen());
   @override
-  State<FriendsHomeScreen> createState() => _FriendsHomeScreenState();
+  ConsumerState<FriendsHomeScreen> createState() => _FriendsHomeScreenState();
 }
 
-class _FriendsHomeScreenState extends State<FriendsHomeScreen>
+class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
@@ -28,7 +24,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   Future<PublicProfile?> _fetchProfile(String uid) {
     return _profileCache[uid] ??=
-        context.read<UserSearchSource>().getProfile(uid).then<PublicProfile?>
+        ref.read(userSearchSourceProvider).getProfile(uid).then<PublicProfile?>
             ((value) => value, onError: (_, __) => null);
   }
 
@@ -38,15 +34,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index == 1) {
-        context.read<FriendsProvider>().markIncomingSeen();
-      }
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final uid = context.read<AuthProvider>().userId;
-      if (uid != null) {
-        context.read<FriendsProvider>().listen(uid);
-        context.read<FriendChatSummaryProvider>().listen(uid);
-        context.read<FriendAlertsProvider>().listen(uid);
+        ref.read(friendsProvider.notifier).markIncomingSeen();
       }
     });
   }
@@ -60,9 +48,11 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<FriendsProvider>();
-    final searchProv = context.watch<FriendSearchProvider>();
-    final chatSummaries = context.watch<FriendChatSummaryProvider>();
+    final friendsState = ref.watch(friendsProvider);
+    final searchState = ref.watch(friendSearchProvider);
+    final chatSummaries = ref.watch(friendChatSummaryProvider);
+    final presenceState = ref.watch(friendPresenceProvider);
+    final authState = ref.watch(authViewStateProvider);
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -79,24 +69,28 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _friendsTab(prov, chatSummaries, loc),
-          _requestsTab(prov, loc),
-          _searchTab(prov, searchProv, loc),
+          _friendsTab(friendsState, chatSummaries, presenceState, loc),
+          _requestsTab(friendsState, loc),
+          _searchTab(friendsState, searchState, loc, authState),
         ],
       ),
     );
   }
 
-  Widget _friendsTab(FriendsProvider prov, FriendChatSummaryProvider chats,
-      AppLocalizations loc) {
-    if (prov.friends.isEmpty) {
+  Widget _friendsTab(
+    FriendsState friends,
+    FriendChatSummaryState chats,
+    FriendPresenceState presence,
+    AppLocalizations loc,
+  ) {
+    final friendsList = friends.friends;
+    if (friendsList.isEmpty) {
       return Center(child: Text(loc.friends_empty_friends));
     }
-    final presence = context.watch<FriendPresenceProvider>();
     return ListView.builder(
-      itemCount: prov.friends.length,
+      itemCount: friendsList.length,
       itemBuilder: (_, i) {
-        final f = prov.friends[i];
+        final f = friendsList[i];
         return FutureBuilder<PublicProfile?>(
           future: _fetchProfile(f.friendUid),
           builder: (context, snapshot) {
@@ -123,16 +117,16 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
     );
   }
 
-  Widget _requestsTab(FriendsProvider prov, AppLocalizations loc) {
+  Widget _requestsTab(FriendsState friends, AppLocalizations loc) {
     return Column(
       children: [
         Expanded(
-          child: prov.incomingPending.isEmpty
+          child: friends.incomingPending.isEmpty
               ? Center(child: Text(loc.friends_empty_incoming))
               : ListView.builder(
-                  itemCount: prov.incomingPending.length,
+                  itemCount: friends.incomingPending.length,
                   itemBuilder: (_, i) {
-                    final r = prov.incomingPending[i];
+                    final r = friends.incomingPending[i];
                     return FutureBuilder<PublicProfile?>(
                       future: _fetchProfile(r.fromUserId),
                       builder: (context, snapshot) {
@@ -149,7 +143,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                               IconButton(
                                 icon: const Icon(Icons.check),
                                 onPressed: () async {
-                                  await prov.accept(r.fromUserId);
+                                  await ref
+                                      .read(friendsProvider.notifier)
+                                      .accept(r.fromUserId);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(loc.friends_snackbar_accepted)),
                                   );
@@ -158,7 +154,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                               IconButton(
                                 icon: const Icon(Icons.close),
                                 onPressed: () async {
-                                  await prov.decline(r.fromUserId);
+                                  await ref
+                                      .read(friendsProvider.notifier)
+                                      .decline(r.fromUserId);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(loc.friends_snackbar_declined)),
                                   );
@@ -174,12 +172,12 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
         ),
         const Divider(),
         Expanded(
-          child: prov.outgoingPending.isEmpty
+          child: friends.outgoingPending.isEmpty
               ? Center(child: Text(loc.friends_empty_outgoing))
               : ListView.builder(
-                  itemCount: prov.outgoingPending.length,
+                  itemCount: friends.outgoingPending.length,
                   itemBuilder: (_, i) {
-                    final r = prov.outgoingPending[i];
+                    final r = friends.outgoingPending[i];
                     return FutureBuilder<PublicProfile?>(
                       future: _fetchProfile(r.toUserId),
                       builder: (context, snapshot) {
@@ -193,7 +191,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                           trailing: IconButton(
                             icon: const Icon(Icons.cancel),
                             onPressed: () async {
-                              await prov.cancel(r.toUserId);
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .cancel(r.toUserId);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_canceled)),
                               );
@@ -240,7 +240,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   AppRouter.friendChat,
                   arguments: {'uid': uid, 'name': name},
                 );
-                context.read<FriendChatSummaryProvider>().markRead(uid);
+                ref.read(friendChatSummaryProvider.notifier).markRead(uid);
               },
             ),
             ListTile(
@@ -272,33 +272,36 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
 
   Future<void> _confirmRemove(String uid, String name) async {
     final loc = AppLocalizations.of(context)!;
-    final prov = context.read<FriendsProvider>();
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Consumer<FriendsProvider>(
-        builder: (context, p, _) => AlertDialog(
-          title: Text(loc.friends_remove_title),
-          content: Text(loc.friends_remove_message(name)),
-          actions: [
-            TextButton(
-              onPressed: p.isBusy ? null : () => Navigator.pop(ctx, false),
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final state = ref.watch(friendsProvider);
+          final notifier = ref.read(friendsProvider.notifier);
+          return AlertDialog(
+            title: Text(loc.friends_remove_title),
+            content: Text(loc.friends_remove_message(name)),
+            actions: [
+              TextButton(
+              onPressed:
+                  state.isBusy ? null : () => Navigator.pop(ctx, false),
               child: Text(loc.friends_remove_no),
             ),
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
-              onPressed: p.isBusy
+              onPressed: state.isBusy
                   ? null
                   : () async {
                       try {
-                        await prov.remove(uid);
+                        await notifier.remove(uid);
                         if (ctx.mounted) Navigator.pop(ctx, true);
                       } catch (_) {
                         if (ctx.mounted) Navigator.pop(ctx, false);
                       }
                     },
-              child: p.isBusy
+              child: state.isBusy
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -307,7 +310,8 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   : Text(loc.friends_remove_yes),
             ),
           ],
-        ),
+          );
+        },
       ),
     );
     if (!mounted) return;
@@ -315,15 +319,19 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.friends_removed_snackbar)),
       );
-    } else if (prov.error != null) {
+    } else if (ref.read(friendsProvider).error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(prov.error!)),
+        SnackBar(content: Text(ref.read(friendsProvider).error!)),
       );
     }
   }
 
   Widget _searchTab(
-      FriendsProvider prov, FriendSearchProvider searchProv, AppLocalizations loc) {
+    FriendsState friends,
+    FriendSearchState searchState,
+    AppLocalizations loc,
+    AuthViewState authState,
+  ) {
     return Column(
       children: [
         Padding(
@@ -331,30 +339,31 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
           child: TextField(
             controller: _searchCtrl,
             onChanged: (v) =>
-                context.read<FriendSearchProvider>().updateQuery(v),
+                ref.read(friendSearchProvider.notifier).updateQuery(v),
             decoration: InputDecoration(labelText: loc.friends_tab_search),
           ),
         ),
         Expanded(
           child: Builder(
             builder: (_) {
-              if (searchProv.loading) {
+              if (searchState.loading) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (_searchCtrl.text.trim().length < 2) {
                 return Center(child: Text(loc.friends_search_min_chars));
               }
-              if (searchProv.error != null) {
-                return Center(child: Text(searchProv.error!));
+              if (searchState.error != null) {
+                return Center(child: Text(searchState.error!));
               }
-              if (searchProv.results.isEmpty) {
+              if (searchState.results.isEmpty) {
                 return Center(child: Text(loc.friends_empty_search));
               }
               return ListView.builder(
-                itemCount: searchProv.results.length,
+                itemCount: searchState.results.length,
                 itemBuilder: (_, i) {
-                  final p = searchProv.results[i];
-                  final cta = searchProv.ctaFor(p.uid, prov);
+                  final p = searchState.results[i];
+                  final cta =
+                      ref.read(friendSearchProvider.notifier).ctaFor(p.uid, friends);
                   Widget trailing;
                   switch (cta) {
                     case FriendSearchCta.self:
@@ -370,7 +379,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                           Text(loc.friends_cta_pending),
                           TextButton(
                             onPressed: () async {
-                              await prov.cancel(p.uid);
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .cancel(p.uid);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_canceled)),
                               );
@@ -386,7 +397,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                         children: [
                           TextButton(
                             onPressed: () async {
-                              await prov.accept(p.uid);
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .accept(p.uid);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_accepted)),
                               );
@@ -395,7 +408,9 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                           ),
                           TextButton(
                             onPressed: () async {
-                              await prov.decline(p.uid);
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .decline(p.uid);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(loc.friends_snackbar_declined)),
                               );
@@ -409,12 +424,14 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                       trailing = TextButton(
                         onPressed: () async {
                           try {
-                            await prov.sendRequest(p.uid);
+                            await ref
+                                .read(friendsProvider.notifier)
+                                .sendRequest(p.uid);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(loc.friends_snackbar_sent)),
                             );
                           } catch (_) {
-                            final msg = prov.error ?? 'Error';
+                            final msg = ref.read(friendsProvider).error ?? 'Error';
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(msg)),
                             );
@@ -426,7 +443,7 @@ class _FriendsHomeScreenState extends State<FriendsHomeScreen>
                   }
                   return FriendListTile(
                     profile: p,
-                    gymId: p.primaryGymCode,
+                    gymId: p.primaryGymCode ?? authState.gymCode,
                     subtitle: p.primaryGymCode,
                     trailing: trailing,
                   );

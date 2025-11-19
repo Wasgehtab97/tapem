@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
-import 'package:tapem/features/friends/providers/friends_provider.dart';
+import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -23,23 +24,24 @@ class LeaderboardEntry {
 
 enum _LeaderboardMode { gym, friends }
 
-class LeaderboardScreen extends StatefulWidget {
+class LeaderboardScreen extends riverpod.ConsumerStatefulWidget {
   const LeaderboardScreen({super.key, required this.title});
 
   final String title;
 
   @override
-  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+  riverpod.ConsumerState<LeaderboardScreen> createState() =>
+      _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> {
   _LeaderboardMode _mode = _LeaderboardMode.gym;
   List<LeaderboardEntry>? _gymEntries;
   List<LeaderboardEntry>? _friendEntries;
   bool _loadingGym = false;
   bool _loadingFriends = false;
   AuthProvider? _authProvider;
-  FriendsProvider? _friendsProvider;
+  riverpod.ProviderSubscription<FriendsState>? _friendsStateSub;
 
   Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
     if (gymIds.isEmpty) {
@@ -81,6 +83,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       _refreshGym();
       _refreshFriends();
     });
+    _friendsStateSub = ref.listen<FriendsState>(
+      friendsProvider,
+      (previous, next) {
+        final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
+        final nextIds = next.friends.map((f) => f.friendUid).toSet();
+        if (prevIds != nextIds) {
+          _refreshFriends();
+        }
+      },
+    );
   }
 
   @override
@@ -92,20 +104,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       _authProvider = auth;
       _authProvider?.addListener(_handleAuthChanged);
     }
-    final friends = context.read<FriendsProvider>();
-    if (!identical(friends, _friendsProvider)) {
-      _friendsProvider?.removeListener(_handleFriendsChanged);
-      _friendsProvider = friends;
-      _friendsProvider?.addListener(_handleFriendsChanged);
-    }
   }
 
   void _handleAuthChanged() {
     _refreshGym();
-    _refreshFriends();
-  }
-
-  void _handleFriendsChanged() {
     _refreshFriends();
   }
 
@@ -162,7 +164,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   Future<void> _refreshFriends() async {
     final auth = _authProvider ?? context.read<AuthProvider>();
-    final friendsProv = _friendsProvider ?? context.read<FriendsProvider>();
+    final friendsState = ref.read(friendsProvider);
     final userId = auth.userId;
     if (userId == null) {
       if (!mounted) return;
@@ -175,7 +177,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     try {
       final fs = FirebaseFirestore.instance;
       final friendIds = {
-        for (final f in friendsProv.friends) f.friendUid,
+        for (final f in friendsState.friends) f.friendUid,
         userId,
       };
       final futures = friendIds.map((uid) async {
@@ -310,7 +312,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void dispose() {
     _authProvider?.removeListener(_handleAuthChanged);
-    _friendsProvider?.removeListener(_handleFriendsChanged);
+    _friendsStateSub?.close();
     super.dispose();
   }
 }

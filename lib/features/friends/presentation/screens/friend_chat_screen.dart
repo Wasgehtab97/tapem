@@ -1,16 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
-import '../../data/friend_chat_api.dart';
-import '../../data/friend_chat_source.dart';
-import '../../domain/models/friend_message.dart';
-import '../../providers/friend_chat_summary_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import '../../domain/models/friend_message.dart';
+import '../../providers/friends_riverpod.dart';
 
-class FriendChatScreen extends StatefulWidget {
+class FriendChatScreen extends ConsumerStatefulWidget {
   const FriendChatScreen({super.key, required this.friendUid, required this.friendName});
 
   final String friendUid;
@@ -23,10 +21,10 @@ class FriendChatScreen extends StatefulWidget {
   }
 
   @override
-  State<FriendChatScreen> createState() => _FriendChatScreenState();
+  ConsumerState<FriendChatScreen> createState() => _FriendChatScreenState();
 }
 
-class _FriendChatScreenState extends State<FriendChatScreen> {
+class _FriendChatScreenState extends ConsumerState<FriendChatScreen> {
   final _messageCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   bool _sending = false;
@@ -35,7 +33,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
+      ref.read(friendChatSummaryProvider.notifier).markRead(widget.friendUid);
     });
   }
 
@@ -60,10 +58,10 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
     }
     setState(() => _sending = true);
     try {
-      await context.read<FriendChatApi>().sendMessage(widget.friendUid, text);
+      await ref.read(friendChatApiProvider).sendMessage(widget.friendUid, text);
       _messageCtrl.clear();
       FocusScope.of(context).unfocus();
-      await context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
+      await ref.read(friendChatSummaryProvider.notifier).markRead(widget.friendUid);
       _scrollToBottom();
       if (kDebugMode) {
         debugPrint('[FriendChatScreen] sendMessage success friend=${widget.friendUid}');
@@ -105,7 +103,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
       );
     }
     if (last.senderId != meUid) {
-      context.read<FriendChatSummaryProvider>().markRead(widget.friendUid);
+      ref.read(friendChatSummaryProvider.notifier).markRead(widget.friendUid);
     }
     _scrollToBottom();
   }
@@ -113,7 +111,7 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
+    final auth = ref.watch(authViewStateProvider);
     final meUid = auth.userId;
     if (meUid == null) {
       return Scaffold(
@@ -121,8 +119,9 @@ class _FriendChatScreenState extends State<FriendChatScreen> {
         body: Center(child: Text(loc.friend_chat_login_required)),
       );
     }
-    final stream =
-        context.watch<FriendChatSource>().watchMessages(meUid, widget.friendUid);
+    final stream = ref
+        .watch(friendChatSourceProvider)
+        .watchMessages(meUid, widget.friendUid);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.friendName),
