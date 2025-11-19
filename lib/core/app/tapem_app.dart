@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../bootstrap/legacy_provider_scope.dart';
@@ -26,14 +26,14 @@ class TapemApp extends StatelessWidget {
   }
 }
 
-class TapemMaterialApp extends StatelessWidget {
+class TapemMaterialApp extends ConsumerWidget {
   const TapemMaterialApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = context.watch<ThemeLoader>().theme;
-    final locale = context.watch<AppProvider>().locale;
-    final keypad = context.read<OverlayNumericKeypadController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeLoaderProvider).theme;
+    final locale = ref.watch(appProvider).locale;
+    final keypad = ref.watch(overlayNumericKeypadControllerProvider);
 
     return MaterialApp(
       navigatorKey: navigatorKey,

@@ -3,11 +3,15 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
+import '../providers/auth_provider.dart';
+import '../providers/auth_providers.dart';
+import '../providers/branding_provider.dart';
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
 import 'workout_timer_telemetry.dart';
@@ -549,5 +553,29 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     await prefs.setStringList(_queueKey, remaining);
   }
 }
+
+final workoutSessionDurationServiceProvider =
+    ChangeNotifierProvider<WorkoutSessionDurationService>((ref) {
+  final service = WorkoutSessionDurationService();
+
+  Future<void> update() {
+    final auth = ref.read(authControllerProvider);
+    final branding = ref.read(brandingProvider);
+    return service.setActiveContext(
+      uid: auth.userId,
+      gymId: branding.gymId,
+    );
+  }
+
+  unawaited(update());
+  ref.onDispose(service.dispose);
+  ref.listen<AuthProvider>(authControllerProvider, (_, __) {
+    unawaited(update());
+  });
+  ref.listen<BrandingProvider>(brandingProvider, (_, __) {
+    unawaited(update());
+  });
+  return service;
+});
 
 

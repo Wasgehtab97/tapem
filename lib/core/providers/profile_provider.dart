@@ -4,11 +4,13 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/models/favorite_exercise_usage.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/storage/profile_cache_store.dart';
+import 'auth_providers.dart';
 
 class ProfileProvider extends ChangeNotifier {
   ProfileProvider({
@@ -667,6 +669,19 @@ class ProfileProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final profileProvider = ChangeNotifierProvider<ProfileProvider>((ref) {
+  final provider = ProfileProvider();
+  ref.onDispose(provider.dispose);
+
+  void update(AuthViewState state) {
+    provider.updateUserContext(userId: state.userId);
+  }
+
+  update(ref.read(authViewStateProvider));
+  ref.listen<AuthViewState>(authViewStateProvider, (_, next) => update(next));
+  return provider;
+});
 
 class _ExerciseAggregate {
   _ExerciseAggregate({

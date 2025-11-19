@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/storage/rest_stats_cache_store.dart';
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import 'package:tapem/features/rest_stats/domain/models/rest_stat_summary.dart';
@@ -185,3 +186,11 @@ class RestStatsProvider extends ChangeNotifier {
     await load(gymId: gymId, userId: userId, forceRefresh: true);
   }
 }
+
+final restStatsProvider = ChangeNotifierProvider<RestStatsProvider>((ref) {
+  final provider = RestStatsProvider(
+    service: ref.read(restStatsServiceProvider),
+  );
+  ref.onDispose(provider.dispose);
+  return provider;
+});

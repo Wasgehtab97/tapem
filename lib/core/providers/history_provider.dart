@@ -1,6 +1,7 @@
 // lib/core/providers/history_provider.dart
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/history/data/sources/firestore_history_source.dart';
@@ -112,3 +113,9 @@ class HistoryProvider extends ChangeNotifier {
         _e1rmChart.map((e) => e.value).reduce((a, b) => a > b ? a : b);
   }
 }
+
+final historyProvider = ChangeNotifierProvider<HistoryProvider>((ref) {
+  final provider = HistoryProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});

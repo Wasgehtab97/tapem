@@ -4,6 +4,10 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
@@ -12,6 +16,7 @@ import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.d
 import 'package:tapem/features/profile/domain/models/powerlifting_assignment.dart';
 import 'package:tapem/features/profile/domain/models/powerlifting_discipline.dart';
 import 'package:tapem/features/profile/domain/models/powerlifting_record.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/services/membership_service.dart';
 
 enum PowerliftingMetric {
@@ -624,6 +629,38 @@ class PowerliftingProvider extends ChangeNotifier
     _logSubscriptions.clear();
   }
 }
+
+final powerliftingProvider = ChangeNotifierProvider<PowerliftingProvider>((ref) {
+  final provider = PowerliftingProvider(
+    firestore: FirebaseFirestore.instance,
+    getDevicesForGym: ref.read(getDevicesForGymProvider),
+    getExercisesForDevice: ref.read(getExercisesForDeviceProvider),
+    membership: ref.read(membershipServiceProvider),
+  );
+
+  provider.registerGymScopedResettable(
+    ref.read(gymScopedStateControllerProvider),
+  );
+
+  Future<void> update() {
+    final auth = ref.read(authControllerProvider);
+    final gym = ref.read(gymProvider);
+    return provider.updateContext(
+      userId: auth.userId,
+      gymId: gym.currentGymId,
+    );
+  }
+
+  ref.onDispose(provider.dispose);
+  ref.listen<AuthProvider>(authControllerProvider, (_, __) {
+    unawaited(update());
+  });
+  ref.listen<GymProvider>(gymProvider, (_, __) {
+    unawaited(update());
+  });
+  unawaited(update());
+  return provider;
+});
 
 class _PowerliftingLabels {
   _PowerliftingLabels({required this.deviceName, this.exerciseName});

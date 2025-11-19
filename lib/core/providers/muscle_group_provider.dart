@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
@@ -483,3 +484,11 @@ class MuscleGroupProvider extends ChangeNotifier {
     return group.name.trim().toLowerCase() == group.region.name.toLowerCase();
   }
 }
+
+final muscleGroupProvider = ChangeNotifierProvider<MuscleGroupProvider>((ref) {
+  final provider = MuscleGroupProvider(
+    membership: ref.read(membershipServiceProvider),
+  );
+  ref.onDispose(provider.dispose);
+  return provider;
+});

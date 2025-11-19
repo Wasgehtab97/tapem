@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'member_number_utils.dart';
 
@@ -65,3 +66,9 @@ class FirestoreMembershipService implements MembershipService {
     }
   }
 }
+
+final membershipServiceProvider = Provider<MembershipService>((ref) {
+  return FirestoreMembershipService(
+    firestore: FirebaseFirestore.instance,
+  );
+});

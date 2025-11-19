@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/features/challenges/domain/models/badge.dart';
 import 'package:tapem/features/challenges/domain/models/completed_challenge.dart';
@@ -73,3 +74,9 @@ class ChallengeProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final challengeProvider = ChangeNotifierProvider<ChallengeProvider>((ref) {
+  final provider = ChallengeProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});
