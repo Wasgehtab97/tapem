@@ -3,13 +3,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
-import 'package:tapem/features/friends/providers/friend_alerts_provider.dart';
+import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -32,14 +33,14 @@ import 'profile_stats_screen.dart';
 
 const bool enableFriends = true;
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends riverpod.ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  riverpod.ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
   @override
   void initState() {
@@ -48,7 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
-        context.read<FriendAlertsProvider>().listen(uid);
         context.read<SettingsProvider>().load(uid);
         final gymId = context.read<AuthProvider>().gymCode ?? '';
         context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
@@ -196,8 +196,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const SizedBox.shrink(),
         actions: [
           if (enableFriends)
-            Consumer<FriendAlertsProvider>(
-              builder: (context, alerts, _) {
+            riverpod.Consumer(
+              builder: (context, ref, _) {
+                final alerts = ref.watch(friendAlertsProvider);
                 return IconButton(
                   icon: Stack(
                     children: [

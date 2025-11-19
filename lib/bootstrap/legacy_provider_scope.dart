@@ -41,18 +41,6 @@ import '../features/device/domain/usecases/update_exercise_usecase.dart';
 import '../features/device/presentation/controllers/workout_day_controller.dart';
 import '../features/device/providers/device_riverpod.dart';
 import '../features/device/providers/workout_day_controller_provider.dart';
-import '../features/friends/data/friend_chat_api.dart';
-import '../features/friends/data/friend_chat_source.dart';
-import '../features/friends/data/friends_api.dart';
-import '../features/friends/data/friends_source.dart';
-import '../features/friends/data/user_search_source.dart';
-import '../features/friends/providers/friend_alerts_provider.dart';
-import '../features/friends/providers/friend_calendar_provider.dart';
-import '../features/friends/providers/friend_chat_summary_provider.dart';
-import '../features/friends/providers/friend_presence_provider.dart';
-import '../features/friends/providers/friend_search_provider.dart';
-import '../features/friends/providers/friends_provider.dart';
-import '../features/friends/providers/friends_riverpod.dart';
 import '../features/nfc/data/nfc_service.dart';
 import '../features/nfc/domain/usecases/read_nfc_code.dart';
 import '../features/nfc/domain/usecases/write_nfc_tag.dart';
@@ -150,37 +138,6 @@ class LegacyProviderScope extends ConsumerWidget {
       ),
       provider.ChangeNotifierProvider<SettingsProvider>.value(
         value: ref.watch(settingsProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendAlertsProvider>.value(
-        value: ref.watch(friendAlertsProvider),
-      ),
-      provider.Provider<FriendsApi>.value(value: ref.watch(friendsApiProvider)),
-      provider.Provider<FriendsSource>.value(
-        value: ref.watch(friendsSourceProvider),
-      ),
-      provider.Provider<UserSearchSource>.value(
-        value: ref.watch(userSearchSourceProvider),
-      ),
-      provider.Provider<FriendChatApi>.value(
-        value: ref.watch(friendChatApiProvider),
-      ),
-      provider.Provider<FriendChatSource>.value(
-        value: ref.watch(friendChatSourceProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendsProvider>.value(
-        value: ref.watch(friendsProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendChatSummaryProvider>.value(
-        value: ref.watch(friendChatSummaryProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendSearchProvider>.value(
-        value: ref.watch(friendSearchProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendCalendarProvider>.value(
-        value: ref.watch(friendCalendarProvider),
-      ),
-      provider.ChangeNotifierProvider<FriendPresenceProvider>.value(
-        value: ref.watch(friendPresenceProvider),
       ),
       provider.ChangeNotifierProvider<OverlayNumericKeypadController>.value(
         value: ref.watch(overlayNumericKeypadControllerProvider),

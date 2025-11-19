@@ -1,36 +1,76 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FriendCalendarProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
-  String? _activeFriendUid;
-  List<String> _trainingDates = [];
-  Map<String, String> _gymIdsByDate = {};
-  bool _isLoading = false;
-  String? _error;
+import '../../../core/providers/firebase_provider.dart';
 
-  FriendCalendarProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+class FriendCalendarState {
+  const FriendCalendarState({
+    this.trainingDates = const [],
+    this.gymIdsByDate = const <String, String>{},
+    this.isLoading = false,
+    this.error,
+    this.activeFriendUid,
+  });
 
-  List<String> get trainingDates => List.unmodifiable(_trainingDates);
-  Map<String, String> get gymIdsByDate => Map.unmodifiable(_gymIdsByDate);
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  final List<String> trainingDates;
+  final Map<String, String> gymIdsByDate;
+  final bool isLoading;
+  final String? error;
+  final String? activeFriendUid;
+
+  FriendCalendarState copyWith({
+    List<String>? trainingDates,
+    Map<String, String>? gymIdsByDate,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+    String? activeFriendUid,
+  }) {
+    return FriendCalendarState(
+      trainingDates: trainingDates ?? this.trainingDates,
+      gymIdsByDate: gymIdsByDate ?? this.gymIdsByDate,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : error ?? this.error,
+      activeFriendUid: activeFriendUid ?? this.activeFriendUid,
+    );
+  }
+}
+
+class FriendCalendarNotifier extends Notifier<FriendCalendarState> {
+  late FirebaseFirestore _firestore;
+
+  @override
+  FriendCalendarState build() {
+    _firestore = ref.watch(firebaseFirestoreProvider);
+    return const FriendCalendarState();
+  }
 
   Future<void> setActiveFriend(String uid) async {
-    if (_activeFriendUid == uid) return;
-    _activeFriendUid = uid;
+    if (state.activeFriendUid == uid) {
+      return;
+    }
+    state = state.copyWith(
+      activeFriendUid: uid,
+      trainingDates: const [],
+      gymIdsByDate: const {},
+      isLoading: true,
+      clearError: true,
+    );
     await _load();
   }
 
   Future<void> _load() async {
-    final uid = _activeFriendUid;
-    if (uid == null) return;
-    _isLoading = true;
-    _error = null;
-    _trainingDates = [];
-    _gymIdsByDate = {};
-    notifyListeners();
+    final uid = state.activeFriendUid;
+    if (uid == null || uid.isEmpty) {
+      state = state.copyWith(
+        trainingDates: const [],
+        gymIdsByDate: const {},
+        isLoading: false,
+        clearError: true,
+      );
+      return;
+    }
+
     try {
       final year = DateTime.now().year;
       final start = DateTime(year, 1, 1);
@@ -41,7 +81,9 @@ class FriendCalendarProvider extends ChangeNotifier {
           .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
           .get();
-      if (_activeFriendUid != uid) return;
+      if (state.activeFriendUid != uid) {
+        return;
+      }
       final set = <String>{};
       final tempGymIds = <String, String>{};
       for (final doc in snap.docs) {
@@ -57,19 +99,23 @@ class FriendCalendarProvider extends ChangeNotifier {
           set.add(key);
         }
       }
-      _trainingDates = set.toList()..sort();
-      _gymIdsByDate = {
-        for (final key in _trainingDates)
+      final dates = set.toList()..sort();
+      final gymIds = {
+        for (final key in dates)
           if (tempGymIds.containsKey(key)) key: tempGymIds[key]!,
       };
+      state = state.copyWith(
+        trainingDates: dates,
+        gymIdsByDate: gymIds,
+        isLoading: false,
+        clearError: true,
+      );
     } catch (e) {
-      if (_activeFriendUid == uid) {
-        _error = e.toString();
-      }
-    } finally {
-      if (_activeFriendUid == uid) {
-        _isLoading = false;
-        notifyListeners();
+      if (state.activeFriendUid == uid) {
+        state = state.copyWith(
+          isLoading: false,
+          error: e.toString(),
+        );
       }
     }
   }
@@ -83,3 +129,8 @@ class FriendCalendarProvider extends ChangeNotifier {
     return null;
   }
 }
+
+final friendCalendarProvider =
+    NotifierProvider<FriendCalendarNotifier, FriendCalendarState>(
+  FriendCalendarNotifier.new,
+);

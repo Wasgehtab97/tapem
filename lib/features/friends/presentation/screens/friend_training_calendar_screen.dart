@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/features/friends/providers/friend_calendar_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar.dart';
 import 'package:tapem/features/profile/presentation/widgets/calendar_popup.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class FriendTrainingCalendarScreen extends StatefulWidget {
+import '../../providers/friends_riverpod.dart';
+
+class FriendTrainingCalendarScreen extends ConsumerStatefulWidget {
   final String friendUid;
   final String friendName;
   const FriendTrainingCalendarScreen({
@@ -15,15 +16,17 @@ class FriendTrainingCalendarScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<FriendTrainingCalendarScreen> createState() => _FriendTrainingCalendarScreenState();
+  ConsumerState<FriendTrainingCalendarScreen> createState() =>
+      _FriendTrainingCalendarScreenState();
 }
 
-class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScreen> {
+class _FriendTrainingCalendarScreenState
+    extends ConsumerState<FriendTrainingCalendarScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FriendCalendarProvider>().setActiveFriend(widget.friendUid);
+      ref.read(friendCalendarProvider.notifier).setActiveFriend(widget.friendUid);
     });
   }
 
@@ -46,15 +49,15 @@ class _FriendTrainingCalendarScreenState extends State<FriendTrainingCalendarScr
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<FriendCalendarProvider>();
-    final dates = prov.trainingDates;
-    final gymIdsByDate = prov.gymIdsByDate;
+    final state = ref.watch(friendCalendarProvider);
+    final dates = state.trainingDates;
+    final gymIdsByDate = state.gymIdsByDate;
     final loc = AppLocalizations.of(context)!;
 
     Widget body;
-    if (prov.isLoading) {
+    if (state.isLoading) {
       body = const Center(child: CircularProgressIndicator());
-    } else if (prov.error != null) {
+    } else if (state.error != null) {
       body = Center(child: Text(loc.friends_privacy_no_access));
     } else {
       body = Padding(

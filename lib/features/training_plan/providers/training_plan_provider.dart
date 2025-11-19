@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
-import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/core/providers/firebase_provider.dart';
 import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';

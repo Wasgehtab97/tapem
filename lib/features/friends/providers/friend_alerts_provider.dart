@@ -2,48 +2,79 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Lightweight provider that keeps track of pending friend requests and unread
-/// friend chat messages without subscribing to the full collections. The
-/// provider only listens to very small queries (limited to a single document)
-/// so that a hot restart does not trigger thousands of document reads.
-class FriendAlertsProvider extends ChangeNotifier {
-  FriendAlertsProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/firebase_provider.dart';
 
-  final FirebaseFirestore _firestore;
+class FriendAlertsState {
+  const FriendAlertsState({
+    this.hasPendingRequests = false,
+    this.hasUnreadMessages = false,
+    this.selfUid,
+  });
 
+  final bool hasPendingRequests;
+  final bool hasUnreadMessages;
+  final String? selfUid;
+
+  bool get showBadge => hasPendingRequests || hasUnreadMessages;
+
+  FriendAlertsState copyWith({
+    bool? hasPendingRequests,
+    bool? hasUnreadMessages,
+    String? selfUid,
+  }) {
+    return FriendAlertsState(
+      hasPendingRequests: hasPendingRequests ?? this.hasPendingRequests,
+      hasUnreadMessages: hasUnreadMessages ?? this.hasUnreadMessages,
+      selfUid: selfUid ?? this.selfUid,
+    );
+  }
+}
+
+class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _pendingSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _unreadSub;
+  late FirebaseFirestore _firestore;
 
-  bool _hasPendingRequests = false;
-  bool _hasUnreadMessages = false;
-  String? _uid;
+  @override
+  FriendAlertsState build() {
+    _firestore = ref.watch(firebaseFirestoreProvider);
+    ref.onDispose(() {
+      _pendingSub?.cancel();
+      _unreadSub?.cancel();
+    });
 
-  bool get hasPendingRequests => _hasPendingRequests;
-  bool get hasUnreadMessages => _hasUnreadMessages;
-  bool get showBadge => _hasPendingRequests || _hasUnreadMessages;
+    ref.listen<AuthViewState>(
+      authViewStateProvider,
+      (previous, next) {
+        final uid = next.userId;
+        final userChanged = previous?.userId != uid;
+        final gymChanged = previous?.gymCode != next.gymCode;
+        if (!next.isLoggedIn || uid == null || uid.isEmpty) {
+          _pendingSub?.cancel();
+          _unreadSub?.cancel();
+          _pendingSub = null;
+          _unreadSub = null;
+          state = const FriendAlertsState();
+          return;
+        }
+        if (userChanged || gymChanged || state.selfUid != uid) {
+          _listen(uid);
+        }
+      },
+      fireImmediately: true,
+    );
 
-  /// Starts listening for pending requests and unread chats for [uid]. Calling
-  /// this repeatedly with the same uid is ignored to avoid re-subscribing after
-  /// a hot restart.
-  void listen(String uid) {
+    return const FriendAlertsState();
+  }
+
+  void _listen(String uid) {
     if (uid.isEmpty) {
       return;
     }
-    if (_uid == uid && _pendingSub != null && _unreadSub != null) {
-      return;
-    }
-    _uid = uid;
-    _subscribe();
-  }
-
-  void _subscribe() {
-    final uid = _uid;
-    if (uid == null || uid.isEmpty) {
-      return;
-    }
-
+    state = state.copyWith(selfUid: uid);
     _pendingSub?.cancel();
     _pendingSub = _firestore
         .collection('friendRequests')
@@ -53,9 +84,8 @@ class FriendAlertsProvider extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       final hasPending = snapshot.docs.isNotEmpty;
-      if (hasPending != _hasPendingRequests) {
-        _hasPendingRequests = hasPending;
-        notifyListeners();
+      if (hasPending != state.hasPendingRequests) {
+        state = state.copyWith(hasPendingRequests: hasPending);
       }
     }, onError: (Object error, StackTrace stackTrace) {
       if (kDebugMode) {
@@ -73,9 +103,8 @@ class FriendAlertsProvider extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       final hasUnread = snapshot.docs.isNotEmpty;
-      if (hasUnread != _hasUnreadMessages) {
-        _hasUnreadMessages = hasUnread;
-        notifyListeners();
+      if (hasUnread != state.hasUnreadMessages) {
+        state = state.copyWith(hasUnreadMessages: hasUnread);
       }
     }, onError: (Object error, StackTrace stackTrace) {
       if (kDebugMode) {
@@ -83,11 +112,9 @@ class FriendAlertsProvider extends ChangeNotifier {
       }
     });
   }
-
-  @override
-  void dispose() {
-    _pendingSub?.cancel();
-    _unreadSub?.cancel();
-    super.dispose();
-  }
 }
+
+final friendAlertsProvider =
+    NotifierProvider<FriendAlertsNotifier, FriendAlertsState>(
+  FriendAlertsNotifier.new,
+);

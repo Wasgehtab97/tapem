@@ -10,7 +10,7 @@ import 'package:uuid/uuid.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../providers/auth_providers.dart';
-import '../../features/device/providers/device_riverpod.dart';
+import '../providers/firebase_provider.dart';
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
 import 'workout_timer_telemetry.dart';

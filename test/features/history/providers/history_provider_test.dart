@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
-import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/core/providers/firebase_provider.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
 import 'package:tapem/features/history/providers/history_provider.dart';
