@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tapem/features/feedback/feedback_provider.dart'
-    as feedback_riverpod;
+import 'package:tapem/features/feedback/feedback_provider.dart' as feedback_riverpod;
 import 'package:tapem/features/feedback/models/feedback_entry.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
@@ -41,7 +40,7 @@ class _FeedbackOverviewScreenState
   Widget build(BuildContext context) {
     final provider = ref.watch(feedback_riverpod.feedbackProvider);
     final gym = ref.watch(gymProvider);
-    final devices = {for (var d in gym.devices) d.uid: d};
+    final devices = {for (var d in gym.devices) d.uid: d}.cast<String, Device>();
 
     return Scaffold(
       appBar: AppBar(

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 
@@ -96,14 +96,20 @@ class MuscleGroupProvider extends ChangeNotifier {
 
   Future<String?> ensureRegionGroup(
       BuildContext context, MuscleRegion region) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return null;
     return _ensureRegionGroup.execute(gymId, region);
   }
 
   Future<void> loadGroups(BuildContext context, {bool force = false}) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     final userId = auth.userId;
     if (gymId == null || userId == null) {
@@ -197,7 +203,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     if (gymId == null) return;
     await _safeSaveGroup(gymId, group);
 
-    final devices = Provider.of<GymProvider>(context, listen: false).devices;
+    final devices = legacy_provider.Provider.of<GymProvider>(
+      context,
+      listen: false,
+    ).devices;
     for (final dId in group.primaryDeviceIds) {
       try {
         final dev = devices.firstWhere((d) => d.uid == dId);
@@ -224,7 +233,10 @@ class MuscleGroupProvider extends ChangeNotifier {
   }
 
   Future<void> deleteGroup(BuildContext context, String groupId) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return;
     await _deleteGroup.execute(gymId, groupId);
@@ -256,7 +268,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     String deviceId,
     List<String> groupIds,
   ) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return;
     final normalized = canonicalizeGroupIds(groupIds);
@@ -277,7 +292,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     String exerciseId,
     List<String> groupIds,
   ) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return;
     final normalized = canonicalizeGroupIds(groupIds);
@@ -297,7 +315,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     List<String> primaryGroupIds,
     List<String> secondaryGroupIds,
   ) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return;
     final normalizedPrimary = canonicalizeGroupIds(primaryGroupIds);
@@ -329,7 +350,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     List<String> primaryGroupIds,
     List<String> secondaryGroupIds,
   ) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final gymId = auth.gymCode;
     if (gymId == null) return;
 
@@ -371,7 +395,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     );
 
     try {
-      final deviceProv = Provider.of<DeviceProvider>(context, listen: false);
+      final deviceProv = legacy_provider.Provider.of<DeviceProvider>(
+        context,
+        listen: false,
+      );
       deviceProv.applyMuscleAssignments(
         deviceId,
         normalizedPrimary,

@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/models/favorite_exercise_usage.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
@@ -122,7 +122,10 @@ class ProfileProvider extends ChangeNotifier {
     BuildContext context, {
     bool forceRefresh = false,
   }) async {
-    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final authProv = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final userId = authProv.userId;
 
     if (userId == null) {
@@ -398,7 +401,10 @@ class ProfileProvider extends ChangeNotifier {
     BuildContext context, {
     bool forceRefresh = false,
   }) async {
-    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final authProv = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     final userId = authProv.userId;
 
     if (userId == null) {

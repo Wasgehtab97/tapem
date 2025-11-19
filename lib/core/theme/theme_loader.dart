@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/gym/domain/models/branding.dart';
-import '../providers/branding_provider.dart';
+import '../providers/auth_providers.dart';
 import '../providers/theme_preference_provider.dart';
 import 'app_brand_theme.dart';
 import 'brand_on_colors.dart';
