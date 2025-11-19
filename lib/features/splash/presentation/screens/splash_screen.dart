@@ -22,16 +22,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   bool _isRetrying = false;
   bool _didNavigate = false;
   Timer? _navigationTimer;
+  ProviderSubscription<AuthViewState>? _authStateSubscription;
 
   @override
   void initState() {
     super.initState();
     _startedAt = DateTime.now();
-    ref.listen<AuthViewState>(
+    _authStateSubscription = ref.listenManual<AuthViewState>(
       authViewStateProvider,
       (previous, next) => _handleAuthState(next),
     );
-    _handleAuthState(ref.read(authViewStateProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _handleAuthState(ref.read(authViewStateProvider));
+    });
   }
 
   void _handleAuthState(AuthViewState state) {
@@ -104,6 +108,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void dispose() {
     _navigationTimer?.cancel();
+    _authStateSubscription?.close();
     super.dispose();
   }
 
