@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/rank/domain/rank_repository.dart';
 import 'package:tapem/features/rank/data/sources/firestore_rank_source.dart';
 import 'package:tapem/features/rank/data/repositories/rank_repository_impl.dart';
@@ -44,3 +45,9 @@ class RankProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final rankProvider = ChangeNotifierProvider<RankProvider>((ref) {
+  final provider = RankProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});

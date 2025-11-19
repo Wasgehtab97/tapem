@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/logging/elog.dart';
 import '../data/creatine_repository.dart';
 
@@ -73,3 +74,9 @@ class CreatineProvider extends ChangeNotifier {
     }
   }
 }
+
+final creatineProvider = ChangeNotifierProvider<CreatineProvider>((ref) {
+  final provider = CreatineProvider(repository: CreatineRepository());
+  ref.onDispose(provider.dispose);
+  return provider;
+});

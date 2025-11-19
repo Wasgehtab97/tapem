@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/rest_stats/domain/models/rest_stat_summary.dart';
 
 class RestStatsService {
@@ -73,3 +74,7 @@ class RestStatsService {
     return snap.docs.map(RestStatSummary.fromFirestore).toList();
   }
 }
+
+final restStatsServiceProvider = Provider<RestStatsService>((ref) {
+  return RestStatsService(firestore: FirebaseFirestore.instance);
+});

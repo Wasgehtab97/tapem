@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class GymScopedResettable {
   void resetGymScopedState();
@@ -22,6 +23,13 @@ class GymScopedStateController extends ChangeNotifier {
     }
   }
 }
+
+final gymScopedStateControllerProvider =
+    ChangeNotifierProvider<GymScopedStateController>((ref) {
+  final controller = GymScopedStateController();
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 
 mixin GymScopedResettableChangeNotifier on ChangeNotifier
     implements GymScopedResettable {

@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/brand_theme_preset.dart';
+import 'auth_providers.dart';
 
 class ThemePreferenceProvider extends ChangeNotifier {
   ThemePreferenceProvider({
@@ -159,3 +161,18 @@ class ThemePreferenceProvider extends ChangeNotifier {
     return [defaultTheme, ...others];
   }
 }
+
+final themePreferenceProvider =
+    ChangeNotifierProvider<ThemePreferenceProvider>((ref) {
+  final provider = ThemePreferenceProvider();
+  ref.onDispose(provider.dispose);
+
+  void update(AuthViewState state) {
+    provider.setUser(state.userId);
+  }
+
+  update(ref.read(authViewStateProvider));
+  ref.listen<AuthViewState>(authViewStateProvider, (_, next) => update(next));
+
+  return provider;
+});

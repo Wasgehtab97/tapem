@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth_provider.dart';
+import 'auth_providers.dart';
 
 class GymContextStateAdapter extends ChangeNotifier implements GymContextState {
   GymContextStatus _status = GymContextStatus.unknown;
@@ -25,3 +27,16 @@ class GymContextStateAdapter extends ChangeNotifier implements GymContextState {
     notifyListeners();
   }
 }
+
+final gymContextStateAdapterProvider =
+    ChangeNotifierProvider<GymContextStateAdapter>((ref) {
+  final adapter = GymContextStateAdapter();
+  void update() {
+    adapter.updateFrom(ref.read(authControllerProvider));
+  }
+
+  ref.onDispose(adapter.dispose);
+  update();
+  ref.listen<AuthProvider>(authControllerProvider, (_, __) => update());
+  return adapter;
+});

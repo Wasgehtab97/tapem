@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'session_timer_controller.dart';
 
@@ -116,3 +117,10 @@ class SessionTimerService extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final sessionTimerServiceProvider =
+    ChangeNotifierProvider<SessionTimerService>((ref) {
+  final service = SessionTimerService();
+  ref.onDispose(service.dispose);
+  return service;
+});

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -182,6 +183,13 @@ class OverlayNumericKeypadHost extends StatefulWidget {
   State<OverlayNumericKeypadHost> createState() =>
       _OverlayNumericKeypadHostState();
 }
+
+final overlayNumericKeypadControllerProvider =
+    ChangeNotifierProvider<OverlayNumericKeypadController>((ref) {
+  final controller = OverlayNumericKeypadController();
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 
 class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     with WidgetsBindingObserver {

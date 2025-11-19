@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 
 class AllExercisesProvider extends ChangeNotifier {
   final GetExercisesForDevice _getEx;
@@ -45,3 +47,11 @@ class AllExercisesProvider extends ChangeNotifier {
     }
   }
 }
+
+final allExercisesProvider = ChangeNotifierProvider<AllExercisesProvider>((ref) {
+  final provider = AllExercisesProvider(
+    getEx: ref.read(getExercisesForDeviceProvider),
+  );
+  ref.onDispose(provider.dispose);
+  return provider;
+});

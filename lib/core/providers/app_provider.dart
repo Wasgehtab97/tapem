@@ -1,7 +1,10 @@
 // lib/core/providers/app_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'shared_preferences_provider.dart';
 
 /// Steuert app-weite Einstellungen (z.B. Sprache).
 class AppProvider extends ChangeNotifier {
@@ -107,3 +110,10 @@ class AppProvider extends ChangeNotifier {
     return Locale(language, segments[1]);
   }
 }
+
+final appProvider = ChangeNotifierProvider<AppProvider>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final provider = AppProvider(preferences: prefs);
+  ref.onDispose(provider.dispose);
+  return provider;
+});

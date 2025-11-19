@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'survey.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
@@ -178,3 +179,9 @@ class SurveyProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final surveyProvider = ChangeNotifierProvider<SurveyProvider>((ref) {
+  final provider = SurveyProvider(firestore: FirebaseFirestore.instance);
+  ref.onDispose(provider.dispose);
+  return provider;
+});

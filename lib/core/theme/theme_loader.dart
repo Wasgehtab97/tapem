@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/gym/domain/models/branding.dart';
+import '../providers/branding_provider.dart';
+import '../providers/theme_preference_provider.dart';
 import 'app_brand_theme.dart';
 import 'brand_on_colors.dart';
 import 'brand_theme_preset.dart';
@@ -284,3 +287,23 @@ class ThemeLoader extends ChangeNotifier {
     _currentTheme = _currentTheme.copyWith(extensions: [ext, onColors]);
   }
 }
+
+final themeLoaderProvider = ChangeNotifierProvider<ThemeLoader>((ref) {
+  final loader = ThemeLoader()..loadDefault();
+
+  void sync() {
+    final branding = ref.read(brandingProvider);
+    final pref = ref.read(themePreferenceProvider);
+    loader.applyBranding(
+      branding.gymId,
+      branding.branding,
+      overridePreset: pref.override,
+    );
+  }
+
+  sync();
+  ref.onDispose(loader.dispose);
+  ref.listen<BrandingProvider>(brandingProvider, (_, __) => sync());
+  ref.listen<ThemePreferenceProvider>(themePreferenceProvider, (_, __) => sync());
+  return loader;
+});

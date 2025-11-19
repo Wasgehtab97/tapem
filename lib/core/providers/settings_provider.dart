@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SettingsProvider extends ChangeNotifier {
   SettingsProvider({FirebaseFirestore? firestore})
@@ -142,3 +143,9 @@ class SettingsProvider extends ChangeNotifier {
   }
 
 }
+
+final settingsProvider = ChangeNotifierProvider<SettingsProvider>((ref) {
+  final provider = SettingsProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'models/feedback_entry.dart';
 
@@ -116,3 +117,9 @@ class FeedbackProvider extends ChangeNotifier {
     }
   }
 }
+
+final feedbackProvider = ChangeNotifierProvider<FeedbackProvider>((ref) {
+  final provider = FeedbackProvider(firestore: FirebaseFirestore.instance);
+  ref.onDispose(provider.dispose);
+  return provider;
+});

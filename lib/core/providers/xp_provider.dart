@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
@@ -379,3 +380,9 @@ class XpProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final xpProvider = ChangeNotifierProvider<XpProvider>((ref) {
+  final provider = XpProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});

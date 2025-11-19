@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
@@ -925,6 +926,12 @@ class StorySessionService {
     );
   }
 }
+
+final storySessionServiceProvider = Provider<StorySessionService>((ref) {
+  return StorySessionService(
+    firestore: FirebaseFirestore.instance,
+  );
+});
 
 StoryDailyXp _dailyXpFromDoc(
   Map<String, dynamic> data, {

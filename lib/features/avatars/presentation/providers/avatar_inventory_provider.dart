@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
@@ -187,4 +188,11 @@ class AvatarInventoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+final avatarInventoryProvider =
+    ChangeNotifierProvider<AvatarInventoryProvider>((ref) {
+  final provider = AvatarInventoryProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});
 

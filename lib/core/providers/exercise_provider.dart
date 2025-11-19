@@ -1,5 +1,6 @@
 // lib/core/providers/exercise_provider.dart
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
 import 'package:tapem/features/device/domain/services/exercise_xp_reassignment_service.dart';
@@ -7,6 +8,7 @@ import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.da
 import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 
 class ExerciseProvider extends ChangeNotifier {
   final GetExercisesForDevice _getEx;
@@ -151,3 +153,16 @@ class ExerciseProvider extends ChangeNotifier {
     );
   }
 }
+
+final exerciseProvider = ChangeNotifierProvider<ExerciseProvider>((ref) {
+  final provider = ExerciseProvider(
+    getEx: ref.read(getExercisesForDeviceProvider),
+    createEx: ref.read(createExerciseUseCaseProvider),
+    deleteEx: ref.read(deleteExerciseUseCaseProvider),
+    updateEx: ref.read(updateExerciseUseCaseProvider),
+    updateMuscles: ref.read(updateExerciseMuscleGroupsUseCaseProvider),
+    xpReassignment: ref.read(exerciseXpReassignmentServiceProvider),
+  );
+  ref.onDispose(provider.dispose);
+  return provider;
+});
