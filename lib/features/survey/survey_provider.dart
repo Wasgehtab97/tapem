@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'survey.dart';
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
@@ -15,11 +16,13 @@ void _defaultLog(String message, [StackTrace? stack]) {
   }
 }
 
-class SurveyProvider extends ChangeNotifier {
+class SurveyProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final FirebaseFirestore _firestore;
   final LogFn _log;
   StreamSubscription<List<Survey>>? _openSub;
   StreamSubscription<List<Survey>>? _closedSub;
+  String? _currentGymId;
 
   List<Survey> openSurveys = [];
   List<Survey> closedSurveys = [];
@@ -34,6 +37,10 @@ class SurveyProvider extends ChangeNotifier {
         _log = log ?? _defaultLog;
 
   void listen(String gymId) {
+    if (_currentGymId == gymId) {
+      return;
+    }
+    _currentGymId = gymId;
     _openSub?.cancel();
     _closedSub?.cancel();
 
@@ -73,6 +80,7 @@ class SurveyProvider extends ChangeNotifier {
   void cancel() {
     _openSub?.cancel();
     _closedSub?.cancel();
+    _currentGymId = null;
   }
 
   Future<void> createSurvey({
@@ -176,12 +184,25 @@ class SurveyProvider extends ChangeNotifier {
   @override
   void dispose() {
     cancel();
+    disposeGymScopedRegistration();
     super.dispose();
+  }
+
+  @override
+  void resetGymScopedState() {
+    cancel();
+    openSurveys = [];
+    closedSurveys = [];
+    _error = null;
+    notifyListeners();
   }
 }
 
 final surveyProvider = ChangeNotifierProvider<SurveyProvider>((ref) {
   final provider = SurveyProvider(firestore: FirebaseFirestore.instance);
+  provider.registerGymScopedResettable(
+    ref.read(gymScopedStateControllerProvider),
+  );
   ref.onDispose(provider.dispose);
   return provider;
 });

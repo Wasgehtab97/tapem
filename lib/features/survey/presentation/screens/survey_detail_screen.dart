@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../survey.dart';
 import '../../survey_provider.dart';
 
-class SurveyDetailScreen extends StatefulWidget {
+class SurveyDetailScreen extends ConsumerStatefulWidget {
   final String gymId;
   final Survey survey;
   const SurveyDetailScreen({
@@ -15,16 +15,16 @@ class SurveyDetailScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<SurveyDetailScreen> createState() => _SurveyDetailScreenState();
+  ConsumerState<SurveyDetailScreen> createState() => _SurveyDetailScreenState();
 }
 
-class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
+class _SurveyDetailScreenState extends ConsumerState<SurveyDetailScreen> {
   late Future<Map<String, int>> _resultsFuture;
 
   @override
   void initState() {
     super.initState();
-    _resultsFuture = context.read<SurveyProvider>().getResults(
+    _resultsFuture = ref.read(surveyProvider).getResults(
       gymId: widget.gymId,
       surveyId: widget.survey.id,
       options: widget.survey.options,
@@ -105,7 +105,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                   icon: const Icon(Icons.close),
                   label: Text(loc.surveyClose),
                   onPressed: () async {
-                    await context.read<SurveyProvider>().closeSurvey(
+                    await ref.read(surveyProvider).closeSurvey(
                       gymId: widget.gymId,
                       surveyId: widget.survey.id,
                     );

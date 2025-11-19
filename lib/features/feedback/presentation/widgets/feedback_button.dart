@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/features/feedback/feedback_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/feedback/feedback_provider.dart'
+    as feedback_riverpod;
 import 'package:tapem/l10n/app_localizations.dart';
 
-class FeedbackButton extends StatelessWidget {
+class FeedbackButton extends ConsumerWidget {
   final String gymId;
   final String deviceId;
   final Color? color;
@@ -18,7 +19,7 @@ class FeedbackButton extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
     final iconColor = color ?? Theme.of(context).iconTheme.color;
     return IconButton(
@@ -26,6 +27,7 @@ class FeedbackButton extends StatelessWidget {
       tooltip: loc.feedbackTooltip,
       onPressed: () => showFeedbackDialog(
         context,
+        ref,
         gymId: gymId,
         deviceId: deviceId,
       ),
@@ -34,7 +36,8 @@ class FeedbackButton extends StatelessWidget {
 }
 
 Future<void> showFeedbackDialog(
-  BuildContext context, {
+  BuildContext context,
+  WidgetRef ref, {
   required String gymId,
   required String deviceId,
 }) async {
@@ -63,12 +66,14 @@ Future<void> showFeedbackDialog(
             onPressed: () async {
               final text = controller.text.trim();
               if (text.isNotEmpty) {
-                final auth = context.read<AuthProvider>();
+                final auth = ref.read(authControllerProvider);
                 final userId = auth.userId ?? '';
-                await context.read<FeedbackProvider>().submitFeedback(
-                  gymId: gymId,
-                  deviceId: deviceId,
-                  userId: userId,
+                await ref
+                    .read(feedback_riverpod.feedbackProvider)
+                    .submitFeedback(
+                      gymId: gymId,
+                      deviceId: deviceId,
+                      userId: userId,
                   text: text,
                 );
                 Navigator.of(ctx).pop();

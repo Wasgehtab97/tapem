@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/rank_provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/challenges/presentation/screens/challenge_tab.dart';
@@ -9,27 +9,27 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 /// Rank landing displayed in the "Rank" tab of the leaderboard.
-class RankScreen extends StatefulWidget {
+class RankScreen extends ConsumerStatefulWidget {
   final String gymId;
   final String deviceId;
   const RankScreen({Key? key, required this.gymId, required this.deviceId})
     : super(key: key);
 
   @override
-  _RankScreenState createState() => _RankScreenState();
+  ConsumerState<RankScreen> createState() => _RankScreenState();
 }
 
-class _RankScreenState extends State<RankScreen>
+class _RankScreenState extends ConsumerState<RankScreen>
     with SingleTickerProviderStateMixin {
-  late RankProvider _provider;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _provider = Provider.of<RankProvider>(context, listen: false);
     _tabController = TabController(length: 2, vsync: this);
-    _provider.watchDevice(widget.gymId, widget.deviceId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(rankProvider).watchDevice(widget.gymId, widget.deviceId);
+    });
   }
 
   @override
@@ -40,6 +40,7 @@ class _RankScreenState extends State<RankScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(rankProvider);
     final theme = Theme.of(context);
     final accentColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
@@ -69,43 +70,38 @@ class _RankScreenState extends State<RankScreen>
           ],
         ),
       ),
-      body: Consumer<RankProvider>(
-        builder: (context, prov, _) {
-          return TabBarView(
-            controller: _tabController,
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          ListView(
+            padding: const EdgeInsets.all(AppSpacing.sm),
             children: [
-              ListView(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                children: [
-                  _RankCard(
-                    title: loc.rankExperience,
-                    icon: const _XpMonogram(),
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.dayXp),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _RankCard(
-                    title: loc.rankDeviceLevel,
-                    icon: const Icon(Icons.fitness_center),
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.deviceXp),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _RankCard(
-                    title: loc.rankMuscleLevel,
-                    icon: const _BicepsIcon(),
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    onTap: () =>
-                        Navigator.of(context).pushNamed(AppRouter.xpOverview),
-                  ),
-                ],
+              _RankCard(
+                title: loc.rankExperience,
+                icon: const _XpMonogram(),
+                subtitle: loc.profileStatsButtonSubtitle,
+                onTap: () => Navigator.of(context).pushNamed(AppRouter.dayXp),
               ),
-              const ChallengeTab(),
+              const SizedBox(height: AppSpacing.sm),
+              _RankCard(
+                title: loc.rankDeviceLevel,
+                icon: const Icon(Icons.fitness_center),
+                subtitle: loc.profileStatsButtonSubtitle,
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.deviceXp),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _RankCard(
+                title: loc.rankMuscleLevel,
+                icon: const _BicepsIcon(),
+                subtitle: loc.profileStatsButtonSubtitle,
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.xpOverview),
+              ),
             ],
-          );
-        },
+          ),
+          const ChallengeTab(),
+        ],
       ),
     );
   }

@@ -1,6 +1,8 @@
 // lib/core/providers/report_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dart';
@@ -26,9 +28,10 @@ extension DeviceUsageRangeX on DeviceUsageRange {
   }
 }
 
-class ReportProvider extends ChangeNotifier {
+class ReportProvider extends ChangeNotifier with GymScopedResettableChangeNotifier {
   final GetDeviceUsageStats _getUsage;
   final GetAllLogTimestamps _getTimestamps;
+  final SharedPreferences? _preferences;
 
   ReportState state = ReportState.initial;
   List<DeviceUsageStat> usageStats = const [];
@@ -38,11 +41,28 @@ class ReportProvider extends ChangeNotifier {
 
   String? _currentGymId;
 
+  static const _usageRangePrefsKey = 'report_usage_range';
+
   ReportProvider({
     required GetDeviceUsageStats getUsageStats,
     required GetAllLogTimestamps getLogTimestamps,
+    SharedPreferences? preferences,
   })  : _getUsage = getUsageStats,
-        _getTimestamps = getLogTimestamps;
+        _getTimestamps = getLogTimestamps,
+        _preferences = preferences {
+    _restoreUsageRange();
+  }
+
+  void _restoreUsageRange() {
+    final storedIndex = _preferences?.getInt(_usageRangePrefsKey);
+    if (storedIndex == null) {
+      return;
+    }
+    if (storedIndex < 0 || storedIndex >= DeviceUsageRange.values.length) {
+      return;
+    }
+    usageRange = DeviceUsageRange.values[storedIndex];
+  }
 
   String? get currentGymId => _currentGymId;
 
@@ -117,6 +137,7 @@ class ReportProvider extends ChangeNotifier {
       return;
     }
     usageRange = range;
+    await _preferences?.setInt(_usageRangePrefsKey, range.index);
     if (_currentGymId == null || _currentGymId!.isEmpty) {
       notifyListeners();
       return;
@@ -138,5 +159,21 @@ class ReportProvider extends ChangeNotifier {
     final now = DateTime.now();
     final since = usageRange.resolveSince(now);
     return _getUsage.execute(gymId, since: since);
+  }
+
+  @override
+  void resetGymScopedState() {
+    state = ReportState.initial;
+    usageStats = const [];
+    heatmapDates = [];
+    errorMessage = null;
+    _currentGymId = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
   }
 }

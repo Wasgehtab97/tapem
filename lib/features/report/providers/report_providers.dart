@@ -2,7 +2,9 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/gym_scoped_resettable.dart';
 import '../../../core/providers/report_provider.dart';
+import '../../../core/providers/shared_preferences_provider.dart';
 import '../../../features/report/domain/usecases/get_all_log_timestamps.dart';
 import '../../../features/report/domain/usecases/get_device_usage_stats.dart';
 
@@ -15,11 +17,16 @@ final getAllLogTimestampsProvider = Provider<GetAllLogTimestamps>((ref) {
 });
 
 final reportProvider = ChangeNotifierProvider<ReportProvider>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
   final usage = ref.watch(getDeviceUsageStatsProvider);
   final logs = ref.watch(getAllLogTimestampsProvider);
   final provider = ReportProvider(
     getUsageStats: usage,
     getLogTimestamps: logs,
+    preferences: prefs,
+  );
+  provider.registerGymScopedResettable(
+    ref.read(gymScopedStateControllerProvider),
   );
   ref.onDispose(provider.dispose);
   return provider;

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/providers/report_provider.dart';
 import '../../../../core/theme/app_brand_theme.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../providers/report_providers.dart' as report_providers;
 import '../widgets/device_usage_chart.dart';
 
-class ReportUsageScreen extends StatelessWidget {
+class ReportUsageScreen extends ConsumerWidget {
   final String gymId;
 
   const ReportUsageScreen({super.key, required this.gymId});
 
   @override
-  Widget build(BuildContext context) {
-    final reportProvider = context.watch<ReportProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reportProvider = ref.watch(report_providers.reportProvider);
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
@@ -22,7 +22,7 @@ class ReportUsageScreen extends StatelessWidget {
 
     if (reportProvider.shouldLoadReport(gymId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<ReportProvider>().loadReport(gymId);
+        ref.read(report_providers.reportProvider).loadReport(gymId);
       });
     }
 
