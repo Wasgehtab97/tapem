@@ -289,21 +289,14 @@ class ThemeLoader extends ChangeNotifier {
 }
 
 final themeLoaderProvider = ChangeNotifierProvider<ThemeLoader>((ref) {
+  final branding = ref.watch(brandingProvider);
+  final preferences = ref.watch(themePreferenceProvider);
   final loader = ThemeLoader()..loadDefault();
-
-  void sync() {
-    final branding = ref.read(brandingProvider);
-    final pref = ref.read(themePreferenceProvider);
-    loader.applyBranding(
-      branding.gymId,
-      branding.branding,
-      overridePreset: pref.override,
-    );
-  }
-
-  sync();
+  loader.applyBranding(
+    branding.gymId,
+    branding.branding,
+    overridePreset: preferences.override,
+  );
   ref.onDispose(loader.dispose);
-  ref.listen<BrandingProvider>(brandingProvider, (_, __) => sync());
-  ref.listen<ThemePreferenceProvider>(themePreferenceProvider, (_, __) => sync());
   return loader;
 });

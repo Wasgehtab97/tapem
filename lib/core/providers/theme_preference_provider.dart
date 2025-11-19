@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/brand_theme_preset.dart';
 import 'auth_providers.dart';
+import 'firebase_provider.dart';
+import 'shared_preferences_provider.dart';
 
 class ThemePreferenceProvider extends ChangeNotifier {
   ThemePreferenceProvider({
@@ -164,7 +166,10 @@ class ThemePreferenceProvider extends ChangeNotifier {
 
 final themePreferenceProvider =
     ChangeNotifierProvider<ThemePreferenceProvider>((ref) {
-  final provider = ThemePreferenceProvider();
+  final provider = ThemePreferenceProvider(
+    firestore: ref.watch(firebaseFirestoreProvider),
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
   ref.onDispose(provider.dispose);
 
   void update(AuthViewState state) {

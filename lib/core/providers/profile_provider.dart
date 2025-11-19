@@ -11,6 +11,7 @@ import 'package:tapem/core/models/favorite_exercise_usage.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/storage/profile_cache_store.dart';
 import 'auth_providers.dart';
+import 'firebase_provider.dart';
 
 class ProfileProvider extends ChangeNotifier {
   ProfileProvider({
@@ -671,7 +672,9 @@ class ProfileProvider extends ChangeNotifier {
 }
 
 final profileProvider = ChangeNotifierProvider<ProfileProvider>((ref) {
-  final provider = ProfileProvider();
+  final provider = ProfileProvider(
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
   ref.onDispose(provider.dispose);
 
   void update(AuthViewState state) {
