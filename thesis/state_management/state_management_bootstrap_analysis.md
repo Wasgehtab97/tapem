@@ -11,73 +11,78 @@
      `currentGymIdProvider`.
   3. Auth- und Gym-Wechsel-Logik (`AuthProvider`, `GymScopedStateController`) definieren die Wahrheit über globale App- und Gym-States.
 
-## 2. Aktueller Bootstrap-Flow (Provider → Hybrid)
-- **Neue Annahme A:** Alle initialen Infrastruktur-Abhängigkeiten (Firebase, Messaging, Report-UseCases, SharedPreferences) werden über
-  `bootstrap/bootstrap.dart` erzeugt und als Riverpod-Overrides (`sharedPreferencesProvider`, `getDeviceUsageStatsProvider`,
-  `getAllLogTimestampsProvider`) in den App-Baum injiziert, bevor irgendein Legacy-Provider erstellt wird.【F:lib/bootstrap/bootstrap.dart†L1-L77】
-- `BootstrapResult.toOverrides()` liefert die Liste der ProviderScope-Overrides, die `runApp` an den obersten Scope übergibt. Damit sind
-  SharedPreferences und Report-UseCases sowohl in Provider- als auch Riverpod-Zweigen konsistent verfügbar.【F:lib/bootstrap/bootstrap.dart†L21-L35】
+## 2. Reale Bootstrap-Kette (main.dart → ProviderScope → LegacyProviderScope)
+- **App-Einstieg:** `main.dart` ruft synchron `bootstrapApp()` auf, wartet auf das `BootstrapResult` und spannt anschließend einen globalen
+  `ProviderScope` mit den resultierenden Overrides um die gesamte App.【F:lib/main.dart†L9-L16】【F:lib/bootstrap/bootstrap.dart†L1-L77】
+- **ProviderScope → TapemApp:** Der `ProviderScope` rendert `TapemApp`, welches sofort den `LegacyProviderScope` um die eigentliche
+  Material-App legt. Es existiert keine `_LegacyRiverpodBridge`; der Legacy-Scope ist direktes Kind des äußeren Riverpod-Scopes und erhält
+  alle Overrides via `WidgetRef`.【F:lib/core/app/tapem_app.dart†L18-L26】【F:lib/bootstrap/legacy_provider_scope.dart†L1-L120】
+- **LegacyProviderScope:** `LegacyProviderScope` liest SharedPreferences, MembershipService und alle Riverpod-first ChangeNotifier aus
+  `bootstrap/providers.dart`, spiegelt sie als klassische Provider-Values (`provider.MultiProvider`) wider und reicht das resultierende
+  Widget (`TapemMaterialApp`) ohne zusätzliche Riverpod-Brücke weiter.【F:lib/bootstrap/legacy_provider_scope.dart†L23-L120】
 
-## 3. LegacyProviderScope (Provider-Hierarchie)
-- **Neue Annahme B:** `LegacyProviderScope` kapselt alle bestehenden `provider.MultiProvider`-Registrierungen und bildet den Übergabeort
-  zwischen den Bootstrap-Overrides und dem restlichen Legacy-State. Der Scope liest Riverpod-Values (z. B. SharedPreferences,
-  MembershipService) via `ref.watch(...)` und spiegelt sie als klassische Provider-Instanzen wider.【F:lib/bootstrap/legacy_provider_scope.dart†L1-L120】
-- Reihenfolge innerhalb der `MultiProvider`-Liste: Reset-Controller (`GymScopedStateController`) entsteht vor `AuthProvider`, gefolgt von
-  Proxy-Providern wie `BrandingProvider` oder `GymProvider`, die sich im `update`-Hook an Auth koppeln. Services, Repositories und
-  Notifier (History, Reports, Devices etc.) folgen danach. Der Scope ist somit die zentrale Stelle, an der neue Legacy-States registriert
-  werden.【F:lib/bootstrap/legacy_provider_scope.dart†L51-L200】【F:lib/bootstrap/legacy_provider_scope.dart†L300-L410】
+## 3. TapemMaterialApp (Endpunkt des Bootstraps)
+- `TapemMaterialApp` konsumiert bereits aufgebaute Provider-Zustände (`ThemeLoader`, `AppProvider`, `OverlayNumericKeypadController`) und
+  liefert den finalen `MaterialApp`. Weitere Riverpod-Scopes treten hier nicht auf; alle Widgets konsumieren die zuvor aufgespannten
+  Provider-Instanzen.【F:lib/core/app/tapem_app.dart†L29-L65】
 
-## 4. _LegacyRiverpodBridge (Hybrid-Verzahnung)
-- **Neue Annahme C:** `_LegacyRiverpodBridge` ist die einzige Klasse, die Legacy-Provider direkt in Riverpod einspeist. Sie liest
-  `AuthProvider`, `BrandingProvider` und `GymProvider` aus dem `MultiProvider`-Kontext und erstellt daraus Riverpod-Overrides für
-  `authControllerProvider`, `authViewStateProvider`, `brandingProvider` und `gymProvider`. Damit teilen sich Provider- und Riverpod-Welt
-  exakt dieselben Instanzen.【F:lib/bootstrap/legacy_provider_scope.dart†L431-L489】
-- Die Overrides werden einmalig in `didChangeDependencies` erstellt und anschließend in einem inneren `ProviderScope` angewendet.
-  Riverpod-Consumer (z. B. Community-Feature) empfangen so stets dieselben ChangeNotifier-Signale wie Provider-Widgets. Ein fehlerhafter
-  oder fehlender Override würde sofort zu divergierenden States führen.
+## 4. LegacyProviderScope (Provider-Hierarchie)
+- **Brückenknoten:** Der Scope konvertiert Riverpod-Abhängigkeiten (`sharedPreferencesProvider`, `membershipServiceProvider`,
+  `gymScopedStateControllerProvider`, `authControllerProvider`, `brandingProvider`, `gymProvider`) in Provider-Pendants, bevor
+  Feature-spezifische ChangeNotifier registriert werden.【F:lib/bootstrap/legacy_provider_scope.dart†L23-L120】
+- **Registrierungs-Reihenfolge:** Gym-/Auth-kritische Provider werden zuerst erzeugt, danach folgen Feature-Domänen wie Geräte, Freunde,
+  Reports, Powerlifting oder Trainingspläne. Diese Reihenfolge stellt sicher, dass Proxy-Provider (`ThemeLoader`, `WorkoutDayController`)
+  ihre Abhängigkeiten vollständig injiziert bekommen.【F:lib/bootstrap/legacy_provider_scope.dart†L51-L380】
 
-## 5. End-to-End-Flow (vom Bootstrap bis zur UI)
-1. `bootstrapApp()` initialisiert Firebase, Push, Avatar-Katalog und Report-Abhängigkeiten und liefert ein `BootstrapResult` zurück.
-2. `runApp` erstellt einen äußeren `ProviderScope` mit den Overrides aus `BootstrapResult.toOverrides()` und ruft innerhalb davon den
-   `LegacyProviderScope` auf.
-3. `LegacyProviderScope` baut die komplette `provider.MultiProvider`-Kette (inkl. Auth, Branding, Gym, Feature-Services) auf und rendert
-   `_LegacyRiverpodBridge` als Kind.
-4. `_LegacyRiverpodBridge` öffnet einen inneren `ProviderScope`, der die Legacy-Instanzen als Riverpod-Overrides bereitstellt. Danach
-   rendert er das eigentliche App-Widget (`child`).
-5. Riverpod-spezifische Widgets (Community) lesen Gym- oder Auth-State ausschließlich über diese Overrides, während klassische Widgets
-   weiterhin `context.watch` nutzen. Beide Welten reagieren damit synchron auf Gym-Wechsel oder Logout-Ereignisse.
+## 5. End-to-End-Flow (Bootstrap → UI)
+1. `bootstrapApp()` initialisiert Firebase, Push, Avatar-Katalog sowie Report-UseCases und liefert die Overrides für SharedPreferences und
+   Reporting an die App zurück.【F:lib/bootstrap/bootstrap.dart†L19-L74】
+2. `main.dart` spannt mit diesen Overrides einen globalen `ProviderScope` und rendert `TapemApp`. Dadurch stehen SharedPreferences,
+   DeviceUsageStats und LogTimestamps schon vor der Legacy-Provider-Initialisierung zur Verfügung.【F:lib/main.dart†L9-L16】
+3. `TapemApp` legt `LegacyProviderScope` um `TapemMaterialApp`, sodass sämtliche Legacy-Provider (inklusive Auth/Gym) auf dieselben
+   Riverpod-Instanzen zugreifen können.【F:lib/core/app/tapem_app.dart†L18-L65】
+4. `TapemMaterialApp` nutzt die bereitgestellten Provider, um Theme, Locale und globale Listener zu konfigurieren. Weitere Scopes oder
+   Brücken existieren nicht; Riverpod-Consumer außerhalb des Legacy-Scopes beziehen ihre Daten direkt aus dem äußeren ProviderScope.
+   【F:lib/core/app/tapem_app.dart†L29-L65】
 
-## 6. Roadmap für neue States
-- **Registrierung:** Jeder neue `ChangeNotifier` mit Gym-Abhängigkeit muss `GymScopedResettableChangeNotifier` verwenden und sich im
-  Konstruktor beim `GymScopedStateController` registrieren.
-- **Riverpod-Integration:** Neue Riverpod-Provider erhalten ihre Daten ausschließlich über klar definierte Overrides (z. B.
-  `ProviderScope(overrides: [...])`) statt direkter Provider-zu-Riverpod-Brücken. Langfristig sollte `currentGymIdProvider` seine
-  Quelle direkt aus einem Riverpod-State beziehen, sobald eine Migration startet.
-- **Testing:** Für neue States sind zwei Schichten vorgesehen:
-  1. **Unit-Tests** für ChangeNotifier/Riverpod-Provider, die den Umgang mit `gymCode`-Änderungen simulieren (Mock `GymScopedStateController`).
-  2. **Widget- bzw. Integrationstests** für kritische Screens, die sicherstellen, dass ProviderScope-Overrides funktionieren und
-     UI bei Gym-Wechseln refreshen.
+## 6. Heutiger State-Katalog (Riverpod-first vs. Provider-only)
+### 6.1 Riverpod-first Zustände
+- **Auth-Kern:** `gymScopedStateControllerProvider`, `authControllerProvider` und `authViewStateProvider` entstehen direkt in `bootstrap/providers.dart` und werden lebenszyklusgerecht via `ref.onDispose` verwaltet.【F:lib/bootstrap/providers.dart†L34-L90】
+- **Branding & Gym:** `brandingProvider` und `gymProvider` sind native Riverpod-`ChangeNotifierProvider` und reagieren auf `AuthViewState`, wodurch Branding- und Gym-Daten zuerst in Riverpod landen und anschließend im LegacyScope gespiegelt werden.【F:lib/bootstrap/providers.dart†L91-L143】
+- **Bootstrap-Abhängigkeiten:** `sharedPreferencesProvider`, `membershipServiceProvider`, `getDeviceUsageStatsProvider` und `getAllLogTimestampsProvider` werden durch `BootstrapResult.toOverrides()` gesetzt und bilden die Brücke zu Infrastruktur-Ressourcen.【F:lib/bootstrap/providers.dart†L18-L33】【F:lib/bootstrap/bootstrap.dart†L19-L41】
 
-## 7. Designprinzipien & Strategieentscheidung
-- **Gegenwärtige Hybridstrategie:** Provider bildet weiterhin die tragende UI-Schicht, während Riverpod punktuell Features (Community, neue Experimente) antreibt. `_LegacyRiverpodBridge` bleibt explizit Teil des Bootstraps, um Auth/Gym/Branding als Overrides in die Riverpod-Welt zu spiegeln. Solange `LegacyProviderScope` existiert, werden zusätzliche Riverpod-Provider nur über Overrides integriert – direkte Provider→Riverpod-Zugriffe sind verboten.【F:lib/bootstrap/legacy_provider_scope.dart†L431-L489】
-- **Geplante Migration:** Neue Domains sollen bevorzugt native Riverpod-Provider erhalten, die lediglich SharedPreferences, MembershipService oder andere Bootstrap-Abhängigkeiten über `BootstrapResult.toOverrides()` beziehen. Legacy-Provider werden sukzessive ersetzt, indem ihre ChangeNotifier-Logik in Riverpod-Portierungen landet. Sobald Auth/Gym selbst Riverpod-first sind, kann `_LegacyRiverpodBridge` entfallen und der äußere `ProviderScope` übernimmt sämtliche Zustände.【F:lib/bootstrap/bootstrap.dart†L21-L77】【F:lib/bootstrap/legacy_provider_scope.dart†L1-L200】
-- **Rolle der Overrides:** Overrides sind der Mechanismus, der Konsistenz garantiert. Jede Hybrid-Erweiterung muss prüfen, ob der benötigte State bereits als Riverpod-Override existiert (z. B. `authControllerProvider`, `brandingProvider`, `gymProvider`). Fehlt ein Override, muss `_overrides` erweitert werden, damit Riverpod und Provider identische Instanzen teilen. Ohne diesen Schritt entstehen divergierende Auth-/Gym-Wahrheiten.
-- **Auth-/Gym-Flows:** AuthProvider orchestriert weiterhin Gym-Wechsel, ruft `GymScopedStateController.resetGymScopedState()` auf und löst damit sowohl Provider- als auch Riverpod-Updates aus. Neue Strategiebausteine müssen respektieren, dass Logout/Gym-Wechsel erst abgeschlossen sind, wenn sowohl `LegacyProviderScope` als auch `_LegacyRiverpodBridge` den neuen Zustand propagiert haben.
+### 6.2 Provider-only Zustände
+- **Geräte & Übungen:** NFC-Service, Device-/Exercise-Repositories sowie sämtliche Device-UseCases existieren ausschließlich als Provider-Registrierungen innerhalb des Legacy-Scopes.【F:lib/bootstrap/legacy_provider_scope.dart†L122-L170】
+- **Freunde & Kommunikation:** Friend-APIs, Chat-Sources, Alerts und Präsenzmanager leben komplett im Provider-Ökosystem und hängen transitive auf Firestore/Provider-Kontext.【F:lib/bootstrap/legacy_provider_scope.dart†L179-L217】
+- **Workout-/Session-Services:** Keypad, Timer, StorySessionService, ThemeLoader, WorkoutSessionDurationService und WorkoutDayController bleiben Provider-only und beziehen Auth-/Branding-Daten via `ChangeNotifierProxyProvider`-Ketten.【F:lib/bootstrap/legacy_provider_scope.dart†L218-L307】
+- **Analytics & Training:** TrainingPlan-, RestStats-, History-, Profile-, Powerlifting-, Exercise- und ReportProvider sowie Survey/Feedback leben ausschließlich im LegacyScope.【F:lib/bootstrap/legacy_provider_scope.dart†L309-L383】
+
+## 7. SOLL: Migration zu nativen Riverpod-Providern (Prioritäten)
+1. **Priorität A – Reporting & Analytics:**
+   - `ReportProvider`, `SurveyProvider`, `FeedbackProvider` und `RankProvider` hängen nur von SharedPreferences, Report-UseCases bzw. Firestore ab und lassen sich deshalb zuerst in Riverpod-`Notifier`- oder `ChangeNotifierProvider`-Instanzen verschieben. Diese Provider können dieselben Bootstrap-Overrides (`sharedPreferencesProvider`, `getDeviceUsageStatsProvider`, `getAllLogTimestampsProvider`) verwenden, sodass nur Konsumenten angepasst werden müssen.【F:lib/bootstrap/legacy_provider_scope.dart†L374-L383】【F:lib/bootstrap/providers.dart†L18-L41】
+   - Schritte: (a) neuen Riverpod-Provider im jeweiligen Feature-Ordner anlegen, (b) Abhängigkeiten via `ref.watch(...)` injizieren, (c) Legacy-Provider-Registrierung entfernen und Widgets auf `ref.watch` umstellen.
+2. **Priorität B – Geräte & Übungen:**
+   - NFC-, Device- und Exercise-Stacks sind stark vernetzt (`DeviceRepository`, diverse UseCases, `ExerciseProvider`, `AllExercisesProvider`). Die Migration startet mit Repository-/UseCase-Providern, die Firestore-Instanzen direkt aus Riverpod beziehen. Anschließend werden `ExerciseProvider` und `AllExercisesProvider` als `ChangeNotifierProvider` in Riverpod neu erstellt, bevor UI-Controller wie `WorkoutDayController` umgestellt werden.【F:lib/bootstrap/legacy_provider_scope.dart†L122-L370】
+   - Schritte: (a) neue Riverpod-Provider für Repositories/UseCases im Geräte-Feature definieren, (b) `WorkoutDayController` in Riverpod heben und Abhängigkeiten über `ref.watch` beziehen, (c) zuletzt UI-spezifische Provider wie `OverlayNumericKeypadController` migrieren.
+3. **Priorität C – Freunde & Kommunikation:**
+   - Friend- und Chat-Provider können nach Stabilisierung der Geräte-Domäne migriert werden, indem Firestore-Sources als Riverpod-Provider gekapselt werden und `FriendsProvider`/`FriendPresenceProvider` ihre Streams via `ref.listen` aktualisieren.【F:lib/bootstrap/legacy_provider_scope.dart†L179-L217】
+   - Schritte: (a) Firestore-Sources als `Provider`/`StreamProvider` neu aufsetzen, (b) Business-Notifiers nach Riverpod portieren, (c) Consumer-Widgets im Friends-Feature schrittweise auf `ref.watch` umstellen.
+4. **Priorität D – Restliche Legacy-Services:**
+   - Nach Abschluss der Kernmigration werden verbleibende Helper (`ThemeLoader`, `WorkoutSessionDurationService`, `TrainingPlanProvider`, `HistoryProvider` etc.) in Riverpod überführt. Fokus liegt auf Services mit geringen externen Abhängigkeiten, um `LegacyProviderScope` langfristig auf UI-nahe Controller zu reduzieren.【F:lib/bootstrap/legacy_provider_scope.dart†L218-L383】
 
 ## 8. Einbindung & Tests neuer States
 1. **Provider-basiertes Onboarding:**
-   - Neue `ChangeNotifier` müssen im `LegacyProviderScope.providers`-Array registriert werden und – falls gym-abhängig – `GymScopedResettableChangeNotifier` implementieren sowie den Controller via `context.read<GymScopedStateController>()` registrieren.【F:lib/bootstrap/legacy_provider_scope.dart†L51-L200】
-   - Auth/Gym-sensitive Provider laden Daten ausschließlich über `authProvider.gymCode` oder `authProvider.userId` im `update`-Hook, damit der Reset-Mechanismus greift. Kommentare im Scope dokumentieren die notwendige Reihenfolge.
-2. **Riverpod-Onboarding innerhalb des bestehenden Bootstraps:**
-   - Benötigt der neue Riverpod-State direkten Zugriff auf Legacy-Instanzen (z. B. AuthProvider), muss `_LegacyRiverpodBridge` einen weiteren Override erhalten: `overrides += [myProvider.overrideWith((ref) => context.read<MyNotifier>())];`. Ohne diesen Schritt existieren zwei unterschiedliche Instanzen.【F:lib/bootstrap/legacy_provider_scope.dart†L431-L489】
-   - Nutzt der State nur Bootstrap-Abhängigkeiten (SharedPreferences, Report-UseCases), reichen die vorhandenen Overrides aus `BootstrapResult.toOverrides()` – zusätzliche ProviderScope-Schichten sind nicht nötig.【F:lib/bootstrap/bootstrap.dart†L21-L77】
-3. **Konkrete Tests für Auth/Gym-abhängige States:**
-   - **Unit:** ChangeNotifier-Tests mit Fake `GymScopedStateController` und Mock MembershipService prüfen, dass `resetGymScopedState()` aufgerufen und `gymCode` korrekt neu geladen wird.
-   - **Widget:** Ein Widget-Test, der `LegacyProviderScope` + `_LegacyRiverpodBridge` in einen Test-`ProviderScope` einbettet und AuthProvider via Fake MembershipService umschaltet, stellt sicher, dass der neue ProviderScope-Override aktualisiert wird.
-   - **Integration/Golden:** Für Features mit Firestore-Abhängigkeit (z. B. Community) sollten Gyms via Fake AuthState gewechselt werden, während `ref.watch`-Consumer beobachtet werden; Assertions stellen sicher, dass alte Streams geschlossen werden.
+   - Solange ein State im LegacyScope verbleibt, muss er weiterhin im `providers`-Array registriert und – falls gym-abhängig – beim `GymScopedStateController` angemeldet werden.【F:lib/bootstrap/legacy_provider_scope.dart†L51-L305】
+2. **Riverpod-Onboarding:**
+   - Neue Riverpod-States ziehen Infrastruktur ausschließlich aus `bootstrap/providers.dart`. Ein zusätzlicher Scope ist nicht nötig; der bestehende globale `ProviderScope` liefert SharedPreferences, MembershipService, Auth-, Branding- und Gym-Instanzen bereits aus.【F:lib/bootstrap/providers.dart†L18-L143】【F:lib/main.dart†L9-L16】
+   - Legacy-Widgets, die noch `context.watch` nutzen, greifen über `LegacyProviderScope` auf dieselben Instanzen zu. Während der Migration sollten Adapter-Widgets (z. B. `ProviderListener`) Tests abdecken, damit Provider- und Riverpod-Zweig identische Daten erhalten.
+3. **Tests:**
+   - **Unit:** Gym-sensitive Riverpod-Provider mocken `authViewStateProvider` und `gymScopedStateControllerProvider`, um Reset-Szenarien abzudecken.【F:lib/bootstrap/providers.dart†L34-L143】
+   - **Widget:** Integrationstests rendern `ProviderScope(overrides: bootstrapResult.toOverrides())` + `LegacyProviderScope`, triggern Gym-Wechsel über `authControllerProvider` und prüfen, dass sowohl `context.watch`- als auch `ref.watch`-Consumer aktualisiert werden.【F:lib/main.dart†L9-L16】【F:lib/bootstrap/legacy_provider_scope.dart†L23-L383】
+   - **Golden/Feature:** Firestore-intensive Domains (Community, Friends) benötigen Tests, die Stream-Abos bei Gym-Wechsel schließen. Hierfür Riverpod-`ProviderContainer` einsetzen und Mock-Sources injizieren.
 
-## 9. Override-Governance (LegacyProviderScope)
-- `_LegacyRiverpodBridge` definiert die verbindliche Liste aller Overrides. Neue Riverpod-States, die ein Legacy-Gegenstück teilen müssen, fügen dort einen Eintrag hinzu – idealerweise mit `overrideWithProvider`, wenn zusätzliche Transformation (z. B. `AuthViewState.fromAuth`) nötig ist.【F:lib/bootstrap/legacy_provider_scope.dart†L431-L489】
-- Beispiel: Ein neuer Riverpod-Notifier `legacyHistoryProvider` sollte über `legacyHistoryProvider.overrideWith((ref) => provider.Provider.of<HistoryProvider>(context, listen: false))` angebunden werden. Tests müssen sicherstellen, dass der Override dieselbe Instanz wie `context.watch<HistoryProvider>()` liefert.
-- Für Auth/Gym-abhängige Overrides sind gezielte Tests Pflicht: Ein Widget-Test setzt `ProviderScope(overrides: [...])` mit dem neuen Override auf, triggert `authProvider.switchGym()` und prüft, dass sowohl Provider- als auch Riverpod-Consumer denselben neuen Wert sehen (z. B. `expect(ref.read(legacyHistoryProvider).lastGym, equals('gym-b'))`). Ohne diesen Test besteht die Gefahr, dass Overrides veralten oder `didChangeDependencies` nicht erneut ausgeführt wird.
+## 9. Override-Governance (ohne zusätzliche Bridge)
+- Die einzigen Overrides entstehen aktuell in `BootstrapResult.toOverrides()`; sie werden beim App-Start in den äußeren `ProviderScope` injiziert und stehen Riverpod wie Provider gleichermaßen zur Verfügung.【F:lib/bootstrap/bootstrap.dart†L19-L41】【F:lib/main.dart†L9-L16】
+- `LegacyProviderScope` darf ausschließlich auf diese Overrides zugreifen und konvertiert sie in Provider-Instanzen. Neue Overrides müssen deshalb zentral im Bootstrap ergänzt werden, damit sowohl Riverpod- als auch Provider-Welt konsistent bleiben.【F:lib/bootstrap/legacy_provider_scope.dart†L23-L120】
+- Sobald ein Legacy-Service nach Riverpod migriert wurde, wird seine Registrierung aus dem `providers`-Array entfernt und (falls nötig) durch einen Adapter ersetzt. Jede Entfernung sollte von Tests begleitet werden, die Auth-/Gym-Wechsel simulieren, damit kein State aus dem Override-Verbund herausfällt.
 
