@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-import 'package:tapem/core/providers/history_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/history/providers/history_provider.dart';
 import 'package:tapem/core/utils/nice_scale.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
@@ -16,7 +19,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/logging/elog.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   final String deviceId;
   final String deviceName;
   final String? deviceDescription;
@@ -34,19 +37,28 @@ class HistoryScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HistoryProvider>().loadHistory(
-            context: context,
-            deviceId: widget.deviceId,
-            exerciseId: widget.isMulti ? widget.exerciseId : null,
-          );
+      final auth = ref.read(authViewStateProvider);
+      final gymId = auth.gymCode;
+      final userId = auth.userId;
+      if (gymId == null || userId == null) {
+        return;
+      }
+      unawaited(
+        ref.read(historyProvider).loadHistory(
+              gymId: gymId,
+              deviceId: widget.deviceId,
+              userId: userId,
+              exerciseId: widget.isMulti ? widget.exerciseId : null,
+            ),
+      );
     });
   }
 
@@ -57,7 +69,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final textTheme = theme.textTheme;
     final brandColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final prov = context.watch<HistoryProvider>();
+    final prov = ref.watch(historyProvider);
     final smallStyle = textTheme.bodySmall?.copyWith(
       color: brandColor.withOpacity(0.7),
       fontSize: 10,

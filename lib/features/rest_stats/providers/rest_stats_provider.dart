@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/core/storage/rest_stats_cache_store.dart';
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import 'package:tapem/features/rest_stats/domain/models/rest_stat_summary.dart';
 
-class RestStatsProvider extends ChangeNotifier {
+class RestStatsProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   RestStatsProvider({
     RestStatsService? service,
     RestStatsCacheStore? cacheStore,
@@ -90,6 +94,19 @@ class RestStatsProvider extends ChangeNotifier {
     _stats = const [];
     _lastLoadedAt = null;
     notifyListeners();
+  }
+
+  @override
+  void resetGymScopedState() {
+    _activeGymId = null;
+    _activeUserId = null;
+    _resetState();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
   }
 
   Future<void> load({
@@ -189,8 +206,41 @@ class RestStatsProvider extends ChangeNotifier {
 
 final restStatsProvider = ChangeNotifierProvider<RestStatsProvider>((ref) {
   final provider = RestStatsProvider(
-    service: ref.read(restStatsServiceProvider),
+    service: ref.watch(restStatsServiceProvider),
   );
+  final gymScopedController = ref.watch(gymScopedStateControllerProvider);
+  provider.registerGymScopedResettable(gymScopedController);
+
+  Future<void> triggerLoad(AuthViewState state) async {
+    final gymId = state.gymCode;
+    final userId = state.userId;
+    if (!state.isLoggedIn || gymId == null || userId == null) {
+      provider.resetGymScopedState();
+      return;
+    }
+    await provider.load(
+      gymId: gymId,
+      userId: userId,
+      forceRefresh: true,
+    );
+  }
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (previous, next) {
+      final gymChanged = previous?.gymCode != next.gymCode;
+      final userChanged = previous?.userId != next.userId;
+      if (!gymChanged && !userChanged) {
+        if (!next.isLoggedIn || next.gymCode == null || next.userId == null) {
+          provider.resetGymScopedState();
+        }
+        return;
+      }
+      unawaited(triggerLoad(next));
+    },
+    fireImmediately: true,
+  );
+
   ref.onDispose(provider.dispose);
   return provider;
 });

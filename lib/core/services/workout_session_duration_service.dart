@@ -9,9 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
-import '../providers/branding_provider.dart';
+import '../../features/device/providers/device_riverpod.dart';
 import '../time/logic_day.dart';
 import '../utils/duration_format.dart';
 import 'workout_timer_telemetry.dart';
@@ -556,25 +555,26 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
 final workoutSessionDurationServiceProvider =
     ChangeNotifierProvider<WorkoutSessionDurationService>((ref) {
-  final service = WorkoutSessionDurationService();
+  final service = WorkoutSessionDurationService(
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
 
-  Future<void> update() {
-    final auth = ref.read(authControllerProvider);
-    final branding = ref.read(brandingProvider);
+  Future<void> update(AuthViewState state) {
     return service.setActiveContext(
-      uid: auth.userId,
-      gymId: branding.gymId,
+      uid: state.userId,
+      gymId: state.gymCode,
     );
   }
 
-  unawaited(update());
+  unawaited(update(ref.read(authViewStateProvider)));
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (_, next) => unawaited(update(next)),
+    fireImmediately: false,
+  );
+
   ref.onDispose(service.dispose);
-  ref.listen<AuthProvider>(authControllerProvider, (_, __) {
-    unawaited(update());
-  });
-  ref.listen<BrandingProvider>(brandingProvider, (_, __) {
-    unawaited(update());
-  });
   return service;
 });
 

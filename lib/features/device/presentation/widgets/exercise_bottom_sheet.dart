@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';

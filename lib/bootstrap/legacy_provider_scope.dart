@@ -5,22 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/providers/all_exercises_provider.dart';
+import '../features/device/providers/all_exercises_provider.dart';
 import '../core/providers/app_provider.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/branding_provider.dart';
 import '../core/providers/challenge_provider.dart';
-import '../core/providers/exercise_provider.dart';
+import '../features/device/providers/exercise_provider.dart';
 import '../core/providers/gym_context_state_adapter.dart';
 import '../core/providers/gym_provider.dart';
 import '../core/providers/gym_scoped_resettable.dart';
-import '../core/providers/history_provider.dart';
 import '../core/providers/muscle_group_provider.dart';
 import '../core/providers/profile_provider.dart';
-import '../core/providers/rest_stats_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/providers/theme_preference_provider.dart';
-import '../core/providers/training_plan_provider.dart';
+import '../features/training_plan/providers/training_plan_provider.dart';
 import '../core/providers/xp_provider.dart';
 import '../core/services/workout_session_duration_service.dart';
 import '../core/theme/theme_loader.dart';
@@ -213,12 +211,6 @@ class LegacyProviderScope extends ConsumerWidget {
       ),
       provider.ChangeNotifierProvider<TrainingPlanProvider>.value(
         value: ref.watch(trainingPlanProvider),
-      ),
-      provider.ChangeNotifierProvider<RestStatsProvider>.value(
-        value: ref.watch(restStatsProvider),
-      ),
-      provider.ChangeNotifierProvider<HistoryProvider>.value(
-        value: ref.watch(historyProvider),
       ),
       provider.ChangeNotifierProvider<ProfileProvider>.value(
         value: ref.watch(profileProvider),

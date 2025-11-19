@@ -1,16 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
+import 'package:tapem/core/providers/shared_preferences_provider.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
 import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
-import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/models/split_day.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/repositories/training_plan_repository.dart';
 
-class TrainingPlanProvider extends ChangeNotifier {
+class TrainingPlanProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final TrainingPlanRepository _repo;
+  final SharedPreferences _prefs;
   final Uuid _uuid = const Uuid();
   List<TrainingPlan> plans = [];
   TrainingPlan? currentPlan;
@@ -19,22 +28,22 @@ class TrainingPlanProvider extends ChangeNotifier {
   bool isSaving = false;
   String? error;
 
-  TrainingPlanProvider({TrainingPlanRepository? repo})
-      : _repo =
-            repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()) {
+  TrainingPlanProvider({
+    required SharedPreferences sharedPreferences,
+    TrainingPlanRepository? repo,
+  })  : _repo = repo ?? TrainingPlanRepositoryImpl(FirestoreTrainingPlanSource()),
+        _prefs = sharedPreferences {
     _loadActivePlanId();
   }
 
-  Future<void> _loadActivePlanId() async {
-    final prefs = await SharedPreferences.getInstance();
-    activePlanId = prefs.getString('activePlanId');
+  void _loadActivePlanId() {
+    activePlanId = _prefs.getString('activePlanId');
     notifyListeners();
   }
 
   Future<void> setActivePlan(String id) async {
     activePlanId = id;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('activePlanId', id);
+    await _prefs.setString('activePlanId', id);
     notifyListeners();
   }
 
@@ -186,15 +195,66 @@ class TrainingPlanProvider extends ChangeNotifier {
     plans.removeWhere((p) => p.id == planId);
     if (activePlanId == planId) {
       activePlanId = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('activePlanId');
+      await _prefs.remove('activePlanId');
     }
     notifyListeners();
+  }
+
+  @override
+  void resetGymScopedState() {
+    plans = [];
+    currentPlan = null;
+    isLoading = false;
+    isSaving = false;
+    error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
   }
 }
 
 final trainingPlanProvider = ChangeNotifierProvider<TrainingPlanProvider>((ref) {
-  final provider = TrainingPlanProvider();
+  final provider = TrainingPlanProvider(
+    sharedPreferences: ref.watch(sharedPreferencesProvider),
+    repo: TrainingPlanRepositoryImpl(
+      FirestoreTrainingPlanSource(
+        firestore: ref.watch(firebaseFirestoreProvider),
+      ),
+    ),
+  );
+  final gymScopedController = ref.watch(gymScopedStateControllerProvider);
+  provider.registerGymScopedResettable(gymScopedController);
+
+  Future<void> handleAuth(AuthViewState state) async {
+    final gymId = state.gymCode;
+    final userId = state.userId;
+    if (!state.isLoggedIn || gymId == null || userId == null) {
+      provider.resetGymScopedState();
+      return;
+    }
+    await provider.loadPlans(gymId, userId);
+  }
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (previous, next) {
+      final gymChanged = previous?.gymCode != next.gymCode;
+      final userChanged = previous?.userId != next.userId;
+      if (!gymChanged && !userChanged) {
+        if (!next.isLoggedIn || next.gymCode == null || next.userId == null) {
+          provider.resetGymScopedState();
+        }
+        return;
+      }
+      unawaited(handleAuth(next));
+    },
+    fireImmediately: true,
+  );
+
   ref.onDispose(provider.dispose);
   return provider;
 });

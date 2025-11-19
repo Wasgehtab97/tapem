@@ -11,7 +11,7 @@ final nfcServiceProvider = Provider<NfcService>((ref) {
 });
 
 final readNfcCodeProvider = Provider<ReadNfcCode>((ref) {
-  return ReadNfcCode(ref.read(nfcServiceProvider));
+  return ReadNfcCode(ref.watch(nfcServiceProvider));
 });
 
 final writeNfcTagUseCaseProvider = Provider<WriteNfcTagUseCase>((ref) {

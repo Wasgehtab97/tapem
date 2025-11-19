@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/exercise_provider.dart';
+import '../../../../features/device/providers/exercise_provider.dart';
 import '../../../device/domain/models/device.dart';
 import '../../../device/domain/models/exercise.dart';
 import '../../domain/models/exercise_entry.dart';
