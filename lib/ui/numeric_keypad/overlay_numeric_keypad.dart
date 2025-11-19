@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -405,10 +405,12 @@ class OverlayNumericKeypad extends StatelessWidget {
                     gap: gap,
                     theme: theme,
                     onHide: () {
-                      context
-                          .read<WorkoutDayController>()
-                          .focusedProvider
-                          ?.clearFocus();
+                      final dayController =
+                          legacy_provider.Provider.of<WorkoutDayController>(
+                        context,
+                        listen: false,
+                      );
+                      dayController.focusedProvider?.clearFocus();
                       controller.close();
                     },
                     onNavigate: () => _navigateNext(context, controller),
@@ -436,7 +438,13 @@ class OverlayNumericKeypad extends StatelessWidget {
   }
 
   static DeviceProvider? _activeProvider(BuildContext context) {
-    return context.read<WorkoutDayController>().focusedProvider;
+    // TODO(legacy-state): Replace the legacy Provider lookup once
+    // WorkoutDayController is served through Riverpod.
+    final controller = legacy_provider.Provider.of<WorkoutDayController>(
+      context,
+      listen: false,
+    );
+    return controller.focusedProvider;
   }
 
   static void _navigateNext(

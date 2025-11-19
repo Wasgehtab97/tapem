@@ -73,7 +73,8 @@ class HistoryProvider extends ChangeNotifier
   }
 
   void _computeStats() {
-    final logsSorted = [..._logs]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final logsSorted = [..._logs]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     if (logsSorted.isEmpty) {
       _workoutCount = 0;
       _setsPerSessionAvg = 0;
@@ -94,9 +95,11 @@ class HistoryProvider extends ChangeNotifier
 
     _workoutCount = sessionEntries.length;
     _setsPerSessionAvg = double.parse(
-        (_logs.length / (_workoutCount == 0 ? 1 : _workoutCount))
-            .toStringAsFixed(1));
-    _heaviest = logsSorted.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
+      (_logs.length / (_workoutCount == 0 ? 1 : _workoutCount))
+          .toStringAsFixed(1),
+    );
+    _heaviest =
+        logsSorted.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
 
     _e1rmChart = sessionEntries.map((e) {
       final date = e.value.first.timestamp;
@@ -108,7 +111,6 @@ class HistoryProvider extends ChangeNotifier
 
     _maxE1rm =
         _e1rmChart.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-  }
   }
 
   @override

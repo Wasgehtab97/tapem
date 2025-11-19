@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -98,7 +98,10 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final auth = context.read<AuthProvider>();
+    final auth = legacy_provider.Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
     if (!identical(auth, _authProvider)) {
       _authProvider?.removeListener(_handleAuthChanged);
       _authProvider = auth;
@@ -112,7 +115,11 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   }
 
   Future<void> _refreshGym() async {
-    final auth = _authProvider ?? context.read<AuthProvider>();
+    final auth = _authProvider ??
+        legacy_provider.Provider.of<AuthProvider>(
+          context,
+          listen: false,
+        );
     final gymId = auth.gymCode ?? '';
     if (gymId.isEmpty) {
       if (!mounted) return;
@@ -163,7 +170,11 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   }
 
   Future<void> _refreshFriends() async {
-    final auth = _authProvider ?? context.read<AuthProvider>();
+    final auth = _authProvider ??
+        legacy_provider.Provider.of<AuthProvider>(
+          context,
+          listen: false,
+        );
     final friendsState = ref.read(friendsProvider);
     final userId = auth.userId;
     if (userId == null) {
