@@ -117,3 +117,17 @@
    - Widget-Tests für `_RiverpodApp` prüfen, dass `currentGymIdProvider` den Watch-Wert korrekt übergibt.
    - Integrationstests für Auth/Gym-Flows (z. B. Fake Firebase/Auth) stellen sicher, dass UI bei Gym-Wechseln neu lädt und keine
      alten Streams aktiv bleiben.
+
+## 9. Override-Governance (LegacyProviderScope)
+- Der `LegacyProviderScope` kapselt weiterhin alle Provider-basierten Services und spiegelt ausgewählte States (Auth, Branding,
+  Gym) in die Riverpod-Welt, indem `_LegacyRiverpodBridge` die dazugehörigen Provider über `ProviderScope.overrides` ersetzt.
+  **Wichtig:** Zusätzlich zu `authControllerProvider`, `brandingProvider` und `gymProvider` wird nun auch
+  `authViewStateProvider` explizit überschrieben, damit Widgets wie der Splash-Screen bei Hybrid-Builds kein gemischtes State-
+  Setup mehr sehen.【F:lib/bootstrap/legacy_provider_scope.dart†L443-L481】
+- Pflegeprozess: Sobald ein neuer Riverpod-Provider indirekt von einem Provider-Äquivalent abhängt (z. B. `ref.watch` auf einem
+  überschriebenen ChangeNotifier), muss derselbe Wert in `_overrides` registriert werden. Der Override sollte eine Riverpod-
+  `Provider`-Instanz sein, die direkt `ref.watch` auf den bereits gebridgten Notifier nutzt; nur so bleiben Listener-Signale
+  (ChangeNotifier-Events) erhalten und Hot-Restarts liefern konsistente Werte.
+- Manuelles QA: Nach Änderungen an `_overrides` ist ein Hot-Restart (`flutter run` → `r`) Pflicht, um sicherzustellen, dass keine
+  Assertions bezüglich mehrfach initialisierter ProviderScopes mehr auftreten. Erst wenn der Splash-Screen ohne Assertion startet,
+  gilt der Bridge-Build als stabil.
