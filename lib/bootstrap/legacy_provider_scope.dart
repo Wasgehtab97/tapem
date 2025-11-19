@@ -65,7 +65,6 @@ import '../features/friends/providers/friend_chat_summary_provider.dart';
 import '../features/friends/providers/friend_presence_provider.dart';
 import '../features/friends/providers/friend_search_provider.dart';
 import '../features/friends/providers/friends_provider.dart';
-import '../features/gym/data/sources/firestore_gym_source.dart';
 import '../features/profile/presentation/providers/powerlifting_provider.dart';
 import '../features/report/domain/usecases/get_all_log_timestamps.dart';
 import '../features/report/domain/usecases/get_device_usage_stats.dart';
@@ -91,24 +90,20 @@ class LegacyProviderScope extends ConsumerWidget {
     final membership = ref.watch(membershipServiceProvider);
     final usageUC = ref.watch(getDeviceUsageStatsProvider);
     final logsUC = ref.watch(getAllLogTimestampsProvider);
-    final brandingSource =
-        FirestoreGymSource(firestore: FirebaseFirestore.instance);
+    final gymScopedController = ref.read(gymScopedStateControllerProvider);
+    final authProvider = ref.read(authControllerProvider);
+    final branding = ref.read(brandingProvider);
+    final gym = ref.read(gymProvider);
 
     return provider.MultiProvider(
       providers: [
         provider.Provider<SharedPreferences>.value(value: sharedPrefs),
         provider.Provider<MembershipService>.value(value: membership),
-        provider.ChangeNotifierProvider<GymScopedStateController>(
-          create: (_) => GymScopedStateController(),
+        provider.ChangeNotifierProvider<GymScopedStateController>.value(
+          value: gymScopedController,
         ),
-        provider.ChangeNotifierProvider<AuthProvider>(
-          create: (c) {
-            final controller = c.read<GymScopedStateController>();
-            return AuthProvider(
-              membershipService: membership,
-              gymScopedStateController: controller,
-            );
-          },
+        provider.ChangeNotifierProvider<AuthProvider>.value(
+          value: authProvider,
         ),
         provider.ChangeNotifierProxyProvider<AuthProvider, GymContextStateAdapter>(
           create: (_) => GymContextStateAdapter(),
@@ -118,52 +113,11 @@ class LegacyProviderScope extends ConsumerWidget {
             return resolved;
           },
         ),
-        provider.ChangeNotifierProxyProvider<AuthProvider, BrandingProvider>(
-          create: (context) {
-            final controller = context.read<GymScopedStateController>();
-            final resolved = BrandingProvider(
-              source: brandingSource,
-              membership: membership,
-            );
-            resolved.registerGymScopedResettable(controller);
-            return resolved;
-          },
-          update: (context, authProvider, branding) {
-            final resolved = branding ?? BrandingProvider(
-              source: brandingSource,
-              membership: membership,
-            );
-            resolved.registerGymScopedResettable(
-              context.read<GymScopedStateController>(),
-            );
-            resolved.loadBrandingWithGym(
-              authProvider.gymCode,
-              authProvider.userId,
-            );
-            return resolved;
-          },
+        provider.ChangeNotifierProvider<BrandingProvider>.value(
+          value: branding,
         ),
-        provider.ChangeNotifierProxyProvider<AuthProvider, GymProvider>(
-          create: (context) {
-            final resolved = GymProvider();
-            resolved.registerGymScopedResettable(
-              context.read<GymScopedStateController>(),
-            );
-            return resolved;
-          },
-          update: (context, authProvider, gymProv) {
-            final resolved = gymProv ?? GymProvider();
-            resolved.registerGymScopedResettable(
-              context.read<GymScopedStateController>(),
-            );
-            final gymId = authProvider.gymCode;
-            if (gymId == null || gymId.isEmpty) {
-              resolved.resetGymScopedState();
-            } else if (resolved.lastRequestedGymId != gymId) {
-              unawaited(resolved.loadGymData(gymId));
-            }
-            return resolved;
-          },
+        provider.ChangeNotifierProvider<GymProvider>.value(
+          value: gym,
         ),
         // TODO(legacy-state): migrate remaining Provider-based services to Riverpod
         provider.Provider<NfcService>(create: (_) => NfcService()),
@@ -428,50 +382,7 @@ class LegacyProviderScope extends ConsumerWidget {
         ),
         provider.ChangeNotifierProvider(create: (_) => RankProvider()),
       ],
-      child: _LegacyRiverpodBridge(child: child),
-    );
-  }
-}
-
-class _LegacyRiverpodBridge extends StatefulWidget {
-  const _LegacyRiverpodBridge({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_LegacyRiverpodBridge> createState() => _LegacyRiverpodBridgeState();
-}
-
-class _LegacyRiverpodBridgeState extends State<_LegacyRiverpodBridge> {
-  late final AuthProvider _auth;
-  late final BrandingProvider _branding;
-  late final GymProvider _gym;
-  late final List<Override> _overrides;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _auth = provider.Provider.of<AuthProvider>(context, listen: false);
-    _branding = provider.Provider.of<BrandingProvider>(context, listen: false);
-    _gym = provider.Provider.of<GymProvider>(context, listen: false);
-    _overrides = [
-      authControllerProvider.overrideWith((ref) => _auth),
-      authViewStateProvider.overrideWithProvider(
-        Provider<AuthViewState>((ref) {
-          final auth = ref.watch(authControllerProvider);
-          return AuthViewState.fromAuth(auth);
-        }),
-      ),
-      brandingProvider.overrideWith((ref) => _branding),
-      gymProvider.overrideWith((ref) => _gym),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: _overrides,
-      child: widget.child,
+      child: child,
     );
   }
 }
