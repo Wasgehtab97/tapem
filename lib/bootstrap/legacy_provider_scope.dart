@@ -456,6 +456,12 @@ class _LegacyRiverpodBridgeState extends State<_LegacyRiverpodBridge> {
     _gym = provider.Provider.of<GymProvider>(context, listen: false);
     _overrides = [
       authControllerProvider.overrideWith((ref) => _auth),
+      authViewStateProvider.overrideWithProvider(
+        Provider<AuthViewState>((ref) {
+          final auth = ref.watch(authControllerProvider);
+          return AuthViewState.fromAuth(auth);
+        }),
+      ),
       brandingProvider.overrideWith((ref) => _branding),
       gymProvider.overrideWith((ref) => _gym),
     ];
