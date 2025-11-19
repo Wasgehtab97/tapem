@@ -21,7 +21,6 @@ import '../core/providers/theme_preference_provider.dart';
 import '../features/training_plan/providers/training_plan_provider.dart';
 import '../core/providers/xp_provider.dart';
 import '../core/services/workout_session_duration_service.dart';
-import '../core/theme/theme_loader.dart';
 import '../features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import '../features/creatine/providers/creatine_provider.dart';
 import '../features/device/domain/repositories/device_repository.dart';
@@ -139,20 +138,22 @@ class LegacyProviderScope extends ConsumerWidget {
       provider.ChangeNotifierProvider<SettingsProvider>.value(
         value: ref.watch(settingsProvider),
       ),
+      // TODO(legacy-state): Remove after keypad widgets read
+      // overlayNumericKeypadControllerProvider via ref.watch.
       provider.ChangeNotifierProvider<OverlayNumericKeypadController>.value(
         value: ref.watch(overlayNumericKeypadControllerProvider),
       ),
+      // TODO(legacy-state): Timer UI still relies on provider package.
       provider.ChangeNotifierProvider<SessionTimerService>.value(
         value: ref.watch(sessionTimerServiceProvider),
       ),
       provider.Provider<StorySessionService>.value(
         value: ref.watch(storySessionServiceProvider),
       ),
+      // TODO(legacy-state): Remove once settings screens consume
+      // themePreferenceProvider via Riverpod directly.
       provider.ChangeNotifierProvider<ThemePreferenceProvider>.value(
         value: ref.watch(themePreferenceProvider),
-      ),
-      provider.ChangeNotifierProvider<ThemeLoader>.value(
-        value: ref.watch(themeLoaderProvider),
       ),
       provider.ChangeNotifierProvider<ChallengeProvider>.value(
         value: ref.watch(challengeProvider),
@@ -160,15 +161,20 @@ class LegacyProviderScope extends ConsumerWidget {
       provider.ChangeNotifierProvider<XpProvider>.value(
         value: ref.watch(xpProvider),
       ),
+      // TODO(legacy-state): Session duration dialogs still use provider.
       provider.ChangeNotifierProvider<WorkoutSessionDurationService>.value(
         value: ref.watch(workoutSessionDurationServiceProvider),
       ),
+      // TODO(legacy-state): Device screens still depend on provider-based
+      // WorkoutDayController.
       provider.ChangeNotifierProvider<WorkoutDayController>.value(
         value: ref.watch(workoutDayControllerProvider),
       ),
+      // TODO(legacy-state): Training plan UI awaits Riverpod migration.
       provider.ChangeNotifierProvider<TrainingPlanProvider>.value(
         value: ref.watch(trainingPlanProvider),
       ),
+      // TODO(legacy-state): Profile widgets consume provider.ProfileProvider.
       provider.ChangeNotifierProvider<ProfileProvider>.value(
         value: ref.watch(profileProvider),
       ),
