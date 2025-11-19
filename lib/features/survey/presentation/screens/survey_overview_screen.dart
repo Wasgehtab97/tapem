@@ -1,45 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import '../../survey_provider.dart';
 import '../../survey.dart';
 import 'survey_detail_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class SurveyOverviewScreen extends StatefulWidget {
+class SurveyOverviewScreen extends ConsumerStatefulWidget {
   final String gymId;
   const SurveyOverviewScreen({Key? key, required this.gymId}) : super(key: key);
 
   @override
-  State<SurveyOverviewScreen> createState() => _SurveyOverviewScreenState();
+  ConsumerState<SurveyOverviewScreen> createState() =>
+      _SurveyOverviewScreenState();
 }
 
-class _SurveyOverviewScreenState extends State<SurveyOverviewScreen>
+class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late SurveyProvider _surveyProvider;
 
   @override
   void initState() {
     super.initState();
-    _surveyProvider = context.read<SurveyProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _surveyProvider.listen(widget.gymId);
+      ref.read(surveyProvider).listen(widget.gymId);
     });
     _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _surveyProvider.cancel();
+    ref.read(surveyProvider).cancel();
     _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final surveyProv = context.watch<SurveyProvider>();
+    final surveyProv = ref.watch(surveyProvider);
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(

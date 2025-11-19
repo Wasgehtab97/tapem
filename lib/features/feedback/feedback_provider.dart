@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 
 import 'models/feedback_entry.dart';
 
@@ -15,7 +16,8 @@ void _defaultLog(String message, [StackTrace? stack]) {
   }
 }
 
-class FeedbackProvider extends ChangeNotifier {
+class FeedbackProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final FirebaseFirestore _firestore;
   final LogFn _log;
 
@@ -116,10 +118,27 @@ class FeedbackProvider extends ChangeNotifier {
       _error = e.toString();
     }
   }
+
+  @override
+  void resetGymScopedState() {
+    _entries.clear();
+    _loading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
+  }
 }
 
 final feedbackProvider = ChangeNotifierProvider<FeedbackProvider>((ref) {
   final provider = FeedbackProvider(firestore: FirebaseFirestore.instance);
+  provider.registerGymScopedResettable(
+    ref.read(gymScopedStateControllerProvider),
+  );
   ref.onDispose(provider.dispose);
   return provider;
 });

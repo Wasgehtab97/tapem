@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tapem/features/feedback/feedback_provider.dart';
+import 'package:tapem/features/feedback/feedback_provider.dart'
+    as feedback_riverpod;
 import 'package:tapem/features/feedback/models/feedback_entry.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 
-class FeedbackOverviewScreen extends StatefulWidget {
+class FeedbackOverviewScreen extends ConsumerStatefulWidget {
   final String gymId;
   const FeedbackOverviewScreen({Key? key, required this.gymId})
     : super(key: key);
 
   @override
-  State<FeedbackOverviewScreen> createState() => _FeedbackOverviewScreenState();
+  ConsumerState<FeedbackOverviewScreen> createState() =>
+      _FeedbackOverviewScreenState();
 }
 
-class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
+class _FeedbackOverviewScreenState
+    extends ConsumerState<FeedbackOverviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -24,7 +27,7 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FeedbackProvider>().loadFeedback(widget.gymId);
+      ref.read(feedback_riverpod.feedbackProvider).loadFeedback(widget.gymId);
     });
   }
 
@@ -36,10 +39,9 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<FeedbackProvider>();
-    final devices = {
-      for (var d in context.watch<GymProvider>().devices) d.uid: d,
-    };
+    final provider = ref.watch(feedback_riverpod.feedbackProvider);
+    final gym = ref.watch(gymProvider);
+    final devices = {for (var d in gym.devices) d.uid: d};
 
     return Scaffold(
       appBar: AppBar(
@@ -86,7 +88,7 @@ class _FeedbackOverviewScreenState extends State<FeedbackOverviewScreen>
                   ? IconButton(
                     icon: const Icon(Icons.check),
                     onPressed: () {
-                      context.read<FeedbackProvider>().markDone(
+                      ref.read(feedback_riverpod.feedbackProvider).markDone(
                         gymId: widget.gymId,
                         entryId: entry.id,
                       );

@@ -17,8 +17,6 @@ import '../core/providers/gym_scoped_resettable.dart';
 import '../core/providers/history_provider.dart';
 import '../core/providers/muscle_group_provider.dart';
 import '../core/providers/profile_provider.dart';
-import '../core/providers/rank_provider.dart';
-import '../core/providers/report_provider.dart';
 import '../core/providers/rest_stats_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/providers/theme_preference_provider.dart';
@@ -45,7 +43,6 @@ import '../features/device/domain/usecases/update_exercise_usecase.dart';
 import '../features/device/presentation/controllers/workout_day_controller.dart';
 import '../features/device/providers/device_riverpod.dart';
 import '../features/device/providers/workout_day_controller_provider.dart';
-import '../features/feedback/feedback_provider.dart';
 import '../features/friends/data/friend_chat_api.dart';
 import '../features/friends/data/friend_chat_source.dart';
 import '../features/friends/data/friends_api.dart';
@@ -66,7 +63,6 @@ import '../features/profile/presentation/providers/powerlifting_provider.dart';
 import '../features/report/providers/report_providers.dart';
 import '../features/rest_stats/data/rest_stats_service.dart';
 import '../features/story_session/story_session_service.dart';
-import '../features/survey/survey_provider.dart';
 import '../services/membership_service.dart';
 import '../ui/numeric_keypad/overlay_numeric_keypad.dart';
 import '../ui/timer/session_timer_service.dart';
@@ -244,18 +240,6 @@ class LegacyProviderScope extends ConsumerWidget {
       ),
       provider.ChangeNotifierProvider<AllExercisesProvider>.value(
         value: ref.watch(allExercisesProvider),
-      ),
-      provider.ChangeNotifierProvider<ReportProvider>.value(
-        value: ref.watch(reportProvider),
-      ),
-      provider.ChangeNotifierProvider<SurveyProvider>.value(
-        value: ref.watch(surveyProvider),
-      ),
-      provider.ChangeNotifierProvider<FeedbackProvider>.value(
-        value: ref.watch(feedbackProvider),
-      ),
-      provider.ChangeNotifierProvider<RankProvider>.value(
-        value: ref.watch(rankProvider),
       ),
     ];
 

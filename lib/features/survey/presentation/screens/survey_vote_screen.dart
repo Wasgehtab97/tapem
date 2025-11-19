@@ -1,38 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../survey_provider.dart';
 import '../../survey.dart';
 
-class SurveyVoteScreen extends StatefulWidget {
+class SurveyVoteScreen extends ConsumerStatefulWidget {
   final String gymId;
   final String userId;
   const SurveyVoteScreen({Key? key, required this.gymId, required this.userId})
     : super(key: key);
 
   @override
-  State<SurveyVoteScreen> createState() => _SurveyVoteScreenState();
+  ConsumerState<SurveyVoteScreen> createState() => _SurveyVoteScreenState();
 }
 
-class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
+class _SurveyVoteScreenState extends ConsumerState<SurveyVoteScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SurveyProvider>().listen(widget.gymId);
+      ref.read(surveyProvider).listen(widget.gymId);
     });
   }
 
   @override
   void dispose() {
-    context.read<SurveyProvider>().cancel();
+    ref.read(surveyProvider).cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<SurveyProvider>();
+    final prov = ref.watch(surveyProvider);
     final surveys = prov.openSurveys;
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
@@ -66,7 +66,7 @@ class _SurveyVoteScreenState extends State<SurveyVoteScreen> {
   }
 }
 
-class _SurveyVoteDetailScreen extends StatefulWidget {
+class _SurveyVoteDetailScreen extends ConsumerStatefulWidget {
   final String gymId;
   final Survey survey;
   final String userId;
@@ -78,11 +78,12 @@ class _SurveyVoteDetailScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_SurveyVoteDetailScreen> createState() =>
+  ConsumerState<_SurveyVoteDetailScreen> createState() =>
       _SurveyVoteDetailScreenState();
 }
 
-class _SurveyVoteDetailScreenState extends State<_SurveyVoteDetailScreen> {
+class _SurveyVoteDetailScreenState
+    extends ConsumerState<_SurveyVoteDetailScreen> {
   String? _selectedOption;
   bool _submitted = false;
 
@@ -126,8 +127,8 @@ class _SurveyVoteDetailScreenState extends State<_SurveyVoteDetailScreen> {
                           _selectedOption == null
                               ? null
                               : () async {
-                                await context
-                                    .read<SurveyProvider>()
+                                await ref
+                                    .read(surveyProvider)
                                     .submitAnswer(
                                       gymId: widget.gymId,
                                       surveyId: widget.survey.id,

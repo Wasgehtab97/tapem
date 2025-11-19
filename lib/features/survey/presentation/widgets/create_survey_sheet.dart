@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../survey_provider.dart';
 
-class CreateSurveySheet extends StatefulWidget {
+class CreateSurveySheet extends ConsumerStatefulWidget {
   final String gymId;
   const CreateSurveySheet({Key? key, required this.gymId}) : super(key: key);
 
   @override
-  State<CreateSurveySheet> createState() => _CreateSurveySheetState();
+  ConsumerState<CreateSurveySheet> createState() => _CreateSurveySheetState();
 }
 
-class _CreateSurveySheetState extends State<CreateSurveySheet> {
+class _CreateSurveySheetState extends ConsumerState<CreateSurveySheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _optionController = TextEditingController();
   final List<String> _options = [];
@@ -52,7 +52,7 @@ class _CreateSurveySheetState extends State<CreateSurveySheet> {
       );
       return;
     }
-    await context.read<SurveyProvider>().createSurvey(
+    await ref.read(surveyProvider).createSurvey(
       gymId: widget.gymId,
       title: title,
       options: List<String>.from(_options),
