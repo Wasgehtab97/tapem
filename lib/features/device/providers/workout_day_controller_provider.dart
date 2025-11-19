@@ -1,6 +1,5 @@
 // lib/features/device/providers/workout_day_controller_provider.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/drafts/session_draft_repository_impl.dart';
@@ -16,19 +15,21 @@ import 'device_riverpod.dart';
 
 final workoutDayControllerProvider =
     ChangeNotifierProvider<WorkoutDayController>((ref) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
+  final membership = ref.watch(membershipServiceProvider);
   final controller = WorkoutDayController(
-    firestore: FirebaseFirestore.instance,
-    membership: ref.read(membershipServiceProvider),
-    deviceRepository: ref.read(deviceRepositoryProvider),
-    getDevicesForGym: ref.read(getDevicesForGymProvider),
+    firestore: firestore,
+    membership: membership,
+    deviceRepository: ref.watch(deviceRepositoryProvider),
+    getDevicesForGym: ref.watch(getDevicesForGymProvider),
     communityStatsWriter: CommunityStatsWriter(
-      firestore: FirebaseFirestore.instance,
+      firestore: firestore,
     ),
     createDraftRepository: () => SessionDraftRepositoryImpl(),
   );
 
   controller.registerGymScopedResettable(
-    ref.read(gymScopedStateControllerProvider),
+    ref.watch(gymScopedStateControllerProvider),
   );
   controller.attachExternalServices(
     xpProvider: ref.read(xpProvider),
@@ -36,18 +37,23 @@ final workoutDayControllerProvider =
     sessionDurationService: ref.read(workoutSessionDurationServiceProvider),
   );
 
-  void updateMembership() {
-    controller.updateMembership(ref.read(membershipServiceProvider));
+  void handleAuth(AuthViewState state) {
+    controller.setActiveUser(state.userId);
   }
 
-  void updateAuth() {
-    controller.setActiveUser(ref.read(authControllerProvider).userId);
-  }
+  controller.updateMembership(membership);
+  handleAuth(ref.read(authViewStateProvider));
 
-  updateMembership();
-  updateAuth();
+  ref.listen<MembershipService>(
+    membershipServiceProvider,
+    (_, next) => controller.updateMembership(next),
+  );
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (_, next) => handleAuth(next),
+    fireImmediately: false,
+  );
 
-  ref.listen<AuthProvider>(authControllerProvider, (_, __) => updateAuth());
   ref.onDispose(controller.dispose);
   return controller;
 });

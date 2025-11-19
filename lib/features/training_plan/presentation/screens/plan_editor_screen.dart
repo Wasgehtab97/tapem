@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/training_plan_provider.dart';
+import '../../../../features/training_plan/providers/training_plan_provider.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/split_day.dart';
 import '../widgets/device_selection_dialog.dart';

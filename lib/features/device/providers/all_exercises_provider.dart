@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 
-class AllExercisesProvider extends ChangeNotifier {
+class AllExercisesProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final GetExercisesForDevice _getEx;
   AllExercisesProvider({required GetExercisesForDevice getEx}) : _getEx = getEx;
 
@@ -46,12 +50,45 @@ class AllExercisesProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  @override
+  void resetGymScopedState() {
+    _byDevice.clear();
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
+  }
 }
 
 final allExercisesProvider = ChangeNotifierProvider<AllExercisesProvider>((ref) {
   final provider = AllExercisesProvider(
-    getEx: ref.read(getExercisesForDeviceProvider),
+    getEx: ref.watch(getExercisesForDeviceProvider),
   );
+  final gymScopedController = ref.watch(gymScopedStateControllerProvider);
+  provider.registerGymScopedResettable(gymScopedController);
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (previous, next) {
+      final gymChanged = previous?.gymCode != next.gymCode;
+      final userChanged = previous?.userId != next.userId;
+      if (!next.isLoggedIn || next.gymCode == null || next.userId == null) {
+        provider.resetGymScopedState();
+        return;
+      }
+      if (gymChanged || userChanged) {
+        provider.resetGymScopedState();
+      }
+    },
+    fireImmediately: true,
+  );
+
   ref.onDispose(provider.dispose);
   return provider;
 });

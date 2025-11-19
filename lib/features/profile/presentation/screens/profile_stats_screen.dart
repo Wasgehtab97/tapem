@@ -1,26 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
-import 'package:tapem/core/providers/rest_stats_provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/rest_stats/providers/rest_stats_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class ProfileStatsScreen extends StatefulWidget {
+class ProfileStatsScreen extends ConsumerStatefulWidget {
   const ProfileStatsScreen({super.key});
 
   @override
-  State<ProfileStatsScreen> createState() => _ProfileStatsScreenState();
+  ConsumerState<ProfileStatsScreen> createState() => _ProfileStatsScreenState();
 }
 
-class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
+class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
   @override
   void initState() {
     super.initState();
@@ -29,8 +31,8 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
       if (!prov.isLoading && prov.trainingDates.isEmpty) {
         prov.loadTrainingDates(context);
       }
-      final auth = context.read<AuthProvider>();
-      final restStats = context.read<RestStatsProvider>();
+      final auth = ref.read(authViewStateProvider);
+      final restStats = ref.read(restStatsProvider);
       final gymId = auth.gymCode;
       final userId = auth.userId;
       if (gymId != null && userId != null) {
@@ -44,7 +46,7 @@ class _ProfileStatsScreenState extends State<ProfileStatsScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProfileProvider>();
-    final restStatsProv = context.watch<RestStatsProvider>();
+    final restStatsProv = ref.watch(restStatsProvider);
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =

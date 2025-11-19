@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';

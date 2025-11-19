@@ -22,70 +22,77 @@ import '../domain/usecases/update_device_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_usecase.dart';
 
+final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
+  return FirebaseFirestore.instance;
+});
+
 final deviceRepositoryProvider = Provider<DeviceRepository>((ref) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
   return DeviceRepositoryImpl(
-    FirestoreDeviceSource(firestore: FirebaseFirestore.instance),
+    FirestoreDeviceSource(firestore: firestore),
   );
 });
 
 final getDevicesForGymProvider = Provider<GetDevicesForGym>((ref) {
-  return GetDevicesForGym(ref.read(deviceRepositoryProvider));
+  return GetDevicesForGym(ref.watch(deviceRepositoryProvider));
 });
 
 final getDeviceByNfcCodeProvider = Provider<GetDeviceByNfcCode>((ref) {
-  return GetDeviceByNfcCode(ref.read(deviceRepositoryProvider));
+  return GetDeviceByNfcCode(ref.watch(deviceRepositoryProvider));
 });
 
 final deleteDeviceUseCaseProvider = Provider<DeleteDeviceUseCase>((ref) {
-  return DeleteDeviceUseCase(ref.read(deviceRepositoryProvider));
+  return DeleteDeviceUseCase(ref.watch(deviceRepositoryProvider));
 });
 
 final createDeviceUseCaseProvider = Provider<CreateDeviceUseCase>((ref) {
-  return CreateDeviceUseCase(ref.read(deviceRepositoryProvider));
+  return CreateDeviceUseCase(ref.watch(deviceRepositoryProvider));
 });
 
 final setDeviceMuscleGroupsUseCaseProvider =
     Provider<SetDeviceMuscleGroupsUseCase>((ref) {
-  return SetDeviceMuscleGroupsUseCase(ref.read(deviceRepositoryProvider));
+  return SetDeviceMuscleGroupsUseCase(ref.watch(deviceRepositoryProvider));
 });
 
 final updateDeviceMuscleGroupsUseCaseProvider =
     Provider<UpdateDeviceMuscleGroupsUseCase>((ref) {
-  return UpdateDeviceMuscleGroupsUseCase(ref.read(deviceRepositoryProvider));
+  return UpdateDeviceMuscleGroupsUseCase(ref.watch(deviceRepositoryProvider));
 });
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>((ref) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
   return ExerciseRepositoryImpl(
-    FirestoreExerciseSource(firestore: FirebaseFirestore.instance),
+    FirestoreExerciseSource(firestore: firestore),
   );
 });
 
 final getExercisesForDeviceProvider = Provider<GetExercisesForDevice>((ref) {
-  return GetExercisesForDevice(ref.read(exerciseRepositoryProvider));
+  return GetExercisesForDevice(ref.watch(exerciseRepositoryProvider));
 });
 
 final createExerciseUseCaseProvider = Provider<CreateExerciseUseCase>((ref) {
-  return CreateExerciseUseCase(ref.read(exerciseRepositoryProvider));
+  return CreateExerciseUseCase(ref.watch(exerciseRepositoryProvider));
 });
 
 final deleteExerciseUseCaseProvider = Provider<DeleteExerciseUseCase>((ref) {
-  return DeleteExerciseUseCase(ref.read(exerciseRepositoryProvider));
+  return DeleteExerciseUseCase(ref.watch(exerciseRepositoryProvider));
 });
 
 final updateExerciseUseCaseProvider = Provider<UpdateExerciseUseCase>((ref) {
-  return UpdateExerciseUseCase(ref.read(exerciseRepositoryProvider));
+  return UpdateExerciseUseCase(ref.watch(exerciseRepositoryProvider));
 });
 
 final updateExerciseMuscleGroupsUseCaseProvider =
     Provider<UpdateExerciseMuscleGroupsUseCase>((ref) {
   return UpdateExerciseMuscleGroupsUseCase(
-    ref.read(exerciseRepositoryProvider),
+    ref.watch(exerciseRepositoryProvider),
   );
 });
 
 final exerciseXpReassignmentServiceProvider =
     Provider<ExerciseXpReassignmentService>((ref) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
   return ExerciseXpReassignmentService(
-    firestore: FirebaseFirestore.instance,
+    firestore: firestore,
   );
 });

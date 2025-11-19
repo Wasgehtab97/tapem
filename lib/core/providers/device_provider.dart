@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart'; // mapEquals
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';

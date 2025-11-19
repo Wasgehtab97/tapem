@@ -8,7 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/training_plan_provider.dart';
+import '../../../../features/training_plan/providers/training_plan_provider.dart';
 import '../../domain/models/exercise_entry.dart';
 import '../../domain/models/planned_set.dart';
 import '../widgets/device_selection_dialog.dart';

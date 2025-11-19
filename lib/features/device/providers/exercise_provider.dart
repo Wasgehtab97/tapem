@@ -1,16 +1,20 @@
-// lib/core/providers/exercise_provider.dart
+// lib/features/device/providers/exercise_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tapem/features/device/domain/models/exercise.dart';
-import 'package:tapem/features/device/domain/usecases/get_exercises_for_device.dart';
-import 'package:tapem/features/device/domain/services/exercise_xp_reassignment_service.dart';
-import 'package:tapem/features/device/domain/usecases/create_exercise_usecase.dart';
-import 'package:tapem/features/device/domain/usecases/delete_exercise_usecase.dart';
-import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
-import 'package:tapem/features/device/domain/usecases/update_exercise_muscle_groups_usecase.dart';
-import 'package:tapem/features/device/providers/device_riverpod.dart';
 
-class ExerciseProvider extends ChangeNotifier {
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
+import '../domain/models/exercise.dart';
+import '../domain/services/exercise_xp_reassignment_service.dart';
+import '../domain/usecases/create_exercise_usecase.dart';
+import '../domain/usecases/delete_exercise_usecase.dart';
+import '../domain/usecases/get_exercises_for_device.dart';
+import '../domain/usecases/update_exercise_muscle_groups_usecase.dart';
+import '../domain/usecases/update_exercise_usecase.dart';
+import 'device_riverpod.dart';
+
+class ExerciseProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final GetExercisesForDevice _getEx;
   final CreateExerciseUseCase _createEx;
   final DeleteExerciseUseCase _deleteEx;
@@ -152,17 +156,52 @@ class ExerciseProvider extends ChangeNotifier {
       newSecondaryIds: secondaryIds,
     );
   }
+
+  @override
+  void resetGymScopedState() {
+    _exercises = [];
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
+  }
 }
 
 final exerciseProvider = ChangeNotifierProvider<ExerciseProvider>((ref) {
   final provider = ExerciseProvider(
-    getEx: ref.read(getExercisesForDeviceProvider),
-    createEx: ref.read(createExerciseUseCaseProvider),
-    deleteEx: ref.read(deleteExerciseUseCaseProvider),
-    updateEx: ref.read(updateExerciseUseCaseProvider),
-    updateMuscles: ref.read(updateExerciseMuscleGroupsUseCaseProvider),
-    xpReassignment: ref.read(exerciseXpReassignmentServiceProvider),
+    getEx: ref.watch(getExercisesForDeviceProvider),
+    createEx: ref.watch(createExerciseUseCaseProvider),
+    deleteEx: ref.watch(deleteExerciseUseCaseProvider),
+    updateEx: ref.watch(updateExerciseUseCaseProvider),
+    updateMuscles: ref.watch(updateExerciseMuscleGroupsUseCaseProvider),
+    xpReassignment: ref.watch(exerciseXpReassignmentServiceProvider),
   );
+  final gymScopedController = ref.watch(gymScopedStateControllerProvider);
+  provider.registerGymScopedResettable(gymScopedController);
+
+  void handleAuthChange(AuthViewState? previous, AuthViewState next) {
+    final gymChanged = previous?.gymCode != next.gymCode;
+    final userChanged = previous?.userId != next.userId;
+    if (!next.isLoggedIn || next.gymCode == null || next.userId == null) {
+      provider.resetGymScopedState();
+      return;
+    }
+    if (gymChanged || userChanged) {
+      provider.resetGymScopedState();
+    }
+  }
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    handleAuthChange,
+    fireImmediately: true,
+  );
+
   ref.onDispose(provider.dispose);
   return provider;
 });

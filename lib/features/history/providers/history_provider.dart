@@ -1,13 +1,15 @@
-// lib/core/providers/history_provider.dart
+// lib/features/history/providers/history_provider.dart
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/features/history/data/sources/firestore_history_source.dart';
+
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/history/data/repositories/history_repository_impl.dart';
-import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
+import 'package:tapem/features/history/data/sources/firestore_history_source.dart';
 import 'package:tapem/features/history/domain/models/workout_log.dart';
+import 'package:tapem/features/history/domain/usecases/get_history_for_device.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 
 class ChartPoint {
   final DateTime date;
@@ -15,7 +17,8 @@ class ChartPoint {
   ChartPoint(this.date, this.value);
 }
 
-class HistoryProvider extends ChangeNotifier {
+class HistoryProvider extends ChangeNotifier
+    with GymScopedResettableChangeNotifier {
   final GetHistoryForDevice _getHistory;
 
   HistoryProvider({GetHistoryForDevice? getHistory})
@@ -43,8 +46,9 @@ class HistoryProvider extends ChangeNotifier {
 
   /// Lädt die Historie für [deviceId] und den aktuell eingeloggten User.
   Future<void> loadHistory({
-    required BuildContext context,
+    required String gymId,
     required String deviceId,
+    required String userId,
     String? exerciseId,
   }) async {
     _isLoading = true;
@@ -52,13 +56,6 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final gymId = auth.gymCode;
-      final userId = auth.userId;
-      if (gymId == null || userId == null) {
-        throw Exception('Benutzer nicht eingeloggt');
-      }
-
       _logs = await _getHistory.execute(
         gymId: gymId,
         deviceId: deviceId,
@@ -112,10 +109,58 @@ class HistoryProvider extends ChangeNotifier {
     _maxE1rm =
         _e1rmChart.map((e) => e.value).reduce((a, b) => a > b ? a : b);
   }
+  }
+
+  @override
+  void resetGymScopedState() {
+    _logs = [];
+    _workoutCount = 0;
+    _setsPerSessionAvg = 0;
+    _heaviest = 0;
+    _maxE1rm = 0;
+    _e1rmChart = [];
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    disposeGymScopedRegistration();
+    super.dispose();
+  }
 }
 
+final getHistoryForDeviceProvider = Provider<GetHistoryForDevice>((ref) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
+  return GetHistoryForDevice(
+    HistoryRepositoryImpl(FirestoreHistorySource(firestore)),
+  );
+});
+
 final historyProvider = ChangeNotifierProvider<HistoryProvider>((ref) {
-  final provider = HistoryProvider();
+  final provider = HistoryProvider(
+    getHistory: ref.watch(getHistoryForDeviceProvider),
+  );
+  final gymScopedController = ref.watch(gymScopedStateControllerProvider);
+  provider.registerGymScopedResettable(gymScopedController);
+
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (previous, next) {
+      final gymChanged = previous?.gymCode != next.gymCode;
+      final userChanged = previous?.userId != next.userId;
+      if (!gymChanged && !userChanged) {
+        if (!next.isLoggedIn || next.gymCode == null || next.userId == null) {
+          provider.resetGymScopedState();
+        }
+        return;
+      }
+      provider.resetGymScopedState();
+    },
+    fireImmediately: true,
+  );
+
   ref.onDispose(provider.dispose);
   return provider;
 });

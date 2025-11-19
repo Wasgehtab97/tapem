@@ -4,7 +4,7 @@ import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/training_plan_provider.dart';
+import '../../../../features/training_plan/providers/training_plan_provider.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/widgets/brand_primary_button.dart';
 import 'plan_editor_screen.dart';

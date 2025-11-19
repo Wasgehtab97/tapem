@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/rest_stats_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/rest_stats/providers/rest_stats_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/features/rest_stats/domain/models/rest_stat_summary.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class RestStatsScreen extends StatefulWidget {
+class RestStatsScreen extends ConsumerStatefulWidget {
   const RestStatsScreen({super.key});
 
   @override
-  State<RestStatsScreen> createState() => _RestStatsScreenState();
+  ConsumerState<RestStatsScreen> createState() => _RestStatsScreenState();
 }
 
-class _RestStatsScreenState extends State<RestStatsScreen> {
+class _RestStatsScreenState extends ConsumerState<RestStatsScreen> {
   @override
   void initState() {
     super.initState();
@@ -23,14 +24,14 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
   }
 
   Future<void> _loadStats({bool force = false}) async {
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authViewStateProvider);
     final gymId = auth.gymCode;
     final userId = auth.userId;
     if (gymId == null || userId == null) {
       return;
     }
-    await context
-        .read<RestStatsProvider>()
+    await ref
+        .read(restStatsProvider)
         .load(gymId: gymId, userId: userId, forceRefresh: force);
   }
 
@@ -56,7 +57,7 @@ class _RestStatsScreenState extends State<RestStatsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final provider = context.watch<RestStatsProvider>();
+    final provider = ref.watch(restStatsProvider);
     final brand = theme.extension<AppBrandTheme>();
     final outlineColor = brand?.outline ?? theme.colorScheme.secondary;
     final actualMs = provider.overallActualRestMs;
