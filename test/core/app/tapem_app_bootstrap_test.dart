@@ -12,7 +12,7 @@ import 'package:tapem/bootstrap/legacy_provider_scope.dart';
 import 'package:tapem/bootstrap/providers.dart';
 import 'package:tapem/core/app/tapem_app.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/auth_providers.dart' hide gymProvider;
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
@@ -42,6 +42,7 @@ import 'package:tapem/features/device/domain/usecases/update_exercise_muscle_gro
 import 'package:tapem/features/device/domain/usecases/update_exercise_usecase.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/all_exercises_provider.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/gym/domain/models/branding.dart';
@@ -50,6 +51,7 @@ import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/nfc/data/nfc_service.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
+import 'package:tapem/features/nfc/providers/nfc_providers.dart';
 import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/features/report/domain/repositories/report_repository.dart';
@@ -59,17 +61,20 @@ import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
 import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
 import 'package:tapem/services/membership_service.dart';
+import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
+import 'package:tapem/core/theme/brand_theme_preset.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await dotenv.testLoad(fileInput: 'APP_NAME=Tapem');
+    dotenv.testLoad(fileInput: 'APP_NAME=Tapem');
   });
 
   group('TapemApp + LegacyProviderScope', () {
-    testWidgets('handles gym selection flow, resets and theme updates',
-        (tester) async {
+    testWidgets('handles gym selection flow, resets and theme updates', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues(const {});
       final sharedPrefs = await SharedPreferences.getInstance();
       final reportRepo = _FakeReportRepository();
@@ -99,10 +104,7 @@ void main() {
       fakeAuth.updateState(isLoading: false, error: 'boom');
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: overrides,
-          child: const TapemApp(),
-        ),
+        ProviderScope(overrides: overrides, child: const TapemApp()),
       );
 
       await tester.pump();
@@ -144,8 +146,10 @@ void main() {
       );
       await tester.pump();
       materialApp = tester.widget(find.byType(MaterialApp));
-      expect(materialApp.theme.colorScheme.primary,
-          equals(const Color(0xFFFF5500)));
+      expect(
+        materialApp.theme.colorScheme.primary,
+        equals(const Color(0xFFFF5500)),
+      );
 
       final resetsAfterSwitch = fakeWorkoutDay.resetCount;
       await fakeAuth.logout();
@@ -154,8 +158,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('LegacyProviderScope uses authViewState overrides safely',
-        (tester) async {
+    testWidgets('LegacyProviderScope uses authViewState overrides safely', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues(const {});
       final sharedPrefs = await SharedPreferences.getInstance();
       final repo = _FakeReportRepository();
@@ -182,12 +187,14 @@ void main() {
         membership: fakeMembership,
       );
 
-      final authState = StateController<AuthViewState>(_authState(
-        isLoggedIn: true,
-        status: GymContextStatus.ready,
-        gymCode: 'club',
-        userId: 'user-1',
-      ));
+      final authState = StateController<AuthViewState>(
+        _authState(
+          isLoggedIn: true,
+          status: GymContextStatus.ready,
+          gymCode: 'club',
+          userId: 'user-1',
+        ),
+      );
 
       overrides.add(
         authViewStateProvider.overrideWith((ref) => authState.state),
@@ -283,7 +290,9 @@ List<Override> _buildLegacyOverrides({
     ...bootstrap.toOverrides(),
     membershipServiceProvider.overrideWithValue(membership),
     authControllerProvider.overrideWith((ref) {
-      auth.attachGymScopedController(ref.read(gymScopedStateControllerProvider));
+      auth.attachGymScopedController(
+        ref.read(gymScopedStateControllerProvider),
+      );
       ref.onDispose(auth.dispose);
       return auth;
     }),
@@ -321,7 +330,9 @@ List<Override> _buildLegacyOverrides({
     }),
     xpProvider.overrideWith((ref) => xp),
     challengeProvider.overrideWith((ref) => challenge),
-    workoutSessionDurationServiceProvider.overrideWith((ref) => workoutDuration),
+    workoutSessionDurationServiceProvider.overrideWith(
+      (ref) => workoutDuration,
+    ),
     trainingPlanProvider.overrideWith((ref) => trainingPlan),
     profileProvider.overrideWith((ref) => profile),
     powerliftingProvider.overrideWith((ref) => powerlifting),
@@ -343,7 +354,9 @@ List<Override> _buildLegacyOverrides({
     deleteDeviceUseCaseProvider.overrideWithValue(deleteDevice),
     createDeviceUseCaseProvider.overrideWithValue(createDevice),
     setDeviceMuscleGroupsUseCaseProvider.overrideWithValue(setDeviceMuscles),
-    updateDeviceMuscleGroupsUseCaseProvider.overrideWithValue(updateDeviceMuscles),
+    updateDeviceMuscleGroupsUseCaseProvider.overrideWithValue(
+      updateDeviceMuscles,
+    ),
     exerciseRepositoryProvider.overrideWithValue(exerciseRepo),
     getExercisesForDeviceProvider.overrideWithValue(getExercises),
     createExerciseUseCaseProvider.overrideWithValue(createExercise),
@@ -357,14 +370,16 @@ List<Override> _buildLegacyOverrides({
 
 class _FakeReportRepository implements ReportRepository {
   @override
-  Future<List<DateTime>> fetchAllLogTimestamps(String gymId,
-          {DateTime? since}) async =>
-      const [];
+  Future<List<DateTime>> fetchAllLogTimestamps(
+    String gymId, {
+    DateTime? since,
+  }) async => const [];
 
   @override
-  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(String gymId,
-          {DateTime? since}) async =>
-      const [];
+  Future<List<DeviceUsageStat>> fetchDeviceUsageStats(
+    String gymId, {
+    DateTime? since,
+  }) async => const [];
 }
 
 class _FakeMembershipService implements MembershipService {
@@ -629,14 +644,16 @@ class _FakeThemePreferenceProvider extends ChangeNotifier
     notifyListeners();
   }
 
+
   @override
-  BrandThemeId? manualDefaultForGym(String? gymId) => BrandThemeId.mintTurquoise;
+  BrandThemeId? manualDefaultForGym(String? gymId) =>
+      BrandThemeId.mintTurquoise;
 
   @override
   List<BrandThemeId> availableForGym(String? gymId) => BrandThemeId.values;
 
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeWorkoutDayController extends ChangeNotifier
@@ -739,13 +756,77 @@ class _MockUpdateDeviceMuscleGroupsUseCase extends Mock
 
 class _MockExerciseRepository extends Mock implements ExerciseRepository {}
 
-class _MockGetExercisesForDevice extends Mock implements GetExercisesForDevice {}
+class _MockGetExercisesForDevice extends Mock
+    implements GetExercisesForDevice {}
 
-class _MockCreateExerciseUseCase extends Mock implements CreateExerciseUseCase {}
+class _MockCreateExerciseUseCase extends Mock
+    implements CreateExerciseUseCase {}
 
-class _MockDeleteExerciseUseCase extends Mock implements DeleteExerciseUseCase {}
+class _MockDeleteExerciseUseCase extends Mock
+    implements DeleteExerciseUseCase {}
 
-class _MockUpdateExerciseUseCase extends Mock implements UpdateExerciseUseCase {}
+class _MockUpdateExerciseUseCase extends Mock
+    implements UpdateExerciseUseCase {}
 
 class _MockUpdateExerciseMuscleGroupsUseCase extends Mock
     implements UpdateExerciseMuscleGroupsUseCase {}
+
+class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
+  bool _isLoading = false;
+  String? _error;
+  bool _creatineEnabled = false;
+  String? _gender;
+  double? _bodyWeightKg;
+
+  @override
+  bool get isLoading => _isLoading;
+
+  @override
+  String? get error => _error;
+
+  @override
+  bool get creatineEnabled => _creatineEnabled;
+
+  @override
+  String? get gender => _gender;
+
+  @override
+  double? get bodyWeightKg => _bodyWeightKg;
+
+  @override
+  Future<void> load(String uid) async {
+    _isLoading = true;
+    notifyListeners();
+    await Future.delayed(Duration.zero);
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setCreatineEnabled(bool value) async {
+    _creatineEnabled = value;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setGender(String? value) async {
+    _gender = value;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setBodyWeightKg(double? value) async {
+    _bodyWeightKg = value;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> updateProfile({String? gender, double? bodyWeightKg}) async {
+    _gender = gender;
+    _bodyWeightKg = bodyWeightKg;
+    notifyListeners();
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}

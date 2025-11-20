@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,7 +31,7 @@ AuthViewState _authState({String? gymId, String? userId}) {
     isLoggedIn: gymId != null && userId != null,
     isAdmin: false,
     gymContextStatus:
-        gymId != null ? GymContextStatus.ready : GymContextStatus.initial,
+        gymId != null ? GymContextStatus.ready : GymContextStatus.unknown,
     gymCode: gymId,
     userId: userId,
     error: null,
@@ -46,7 +45,7 @@ WorkoutLog _log(int i) {
     sessionId: 'session$i',
     exerciseId: 'ex$i',
     timestamp: DateTime(2024, 1, i + 1),
-    weight: 100 + i,
+    weight: 100.0 + i,
     reps: 5,
     setNumber: i + 1,
   );
@@ -65,7 +64,7 @@ void main() {
       overrides: [
         getHistoryForDeviceProvider.overrideWith((ref) => GetHistoryForDevice(repo)),
         authViewStateProvider.overrideWith((ref) => authState.state),
-        firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
+        firebaseFirestoreProvider.overrideWith((ref) => FakeFirebaseFirestore()),
       ],
     );
     addTearDown(container.dispose);

@@ -548,17 +548,7 @@ class _CommunityFeedCard extends StatelessWidget {
   }
 }
 
-class _CommunityKpiDescriptor {
-  const _CommunityKpiDescriptor({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
 
-  final IconData icon;
-  final String label;
-  final String value;
-}
 
 class _CommunityKpiCard extends StatelessWidget {
   const _CommunityKpiCard({

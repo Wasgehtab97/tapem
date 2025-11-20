@@ -13,7 +13,7 @@ class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   bool _creatineEnabled;
   String? _gender;
   double? _bodyWeightKg;
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? _error;
 
   @override

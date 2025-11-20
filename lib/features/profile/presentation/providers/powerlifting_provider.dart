@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/auth_providers.dart' hide gymProvider;
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/domain/models/device.dart';

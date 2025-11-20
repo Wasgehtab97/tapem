@@ -198,7 +198,7 @@ class MuscleGroupProvider extends ChangeNotifier {
   }
 
   Future<void> saveGroup(BuildContext context, MuscleGroup group) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = legacy_provider.Provider.of<AuthProvider>(context, listen: false);
     final gymId = auth.gymCode;
     if (gymId == null) return;
     await _safeSaveGroup(gymId, group);

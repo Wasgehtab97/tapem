@@ -13,7 +13,6 @@ import '../core/providers/challenge_provider.dart';
 import '../features/device/providers/exercise_provider.dart';
 import '../core/providers/gym_context_state_adapter.dart';
 import '../core/providers/gym_provider.dart';
-import '../core/providers/gym_scoped_resettable.dart';
 import '../core/providers/muscle_group_provider.dart';
 import '../core/providers/profile_provider.dart';
 import '../core/providers/settings_provider.dart';
@@ -48,10 +47,9 @@ import '../features/profile/presentation/providers/powerlifting_provider.dart';
 import '../features/report/providers/report_providers.dart';
 import '../features/rest_stats/data/rest_stats_service.dart';
 import '../features/story_session/story_session_service.dart';
-import '../services/membership_service.dart';
 import '../ui/numeric_keypad/overlay_numeric_keypad.dart';
 import '../ui/timer/session_timer_service.dart';
-import 'providers.dart';
+import 'providers.dart' hide gymProvider;
 
 class LegacyProviderScope extends ConsumerWidget {
   const LegacyProviderScope({super.key, required this.child});
@@ -68,7 +66,7 @@ class LegacyProviderScope extends ConsumerWidget {
     final branding = ref.watch(brandingProvider);
     final gym = ref.watch(gymProvider);
 
-    final adapters = <provider.SingleChildWidget>[
+    final adapters = [
       provider.Provider<SharedPreferences>.value(value: sharedPrefs),
       provider.Provider<MembershipService>.value(value: membership),
       provider.ChangeNotifierProvider<GymScopedStateController>.value(

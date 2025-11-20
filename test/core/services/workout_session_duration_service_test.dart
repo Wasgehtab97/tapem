@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,7 +37,7 @@ AuthViewState _authState({String? gymId, String? userId}) {
     isLoggedIn: gymId != null && userId != null,
     isAdmin: false,
     gymContextStatus:
-        gymId != null ? GymContextStatus.ready : GymContextStatus.initial,
+        gymId != null ? GymContextStatus.ready : GymContextStatus.unknown,
     gymCode: gymId,
     userId: userId,
     error: null,
@@ -110,7 +109,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
-        firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
+        firebaseFirestoreProvider.overrideWith((ref) => FakeFirebaseFirestore()),
         authViewStateProvider.overrideWith((ref) => authState.state),
       ],
     );

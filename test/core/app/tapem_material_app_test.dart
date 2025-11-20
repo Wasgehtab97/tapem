@@ -25,13 +25,13 @@ void main() {
 
       MaterialApp materialApp =
           tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.theme.brightness, Brightness.light);
+      expect(materialApp.theme?.brightness, Brightness.light);
 
       themeLoader.updateTheme(ThemeData(brightness: Brightness.dark));
       await tester.pump();
 
       materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.theme.brightness, Brightness.dark);
+      expect(materialApp.theme?.brightness, Brightness.dark);
     });
 
     testWidgets('updates locale when the active auth profile changes',

@@ -41,7 +41,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   bool _loadingGym = false;
   bool _loadingFriends = false;
   AuthProvider? _authProvider;
-  riverpod.ProviderSubscription<FriendsState>? _friendsStateSub;
 
   Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
     if (gymIds.isEmpty) {
@@ -79,11 +78,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshGym();
-      _refreshFriends();
-    });
-    _friendsStateSub = ref.listen<FriendsState>(
+    ref.listen<FriendsState>(
       friendsProvider,
       (previous, next) {
         final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
@@ -323,7 +318,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   @override
   void dispose() {
     _authProvider?.removeListener(_handleAuthChanged);
-    _friendsStateSub?.close();
     super.dispose();
   }
 }

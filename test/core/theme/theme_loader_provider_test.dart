@@ -19,7 +19,7 @@ AuthViewState _authState({String? gymId, String? userId}) {
     isLoggedIn: gymId != null && userId != null,
     isAdmin: false,
     gymContextStatus:
-        gymId != null ? GymContextStatus.ready : GymContextStatus.initial,
+        gymId != null ? GymContextStatus.ready : GymContextStatus.unknown,
     gymCode: gymId,
     userId: userId,
     error: null,
@@ -70,10 +70,10 @@ void main() {
     final branding = _TestBrandingProvider();
     final container = ProviderContainer(
       overrides: [
-        firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        membershipServiceProvider.overrideWithValue(_FakeMembershipService()),
-        brandingProvider.overrideWithValue(branding),
+        firebaseFirestoreProvider.overrideWith((ref) => FakeFirebaseFirestore()),
+        sharedPreferencesProvider.overrideWith((ref) => prefs),
+        membershipServiceProvider.overrideWith((ref) => _FakeMembershipService()),
+        brandingProvider.overrideWith((ref) => branding),
         authViewStateProvider.overrideWith((ref) => _authState(
               gymId: 'gymA',
               userId: 'userA',

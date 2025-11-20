@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
@@ -79,7 +80,7 @@ class DeviceSessionSection extends StatelessWidget {
   }
 }
 
-class _DeviceSessionSectionBody extends StatefulWidget {
+class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
   const _DeviceSessionSectionBody({
     required this.gymId,
     required this.deviceId,
@@ -103,10 +104,10 @@ class _DeviceSessionSectionBody extends StatefulWidget {
   final VoidCallback? onCloseRequested;
 
   @override
-  State<_DeviceSessionSectionBody> createState() => _DeviceSessionSectionBodyState();
+  riverpod.ConsumerState<_DeviceSessionSectionBody> createState() => _DeviceSessionSectionBodyState();
 }
 
-class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
+class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessionSectionBody> {
   final _formKey = GlobalKey<FormState>();
   final List<GlobalKey<SetCardState>> _setKeys = [];
   OverlayNumericKeypadController? _keypadController;
@@ -245,6 +246,7 @@ class _DeviceSessionSectionBodyState extends State<_DeviceSessionSectionBody> {
     unawaited(
       showFeedbackDialog(
         context,
+        ref,
         gymId: widget.gymId,
         deviceId: widget.deviceId,
       ),

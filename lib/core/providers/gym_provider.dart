@@ -1,6 +1,7 @@
 // lib/core/providers/gym_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
@@ -90,3 +91,7 @@ class GymProvider extends ChangeNotifier
     super.dispose();
   }
 }
+
+final gymProvider = ChangeNotifierProvider<GymProvider>((ref) {
+  return GymProvider();
+});

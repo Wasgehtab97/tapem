@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/friends/data/friend_chat_api.dart';
 import 'package:tapem/features/friends/data/friend_chat_source.dart';
@@ -58,8 +59,8 @@ void main() {
     final authState = StateController(_authState('gym1', 'user1'));
     final container = ProviderContainer(
       overrides: [
-        friendChatSourceProvider.overrideWithValue(chatSource),
-        friendChatApiProvider.overrideWithValue(_FakeFriendChatApi()),
+        friendChatSourceProvider.overrideWith((ref) => chatSource),
+        friendChatApiProvider.overrideWith((ref) => _FakeFriendChatApi()),
         authViewStateProvider.overrideWith((ref) => authState.state),
       ],
     );

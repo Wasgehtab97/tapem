@@ -51,7 +51,7 @@ void main() {
     registerFallbackValue(_FakeTextEditingController());
   });
 
-  Future<void> _pumpMultipleSessions(
+  Future<void> pumpMultipleSessions(
     WidgetTester tester, {
     required DeviceProvider firstProvider,
     required DeviceProvider secondProvider,
@@ -188,7 +188,7 @@ void main() {
       restInSeconds: 150,
     );
 
-    await _pumpMultipleSessions(
+    await pumpMultipleSessions(
       tester,
       firstProvider: firstProvider,
       secondProvider: secondProvider,

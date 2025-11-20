@@ -70,7 +70,7 @@ void main() {
     when(() => gymProvider.currentGymId).thenReturn('gym-1');
   });
 
-  Route<dynamic> _testRouteFactory(RouteSettings settings) {
+  Route<dynamic> testRouteFactory(RouteSettings settings) {
     if (settings.name == Navigator.defaultRouteName) {
       return MaterialPageRoute(builder: (_) => const ProfileScreen());
     }
@@ -95,7 +95,7 @@ void main() {
           ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
-            onGenerateRoute: _testRouteFactory,
+            onGenerateRoute: testRouteFactory,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
           ),

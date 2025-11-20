@@ -263,7 +263,7 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return Consumer<ProfileProvider>(
+        return legacy_provider.Consumer<ProfileProvider>(
           builder: (context, provider, _) {
             final isLoading = provider.isFavoriteExercisesLoading;
             final error = provider.favoriteExercisesError;
