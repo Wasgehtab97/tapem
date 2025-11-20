@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tapem/core/database/database_service.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/sources/firestore_session_source.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
@@ -34,9 +36,13 @@ class TrainingDetailsProvider extends ChangeNotifier {
   int? get dayDurationMs => _dayDurationMs;
   String? get gymId => _gymId;
 
-  TrainingDetailsProvider() {
+  TrainingDetailsProvider(
+    DatabaseService databaseService,
+    SyncService syncService,
+  ) {
     final repo = SessionRepositoryImpl(
-      FirestoreSessionSource(),
+      databaseService,
+      syncService,
       _meta,
     );
     _getSessions = GetSessionsForDate(repo);

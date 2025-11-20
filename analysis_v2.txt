@@ -1,0 +1,41 @@
+Analyzing tapem...                                              
+
+   info • The import of '../core/providers/database_provider.dart' is unnecessary because all of the used elements are also provided by the import of 'providers.dart' • lib/bootstrap/bootstrap.dart:20:8 • unnecessary_import
+  error • Undefined class 'DatabaseService' • lib/core/providers/training_details_provider.dart:38:5 • undefined_class
+  error • Undefined class 'SyncService' • lib/core/providers/training_details_provider.dart:39:5 • undefined_class
+warning • The declaration '_CommunityKpiCard' isn't referenced • lib/features/community/presentation/screens/community_screen.dart:553:7 • unused_element
+warning • A value for optional parameter 'isActive' isn't ever given • lib/features/community/presentation/screens/community_screen.dart:559:10 • unused_element_parameter
+warning • The declaration '_openGymSelection' isn't referenced • lib/features/device/presentation/screens/workout_day_screen.dart:50:35 • unused_element
+   info • The import of 'package:tapem/core/providers/database_provider.dart' is unnecessary because all of the used elements are also provided by the import of 'package:tapem/bootstrap/providers.dart' • test/bootstrap/bootstrap_result_test.dart:8:8 • unnecessary_import
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:119:48 • unchecked_use_of_nullable_value
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:127:32 • unchecked_use_of_nullable_value
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:154:27 • unchecked_use_of_nullable_value
+  error • The named parameter 'databaseService' is required, but there's no corresponding argument • test/core/app/tapem_app_bootstrap_test.dart:171:25 • missing_required_argument
+  error • The named parameter 'syncService' is required, but there's no corresponding argument • test/core/app/tapem_app_bootstrap_test.dart:171:25 • missing_required_argument
+  error • The name 'gymProvider' is defined in the libraries 'package:tapem/core/providers/auth_providers.dart' and 'package:tapem/core/providers/gym_provider.dart' • test/core/app/tapem_app_bootstrap_test.dart:310:5 • ambiguous_import
+warning • The value of the field '_uid' isn't used • test/core/app/tapem_app_bootstrap_test.dart:627:11 • unused_field
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:629:3 • invalid_annotation
+   info • The member 'isLoading' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:630:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:632:3 • invalid_annotation
+   info • The member 'error' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:633:15 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:635:3 • invalid_annotation
+   info • The member 'override' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:636:21 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:638:3 • invalid_annotation
+   info • The member 'hasLoaded' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:639:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:641:3 • invalid_annotation
+   info • The member 'setUser' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:642:8 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:648:3 • invalid_annotation
+   info • The member 'setTheme' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:649:16 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:655:3 • invalid_annotation
+   info • The member 'manualDefaultForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:656:17 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:659:3 • invalid_annotation
+   info • The member 'availableForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:660:22 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:662:3 • invalid_annotation
+   info • The member 'noSuchMethod' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:663:11 • annotate_overrides
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/core/services/workout_session_duration_service_test.dart:4:8 • depend_on_referenced_packages
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/core/theme/theme_loader_provider_test.dart:3:8 • depend_on_referenced_packages
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/features/friends/providers/friend_chat_summary_provider_test.dart:4:8 • depend_on_referenced_packages
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/features/friends/providers/friend_presence_provider_test.dart:4:8 • depend_on_referenced_packages
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/features/history/providers/history_provider_test.dart:4:8 • depend_on_referenced_packages
+   info • The imported package 'riverpod' isn't a dependency of the importing package • test/features/rest_stats/providers/rest_stats_provider_test.dart:4:8 • depend_on_referenced_packages
+

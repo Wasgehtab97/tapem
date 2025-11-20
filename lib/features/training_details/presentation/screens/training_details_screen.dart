@@ -1,9 +1,11 @@
 // lib/features/training_details/presentation/screens/training_details_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:intl/intl.dart';
 
+import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
@@ -13,7 +15,7 @@ import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class TrainingDetailsScreen extends StatelessWidget {
+class TrainingDetailsScreen extends ConsumerWidget {
   final DateTime date;
   final String userId;
   final String? gymId;
@@ -26,15 +28,18 @@ class TrainingDetailsScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final fallbackGymId = gymId ?? context.read<BrandingProvider>().gymId;
-    return ChangeNotifierProvider<TrainingDetailsProvider>(
+    final databaseService = ref.read(databaseServiceProvider);
+    final syncService = ref.read(syncServiceProvider);
+
+    return provider.ChangeNotifierProvider<TrainingDetailsProvider>(
       create: (_) {
-        final prov = TrainingDetailsProvider();
+        final prov = TrainingDetailsProvider(databaseService, syncService);
         prov.loadSessions(userId: userId, date: date, gymId: fallbackGymId);
         return prov;
       },
-      child: Consumer<TrainingDetailsProvider>(
+      child: provider.Consumer<TrainingDetailsProvider>(
         builder: (ctx, prov, _) {
           // Loading state
           if (prov.isLoading) {

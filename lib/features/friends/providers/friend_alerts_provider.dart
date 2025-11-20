@@ -46,26 +46,29 @@ class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
       _unreadSub?.cancel();
     });
 
-    ref.listen<AuthViewState>(
-      authViewStateProvider,
-      (previous, next) {
-        final uid = next.userId;
-        final userChanged = previous?.userId != uid;
-        final gymChanged = previous?.gymCode != next.gymCode;
-        if (!next.isLoggedIn || uid == null || uid.isEmpty) {
-          _pendingSub?.cancel();
-          _unreadSub?.cancel();
-          _pendingSub = null;
-          _unreadSub = null;
-          state = const FriendAlertsState();
-          return;
-        }
-        if (userChanged || gymChanged || state.selfUid != uid) {
-          _listen(uid);
-        }
-      },
-      fireImmediately: true,
-    );
+    // Defer listening until after build completes
+    Future.microtask(() {
+      ref.listen<AuthViewState>(
+        authViewStateProvider,
+        (previous, next) {
+          final uid = next.userId;
+          final userChanged = previous?.userId != uid;
+          final gymChanged = previous?.gymCode != next.gymCode;
+          if (!next.isLoggedIn || uid == null || uid.isEmpty) {
+            _pendingSub?.cancel();
+            _unreadSub?.cancel();
+            _pendingSub = null;
+            _unreadSub = null;
+            state = const FriendAlertsState();
+            return;
+          }
+          if (userChanged || gymChanged || state.selfUid != uid) {
+            _listen(uid);
+          }
+        },
+        fireImmediately: true,
+      );
+    });
 
     return const FriendAlertsState();
   }

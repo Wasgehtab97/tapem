@@ -1,0 +1,12 @@
+Analyzing tapem...                                              
+
+   info • The member 'isLoading' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:630:12 • annotate_overrides
+   info • The member 'error' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:632:15 • annotate_overrides
+   info • The member 'override' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:634:21 • annotate_overrides
+   info • The member 'hasLoaded' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:636:12 • annotate_overrides
+   info • The member 'setUser' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:638:8 • annotate_overrides
+   info • The member 'setTheme' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:643:16 • annotate_overrides
+   info • The member 'manualDefaultForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:648:17 • annotate_overrides
+   info • The member 'availableForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:651:22 • annotate_overrides
+   info • The member 'noSuchMethod' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:653:11 • annotate_overrides
+

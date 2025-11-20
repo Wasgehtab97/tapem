@@ -1,0 +1,218 @@
+Analyzing tapem...                                              
+
+  error • Undefined name 'isActive' • lib/features/community/presentation/screens/community_screen.dart:553:27 • undefined_identifier
+   info • An uninitialized variable should have an explicit type annotation • lib/features/community/presentation/screens/community_screen.dart:554:5 • prefer_typing_uninitialized_variables
+  error • 'return' can't be used as an identifier because it's a keyword • lib/features/community/presentation/screens/community_screen.dart:554:5 • expected_identifier_but_got_keyword
+  error • Expected to find ';' • lib/features/community/presentation/screens/community_screen.dart:554:5 • expected_token
+  error • Variables must be declared using the keywords 'const', 'final', 'var' or a type name • lib/features/community/presentation/screens/community_screen.dart:554:5 • missing_const_final_var_or_type
+   info • The variable name 'AnimatedContainer' isn't a lowerCamelCase identifier • lib/features/community/presentation/screens/community_screen.dart:554:12 • non_constant_identifier_names
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:555:15 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:555:15 • obsolete_colon_for_default_value
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:556:12 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:556:12 • obsolete_colon_for_default_value
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:557:17 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:557:17 • obsolete_colon_for_default_value
+  error • The default value of an optional parameter must be constant • lib/features/community/presentation/screens/community_screen.dart:557:19 • non_constant_default_value
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:562:13 • undefined_identifier
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:563:13 • undefined_identifier
+  error • Undefined name 'isActive' • lib/features/community/presentation/screens/community_screen.dart:563:37 • undefined_identifier
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:567:35 • undefined_identifier
+  error • Undefined name 'isActive' • lib/features/community/presentation/screens/community_screen.dart:567:59 • undefined_identifier
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:570:20 • undefined_identifier
+  error • Undefined name 'isActive' • lib/features/community/presentation/screens/community_screen.dart:570:44 • undefined_identifier
+  error • Undefined name 'isActive' • lib/features/community/presentation/screens/community_screen.dart:571:25 • undefined_identifier
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:576:14 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:576:14 • obsolete_colon_for_default_value
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:577:18 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:577:18 • obsolete_colon_for_default_value
+  error • Named parameters must be enclosed in curly braces ('{' and '}') • lib/features/community/presentation/screens/community_screen.dart:578:12 • named_parameter_outside_group
+  error • Using a colon as the separator before a default value is no longer supported • lib/features/community/presentation/screens/community_screen.dart:578:12 • obsolete_colon_for_default_value
+  error • The default value of an optional parameter must be constant • lib/features/community/presentation/screens/community_screen.dart:578:14 • non_constant_default_value
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:586:19 • undefined_identifier
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:587:19 • undefined_identifier
+  error • Undefined name 'accentColor' • lib/features/community/presentation/screens/community_screen.dart:592:26 • undefined_identifier
+  error • Undefined name 'icon' • lib/features/community/presentation/screens/community_screen.dart:599:25 • undefined_identifier
+  error • Undefined name 'value' • lib/features/community/presentation/screens/community_screen.dart:603:13 • undefined_identifier
+  error • Undefined name 'theme' • lib/features/community/presentation/screens/community_screen.dart:604:20 • undefined_identifier
+  error • Undefined name 'theme' • lib/features/community/presentation/screens/community_screen.dart:607:22 • undefined_identifier
+  error • Undefined name 'label' • lib/features/community/presentation/screens/community_screen.dart:612:13 • undefined_identifier
+  error • Undefined name 'theme' • lib/features/community/presentation/screens/community_screen.dart:613:20 • undefined_identifier
+  error • Undefined name 'theme' • lib/features/community/presentation/screens/community_screen.dart:614:22 • undefined_identifier
+  error • A function body must be provided • lib/features/community/presentation/screens/community_screen.dart:620:6 • missing_function_body
+  error • Expected a method, getter, setter or operator declaration • lib/features/community/presentation/screens/community_screen.dart:621:3 • expected_executable
+  error • Expected a method, getter, setter or operator declaration • lib/features/community/presentation/screens/community_screen.dart:622:1 • expected_executable
+  error • Missing concrete implementation of 'abstract class State<T extends StatefulWidget> with Diagnosticable.build' • lib/features/device/presentation/screens/workout_day_screen.dart:42:7 • non_abstract_class_inherits_abstract_member
+   info • The private field _isInitializing could be 'final' • lib/features/device/presentation/screens/workout_day_screen.dart:45:8 • prefer_final_fields
+   info • The private field _ownsSession could be 'final' • lib/features/device/presentation/screens/workout_day_screen.dart:46:8 • prefer_final_fields
+  error • Expected a class member • lib/features/device/presentation/screens/workout_day_screen.dart:50:7 • expected_class_member
+  error • Expected a class member • lib/features/device/presentation/screens/workout_day_screen.dart:50:8 • expected_class_member
+  error • Expected a class member • lib/features/device/presentation/screens/workout_day_screen.dart:51:5 • expected_class_member
+  error • Expected a class member • lib/features/device/presentation/screens/workout_day_screen.dart:51:6 • expected_class_member
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:55:18 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:56:24 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:63:10 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/device/presentation/screens/workout_day_screen.dart:64:5 • undefined_function
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:66:5 • undefined_identifier
+  error • Undefined name '_scrollController' • lib/features/device/presentation/screens/workout_day_screen.dart:71:12 • undefined_identifier
+  error • Undefined name '_scrollController' • lib/features/device/presentation/screens/workout_day_screen.dart:72:7 • undefined_identifier
+  error • Invalid context for 'super' invocation • lib/features/device/presentation/screens/workout_day_screen.dart:82:5 • super_in_invalid_context
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:87:18 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:88:24 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:90:14 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:91:17 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:92:19 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:97:14 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:98:17 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:99:19 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:102:9 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/device/presentation/screens/workout_day_screen.dart:103:7 • undefined_function
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:104:9 • undefined_identifier
+  error • Undefined name '_isInitializing' • lib/features/device/presentation/screens/workout_day_screen.dart:105:9 • undefined_identifier
+  error • Undefined name '_ownsSession' • lib/features/device/presentation/screens/workout_day_screen.dart:107:11 • undefined_identifier
+  error • Undefined name '_scrollController' • lib/features/device/presentation/screens/workout_day_screen.dart:115:5 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:116:17 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:117:9 • undefined_identifier
+  error • Undefined name '_ownsSession' • lib/features/device/presentation/screens/workout_day_screen.dart:117:56 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:118:26 • undefined_identifier
+  error • Invalid context for 'super' invocation • lib/features/device/presentation/screens/workout_day_screen.dart:123:5 • super_in_invalid_context
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:127:24 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:129:34 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:130:7 • undefined_identifier
+  error • Undefined name '_ownsSession' • lib/features/device/presentation/screens/workout_day_screen.dart:131:7 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:133:10 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/device/presentation/screens/workout_day_screen.dart:135:7 • undefined_function
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:138:18 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:145:20 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/device/presentation/screens/workout_day_screen.dart:147:7 • undefined_function
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:155:41 • undefined_identifier
+  error • Undefined name '_isInitializing' • lib/features/device/presentation/screens/workout_day_screen.dart:173:9 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:197:50 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:200:29 • undefined_identifier
+  error • Undefined name '_restTimerKey' • lib/features/device/presentation/screens/workout_day_screen.dart:204:22 • undefined_identifier
+  error • Undefined name '_scrollController' • lib/features/device/presentation/screens/workout_day_screen.dart:229:23 • undefined_identifier
+  error • Undefined name '_scrollController' • lib/features/device/presentation/screens/workout_day_screen.dart:236:29 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:258:45 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:314:17 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:335:20 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:343:37 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:344:24 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:345:18 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:346:22 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:349:16 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:367:10 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:381:18 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:400:12 • undefined_identifier
+  error • Undefined name 'widget' • lib/features/device/presentation/screens/workout_day_screen.dart:416:41 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:428:10 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:435:30 • undefined_identifier
+  error • Undefined name '_sessionKey' • lib/features/device/presentation/screens/workout_day_screen.dart:436:11 • undefined_identifier
+  error • Undefined name '_ownsSession' • lib/features/device/presentation/screens/workout_day_screen.dart:437:11 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/device/presentation/screens/workout_day_screen.dart:445:13 • undefined_identifier
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:446:24 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/device/presentation/screens/workout_day_screen.dart:449:9 • undefined_function
+  error • Undefined name 'context' • lib/features/device/presentation/screens/workout_day_screen.dart:479:28 • undefined_identifier
+  error • Expected a method, getter, setter or operator declaration • lib/features/device/presentation/screens/workout_day_screen.dart:482:3 • expected_executable
+warning • The declaration '<unnamed>' isn't referenced • test/core/app/tapem_app_bootstrap_test.dart:1:1 • unused_element
+  error • Expected a method, getter, setter or operator declaration • test/core/app/tapem_app_bootstrap_test.dart:1:1 • expected_executable
+  error • Expected a method, getter, setter or operator declaration • test/core/app/tapem_app_bootstrap_test.dart:1:2 • expected_executable
+  error • Expected a method, getter, setter or operator declaration • test/core/app/tapem_app_bootstrap_test.dart:1:3 • expected_executable
+  error • Expected to find ';' • test/core/app/tapem_app_bootstrap_test.dart:1:4 • expected_token
+  error • Undefined class 'dart' • test/core/app/tapem_app_bootstrap_test.dart:1:4 • undefined_class
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:2:1 • directive_after_declaration
+  error • Expected an identifier • test/core/app/tapem_app_bootstrap_test.dart:2:1 • missing_identifier
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:3:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:4:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:5:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:6:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:7:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:9:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:10:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:11:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:12:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:13:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:14:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:15:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:16:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:17:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:18:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:19:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:20:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:21:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:22:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:23:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:24:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:25:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:26:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:27:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:28:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:29:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:30:1 • directive_after_declaration
+  error • Target of URI doesn't exist: 'package:tapem/features/xp/domain/services/exercise_xp_reassignment_service.dart' • test/core/app/tapem_app_bootstrap_test.dart:30:8 • uri_does_not_exist
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:31:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:32:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:33:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:34:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:35:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:36:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:37:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:38:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:39:1 • directive_after_declaration
+  error • Expected to find ';' • test/core/app/tapem_app_bootstrap_test.dart:39:8 • expected_token
+  error • Target of URI doesn't exist: 'package:tapem/features/device/domain/usecases/update_device_muscle_groups_usecase.경기도' • test/core/app/tapem_app_bootstrap_test.dart:39:8 • uri_does_not_exist
+  error • Unterminated string literal • test/core/app/tapem_app_bootstrap_test.dart:39:93 • unterminated_string_literal
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:40:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:41:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:42:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:43:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:44:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:45:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:46:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:47:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:48:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:49:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:50:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:51:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:52:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:53:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:54:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:55:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:56:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:57:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:58:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:59:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:60:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:61:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:62:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:63:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:64:1 • directive_after_declaration
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:65:1 • directive_after_declaration
+  error • Target of URI doesn't exist: 'package:tapem/features/xp/data/xp_repository.dart' • test/core/app/tapem_app_bootstrap_test.dart:65:8 • uri_does_not_exist
+  error • Directives must appear before any declarations • test/core/app/tapem_app_bootstrap_test.dart:66:1 • directive_after_declaration
+  error • Target of URI doesn't exist: 'package:tapem/features/xp/domain/models/xp_state.dart' • test/core/app/tapem_app_bootstrap_test.dart:66:8 • uri_does_not_exist
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:127:32 • unchecked_use_of_nullable_value
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:154:27 • unchecked_use_of_nullable_value
+  error • Undefined name 'challengeProvider' • test/core/app/tapem_app_bootstrap_test.dart:338:5 • undefined_identifier
+  error • The argument type '_MockExerciseXpReassignmentService' can't be assigned to the parameter type 'ExerciseXpReassignmentService'.  • test/core/app/tapem_app_bootstrap_test.dart:353:61 • argument_type_not_assignable
+  error • The argument type '_MockUpdateDeviceMuscleGroupsUseCase' can't be assigned to the parameter type 'UpdateDeviceMuscleGroupsUseCase'.  • test/core/app/tapem_app_bootstrap_test.dart:364:7 • argument_type_not_assignable
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:630:3 • invalid_annotation
+   info • The member 'isLoading' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:631:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:633:3 • invalid_annotation
+   info • The member 'error' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:634:15 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:636:3 • invalid_annotation
+   info • The member 'override' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:637:21 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:639:3 • invalid_annotation
+   info • The member 'hasLoaded' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:640:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:642:3 • invalid_annotation
+   info • The member 'setUser' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:643:8 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:648:3 • invalid_annotation
+   info • The member 'setTheme' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:649:16 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:654:3 • invalid_annotation
+   info • The member 'manualDefaultForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:655:17 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:658:3 • invalid_annotation
+   info • The member 'availableForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:659:22 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:661:3 • invalid_annotation
+   info • The member 'noSuchMethod' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:662:11 • annotate_overrides
+  error • Classes and mixins can only implement other classes and mixins • test/core/app/tapem_app_bootstrap_test.dart:696:16 • implements_non_class
+  error • Classes and mixins can only implement other classes and mixins • test/core/app/tapem_app_bootstrap_test.dart:739:16 • implements_non_class
+  error • Classes and mixins can only implement other classes and mixins • test/core/app/tapem_app_bootstrap_test.dart:761:16 • implements_non_class
+

@@ -65,6 +65,10 @@ dependencies:
   # Local Storage & Timezone
   shared_preferences: ^2.4.10
   flutter_timezone: ^4.1.1
+  isar: ^3.1.0
+  isar_flutter_libs: ^3.1.0
+  connectivity_plus: ^6.0.3
+  path_provider: ^2.1.5
 
   # NFC-Pakete (Git-Quelle für Fixes)
   nfc_manager:
@@ -85,6 +89,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   build_runner: ^2.4.6
+  isar_generator: ^3.1.0
   json_serializable: ^6.7.0
   flutter_launcher_icons: ^0.14.3
   fake_cloud_firestore: ^3.1.0

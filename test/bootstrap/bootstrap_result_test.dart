@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:tapem/core/database/database_service.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 
 import 'package:tapem/bootstrap/bootstrap.dart';
 import 'package:tapem/bootstrap/providers.dart';
@@ -22,6 +26,9 @@ class _FakeReportRepository implements ReportRepository {
   }
 }
 
+class _MockDatabaseService extends Mock implements DatabaseService {}
+class _MockSyncService extends Mock implements SyncService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -32,10 +39,15 @@ void main() {
     final usage = GetDeviceUsageStats(repo);
     final logs = GetAllLogTimestamps(repo);
 
+    final databaseService = _MockDatabaseService();
+    final syncService = _MockSyncService();
+
     final result = BootstrapResult(
       sharedPreferences: sharedPrefs,
       getUsageStats: usage,
       getLogTimestamps: logs,
+      databaseService: databaseService,
+      syncService: syncService,
     );
 
     final container = ProviderContainer(overrides: result.toOverrides());
@@ -43,5 +55,7 @@ void main() {
     expect(container.read(sharedPreferencesProvider), same(sharedPrefs));
     expect(container.read(getDeviceUsageStatsProvider), same(usage));
     expect(container.read(getAllLogTimestampsProvider), same(logs));
+    expect(container.read(databaseServiceProvider), same(databaseService));
+    expect(container.read(syncServiceProvider), same(syncService));
   });
 }

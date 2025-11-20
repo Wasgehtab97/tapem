@@ -1,0 +1,29 @@
+Analyzing tapem...                                              
+
+   info • The import of 'package:tapem/core/providers/gym_scoped_resettable.dart' is unnecessary because all of the used elements are also provided by the import of 'package:tapem/bootstrap/providers.dart' • test/core/app/tapem_app_bootstrap_test.dart:18:8 • unnecessary_import
+   info • The import of 'package:tapem/services/membership_service.dart' is unnecessary because all of the used elements are also provided by the import of 'package:tapem/bootstrap/providers.dart' • test/core/app/tapem_app_bootstrap_test.dart:62:8 • unnecessary_import
+  error • Target of URI doesn't exist: 'package:tapem/features/xp/data/xp_repository.dart' • test/core/app/tapem_app_bootstrap_test.dart:65:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:tapem/features/xp/domain/models/xp_state.dart' • test/core/app/tapem_app_bootstrap_test.dart:66:8 • uri_does_not_exist
+warning • Duplicate import • test/core/app/tapem_app_bootstrap_test.dart:68:8 • duplicate_import
+warning • Duplicate import • test/core/app/tapem_app_bootstrap_test.dart:69:8 • duplicate_import
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:130:32 • unchecked_use_of_nullable_value
+  error • The property 'colorScheme' can't be unconditionally accessed because the receiver can be 'null' • test/core/app/tapem_app_bootstrap_test.dart:157:27 • unchecked_use_of_nullable_value
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:633:3 • invalid_annotation
+   info • The member 'isLoading' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:634:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:636:3 • invalid_annotation
+   info • The member 'error' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:637:15 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:639:3 • invalid_annotation
+   info • The member 'override' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:640:21 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:642:3 • invalid_annotation
+   info • The member 'hasLoaded' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:643:12 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:645:3 • invalid_annotation
+   info • The member 'setUser' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:646:8 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:651:3 • invalid_annotation
+   info • The member 'setTheme' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:652:16 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:657:3 • invalid_annotation
+   info • The member 'manualDefaultForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:658:17 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:661:3 • invalid_annotation
+   info • The member 'availableForGym' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:662:22 • annotate_overrides
+  error • Annotation must be either a const variable reference or const constructor invocation • test/core/app/tapem_app_bootstrap_test.dart:664:3 • invalid_annotation
+   info • The member 'noSuchMethod' overrides an inherited member but isn't annotated with '@override' • test/core/app/tapem_app_bootstrap_test.dart:665:11 • annotate_overrides
+

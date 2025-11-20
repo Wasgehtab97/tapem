@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
@@ -14,7 +16,7 @@ import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 
-class StorySessionHighlightsListener extends StatefulWidget {
+class StorySessionHighlightsListener extends ConsumerStatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -25,12 +27,12 @@ class StorySessionHighlightsListener extends StatefulWidget {
   });
 
   @override
-  State<StorySessionHighlightsListener> createState() =>
+  ConsumerState<StorySessionHighlightsListener> createState() =>
       _StorySessionHighlightsListenerState();
 }
 
 class _StorySessionHighlightsListenerState
-    extends State<StorySessionHighlightsListener> {
+    extends ConsumerState<StorySessionHighlightsListener> {
   late final GetSessionsForDate _getSessionsForDate;
   StreamSubscription<WorkoutSessionCompletionEvent>? _subscription;
   WorkoutSessionDurationService? _durationService;
@@ -40,8 +42,11 @@ class _StorySessionHighlightsListenerState
   @override
   void initState() {
     super.initState();
+    final databaseService = ref.read(databaseServiceProvider);
+    final syncService = ref.read(syncServiceProvider);
     final repository = SessionRepositoryImpl(
-      FirestoreSessionSource(),
+      databaseService,
+      syncService,
       SessionMetaSource(),
     );
     _getSessionsForDate = GetSessionsForDate(repository);

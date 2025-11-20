@@ -15,28 +15,38 @@ import '../features/avatars/domain/services/avatar_catalog.dart';
 import '../features/report/data/repositories/report_repository_impl.dart';
 import '../features/report/domain/usecases/get_all_log_timestamps.dart';
 import '../features/report/domain/usecases/get_device_usage_stats.dart';
+import '../core/database/database_service.dart';
+import '../core/sync/sync_service.dart';
 import 'firebase.dart';
 import 'providers.dart';
+
 
 class BootstrapResult {
   const BootstrapResult({
     required this.sharedPreferences,
     required this.getUsageStats,
     required this.getLogTimestamps,
+    required this.databaseService,
+    required this.syncService,
   });
 
   final SharedPreferences sharedPreferences;
   final GetDeviceUsageStats getUsageStats;
   final GetAllLogTimestamps getLogTimestamps;
+  final DatabaseService databaseService;
+  final SyncService syncService;
 
   List<Override> toOverrides() {
     return [
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       getDeviceUsageStatsProvider.overrideWithValue(getUsageStats),
       getAllLogTimestampsProvider.overrideWithValue(getLogTimestamps),
+      databaseServiceProvider.overrideWithValue(databaseService),
+      syncServiceProvider.overrideWithValue(syncService),
     ];
   }
 }
+
 
 Future<BootstrapResult> bootstrapApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,9 +82,18 @@ Future<BootstrapResult> bootstrapApp() async {
   final logsUC = GetAllLogTimestamps(reportRepo);
   final sharedPrefs = await SharedPreferences.getInstance();
 
+  final databaseService = DatabaseService();
+  await databaseService.init();
+
+  final syncService = SyncService(databaseService);
+  syncService.init();
+
   return BootstrapResult(
     sharedPreferences: sharedPrefs,
     getUsageStats: usageUC,
     getLogTimestamps: logsUC,
+    databaseService: databaseService,
+    syncService: syncService,
   );
 }
+

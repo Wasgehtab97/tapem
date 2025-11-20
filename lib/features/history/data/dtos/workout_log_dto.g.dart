@@ -24,12 +24,12 @@ Map<String, dynamic> _$WorkoutLogDtoToJson(WorkoutLogDto instance) =>
     <String, dynamic>{
       'userId': instance.userId,
       'sessionId': instance.sessionId,
-      if (instance.exerciseId != null) 'exerciseId': instance.exerciseId,
+      'exerciseId': instance.exerciseId,
       'timestamp': WorkoutLogDto._dateToTimestamp(instance.timestamp),
       'weight': instance.weight,
       'reps': instance.reps,
-      if (instance.dropWeightKg != null) 'dropWeightKg': instance.dropWeightKg,
-      if (instance.dropReps != null) 'dropReps': instance.dropReps,
+      'dropWeightKg': instance.dropWeightKg,
+      'dropReps': instance.dropReps,
       'setNumber': instance.setNumber,
-      if (instance.isBodyweight) 'isBodyweight': true,
+      'isBodyweight': instance.isBodyweight,
     };

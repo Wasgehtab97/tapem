@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,14 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tapem/bootstrap/bootstrap.dart';
 import 'package:tapem/bootstrap/legacy_provider_scope.dart';
-import 'package:tapem/bootstrap/providers.dart';
+import 'package:tapem/bootstrap/providers.dart' hide gymProvider;
 import 'package:tapem/core/app/tapem_app.dart';
+import 'package:tapem/core/database/database_service.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/auth_providers.dart' hide gymProvider;
 import 'package:tapem/core/providers/branding_provider.dart';
-import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
-import 'package:tapem/core/providers/gym_scoped_resettable.dart';
+
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
@@ -60,9 +59,11 @@ import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dar
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
 import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
-import 'package:tapem/services/membership_service.dart';
+
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
+import 'package:tapem/features/xp/domain/xp_repository.dart';
+import 'package:tapem/core/providers/challenge_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +83,8 @@ void main() {
         sharedPreferences: sharedPrefs,
         getUsageStats: GetDeviceUsageStats(reportRepo),
         getLogTimestamps: GetAllLogTimestamps(reportRepo),
+        databaseService: _MockDatabaseService(),
+        syncService: _MockSyncService(),
       );
 
       final fakeAuth = _FakeAuthProvider()..setUserName('Tester');
@@ -112,7 +115,8 @@ void main() {
       expect(find.textContaining('Fehler beim Laden'), findsOneWidget);
 
       var materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      final initialPrimary = materialApp.theme.colorScheme.primary;
+      final initialPrimary = materialApp.theme?.colorScheme.primary;
+      expect(initialPrimary, isNotNull);
 
       fakeBranding.emitBranding(
         'club',
@@ -120,7 +124,7 @@ void main() {
       );
       await tester.pump();
       materialApp = tester.widget(find.byType(MaterialApp));
-      expect(materialApp.theme.colorScheme.primary, isNot(initialPrimary));
+      expect(materialApp.theme?.colorScheme.primary, isNot(initialPrimary));
 
       fakeAuth.updateState(
         isLoading: false,
@@ -147,7 +151,7 @@ void main() {
       await tester.pump();
       materialApp = tester.widget(find.byType(MaterialApp));
       expect(
-        materialApp.theme.colorScheme.primary,
+        materialApp.theme?.colorScheme.primary,
         equals(const Color(0xFFFF5500)),
       );
 
@@ -168,6 +172,8 @@ void main() {
         sharedPreferences: sharedPrefs,
         getUsageStats: GetDeviceUsageStats(repo),
         getLogTimestamps: GetAllLogTimestamps(repo),
+        databaseService: _MockDatabaseService(),
+        syncService: _MockSyncService(),
       );
 
       final fakeAuth = _FakeAuthProvider()..setUserName('Tester');
@@ -381,6 +387,9 @@ class _FakeReportRepository implements ReportRepository {
     DateTime? since,
   }) async => const [];
 }
+
+class _MockDatabaseService extends Mock implements DatabaseService {}
+class _MockSyncService extends Mock implements SyncService {}
 
 class _FakeMembershipService implements MembershipService {
   final List<(String gymId, String uid)> calls = [];
@@ -617,42 +626,30 @@ class _FakeThemePreferenceProvider extends ChangeNotifier
     implements ThemePreferenceProvider {
   BrandThemeId? _override;
   bool _hasLoaded = true;
-  String? _uid;
 
-  @override
   bool get isLoading => false;
 
-  @override
   String? get error => null;
 
-  @override
   BrandThemeId? get override => _override;
 
-  @override
   bool get hasLoaded => _hasLoaded;
 
-  @override
   void setUser(String? uid) {
-    _uid = uid;
     _hasLoaded = true;
     notifyListeners();
   }
 
-  @override
   Future<void> setTheme(BrandThemeId? theme) async {
     _override = theme;
     notifyListeners();
   }
 
-
-  @override
   BrandThemeId? manualDefaultForGym(String? gymId) =>
       BrandThemeId.mintTurquoise;
 
-  @override
   List<BrandThemeId> availableForGym(String? gymId) => BrandThemeId.values;
 
-  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

@@ -47,16 +47,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   final GlobalKey<SessionRestTimerState> _restTimerKey =
       GlobalKey<SessionRestTimerState>();
 
-  Future<WorkoutDeviceSelection?> _openGymSelection() {
-    return Navigator.of(context).push<WorkoutDeviceSelection>(
-      MaterialPageRoute(
-        builder: (routeContext) => GymScreen(
-          selectionMode: true,
-          onSelect: (result) => Navigator.of(routeContext).pop(result),
-        ),
-      ),
-    );
-  }
+
 
   void _handleSelection(WorkoutDeviceSelection selection) {
     final auth = context.read<AuthProvider>();

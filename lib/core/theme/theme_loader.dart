@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/gym/domain/models/branding.dart';
 import '../providers/auth_providers.dart';
+import '../providers/branding_provider.dart';
 import '../providers/theme_preference_provider.dart';
 import 'app_brand_theme.dart';
 import 'brand_on_colors.dart';
@@ -289,14 +290,30 @@ class ThemeLoader extends ChangeNotifier {
 }
 
 final themeLoaderProvider = ChangeNotifierProvider<ThemeLoader>((ref) {
-  final branding = ref.watch(brandingProvider);
-  final preferences = ref.watch(themePreferenceProvider);
   final loader = ThemeLoader()..loadDefault();
-  loader.applyBranding(
-    branding.gymId,
-    branding.branding,
-    overridePreset: preferences.override,
-  );
+  
+  // Listen to branding changes and update theme
+  ref.listen<BrandingProvider>(brandingProvider, (previous, next) {
+    final preferences = ref.read(themePreferenceProvider);
+    loader.applyBranding(
+      next.gymId,
+      next.branding,
+      overridePreset: preferences.override,
+    );
+  }, fireImmediately: true);
+  
+  // Listen to preference changes and update theme
+  ref.listen<ThemePreferenceProvider>(themePreferenceProvider, (previous, next) {
+    final branding = ref.read(brandingProvider);
+    loader.applyBranding(
+      branding.gymId,
+      branding.branding,
+      overridePreset: next.override,
+    );
+  });
+  
   ref.onDispose(loader.dispose);
   return loader;
 });
+
+
