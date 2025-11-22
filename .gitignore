@@ -144,3 +144,10 @@ functions/.runtimeconfig.json
 **/key.properties
 !ios/Runner/GoogleService-Info.plist
 assets/avatars/*.png
+
+# ==================================================
+# Firebase Options (FlutterFire CLI generated)
+# ==================================================
+# These contain API keys and must never be committed
+lib/firebase_options*.dart
+!lib/firebase_options.example.dart
