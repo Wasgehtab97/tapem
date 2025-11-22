@@ -318,12 +318,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const PowerliftingScreen());
 
       default:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Seite nicht gefunden')),
-              ),
-        );
+        // Wenn Route nicht gefunden → zur Login-Maske redirecten
+        // Das verhindert "Seite nicht gefunden" bei ungültigen/cached Routes
+        return MaterialPageRoute(builder: (_) => const AuthScreen());
     }
   }
 

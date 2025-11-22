@@ -20,7 +20,6 @@ import '../core/sync/sync_service.dart';
 import 'firebase.dart';
 import 'providers.dart';
 
-
 class BootstrapResult {
   const BootstrapResult({
     required this.sharedPreferences,
@@ -47,11 +46,22 @@ class BootstrapResult {
   }
 }
 
-
 Future<BootstrapResult> bootstrapApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env.dev').catchError((_) {});
+  const env = String.fromEnvironment('ENV', defaultValue: 'dev');
+  await dotenv.load(fileName: '.env.$env').catchError((_) {});
+  
+  // Environment-Logging
+  final appName = dotenv.get('APP_NAME', fallback: 'Tap\'em');
+  final environment = dotenv.get('ENVIRONMENT', fallback: 'dev');
+  debugPrint('');
+  debugPrint('════════════════════════════════════════════════════════');
+  debugPrint('🚀 ENVIRONMENT: ${environment.toUpperCase()}');
+  debugPrint('📱 APP NAME: $appName');
+  debugPrint('════════════════════════════════════════════════════════');
+  debugPrint('');
+  
   await ensureFirebaseInitialized();
   assert(() {
     debugPrint('[Firebase] projectId=' + Firebase.app().options.projectId);
@@ -72,7 +82,8 @@ Future<BootstrapResult> bootstrapApp() async {
     if (!AvatarCatalog.instance.warmed ||
         !AvatarCatalog.instance.manifestHasPrefix) {
       debugPrint(
-          '[AvatarCatalog] manifest_missing_prefix assets/avatars/ – check pubspec.yaml and assets/avatars/');
+        '[AvatarCatalog] manifest_missing_prefix assets/avatars/ – check pubspec.yaml and assets/avatars/',
+      );
     }
     return true;
   }());
@@ -96,4 +107,3 @@ Future<BootstrapResult> bootstrapApp() async {
     syncService: syncService,
   );
 }
-

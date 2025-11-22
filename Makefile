@@ -1,4 +1,4 @@
-.PHONY: ios android push ios-dev ios-emu android-emu R rules rules-dev ios-wireless admin
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod android-emu ios-emu-both R rules rules-dev ios-wireless admin
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -43,14 +43,74 @@ ios-dev:
 	fvm flutter gen-l10n
 	fvm flutter run -v -d $(iOS_DEV_ID)
 
-# iOS Emulator
+# iOS Emulator (Dev - Debug mode)
 ios-emu:
-	fvm flutter clean
+	@echo "═════════════════════════════════════════════════════"
+	@echo "🔧 Starting iOS Emulator - DEV Environment"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Dev Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem.dev"
+	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	open -a Simulator
+	@sleep 5
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🚀 Launching DEV app..."
+	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=dev
+
+# iOS Emulator (Prod - Debug-Prod configuration)
+ios-emu-prod:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "🚀 Starting iOS Emulator - PRODUCTION Environment"
+	@echo "⚠️  WARNING: Using PRODUCTION Firebase Project!"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Prod Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem"
+	cp ios/config/prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	open -a Simulator
+	@sleep 5
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🚀 Launching PROD app..."
+	@# Temporarily change Debug config, run app, then restore
+	@sed -i.bak 's/BUNDLE_ID_SUFFIX = \.dev;/BUNDLE_ID_SUFFIX = "";/' ios/Runner.xcodeproj/project.pbxproj
+	@sed -i.bak 's/DISPLAY_NAME = "Tap'\''em DEV";/DISPLAY_NAME = "Tap'\''em";/' ios/Runner.xcodeproj/project.pbxproj
+	@trap 'sed -i.bak "s/BUNDLE_ID_SUFFIX = \"\";/BUNDLE_ID_SUFFIX = .dev;/" ios/Runner.xcodeproj/project.pbxproj; sed -i.bak "s/DISPLAY_NAME = \"Tap'\''em\";/DISPLAY_NAME = \"Tap'\''em DEV\";/" ios/Runner.xcodeproj/project.pbxproj; rm -f ios/Runner.xcodeproj/*.bak; echo "✅ Restored Debug config"' EXIT; \
+	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=prod
+
+# iOS Emulator (BOTH Dev & Prod in parallel)
+ios-emu-both:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "🚀 Installing BOTH Dev & Prod Apps"
+	@echo "═════════════════════════════════════════════════════"
+	@echo ""
+	@echo "📱 Step 1/2: Building DEV app..."
+	@echo "════════════════════════════════════════════════════"
+	cp ios/Runner/GoogleService-Info-Dev.plist ios/Runner/GoogleService-Info.plist
 	open -a Simulator
 	@sleep 5
 	fvm flutter pub get
 	fvm flutter gen-l10n
-	fvm flutter run -d "iPhone 16 Plus"
+	@echo "🏗️  Installing DEV app (detached mode)..."
+	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=dev -d &
+	@echo "✅ DEV app installed!"
+	@echo ""
+	@sleep 10
+	@echo "📱 Step 2/2: Building PROD app..."
+	@echo "════════════════════════════════════════════════════"
+	cp ios/Runner/GoogleService-Info-Prod.plist ios/Runner/GoogleService-Info.plist
+	@sleep 2
+	@echo "🏗️  Installing PROD app (detached mode)..."
+	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=prod -d &
+	@sleep 10
+	@echo "✅ PROD app installed!"
+	@echo ""
+	@echo "═════════════════════════════════════════════════════"
+	@echo "✨ SUCCESS! Both apps are now running in parallel!"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 Tap'em DEV   → Bundle ID: com.example.tapem.dev"
+	@echo "📱 Tap'em       → Bundle ID: com.example.tapem"
+	@echo "═════════════════════════════════════════════════════"
 
 # Admin-Skript
 admin:
