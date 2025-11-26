@@ -2,9 +2,10 @@
 class Session {
   final String sessionId;
   final String gymId;
+  final String userId;
   final String deviceId;
   final String deviceName;
-  final String deviceDescription; // neu!
+  final String? deviceDescription; // nullable
   final String? exerciseId;
   final String? exerciseName;
   final bool isMulti;
@@ -24,9 +25,10 @@ class Session {
   Session({
     required this.sessionId,
     required this.gymId,
+    required this.userId,
     required this.deviceId,
     required this.deviceName,
-    required this.deviceDescription, // neu!
+    this.deviceDescription, // nullable, not required
     this.exerciseId,
     this.exerciseName,
     this.isMulti = false,

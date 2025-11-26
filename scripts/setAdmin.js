@@ -3,14 +3,14 @@
 const admin = require('firebase-admin');
 
 // Keyfile aus dem selben Ordner:
-const serviceAccount = require('./admin.json');
+const serviceAccount = require('./firebase_admin_dev.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 // UID des Nutzers, der Admin werden soll:
-const TEST_UID = '9lrphm5moSVf3ctkKs5pkL2jMA22';
+const TEST_UID = 'CdSFLwXRJ8PMKuZqnvIelbbWqr32';
 
 async function makeAdmin() {
   try {

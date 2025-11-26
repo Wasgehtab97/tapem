@@ -1,8 +1,714 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ─────────────────────────
+    // Helper Functions
+    // ─────────────────────────
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // Membership: either custom claim gymId or membership doc under gym
+    function inGym(gymId) {
+      return isAuthed() && (
+        request.auth.token.gymId == gymId ||
+        exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid))
+      );
+    }
+
+    // Admin if claim says admin OR membership role == admin
+    function isAdmin(gymId) {
+      return inGym(gymId) && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Custom claim based gym admin
+    function isGymAdmin(gymId) {
+      return isAuthed() &&
+             request.auth.token.role == 'gym_admin' &&
+             request.auth.token.gymId == gymId;
+    }
+
+    // Global admin claim
+    function isGlobalAdmin() {
+      return isAuthed() && request.auth.token.role == 'global_admin';
+    }
+
+    // Membership check
+    function isMember(userId, gymId) {
+      return exists(/databases/$(database)/documents/gyms/$(gymId)/users/$(userId));
+    }
+
+    function activeGymId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activeGymId;
+    }
+
+    // Admin for the given gym and user (based on membership doc)
+    function isGymAdminFor(userId, gymId) {
+      return isAuthed() &&
+             isMember(userId, gymId) &&
+             get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(userId) {
+      return isAuthed() && request.auth.uid == userId;
+    }
+
+    // Friend relation exists (symmetrische Kante)
+    function isFriend(owner, viewer) {
+      return exists(/databases/$(database)/documents/users/$(owner)/friends/$(viewer));
+    }
+
+    // Share at least one gym code (robust gegen fehlende Felder)
+    function sharesGym(owner, viewer) {
+      let ownerDoc = get(/databases/$(database)/documents/users/$(owner)).data;
+      let viewerDoc = get(/databases/$(database)/documents/users/$(viewer)).data;
+      let a = ownerDoc.gymCodes;
+      let b = viewerDoc.gymCodes;
+      return a != null && b != null && a.hasAny(b);
+    }
+
+    // Convenience: owner in gym or admin
+    function ownerOrAdmin(gymId, userId) {
+      return (request.auth.uid == userId && inGym(gymId)) || isAdmin(gymId);
+    }
+
+    // Write must be performed by the owner within the gym
+    function requestOwnerInGym(gymId) {
+      return inGym(gymId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Read must refer to a doc owned by requester within gym, or admin
+    function resourceOwnerOrAdmin(gymId) {
+      return (inGym(gymId) && resource.data.userId == request.auth.uid) || isAdmin(gymId);
+    }
+
+    function canIncrementMemberNumberCounter() {
+      let allowedKeys = resource.data.keys().concat(['memberNumberCounter']);
+      return isAuthed() &&
+        request.resource.data.keys().hasOnly(allowedKeys) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['memberNumberCounter']) &&
+        request.resource.data.memberNumberCounter is int &&
+        request.resource.data.memberNumberCounter <= 9999 &&
+        (
+          !('memberNumberCounter' in resource.data) && request.resource.data.memberNumberCounter >= 0 ||
+          (
+            resource.data.memberNumberCounter is int &&
+            request.resource.data.memberNumberCounter == resource.data.memberNumberCounter + 1
+          )
+        );
+    }
+
+    // Owner or friend based on a given field
+    function isOwnerOrFriend(field) {
+      return (field in resource.data) &&
+        (resource.data[field] == request.auth.uid ||
+         isFriend(resource.data[field], request.auth.uid));
+    }
+
+    function chatExists(conversationId) {
+      return exists(/databases/$(database)/documents/friendConversations/$(conversationId));
+    }
+
+    function chatMembers(conversationId) {
+      return get(/databases/$(database)/documents/friendConversations/$(conversationId)).data.members;
+    }
+
+    function isChatParticipant(conversationId) {
+      return isAuthed() && chatExists(conversationId) &&
+        chatMembers(conversationId).hasAny([request.auth.uid]);
+    }
+
+    function isSingleDevice(gymId, machineId) {
+      let deviceDoc = get(/databases/$(database)/documents/gyms/$(gymId)/devices/$(machineId)).data;
+      return deviceDoc != null && deviceDoc.isMulti == false;
+    }
+
+    function fieldEmpty(field) {
+      return !(field in resource.data) || resource.data[field] == null || resource.data[field] == '';
+    }
+
+    // Public exercise if none of the owner fields are set (READ context uses resource)
+    function isPublicExercise() {
+      return fieldEmpty('userId') && fieldEmpty('ownerId') && fieldEmpty('createdBy');
+    }
+
+    function isFeedEventAllowedKeys(data) {
+      return data.keys().hasOnly([
+        'type',
+        'createdAt',
+        'dayKey'
+      ]);
+    }
+
+    function isFeedEventId(eventId, dayKey, userId) {
+      return eventId == dayKey + '_' + userId;
+    }
+
+    function optionalStringField(data, field) {
+      return !(field in data) || data[field] is string;
+    }
+
+    function optionalIntField(data, field) {
+      return !(field in data) || data[field] is int;
+    }
+
+    function optionalNumberField(data, field) {
+      return !(field in data) || data[field] is number;
+    }
+
+    // ─────────────────────────
+    // Activity stream (server only)
+    // ─────────────────────────
+    match /gyms/{gymId}/activity/{eventId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─────────────────────────
+    // Global logs read (owner-only)
+    // ─────────────────────────
+    match /{path=**}/logs/{logId} {
+      allow read: if isAuthed() &&
+        (resource.data.userId == request.auth.uid ||
+         isFriend(resource.data.userId, request.auth.uid));
+      allow delete: if isAuthed() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ─────────────────────────
+    // Friend Requests (top-level)
+    // ─────────────────────────
+    match /friendRequests/{reqId} {
+      allow read: if isAuthed() &&
+        (request.auth.uid == resource.data.fromUserId ||
+         request.auth.uid == resource.data.toUserId);
+
+      allow create: if request.auth.uid == request.resource.data.fromUserId &&
+        request.resource.data.fromUserId != request.resource.data.toUserId &&
+        request.resource.data.status == 'pending' &&
+        reqId == request.resource.data.fromUserId + '_' + request.resource.data.toUserId &&
+        request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp &&
+        (!('message' in request.resource.data) ||
+          (request.resource.data.message is string &&
+           request.resource.data.message.size() <= 280));
+
+      allow update: if request.resource.data.keys().hasOnly(['fromUserId','toUserId','status','createdAt','updatedAt','message']) &&
+        request.resource.data.fromUserId == resource.data.fromUserId &&
+        request.resource.data.toUserId == resource.data.toUserId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt is timestamp && (
+          (request.auth.uid == resource.data.fromUserId && resource.data.status == 'pending' &&
+            request.resource.data.status == 'canceled') ||
+          (request.auth.uid == resource.data.toUserId && resource.data.status == 'pending' &&
+            (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined'))
+        );
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────
+    // Friend chat conversations
+    // ─────────────────────────
+    match /friendConversations/{conversationId} {
+      allow read: if isChatParticipant(conversationId);
+      allow create: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'members',
+          'lastMessage',
+          'lastMessageAt',
+          'lastMessageSenderId',
+          'updatedAt'
+        ]) &&
+        request.resource.data.members is list &&
+        request.resource.data.members.size() == 2 &&
+        request.resource.data.members.hasAny([request.auth.uid]) &&
+        request.resource.data.members[0] is string &&
+        request.resource.data.members[1] is string &&
+        (!('lastMessage' in request.resource.data) ||
+          (request.resource.data.lastMessage is string &&
+           request.resource.data.lastMessage.size() > 0)) &&
+        (!('lastMessageAt' in request.resource.data) ||
+          (request.resource.data.lastMessageAt is timestamp ||
+           request.resource.data.lastMessageAt == request.time)) &&
+        (!('lastMessageSenderId' in request.resource.data) ||
+          request.resource.data.lastMessageSenderId is string) &&
+        (!('updatedAt' in request.resource.data) ||
+          (request.resource.data.updatedAt is timestamp ||
+           request.resource.data.updatedAt == request.time));
+      allow update: if isChatParticipant(conversationId) &&
+        request.resource.data.keys().hasOnly([
+          'members',
+          'lastMessage',
+          'lastMessageAt',
+          'lastMessageSenderId',
+          'updatedAt'
+        ]) &&
+        request.resource.data.members == resource.data.members &&
+        request.resource.data.lastMessage is string &&
+        request.resource.data.lastMessage.size() > 0 &&
+        (request.resource.data.lastMessageAt is timestamp ||
+          request.resource.data.lastMessageAt == request.time) &&
+        request.resource.data.lastMessageSenderId is string &&
+        (request.resource.data.updatedAt is timestamp ||
+          request.resource.data.updatedAt == request.time);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isChatParticipant(conversationId);
+        allow create: if isChatParticipant(conversationId) &&
+          request.resource.data.keys().hasOnly(['senderId', 'text', 'createdAt']) &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 &&
+          request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    // ─────────────────────────
+    // Avatar catalog global
+    // ─────────────────────────
+    match /catalogAvatarsGlobal/{avatarId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
+    }
+
+    // ─────────────────────────
+    // Public profiles
+    // ─────────────────────────
+    match /public_profiles/{uid} {
+      allow read: if isAuthed();
+      allow create: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['avatarKey', 'usernameLower', 'createdAt']) &&
+        request.resource.data.avatarKey is string &&
+        request.resource.data.createdAt is timestamp &&
+        (!('usernameLower' in request.resource.data) || request.resource.data.usernameLower is string);
+      allow update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['avatarKey', 'usernameLower']) &&
+        request.resource.data.avatarKey is string &&
+        (!('usernameLower' in request.resource.data) || request.resource.data.usernameLower is string);
+      allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
+        request.resource.data.keys().hasOnly(['usernameLower']) &&
+        request.resource.data.usernameLower is string;
+      allow delete: if false;
+    }
+
+    // ─────────────────────────
+    // Usernames mapping
+    // ─────────────────────────
+      match /usernames/{name} {
+        allow read: if isAuthed();
+        allow create: if isOwner(request.resource.data.uid) &&
+          !exists(/databases/$(database)/documents/usernames/$(name)) &&
+          request.resource.data.keys().hasOnly(['uid','createdAt']) &&
+          request.resource.data.createdAt is timestamp;
+        allow update: if isOwner(resource.data.uid) &&
+          request.resource.data.keys().hasOnly(['uid','createdAt']) &&
+          (!('uid' in request.resource.data) ||
+            request.resource.data.uid == resource.data.uid) &&
+          (!('createdAt' in request.resource.data) ||
+            request.resource.data.createdAt is timestamp);
+        allow delete: if isOwner(resource.data.uid);
+      }
+
+    // ─────────────────────────
+    // Users (top-level)
+    // ─────────────────────────
+    match /users/{uid} {
+      // Keep profile readable for authed users (e.g., username checks)
+      allow create: if isOwner(uid);
+      allow read: if isAuthed();
+      allow update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly([
+          'username',
+          'usernameLower',
+          'showInLeaderboard',
+          'publicProfile',
+          'avatarUrl',
+          'avatarKey',
+          'avatarUpdatedAt',
+          'equippedAvatarRef',
+          'activeGymId'
+        ]);
+      allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
+        request.resource.data.keys().hasOnly(['avatarKey']) &&
+        request.resource.data.avatarKey is string;
+
+      // Friends list (symmetrische Kante)
+      match /friends/{fid} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && uid != fid &&
+          request.resource.data.keys().hasOnly(['createdAt']) &&
+          request.resource.data.createdAt is timestamp;
+        allow delete: if isOwner(uid);
+      }
+
+      match /avatarsOwned/{avatarId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /avatarInventory/{docId} {
+        allow read: if isOwner(uid) || isGymAdminFor(uid,
+          resource.data.gymId != null ? resource.data.gymId : request.auth.token.gymId);
+
+        allow create: if (isOwner(uid) || isGymAdminFor(uid,
+              request.resource.data.gymId != null ? request.resource.data.gymId : request.auth.token.gymId)) &&
+          request.resource.data.keys().hasOnly(['key', 'source', 'gymId', 'createdAt', 'updatedAt']) &&
+          request.resource.data.source in ['user/self', 'admin/manual'] &&
+          request.resource.data.key.matches('^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$') &&
+          ((request.resource.data.key.matches('^global/[A-Za-z0-9_-]+$') && !('gymId' in request.resource.data)) ||
+           (request.resource.data.gymId != null &&
+            request.resource.data.key.matches('^' + request.resource.data.gymId + '/[A-Za-z0-9_-]+$'))) &&
+          (!('createdAt' in request.resource.data) ||
+            (request.resource.data.createdAt is timestamp &&
+             request.resource.data.createdAt == request.time));
+
+        allow delete: if isOwner(uid) || isGymAdminFor(uid,
+          resource.data.gymId != null ? resource.data.gymId : request.auth.token.gymId);
+
+        allow update: if false;
+      }
+
+      // Privacy-aware public calendar (server writes)
+      match /publicCalendar/{month} {
+        allow read: if isAuthed() && (
+          isOwner(uid) ||
+          get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'public' ||
+          (
+            get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'friends' &&
+            isFriend(uid, request.auth.uid)
+          ) ||
+          (
+            get(/databases/$(database)/documents/users/$(uid)).data.calendarVisibility == 'same_gym' &&
+            sharesGym(uid, request.auth.uid)
+          )
+        );
+        allow write: if false; // only via Cloud Functions
+      }
+
+      // Friend meta & push tokens are owner-managed
+      match /friendMeta/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /friendChats/{friendUid} {
+        allow read: if isOwner(uid);
+        allow create, update: if isAuthed() &&
+          (request.auth.uid == uid || request.auth.uid == friendUid) &&
+          request.resource.data.keys().hasOnly([
+            'conversationId',
+            'hasUnread',
+            'lastMessage',
+            'lastMessageAt',
+            'lastMessageSenderId',
+            'updatedAt',
+            'lastReadAt'
+          ]) &&
+          (!('conversationId' in request.resource.data) ||
+            request.resource.data.conversationId is string) &&
+          (!('hasUnread' in request.resource.data) ||
+            request.resource.data.hasUnread is bool) &&
+          (!('lastMessage' in request.resource.data) ||
+            (request.resource.data.lastMessage is string &&
+             request.resource.data.lastMessage.size() > 0)) &&
+          (!('lastMessageAt' in request.resource.data) ||
+            (request.resource.data.lastMessageAt is timestamp ||
+             request.resource.data.lastMessageAt == request.time)) &&
+          (!('lastMessageSenderId' in request.resource.data) ||
+            request.resource.data.lastMessageSenderId is string) &&
+          (!('updatedAt' in request.resource.data) ||
+            (request.resource.data.updatedAt is timestamp ||
+             request.resource.data.updatedAt == request.time)) &&
+          (!('lastReadAt' in request.resource.data) ||
+            (request.auth.uid == uid &&
+              (request.resource.data.lastReadAt is timestamp ||
+               request.resource.data.lastReadAt == request.time)));
+        allow delete: if isOwner(uid);
+      }
+
+      match /pushTokens/{token} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /settings/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /creatine_intakes/{date} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Fallback for other user subcollections (owner-only)
+      match /trainingDayXP/{dayId} {
+        // Owner, Global-Admin oder Admin des activeGymId, sofern Ziel-User dort Mitglied ist
+        allow read, get, list: if
+            isOwner(uid)
+            || isGlobalAdmin()
+            || (isAuthed()
+                && activeGymId() is string
+                && isAdmin(activeGymId())
+                && isMember(uid, activeGymId()));
+        allow write: if isOwner(uid);
+      }
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ─────────────────────────
+    // Gyms
+    // ─────────────────────────
+    match /gyms/{gymId} {
+      // Public gym doc (non-sensitive fields only)
+      allow read: if true;
+      allow create, delete: if isAdmin(gymId);
+      allow update: if isAdmin(gymId) || canIncrementMemberNumberCounter();
+
+      // Branding / config
+      match /config/{docId} {
+        allow read: if isAuthed();
+        allow write: if isAdmin(gymId);
+      }
+
+      // Avatar catalog per gym
+      match /avatarCatalog/{avatarId} {
+        allow read: if inGym(gymId);
+        allow write: if isGymAdmin(gymId);
+      }
+
+      // Devices
+      match /devices/{deviceId} {
+        allow read: if isAuthed();
+        allow write: if isAdmin(gymId);
+
+        // Device logs (immutable; owner append-only)
+        match /logs/{logId} {
+          allow create: if requestOwnerInGym(gymId);
+          allow read: if resourceOwnerOrAdmin(gymId);
+          allow delete: if resourceOwnerOrAdmin(gymId);
+          allow update: if false;
+        }
+
+        // Session snapshots per user (read owner/admin; write owner-only)
+        match /sessions/{sessionId} {
+          allow create: if requestOwnerInGym(gymId);
+          allow read: if resourceOwnerOrAdmin(gymId) ||
+                       isFriend(resource.data.userId, request.auth.uid);
+          allow delete: if resourceOwnerOrAdmin(gymId);
+          allow update: if false;
+        }
+
+        // Per-user notes for device
+        match /userNotes/{userId} {
+          allow read, write: if ownerOrAdmin(gymId, userId);
+        }
+
+        // Leaderboard entries (owner/admin; allow markers)
+        match /leaderboard/{userId} {
+          allow read: if ownerOrAdmin(gymId, userId);
+          allow create, update: if ownerOrAdmin(gymId, userId) &&
+                                request.resource.data.userId == userId;
+          allow delete: if ownerOrAdmin(gymId, userId);
+
+          // Daily markers
+          match /days/{dayKey} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
+          }
+
+          // Session markers
+          match /sessions/{sessionId} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
+          }
+
+          // Exercise markers for multi-exercise tracking
+          match /exercises/{exerciseId} {
+            allow read: if ownerOrAdmin(gymId, userId);
+            allow create: if ownerOrAdmin(gymId, userId);
+            allow delete: if ownerOrAdmin(gymId, userId);
+          }
+        }
+
+        // Custom exercises (public, owner or friends; admin override)
+        match /exercises/{exerciseId} {
+          allow read: if isAdmin(gymId) ||
+            isOwnerOrFriend('userId') ||
+            isOwnerOrFriend('ownerId') ||
+            isOwnerOrFriend('createdBy') ||
+            isPublicExercise();
+          allow write: if inGym(gymId) && (
+                          request.auth.uid == request.resource.data.userId ||
+                          request.auth.uid == resource.data.userId
+                        ) || isAdmin(gymId);
+        }
+      }
+
+      // Surveys
+      match /surveys/{surveyId} {
+        allow read: if inGym(gymId);
+        allow create, update, delete: if isAdmin(gymId);
+
+        match /answers/{answerId} {
+          allow create: if inGym(gymId) && request.auth.uid == request.resource.data.userId;
+          allow read: if isAdmin(gymId);
+          allow update, delete: if false;
+        }
+      }
+
+      // Feedback
+      match /feedback/{entryId} {
+        allow create: if inGym(gymId) && request.resource.data.userId == request.auth.uid;
+        allow read, update, delete: if isAdmin(gymId);
+      }
+
+      // Machine attempts (king/queen leaderboard)
+      match /machines/{machineId} {
+        allow read: if inGym(gymId);
+        allow write: if false;
+
+        match /attempts/{attemptId} {
+          allow read: if inGym(gymId);
+          allow create: if inGym(gymId) &&
+            request.auth.uid == request.resource.data.userId &&
+            request.resource.data.keys().hasOnly([
+              'gymId',
+              'machineId',
+              'userId',
+              'username',
+              'e1rm',
+              'reps',
+              'weight',
+              'createdAt',
+              'isMulti',
+              'gender',
+              'bodyWeightKg'
+            ]) &&
+            request.resource.data.gymId == gymId &&
+            request.resource.data.machineId == machineId &&
+            request.resource.data.isMulti == false &&
+            request.resource.data.username is string &&
+            request.resource.data.username.size() > 0 &&
+            request.resource.data.e1rm is number &&
+            request.resource.data.e1rm > 0 &&
+            (!('reps' in request.resource.data) ||
+              (request.resource.data.reps is int && request.resource.data.reps > 0)) &&
+            (!('weight' in request.resource.data) ||
+              (request.resource.data.weight is number && request.resource.data.weight > 0)) &&
+            (!('bodyWeightKg' in request.resource.data) ||
+              (request.resource.data.bodyWeightKg is number && request.resource.data.bodyWeightKg > 0)) &&
+            (!('gender' in request.resource.data) ||
+              ['m', 'w', 'divers'].hasAny([request.resource.data.gender])) &&
+            request.resource.data.createdAt == request.time &&
+            isSingleDevice(gymId, machineId);
+          allow update, delete: if false;
+        }
+      }
+
+      // Training plans
+      match /trainingPlans/{planId}/{subdoc=**} {
+        allow read, write: if inGym(gymId) && (
+          isAdmin(gymId) ||
+          request.auth.uid == request.resource.data.createdBy ||
+          request.auth.uid == resource.data.createdBy
+        );
+      }
+
+      // Muscle groups
+      match /muscleGroups/{groupId} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // Challenges
+      match /challenges/{type}/{docId}/{sub=**} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
+      // Users subcollection under gym
+      match /users/{userId} {
+        allow read: if inGym(gymId);
+        allow create: if isAuthed() &&
+                       request.auth.uid == userId &&
+                       request.resource.data.role == 'member';
+        allow update, delete: if isAdmin(gymId);
+      }
+
+      match /users/{userId}/rank/{document=**} {
+        allow read: if ownerOrAdmin(gymId, userId) ||
+                     isFriend(userId, request.auth.uid);
+        allow write: if ownerOrAdmin(gymId, userId);
+      }
+
+      match /users/{userId}/{doc=**} {
+        allow read, write: if ownerOrAdmin(gymId, userId);
+      }
+
+      match /stats_daily/{day} {
+        allow read: if inGym(gymId);
+        allow create, update: if inGym(gymId) &&
+          request.resource.data.keys().hasOnly([
+            'date',
+            'dayKey',
+            'repsTotal',
+            'volumeTotal',
+            'trainingSessions',
+            'exerciseTotal',
+            'setTotal'
+          ]) &&
+          request.resource.data.date is timestamp;
+        allow delete: if false;
+      }
+
+      match /stats_applied/{sessionId} {
+        allow create: if inGym(gymId) &&
+          request.resource.data.keys().hasOnly(['userId', 'createdAt']) &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.createdAt == request.time;
+        allow read, update, delete: if false;
+      }
+
+      match /feed_events/{eventId} {
+        allow read: if inGym(gymId);
+        allow create: if inGym(gymId) &&
+          isFeedEventId(eventId, request.resource.data.dayKey, request.auth.uid) &&
+          isFeedEventAllowedKeys(request.resource.data) &&
+          ['day_summary', 'milestone'].hasAny([request.resource.data.type]) &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.dayKey is string;
+        allow update: if inGym(gymId) &&
+          isFeedEventId(eventId, resource.data.dayKey, request.auth.uid) &&
+          isFeedEventAllowedKeys(request.resource.data) &&
+          ['day_summary', 'milestone'].hasAny([request.resource.data.type]) &&
+          request.resource.data.dayKey == resource.data.dayKey &&
+          request.resource.data.type == resource.data.type &&
+          request.resource.data.createdAt == request.time;
+        allow delete: if false;
+      }
+
+      // Fallback inside gyms
+      match /{document=**} {
+        allow read: if inGym(gymId);
+        allow write: if isAdmin(gymId);
+      }
+    }
+
+    // ─────────────────────────
+    // Deny everything else
+    // ─────────────────────────
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

@@ -139,9 +139,10 @@ class TrainingPlanProvider extends ChangeNotifier
     String exerciseId,
     DateTime date,
   ) {
-    debugPrint(
-      '🔎 entryForDate device=$deviceId exercise=$exerciseId date=$date',
-    );
+    // Disabled - too verbose
+    // debugPrint(
+    //   '🔎 entryForDate device=$deviceId exercise=$exerciseId date=$date',
+    // );
     if (activePlanId == null) return null;
     TrainingPlan? plan;
     try {

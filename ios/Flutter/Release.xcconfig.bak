@@ -1,2 +1,16 @@
-#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
-#include "Generated.xcconfig"
+#include? "../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+#include? "Generated.xcconfig"
+
+SUPPORTED_PLATFORMS = iphonesimulator iphoneos
+EXCLUDED_ARCHS[sdk=iphonesimulator*] =
+IPHONEOS_DEPLOYMENT_TARGET = 13.0
+SWIFT_VERSION = 5.0
+ENABLE_BITCODE = NO
+VALIDATE_WORKSPACE = YES
+OTHER_LDFLAGS = $(inherited)
+FRAMEWORK_SEARCH_PATHS = $(inherited)
+HEADER_SEARCH_PATHS = $(inherited)
+
+// DEV settings (default for development)
+BUNDLE_ID_SUFFIX=.dev
+DISPLAY_NAME=Tap'em DEV

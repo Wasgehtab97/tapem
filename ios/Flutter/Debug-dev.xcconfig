@@ -1,0 +1,7 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug-dev.xcconfig"
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+// Custom settings for Debug-Dev configuration
+BUNDLE_ID_SUFFIX=.dev
+DISPLAY_NAME=Tap'em DEV

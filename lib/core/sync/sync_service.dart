@@ -5,10 +5,11 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'package:tapem/core/database/database_service.dart';
-import 'package:tapem/core/sync/models/sync_job.dart';
+import 'package:tapem/core/sync/models/hive_sync_job.dart';
 
+/// Sync service with Hive-based offline sync queue
 class SyncService {
   final DatabaseService _db;
   final FirebaseFirestore _firestore;
@@ -39,6 +40,8 @@ class SyncService {
     Future.delayed(const Duration(seconds: 2), () {
       syncPendingJobs();
     });
+
+    debugPrint('[SyncService] Initialized with Hive');
   }
 
   void dispose() {
@@ -55,11 +58,12 @@ class SyncService {
     _isSyncing = true;
 
     try {
-      final jobs = await _db.isar.syncJobs
-          .where()
-          .sortByCreatedAt()
-          .limit(50) // Process max 50 jobs at a time
-          .findAll();
+      final box = _db.syncJobsBox;
+      final allJobs = box.values.toList();
+      
+      // Sort by createdAt and take max 50
+      allJobs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      final jobs = allJobs.take(50).toList();
 
       debugPrint('[SyncService] Found ${jobs.length} pending jobs');
 
@@ -82,16 +86,16 @@ class SyncService {
         try {
           await _processJob(job);
           debugPrint('[SyncService] Successfully processed job ${job.id}');
-          await _db.isar.writeTxn(() async {
-            await _db.isar.syncJobs.delete(job.id);
-          });
+          
+          // Delete job from Hive
+          await job.delete();
         } catch (e) {
           debugPrint('[SyncService] Failed to process job ${job.id}: $e');
-          await _db.isar.writeTxn(() async {
-            job.retryCount++;
-            job.lastAttempt = DateTime.now();
-            await _db.isar.syncJobs.put(job);
-          });
+          
+          // Update retry count and last attempt
+          job.retryCount++;
+          job.lastAttempt = DateTime.now();
+          await job.save();
         }
       }
     } catch (e) {
@@ -101,7 +105,7 @@ class SyncService {
     }
   }
 
-  Future<void> _processJob(SyncJob job) async {
+  Future<void> _processJob(HiveSyncJob job) async {
     final data = jsonDecode(job.payload) as Map<String, dynamic>;
     
     if (job.collection == 'sessions') {
@@ -172,7 +176,8 @@ class SyncService {
     required String action,
     required Map<String, dynamic> payload,
   }) async {
-    final job = SyncJob()
+    final job = HiveSyncJob()
+      ..id = const Uuid().v4()
       ..collection = collection
       ..docId = docId
       ..action = action
@@ -180,9 +185,7 @@ class SyncService {
       ..createdAt = DateTime.now()
       ..retryCount = 0;
 
-    await _db.isar.writeTxn(() async {
-      await _db.isar.syncJobs.put(job);
-    });
+    await _db.syncJobsBox.add(job);
     
     debugPrint('[SyncService] Added sync job: $collection/$docId ($action)');
     
@@ -190,4 +193,3 @@ class SyncService {
     syncPendingJobs();
   }
 }
-

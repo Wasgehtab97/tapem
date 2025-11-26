@@ -1,4 +1,4 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod android-emu ios-emu-both R rules rules-dev ios-wireless admin
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev ios-wireless admin
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -17,19 +17,34 @@ ios:
 	cd ios && pod install && cd ..
 	fvm flutter run --release -d $(iOS_DEV_ID)
 
-# Android auf echtem Gerät
-android:
-	flutter clean
-	flutter pub get
-	flutter gen-l10n
-	flutter run --release -d $(ANDROID_ID)
+# Android (Prod - on physical device)
+android: android-prod
 
-# Android Emulator starten und App ausführen
-android-emu:
+android-prod:
+	@echo "📱 Deploying to Android - PRODUCTION Environment"
+	cp android/config/prod/google-services.json android/app/google-services.json
 	flutter clean
 	flutter pub get
 	flutter gen-l10n
-	flutter run -d $(ANDROID_EMU_ID)
+	flutter run --release -d $(ANDROID_ID) --dart-define=ENV=prod
+
+# Android (Dev - on physical device)
+android-dev:
+	@echo "📱 Deploying to Android - DEV Environment"
+	cp android/config/dev/google-services.json android/app/google-services.json
+	flutter clean
+	flutter pub get
+	flutter gen-l10n
+	flutter run --release -d $(ANDROID_ID) --dart-define=ENV=dev
+
+# Android Emulator (Dev)
+android-emu:
+	@echo "🔧 Starting Android Emulator - DEV Environment"
+	cp android/config/dev/google-services.json android/app/google-services.json
+	flutter clean
+	flutter pub get
+	flutter gen-l10n
+	flutter run -d $(ANDROID_EMU_ID) --dart-define=ENV=dev
 
 # Git push
 push:
@@ -43,10 +58,17 @@ ios-dev:
 	fvm flutter gen-l10n
 	fvm flutter run -v -d $(iOS_DEV_ID)
 
-# iOS Emulator (Dev - Debug mode)
-ios-emu:
+# ═════════════════════════════════════════════════════
+# iOS Emulator Targets
+# ═════════════════════════════════════════════════════
+
+# iOS Emulator (Dev - Debug mode) - DEFAULT
+ios-emu: ios-emu-dev-d
+
+# iOS Emulator (Dev - Debug mode) - WITH HOT RESTART ✅
+ios-emu-dev-d:
 	@echo "═════════════════════════════════════════════════════"
-	@echo "🔧 Starting iOS Emulator - DEV Environment"
+	@echo "🔧 iOS Emulator - DEV (Debug + Hot Restart)"
 	@echo "═════════════════════════════════════════════════════"
 	@echo "📋 Using Dev Firebase config..."
 	@echo "📦 Bundle ID: com.example.tapem.dev"
@@ -55,28 +77,122 @@ ios-emu:
 	@sleep 5
 	fvm flutter pub get > /dev/null 2>&1
 	fvm flutter gen-l10n > /dev/null 2>&1
-	@echo "🚀 Launching DEV app..."
-	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=dev
+	@echo "🚀 Launching DEV app with flavor..."
+	fvm flutter run --flavor dev -d "iPhone 16 Plus" --dart-define=ENV=dev
 
-# iOS Emulator (Prod - Debug-Prod configuration)
-ios-emu-prod:
+# iOS Emulator (Dev - Release mode) - WITH HOT RESTART ✅
+ios-emu-dev:
 	@echo "═════════════════════════════════════════════════════"
-	@echo "🚀 Starting iOS Emulator - PRODUCTION Environment"
+	@echo "🔧 iOS Emulator - DEV (Release)"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Dev Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem.dev"
+	cp ios/config/dev/GoogleServiceInfo.plist ios/Runner/GoogleService-Info.plist
+	open -a Simulator
+	@sleep 5
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🚀 Launching DEV app with flavor (Release)..."
+	fvm flutter run --release --flavor dev -d "iPhone 16 Plus" --dart-define=ENV=dev
+
+# iOS Emulator (Prod - Debug mode) - WITH HOT RESTART ✅
+ios-emu-prod-d:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "🚀 iOS Emulator - PROD (Debug + Hot Restart)"
 	@echo "⚠️  WARNING: Using PRODUCTION Firebase Project!"
 	@echo "═════════════════════════════════════════════════════"
 	@echo "📋 Using Prod Firebase config..."
 	@echo "📦 Bundle ID: com.example.tapem"
 	cp ios/config/prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
 	open -a Simulator
-	@sleep 5
+	@sleep 3
 	fvm flutter pub get > /dev/null 2>&1
 	fvm flutter gen-l10n > /dev/null 2>&1
-	@echo "🚀 Launching PROD app..."
-	@# Temporarily change Debug config, run app, then restore
-	@sed -i.bak 's/BUNDLE_ID_SUFFIX = \.dev;/BUNDLE_ID_SUFFIX = "";/' ios/Runner.xcodeproj/project.pbxproj
-	@sed -i.bak 's/DISPLAY_NAME = "Tap'\''em DEV";/DISPLAY_NAME = "Tap'\''em";/' ios/Runner.xcodeproj/project.pbxproj
-	@trap 'sed -i.bak "s/BUNDLE_ID_SUFFIX = \"\";/BUNDLE_ID_SUFFIX = .dev;/" ios/Runner.xcodeproj/project.pbxproj; sed -i.bak "s/DISPLAY_NAME = \"Tap'\''em\";/DISPLAY_NAME = \"Tap'\''em DEV\";/" ios/Runner.xcodeproj/project.pbxproj; rm -f ios/Runner.xcodeproj/*.bak; echo "✅ Restored Debug config"' EXIT; \
-	fvm flutter run -d "iPhone 16 Plus" --dart-define=ENV=prod
+	@echo "🚀 Launching PROD app with flavor..."
+	fvm flutter run --flavor prod -d "iPhone 16 Plus" --dart-define=ENV=prod
+
+
+# iOS Emulator (Prod - Release mode) - NOT SUPPORTED
+ios-emu-prod:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "❌ iOS Emulator - Release builds NOT supported"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "ℹ️  Simulators only support Debug builds (x86_64)"
+	@echo "ℹ️  Use 'make ios-emu-prod-d' for Prod Debug testing"
+	@echo "ℹ️  Or 'make ios-mobile-prod' for Release on real iPhone"
+	@echo "═════════════════════════════════════════════════════"
+	@exit 1
+
+# iOS Mobile (Dev - on physical iPhone)
+ios-mobile-dev:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 Deploying to iPhone - DEV Environment (Release Build)"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Dev Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem.dev"
+	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🔧 Installing CocoaPods dependencies..."
+	cd ios && pod install && cd ..
+	@echo "🚀 Launching DEV app on iPhone (Release Build)..."
+	fvm flutter run --release -d $(iOS_DEV_ID) --dart-define=ENV=dev
+
+# iOS Mobile (Dev - on physical iPhone - DEBUG)
+ios-mobile-dev-d:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 Deploying to iPhone - DEV Environment (DEBUG Build)"
+	@echo "🔥 Hot Restart Enabled"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Dev Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem.dev"
+	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🔧 Installing CocoaPods dependencies..."
+	cd ios && pod install && cd ..
+	@echo "🚀 Launching DEV app on iPhone (Debug Build)..."
+	fvm flutter run -d $(iOS_DEV_ID) --dart-define=ENV=dev
+
+# iOS Mobile (Prod - on physical iPhone)
+ios-mobile-prod:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 Deploying to iPhone - PRODUCTION Environment (Release Build)"
+	@echo "⚠️  WARNING: Using PRODUCTION Firebase Project!"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Prod Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem"
+	cp ios/config/prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🔧 Installing CocoaPods dependencies..."
+	cd ios && pod install && cd ..
+	@echo "🚀 Launching PROD app on iPhone (Release Build)..."
+	./scripts/build_with_prod_config.sh Release $(iOS_DEV_ID) release
+
+# iOS Mobile (Prod - on physical iPhone - DEBUG) - CLEAN BUILD
+ios-mobile-prod-d:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 iPhone - PRODUCTION Environment (Debug Build)"
+	@echo "⚠️  WARNING: Using PRODUCTION Firebase Project!"
+	@echo "🔥 Hot Restart Enabled"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Prod Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem"
+	cp ios/config/prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🔧 Installing CocoaPods dependencies..."
+	cd ios && pod install && cd ..
+	@echo "🔨 Building with xcodebuild (Debug-Prod config)..."
+	cd ios && xcodebuild -workspace Runner.xcworkspace \
+		-scheme Runner \
+		-configuration Debug-Prod \
+		-destination 'id=$(iOS_DEV_ID)' \
+		-derivedDataPath build \
+		build > /dev/null 2>&1 && cd ..
+	@echo "📲 Installing PROD app on iPhone..."
+	cd ios && ios-deploy --id $(iOS_DEV_ID) --bundle build/Build/Products/Debug-Prod-iphoneos/Runner.app --justlaunch && cd ..
 
 # iOS Emulator (BOTH Dev & Prod in parallel)
 ios-emu-both:

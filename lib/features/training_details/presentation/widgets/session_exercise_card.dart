@@ -54,46 +54,54 @@ class SessionExerciseCard extends StatelessWidget {
                         Icons.fitness_center,
                         size: 16,
                       ),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Builder(builder: (context) {
+                          final isBodyweight = set.isBodyweight;
+                          final loc = isBodyweight
+                              ? AppLocalizations.of(context)
+                              : null;
+                          final wt = () {
+                            if (!isBodyweight) {
+                              return '${set.weight.toStringAsFixed(1)} kg';
+                            }
+                            final additional =
+                                set.weight.abs() < 0.01 ? 0 : set.weight;
+                            final base = loc?.bodyweightAbbrev ?? 'BW';
+                            if (additional == 0) {
+                              return base;
+                            }
+                            return '$base + ${additional.toStringAsFixed(1)} kg';
+                          }();
+                          return Text(
+                            wt,
+                            style: const TextStyle(
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }),
+                      ),
                       const SizedBox(width: 4),
-                      Builder(builder: (context) {
-                        final isBodyweight = set.isBodyweight;
-                        final loc = isBodyweight
-                            ? AppLocalizations.of(context)
-                            : null;
-                        final wt = () {
-                          if (!isBodyweight) {
-                            return '${set.weight.toStringAsFixed(1)} kg';
-                          }
-                          final additional =
-                              set.weight.abs() < 0.01 ? 0 : set.weight;
-                          final base = loc?.bodyweightAbbrev ?? 'BW';
-                          if (additional == 0) {
-                            return base;
-                          }
-                          return '$base + ${additional.toStringAsFixed(1)} kg';
-                        }();
-                        return Text(
-                          wt,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
-                        );
-                      }),
-                      const SizedBox(width: 8),
                       const Icon(
                         Icons.repeat,
                         size: 16,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${set.reps} Wdh',
-                        style: const TextStyle(
-                          fontSize: 14,
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          '${set.reps} Wdh',
+                          style: const TextStyle(
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  if (set.dropWeightKg != null && set.dropReps != null)
+                  if (set.dropWeightKg != null &&
+                      set.dropReps != null &&
+                      (set.dropWeightKg! > 0 || set.dropReps! > 0))
                     Padding(
                       padding: const EdgeInsets.only(left: 20, top: 2),
                       child: Text(

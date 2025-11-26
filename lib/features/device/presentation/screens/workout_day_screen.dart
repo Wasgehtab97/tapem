@@ -59,6 +59,12 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       userId: auth.userId!,
     );
     if (!mounted) return;
+    
+    // Close keyboard before scrolling
+    FocusManager.instance.primaryFocus?.unfocus();
+    final keypad = context.read<OverlayNumericKeypadController>();
+    keypad.close();
+    
     setState(() {});
     _scrollToLatest();
     _sessionKey ??= session.key;
@@ -105,6 +111,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           _ownsSession = true;
         }
       });
+      _scrollToLatest();
     }
   }
 
@@ -178,9 +185,23 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+        leadingWidth: 150,
+        leading: InkWell(
+          onTap: () => Navigator.of(context).pop(),
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              const Icon(Icons.add),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Nächste Übung',
+                  style: Theme.of(context).textTheme.labelLarge,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
         centerTitle: true,
         titleSpacing: 0,

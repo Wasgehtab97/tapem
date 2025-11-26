@@ -1,16 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
 import 'package:tapem/core/database/database_service.dart';
 import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
-import 'package:tapem/features/training_details/data/models/local_session.dart';
+import 'package:tapem/features/training_details/data/models/hive_session.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 
+/// Session repository with Hive for local-first data management
 class SessionRepositoryImpl implements SessionRepository {
   final DatabaseService _db;
   final SyncService _syncService;
@@ -33,20 +33,24 @@ class SessionRepositoryImpl implements SessionRepository {
     required DateTime date,
     bool fromCacheOnly = false,
   }) async {
-    // Local-First: Query Isar
+    // Local-First: Query Hive
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final localSessions = await _db.isar.localSessions
-        .filter()
-        .userIdEqualTo(userId)
-        .timestampBetween(startOfDay, endOfDay)
-        .sortByTimestamp()
-        .findAll();
+    final box = _db.sessionsBox;
+    final localSessions = box.values.where((session) {
+      return session.userId == userId &&
+          session.timestamp.isAfter(startOfDay) &&
+          session.timestamp.isBefore(endOfDay);
+    }).toList();
+
+    // Sort by timestamp
+    localSessions.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     return localSessions.map((local) => Session(
       sessionId: local.sessionId,
       gymId: local.gymId,
+      userId: local.userId,
       deviceId: local.deviceId,
       deviceName: local.deviceName,
       deviceDescription: local.deviceDescription,
@@ -69,13 +73,13 @@ class SessionRepositoryImpl implements SessionRepository {
     )).toList();
   }
 
-  @override
+   @override
   Future<void> saveSession({required Session session}) async {
-    // 1. Save to Isar
-    final localSession = LocalSession()
+    // 1. Save to Hive
+    final hiveSession = HiveSession()
       ..sessionId = session.sessionId
       ..gymId = session.gymId
-      ..userId = '' // Will be set by caller
+      ..userId = session.userId
       ..deviceId = session.deviceId
       ..deviceName = session.deviceName
       ..deviceDescription = session.deviceDescription
@@ -84,7 +88,7 @@ class SessionRepositoryImpl implements SessionRepository {
       ..exerciseName = session.exerciseName
       ..timestamp = session.timestamp
       ..note = session.note
-      ..sets = session.sets.map((s) => LocalSessionSet()
+      ..sets = session.sets.map((s) => HiveSessionSet()
         ..weight = s.weight
         ..reps = s.reps
         ..setNumber = s.setNumber
@@ -96,9 +100,7 @@ class SessionRepositoryImpl implements SessionRepository {
       ..durationMs = session.durationMs
       ..updatedAt = DateTime.now();
 
-    await _db.isar.writeTxn(() async {
-      await _db.isar.localSessions.put(localSession);
-    });
+    await _db.sessionsBox.add(hiveSession);
 
     // 2. Queue Sync Job
     await _syncService.addJob(
@@ -131,7 +133,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required DateTime endDate,
   }) async {
     try {
-      // Fetch from Firestore (using the existing source)
+      // Fetch from Firestore
       final firestore = FirebaseFirestore.instance;
       final query = firestore
           .collectionGroup('logs')
@@ -151,58 +153,57 @@ class SessionRepositoryImpl implements SessionRepository {
         grouped.putIfAbsent(sessionId, () => []).add(doc);
       }
 
-      // Convert to LocalSession and save to Isar
-      await _db.isar.writeTxn(() async {
-        for (final entry in grouped.entries) {
-          final docs = entry.value;
-          if (docs.isEmpty) continue;
+      // Convert to HiveSession and save to Hive
+      final box = _db.sessionsBox;
+      for (final entry in grouped.entries) {
+        final docs = entry.value;
+        if (docs.isEmpty) continue;
 
-          final firstData = docs.first.data() as Map<String, dynamic>;
-          final deviceRef = docs.first.reference.parent.parent!;
-          final gymId = deviceRef.parent.parent!.id;
-          
-          // Fetch device metadata
-          String deviceName = firstData['deviceId'] as String? ?? '';
-          String deviceDescription = '';
-          bool isMulti = false;
-          try {
-            final deviceSnap = await deviceRef.get();
-            final deviceData = deviceSnap.data();
-            if (deviceData != null) {
-              deviceName = deviceData['name'] as String? ?? deviceName;
-              deviceDescription = deviceData['description'] as String? ?? '';
-              isMulti = deviceData['isMulti'] as bool? ?? false;
-            }
-          } catch (_) {}
+        final firstData = docs.first.data() as Map<String, dynamic>;
+        final deviceRef = docs.first.reference.parent.parent!;
+        final gymId = deviceRef.parent.parent!.id;
+        
+        // Fetch device metadata
+        String deviceName = firstData['deviceId'] as String? ?? '';
+        String deviceDescription = '';
+        bool isMulti = false;
+        try {
+          final deviceSnap = await deviceRef.get();
+          final deviceData = deviceSnap.data();
+          if (deviceData != null) {
+            deviceName = deviceData['name'] as String? ?? deviceName;
+            deviceDescription = deviceData['description'] as String? ?? '';
+            isMulti = deviceData['isMulti'] as bool? ?? false;
+          }
+        } catch (_) {}
 
-          final sets = docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return LocalSessionSet()
-              ..weight = (data['weight'] as num?)?.toDouble() ?? 0.0
-              ..reps = (data['reps'] as num?)?.toInt() ?? 0
-              ..setNumber = (data['setNumber'] as num?)?.toInt() ?? 0
-              ..dropWeightKg = (data['dropWeightKg'] as num?)?.toDouble() ?? 0.0
-              ..dropReps = (data['dropReps'] as num?)?.toInt() ?? 0
-              ..isBodyweight = data['isBodyweight'] as bool? ?? false;
-          }).toList();
+        final sets = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return HiveSessionSet()
+            ..weight = (data['weight'] as num?)?.toDouble() ?? 0.0
+            ..reps = (data['reps'] as num?)?.toInt() ?? 0
+            ..setNumber = (data['setNumber'] as num?)?.toInt() ?? 0
+            ..dropWeightKg = (data['dropWeightKg'] as num?)?.toDouble() ?? 0.0
+            ..dropReps = (data['dropReps'] as num?)?.toInt() ?? 0
+            ..isBodyweight = data['isBodyweight'] as bool? ?? false;
+        }).toList();
 
-          final localSession = LocalSession()
-            ..sessionId = entry.key
-            ..gymId = gymId
-            ..userId = userId
-            ..deviceId = firstData['deviceId'] as String? ?? ''
-            ..deviceName = deviceName
-            ..deviceDescription = deviceDescription
-            ..isMulti = isMulti
-            ..exerciseId = firstData['exerciseId'] as String?
-            ..timestamp = (firstData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now()
-            ..note = firstData['note'] as String?
-            ..sets = sets
-            ..updatedAt = DateTime.now();
+        final hiveSession = HiveSession()
+          ..sessionId = entry.key
+          ..gymId = gymId
+          ..userId = userId
+          ..deviceId = firstData['deviceId'] as String? ?? ''
+          ..deviceName = deviceName
+          ..deviceDescription = deviceDescription
+          ..isMulti = isMulti
+          ..exerciseId = firstData['exerciseId'] as String?
+          ..timestamp = (firstData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now()
+          ..note = firstData['note'] as String?
+          ..sets = sets
+          ..updatedAt = DateTime.now();
 
-          await _db.isar.localSessions.put(localSession);
-        }
-      });
+        await box.add(hiveSession);
+      }
     } catch (e) {
       // Log error but don't throw - sync should be best effort
       debugPrint('syncFromRemote error: $e');
@@ -215,10 +216,12 @@ class SessionRepositoryImpl implements SessionRepository {
     required String userId,
     required Session session,
   }) async {
-    // 1. Delete from Isar
-    await _db.isar.writeTxn(() async {
-      await _db.isar.localSessions.filter().sessionIdEqualTo(session.sessionId).deleteAll();
-    });
+    // 1. Delete from Hive
+    final box = _db.sessionsBox;
+    final toDelete = box.values.where((s) => s.sessionId == session.sessionId).toList();
+    for (final item in toDelete) {
+      await item.delete();
+    }
 
     // 2. Queue Sync Job
     await _syncService.addJob(
@@ -231,9 +234,7 @@ class SessionRepositoryImpl implements SessionRepository {
       },
     );
 
-    // 3. Cleanup auxiliary data (XP, Meta, etc.) - Best effort or queue these too?
-    // For now, we keep the existing direct calls but wrap them in try-catch to not block offline flow
-    // Ideally, these should also be part of the sync logic or separate sync jobs.
+    // 3. Cleanup auxiliary data (best effort)
     try {
         final snapshot = await _deviceSource.getSnapshotBySessionId(
           gymId: gymId,
@@ -277,8 +278,7 @@ class SessionRepositoryImpl implements SessionRepository {
           secondaryMuscleGroupIds: snapshot?.secondaryMuscleGroupIds ?? const [],
         );
     } catch (e) {
-        // Ignore errors if offline
+        debugPrint('[SessionRepository] Error deleting remote session: $e');
     }
   }
 }
-

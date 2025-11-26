@@ -13,6 +13,7 @@ import 'package:tapem/features/device/data/repositories/device_repository_impl.d
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
+import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 import 'package:tapem/services/membership_service.dart';
 
 @immutable
@@ -101,12 +102,14 @@ class WorkoutDayController extends ChangeNotifier
   WorkoutDayController({
     required FirebaseFirestore firestore,
     required MembershipService membership,
+    required SessionRepository sessionRepository,
     DeviceRepository? deviceRepository,
     GetDevicesForGym? getDevicesForGym,
     CommunityStatsWriter? communityStatsWriter,
     SessionDraftRepository Function()? createDraftRepository,
   })  : _firestore = firestore,
         _membership = membership,
+        _sessionRepository = sessionRepository,
         _communityStatsWriter =
             communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
         _createDraftRepository =
@@ -119,6 +122,7 @@ class WorkoutDayController extends ChangeNotifier
 
   final FirebaseFirestore _firestore;
   MembershipService _membership;
+  final SessionRepository _sessionRepository;
   late final DeviceRepository _deviceRepository;
   late final GetDevicesForGym _getDevicesForGym;
   final CommunityStatsWriter _communityStatsWriter;
@@ -216,6 +220,7 @@ class WorkoutDayController extends ChangeNotifier
     final provider = DeviceProvider(
       firestore: _firestore,
       deviceRepository: _deviceRepository,
+      sessionRepository: _sessionRepository,
       getDevicesForGym: _getDevicesForGym,
       draftRepo: _createDraftRepository(),
       membership: _membership,

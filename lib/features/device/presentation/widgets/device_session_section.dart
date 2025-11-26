@@ -672,7 +672,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final hasScrollableParent = Scrollable.maybeOf(context) != null;
     final content = _buildContent(context, prov);
     final Widget wrappedContent = hasScrollableParent
-        ? IntrinsicHeight(child: content)
+        ? content
         : SingleChildScrollView(
             padding: EdgeInsets.zero,
             clipBehavior: Clip.none,

@@ -8,15 +8,16 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 
 import '../app_router.dart';
 import '../firebase_options.dart';
 import '../core/providers/functions_provider.dart';
+import '../core/push/push_notification_handler.dart';
 import 'navigation.dart';
 
-const bool kEnablePush = false;
+const bool kEnablePush = true;
 
 Future<void> ensureFirebaseInitialized() async {
   try {
@@ -33,9 +34,16 @@ Future<void> ensureFirebaseInitialized() async {
 }
 
 Future<void> initializeAppCheck() async {
-  await FirebaseAppCheck.instance.activate(
-    appleProvider: AppleProvider.deviceCheck,
-  );
+  try {
+    await FirebaseAppCheck.instance.activate(
+      // Debug: Prints a debug token to console (use in Firebase Console)
+      // Release: Uses real attestation (DeviceCheck / Play Integrity)
+      appleProvider: kReleaseMode ? AppleProvider.deviceCheck : AppleProvider.debug,
+      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+    );
+  } catch (e) {
+    debugPrint('[AppCheck] Failed to activate: $e');
+  }
 }
 
 void configureFirestorePersistence() {
@@ -87,6 +95,12 @@ Future<void> initializePushMessaging() async {
     FirebaseMessaging.instance.onTokenRefresh.listen((token) {
       _registerToken(token)
           .catchError((error) => debugPrint('[FCM] onTokenRefresh error: $error'));
+    });
+
+    // Foreground message handler - show in-app notification
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('[FCM] Foreground message received: ${message.messageId}');
+      PushNotificationHandler.handleForegroundMessage(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);

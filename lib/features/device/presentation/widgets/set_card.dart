@@ -20,7 +20,8 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
 
-void _slog(int idx, String m) => debugPrint('🧾 [SetCard#$idx] $m');
+// Disabled for production - uncomment for widget debugging
+void _slog(int idx, String m) {} // => debugPrint('🧾 [SetCard#$idx] $m');
 
 class SetCardTheme {
   final EdgeInsets padding;

@@ -45,6 +45,7 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     flutter_additional_ios_build_settings(t)
+    
     t.build_configurations.each do |c|
       # Einheitliche Targets/Flags
       c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
@@ -58,6 +59,28 @@ post_install do |installer|
       c.build_settings['HEADER_SEARCH_PATHS']   = '$(inherited)'
       c.build_settings['FRAMEWORK_SEARCH_PATHS'] = '$(inherited)'
       c.build_settings['OTHER_LDFLAGS']         = '$(inherited)'
+    end
+    
+    # *** ISAR FIX: Force static library + preserve symbols ***
+    if t.name == 'isar_flutter_libs'
+      # Force static library build
+      def t.build_type
+        Pod::BuildType.static_library
+      end
+      
+      t.build_configurations.each do |c|
+        # Add library search path
+        c.build_settings['LIBRARY_SEARCH_PATHS'] ||= ['$(inherited)']
+        c.build_settings['LIBRARY_SEARCH_PATHS'] << '"${PODS_CONFIGURATION_BUILD_DIR}/isar_flutter_libs"'
+        
+        # Preserve symbols in Release
+        c.build_settings['DEAD_CODE_STRIPPING'] = 'NO'
+        c.build_settings['STRIP_STYLE'] = 'non-global'
+        
+        # Explicit linking
+        c.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
+        c.build_settings['OTHER_LDFLAGS'] << '-lisar_flutter_libs'
+      end
     end
   end
 end

@@ -1,5 +1,9 @@
 #include? "../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
-#include? "Generated.xcconfig"
+#include "Generated.xcconfig"
+
+// Production settings for Release configuration
+BUNDLE_ID_SUFFIX=
+DISPLAY_NAME=Tap'em
 
 SUPPORTED_PLATFORMS = iphonesimulator iphoneos
 EXCLUDED_ARCHS[sdk=iphonesimulator*] =

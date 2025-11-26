@@ -17,8 +17,9 @@ class XpTrace {
   }
 
   static void log(String stage, Map<String, Object?> data) {
-    if (!kDebugMode) return;
-    final payload = data.entries.map((e) => '${e.key}=${e.value}').join(' ');
-    debugPrint('XP/$stage $payload');
+    // Disabled for production - uncomment for XP debugging
+    // if (!kDebugMode) return;
+    // final payload = data.entries.map((e) => '${e.key}=${e.value}').join(' ');
+    // debugPrint('XP/$stage $payload');
   }
 }

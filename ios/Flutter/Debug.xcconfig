@@ -9,3 +9,7 @@ ENABLE_BITCODE = NO
 OTHER_LDFLAGS = $(inherited)
 FRAMEWORK_SEARCH_PATHS = $(inherited)
 HEADER_SEARCH_PATHS = $(inherited)
+
+// ⚠️ DEV settings - MUST STAY DEV
+BUNDLE_ID_SUFFIX=.dev
+DISPLAY_NAME=Tap'em DEV

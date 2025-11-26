@@ -11,6 +11,8 @@ import '../../../core/providers/xp_provider.dart';
 import '../../../core/services/workout_session_duration_service.dart';
 import '../../../features/community/data/community_stats_writer.dart';
 import '../../../services/membership_service.dart';
+import '../../../services/membership_service.dart';
+import '../../training_details/providers/session_repository_provider.dart';
 import '../presentation/controllers/workout_day_controller.dart';
 import 'device_riverpod.dart';
 
@@ -21,6 +23,7 @@ final workoutDayControllerProvider =
   final controller = WorkoutDayController(
     firestore: firestore,
     membership: membership,
+    sessionRepository: ref.watch(sessionRepositoryProvider),
     deviceRepository: ref.watch(deviceRepositoryProvider),
     getDevicesForGym: ref.watch(getDevicesForGymProvider),
     communityStatsWriter: CommunityStatsWriter(
