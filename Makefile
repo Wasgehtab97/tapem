@@ -278,3 +278,6 @@ localhost:
 
 reset:
 	git reset --hard origin/a_gpt5 
+
+logo:
+	flutter pub run flutter_launcher_icons
