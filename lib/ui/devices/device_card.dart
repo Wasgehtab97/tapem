@@ -28,94 +28,125 @@ class DeviceCard extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final secondaryColor = theme.colorScheme.onSurface.withOpacity(0.7);
-    final idColor = brandColor.withOpacity(0.85);
+    
+    // Premium colors
+    final titleColor = theme.colorScheme.onSurface;
+    final subtitleColor = theme.colorScheme.onSurface.withOpacity(0.6);
+    final idBadgeColor = brandColor.withOpacity(0.15);
+    final idTextColor = brandColor;
 
     final semanticsLabel =
         '${device.name}, ${brand.isNotEmpty ? '$brand, ' : ''}ID $idText';
 
     return BrandInteractiveCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 12,
-      ),
+      padding: EdgeInsets.zero,
       semanticLabel: semanticsLabel,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  device.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: brandColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              brandColor.withOpacity(0.08),
+              brandColor.withOpacity(0.02),
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    device.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: titleColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                if (brand.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs / 2),
-                    child: Text(
+                  if (brand.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
                       brand,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: secondaryColor,
-                        letterSpacing: 0.15,
+                        color: subtitleColor,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                  ),
-              ],
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 120, maxWidth: 180),
-            child: Column(
+            const SizedBox(width: AppSpacing.md),
+            Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'ID: $idText',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: idColor,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: idBadgeColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: brandColor.withOpacity(0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        'ID: $idText',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: idTextColor,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                     if (onAssignMuscles != null || onResetMuscles != null)
-                      PopupMenuButton<_Menu>(
-                        tooltip: loc.assignMuscleGroups,
-                        icon: Icon(Icons.more_vert, color: brandColor),
-                        onSelected: (v) {
-                          switch (v) {
-                            case _Menu.assign:
-                              onAssignMuscles?.call();
-                              break;
-                            case _Menu.reset:
-                              onResetMuscles?.call();
-                              break;
-                          }
-                        },
-                        itemBuilder: (ctx) => [
-                          if (onAssignMuscles != null)
-                            PopupMenuItem(
-                              value: _Menu.assign,
-                              child: Text(loc.assignMuscleGroups),
-                            ),
-                          if (onResetMuscles != null)
-                            PopupMenuItem(
-                              value: _Menu.reset,
-                              child: Text(loc.resetMuscleGroups),
-                            ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: PopupMenuButton<_Menu>(
+                          tooltip: loc.assignMuscleGroups,
+                          icon: Icon(Icons.more_vert, 
+                            color: subtitleColor,
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onSelected: (v) {
+                            switch (v) {
+                              case _Menu.assign:
+                                onAssignMuscles?.call();
+                                break;
+                              case _Menu.reset:
+                                onResetMuscles?.call();
+                                break;
+                            }
+                          },
+                          itemBuilder: (ctx) => [
+                            if (onAssignMuscles != null)
+                              PopupMenuItem(
+                                value: _Menu.assign,
+                                child: Text(loc.assignMuscleGroups),
+                              ),
+                            if (onResetMuscles != null)
+                              PopupMenuItem(
+                                value: _Menu.reset,
+                                child: Text(loc.resetMuscleGroups),
+                              ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -123,19 +154,16 @@ class DeviceCard extends StatelessWidget {
                     (device.primaryMuscleGroups.isNotEmpty ||
                         device.secondaryMuscleGroups.isNotEmpty))
                   Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: MuscleChips(
-                        primaryIds: device.primaryMuscleGroups,
-                        secondaryIds: device.secondaryMuscleGroups,
-                      ),
+                    padding: const EdgeInsets.only(top: 12),
+                    child: MuscleChips(
+                      primaryIds: device.primaryMuscleGroups,
+                      secondaryIds: device.secondaryMuscleGroups,
                     ),
                   ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

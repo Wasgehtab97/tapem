@@ -110,6 +110,7 @@ class SessionRepositoryImpl implements SessionRepository {
       payload: {
         'sessionId': session.sessionId,
         'gymId': session.gymId,
+        'userId': session.userId,  // ← CRITICAL: Must include userId for friend calendar queries
         'deviceId': session.deviceId,
         'timestamp': session.timestamp.toIso8601String(),
         'sets': session.sets.map((s) => {
@@ -153,12 +154,13 @@ class SessionRepositoryImpl implements SessionRepository {
         grouped.putIfAbsent(sessionId, () => []).add(doc);
       }
 
-      // Convert to HiveSession and save to Hive
+      // Convert to HiveSession and save to Hive (with upsert logic to prevent duplicates)
       final box = _db.sessionsBox;
       for (final entry in grouped.entries) {
         final docs = entry.value;
         if (docs.isEmpty) continue;
 
+        final sessionId = entry.key;
         final firstData = docs.first.data() as Map<String, dynamic>;
         final deviceRef = docs.first.reference.parent.parent!;
         final gymId = deviceRef.parent.parent!.id;
@@ -188,21 +190,66 @@ class SessionRepositoryImpl implements SessionRepository {
             ..isBodyweight = data['isBodyweight'] as bool? ?? false;
         }).toList();
 
-        final hiveSession = HiveSession()
-          ..sessionId = entry.key
-          ..gymId = gymId
-          ..userId = userId
-          ..deviceId = firstData['deviceId'] as String? ?? ''
-          ..deviceName = deviceName
-          ..deviceDescription = deviceDescription
-          ..isMulti = isMulti
-          ..exerciseId = firstData['exerciseId'] as String?
-          ..timestamp = (firstData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now()
-          ..note = firstData['note'] as String?
-          ..sets = sets
-          ..updatedAt = DateTime.now();
+        // Check if session already exists to prevent duplicates
+        HiveSession? existingSession;
+        for (final session in box.values) {
+          if (session.sessionId == sessionId) {
+            existingSession = session;
+            break;
+          }
+        }
 
-        await box.add(hiveSession);
+        if (existingSession != null) {
+          // Update existing session
+          existingSession
+            ..gymId = gymId
+            ..userId = userId
+            ..deviceId = firstData['deviceId'] as String? ?? ''
+            ..deviceName = deviceName
+            ..deviceDescription = deviceDescription
+            ..isMulti = isMulti
+            ..exerciseId = firstData['exerciseId'] as String?
+            ..exerciseName = firstData['exerciseName'] as String?
+            ..timestamp = (firstData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now()
+            ..note = firstData['note'] as String?
+            ..sets = sets
+            ..startTime = firstData['startTime'] != null 
+                ? (firstData['startTime'] as Timestamp).toDate() 
+                : null
+            ..endTime = firstData['endTime'] != null 
+                ? (firstData['endTime'] as Timestamp).toDate() 
+                : null
+            ..durationMs = (firstData['durationMs'] as num?)?.toInt()
+            ..updatedAt = DateTime.now();
+          await existingSession.save();
+          debugPrint('🔄 Updated existing session: $sessionId');
+        } else {
+          // Add new session
+          final hiveSession = HiveSession()
+            ..sessionId = sessionId
+            ..gymId = gymId
+            ..userId = userId
+            ..deviceId = firstData['deviceId'] as String? ?? ''
+            ..deviceName = deviceName
+            ..deviceDescription = deviceDescription
+            ..isMulti = isMulti
+            ..exerciseId = firstData['exerciseId'] as String?
+            ..exerciseName = firstData['exerciseName'] as String?
+            ..timestamp = (firstData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now()
+            ..note = firstData['note'] as String?
+            ..sets = sets
+            ..startTime = firstData['startTime'] != null 
+                ? (firstData['startTime'] as Timestamp).toDate() 
+                : null
+            ..endTime = firstData['endTime'] != null 
+                ? (firstData['endTime'] as Timestamp).toDate() 
+                : null
+            ..durationMs = (firstData['durationMs'] as num?)?.toInt()
+            ..updatedAt = DateTime.now();
+
+          await box.add(hiveSession);
+          debugPrint('✅ Added new session: $sessionId');
+        }
       }
     } catch (e) {
       // Log error but don't throw - sync should be best effort

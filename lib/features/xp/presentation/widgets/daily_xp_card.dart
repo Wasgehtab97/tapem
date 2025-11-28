@@ -58,12 +58,17 @@ class DailyXpCard extends StatelessWidget {
         ? 'Maximallevel erreicht'
         : '${format.format(xpRemaining)} XP bis Level ${level + 1}';
 
+    // Better contrast: dark text on light gradient
+    final textColor = Colors.black.withOpacity(0.85);
+    final subtleTextColor = Colors.black.withOpacity(0.6);
+    final progressBgColor = Colors.black.withOpacity(0.12);
+
     final themed = theme.copyWith(
       textTheme: theme.textTheme.apply(
-        bodyColor: Colors.white,
-        displayColor: Colors.white,
+        bodyColor: textColor,
+        displayColor: textColor,
       ),
-      colorScheme: theme.colorScheme.copyWith(onSurface: Colors.white),
+      colorScheme: theme.colorScheme.copyWith(onSurface: textColor),
     );
 
     return Container(
@@ -75,6 +80,13 @@ class DailyXpCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: highlightGradient,
         borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.first.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: padding,
@@ -94,20 +106,25 @@ class DailyXpCard extends StatelessWidget {
                     Text(
                       xpLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                            fontWeight: FontWeight.w700,
                           ) ??
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                          TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     Text(
                       totalXpLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
+                            color: subtleTextColor,
+                            fontWeight: FontWeight.w500,
                           ) ??
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                          TextStyle(
+                            color: subtleTextColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ],
                 ),
@@ -115,21 +132,28 @@ class DailyXpCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: userProgress.clamp(0.0, 1.0),
-                  minHeight: 6,
-                  backgroundColor: Colors.white.withOpacity(0.25),
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  minHeight: 8,
+                  backgroundColor: progressBgColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    progressColor.withOpacity(0.8),
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 remainingText,
                 style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white70,
+                      color: subtleTextColor,
+                      fontWeight: FontWeight.w600,
                     ) ??
-                    const TextStyle(color: Colors.white70, fontSize: 12),
+                    TextStyle(
+                      color: subtleTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               if (footer != null) ...[
                 const SizedBox(height: AppSpacing.sm),

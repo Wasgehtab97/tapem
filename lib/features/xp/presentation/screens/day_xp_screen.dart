@@ -34,13 +34,16 @@ class _DayXpScreenState extends State<DayXpScreen> {
   @override
   void initState() {
     super.initState();
-    final auth = context.read<AuthProvider>();
-    final xpProv = context.read<XpProvider>();
-    final uid = auth.userId;
-    if (uid != null) {
-      xpProv.watchTrainingDays(uid);
-      xpProv.watchStatsDailyXp(auth.gymCode ?? '', uid);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      final xpProv = context.read<XpProvider>();
+      final uid = auth.userId;
+      if (uid != null) {
+        xpProv.watchTrainingDays(uid);
+        xpProv.watchStatsDailyXp(auth.gymCode ?? '', uid);
+      }
+    });
   }
 
   @override

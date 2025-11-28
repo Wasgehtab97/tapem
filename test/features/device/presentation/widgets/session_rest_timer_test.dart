@@ -6,11 +6,11 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
-import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
+
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
@@ -26,9 +26,7 @@ class _MockSettingsProvider extends Mock
     with ChangeNotifier
     implements SettingsProvider {}
 
-class _MockTrainingPlanProvider extends Mock
-    with ChangeNotifier
-    implements TrainingPlanProvider {}
+
 
 class _MockExerciseProvider extends Mock
     with ChangeNotifier
@@ -55,22 +53,17 @@ void main() {
     WidgetTester tester, {
     required DeviceProvider firstProvider,
     required DeviceProvider secondProvider,
-    ExerciseEntry? firstPlan,
-    ExerciseEntry? secondPlan,
   }) async {
     final auth = _MockAuthProvider();
     final settings = _MockSettingsProvider();
-    final training = _MockTrainingPlanProvider();
+
     final exercises = _MockExerciseProvider();
     final keypad = _MockKeypadController();
     final workout = _MockWorkoutDayController();
 
     when(() => auth.userId).thenReturn('user-1');
     when(() => settings.load(any())).thenAnswer((_) async {});
-    when(() => training.plans).thenReturn(const []);
-    when(() => training.isLoading).thenReturn(false);
-    when(() => training.activePlanId).thenReturn(null);
-    when(() => training.loadPlans(any(), any())).thenAnswer((_) async {});
+
     when(() => exercises.exercises).thenReturn(const []);
     when(() => keypad.openFor(
           any(),
@@ -120,7 +113,7 @@ void main() {
         providers: [
           Provider<AuthProvider>.value(value: auth),
           Provider<SettingsProvider>.value(value: settings),
-          Provider<TrainingPlanProvider>.value(value: training),
+
           Provider<ExerciseProvider>.value(value: exercises),
           ChangeNotifierProvider<OverlayNumericKeypadController>.value(
             value: keypad,
@@ -143,7 +136,7 @@ void main() {
                   userId: 'user-1',
                   displayIndex: 1,
                   sessionKey: 'session-1',
-                  plannedEntry: firstPlan,
+
                 ),
                 DeviceSessionSection(
                   key: const ValueKey('session-2'),
@@ -154,7 +147,7 @@ void main() {
                   userId: 'user-1',
                   displayIndex: 2,
                   sessionKey: 'session-2',
-                  plannedEntry: secondPlan,
+
                 ),
               ],
             ),
@@ -169,31 +162,11 @@ void main() {
       (tester) async {
     final firstProvider = _MockDeviceProvider();
     final secondProvider = _MockDeviceProvider();
-    final firstPlan = ExerciseEntry(
-      deviceId: 'device-a',
-      exerciseId: 'exercise-a',
-      exerciseName: 'Exercise A',
-      setType: 'work',
-      totalSets: 0,
-      workSets: 0,
-      restInSeconds: 90,
-    );
-    final secondPlan = ExerciseEntry(
-      deviceId: 'device-b',
-      exerciseId: 'exercise-b',
-      exerciseName: 'Exercise B',
-      setType: 'work',
-      totalSets: 0,
-      workSets: 0,
-      restInSeconds: 150,
-    );
 
     await pumpMultipleSessions(
       tester,
       firstProvider: firstProvider,
       secondProvider: secondProvider,
-      firstPlan: firstPlan,
-      secondPlan: secondPlan,
     );
 
     expect(find.byType(SessionRestTimer), findsNothing);

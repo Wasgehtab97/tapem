@@ -11,7 +11,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/time/logic_day.dart';
@@ -33,7 +33,7 @@ import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
-import '../../../training_plan/domain/models/exercise_entry.dart';
+
 
 class DeviceSessionSection extends StatelessWidget {
   const DeviceSessionSection({
@@ -45,7 +45,7 @@ class DeviceSessionSection extends StatelessWidget {
     required this.userId,
     this.displayIndex = 1,
     this.sessionKey,
-    this.plannedEntry,
+
     this.onSessionSaved,
     this.onCloseRequested,
   });
@@ -57,7 +57,7 @@ class DeviceSessionSection extends StatelessWidget {
   final String userId;
   final int displayIndex;
   final String? sessionKey;
-  final ExerciseEntry? plannedEntry;
+
   final VoidCallback? onSessionSaved;
   final VoidCallback? onCloseRequested;
 
@@ -72,7 +72,7 @@ class DeviceSessionSection extends StatelessWidget {
         userId: userId,
         displayIndex: displayIndex,
         sessionKey: sessionKey,
-        plannedEntry: plannedEntry,
+
         onSessionSaved: onSessionSaved,
         onCloseRequested: onCloseRequested,
       ),
@@ -88,7 +88,7 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
     required this.userId,
     required this.displayIndex,
     this.sessionKey,
-    this.plannedEntry,
+
     this.onSessionSaved,
     this.onCloseRequested,
   });
@@ -99,7 +99,7 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
   final String userId;
   final int displayIndex;
   final String? sessionKey;
-  final ExerciseEntry? plannedEntry;
+
   final VoidCallback? onSessionSaved;
   final VoidCallback? onCloseRequested;
 
@@ -140,15 +140,13 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       exerciseId: widget.exerciseId,
       userId: widget.userId,
     );
-    final planProv = context.read<TrainingPlanProvider>();
-    if (planProv.plans.isEmpty && !planProv.isLoading) {
-      await planProv.loadPlans(widget.gymId, widget.userId);
-    }
-    if (planProv.activePlanId == null && planProv.plans.isNotEmpty) {
-      await planProv.setActivePlan(planProv.plans.first.id);
-    }
+
     if (mounted) {
-      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
     }
   }
 
@@ -294,7 +292,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final counts = prov.getSetCounts();
     final canClose = widget.onCloseRequested != null && counts.done == 0;
     final badgeBackground = theme.colorScheme.secondaryContainer;
-    final badgeForeground = theme.colorScheme.onSecondaryContainer;
+    final isLight = ThemeData.estimateBrightnessForColor(badgeBackground) == Brightness.light;
+    final badgeTextColor = isLight ? Colors.black : Colors.white;
 
     final showClose = widget.onCloseRequested != null;
 
@@ -313,11 +312,11 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
             child: Text(
               widget.displayIndex.toString(),
               style: theme.textTheme.titleSmall?.copyWith(
-                    color: badgeForeground,
+                    color: badgeTextColor,
                     fontWeight: FontWeight.w600,
                   ) ??
                   TextStyle(
-                    color: badgeForeground,
+                    color: badgeTextColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -354,7 +353,6 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   Widget _buildEditablePage(
     DeviceProvider prov,
     AppLocalizations loc,
-    ExerciseEntry? plannedEntry,
   ) {
     final theme = Theme.of(context);
     final outlineColor =
@@ -393,10 +391,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 
     final children = <Widget>[
       const SizedBox(height: 12),
-      if (plannedEntry != null) ...[
-        const SizedBox(height: 8),
-        _PlannedTable(entry: plannedEntry),
-      ],
+
       const SizedBox(height: 8),
       SessionActionStrip(
         onOpenLeaderboard: prov.device == null
@@ -472,7 +467,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
         FilledButton(
           onPressed: prov.hasSessionToday || prov.isSaving
               ? null
-              : () => _saveSession(prov, loc, plannedEntry),
+              : () => _saveSession(prov, loc),
           child: prov.isSaving
               ? SizedBox(
                   width: 20,
@@ -503,7 +498,6 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   Future<void> _saveSession(
     DeviceProvider prov,
     AppLocalizations loc,
-    ExerciseEntry? plannedEntry,
   ) async {
     _focusSession();
     final auth = context.read<AuthProvider>();
@@ -575,7 +569,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       userName: auth.userName,
       gender: settingsProv.gender,
       bodyWeightKg: settingsProv.bodyWeightKg,
-      plannedRestSeconds: plannedEntry?.restInSeconds,
+
     );
     final sessionId = prov.lastSessionId;
     if (!ok) {
@@ -640,16 +634,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       );
     }
 
-    final plannedEntry = widget.plannedEntry ??
-        context.select<TrainingPlanProvider, ExerciseEntry?>(
-          (p) => p.entryForDate(
-            widget.deviceId,
-            widget.exerciseId,
-            DateTime.now(),
-          ),
-        );
 
-    return _buildEditablePage(prov, loc, plannedEntry);
+
+    return _buildEditablePage(prov, loc);
   }
 
   @override
@@ -929,198 +916,4 @@ class _SetListFieldHeader extends StatelessWidget {
   }
 }
 
-class _PlannedTable extends StatefulWidget {
-  const _PlannedTable({required this.entry});
 
-  final ExerciseEntry entry;
-
-  @override
-  State<_PlannedTable> createState() => _PlannedTableState();
-}
-
-class _PlannedTableState extends State<_PlannedTable> {
-  final List<TextEditingController> _weightCtrls = [];
-  final List<TextEditingController> _repsCtrls = [];
-
-  bool _muted = false;
-
-  void _setTextSilently(TextEditingController c, String text) {
-    if (c.text == text) return;
-    _muted = true;
-    c.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
-    _muted = false;
-  }
-
-  void _syncControllers(List<Map<String, dynamic>> sets) {
-    while (_weightCtrls.length < sets.length) {
-      final i = _weightCtrls.length;
-      _weightCtrls.add(TextEditingController(text: sets[i]['weight'] ?? ''));
-      _repsCtrls.add(TextEditingController(text: sets[i]['reps'] ?? ''));
-
-      _weightCtrls[i].addListener(() {
-        if (_muted) return;
-        context.read<DeviceProvider>().updateSet(
-              i,
-              weight: _weightCtrls[i].text,
-            );
-      });
-      _repsCtrls[i].addListener(() {
-        if (_muted) return;
-        context.read<DeviceProvider>().updateSet(i, reps: _repsCtrls[i].text);
-      });
-    }
-
-    while (_weightCtrls.length > sets.length) {
-      _weightCtrls.removeLast().dispose();
-      _repsCtrls.removeLast().dispose();
-    }
-
-    for (var i = 0; i < sets.length; i++) {
-      final w = sets[i]['weight'] ?? '';
-      final r = sets[i]['reps'] ?? '';
-      _setTextSilently(_weightCtrls[i], w);
-      _setTextSilently(_repsCtrls[i], r);
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final c in _weightCtrls) {
-      c.dispose();
-    }
-    for (final c in _repsCtrls) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final prov = context.watch<DeviceProvider>();
-
-    if (prov.sets.length < widget.entry.totalSets) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        while (prov.sets.length < widget.entry.totalSets) {
-          prov.addSet();
-        }
-      });
-    }
-
-    if (widget.entry.reps != null &&
-        prov.sets.every((s) => (s['reps'] ?? '').toString().isEmpty)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        for (var i = 0; i < prov.sets.length; i++) {
-          prov.updateSet(i, reps: widget.entry.reps!.toString());
-        }
-      });
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncControllers(prov.sets);
-    });
-
-    final weightHint = widget.entry.weight?.toString();
-    final repsHint = widget.entry.reps?.toString();
-    final loc = AppLocalizations.of(context)!;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      child: Container(
-        decoration: DeviceLevelStyle.widgetDecorationFor(
-          prov.level,
-          theme: Theme.of(context),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Heute dran',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            for (final entrySet in prov.sets.asMap().entries)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(width: 24, child: Text(entrySet.value['number'] ?? '')),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        key: ValueKey('w-${entrySet.key}'),
-                        controller: _weightCtrls[entrySet.key],
-                        decoration: InputDecoration(
-                          labelText: prov.isBodyweightMode ? loc.bodyweight : 'kg',
-                          hintText: weightHint,
-                          isDense: true,
-                        ),
-                        readOnly: true,
-                        keyboardType: TextInputType.none,
-                        autofocus: false,
-                        onTap: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          context
-                              .read<OverlayNumericKeypadController>()
-                              .openFor(
-                                _weightCtrls[entrySet.key],
-                                allowDecimal: true,
-                              );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        key: ValueKey('r-${entrySet.key}'),
-                        controller: _repsCtrls[entrySet.key],
-                        decoration: InputDecoration(
-                          labelText: 'x',
-                          hintText: repsHint,
-                          isDense: true,
-                        ),
-                        readOnly: true,
-                        keyboardType: TextInputType.none,
-                        autofocus: false,
-                        onTap: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          context
-                              .read<OverlayNumericKeypadController>()
-                              .openFor(
-                                _repsCtrls[entrySet.key],
-                                allowDecimal: false,
-                              );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => prov.removeSet(entrySet.key),
-                    ),
-                  ],
-                ),
-              ),
-            Center(
-              child: _AddSetButton(
-                label: loc.addSetButton,
-                onPressed: () => prov.addSet(),
-              ),
-            ),
-            if (widget.entry.notes != null && widget.entry.notes!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Notiz: ${widget.entry.notes!}'),
-            ],
-            const Divider(),
-          ],
-        ),
-      ),
-    );
-  }
-}

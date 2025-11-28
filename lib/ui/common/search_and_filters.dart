@@ -65,29 +65,6 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
     super.dispose();
   }
 
-  Future<void> _showSortSheet() async {
-    final loc = AppLocalizations.of(context)!;
-    final res = await showModalBottomSheet<SortOrder>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(loc.filterSortAz),
-              onTap: () => Navigator.pop(ctx, SortOrder.az),
-            ),
-            ListTile(
-              title: Text(loc.filterSortZa),
-              onTap: () => Navigator.pop(ctx, SortOrder.za),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (res != null) widget.onSort(res);
-  }
-
   Future<void> _showMuscleSheet() async {
     final loc = AppLocalizations.of(context)!;
     final prov = context.read<MuscleGroupProvider>();
@@ -118,77 +95,137 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accentColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final loc = AppLocalizations.of(context)!;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _controller,
-          onChanged: widget.onQuery,
-          decoration: InputDecoration(
-            hintText: loc.multiDeviceSearchHint,
-            prefixIcon: const BrandGradientIcon(Icons.search),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.cardColor.withOpacity(isDark ? 0.5 : 0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.dividerColor.withOpacity(0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            filled: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (context, value, child) {
+                return TextField(
+                  controller: _controller,
+                  onChanged: widget.onQuery,
+                  style: theme.textTheme.bodyLarge,
+                  decoration: InputDecoration(
+                    hintText: loc.multiDeviceSearchHint,
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor.withOpacity(0.7),
+                    ),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: BrandGradientIcon(Icons.search, size: 24),
+                    ),
+                    suffixIcon: value.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear,
+                                color: theme.iconTheme.color?.withOpacity(0.5)),
+                            onPressed: () {
+                              _controller.clear();
+                              widget.onQuery('');
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                );
+              },
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            FilterChip(
-              label: Text(
-                loc.filterNameChip,
-                style: theme.textTheme.labelLarge?.copyWith(
-                      color: accentColor,
-                    ) ??
-                    TextStyle(color: accentColor),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          child: Row(
+            children: [
+              _FilterPill(
+                label: loc.filterMuscleChip,
+                selected: widget.muscleFilterIds.isNotEmpty,
+                onTap: () => _showMuscleSheet(),
               ),
-              selected: widget.sort == SortOrder.za,
-              onSelected: (_) => _showSortSheet(),
-              shape: const StadiumBorder(),
-              selectedColor: theme.colorScheme.primaryContainer,
-              showCheckmark: false,
-            ),
-            const SizedBox(width: 8),
-            FilterChip(
-              label: Text(
-                loc.filterMuscleChip,
-                style: theme.textTheme.labelLarge?.copyWith(
-                      color: accentColor,
-                    ) ??
-                    TextStyle(color: accentColor),
+              const SizedBox(width: 12),
+              _FilterPill(
+                label: loc.filterRecentChip,
+                selected: widget.sort == SortOrder.recent,
+                onTap: () =>
+                    widget.onSort(widget.sort == SortOrder.recent ? SortOrder.az : SortOrder.recent),
               ),
-              selected: widget.muscleFilterIds.isNotEmpty,
-              onSelected: (_) => _showMuscleSheet(),
-              shape: const StadiumBorder(),
-              selectedColor: theme.colorScheme.primaryContainer,
-              showCheckmark: false,
-            ),
-            const SizedBox(width: 8),
-            FilterChip(
-              label: Text(
-                loc.filterRecentChip,
-                style: theme.textTheme.labelLarge?.copyWith(
-                      color: accentColor,
-                    ) ??
-                    TextStyle(color: accentColor),
-              ),
-              selected: widget.sort == SortOrder.recent,
-              onSelected: (v) =>
-                  widget.onSort(v ? SortOrder.recent : SortOrder.az),
-              shape: const StadiumBorder(),
-              selectedColor: theme.colorScheme.primaryContainer,
-              showCheckmark: false,
-            ),
-          ],
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final activeColor = brandTheme?.outline ?? theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? activeColor.withOpacity(0.15)
+              : theme.cardColor.withOpacity(isDark ? 0.3 : 0.6),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected
+                ? activeColor.withOpacity(0.6)
+                : theme.dividerColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: selected
+                ? activeColor
+                : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }

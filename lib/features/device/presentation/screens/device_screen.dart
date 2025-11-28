@@ -113,7 +113,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               exerciseId: session.exerciseId,
               userId: session.userId,
               sessionKey: session.key,
-              plannedEntry: null,
+
               onSessionSaved: _handleSessionSaved,
               onCloseRequested: _handleCloseRequested,
             ),

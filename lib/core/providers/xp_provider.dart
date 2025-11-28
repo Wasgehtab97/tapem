@@ -63,21 +63,31 @@ class XpProvider extends ChangeNotifier {
   }) {
     final previousXp = _statsDailyXp;
     final previousDate = _statsDailyFetchedAt;
+    final previousLevel = _dailyLevel;
+    final previousLevelXp = _dailyLevelXp;
+    
     _statsDailyXp = totalXp;
     _statsDailyFetchedAt = fetchedAt;
     var level = (totalXp ~/ LevelService.xpPerLevel) + 1;
     if (level > LevelService.maxLevel) level = LevelService.maxLevel;
     final xpInLevel =
         level >= LevelService.maxLevel ? 0 : totalXp % LevelService.xpPerLevel;
-    final shouldNotify =
-        previousXp != totalXp ||
-        previousDate == null ||
-        !_isSameCalendarDay(previousDate, fetchedAt);
+    
     _dailyLevel = level;
     _dailyLevelXp = xpInLevel;
+    
+    // Only notify if values actually changed
+    final hasChanged =
+        previousXp != totalXp ||
+        previousLevel != level ||
+        previousLevelXp != xpInLevel ||
+        previousDate == null ||
+        !_isSameCalendarDay(previousDate, fetchedAt);
+    
     debugPrint(
         '🔄 provider statsDailyXp=$totalXp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source');
-    if (shouldNotify) {
+    
+    if (hasChanged) {
       notifyListeners();
     }
   }

@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
@@ -24,9 +24,7 @@ class _MockAuthProvider extends Mock
     with ChangeNotifier
     implements AuthProvider {}
 
-class _MockTrainingPlanProvider extends Mock
-    with ChangeNotifier
-    implements TrainingPlanProvider {}
+
 
 class _MockExerciseProvider extends Mock
     with ChangeNotifier
@@ -120,7 +118,7 @@ void main() {
 
   late _MockDeviceProvider deviceProvider;
   late _MockAuthProvider authProvider;
-  late _MockTrainingPlanProvider trainingPlanProvider;
+
   late _MockExerciseProvider exerciseProvider;
   late OverlayNumericKeypadController keypadController;
   late _MockGetDeviceByNfcCode getDeviceByNfcCode;
@@ -133,7 +131,7 @@ void main() {
   setUp(() {
     deviceProvider = _MockDeviceProvider();
     authProvider = _MockAuthProvider();
-    trainingPlanProvider = _MockTrainingPlanProvider();
+
     exerciseProvider = _MockExerciseProvider();
     keypadController = _FakeKeypadController();
     getDeviceByNfcCode = _MockGetDeviceByNfcCode();
@@ -247,13 +245,7 @@ void main() {
           Exercise(id: 'ex', name: 'Exercise', userId: 'user'),
         ]);
 
-    when(() => trainingPlanProvider.plans).thenReturn(const []);
-    when(() => trainingPlanProvider.isLoading).thenReturn(false);
-    when(() => trainingPlanProvider.activePlanId).thenReturn(null);
-    when(() => trainingPlanProvider.loadPlans(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => trainingPlanProvider.setActivePlan(any()))
-        .thenAnswer((_) async {});
+
 
     when(() => getDeviceByNfcCode.execute(any(), any()))
         .thenAnswer((_) async => null);
@@ -286,9 +278,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<DeviceProvider>.value(value: deviceProvider),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider<TrainingPlanProvider>.value(
-          value: trainingPlanProvider,
-        ),
+
         ChangeNotifierProvider<ExerciseProvider>.value(value: exerciseProvider),
         ChangeNotifierProvider<OverlayNumericKeypadController>.value(
           value: keypadController,

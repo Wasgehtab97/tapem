@@ -17,7 +17,7 @@ import '../core/providers/muscle_group_provider.dart';
 import '../core/providers/profile_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/providers/theme_preference_provider.dart';
-import '../features/training_plan/providers/training_plan_provider.dart';
+
 import '../core/providers/xp_provider.dart';
 import '../core/services/workout_session_duration_service.dart';
 import '../features/avatars/presentation/providers/avatar_inventory_provider.dart';
@@ -168,10 +168,7 @@ class LegacyProviderScope extends ConsumerWidget {
       provider.ChangeNotifierProvider<WorkoutDayController>.value(
         value: ref.watch(workoutDayControllerProvider),
       ),
-      // TODO(legacy-state): Training plan UI awaits Riverpod migration.
-      provider.ChangeNotifierProvider<TrainingPlanProvider>.value(
-        value: ref.watch(trainingPlanProvider),
-      ),
+
       // TODO(legacy-state): Profile widgets consume provider.ProfileProvider.
       provider.ChangeNotifierProvider<ProfileProvider>.value(
         value: ref.watch(profileProvider),

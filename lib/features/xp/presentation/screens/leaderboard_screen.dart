@@ -78,16 +78,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   @override
   void initState() {
     super.initState();
-    ref.listen<FriendsState>(
-      friendsProvider,
-      (previous, next) {
-        final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
-        final nextIds = next.friends.map((f) => f.friendUid).toSet();
-        if (prevIds != nextIds) {
-          _refreshFriends();
-        }
-      },
-    );
   }
 
   @override
@@ -229,6 +219,17 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<FriendsState>(
+      friendsProvider,
+      (previous, next) {
+        final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
+        final nextIds = next.friends.map((f) => f.friendUid).toSet();
+        if (prevIds != nextIds) {
+          _refreshFriends();
+        }
+      },
+    );
+
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();

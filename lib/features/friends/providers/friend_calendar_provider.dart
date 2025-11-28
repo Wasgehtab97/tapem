@@ -75,12 +75,14 @@ class FriendCalendarNotifier extends Notifier<FriendCalendarState> {
       final year = DateTime.now().year;
       final start = DateTime(year, 1, 1);
       final end = DateTime(year, 12, 31, 23, 59, 59, 999);
+      print('[FriendCalendar] Loading training dates for friend=$uid year=$year');
       final snap = await _firestore
           .collectionGroup('logs')
           .where('userId', isEqualTo: uid)
           .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end))
           .get();
+      print('[FriendCalendar] Found ${snap.docs.length} logs for friend=$uid');
       if (state.activeFriendUid != uid) {
         return;
       }
@@ -104,13 +106,16 @@ class FriendCalendarNotifier extends Notifier<FriendCalendarState> {
         for (final key in dates)
           if (tempGymIds.containsKey(key)) key: tempGymIds[key]!,
       };
+      print('[FriendCalendar] Processed ${dates.length} unique training days');
       state = state.copyWith(
         trainingDates: dates,
         gymIdsByDate: gymIds,
         isLoading: false,
         clearError: true,
       );
-    } catch (e) {
+    } catch (e, st) {
+      print('[FriendCalendar] ERROR loading calendar: $e');
+      print(st);
       if (state.activeFriendUid == uid) {
         state = state.copyWith(
           isLoading: false,

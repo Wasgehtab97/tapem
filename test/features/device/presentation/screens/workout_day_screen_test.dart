@@ -5,12 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+
+import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
+import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
-import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
+
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 
@@ -18,9 +20,7 @@ import '../../../../features/auth/helpers/fake_firestore.dart';
 
 class _MockAuthProvider extends Mock implements AuthProvider {}
 
-class _MockTrainingPlanProvider extends Mock
-    with ChangeNotifier
-    implements TrainingPlanProvider {}
+
 
 class _MockMembershipService extends Mock implements MembershipService {}
 
@@ -60,33 +60,49 @@ class _FakeSessionDraftRepository implements SessionDraftRepository {
   }
 }
 
+class _MockSessionRepository extends Mock implements SessionRepository {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     registerFallbackValue(DateTime(2023));
+    registerFallbackValue(Session(
+      sessionId: 'dummy',
+      gymId: 'gym',
+      userId: 'user',
+      deviceId: 'device',
+      deviceName: 'Device',
+      note: 'Note',
+      timestamp: DateTime.now(),
+      sets: [],
+    ));
   });
 
   late WorkoutDayController controller;
   late _MockAuthProvider authProvider;
-  late _MockTrainingPlanProvider trainingPlanProvider;
+
   late _MockMembershipService membership;
+  late _MockSessionRepository sessionRepository;
 
   setUp(() {
     final firestore = FakeFirebaseFirestore();
     membership = _MockMembershipService();
+    sessionRepository = _MockSessionRepository();
     when(() => membership.ensureMembership(any(), any()))
         .thenAnswer((_) async {});
+    when(() => sessionRepository.saveSession(session: any(named: 'session')))
+        .thenAnswer((_) async {});
+
     controller = WorkoutDayController(
       firestore: firestore,
       membership: membership,
+      sessionRepository: sessionRepository,
       createDraftRepository: () => _FakeSessionDraftRepository(),
     );
     authProvider = _MockAuthProvider();
     when(() => authProvider.userId).thenReturn('user-1');
-    trainingPlanProvider = _MockTrainingPlanProvider();
-    when(() => trainingPlanProvider.entryForDate(any(), any(), any()))
-        .thenReturn(null);
+
   });
 
   tearDown(() {
@@ -107,9 +123,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
           Provider<AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<TrainingPlanProvider>.value(
-            value: trainingPlanProvider,
-          ),
+
         ],
         child: MaterialApp(
           navigatorObservers: [observer],
@@ -142,73 +156,7 @@ void main() {
     );
   });
 
-  testWidgets('workout day screen renders single rest timer in header',
-      (tester) async {
-    when(() => trainingPlanProvider.entryForDate(any(), any(), any())).thenReturn(
-      ExerciseEntry(
-        deviceId: 'device-1',
-        exerciseId: 'exercise-1',
-        exerciseName: 'Exercise',
-        setType: 'work',
-        totalSets: 0,
-        workSets: 0,
-        restInSeconds: 75,
-      ),
-    );
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
-          Provider<AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<TrainingPlanProvider>.value(
-            value: trainingPlanProvider,
-          ),
-        ],
-        child: const MaterialApp(
-          home: WorkoutDayScreen(
-            gymId: 'gym-1',
-            deviceId: 'device-1',
-            exerciseId: 'exercise-1',
-          ),
-        ),
-      ),
-    );
-
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.byType(SessionRestTimer), findsOneWidget);
-    expect(find.byTooltip('Select rest duration'), findsOneWidget);
-
-    final appBar = tester.widget<AppBar>(find.byType(AppBar));
-    final padding = appBar.title as Padding;
-    final row = padding.child as Row;
-    final children = row.children;
-    expect(children.whereType<ActiveWorkoutTimer>(), hasLength(1));
-    expect(children.whereType<SessionRestTimer>(), hasLength(1));
-
-    final activeIndex =
-        children.indexWhere((child) => child is ActiveWorkoutTimer);
-    final restIndex =
-        children.indexWhere((child) => child is SessionRestTimer);
-    expect(activeIndex, isNot(-1));
-    expect(restIndex, isNot(-1));
-    expect(restIndex, greaterThan(activeIndex));
-    expect(children[restIndex - 1], isA<SizedBox>());
-
-    final actions = appBar.actions ?? const <Widget>[];
-    final timersInActions = actions.where((widget) {
-      if (widget is SessionRestTimer) {
-        return true;
-      }
-      if (widget is Padding) {
-        return widget.child is SessionRestTimer;
-      }
-      return false;
-    });
-    expect(timersInActions, isEmpty);
-  });
 
   testWidgets('closing a secondary screen keeps the shared session alive',
       (tester) async {
@@ -219,7 +167,7 @@ void main() {
         gymId: 'gym-1',
         deviceId: 'device-1',
         exerciseId: 'exercise-1',
-        sessionBuilder: (context, session, plannedEntry) {
+        sessionBuilder: (context, session) {
           renderedSessionKeys.add(session.key);
           return Text('session-${session.key}', key: ValueKey(session.key));
         },
@@ -231,9 +179,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
           Provider<AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<TrainingPlanProvider>.value(
-            value: trainingPlanProvider,
-          ),
+
         ],
         child: MaterialApp(home: buildScreen()),
       ),
@@ -278,16 +224,14 @@ void main() {
               value: controller,
             ),
             Provider<AuthProvider>.value(value: authProvider),
-            ChangeNotifierProvider<TrainingPlanProvider>.value(
-              value: trainingPlanProvider,
-            ),
+
           ],
           child: MaterialApp(
             home: WorkoutDayScreen(
               gymId: 'gym-1',
               deviceId: deviceId,
               exerciseId: 'exercise-1',
-              sessionBuilder: (context, session, plannedEntry) {
+              sessionBuilder: (context, session) {
                 return Text('session-${session.key}', key: ValueKey(session.key));
               },
             ),

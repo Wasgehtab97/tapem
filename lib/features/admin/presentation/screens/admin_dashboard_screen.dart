@@ -336,144 +336,167 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
 
     final theme = Theme.of(context);
+    final brandColor = theme.colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.adminDashboardTitle)),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadDevices,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.lg,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: _AdminActionGrid(
-                        actions: [
-                          _AdminAction(
-                            icon: Icons.add,
-                            title: loc.adminDashboardCreateDevice,
-                            onTap: _showCreateDialog,
-                          ),
-                          _AdminAction(
-                            icon: Icons.fitness_center,
-                            title: loc.muscleGroupTitle,
-                            onTap: () {
-                              Navigator.of(context)
-                                  .pushNamed(AppRouter.manageMuscleGroups);
-                            },
-                          ),
-                          _AdminAction(
-                            icon: Icons.brush,
-                            title: loc.adminDashboardBranding,
-                            onTap: () {
-                              Navigator.of(context).pushNamed(AppRouter.branding);
-                            },
-                          ),
-                          _AdminAction(
-                            icon: Icons.flag,
-                            title: loc.challengeAdminTitle,
-                            onTap: () {
-                              Navigator.of(context)
-                                  .pushNamed(AppRouter.manageChallenges);
-                            },
-                          ),
-                          _AdminAction(
-                            icon: Icons.person,
-                            title: loc.admin_symbols_title,
-                            onTap: () {
-                              Navigator.of(context)
-                                  .pushNamed(AppRouter.adminSymbols);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        AppSpacing.sm,
-                        AppSpacing.md,
-                        AppSpacing.sm,
-                      ),
-                      child: Text(
-                        loc.challengeAdminFieldDevices,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_devices.isEmpty)
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(loc.adminDashboardTitle),
+        foregroundColor: brandColor,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.scaffoldBackgroundColor,
+              Color.alphaBlend(
+                brandColor.withOpacity(0.05),
+                theme.scaffoldBackgroundColor,
+              ),
+            ],
+          ),
+        ),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadDevices,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.md,
+                        AppSpacing.lg + kToolbarHeight + 16,
                         AppSpacing.md,
                         AppSpacing.md,
-                        AppSpacing.xl,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceVariant.withOpacity(
-                              theme.brightness == Brightness.dark ? 0.5 : 0.9,
+                        child: _AdminActionGrid(
+                          actions: [
+                            _AdminAction(
+                              icon: Icons.add,
+                              title: loc.adminDashboardCreateDevice,
+                              onTap: _showCreateDialog,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Text(
-                              loc.gymNoDevices,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                            _AdminAction(
+                              icon: Icons.fitness_center,
+                              title: loc.muscleGroupTitle,
+                              onTap: () {
+                                Navigator.of(context)
+                                    .pushNamed(AppRouter.manageMuscleGroups);
+                              },
                             ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        0,
-                        AppSpacing.md,
-                        AppSpacing.xl,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (ctx, index) {
-                            final device = _devices[index];
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: index == _devices.length - 1
-                                    ? 0
-                                    : AppSpacing.sm,
-                              ),
-                              child: DeviceListItem(
-                                device: device,
-                                onDeleted: () {
-                                  _loadDevices();
-                                },
-                              ),
-                            );
-                          },
-                          childCount: _devices.length,
+                            _AdminAction(
+                              icon: Icons.brush,
+                              title: loc.adminDashboardBranding,
+                              onTap: () {
+                                Navigator.of(context).pushNamed(AppRouter.branding);
+                              },
+                            ),
+                            _AdminAction(
+                              icon: Icons.flag,
+                              title: loc.challengeAdminTitle,
+                              onTap: () {
+                                Navigator.of(context)
+                                    .pushNamed(AppRouter.manageChallenges);
+                              },
+                            ),
+                            _AdminAction(
+                              icon: Icons.person,
+                              title: loc.admin_symbols_title,
+                              onTap: () {
+                                Navigator.of(context)
+                                    .pushNamed(AppRouter.adminSymbols);
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                ],
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          AppSpacing.sm,
+                          AppSpacing.md,
+                          AppSpacing.sm,
+                        ),
+                        child: Text(
+                          loc.challengeAdminFieldDevices,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: brandColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_devices.isEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          AppSpacing.md,
+                          AppSpacing.md,
+                          AppSpacing.xl,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceVariant.withOpacity(
+                                theme.brightness == Brightness.dark ? 0.5 : 0.9,
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              child: Text(
+                                loc.gymNoDevices,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          0,
+                          AppSpacing.md,
+                          AppSpacing.xl,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (ctx, index) {
+                              final device = _devices[index];
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == _devices.length - 1
+                                      ? 0
+                                      : AppSpacing.sm,
+                                ),
+                                child: DeviceListItem(
+                                  device: device,
+                                  onDeleted: () {
+                                    _loadDevices();
+                                  },
+                                ),
+                              );
+                            },
+                            childCount: _devices.length,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }

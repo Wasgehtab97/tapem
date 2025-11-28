@@ -82,8 +82,12 @@ class SessionRestTimerState extends State<SessionRestTimer> {
               label:
                   isRunning ? 'Pause rest timer' : 'Start rest timer',
               child: IconButton(
-                iconSize: 22,
+                iconSize: 16,
                 padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 24,
+                  minHeight: 24,
+                ),
                 visualDensity: VisualDensity.compact,
                 icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
                 tooltip:
@@ -100,17 +104,17 @@ class SessionRestTimerState extends State<SessionRestTimer> {
             );
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Tooltip(
           message: 'Select rest duration',
           child: InkWell(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(20),
             onTap: () => _handleTimerTap(context),
             child: Padding(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(2),
               child: SizedBox(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 child: ValueListenableBuilder<Duration>(
                   valueListenable: _service.remaining,
                   builder: (context, remaining, _) {
@@ -127,20 +131,23 @@ class SessionRestTimerState extends State<SessionRestTimer> {
                     final textStyle =
                         theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],
                             ) ??
                             TextStyle(
                               color: colorScheme.onSurfaceVariant,
-                              fontSize: 12,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
                             );
                     return Stack(
                       alignment: Alignment.center,
                       children: [
                         CircularProgressIndicator(
                           value: progress,
-                          strokeWidth: 3,
+                          strokeWidth: 2.5,
                         ),
                         Text(
                           timeLabel,

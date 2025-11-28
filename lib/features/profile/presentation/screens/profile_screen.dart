@@ -1,5 +1,6 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
@@ -45,6 +46,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<ProfileProvider>().loadTrainingDates(context);
       final uid = context.read<AuthProvider>().userId;
       if (uid != null) {
@@ -56,16 +58,34 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
   }
 
   void _openCalendarPopup(String userId, List<String> trainingDates) {
-    showModalBottomSheet<void>(
+    showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder:
           (_) => CalendarPopup(
             trainingDates: trainingDates,
             initialYear: DateTime.now().year,
             userId: userId,
           ),
+    );
+  }
+
+
+  void _showAvatarPicker() {
+    final auth = context.read<AuthProvider>();
+    showDialog(
+      context: context,
+      barrierColor: Colors.black38,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: AvatarPicker(
+          currentKey: auth.avatarKey,
+          onSelect: (key) {
+            auth.setAvatarKey(key);
+            Navigator.pop(ctx);
+          },
+        ),
+      ),
     );
   }
 
@@ -78,24 +98,70 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       avatarKey: auth.avatarKey,
     );
 
-    showModalBottomSheet<void>(
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: DailyXpCard(
-              profile: profile,
-              level: xpProvider.dailyLevel,
-              xpInLevel: xpProvider.dailyLevelXp,
-              totalXp: xpProvider.statsDailyXp,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.cardLg),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.cardLg),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.1),
+                      Colors.white.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.cardLg),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: DailyXpCard(
+                  profile: profile,
+                  level: xpProvider.dailyLevel,
+                  xpInLevel: xpProvider.dailyLevelXp,
+                  totalXp: xpProvider.statsDailyXp,
+                  onAvatarTap: () {
+                    Navigator.pop(dialogContext);
+                    _showAvatarPicker();
+                  },
+                ),
+              ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -135,17 +201,17 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _openCalendarPopup(userId, prov.trainingDates),
-                child: Calendar(
-                  trainingDates: prov.trainingDates,
-                  showNavigation: false,
-                  year: DateTime.now().year,
-                ),
+            const SizedBox(height: AppSpacing.sm),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openCalendarPopup(userId, prov.trainingDates),
+              child: Calendar(
+                trainingDates: prov.trainingDates,
+                showNavigation: false,
+                year: DateTime.now().year,
               ),
             ),
+            const Spacer(),
           ],
         ),
       );
@@ -261,11 +327,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     title: loc.profileStatsButtonLabel,
                     subtitle: loc.profileStatsButtonSubtitle,
                     leading: const SizedBox.square(
-                      dimension: 48,
+                      dimension: 56,
                       child: _ProfileStatsLeadingIcon(),
                     ),
-                    trailing: const _ProfileStatsSparkline(),
-                    showChevron: false,
+                    showChevron: true,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -284,11 +349,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     title: loc.profileCommunityButtonTitle,
                     subtitle: loc.profileCommunityButtonSubtitle,
                     leading: const SizedBox.square(
-                      dimension: 48,
+                      dimension: 56,
                       child: _ProfileCommunityLeadingIcon(),
                     ),
-                    trailing: const _ProfileCommunityHighlight(),
-                    showChevron: false,
+                    showChevron: true,
                     onTap: () {
                       Navigator.pushNamed(context, AppRouter.community);
                     },
@@ -302,11 +366,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     title: loc.surveyListTitle,
                     subtitle: loc.reportViewSurveysTitle,
                     leading: const SizedBox.square(
-                      dimension: 48,
+                      dimension: 56,
                       child: _ProfileSurveyLeadingIcon(),
                     ),
-                    trailing: const _ProfileSurveyHighlight(),
-                    showChevron: false,
+                    showChevron: true,
                     onTap: () {
                       final gymId = context.read<GymProvider>().currentGymId;
                       final userId = context.read<AuthProvider>().userId ?? '';
@@ -340,14 +403,21 @@ class _ProfileStatsLeadingIcon extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
     final backgroundColor = theme.scaffoldBackgroundColor;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xs),
-      alignment: Alignment.center,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: borderColor),
       ),
       child: Icon(
@@ -367,21 +437,30 @@ class _ProfileCommunityLeadingIcon extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
     final backgroundColor = theme.scaffoldBackgroundColor;
     return Container(
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: borderColor),
         color: backgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(Icons.groups_2, color: brandColor, size: 26),
+          Icon(Icons.groups_2, color: brandColor, size: 28),
           Positioned(
-            right: 6,
-            bottom: 6,
+            right: 8,
+            bottom: 8,
             child: Icon(
               Icons.celebration,
               size: 16,
@@ -544,15 +623,23 @@ class _ProfileSurveyLeadingIcon extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.08);
+    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
     final backgroundColor = theme.scaffoldBackgroundColor;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xs),
+      width: 56,
+      height: 56,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppRadius.button),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Icon(
         Icons.poll_outlined,
@@ -646,47 +733,69 @@ class _ProfileActionButton extends StatelessWidget {
       uiLogEvent: uiLogEvent,
       borderRadius: radius,
       semanticLabel: '$title, $subtitle',
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          leading,
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: brandColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: onSurface.withOpacity(0.7),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
-            ),
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              brandColor.withOpacity(0.08),
+              brandColor.withOpacity(0.02),
+            ],
           ),
-          if (trailing != null) ...[
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            leading,
             const SizedBox(width: AppSpacing.md),
-            trailing!,
-          ],
-          if (showChevron) ...[
-            const SizedBox(width: AppSpacing.md),
-            Icon(
-              Icons.chevron_right,
-              color: brandColor,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: onSurface,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: onSurface.withOpacity(0.6),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: AppSpacing.md),
+              trailing!,
+            ],
+            if (showChevron) ...[
+              const SizedBox(width: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: onSurface.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: brandColor,
+                  size: 16,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

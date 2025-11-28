@@ -85,9 +85,11 @@ class SetCardTheme {
       Colors.black.withOpacity(isDark ? 0.7 : 0.78),
       softenedSurface,
     );
-    final stroke = scheme.onSurface.withOpacity(isDark ? 0.32 : 0.18);
+    // Transparent borders for all input fields (no visible borders)
+    final stroke = Colors.transparent;
     const activeStrokeBase = Colors.black;
-    final strokeActive = activeStrokeBase.withOpacity(isDark ? 0.9 : 0.82);
+    // Transparent border when focused (no visible border on focus)
+    final strokeActive = Colors.transparent;
     final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
     final glowActive = activeStrokeBase.withOpacity(isDark ? 0.35 : 0.28);
 
@@ -828,6 +830,11 @@ class SetRowContent extends StatelessWidget {
 
     final children = <Widget>[];
     if (showFieldHeaderRow && showFieldHeaders) {
+      // Remove (kg) from weight label for header
+      final weightHeaderLabel = isBodyweightMode
+          ? loc.bodyweightFieldLabel('').trim()
+          : 'Gewicht';
+      
       children.add(
         Padding(
           padding: EdgeInsets.only(bottom: dense ? 6 : 8),
@@ -835,14 +842,26 @@ class SetRowContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(width: leadingWidth),
-              Expanded(
+              // Header for "Vorher" field
+              if (previousSet != null)
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    'Vorher',
+                    style: headerStyle,
+                  ),
+                ),
+              if (previousSet != null) SizedBox(width: dense ? 4 : 6),
+              Flexible(
+                flex: 3,
                 child: Text(
-                  weightLabel,
+                  weightHeaderLabel,
                   style: headerStyle,
                 ),
               ),
-              SizedBox(width: dense ? 8 : 12),
-              Expanded(
+              SizedBox(width: dense ? 4 : 6),
+              Flexible(
+                flex: 3,
                 child: Text(
                   repsLabel,
                   style: headerStyle,
@@ -864,7 +883,20 @@ class SetRowContent extends StatelessWidget {
             dense: dense,
           ),
           SizedBox(width: dense ? 6 : 8),
-          Expanded(
+          // Previous set compact display
+          if (previousSet != null)
+            Flexible(
+              flex: 2,
+              child: _CompactPreviousDisplay(
+                previous: previousSet!,
+                tokens: tokens,
+                dense: dense,
+                loc: loc,
+              ),
+            ),
+          if (previousSet != null) SizedBox(width: dense ? 4 : 6),
+          Flexible(
+            flex: 3,
             child: KeyedSubtree(
               key: weightFieldKey,
               child: _InputPill(
@@ -887,8 +919,9 @@ class SetRowContent extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: dense ? 6 : 8),
-          Expanded(
+          SizedBox(width: dense ? 4 : 6),
+          Flexible(
+            flex: 3,
             child: KeyedSubtree(
               key: repsFieldKey,
               child: _InputPill(
@@ -909,7 +942,7 @@ class SetRowContent extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: dense ? 6 : 8),
+          SizedBox(width: dense ? 5 : 7),
           _RoundButton(
             tokens: tokens,
             icon: showExtras ? Icons.expand_less : Icons.expand_more,
@@ -936,112 +969,102 @@ class SetRowContent extends StatelessWidget {
       ),
     );
 
-    if (previousSet != null) {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(top: dense ? 4 : 6),
-          child: _PreviousSetSummary(
-            previous: previousSet!,
-            tokens: tokens,
-            dense: dense,
-            leadingWidth: leadingWidth,
-            loc: loc,
-          ),
-        ),
-      );
-    }
+
+    // Previous set summary is now shown inline in the row above
+    // if (previousSet != null) {
+    //   children.add(
+    //     Padding(
+    //       padding: EdgeInsets.only(top: dense ? 4 : 6),
+    //       child: _PreviousSetSummary(
+    //         previous: previousSet!,
+    //         tokens: tokens,
+    //         dense: dense,
+    //         leadingWidth: leadingWidth,
+    //         loc: loc,
+    //       ),
+    //     ),
+    //   );
+    // }
     if (showExtras) {
       children.add(SizedBox(height: dense ? 6 : 9));
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
-        children.add(
-          SizedBox(
-            width: double.infinity,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final hasAddButton = !readOnly && drop.showAddButton;
-                final fieldGap = dense ? 6.0 : 10.0;
-                final buttonSize = dense ? 38.0 : 42.0;
-                final trailingLeadingGap = fieldGap;
-                final trailingBetweenGap = dense ? 5.0 : 6.0;
-                final trailingReservedWidth =
-                    trailingLeadingGap + buttonSize + trailingBetweenGap + buttonSize;
-                final available = constraints.maxWidth -
-                    leadingWidth -
-                    fieldGap -
-                    trailingReservedWidth;
-                final fieldWidth = math.max(0.0, available / 2);
-                final trailingRemainder = trailingBetweenGap + buttonSize;
+          final hasAddButton = !readOnly && drop.showAddButton;
+          final buttonSize = dense ? 38.0 : 42.0;
 
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: leadingWidth,
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: Padding(
-                          padding: EdgeInsetsDirectional.only(
-                            end: dropBadgeToFieldGap,
-                          ),
-                          child: _DropBadge(tokens: tokens, dense: dense),
-                        ),
+          children.add(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: leadingWidth,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        end: dropBadgeToFieldGap,
                       ),
+                      child: _DropBadge(tokens: tokens, dense: dense),
                     ),
-                    SizedBox(
-                      width: fieldWidth,
-                      child: KeyedSubtree(
-                        key: drop.weightKey,
-                        child: _InputPill(
-                          controller: drop.weightController,
-                          focusNode: drop.weightFocus,
-                          label: loc.dropKgFieldLabel,
-                          readOnly: readOnly || done,
-                          tokens: tokens,
-                          dense: true,
-                          onTap: drop.onTapWeight,
-                          validator: drop.validator,
-                        ),
-                      ),
+                  ),
+                ),
+                SizedBox(width: dense ? 6 : 8),
+                if (previousSet != null) ...[
+                  const Spacer(flex: 2),
+                  SizedBox(width: dense ? 4 : 6),
+                ],
+                Flexible(
+                  flex: 3,
+                  child: KeyedSubtree(
+                    key: drop.weightKey,
+                    child: _InputPill(
+                      controller: drop.weightController,
+                      focusNode: drop.weightFocus,
+                      label: loc.dropKgFieldLabel,
+                      readOnly: readOnly || done,
+                      tokens: tokens,
+                      dense: true,
+                      onTap: drop.onTapWeight,
+                      validator: drop.validator,
                     ),
-                    SizedBox(width: fieldGap),
-                    SizedBox(
-                      width: fieldWidth,
-                      child: KeyedSubtree(
-                        key: drop.repsKey,
-                        child: _InputPill(
-                          controller: drop.repsController,
-                          focusNode: drop.repsFocus,
-                          label: loc.dropRepsFieldLabel,
-                          readOnly: readOnly || done,
-                          tokens: tokens,
-                          dense: true,
-                          onTap: drop.onTapReps,
-                          validator: drop.validator,
-                        ),
-                      ),
+                  ),
+                ),
+                SizedBox(width: dense ? 4 : 6),
+                Flexible(
+                  flex: 3,
+                  child: KeyedSubtree(
+                    key: drop.repsKey,
+                    child: _InputPill(
+                      controller: drop.repsController,
+                      focusNode: drop.repsFocus,
+                      label: loc.dropRepsFieldLabel,
+                      readOnly: readOnly || done,
+                      tokens: tokens,
+                      dense: true,
+                      onTap: drop.onTapReps,
+                      validator: drop.validator,
                     ),
-                    if (hasAddButton) ...[
-                      SizedBox(width: trailingLeadingGap),
-                      _RoundButton(
-                        tokens: tokens,
-                        icon: Icons.add,
-                        filled: false,
-                        semantics: loc.addSetButton,
-                        dense: true,
-                        onTap: drop.onAdd,
-                        iconColor: primaryColor,
-                        disabledIconColor: primaryColor.withOpacity(0.4),
-                      ),
-                      SizedBox(width: trailingRemainder),
-                    ] else
-                      SizedBox(width: trailingReservedWidth),
-                  ],
-                );
-              },
+                  ),
+                ),
+                SizedBox(width: dense ? 5 : 7),
+                if (hasAddButton)
+                  _RoundButton(
+                    tokens: tokens,
+                    icon: Icons.add,
+                    filled: false,
+                    semantics: loc.addSetButton,
+                    dense: true,
+                    onTap: drop.onAdd,
+                    iconColor: primaryColor,
+                    disabledIconColor: primaryColor.withOpacity(0.4),
+                  )
+                else
+                  SizedBox(width: buttonSize),
+                SizedBox(width: dense ? 5 : 7),
+                SizedBox(width: buttonSize),
+              ],
             ),
-          ),
-        );
+          );
         if (i != dropRows.length - 1) {
           children.add(SizedBox(height: dense ? 8 : 12));
         }
@@ -1064,180 +1087,6 @@ class SetRowContent extends StatelessWidget {
   }
 }
 
-class _PreviousSetSummary extends StatelessWidget {
-  final SessionSetVM previous;
-  final SetCardTheme tokens;
-  final bool dense;
-  final double leadingWidth;
-  final AppLocalizations loc;
-
-  const _PreviousSetSummary({
-    required this.previous,
-    required this.tokens,
-    required this.dense,
-    required this.leadingWidth,
-    required this.loc,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = GoogleFonts.inter(
-      fontSize: dense ? 11 : 12,
-      fontWeight: FontWeight.w500,
-      color: tokens.chipFg.withOpacity(0.88),
-    );
-    final labelStyle = textStyle.copyWith(fontWeight: FontWeight.w600);
-    final background = Color.alphaBlend(
-      tokens.cardFill.withOpacity(0.65),
-      Theme.of(context).colorScheme.surface,
-    );
-
-    final drops = previous.drops;
-    final maxPreferredWidth = dense ? 220.0 : 260.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: leadingWidth),
-            Flexible(
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxPreferredWidth),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: dense ? 10 : 12,
-                      vertical: dense ? 4 : 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: background,
-                      borderRadius: BorderRadius.circular(dense ? 12 : 14),
-                      border: Border.all(
-                        color: tokens.chipBorder.withOpacity(0.35),
-                        width: 0.5,
-                      ),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        style: textStyle,
-                        children: [
-                          TextSpan(
-                            text: '${loc.setCardPreviousLabel}: ',
-                            style: labelStyle,
-                          ),
-                          TextSpan(
-                            text:
-                                '${_weightDescription(previous, loc)} × ${previous.reps}',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (drops.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(
-              top: dense ? 4 : 6,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: leadingWidth),
-                Flexible(
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxPreferredWidth),
-                      child: Wrap(
-                        alignment: WrapAlignment.start,
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          for (final drop in drops)
-                            _PreviousDropChip(
-                              drop: drop,
-                              tokens: tokens,
-                              dense: dense,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  String _weightDescription(SessionSetVM s, AppLocalizations loc) {
-    if (!s.isBodyweight) {
-      return '${_formatNumber(s.kg)} kg';
-    }
-    if (s.kg == 0) {
-      return loc.bodyweight;
-    }
-    return loc.bodyweightPlus(_formatNumber(s.kg));
-  }
-
-  String _formatNumber(num value) {
-    final formatter = NumberFormat('0.##');
-    return formatter.format(value);
-  }
-}
-
-class _PreviousDropChip extends StatelessWidget {
-  final DropEntry drop;
-  final SetCardTheme tokens;
-  final bool dense;
-
-  const _PreviousDropChip({
-    required this.drop,
-    required this.tokens,
-    required this.dense,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = GoogleFonts.inter(
-      fontSize: dense ? 10 : 11,
-      fontWeight: FontWeight.w500,
-      color: tokens.chipFg.withOpacity(0.82),
-    );
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: dense ? 8 : 10,
-        vertical: dense ? 4 : 5,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.cardFill,
-        borderRadius: BorderRadius.circular(dense ? 11 : 12),
-        border: Border.all(
-          color: tokens.chipBorder.withOpacity(0.3),
-          width: 0.5,
-        ),
-      ),
-      child: Text(
-        '${_formatNumber(drop.kg)} kg × ${drop.reps}',
-        style: textStyle,
-      ),
-    );
-  }
-
-  String _formatNumber(num value) {
-    final formatter = NumberFormat('0.##');
-    return formatter.format(value);
-  }
-}
 
 class _DropRowConfig {
   final TextEditingController weightController;
@@ -1266,6 +1115,9 @@ class _DropRowConfig {
     this.onAdd,
   });
 }
+
+
+
 
 class _IndexBadge extends StatelessWidget {
   final SetCardTheme tokens;
@@ -1504,6 +1356,8 @@ class _InputPillState extends State<_InputPill> {
         decoration: const InputDecoration(
           isCollapsed: true,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
       ),
@@ -1660,6 +1514,65 @@ class _RoundButtonState extends State<_RoundButton> {
                     theme.colorScheme.onSurface.withOpacity(0.8);
               }(),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Compact previous set display for inline row layout
+class _CompactPreviousDisplay extends StatelessWidget {
+  final SessionSetVM previous;
+  final SetCardTheme tokens;
+  final bool dense;
+  final AppLocalizations loc;
+
+  const _CompactPreviousDisplay({
+    required this.previous,
+    required this.tokens,
+    required this.dense,
+    required this.loc,
+  });
+
+  String _formatNumber(num value) {
+    final formatter = NumberFormat('0.##');
+    return formatter.format(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = GoogleFonts.inter(
+      fontSize: dense ? 10 : 11,
+      fontWeight: FontWeight.w600,
+      color: tokens.chipFg.withOpacity(0.75),
+    );
+
+    final weightStr = previous.isBodyweight
+        ? (previous.kg == 0 ? 'BW' : 'BW+${_formatNumber(previous.kg)}')
+        : _formatNumber(previous.kg);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 6 : 8,
+        vertical: dense ? 6 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.inputFill.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(dense ? 12 : 14),
+        border: Border.all(
+          color: tokens.chipBorder.withOpacity(0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '$weightStr×${previous.reps}',
+            style: textStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

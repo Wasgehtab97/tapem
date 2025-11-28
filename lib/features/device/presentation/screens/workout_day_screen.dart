@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+import 'package:tapem/app_router.dart';
+
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
-import 'package:tapem/features/training_plan/domain/models/exercise_entry.dart';
+
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
@@ -30,7 +31,6 @@ class WorkoutDayScreen extends StatefulWidget {
   final Widget Function(
     BuildContext context,
     WorkoutDaySession session,
-    ExerciseEntry? plannedEntry,
   )?
       sessionBuilder;
   final bool closeSessionOnDispose;
@@ -77,6 +77,17 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         0.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
+      );
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
     });
   }
@@ -162,16 +173,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     final sessions = (userId == null)
         ? const <WorkoutDaySession>[]
         : controller.sessionsFor(userId: userId, gymId: activeGymId);
-    final trainingPlanProvider = context.watch<TrainingPlanProvider>();
-    final currentDate = DateTime.now();
-    final List<ExerciseEntry?> plannedEntries = [
-      for (final session in sessions)
-        trainingPlanProvider.entryForDate(
-          session.deviceId,
-          session.exerciseId,
-          currentDate,
-        ),
-    ];
+
 
     final loc = AppLocalizations.of(context)!;
 
@@ -181,26 +183,41 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       );
     }
 
-    final restSeconds = _resolveRestSeconds(sessions, plannedEntries);
+    final restSeconds = _resolveRestSeconds(sessions);
+    final theme = Theme.of(context);
+    final brandColor = theme.colorScheme.primary;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        leadingWidth: 150,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leadingWidth: 160,
         leading: InkWell(
-          onTap: () => Navigator.of(context).pop(),
-          child: Row(
-            children: [
-              const SizedBox(width: 16),
-              const Icon(Icons.add),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Nächste Übung',
-                  style: Theme.of(context).textTheme.labelLarge,
-                  overflow: TextOverflow.ellipsis,
+          onTap: () => Navigator.of(context).popUntil((route) => route.settings.name == '/home' || route.isFirst),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Icon(Icons.add, color: brandColor),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Nächste Übung',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: brandColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         centerTitle: true,
@@ -212,17 +229,21 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ActiveWorkoutTimer(
-                key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
-                compact: true,
-                padding: EdgeInsets.zero,
-                sessionKey: _sessionKey,
+              Flexible(
+                child: ActiveWorkoutTimer(
+                  key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
+                  compact: true,
+                  padding: EdgeInsets.zero,
+                  sessionKey: _sessionKey,
+                ),
               ),
               const SizedBox(width: 12),
-              SessionRestTimer(
-                key: _restTimerKey,
-                initialSeconds: restSeconds,
-                onInteraction: _handleTimerInteraction,
+              Flexible(
+                child: SessionRestTimer(
+                  key: _restTimerKey,
+                  initialSeconds: restSeconds,
+                  onInteraction: _handleTimerInteraction,
+                ),
               ),
             ],
           ),
@@ -232,6 +253,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           child: SizedBox(height: 8),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.check, color: brandColor),
+            tooltip: 'Zum Speichern-Button',
+            onPressed: _scrollToBottom,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: NfcScanButton(
@@ -243,80 +269,93 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Scrollbar(
-          controller: _scrollController,
-          child: Consumer<OverlayNumericKeypadController>(
-            builder: (context, keypadController, _) {
-              final bottomSpacerHeight = keypadController.keypadContentHeight +
-                  MediaQuery.of(context).padding.bottom +
-                  12;
-              return CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  if (sessions.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Text(
-                          loc.multiDeviceNewExercise,
-                          style: Theme.of(context).textTheme.titleMedium,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.scaffoldBackgroundColor,
+              Color.alphaBlend(
+                brandColor.withOpacity(0.05),
+                theme.scaffoldBackgroundColor,
+              ),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Scrollbar(
+            controller: _scrollController,
+            child: Consumer<OverlayNumericKeypadController>(
+              builder: (context, keypadController, _) {
+                final bottomSpacerHeight = keypadController.keypadContentHeight +
+                    MediaQuery.of(context).padding.bottom +
+                    12;
+                return CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    if (sessions.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Text(
+                            loc.multiDeviceNewExercise,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                         ),
+                      )
+                    else ...[
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 16),
                       ),
-                    )
-                  else ...[
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 16),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final session = sessions[index];
-                            final builder = widget.sessionBuilder;
-                            final displayIndex = sessions.length - index;
-                            if (builder != null) {
-                              return builder(
-                                context,
-                                session,
-                                plannedEntries[index],
+                      SliverPadding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final session = sessions[index];
+                              final builder = widget.sessionBuilder;
+                              final displayIndex = sessions.length - index;
+                              if (builder != null) {
+                                return builder(
+                                  context,
+                                  session,
+                                );
+                              }
+                              return DeviceSessionSection(
+                                key: ValueKey(session.key),
+                                provider: session.provider,
+                                gymId: session.gymId,
+                                deviceId: session.deviceId,
+                                exerciseId: session.exerciseId,
+                                userId: session.userId,
+                                displayIndex: displayIndex,
+                                sessionKey: session.key,
+
+                                onCloseRequested: () => _handleCloseSession(session),
                               );
-                            }
-                            return DeviceSessionSection(
-                              key: ValueKey(session.key),
-                              provider: session.provider,
-                              gymId: session.gymId,
-                              deviceId: session.deviceId,
-                              exerciseId: session.exerciseId,
-                              userId: session.userId,
-                              displayIndex: displayIndex,
-                              sessionKey: session.key,
-                              plannedEntry: plannedEntries[index],
-                              onCloseRequested: () => _handleCloseSession(session),
-                            );
-                          },
-                          childCount: sessions.length,
+                            },
+                            childCount: sessions.length,
+                          ),
                         ),
                       ),
-                    ),
+                      SliverToBoxAdapter(
+                        child: _SaveAllButton(
+                          isSaving: controller.isSaving,
+                          canSave: controller.canSave,
+                          onPressed: () => _handleSaveAllSessions(
+                            sessions,
+                          ),
+                        ),
+                      ),
+                    ],
                     SliverToBoxAdapter(
-                      child: _SaveAllButton(
-                        isSaving: controller.isSaving,
-                        canSave: controller.canSave,
-                        onPressed: () => _handleSaveAllSessions(
-                          sessions,
-                          plannedEntries,
-                        ),
-                      ),
+                      child: SizedBox(height: bottomSpacerHeight),
                     ),
                   ],
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: bottomSpacerHeight),
-                  ),
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -325,7 +364,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
   int? _resolveRestSeconds(
     List<WorkoutDaySession> sessions,
-    List<ExerciseEntry?> plannedEntries,
   ) {
     if (sessions.isEmpty) {
       return null;
@@ -334,16 +372,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     if (key != null) {
       final index = sessions.indexWhere((session) => session.key == key);
       if (index != -1) {
-        final rest = plannedEntries[index]?.restInSeconds;
-        if (rest != null) {
-          return rest;
-        }
-      }
-    }
-    for (final entry in plannedEntries) {
-      final rest = entry?.restInSeconds;
-      if (rest != null) {
-        return rest;
       }
     }
     return null;
@@ -357,7 +385,6 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
   Future<void> _handleSaveAllSessions(
     List<WorkoutDaySession> sessions,
-    List<ExerciseEntry?> plannedEntries,
   ) async {
     final loc = AppLocalizations.of(context)!;
     final controller = context.read<WorkoutDayController>();
@@ -427,10 +454,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
     await settings.load(auth.userId!);
 
-    final plannedRest = <String, int?>{
-      for (var i = 0; i < sessions.length; i++)
-        sessions[i].key: plannedEntries[i]?.restInSeconds,
-    };
+
 
     final activeGymId = auth.gymCode ?? widget.gymId;
 
@@ -441,7 +465,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       userName: auth.userName,
       gender: settings.gender,
       bodyWeightKg: settings.bodyWeightKg,
-      plannedRestSecondsBySession: plannedRest,
+
     );
 
     if (!mounted) return;
@@ -462,7 +486,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       );
       if (remaining.isEmpty) {
         if (mounted) {
-          Navigator.of(context).maybePop();
+          // Navigate to home/profile page after saving
+          Navigator.of(context).popUntil((route) {
+            final name = route.settings.name;
+            return name == AppRouter.home || route.isFirst;
+          });
         }
       } else {
         setState(() {});
@@ -513,19 +541,53 @@ class _SaveAllButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor = theme.colorScheme.primary;
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: !canSave || isSaving ? null : onPressed,
-          child: isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Speichern'),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: canSave && !isSaving
+              ? [
+                  BoxShadow(
+                    color: brandColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: FilledButton(
+            onPressed: !canSave || isSaving ? null : onPressed,
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'Speichern',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+          ),
         ),
       ),
     );

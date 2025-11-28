@@ -1596,7 +1596,7 @@ class DeviceProvider extends ChangeNotifier {
               try {
                 await challengeProv
                     .checkChallenges(gymId, userId, resolvedDeviceId);
-              } catch (e, st) {
+              } catch (e) {
                 // Silence known index error in dev environment
                 // _log('⚠️ [Provider] challenge check error: $e', st);
               }

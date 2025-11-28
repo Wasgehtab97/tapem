@@ -54,8 +54,10 @@ class ExerciseProvider extends ChangeNotifier
     notifyListeners();
     try {
       _exercises = await _getEx.execute(gymId, deviceId, userId);
-    } catch (e) {
+    } catch (e, st) {
       _error = e.toString();
+      debugPrint('❌ [ExerciseProvider] loadExercises error: $e');
+      debugPrintStack(stackTrace: st);
     } finally {
       _isLoading = false;
       notifyListeners();

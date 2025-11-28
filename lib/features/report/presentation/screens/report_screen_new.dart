@@ -22,73 +22,100 @@ class ReportScreenNew extends StatelessWidget {
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Text(loc.reportTitle),
         centerTitle: true,
         foregroundColor: brandColor,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
-                children: [
-                  _ReportNavigationCard(
-                    icon: Icons.groups_rounded,
-                    title: loc.reportMembersButtonTitle,
-                    subtitle: loc.reportMembersButtonSubtitle,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ReportMembersScreen(gymId: gymId),
-                        ),
-                      );
-                    },
-                  ),
-                  _ReportNavigationCard(
-                    icon: Icons.bar_chart_rounded,
-                    title: loc.reportUsageButtonTitle,
-                    subtitle: loc.reportUsageButtonSubtitle,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ReportUsageScreen(gymId: gymId),
-                        ),
-                      );
-                    },
-                  ),
-                  _ReportNavigationCard(
-                    icon: Icons.feedback_outlined,
-                    title: loc.reportFeedbackButtonTitle,
-                    subtitle: loc.reportFeedbackButtonSubtitle,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ReportFeedbackScreen(gymId: gymId),
-                        ),
-                      );
-                    },
-                  ),
-                  _ReportNavigationCard(
-                    icon: Icons.poll,
-                    title: loc.reportSurveysButtonTitle,
-                    subtitle: loc.reportSurveysButtonSubtitle,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ReportSurveysScreen(gymId: gymId),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.scaffoldBackgroundColor,
+              Color.alphaBlend(
+                brandColor.withOpacity(0.06),
+                theme.scaffoldBackgroundColor,
               ),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  loc.reportTitle,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: brandColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    _ReportNavigationCard(
+                      icon: Icons.groups_rounded,
+                      title: loc.reportMembersButtonTitle,
+                      subtitle: loc.reportMembersButtonSubtitle,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportMembersScreen(gymId: gymId),
+                          ),
+                        );
+                      },
+                    ),
+                    _ReportNavigationCard(
+                      icon: Icons.bar_chart_rounded,
+                      title: loc.reportUsageButtonTitle,
+                      subtitle: loc.reportUsageButtonSubtitle,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportUsageScreen(gymId: gymId),
+                          ),
+                        );
+                      },
+                    ),
+                    _ReportNavigationCard(
+                      icon: Icons.feedback_outlined,
+                      title: loc.reportFeedbackButtonTitle,
+                      subtitle: loc.reportFeedbackButtonSubtitle,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportFeedbackScreen(gymId: gymId),
+                          ),
+                        );
+                      },
+                    ),
+                    _ReportNavigationCard(
+                      icon: Icons.poll,
+                      title: loc.reportSurveysButtonTitle,
+                      subtitle: loc.reportSurveysButtonSubtitle,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportSurveysScreen(gymId: gymId),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -176,6 +176,8 @@ class WorkoutDayController extends ChangeNotifier
 
   @override
   void resetGymScopedState() {
+    debugPrint('⚠️ [WorkoutDayController] resetGymScopedState triggered');
+    debugPrintStack(label: 'resetGymScopedState_stack');
     for (final entry in _sessions.values) {
       entry.dispose();
     }
@@ -304,8 +306,13 @@ class WorkoutDayController extends ChangeNotifier
   }
 
   bool closeSession(String key) {
+    // Debug logging for disappearing exercises investigation
+    debugPrint('🔍 [WorkoutDayController] closeSession requested for key=$key');
+    debugPrintStack(label: 'closeSession_stack');
+    
     final entry = _sessions.remove(key);
     if (entry == null) {
+      debugPrint('⚠️ [WorkoutDayController] closeSession: session not found for key=$key');
       return false;
     }
     entry.dispose();

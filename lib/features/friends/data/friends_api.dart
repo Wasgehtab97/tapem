@@ -74,9 +74,32 @@ class FriendsApi {
     try {
       final snap = await ref.get();
       final data = snap.data();
-      if (data == null || data['toUserId'] != me || data['status'] != 'pending') {
+      
+      // If request doesn't exist or toUserId doesn't match, fail
+      if (data == null || data['toUserId'] != me) {
         throw FriendsApiException(FriendsApiError.failedPrecondition);
       }
+      
+      // If already accepted, this is idempotent - just ensure friend edge exists
+      if (data['status'] == 'accepted') {
+        final edge = _firestore
+            .collection('users')
+            .doc(me)
+            .collection('friends')
+            .doc(fromUserId);
+        await edge.set({'createdAt': now}, SetOptions(merge: true));
+        if (kDebugMode) {
+          debugPrint('[Friends] accept from=$fromUserId already accepted, ensured edge');
+        }
+        return;
+      }
+      
+      // If not pending, fail
+      if (data['status'] != 'pending') {
+        throw FriendsApiException(FriendsApiError.failedPrecondition);
+      }
+      
+      // Accept the request
       await ref.set({'status': 'accepted', 'updatedAt': now}, SetOptions(merge: true));
       final edge = _firestore
           .collection('users')

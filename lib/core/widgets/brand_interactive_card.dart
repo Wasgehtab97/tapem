@@ -137,27 +137,30 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
               ]
             : const [],
       ),
-      child: Stack(
-        children: [
-          if (widget.showPressedOverlay)
-            Positioned.fill(
-              child: AnimatedOpacity(
-                opacity: _isPressed ? 1 : 0,
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: overlay.withOpacity(0.35),
-                    borderRadius: radius,
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          children: [
+            if (widget.showPressedOverlay)
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  opacity: _isPressed ? 1 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOutCubic,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: overlay.withOpacity(0.35),
+                      borderRadius: radius,
+                    ),
                   ),
                 ),
               ),
+            Padding(
+              padding: widget.padding,
+              child: widget.child,
             ),
-          Padding(
-            padding: widget.padding,
-            child: widget.child,
-          ),
-        ],
+          ],
+        ),
       ),
     );
 

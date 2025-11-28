@@ -34,10 +34,9 @@ class _FriendTrainingCalendarScreenState
     List<String> trainingDates,
     Map<String, String> gymIdsByDate,
   ) {
-    showModalBottomSheet<void>(
+    showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => CalendarPopup(
         trainingDates: trainingDates,
         initialYear: DateTime.now().year,

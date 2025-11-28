@@ -24,10 +24,9 @@ class _CreatineScreenState extends State<CreatineScreen> {
 
   Future<void> _openCalendar(CreatineProvider prov) async {
     elogUi('creatine_open_popup', {});
-    final selected = await showModalBottomSheet<DateTime>(
+    final selected = await showDialog<DateTime>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => CalendarPopup(
         trainingDates: prov.intakeDates.toList(),
         initialYear: DateTime.now().year,

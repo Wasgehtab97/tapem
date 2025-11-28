@@ -17,6 +17,7 @@ import '../features/report/domain/usecases/get_all_log_timestamps.dart';
 import '../features/report/domain/usecases/get_device_usage_stats.dart';
 import '../core/database/database_service.dart';
 import '../core/sync/sync_service.dart';
+import '../core/migrations/session_duplicate_cleanup_migration.dart';
 import 'firebase.dart';
 import 'providers.dart';
 
@@ -95,6 +96,20 @@ Future<BootstrapResult> bootstrapApp() async {
 
   final databaseService = DatabaseService();
   await databaseService.init();
+
+  // Run one-time migration to clean up duplicate sessions from 2025-11-27
+  try {
+    final migrationResult = await SessionDuplicateCleanupMigration.run();
+    if (migrationResult['success'] == true) {
+      debugPrint('✅ Duplicate cleanup migration completed successfully');
+    } else if (migrationResult['skipped'] == true) {
+      debugPrint('⏭️  Duplicate cleanup migration already completed');
+    } else {
+      debugPrint('⚠️  Duplicate cleanup migration failed: ${migrationResult['error']}');
+    }
+  } catch (e) {
+    debugPrint('⚠️  Failed to run duplicate cleanup migration: $e');
+  }
 
   final syncService = SyncService(databaseService);
   syncService.init();

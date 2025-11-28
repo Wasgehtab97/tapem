@@ -86,7 +86,6 @@ class AppRouter {
     report,
     admin,
     affiliate,
-    planOverview,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {

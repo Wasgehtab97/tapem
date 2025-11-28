@@ -126,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _HomeTabId.gym,
       _HomeTabId.profile,
       _HomeTabId.rank,
+      _HomeTabId.plan,
     };
     final tabs = (FF.limitTabsForMembers && !isAdmin)
         ? allTabs

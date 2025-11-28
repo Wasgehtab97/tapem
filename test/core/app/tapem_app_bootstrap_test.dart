@@ -1,4 +1,5 @@
-
+import 'dart:core';
+import 'dart:core' as core;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,7 +59,7 @@ import 'package:tapem/features/report/domain/usecases/get_all_log_timestamps.dar
 import 'package:tapem/features/report/domain/usecases/get_device_usage_stats.dart';
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
-import 'package:tapem/features/training_plan/providers/training_plan_provider.dart';
+
 
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
@@ -263,7 +264,7 @@ List<Override> _buildLegacyOverrides({
   final xp = _MockXpProvider();
   final challenge = _MockChallengeProvider();
   final workoutDuration = _MockWorkoutSessionDurationService();
-  final trainingPlan = _MockTrainingPlanProvider();
+
   final profile = _MockProfileProvider();
   final powerlifting = _MockPowerliftingProvider();
   final creatine = _MockCreatineProvider();
@@ -339,7 +340,7 @@ List<Override> _buildLegacyOverrides({
     workoutSessionDurationServiceProvider.overrideWith(
       (ref) => workoutDuration,
     ),
-    trainingPlanProvider.overrideWith((ref) => trainingPlan),
+
     profileProvider.overrideWith((ref) => profile),
     powerliftingProvider.overrideWith((ref) => powerlifting),
     creatineProvider.overrideWith((ref) => creatine),
@@ -627,29 +628,38 @@ class _FakeThemePreferenceProvider extends ChangeNotifier
   BrandThemeId? _override;
   bool _hasLoaded = true;
 
+  @core.override
   bool get isLoading => false;
 
+  @core.override
   String? get error => null;
 
+  @core.override
   BrandThemeId? get override => _override;
 
+  @core.override
   bool get hasLoaded => _hasLoaded;
 
+  @core.override
   void setUser(String? uid) {
     _hasLoaded = true;
     notifyListeners();
   }
 
+  @core.override
   Future<void> setTheme(BrandThemeId? theme) async {
     _override = theme;
     notifyListeners();
   }
 
+  @core.override
   BrandThemeId? manualDefaultForGym(String? gymId) =>
       BrandThemeId.mintTurquoise;
 
+  @core.override
   List<BrandThemeId> availableForGym(String? gymId) => BrandThemeId.values;
 
+  @core.override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -690,9 +700,7 @@ class _MockWorkoutSessionDurationService extends Mock
     with ChangeNotifier
     implements WorkoutSessionDurationService {}
 
-class _MockTrainingPlanProvider extends Mock
-    with ChangeNotifier
-    implements TrainingPlanProvider {}
+
 
 class _MockProfileProvider extends Mock
     with ChangeNotifier

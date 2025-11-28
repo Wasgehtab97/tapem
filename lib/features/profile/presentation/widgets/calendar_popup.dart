@@ -1,7 +1,9 @@
 // lib/features/profile/presentation/widgets/calendar_popup.dart
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:tapem/app_router.dart'; // ← HIER DEN IMPORT HINZUFÜGEN
+import 'package:tapem/app_router.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'calendar.dart';
 
 /// Modal Bottom Sheet mit größerem, horizontal scrollbarem Jahres-Heatmap-Kalender.
@@ -109,7 +111,6 @@ class _CalendarPopupState extends State<CalendarPopup> {
 
   @override
   Widget build(BuildContext context) {
-    final sheetHeight = MediaQuery.of(context).size.height * 0.6;
     const boxSize = 24.0;
     const boxMargin = 2.0;
     final cellWidth = boxSize + boxMargin * 2;
@@ -120,43 +121,98 @@ class _CalendarPopupState extends State<CalendarPopup> {
       _scheduleJumpToRelevantWeek();
     }
 
-    return SizedBox(
-      height: sheetHeight,
-      child: Material(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1E1E1E).withOpacity(0.85),
+              const Color(0xFF121212).withOpacity(0.90),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.cardLg),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
+            ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            controller: _scrollCtrl,
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: metrics.weekCount * cellWidth,
-              child: Calendar(
-                trainingDates: widget.trainingDates,
-                year: _activeYear,
-                minYear: _firstSupportedYear,
-                onYearChanged: _handleYearChanged,
-                showDayNumbers: true,
-                onDayTap: (date) {
-                  Navigator.of(context).pop(date);
-                  if (widget.navigateOnTap) {
-                    final args = <String, dynamic>{
-                      'userId': widget.userId,
-                      'date': date,
-                    };
-                    final gymId = widget.gymIdsByDate?[_formatDateKey(date)];
-                    if (gymId != null) {
-                      args['gymId'] = gymId;
-                    }
-                    Navigator.of(context).pushNamed(
-                      AppRouter.trainingDetails,
-                      arguments: args,
-                    );
-                  }
-                },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.cardLg),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.1),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppRadius.cardLg),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Trainingstage',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      height: 300, // Fixed height for the calendar area
+                      child: SingleChildScrollView(
+                        controller: _scrollCtrl,
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: metrics.weekCount * cellWidth,
+                          child: Calendar(
+                            trainingDates: widget.trainingDates,
+                            year: _activeYear,
+                            minYear: _firstSupportedYear,
+                            onYearChanged: _handleYearChanged,
+                            showDayNumbers: true,
+                            onDayTap: (date) {
+                              Navigator.of(context).pop(date);
+                              if (widget.navigateOnTap) {
+                                final args = <String, dynamic>{
+                                  'userId': widget.userId,
+                                  'date': date,
+                                };
+                                final gymId = widget.gymIdsByDate?[_formatDateKey(date)];
+                                if (gymId != null) {
+                                  args['gymId'] = gymId;
+                                }
+                                Navigator.of(context).pushNamed(
+                                  AppRouter.trainingDetails,
+                                  arguments: args,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

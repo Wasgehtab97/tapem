@@ -6,6 +6,8 @@ import '../widgets/active_challenges_widget.dart';
 import '../widgets/completed_challenges_widget.dart';
 import '../../../../core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 
 class ChallengeTab extends StatefulWidget {
   const ChallengeTab({Key? key}) : super(key: key);
@@ -38,14 +40,43 @@ class _ChallengeTabState extends State<ChallengeTab>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final accentColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
     return Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: loc.challengeTabActive),
-            Tab(text: loc.challengeTabCompleted),
-          ],
+        Container(
+          margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
+          height: 40,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.1)),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: accentColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accentColor.withOpacity(0.5)),
+            ),
+            labelColor: accentColor,
+            unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.6),
+            labelStyle: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            dividerColor: Colors.transparent,
+            splashBorderRadius: BorderRadius.circular(20),
+              tabs: [
+                _buildSizedTab(context, loc.challengeTabActive, [
+                  loc.challengeTabActive,
+                  loc.challengeTabCompleted,
+                ]),
+                _buildSizedTab(context, loc.challengeTabCompleted, [
+                  loc.challengeTabActive,
+                  loc.challengeTabCompleted,
+                ]),
+              ],
+          ),
         ),
         Expanded(
           child: TabBarView(
@@ -57,6 +88,27 @@ class _ChallengeTabState extends State<ChallengeTab>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSizedTab(BuildContext context, String label, List<String> allLabels) {
+    return Tab(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ...allLabels.map((l) => Visibility(
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: Text(l),
+                )),
+            Text(label),
+          ],
+        ),
+      ),
     );
   }
 }
