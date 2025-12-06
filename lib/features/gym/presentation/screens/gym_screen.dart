@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:provider/provider.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
@@ -21,10 +22,14 @@ class GymScreen extends StatefulWidget {
     super.key,
     this.onSelect,
     this.selectionMode = false,
+    this.floatingActionButton,
+    this.actions,
   });
 
   final ValueChanged<WorkoutDeviceSelection>? onSelect;
   final bool selectionMode;
+  final Widget? floatingActionButton;
+  final List<Widget>? actions;
 
   @override
   State<GymScreen> createState() => _GymScreenState();
@@ -36,7 +41,7 @@ class _GymScreenState extends State<GymScreen>
   Set<String> _muscles = {};
   SortOrder _sort = SortOrder.az;
   List<String> _recent = [];
-  final ScrollController _scrollController = ScrollController();
+  late AutoScrollController _scrollController;
 
   @override
   bool get wantKeepAlive => true;
@@ -50,6 +55,9 @@ class _GymScreenState extends State<GymScreen>
   @override
   void initState() {
     super.initState();
+    _scrollController = AutoScrollController(
+      viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final gym = context.read<GymProvider>();
@@ -105,25 +113,9 @@ class _GymScreenState extends State<GymScreen>
       (device) => device.name.toUpperCase().startsWith(letter),
     );
     
-    if (index == -1 || !_scrollController.hasClients) {
-      return;
+    if (index != -1) {
+      _scrollController.scrollToIndex(index, preferPosition: AutoScrollPosition.begin);
     }
-
-    // Use a more accurate calculation based on actual card dimensions
-    // Card height (~80-100px) + vertical padding (16px) = ~96-116px per item
-    // We'll use a conservative estimate and let the scroll settle naturally
-    const estimatedItemHeight = 108.0;
-    final targetPosition = index * estimatedItemHeight;
-    
-    // Clamp to valid scroll range
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final clampedPosition = targetPosition.clamp(0.0, maxScroll);
-    
-    _scrollController.animateTo(
-      clampedPosition,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
@@ -159,6 +151,7 @@ class _GymScreenState extends State<GymScreen>
     if (widget.selectionMode) {
       appBar = AppBar(
         title: Text(loc.multiDeviceExerciseListTitle),
+        actions: widget.actions,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).maybePop(),
@@ -167,6 +160,7 @@ class _GymScreenState extends State<GymScreen>
     }
 
     return Scaffold(
+      floatingActionButton: widget.floatingActionButton,
       extendBodyBehindAppBar: true,
       appBar: appBar,
       body: Container(
@@ -225,62 +219,68 @@ class _GymScreenState extends State<GymScreen>
                                 itemCount: devices.length,
                                 itemBuilder: (ctx, i) {
                                   final d = devices[i];
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    child: DeviceCard(
-                                      device: d,
-                                      onTap: () async {
-                                        final nav = Navigator.of(context);
-                                        final idStr = d.uid;
-                                        if (widget.onSelect != null) {
-                                          if (d.isMulti) {
-                                            final selection = await nav
-                                                .push<WorkoutDeviceSelection>(
-                                              MaterialPageRoute(
-                                                builder: (ctx) => ExerciseListScreen(
+                                  return AutoScrollTag(
+                                    key: ValueKey(i),
+                                    controller: _scrollController,
+                                    index: i,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: DeviceCard(
+                                        device: d,
+                                        onTap: () async {
+                                          final nav = Navigator.of(context);
+                                          final idStr = d.uid;
+                                          if (widget.onSelect != null) {
+                                            if (d.isMulti) {
+                                              final selection = await nav
+                                                  .push<WorkoutDeviceSelection>(
+                                                MaterialPageRoute(
+                                                  builder: (ctx) => ExerciseListScreen(
+                                                    gymId: gymId,
+                                                    deviceId: idStr,
+                                                    onSelect: (result) =>
+                                                        Navigator.of(ctx).pop(result),
+                                                  ),
+                                                ),
+                                              );
+                                              if (selection != null) {
+                                                widget.onSelect!(selection);
+                                              }
+                                            } else {
+                                              widget.onSelect!(
+                                                WorkoutDeviceSelection(
                                                   gymId: gymId,
                                                   deviceId: idStr,
-                                                  onSelect: (result) =>
-                                                      Navigator.of(ctx).pop(result),
+                                                  exerciseId: idStr,
+                                                  exerciseName: d.name,
                                                 ),
-                                              ),
-                                            );
-                                            if (selection != null) {
-                                              widget.onSelect!(selection);
+                                              );
                                             }
+                                            return;
+                                          }
+                                          if (d.isMulti) {
+                                            nav.pushNamed(
+                                              AppRouter.exerciseList,
+                                              arguments: {
+                                                'gymId': gymId,
+                                                'deviceId': idStr,
+                                              },
+                                            );
                                           } else {
-                                            widget.onSelect!(
-                                              WorkoutDeviceSelection(
-                                                gymId: gymId,
-                                                deviceId: idStr,
-                                                exerciseId: idStr,
-                                              ),
+                                            nav.pushNamed(
+                                              AppRouter.workoutDay,
+                                              arguments: {
+                                                'gymId': gymId,
+                                                'deviceId': idStr,
+                                                'exerciseId': idStr,
+                                              },
                                             );
                                           }
-                                          return;
-                                        }
-                                        if (d.isMulti) {
-                                          nav.pushNamed(
-                                            AppRouter.exerciseList,
-                                            arguments: {
-                                              'gymId': gymId,
-                                              'deviceId': idStr,
-                                            },
-                                          );
-                                        } else {
-                                          nav.pushNamed(
-                                            AppRouter.workoutDay,
-                                            arguments: {
-                                              'gymId': gymId,
-                                              'deviceId': idStr,
-                                              'exerciseId': idStr,
-                                            },
-                                          );
-                                        }
-                                      },
+                                        },
+                                      ),
                                     ),
                                   );
                                 },
@@ -306,4 +306,3 @@ class _GymScreenState extends State<GymScreen>
     );
   }
 }
-

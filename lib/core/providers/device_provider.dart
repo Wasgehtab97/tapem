@@ -219,7 +219,9 @@ class DeviceProvider extends ChangeNotifier {
       'dropReps': '',
       'done': false,
       'isBodyweight': isBodyweight ?? _isBodyweightMode,
+      'isBodyweight': isBodyweight ?? _isBodyweightMode,
       'completedAtMs': null,
+      'id': _uuid.v4(),
     });
   }
 
@@ -608,6 +610,7 @@ class DeviceProvider extends ChangeNotifier {
   void insertSetAt(int index, Map<String, dynamic> set) {
     final s = Map<String, dynamic>.from(set);
     s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
+    s.putIfAbsent('id', () => _uuid.v4());
     _sets.insert(index, _withNormalizedDrops(s));
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
@@ -1123,6 +1126,7 @@ class DeviceProvider extends ChangeNotifier {
           'dropReps': draft.sets[i].dropReps ?? '',
           'done': draft.sets[i].done,
           'isBodyweight': draft.sets[i].isBodyweight,
+          'id': _uuid.v4(),
           'drops': [
             for (final drop in draft.sets[i].drops)
               {'weight': drop.weight, 'reps': drop.reps},

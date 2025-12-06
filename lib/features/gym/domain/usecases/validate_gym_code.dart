@@ -1,22 +1,29 @@
 // lib/features/gym/domain/usecases/validate_gym_code.dart
-import '../models/gym_config.dart';
-import '../repositories/gym_repository.dart';
+import '../models/gym_code_validation_result.dart';
+import '../services/gym_code_service.dart';
+import '../exceptions/gym_code_exceptions.dart';
 
-/// Exception, wenn kein Gym für den Code gefunden wird.
-class GymNotFoundException implements Exception {
-  final String message;
-  GymNotFoundException([this.message = 'Gym not found for given code.']);
-}
+export '../exceptions/gym_code_exceptions.dart';
+export '../models/gym_code_validation_result.dart';
 
+/// Use case for validating gym registration codes
+/// 
+/// This validates rotating gym codes that expire monthly.
+/// Throws specific exceptions for different failure cases.
 class ValidateGymCode {
-  final GymRepository _repository;
+  final GymCodeService _service;
 
-  ValidateGymCode(this._repository);
+  ValidateGymCode([GymCodeService? service])
+      : _service = service ?? GymCodeService();
 
-  /// Wirft [GymNotFoundException], wenn der Code ungültig ist.
-  Future<GymConfig> execute(String code) async {
-    final gym = await _repository.getGymByCode(code);
-    if (gym == null) throw GymNotFoundException();
-    return gym;
+  /// Validate a gym code and return gym information
+  /// 
+  /// Throws:
+  /// - [GymCodeNotFoundException] if code doesn't exist
+  /// - [GymCodeExpiredException] if code has expired
+  /// - [GymCodeInactiveException] if code is deactivated
+  /// - [InvalidCodeFormatException] if code format is invalid
+  Future<GymCodeValidationResult> execute(String code) async {
+    return await _service.validateCode(code);
   }
 }

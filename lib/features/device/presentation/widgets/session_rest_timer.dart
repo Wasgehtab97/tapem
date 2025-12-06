@@ -1,4 +1,5 @@
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tapem/ui/timer/session_timer_service.dart';
@@ -68,53 +69,68 @@ class SessionRestTimerState extends State<SessionRestTimer> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        ValueListenableBuilder<bool>(
-          valueListenable: _service.running,
-          builder: (context, isRunning, _) {
-            return Semantics(
-              button: true,
-              label:
-                  isRunning ? 'Pause rest timer' : 'Start rest timer',
-              child: IconButton(
-                iconSize: 16,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 24,
-                  minHeight: 24,
-                ),
-                visualDensity: VisualDensity.compact,
-                icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
-                tooltip:
-                    isRunning ? 'Pause rest timer' : 'Start rest timer',
-                onPressed: () {
-                  widget.onInteraction?.call();
-                  if (isRunning) {
-                    _service.stop();
-                  } else {
-                    _service.start();
-                  }
-                },
-              ),
-            );
-          },
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
         ),
-        const SizedBox(width: 4),
-        Tooltip(
-          message: 'Select rest duration',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () => _handleTimerTap(context),
-            child: Padding(
-              padding: const EdgeInsets.all(2),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+           ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ValueListenableBuilder<bool>(
+            valueListenable: _service.running,
+            builder: (context, isRunning, _) {
+              return Semantics(
+                button: true,
+                label: isRunning ? 'Pause rest timer' : 'Start rest timer',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      widget.onInteraction?.call();
+                      if (isRunning) {
+                        _service.stop();
+                      } else {
+                        _service.start();
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        isRunning ? Icons.pause : Icons.play_arrow,
+                        size: 18,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 2),
+          Tooltip(
+            message: 'Select rest duration',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _handleTimerTap(context),
               child: SizedBox(
-                width: 36,
-                height: 36,
+                 width: 38,
+                 height: 38,
                 child: ValueListenableBuilder<Duration>(
                   valueListenable: _service.remaining,
                   builder: (context, remaining, _) {
@@ -128,30 +144,26 @@ class SessionRestTimerState extends State<SessionRestTimer> {
                     final displayMinutes = remaining.inMinutes;
                     final timeLabel =
                         '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
-                    final textStyle =
-                        theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ) ??
-                            TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            );
                     return Stack(
                       alignment: Alignment.center,
                       children: [
                         CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 2.5,
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                         Text(
                           timeLabel,
-                          style: textStyle,
+                          style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -161,8 +173,8 @@ class SessionRestTimerState extends State<SessionRestTimer> {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -172,30 +184,115 @@ class SessionRestTimerState extends State<SessionRestTimer> {
     final selectedDuration = _service.selectedDuration.inSeconds;
     final chosenSeconds = await showModalBottomSheet<int>(
       context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.8),
+      isScrollControlled: true,
       builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Select rest duration',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+        final theme = Theme.of(context);
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF14171A).withOpacity(0.9),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              border: Border(
+                top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
               ),
-              for (final seconds in durations)
-                ListTile(
-                  title: Text('${seconds}s'),
-                  trailing: seconds == selectedDuration
-                      ? const Icon(Icons.check)
-                      : null,
-                  onTap: () {
-                    Navigator.of(sheetContext).pop(seconds);
-                  },
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 40,
+                  offset: const Offset(0, -10),
                 ),
-              const SizedBox(height: 12),
-            ],
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Pausenzeit wählen', // localized later if needed, hardcode for now or use passed param
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Flexible(
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 1.8,
+                      ),
+                      itemCount: durations.length,
+                      itemBuilder: (context, i) {
+                        final seconds = durations[i];
+                        final isSelected = seconds == selectedDuration;
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => Navigator.of(sheetContext).pop(seconds),
+                            borderRadius: BorderRadius.circular(16),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Colors.blueAccent.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.blueAccent
+                                      : Colors.white.withOpacity(0.1),
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.blueAccent.withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        )
+                                      ]
+                                    : [],
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${seconds}s',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: isSelected ? Colors.white : Colors.white70,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
           ),
         );
       },

@@ -1,5 +1,7 @@
 // lib/features/profile/presentation/widgets/calendar.dart
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -142,23 +144,40 @@ class _CalendarState extends State<Calendar> {
         final rawSize = (usable - weekCount * margin * 2) / weekCount;
         final cellSize = rawSize.clamp(4.0, usable);
 
-        // Monats-Labels
+        // Monats-Labels mit Kollisionserkennung
         List<Widget> monthLabels = [];
+        double lastRightEdge = -double.infinity;
+        const labelBuffer = 4.0; // Mindestabstand zwischen Labels
+        
         for (var m = 1; m <= 12; m++) {
           final firstOfMonth = DateTime(_year, m, 1);
           final offsetDays = firstOfMonth.difference(gridStart).inDays;
           final colIndex = (offsetDays / 7).floor().clamp(0, weekCount - 1);
-          monthLabels.add(
-            Positioned(
-              left: hPad + colIndex * (cellSize + margin * 2),
-              child: Text(
-                DateFormat.MMM(locale).format(firstOfMonth),
-                style: theme.textTheme.bodySmall?.copyWith(color: accentColor) ??
-                    TextStyle(color: accentColor),
+          final leftPosition = hPad + colIndex * (cellSize + margin * 2);
+          
+          // Messe die Breite des Labels
+          final labelText = DateFormat.MMM(locale).format(firstOfMonth);
+          final textStyle = theme.textTheme.bodySmall?.copyWith(color: accentColor) ??
+              TextStyle(color: accentColor);
+          final textPainter = TextPainter(
+            text: TextSpan(text: labelText, style: textStyle),
+            textDirection: ui.TextDirection.ltr,
+          )..layout();
+          final labelWidth = textPainter.width;
+          final rightEdge = leftPosition + labelWidth;
+          
+          // Nur anzeigen, wenn kein Überlappen
+          if (leftPosition >= lastRightEdge + labelBuffer) {
+            monthLabels.add(
+              Positioned(
+                left: leftPosition,
+                child: Text(labelText, style: textStyle),
               ),
-            ),
-          );
+            );
+            lastRightEdge = rightEdge;
+          }
         }
+
 
         final header =
             widget.showNavigation

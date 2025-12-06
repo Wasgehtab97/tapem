@@ -11,6 +11,7 @@ class ReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gymId = context.watch<GymProvider>().currentGymId;
-    return ReportScreenNew(gymId: gymId);
+    // Using UniqueKey to force rebuild and ensure new UI is picked up
+    return ReportScreenNew(key: UniqueKey(), gymId: gymId);
   }
 }

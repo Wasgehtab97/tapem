@@ -598,11 +598,11 @@
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "stats_daily",
-      "queryScope": "COLLECTION",
+      "collectionGroup": "codes",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "date",
+          "fieldPath": "code",
           "order": "ASCENDING"
         }
       ],

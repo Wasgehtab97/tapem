@@ -42,7 +42,8 @@ class _AlphabetScrollbarState extends State<AlphabetScrollbar> {
   void _handleDragUpdate(DragUpdateDetails details, BoxConstraints constraints) {
     final RenderBox box = context.findRenderObject() as RenderBox;
     final localPosition = box.globalToLocal(details.globalPosition);
-    final itemHeight = constraints.maxHeight / _letters.length;
+    final innerHeight = constraints.maxHeight - 2.0; // Account for 1px border top/bottom
+    final itemHeight = innerHeight / _letters.length;
     final index = (localPosition.dy / itemHeight).floor().clamp(0, _letters.length - 1);
     
     final letter = _letters[index];
@@ -60,6 +61,12 @@ class _AlphabetScrollbarState extends State<AlphabetScrollbar> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Ensure we have enough height to display letters comfortably
+        // 26 letters * ~10px min height = ~260px.
+        if (constraints.maxHeight < 300.0) {
+          return const SizedBox();
+        }
+
         return GestureDetector(
           onVerticalDragStart: (_) {},
           onVerticalDragUpdate: (details) => _handleDragUpdate(details, constraints),
@@ -76,26 +83,29 @@ class _AlphabetScrollbarState extends State<AlphabetScrollbar> {
                 width: 1,
               ),
             ),
+            padding: const EdgeInsets.symmetric(vertical: 1),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: _letters.map((letter) {
                 final isActive = letter == _activeLetter || letter == widget.currentLetter;
-                return GestureDetector(
-                  onTap: () => _handleLetterTap(letter),
-                  child: Container(
-                    width: 24,
-                    height: constraints.maxHeight / _letters.length,
-                    alignment: Alignment.center,
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 150),
-                      style: TextStyle(
-                        fontSize: isActive ? 13 : 10,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                        color: isActive 
-                            ? brandColor 
-                            : theme.colorScheme.onSurface.withOpacity(0.5),
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => _handleLetterTap(letter),
+                    child: Container(
+                      width: 24,
+                      alignment: Alignment.center,
+                      color: Colors.transparent, // Hit test target
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 150),
+                        style: TextStyle(
+                          fontSize: isActive ? 13 : 10,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive 
+                              ? brandColor 
+                              : theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                        child: Text(letter),
                       ),
-                      child: Text(letter),
                     ),
                   ),
                 );

@@ -187,7 +187,7 @@ class _StorySessionCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(36, 36, 36, 32),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -219,11 +219,11 @@ class _StorySessionCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
                       _XpBanner(dailyXp: dailyXp, palette: palette),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       _StoryStatsRow(stats: stats, palette: palette),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       if (achievements.isNotEmpty) ...[
                         Text(
                           loc.storySessionBadgesTitle,
@@ -232,7 +232,7 @@ class _StorySessionCard extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         _BadgesSection(
                           achievements: achievements,
                           loc: loc,
@@ -321,7 +321,7 @@ class _XpBanner extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final format = NumberFormat.decimalPattern(loc.localeName);
     final theme = Theme.of(context);
-    final netDelta = dailyXp.netXpDelta ?? (dailyXp.xp + dailyXp.penaltySum);
+    final netDelta = dailyXp.xp + dailyXp.penaltySum;
     final netText = '${_formatSignedInt(netDelta, format)} XP';
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -367,7 +367,7 @@ class _XpBanner extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/services/username_service.dart';
-import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
+import 'package:tapem/features/gym/domain/services/gym_code_service.dart';
 import 'package:tapem/services/member_number_utils.dart';
 
 typedef ChangeUsernameRunner = Future<void> Function({
@@ -17,17 +17,14 @@ class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final ChangeUsernameRunner _changeUsername;
-  final FirestoreGymSource _gymSource;
 
   FirestoreAuthSource({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     ChangeUsernameRunner? changeUsername,
-    FirestoreGymSource? gymSource,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
-        _changeUsername = changeUsername ?? changeUsernameTransaction,
-        _gymSource = gymSource ?? FirestoreGymSource();
+        _changeUsername = changeUsername ?? changeUsernameTransaction;
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -51,9 +48,11 @@ class FirestoreAuthSource {
     );
     final uid = cred.user!.uid;
 
-    // Gym anhand des Codes suchen und dessen ID speichern
-    final gym = await _gymSource.getGymByCode(initialGymCode);
-    if (gym == null) throw Exception('Gym code not found');
+    // Validate gym code using new rotating code system
+    // This will throw GymCodeExpiredException, GymCodeNotFoundException, etc.
+    final gymCodeService = GymCodeService();
+    final validation = await gymCodeService.validateCode(initialGymCode);
+    final gymId = validation.gymId;
 
     final now = DateTime.now();
     final dto = UserDataDto(
@@ -62,7 +61,7 @@ class FirestoreAuthSource {
       emailLower: email.toLowerCase(),
       userName: null,
       userNameLower: null,
-      gymCodes: [gym.id],
+      gymCodes: [gymId],  // Store gym ID, not the code!
       showInLeaderboard: true,
       publicProfile: false,
       role: 'member',
@@ -71,11 +70,11 @@ class FirestoreAuthSource {
     await _firestore.collection('users').doc(uid).set(dto.toJson());
 
     await _firestore.runTransaction((tx) async {
-      final gymRef = _firestore.collection('gyms').doc(gym.id);
+      final gymRef = _firestore.collection('gyms').doc(gymId);
       final membershipRef = gymRef.collection('users').doc(uid);
 
       final gymSnap = await tx.get(gymRef);
-      final nextNumber = nextMemberNumber(gymSnap.data(), gymId: gym.id);
+      final nextNumber = nextMemberNumber(gymSnap.data(), gymId: gymId);
       final memberNumber = formatMemberNumber(nextNumber);
 
       updateMemberNumberCounter(tx, gymRef, nextNumber);
@@ -149,18 +148,15 @@ class FirestoreAuthSource {
     });
   }
 
+  Future<void> setPublicKey(String userId, String publicKey) async {
+    await _firestore.collection('users').doc(userId).update({
+      'publicKey': publicKey,
+    });
+  }
+
   Future<void> sendPasswordResetEmail(String email) {
-    final settings = ActionCodeSettings(
-      url: 'https://tapem.page.link/reset',
-      handleCodeInApp: true,
-      androidPackageName: 'com.example.tapem',
-      iOSBundleId: 'com.example.tapem',
-      androidInstallApp: true,
-      dynamicLinkDomain: 'tapem.page.link',
-    );
-    return _auth.sendPasswordResetEmail(
-      email: email,
-      actionCodeSettings: settings,
-    );
+    // Use default Firebase password reset email
+    // This avoids "Domain not allowlisted" errors
+    return _auth.sendPasswordResetEmail(email: email);
   }
 }

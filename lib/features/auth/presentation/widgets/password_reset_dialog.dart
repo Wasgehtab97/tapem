@@ -1,61 +1,130 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import '../../../../core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
+import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
+import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 
-Future<void> showPasswordResetDialog(BuildContext context) async {
-  final loc = AppLocalizations.of(context)!;
-  final ctr = TextEditingController();
-  final auth = context.read<AuthProvider>();
-  String? error;
-  await showDialog(
+Future<void> showPasswordResetDialog(BuildContext context) {
+  return showDialog(
     context: context,
-    builder:
-        (_) => StatefulBuilder(
-          builder:
-              (ctx, setState) => AlertDialog(
-                title: Text(loc.passwordResetDialogTitle),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(loc.passwordResetHint),
-                    TextField(
-                      controller: ctr,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: loc.emailFieldLabel,
-                        errorText: error,
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel'),
+    builder: (ctx) => const _PasswordResetDialog(),
+  );
+}
+
+class _PasswordResetDialog extends StatefulWidget {
+  const _PasswordResetDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_PasswordResetDialog> createState() => _PasswordResetDialogState();
+}
+
+class _PasswordResetDialogState extends State<_PasswordResetDialog> {
+  final _emailController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
+    final authProv = context.read<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
+    
+    final email = _emailController.text.trim();
+    await authProv.resetPassword(email);
+    
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (authProv.error == null) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.passwordResetSent),
+          backgroundColor: Colors.green.withOpacity(0.8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProv.error ?? loc.errorPrefix),
+          backgroundColor: Colors.red.withOpacity(0.8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingL),
+        child: GlassCard(
+          padding: const EdgeInsets.all(AuthTheme.spacingL),
+          child: Material(
+            color: Colors.transparent, // Need Material for text inputs to work correctly
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                   Text(
+                    loc.forgotPassword,
+                    style: AuthTheme.subHeadingStyle,
+                    textAlign: TextAlign.center,
                   ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final email = ctr.text.trim();
-                      if (email.isEmpty || !email.contains('@')) {
-                        setState(() => error = loc.emailInvalid);
-                        return;
-                      }
-                      await auth.resetPassword(email);
-                      if (auth.error == null) {
-                        // ignore: use_build_context_synchronously
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(loc.passwordResetSent)),
-                        );
-                      } else {
-                        setState(() => error = auth.error);
-                      }
-                    },
-                    child: const Text('OK'),
+                  const SizedBox(height: AuthTheme.spacingL),
+                  
+                  PremiumTextField(
+                    label: loc.emailFieldLabel,
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icons.email_outlined,
+                    validator: (v) => 
+                        v != null && v.contains('@') ? null : loc.emailInvalid,
+                  ),
+                  
+                  const SizedBox(height: AuthTheme.spacingL),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PremiumButton(
+                          text: 'Cancel', // Should be localized ideally
+                          isOutlined: true,
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      const SizedBox(width: AuthTheme.spacingM),
+                      Expanded(
+                        child: PremiumButton(
+                          text: 'Send',
+                          isLoading: _isLoading,
+                          onPressed: _isLoading ? null : _submit,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+          ),
         ),
-  );
+      ),
+    );
+  }
 }

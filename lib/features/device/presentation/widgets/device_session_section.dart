@@ -272,83 +272,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     return device.name;
   }
 
-  Widget _buildHeader(BuildContext context, DeviceProvider prov) {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
-    final exercises = prov.device?.isMulti ?? false
-        ? context.watch<ExerciseProvider>().exercises
-        : null;
-    final resolvedTitle =
-        _resolveExerciseTitle(context, prov, exercises: exercises) ??
-            loc.newSessionTitle;
-    final titleStyle = theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ) ??
-        const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        );
 
-    final counts = prov.getSetCounts();
-    final canClose = widget.onCloseRequested != null && counts.done == 0;
-    final badgeBackground = theme.colorScheme.secondaryContainer;
-    final isLight = ThemeData.estimateBrightnessForColor(badgeBackground) == Brightness.light;
-    final badgeTextColor = isLight ? Colors.black : Colors.white;
 
-    final showClose = widget.onCloseRequested != null;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: badgeBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              widget.displayIndex.toString(),
-              style: theme.textTheme.titleSmall?.copyWith(
-                    color: badgeTextColor,
-                    fontWeight: FontWeight.w600,
-                  ) ??
-                  TextStyle(
-                    color: badgeTextColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              resolvedTitle,
-              textAlign: TextAlign.center,
-              style: titleStyle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (showClose) const SizedBox(width: 12),
-          if (showClose)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: loc.commonClose,
-              visualDensity: VisualDensity.compact,
-              onPressed: canClose
-                  ? () {
-                      _closeKeyboard();
-                      widget.onCloseRequested?.call();
-                    }
-                  : null,
-            ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildEditablePage(
     DeviceProvider prov,
@@ -389,35 +314,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 
     final resolvedTitle = exerciseTitle ?? loc.newSessionTitle;
 
-    final children = <Widget>[
-      const SizedBox(height: 12),
-
-      const SizedBox(height: 8),
-      SessionActionStrip(
-        onOpenLeaderboard: prov.device == null
-            ? null
-            : () => _openLeaderboard(prov, resolvedTitle),
-        onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
-        onToggleBodyweight: () => _toggleBodyweight(prov),
-        onFeedback: () => _handleFeedback(),
-        isBodyweightMode: prov.isBodyweightMode,
-        leaderboardTooltip: loc.deviceLeaderboardTooltip,
-        historyTooltip: loc.deviceHistoryTooltip,
-        bodyweightTooltip: loc.bodyweightToggleTooltip,
-        feedbackTooltip: loc.feedbackTooltip,
-        preFeedbackActions: [
-          XpInfoButton(
-            xp: prov.xp,
-            level: prov.level,
-            buttonStyle: sessionActionButtonStyle(context),
-          ),
-        ],
-      postFeedbackActions: [
-        NoteButtonWidget(
-          deviceId: widget.deviceId,
-        ),
-      ],
-    ),
+    // Build sets content
+    final setsContent = <Widget>[
       if (prov.sets.isNotEmpty) ...[
         const SizedBox(height: 6),
         _GroupedSetList(
@@ -462,25 +360,29 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           note: lastNote,
         ),
       ],
-      if (widget.onSessionSaved != null) ...[
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: prov.hasSessionToday || prov.isSaving
-              ? null
-              : () => _saveSession(prov, loc),
-          child: prov.isSaving
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
-                  ),
-                )
-              : Text(loc.saveButton),
-        ),
-      ],
     ];
+
+    // Build save button
+    final saveButton = widget.onSessionSaved != null
+        ? <Widget>[
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: prov.hasSessionToday || prov.isSaving
+                  ? null
+                  : () => _saveSession(prov, loc),
+              child: prov.isSaving
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(outlineColor),
+                      ),
+                    )
+                  : Text(loc.saveButton),
+            ),
+          ]
+        : <Widget>[];
 
     return Form(
       key: _formKey,
@@ -489,7 +391,31 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
-          children: children,
+          children: [
+            const SizedBox(height: 12),
+            _SwipeableSessionContent(
+              setsPage: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...setsContent,
+                  ...saveButton,
+                ],
+              ),
+              actionsPage: _StylishActionsGrid(
+                onOpenLeaderboard: prov.device == null
+                    ? null
+                    : () => _openLeaderboard(prov, resolvedTitle),
+                onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
+                onToggleBodyweight: () => _toggleBodyweight(prov),
+                onFeedback: () => _handleFeedback(),
+                isBodyweightMode: prov.isBodyweightMode,
+                xp: prov.xp,
+                level: prov.level,
+                deviceId: widget.deviceId,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -646,6 +572,96 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     super.dispose();
   }
 
+  Widget _buildHeader(BuildContext context, DeviceProvider prov) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
+
+    final exercises = prov.device?.isMulti ?? false
+        ? context.watch<ExerciseProvider>().exercises
+        : null;
+    final resolvedTitle =
+        _resolveExerciseTitle(context, prov, exercises: exercises) ??
+            loc.newSessionTitle;
+
+    final showClose = widget.onCloseRequested != null;
+    final counts = prov.getSetCounts();
+    final canClose = widget.onCloseRequested != null && counts.done == 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Row(
+        children: [
+          // Premium Index Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  brandColor,
+                  brandColor.withOpacity(0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: brandColor.withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              widget.displayIndex.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Title
+          Expanded(
+            child: Text(
+              resolvedTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // Close Button
+          if (showClose)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: canClose
+                    ? () {
+                        _closeKeyboard();
+                        widget.onCloseRequested?.call();
+                      }
+                    : null,
+                borderRadius: BorderRadius.circular(50),
+                child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white.withOpacity(0.6),
+                    )),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<DeviceProvider>();
@@ -653,9 +669,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
 
     final theme = Theme.of(context);
-    final borderColor =
-        (theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.outline)
-            .withOpacity(0.2);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
+
     final hasScrollableParent = Scrollable.maybeOf(context) != null;
     final content = _buildContent(context, prov);
     final Widget wrappedContent = hasScrollableParent
@@ -667,18 +683,53 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           );
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader(context, prov),
-          const Divider(height: 1),
-          wrappedContent,
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.canvasColor.withOpacity(0.9), // Darker base
+            Color.alphaBlend(brandColor.withOpacity(0.05), theme.canvasColor),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(context, prov),
+            // Premium Separator (Subtle Gradient Line)
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.white.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+            wrappedContent,
+             const SizedBox(height: 12), // Bottom padding
+          ],
+        ),
       ),
     );
   }
@@ -823,7 +874,7 @@ class _GroupedSetList extends StatelessWidget {
     SessionSetVM? previous,
   }) {
     return Dismissible(
-      key: ValueKey('set-${set['number']}'),
+      key: ValueKey(set['id'] ?? 'set-${set['number']}'),
       direction: DismissDirection.endToStart,
       background: const SizedBox.shrink(),
       secondaryBackground: Container(
@@ -911,6 +962,354 @@ class _SetListFieldHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Swipeable content with two pages: sets view and actions view
+class _SwipeableSessionContent extends StatefulWidget {
+  const _SwipeableSessionContent({
+    required this.setsPage,
+    required this.actionsPage,
+  });
+
+  final Widget setsPage;
+  final Widget actionsPage;
+
+  @override
+  State<_SwipeableSessionContent> createState() => _SwipeableSessionContentState();
+}
+
+class _SwipeableSessionContentState extends State<_SwipeableSessionContent> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor = theme.extension<AppBrandTheme>()?.outline ?? 
+        theme.colorScheme.secondary;
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Page Indicators
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PageIndicator(
+                isActive: _currentPage == 0,
+                color: brandColor,
+              ),
+              const SizedBox(width: 8),
+              _PageIndicator(
+                isActive: _currentPage == 1,
+                color: brandColor,
+              ),
+            ],
+          ),
+        ),
+        // PageView with page-specific height
+        SizedBox(
+          height: _currentPage == 0 ? 280 : 250,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            children: [
+              // Page 1: Sets View - compact
+              SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: widget.setsPage,
+              ),
+              // Page 2: Actions View - grid fits perfectly
+              SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: widget.actionsPage,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Simple circular page indicator
+class _PageIndicator extends StatelessWidget {
+  const _PageIndicator({
+    required this.isActive,
+    required this.color,
+  });
+
+  final bool isActive;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: isActive ? 24 : 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: isActive ? color : color.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
+/// Stylish grid layout for action buttons
+class _StylishActionsGrid extends StatelessWidget {
+  const _StylishActionsGrid({
+    this.onOpenLeaderboard,
+    this.onOpenHistory,
+    this.onToggleBodyweight,
+    this.onFeedback,
+    required this.isBodyweightMode,
+    required this.xp,
+    required this.level,
+    required this.deviceId,
+  });
+
+  final VoidCallback? onOpenLeaderboard;
+  final VoidCallback? onOpenHistory;
+  final VoidCallback? onToggleBodyweight;
+  final VoidCallback? onFeedback;
+  final bool isBodyweightMode;
+  final int xp;
+  final int level;
+  final String deviceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor = theme.extension<AppBrandTheme>()?.outline ?? 
+        theme.colorScheme.secondary;
+    final loc = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.0,
+        children: [
+          if (onOpenLeaderboard != null)
+            _ActionGridButton(
+              icon: Icons.emoji_events_rounded,
+              label: 'Bestenliste',
+              color: brandColor,
+              onTap: onOpenLeaderboard!,
+            ),
+          if (onOpenHistory != null)
+            _ActionGridButton(
+              icon: Icons.history_rounded,
+              label: 'Verlauf',
+              color: brandColor,
+              onTap: onOpenHistory!,
+            ),
+          if (onToggleBodyweight != null)
+            _ActionGridButton(
+              icon: Icons.accessibility_new_rounded,
+              label: 'Körpergewicht',
+              color: brandColor,
+              onTap: onToggleBodyweight!,
+              isActive: isBodyweightMode,
+            ),
+          _ActionGridButton(
+            icon: Icons.military_tech_rounded,
+            label: 'Level $level',
+            subtitle: '$xp XP',
+            color: brandColor,
+            onTap: () {
+              // XP info - could show details
+            },
+          ),
+          if (onFeedback != null)
+            _ActionGridButton(
+              icon: Icons.chat_bubble_outline_rounded,
+              label: 'Feedback',
+              color: brandColor,
+              onTap: onFeedback!,
+            ),
+          _ActionGridButton(
+            icon: Icons.edit_note_rounded,
+            label: 'Notiz',
+            color: brandColor,
+            onTap: () {
+              // Show note dialog - using existing NoteButtonWidget functionality
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Session Note'),
+                  content: const TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Add a note...',
+                    ),
+                    maxLines: 3,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual action button for the grid
+class _ActionGridButton extends StatelessWidget {
+  const _ActionGridButton({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.isActive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Dark surface color for premium look
+    final surfaceColor = Colors.black.withOpacity(0.4);
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isActive ? color.withOpacity(0.2) : surfaceColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isActive 
+                  ? color.withOpacity(0.6) 
+                  : Colors.white.withOpacity(0.08),
+              width: 1,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                     BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isActive
+                  ? [
+                      color.withOpacity(0.3),
+                      color.withOpacity(0.1),
+                    ]
+                  : [
+                      Colors.white.withOpacity(0.05),
+                      Colors.white.withOpacity(0.02),
+                    ],
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Glowing Icon Container
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive 
+                    ? color 
+                    : Colors.white.withOpacity(0.05),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.6),
+                            blurRadius: 12,
+                            offset: const Offset(0, 0),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.7),
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isActive 
+                        ? Colors.white.withOpacity(0.9) 
+                        : Colors.white.withOpacity(0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

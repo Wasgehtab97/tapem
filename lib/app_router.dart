@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/admin_devices_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
@@ -41,6 +42,9 @@ import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.
 import 'package:tapem/core/widgets/gym_context_guard.dart';
 import 'bootstrap/navigation.dart';
 import 'bootstrap/providers.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
+import 'package:tapem/features/training_plan/presentation/screens/plan_detail_screen.dart';
+import 'package:tapem/features/training_plan/presentation/screens/plan_exercise_picker_screen.dart';
 
 class AppRouter {
   static const splash = '/';
@@ -52,6 +56,7 @@ class AppRouter {
   static const history = '/history';
   static const report = '/report';
   static const admin = '/admin';
+  static const adminDevices = '/admin_devices';
   static const affiliate = '/affiliate';
   static const rank = '/rank';
   // Deprecated alias for backward compatibility
@@ -59,6 +64,8 @@ class AppRouter {
   static const trainingDetails = '/training_details';
   static const selectGym = '/select_gym';
   static const planOverview = '/plan_overview';
+  static const trainingPlanDetail = '/training_plan_detail';
+  static const trainingPlanPicker = '/training_plan_picker';
   static const manageMuscleGroups = '/manage_muscle_groups';
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
@@ -192,6 +199,13 @@ class AppRouter {
           ),
         );
 
+      case adminDevices:
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminDevicesScreen(),
+          ),
+        );
+
       case manageChallenges:
         return MaterialPageRoute(
           builder: (_) => const GymContextGuard(
@@ -244,6 +258,21 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const GymContextGuard(
             child: PlanOverviewScreen(),
+          ),
+        );
+
+      case trainingPlanDetail:
+        final plan = settings.arguments as TrainingPlan?;
+        return MaterialPageRoute(
+          builder: (_) => GymContextGuard(
+            child: PlanDetailScreen(plan: plan),
+          ),
+        );
+
+      case trainingPlanPicker:
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: PlanExercisePickerScreen(),
           ),
         );
 
@@ -305,9 +334,11 @@ class AppRouter {
 
       case friendChat:
         final args = settings.arguments as Map<String, String>? ?? const {};
-        return FriendChatScreen.route(
-          friendUid: args['uid'] ?? '',
-          friendName: args['name'] ?? '',
+        return MaterialPageRoute(
+          builder: (_) => FriendChatScreen(
+            friendUid: args['uid'] ?? '',
+            friendName: args['name'] ?? '',
+          ),
         );
 
       case creatine:

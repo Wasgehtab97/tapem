@@ -5,3 +5,4 @@
 // Custom settings for Release-Dev configuration
 BUNDLE_ID_SUFFIX=.dev
 DISPLAY_NAME=Tap'em DEV
+FLUTTER_FLAVOR=dev

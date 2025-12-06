@@ -80,45 +80,99 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
       }
 
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            loc.historyOverviewTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              loc.historyOverviewTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _kpiRing(
-                context,
-                loc.profileStatsTotalTrainingDays,
-                totalTrainingDays.toString(),
-              ),
-              _kpiRing(
-                context,
-                loc.profileStatsAverageTrainingDaysPerWeek,
-                formatAverage(avgTrainingDays),
-              ),
-              _kpiRing(
-                context,
-                loc.profileStatsRestTimerLabel,
-                restValue,
-                onTap: () =>
-                    Navigator.of(context).pushNamed(AppRouter.restStats),
-              ),
-              _kpiRing(
-                context,
-                loc.profileStatsFavoriteExercise,
-                favoriteExercise,
-                onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
-              ),
-              _powerliftingButton(context, loc),
-            ],
+          const SizedBox(height: AppSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final isWide = width > 600;
+              final crossAxisCount = isWide ? 3 : 2;
+              final gap = 12.0;
+              final itemWidth = (width - ((crossAxisCount - 1) * gap)) / crossAxisCount;
+              
+              // We'll use a custom layout or just a straightforward Column of Rows for better control
+              // or a Wrap that mimics a grid.
+              // Let's go with a custom Bento-ish layout using column/rows for the specific items we have.
+              
+              return Column(
+                children: [
+                   // Top Row: Total Days (Large) + Avg Days
+                   Row(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       Expanded(
+                         flex: 3,
+                         child: _StatCard(
+                           label: loc.profileStatsTotalTrainingDays,
+                           value: totalTrainingDays.toString(),
+                           icon: Icons.calendar_today_rounded,
+                           color: Colors.blueAccent,
+                           isLarge: true,
+                         ),
+                       ),
+                       SizedBox(width: gap),
+                       Expanded(
+                         flex: 4,
+                         child: _StatCard(
+                           label: loc.profileStatsAverageTrainingDaysPerWeek,
+                           value: formatAverage(avgTrainingDays),
+                           icon: Icons.show_chart_rounded,
+                           color: Colors.purpleAccent,
+                           subtitle: '/ ${loc.deviceLeaderboardTabWeek}',
+                         ),
+                       ),
+                     ],
+                   ),
+                   SizedBox(height: gap),
+                   // Second Row: Rest Timer + Favorite Exercise
+                   Row(
+                     children: [
+                       Expanded(
+                         child: _StatCard(
+                           label: 'Rest Timer', // loc.profileStatsRestTimerLabel might be long, check localization
+                           value: restValue,
+                           icon: Icons.timer_outlined,
+                           color: Colors.orangeAccent,
+                           onTap: () => Navigator.of(context).pushNamed(AppRouter.restStats),
+                         ),
+                       ),
+                       SizedBox(width: gap),
+                       Expanded(
+                         child: _StatCard(
+                           label: 'Lieblingsübung', // loc.profileStatsFavoriteExercise
+                           value: favoriteExercise,
+                           icon: Icons.favorite_rounded,
+                           color: Colors.pinkAccent,
+                           onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
+                         ),
+                       ),
+                     ],
+                   ),
+                   SizedBox(height: gap),
+                   // Bottom: Powerlifting (Full Width or special)
+                   _StatCard(
+                     label: loc.profileStatsPowerliftingButton,
+                     value: 'Total & Wilks',
+                     icon: Icons.fitness_center_rounded,
+                     color: brandColor, // Theme color
+                     onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
+                     isWide: true,
+                   ),
+                ],
+              );
+            },
           ),
         ],
       );
@@ -126,12 +180,26 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.profileStatsTitle),
+        title: Text(
+          loc.profileStatsTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         centerTitle: true,
-        foregroundColor: brandColor,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: DefaultTextStyle.merge(
-        style: TextStyle(color: brandColor),
+      extendBodyBehindAppBar: true,
+      body: Container(
+         decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.scaffoldBackgroundColor,
+              Color.alphaBlend(brandColor.withOpacity(0.05), theme.scaffoldBackgroundColor),
+            ],
+          ),
+        ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -156,108 +224,12 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
     return '${duration.inMinutes}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Widget _kpiRing(
-    BuildContext context,
-    String label,
-    String? value, {
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-    final brand = theme.extension<AppBrandTheme>();
-    final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
-    final trimmedValue = value?.trim();
-    final hasValue = trimmedValue != null && trimmedValue.isNotEmpty;
-    final displayValue = trimmedValue ?? '';
-    final semanticsLabel = hasValue ? '$label: $displayValue' : label;
-    return _circularBrandCard(
-      context,
-      semanticsLabel: semanticsLabel,
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasValue) ...[
-            Text(
-              displayValue,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: onBrandColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-          ],
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: onBrandColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _powerliftingButton(BuildContext context, AppLocalizations loc) {
-    final theme = Theme.of(context);
-    final brand = theme.extension<AppBrandTheme>();
-    final onBrandColor = brand?.onBrand ?? theme.colorScheme.onPrimary;
-
-    elogUi('PROFILE_STATS_POWERLIFTING', {'title': loc.profileStatsPowerliftingButton});
-
-    return _circularBrandCard(
-      context,
-      semanticsLabel: loc.profileStatsPowerliftingButton,
-      onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.fitness_center_rounded, color: onBrandColor, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            loc.profileStatsPowerliftingButton,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: onBrandColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _circularBrandCard(
-    BuildContext context, {
-    required Widget child,
-    VoidCallback? onTap,
-    String? semanticsLabel,
-  }) {
-    return Semantics(
-      button: onTap != null,
-      label: semanticsLabel,
-      child: SizedBox(
-        width: 112,
-        height: 112,
-        child: BrandGradientCard(
-          borderRadius: BorderRadius.circular(56),
-          padding: EdgeInsets.zero,
-          onTap: onTap,
-          child: Center(child: child),
-        ),
-      ),
-    );
-  }
-
   Future<void> _showFavoriteExercisesDialog(
     BuildContext context,
     ProfileProvider prov,
     AppLocalizations loc,
   ) async {
+    // ... (keep existing dialog logic)
     unawaited(prov.ensureFavoriteExercisesLoaded(context));
 
     await showDialog<void>(
@@ -331,6 +303,130 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
           },
         );
       },
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String? value;
+  final IconData icon;
+  final Color color;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final bool isLarge;
+  final bool isWide;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.subtitle,
+    this.onTap,
+    this.isLarge = false,
+    this.isWide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final displayValue = (value == null || value!.trim().isEmpty) ? '—' : value!;
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          constraints: BoxConstraints(
+            minHeight: isLarge ? 160 : 120, // Taller for large cards
+          ),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1,
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.05),
+                Colors.white.withOpacity(0.01),
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Header with Icon
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: color,
+                    ),
+                  ),
+                  if (onTap != null)
+                     Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayValue,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: isLarge ? 32 : 24,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withOpacity(0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

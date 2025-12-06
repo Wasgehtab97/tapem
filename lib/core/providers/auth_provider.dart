@@ -21,6 +21,8 @@ import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
+import 'package:tapem/features/auth/domain/usecases/set_public_key.dart';
+import 'package:tapem/features/security/domain/services/encryption_service.dart';
 import 'package:tapem/services/membership_service.dart';
 
 typedef ActiveGymSetter = Future<void> Function(String gymId);
@@ -113,6 +115,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   final SetPublicProfileUseCase _setPublicProfileUC;
   final SetAvatarKeyUseCase _setAvatarKeyUC;
   final CheckUsernameAvailable _checkUsernameUC;
+  final SetPublicKeyUseCase _setPublicKeyUC;
   final ResetPasswordUseCase _resetPasswordUC;
   final FirebaseAuthManager _authManager;
   final SessionDraftRepository _sessionDraftRepository;
@@ -136,6 +139,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     required SetShowInLeaderboardUseCase setShowInLeaderboardUseCase,
     required SetPublicProfileUseCase setPublicProfileUseCase,
     required SetAvatarKeyUseCase setAvatarKeyUseCase,
+    required SetPublicKeyUseCase setPublicKeyUseCase,
     required CheckUsernameAvailable checkUsernameUseCase,
     required ResetPasswordUseCase resetPasswordUseCase,
     required FirebaseAuthManager authManager,
@@ -153,6 +157,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         _setShowInLbUC = setShowInLeaderboardUseCase,
         _setPublicProfileUC = setPublicProfileUseCase,
         _setAvatarKeyUC = setAvatarKeyUseCase,
+        _setPublicKeyUC = setPublicKeyUseCase,
         _checkUsernameUC = checkUsernameUseCase,
         _resetPasswordUC = resetPasswordUseCase,
         _authManager = authManager,
@@ -180,6 +185,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         sessionDraftRepository ?? SessionDraftRepositoryImpl();
     final resolvedMembership = membershipService ?? FirestoreMembershipService();
     final resolvedSetActiveGym = setActiveGym ?? UserProfileService.setActiveGym;
+    
     return AuthProvider._(
       loginUseCase:
           LoginUseCase(repo: repo, authManager: resolvedAuthManager),
@@ -192,6 +198,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           SetShowInLeaderboardUseCase(repo),
       setPublicProfileUseCase: SetPublicProfileUseCase(repo),
       setAvatarKeyUseCase: SetAvatarKeyUseCase(repo),
+      setPublicKeyUseCase: SetPublicKeyUseCase(repo),
       checkUsernameUseCase: CheckUsernameAvailable(repo),
       resetPasswordUseCase: ResetPasswordUseCase(repo),
       authManager: resolvedAuthManager,
@@ -276,6 +283,25 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           _user = currentUser.copyWith(
             role: claims['role'] as String? ?? currentUser.role,
           );
+
+          // Check and generate encryption keys if needed
+          try {
+            final encryptionService = EncryptionService(userId: currentUser.id);
+            final hasKeyPair = await encryptionService.hasKeyPair();
+            if (!hasKeyPair) {
+              if (kDebugMode) {
+                debugPrint('[AuthProvider] Generating new E2EE keys for user');
+              }
+              final publicKey = await encryptionService.generateAndStoreKeyPair();
+              await _setPublicKeyUC.execute(currentUser.id, publicKey);
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('[AuthProvider] Failed to generate/store keys: $e');
+            }
+            // Don't block login on key generation failure, but log it
+          }
+
           await _syncActiveGymSelection(
             currentUser: _user!,
             fbUser: fbUser,

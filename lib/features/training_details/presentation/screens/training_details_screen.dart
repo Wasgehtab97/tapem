@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
 import 'package:tapem/core/providers/branding_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
@@ -88,6 +90,7 @@ class TrainingDetailsScreen extends ConsumerWidget {
           }
 
           return Scaffold(
+            extendBodyBehindAppBar: true,
             appBar: _AppBar(
               titleDate: date,
               durationMs: duration,
@@ -96,68 +99,87 @@ class TrainingDetailsScreen extends ConsumerWidget {
                   ? null
                   : openStory,
             ),
-            body: sessions.isEmpty
-                ? const Center(child: Text('Keine Trainingseinheiten'))
-                : Scrollbar(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: DaySessionsOverview(
-                        sessions: sessions,
-                        onSessionLongPress: (session) async {
-                          final confirmed = await showDialog<bool>(
-                            context: ctx,
-                            builder: (dialogCtx) => AlertDialog(
-                              title: Text(
-                                loc.trainingDetailsDeleteSessionTitle,
-                              ),
-                              content: Text(
-                                loc.trainingDetailsDeleteSessionMessage,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(dialogCtx).pop(false),
-                                  child: Text(loc.commonCancel),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(dialogCtx).pop(true),
-                                  style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red),
-                                  child: Text(
-                                    loc.trainingDetailsDeleteSessionConfirm,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirmed != true) {
-                            return;
-                          }
-                          try {
-                            await prov.deleteSession(session);
-                            if (!ctx.mounted) return;
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.trainingDetailsDeleteSessionSuccess,
-                                ),
-                              ),
-                            );
-                          } catch (_) {
-                            if (!ctx.mounted) return;
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  loc.trainingDetailsDeleteSessionError,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(ctx).scaffoldBackgroundColor,
+                    Color.alphaBlend(
+                      (Theme.of(ctx).extension<AppBrandTheme>()?.outline ??
+                              Theme.of(ctx).colorScheme.secondary)
+                          .withOpacity(0.05),
+                      Theme.of(ctx).scaffoldBackgroundColor,
                     ),
-                  ),
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                child: sessions.isEmpty
+                    ? const Center(child: Text('Keine Trainingseinheiten'))
+                    : Scrollbar(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: DaySessionsOverview(
+                            sessions: sessions,
+                            onSessionLongPress: (session) async {
+                              final confirmed = await showDialog<bool>(
+                                context: ctx,
+                                builder: (dialogCtx) => AlertDialog(
+                                  title: Text(
+                                    loc.trainingDetailsDeleteSessionTitle,
+                                  ),
+                                  content: Text(
+                                    loc.trainingDetailsDeleteSessionMessage,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogCtx).pop(false),
+                                      child: Text(loc.commonCancel),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogCtx).pop(true),
+                                      style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red),
+                                      child: Text(
+                                        loc.trainingDetailsDeleteSessionConfirm,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed != true) {
+                                return;
+                              }
+                              try {
+                                await prov.deleteSession(session);
+                                if (!ctx.mounted) return;
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      loc.trainingDetailsDeleteSessionSuccess,
+                                    ),
+                                  ),
+                                );
+                              } catch (_) {
+                                if (!ctx.mounted) return;
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      loc.trainingDetailsDeleteSessionError,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+              ),
+            ),
           );
         },
       ),

@@ -47,30 +47,35 @@ class SessionRepositoryImpl implements SessionRepository {
     // Sort by timestamp
     localSessions.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    return localSessions.map((local) => Session(
-      sessionId: local.sessionId,
-      gymId: local.gymId,
-      userId: local.userId,
-      deviceId: local.deviceId,
-      deviceName: local.deviceName,
-      deviceDescription: local.deviceDescription,
-      exerciseId: local.exerciseId,
-      exerciseName: local.exerciseName,
-      isMulti: local.isMulti,
-      timestamp: local.timestamp,
-      note: local.note ?? '',
-      sets: local.sets.map((s) => SessionSet(
-        weight: s.weight,
-        reps: s.reps,
-        setNumber: s.setNumber,
-        dropWeightKg: s.dropWeightKg,
-        dropReps: s.dropReps,
-        isBodyweight: s.isBodyweight,
-      )).toList(),
-      startTime: local.startTime,
-      endTime: local.endTime,
-      durationMs: local.durationMs,
-    )).toList();
+    return localSessions.map((local) {
+      final sortedSets = local.sets.toList()
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+
+      return Session(
+        sessionId: local.sessionId,
+        gymId: local.gymId,
+        userId: local.userId,
+        deviceId: local.deviceId,
+        deviceName: local.deviceName,
+        deviceDescription: local.deviceDescription,
+        exerciseId: local.exerciseId,
+        exerciseName: local.exerciseName,
+        isMulti: local.isMulti,
+        timestamp: local.timestamp,
+        note: local.note ?? '',
+        sets: sortedSets.map((s) => SessionSet(
+          weight: s.weight,
+          reps: s.reps,
+          setNumber: s.setNumber,
+          dropWeightKg: s.dropWeightKg,
+          dropReps: s.dropReps,
+          isBodyweight: s.isBodyweight,
+        )).toList(),
+        startTime: local.startTime,
+        endTime: local.endTime,
+        durationMs: local.durationMs,
+      );
+    }).toList();
   }
 
    @override

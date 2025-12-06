@@ -5,6 +5,8 @@ admin.initializeApp();
 const avatars = require('./avatars');
 const xp = require('./xp');
 const activity = require('./activity');
+const gymCodes = require('./gymCodes');
+
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
 exports.onUserCreateDefaults = avatars.onUserCreateDefaults;
@@ -13,6 +15,9 @@ exports.onChallengeState = avatars.onChallengeState;
 exports.onEventParticipation = avatars.onEventParticipation;
 exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
+
+// Gym Code Functions (manual rotation only - works on Spark plan)
+exports.manuallyRotateGymCode = gymCodes.manuallyRotateGymCode;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')
@@ -674,42 +679,42 @@ exports.setFriendRequestsSeen = functions.https.onCall(async (data, context) => 
 exports.changeUsername = functions
   .region('europe-west3')
   .https.onCall(async (data, context) => {
-  const uid = context.auth && context.auth.uid;
-  if (!uid) {
-    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
-  }
-  const newUsername = data && data.newUsername;
-  if (typeof newUsername !== 'string') {
-    throw new functions.https.HttpsError('invalid-argument', 'Missing username');
-  }
-  const target = newUsername.trim();
-  const regex = /^[A-Za-z0-9 ]{3,20}$/;
-  if (!regex.test(target)) {
-    throw new functions.https.HttpsError('invalid-argument', 'username_invalid');
-  }
-  const lower = target.toLowerCase();
-  const db = admin.firestore();
-  const userRef = db.collection('users').doc(uid);
-  await db.runTransaction(async (tx) => {
-    const userSnap = await tx.get(userRef);
-    if (!userSnap.exists) {
-      throw new functions.https.HttpsError('not-found', 'user_not_found');
+    const uid = context.auth && context.auth.uid;
+    if (!uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
-    const oldLower = userSnap.data().usernameLower;
-    if (oldLower === lower) {
-      return;
+    const newUsername = data && data.newUsername;
+    if (typeof newUsername !== 'string') {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing username');
     }
-    const mappingRef = db.collection('usernames').doc(lower);
-    const mappingSnap = await tx.get(mappingRef);
-    if (mappingSnap.exists && mappingSnap.data().uid !== uid) {
-      throw new functions.https.HttpsError('already-exists', 'username_taken');
+    const target = newUsername.trim();
+    const regex = /^[A-Za-z0-9 ]{3,20}$/;
+    if (!regex.test(target)) {
+      throw new functions.https.HttpsError('invalid-argument', 'username_invalid');
     }
-    if (oldLower) {
-      const oldRef = db.collection('usernames').doc(oldLower);
-      tx.delete(oldRef);
-    }
-    tx.set(mappingRef, { uid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-    tx.update(userRef, { username: target, usernameLower: lower });
+    const lower = target.toLowerCase();
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+    await db.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (!userSnap.exists) {
+        throw new functions.https.HttpsError('not-found', 'user_not_found');
+      }
+      const oldLower = userSnap.data().usernameLower;
+      if (oldLower === lower) {
+        return;
+      }
+      const mappingRef = db.collection('usernames').doc(lower);
+      const mappingSnap = await tx.get(mappingRef);
+      if (mappingSnap.exists && mappingSnap.data().uid !== uid) {
+        throw new functions.https.HttpsError('already-exists', 'username_taken');
+      }
+      if (oldLower) {
+        const oldRef = db.collection('usernames').doc(oldLower);
+        tx.delete(oldRef);
+      }
+      tx.set(mappingRef, { uid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      tx.update(userRef, { username: target, usernameLower: lower });
+    });
+    return { username: target, usernameLower: lower };
   });
-  return { username: target, usernameLower: lower };
-});

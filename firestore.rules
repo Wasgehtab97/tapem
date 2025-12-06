@@ -216,59 +216,89 @@ service cloud.firestore {
     // Friend chat conversations
     // ─────────────────────────
     match /friendConversations/{conversationId} {
-      allow read: if isChatParticipant(conversationId);
+      // Can read if conversationId contains your UID (works even if conversation doesn't exist yet)
+      // ConversationId format: "uid1_uid2" (sorted)
+      allow read: if isAuthed() &&
+        (conversationId.split('_')[0] == request.auth.uid ||
+         conversationId.split('_')[1] == request.auth.uid);
+
+      // Anyone can create if they're one of the members
       allow create: if isAuthed() &&
         request.resource.data.keys().hasOnly([
           'members',
+          'createdAt',
+          'updatedAt',
           'lastMessage',
-          'lastMessageAt',
-          'lastMessageSenderId',
-          'updatedAt'
+          'lastReadAt'
         ]) &&
         request.resource.data.members is list &&
         request.resource.data.members.size() == 2 &&
         request.resource.data.members.hasAny([request.auth.uid]) &&
-        request.resource.data.members[0] is string &&
-        request.resource.data.members[1] is string &&
-        (!('lastMessage' in request.resource.data) ||
-          (request.resource.data.lastMessage is string &&
-           request.resource.data.lastMessage.size() > 0)) &&
-        (!('lastMessageAt' in request.resource.data) ||
-          (request.resource.data.lastMessageAt is timestamp ||
-           request.resource.data.lastMessageAt == request.time)) &&
-        (!('lastMessageSenderId' in request.resource.data) ||
-          request.resource.data.lastMessageSenderId is string) &&
-        (!('updatedAt' in request.resource.data) ||
-          (request.resource.data.updatedAt is timestamp ||
-           request.resource.data.updatedAt == request.time));
-      allow update: if isChatParticipant(conversationId) &&
-        request.resource.data.keys().hasOnly([
-          'members',
-          'lastMessage',
-          'lastMessageAt',
-          'lastMessageSenderId',
-          'updatedAt'
-        ]) &&
-        request.resource.data.members == resource.data.members &&
-        request.resource.data.lastMessage is string &&
-        request.resource.data.lastMessage.size() > 0 &&
-        (request.resource.data.lastMessageAt is timestamp ||
-          request.resource.data.lastMessageAt == request.time) &&
-        request.resource.data.lastMessageSenderId is string &&
-        (request.resource.data.updatedAt is timestamp ||
-          request.resource.data.updatedAt == request.time);
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp;
+
+      // Can update if you're a participant and not changing members
+      // Also allows updating own lastReadAt timestamp
+      allow update: if isAuthed() &&
+        resource.data.members.hasAny([request.auth.uid]) &&
+        request.resource.data.members == resource.data.members;
+
       allow delete: if false;
 
       match /messages/{messageId} {
-        allow read: if isChatParticipant(conversationId);
-        allow create: if isChatParticipant(conversationId) &&
-          request.resource.data.keys().hasOnly(['senderId', 'text', 'createdAt']) &&
+        // Can read messages if conversationId contains your UID
+        // ConversationId format: "uid1_uid2" (sorted)
+        allow read: if isAuthed() &&
+          (conversationId.split('_')[0] == request.auth.uid ||
+           conversationId.split('_')[1] == request.auth.uid);
+
+        // Can create message if you're the sender and conversationId contains your UID
+        allow create: if isAuthed() &&
           request.resource.data.senderId == request.auth.uid &&
-          request.resource.data.text is string &&
-          request.resource.data.text.size() > 0 &&
-          request.resource.data.createdAt == request.time;
+          (conversationId.split('_')[0] == request.auth.uid ||
+           conversationId.split('_')[1] == request.auth.uid) &&
+          request.resource.data.keys().hasOnly(['senderId', 'type', 'createdAt', 'text', 'highlightData', 'isEncrypted', 'nonce', 'stickerId']) &&
+          request.resource.data.type is string &&
+          request.resource.data.createdAt is timestamp &&
+          (!('isEncrypted' in request.resource.data) || request.resource.data.isEncrypted is bool) &&
+          (!('nonce' in request.resource.data) || request.resource.data.nonce is string) &&
+          (!('stickerId' in request.resource.data) || request.resource.data.stickerId is string);
+
+
         allow update, delete: if false;
       }
+    }
+
+    // ─────────────────────────
+    // Conversation encryption keys
+    // ─────────────────────────
+    match /conversationKeys/{conversationId}/participants/{userId} {
+      // Can read own encrypted key
+      allow read: if isAuthed() && userId == request.auth.uid;
+      
+      // Can create if you're a participant in the conversation
+      allow create: if isAuthed() &&
+        (conversationId.split('_')[0] == request.auth.uid ||
+         conversationId.split('_')[1] == request.auth.uid) &&
+        request.resource.data.keys().hasOnly(['conversationId', 'userId', 'encryptedKey', 'createdAt', 'encryptedBy']) &&
+        request.resource.data.conversationId is string &&
+        request.resource.data.userId is string &&
+        request.resource.data.encryptedKey is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.encryptedBy is string;
+      
+      allow update, delete: if false;
+    }
+
+    // ─────────────────────────
+    // Stickers collection
+    // ─────────────────────────
+    match /stickers/{stickerId} {
+      // Anyone authenticated can read stickers
+      allow read: if isAuthed();
+      
+      // Only global admins can write stickers
+      allow write: if isGlobalAdmin();
     }
 
     // ─────────────────────────
@@ -702,6 +732,55 @@ service cloud.firestore {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
       }
+    }
+
+    // ─────────────────────────
+    // Gym Codes (Rotating Registration Codes)
+    // ─────────────────────────
+    match /gym_codes/{gymId}/codes/{codeId} {
+      // Allow anyone to read codes for validation during registration
+      // This is safe because:
+      // 1. Codes are temporary (expire after 30 days)
+      // 2. Codes are random and hard to guess
+      // 3. Only active, non-expired codes work for registration
+      allow read: if true;
+      
+      // Only gym admins can create codes
+      allow create: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+        request.resource.data.keys().hasOnly([
+          'code',
+          'gymId',
+          'createdAt',
+          'expiresAt',
+          'isActive',
+          'createdBy'
+        ]) &&
+        request.resource.data.code is string &&
+        request.resource.data.code.size() == 6 &&
+        request.resource.data.gymId == gymId &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.isActive is bool &&
+        request.resource.data.createdBy is string;
+      
+      // Only allow updating isActive field (for deactivation)
+      allow update: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+        request.resource.data.keys().hasOnly([
+          'code',
+          'gymId',
+          'createdAt',
+          'expiresAt',
+          'isActive',
+          'createdBy'
+        ]) &&
+        request.resource.data.code == resource.data.code &&
+        request.resource.data.gymId == resource.data.gymId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.expiresAt == resource.data.expiresAt &&
+        request.resource.data.createdBy == resource.data.createdBy;
+      
+      // Codes are immutable - no deletion
+      allow delete: if false;
     }
 
     // ─────────────────────────

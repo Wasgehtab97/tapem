@@ -19,6 +19,7 @@ import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 // Disabled for production - uncomment for widget debugging
 void _slog(int idx, String m) {} // => debugPrint('🧾 [SetCard#$idx] $m');
@@ -65,51 +66,32 @@ class SetCardTheme {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    Color tint(Color base, Color overlay, double opacity) {
-      return Color.alphaBlend(overlay.withOpacity(opacity), base);
-    }
-
-    final surface = theme.canvasColor;
-    final softenedSurface = tint(surface, scheme.surface, isDark ? 0.75 : 0.95);
-    final quietBase = tint(softenedSurface, scheme.primary, isDark ? 0.06 : 0.04);
-    final idleOverlay = tint(quietBase, scheme.surfaceTint, isDark ? 0.1 : 0.06);
-    final cardFill = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.85 : 0.9),
-      softenedSurface,
-    );
-    final inputBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.88 : 0.92),
-      softenedSurface,
-    );
-    final inputDisabledBase = Color.alphaBlend(
-      Colors.black.withOpacity(isDark ? 0.7 : 0.78),
-      softenedSurface,
-    );
-    // Transparent borders for all input fields (no visible borders)
-    final stroke = Colors.transparent;
-    const activeStrokeBase = Colors.black;
-    // Transparent border when focused (no visible border on focus)
-    final strokeActive = Colors.transparent;
-    final glowIdle = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
-    final glowActive = activeStrokeBase.withOpacity(isDark ? 0.35 : 0.28);
+     // Premium Colors
+    final surface = theme.canvasColor; // Very Dark
+    
+    // Very dark pill background for inputs
+    final inputFill = Colors.black.withOpacity(0.3); 
+    
+    // Brand glow for active state
+    final brandColor = scheme.primary;
 
     return SetCardTheme(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      chipBg: idleOverlay,
-      chipFg: scheme.onSurface.withOpacity(isDark ? 0.92 : 0.78),
-      chipBorder: scheme.onSurface.withOpacity(isDark ? 0.22 : 0.12),
-      doneOn: tint(quietBase, scheme.primaryContainer, isDark ? 0.4 : 0.25),
-      doneOff: scheme.onSurface.withOpacity(0.55),
-      menuBg: tint(quietBase, scheme.primary, isDark ? 0.18 : 0.12),
-      menuFg: scheme.primary.withOpacity(isDark ? 0.85 : 0.75),
-      cardFill: cardFill,
-      inputFill: inputBase,
-      inputFillDisabled: inputDisabledBase,
-      inputStroke: stroke,
-      inputStrokeActive: strokeActive,
-      inputShadow: glowIdle,
-      inputShadowActive: glowActive,
-      inputPlaceholder: scheme.primary.withOpacity(isDark ? 0.45 : 0.38),
+      chipBg: Colors.white.withOpacity(0.05),
+      chipFg: Colors.white,
+      chipBorder: Colors.white.withOpacity(0.1),
+      doneOn: brandColor,
+      doneOff: Colors.white.withOpacity(0.1),
+      menuBg: Colors.black.withOpacity(0.8),
+      menuFg: Colors.white,
+      cardFill: Colors.transparent, // We use the container background or transparent
+      inputFill: inputFill,
+      inputFillDisabled: Colors.black.withOpacity(0.1),
+      inputStroke: Colors.transparent, 
+      inputStrokeActive: brandColor.withOpacity(0.5), // Subtle glow
+      inputShadow: Colors.transparent,
+      inputShadowActive: brandColor.withOpacity(0.2),
+      inputPlaceholder: Colors.white.withOpacity(0.3),
     );
   }
 
@@ -1281,58 +1263,56 @@ class _InputPillState extends State<_InputPill> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final showLabel = widget.showLabel;
     final hasValue = _text.trim().isNotEmpty;
     final hasFocus = _hasFocus;
     final disabled = widget.readOnly;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final brandColor = colorScheme.primary;
     final tokens = widget.tokens;
     final dense = widget.dense;
 
-    final radius = BorderRadius.circular(dense ? 14 : 18);
-    final fillColor = disabled ? tokens.inputFillDisabled : tokens.inputFill;
-    final borderColor = hasFocus ? tokens.inputStrokeActive : tokens.inputStroke;
-    final haloColor = hasFocus ? tokens.inputShadowActive : tokens.inputShadow;
+    // Premium Pill Design Constants
+    final radius = BorderRadius.circular(dense ? 16 : 20);
+    
+    // Darker, more solid fill for the "hole" effect
+    final fillColor = disabled 
+        ? Colors.white.withOpacity(0.05) 
+        : Colors.black.withOpacity(0.35); // Much darker
+    
+    // Border logic
+    final borderColor = hasFocus 
+        ? brandColor.withOpacity(0.5) 
+        : Colors.white.withOpacity(0.1); 
+        
+    final double borderWid = hasFocus ? 1.5 : 1.0;
 
-    final labelStyle = GoogleFonts.inter(
-      fontSize: dense ? 10.5 : 11.5,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-      color: tokens.chipFg.withOpacity(hasFocus ? 0.82 : 0.62),
-    );
+    // Typography
+    final valueColor = disabled
+        ? Colors.white.withOpacity(0.3)
+        : hasValue 
+            ? Colors.white 
+            : Colors.white.withOpacity(0.5); // Placeholder color
 
-    final valueColor = brandColor.withOpacity(
-      disabled
-          ? 0.45
-          : hasValue
-              ? (isDark ? 0.96 : 0.9)
-              : (isDark ? 0.7 : 0.68),
-    );
-    final keypadTypeface = Theme.of(context).textTheme.titleLarge ??
-        Theme.of(context).textTheme.bodyMedium ??
-        const TextStyle();
-    final valueStyle = keypadTypeface.copyWith(
-      fontSize: showLabel
-          ? (dense ? 16 : 18)
-          : (dense ? 18 : 20),
+    final fontSize = dense ? 16.0 : 18.0;
+    
+    final valueStyle = GoogleFonts.inter(
+      fontSize: fontSize,
       fontWeight: FontWeight.w600,
       color: valueColor,
       height: 1.1,
     );
 
     final placeholderStyle = valueStyle.copyWith(
-      color: tokens.inputPlaceholder,
+      color: Colors.white.withOpacity(0.2), // Faint placeholder
     );
 
-    final double horizontalPadding =
-        showLabel ? (dense ? 10 : 12) : (dense ? 11 : 14);
-    final double verticalPadding =
-        showLabel ? (dense ? 4 : 6) : (dense ? 6 : 8);
-    final double minHeight = dense ? 40 : 46;
+    final double horizontalPadding = dense ? 10 : 14;
+    final double verticalPadding = dense ? 8 : 12;
+    final double minHeight = dense ? 36 : 44;
 
     final Widget textField = SizedBox(
       width: double.infinity,
@@ -1379,18 +1359,26 @@ class _InputPillState extends State<_InputPill> {
           borderRadius: radius,
           border: Border.all(
             color: borderColor,
-            width: showLabel ? 0.8 : 1,
+            width: borderWid,
           ),
-          boxShadow: disabled
-              ? null
-              : [
+          // Inner shadow simulation for 'depth' or outer glow for focus
+          boxShadow: hasFocus && !disabled
+              ? [
                   BoxShadow(
-                    color: haloColor,
-                    blurRadius: hasFocus ? 18 : 10,
-                    spreadRadius: hasFocus ? 0.6 : 0.1,
-                    offset: Offset(0, hasFocus ? 8 : 4),
+                    color: brandColor.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 0),
                   ),
-                ],
+                ]
+              : [
+                   // Subtle inner-like shadow (using inset would require custom painter or library, 
+                   // so we stick to a clean flat look with border)
+                   BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 2,
+                    offset: const Offset(0, 2),
+                   )
+              ],
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -1413,6 +1401,13 @@ class _InputPillState extends State<_InputPill> {
       ),
     );
 
+    final labelStyle = GoogleFonts.inter(
+      fontSize: dense ? 10.5 : 11.5,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: tokens.chipFg.withOpacity(hasFocus ? 0.82 : 0.62),
+    );
+
     if (showLabel) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1428,6 +1423,8 @@ class _InputPillState extends State<_InputPill> {
     return inputSurface;
   }
 }
+
+
 
 class _RoundButton extends StatefulWidget {
   final SetCardTheme tokens;
@@ -1460,59 +1457,60 @@ class _RoundButtonState extends State<_RoundButton> {
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.dense ? 40.0 : 44.0;
-    final scale = _pressed ? 0.98 : 1.0;
+    final size = widget.dense ? 38.0 : 44.0;
+    final scale = _pressed ? 0.95 : 1.0;
+    final theme = Theme.of(context);
+    final brandColor = theme.colorScheme.primary;
+
+    // Button states
+    final isEnabled = widget.onTap != null;
+    final isFilled = widget.filled;
+
+    // Colors
+    final bgColor = isFilled
+        ? brandColor
+        : (isEnabled ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05));
+    
+    final iconColor = isFilled
+        ? Colors.white // Always white text on filled brand color
+        : (isEnabled ? (widget.iconColor ?? Colors.white) : Colors.white.withOpacity(0.3));
+
     return Semantics(
       label: widget.semantics,
       button: true,
       child: GestureDetector(
-        onTapDown: widget.onTap == null
-            ? null
-            : (_) => setState(() => _pressed = true),
-        onTapUp: widget.onTap == null
-            ? null
-            : (_) => setState(() => _pressed = false),
-        onTapCancel: widget.onTap == null
-            ? null
-            : () => setState(() => _pressed = false),
+        onTapDown: isEnabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: isEnabled ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel: isEnabled ? () => setState(() => _pressed = false) : null,
         onTap: widget.onTap,
         child: AnimatedScale(
           scale: scale,
-          duration: const Duration(milliseconds: 80),
-          child: Container(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: size,
             height: size,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: widget.tokens.cardFill,
-              boxShadow: widget.onTap == null
-                  ? null
-                  : [
+              borderRadius: BorderRadius.circular(size / 2),
+              color: bgColor,
+              boxShadow: isFilled
+                  ? [
                       BoxShadow(
-                        color: widget.tokens.menuFg
-                            .withOpacity(widget.filled ? 0.26 : 0.14),
-                        blurRadius: widget.filled ? 16 : 12,
-                        offset: const Offset(0, 6),
+                        color: brandColor.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ],
+                    ]
+                  : [],
+              border: isFilled 
+                  ? null 
+                  : Border.all(color: Colors.white.withOpacity(isEnabled ? 0.1 : 0.05)),
             ),
             child: Icon(
               widget.icon,
-              color: () {
-                final theme = Theme.of(context);
-                final brandOn = theme.extension<BrandOnColors>();
-                if (widget.filled) {
-                  return widget.filledIconColor ??
-                      brandOn?.onCta ??
-                      theme.colorScheme.onPrimary;
-                }
-                if (widget.onTap == null) {
-                  return widget.disabledIconColor ??
-                      widget.tokens.menuFg.withOpacity(0.55);
-                }
-                return widget.iconColor ??
-                    theme.colorScheme.onSurface.withOpacity(0.8);
-              }(),
+              color: iconColor,
+              size: size * 0.5,
             ),
           ),
         ),

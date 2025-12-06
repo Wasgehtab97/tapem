@@ -9,6 +9,7 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/profile/presentation/widgets/change_username_sheet.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -286,34 +287,194 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themePref = context.read<ThemePreferenceProvider>();
     final gymId = auth.gymCode;
     final manualDefault = themePref.manualDefaultForGym(gymId);
-    final additionalOptions = themePref
-        .availableForGym(gymId)
+    
+    // Get available IDs.
+    final availableIds = themePref.availableForGym(gymId);
+    // Filter out manualDefault from explicit list if we want to avoid duplicates, 
+    // but usually "Default" is separate. 
+    // Logic from previous implementation:
+    // additionalOptions = availableForGym.where(id != manualDefault)
+    final additionalOptions = availableIds
         .where((id) => manualDefault == null || id != manualDefault)
         .toList();
-    showDialog<void>(
+
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) {
-        final selected = dialogContext.watch<ThemePreferenceProvider>().override;
-        return SimpleDialog(
-          title: Text(loc.settingsThemeDialogTitle),
-          children: [
-            RadioListTile<BrandThemeId?>(
-              value: null,
-              groupValue: selected,
-              onChanged: (_) => _onThemeSelected(dialogContext, null),
-              title: Text(loc.settingsThemeDefault),
-              subtitle: manualDefault != null
-                  ? Text(_themeOptionLabel(loc, manualDefault))
-                  : null,
-            ),
-            for (final option in additionalOptions)
-              RadioListTile<BrandThemeId?>(
-                value: option,
-                groupValue: selected,
-                onChanged: (_) => _onThemeSelected(dialogContext, option),
-                title: Text(_themeOptionLabel(loc, option)),
-              ),
-          ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        // Watch current selection to update UI instantly if needed, 
+        // or just read once if we close on tap.
+        // We probably want to visualize the *current* selection.
+        return Consumer<ThemePreferenceProvider>(
+          builder: (context, ref, _) {
+            final selectedId = ref.override;
+            
+            // Helper to build a Grid Item
+            Widget buildThemeCard({
+              required String label,
+              required BrandThemePreset? preset, // If null, maybe use a neutral style or manualDefault
+              required bool isSelected,
+              required VoidCallback onTap,
+            }) {
+              // Determine gradient colors
+              final gradient = preset != null
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [preset.gradientStart, preset.gradientEnd],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.grey.shade800,
+                        Colors.black,
+                      ],
+                    );
+
+              return GestureDetector(
+                onTap: onTap,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    gradient: gradient,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: (preset?.gradientStart ?? Colors.white).withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Stack(
+                    children: [
+                      if (isSelected)
+                        Positioned(
+                          right: 12,
+                          top: 12,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.check,
+                              size: 14,
+                              color: preset?.gradientEnd ?? Colors.black,
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                             gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withOpacity(0.0),
+                                Colors.black.withOpacity(0.6),
+                              ],
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.5,
+              maxChildSize: 0.9,
+              builder: (_, controller) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  ),
+                  child: Column(
+                    children: [
+                       Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 20),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+                        child: Text(
+                          loc.settingsThemeDialogTitle,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GridView(
+                          controller: controller,
+                          padding: const EdgeInsets.all(24),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.4,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          children: [
+                            // Default Option
+                            buildThemeCard(
+                              label: manualDefault != null
+                                  ? '${loc.settingsThemeDefault} (${_themeOptionLabel(loc, manualDefault)})'
+                                  : loc.settingsThemeDefault,
+                              preset: manualDefault != null ? BrandThemePresets.of(manualDefault) : null,
+                              isSelected: selectedId == null,
+                              onTap: () => _onThemeSelected(sheetContext, null),
+                            ),
+                            // explicit options
+                            for (final id in additionalOptions)
+                              buildThemeCard(
+                                label: _themeOptionLabel(loc, id),
+                                preset: BrandThemePresets.of(id),
+                                isSelected: selectedId == id,
+                                onTap: () => _onThemeSelected(sheetContext, id),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -564,13 +725,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsSection(
             title: loc.settingsSectionPersonalization,
             children: [
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.language,
                 title: loc.settingsOptionLanguage,
                 subtitle: languageLabel,
                 onTap: _showLanguageDialog,
               ),
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.palette,
                 title: loc.settingsOptionTheme,
                 subtitle: themeLabel,
@@ -581,13 +742,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsSection(
             title: loc.settingsSectionHealthTracking,
             children: [
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.monitor_weight,
                 title: loc.settingsBodyMetrics,
                 subtitle: bodySummary,
                 onTap: _showBodyMetricsSheet,
               ),
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.health_and_safety,
                 title: loc.settingsCreatineTracker,
                 subtitle: creatineStatus,
@@ -601,13 +762,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsSection(
             title: loc.settingsSectionVisibilityAccount,
             children: [
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.visibility,
                 title: loc.settingsOptionPublicProfile,
                 subtitle: privacyLabel,
                 onTap: _showPrivacyDialog,
               ),
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.person,
                 title: loc.settingsOptionChangeUsername,
                 subtitle: loc.settingsUsernameCurrent(username),
@@ -618,13 +779,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsSection(
             title: loc.settingsSectionLegal,
             children: [
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.gavel,
                 title: loc.settingsLegalImprint,
                 subtitle: loc.settingsLegalPlaceholderDescription,
                 onTap: () => _showLegalPlaceholder(loc.settingsLegalImprint),
               ),
-              _SettingsTile(
+              _PremiumSettingsTile(
                 icon: Icons.privacy_tip,
                 title: loc.settingsLegalPrivacy,
                 subtitle: loc.settingsLegalPlaceholderDescription,
@@ -697,8 +858,8 @@ class _SettingsSection extends StatelessWidget {
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
+class _PremiumSettingsTile extends StatelessWidget {
+  const _PremiumSettingsTile({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -713,19 +874,88 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 2,
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  brandColor.withOpacity(0.08),
+                  brandColor.withOpacity(0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.05),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: brandColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: brandColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: brandColor.withOpacity(0.8),
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        leading: Icon(icon, color: theme.colorScheme.primary),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }

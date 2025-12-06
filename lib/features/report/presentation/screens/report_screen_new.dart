@@ -1,7 +1,10 @@
+// lib/features/report/presentation/screens/report_screen_new.dart
+
 import 'package:flutter/material.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_gradient_card.dart';
+import 'package:tapem/core/widgets/premium_action_card.dart';
+import 'package:tapem/core/widgets/premium_leading_icon.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'report_feedback_screen.dart';
@@ -18,8 +21,8 @@ class ReportScreenNew extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -59,116 +62,76 @@ class ReportScreenNew extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: AppSpacing.md,
-                  runSpacing: AppSpacing.md,
+                Column(
                   children: [
-                    _ReportNavigationCard(
-                      icon: Icons.groups_rounded,
-                      title: loc.reportMembersButtonTitle,
-                      subtitle: loc.reportMembersButtonSubtitle,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportMembersScreen(gymId: gymId),
-                          ),
-                        );
-                      },
+                    SizedBox(
+                      width: double.infinity,
+                      child: PremiumActionCard(
+                        title: loc.reportMembersButtonTitle,
+                        subtitle: loc.reportMembersButtonSubtitle,
+                        leading: const PremiumLeadingIcon(icon: Icons.groups_rounded),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportMembersScreen(gymId: gymId),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    _ReportNavigationCard(
-                      icon: Icons.bar_chart_rounded,
-                      title: loc.reportUsageButtonTitle,
-                      subtitle: loc.reportUsageButtonSubtitle,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportUsageScreen(gymId: gymId),
-                          ),
-                        );
-                      },
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PremiumActionCard(
+                        title: loc.reportUsageButtonTitle,
+                        subtitle: loc.reportUsageButtonSubtitle,
+                        leading: const PremiumLeadingIcon(icon: Icons.bar_chart_rounded),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportUsageScreen(gymId: gymId),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    _ReportNavigationCard(
-                      icon: Icons.feedback_outlined,
-                      title: loc.reportFeedbackButtonTitle,
-                      subtitle: loc.reportFeedbackButtonSubtitle,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportFeedbackScreen(gymId: gymId),
-                          ),
-                        );
-                      },
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PremiumActionCard(
+                        title: loc.reportFeedbackButtonTitle,
+                        subtitle: loc.reportFeedbackButtonSubtitle,
+                        leading: const PremiumLeadingIcon(icon: Icons.feedback_outlined),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportFeedbackScreen(gymId: gymId),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    _ReportNavigationCard(
-                      icon: Icons.poll,
-                      title: loc.reportSurveysButtonTitle,
-                      subtitle: loc.reportSurveysButtonSubtitle,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportSurveysScreen(gymId: gymId),
-                          ),
-                        );
-                      },
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PremiumActionCard(
+                        title: loc.reportSurveysButtonTitle,
+                        subtitle: loc.reportSurveysButtonSubtitle,
+                        leading: const PremiumLeadingIcon(icon: Icons.poll),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportSurveysScreen(gymId: gymId),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-}
-
-class _ReportNavigationCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ReportNavigationCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SizedBox(
-      width: 180,
-      child: BrandGradientCard(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.lg,
-          horizontal: AppSpacing.md,
-        ),
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(icon, size: 36),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
         ),
       ),
     );

@@ -5,3 +5,4 @@
 // Custom settings for Release-Prod configuration
 BUNDLE_ID_SUFFIX=
 DISPLAY_NAME=Tap'em
+FLUTTER_FLAVOR=prod

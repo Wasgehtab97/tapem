@@ -1,3 +1,4 @@
+import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
 // lib/features/profile/presentation/screens/profile_screen.dart
 
 import 'dart:ui';
@@ -29,6 +30,7 @@ import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
 import 'profile_stats_screen.dart';
 
 const bool enableFriends = true;
@@ -162,6 +164,136 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     );
   }
 
+  void _showLogoutConfirmation() {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor.withOpacity(0.8),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      brandColor.withOpacity(0.1),
+                      brandColor.withOpacity(0.02),
+                    ],
+                  ),
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(32, 32, 32, 48),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.red.withOpacity(0.1),
+                      ),
+                      child: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.red,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Abmelden?',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Möchtest du dich wirklich abmelden?',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.read<AuthProvider>().logout();
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            AppRouter.auth,
+                            (route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          foregroundColor: Colors.red,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: Colors.red.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Abmelden',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Abbrechen',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -264,11 +396,15 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             riverpod.Consumer(
               builder: (context, ref, _) {
                 final alerts = ref.watch(friendAlertsProvider);
+                final chatUnread = ref.watch(chatUnreadProvider);
+                final hasUnreadMessages = chatUnread.valueOrNull?.hasUnread ?? false;
+                final showBadge = alerts.showBadge || hasUnreadMessages;
+
                 return IconButton(
                   icon: Stack(
                     children: [
                       const BrandGradientIcon(Icons.group),
-                      if (alerts.showBadge)
+                      if (showBadge)
                         const Positioned(
                           right: 0,
                           top: 0,
@@ -302,10 +438,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           IconButton(
             icon: const BrandGradientIcon(Icons.logout),
             tooltip: loc.logoutTooltip,
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.of(context).pushReplacementNamed(AppRouter.auth);
-            },
+            onPressed: () => _showLogoutConfirmation(),
           ),
         ],
       ),
@@ -317,76 +450,32 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         child: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: _ProfileActionButton(
-                    title: loc.profileStatsButtonLabel,
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    leading: const SizedBox.square(
-                      dimension: 56,
-                      child: _ProfileStatsLeadingIcon(),
-                    ),
-                    showChevron: true,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileStatsScreen(),
-                        ),
-                      );
-                    },
-                    uiLogEvent: 'PROFILE_STATS_CARD_RENDER',
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: ProfileHubButton(
+              onStatsTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ProfileStatsScreen(),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                SizedBox(
-                  width: double.infinity,
-                  child: _ProfileActionButton(
-                    title: loc.profileCommunityButtonTitle,
-                    subtitle: loc.profileCommunityButtonSubtitle,
-                    leading: const SizedBox.square(
-                      dimension: 56,
-                      child: _ProfileCommunityLeadingIcon(),
+                );
+              },
+              onCommunityTap: () {
+                Navigator.pushNamed(context, AppRouter.community);
+              },
+              onSurveysTap: () {
+                final gymId = context.read<GymProvider>().currentGymId;
+                final userId = context.read<AuthProvider>().userId ?? '';
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SurveyVoteScreen(
+                      gymId: gymId,
+                      userId: userId,
                     ),
-                    showChevron: true,
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRouter.community);
-                    },
-                    uiLogEvent: 'PROFILE_COMMUNITY_CARD_RENDER',
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                SizedBox(
-                  width: double.infinity,
-                  child: _ProfileActionButton(
-                    title: loc.surveyListTitle,
-                    subtitle: loc.reportViewSurveysTitle,
-                    leading: const SizedBox.square(
-                      dimension: 56,
-                      child: _ProfileSurveyLeadingIcon(),
-                    ),
-                    showChevron: true,
-                    onTap: () {
-                      final gymId = context.read<GymProvider>().currentGymId;
-                      final userId = context.read<AuthProvider>().userId ?? '';
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SurveyVoteScreen(
-                            gymId: gymId,
-                            userId: userId,
-                          ),
-                        ),
-                      );
-                    },
-                    uiLogEvent: 'PROFILE_CARD_RENDER',
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),

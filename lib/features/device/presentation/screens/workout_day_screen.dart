@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/app_router.dart';
 
@@ -192,24 +193,37 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leadingWidth: 160,
+        leadingWidth: 120, // Reduced from 130 to give more space/centering chance
         leading: InkWell(
-          onTap: () => Navigator.of(context).popUntil((route) => route.settings.name == '/home' || route.isFirst),
+          onTap: () {
+            // Robustly close keyboard and clear focus
+            final dayController = context.read<WorkoutDayController>();
+            dayController.focusedProvider?.clearFocus();
+            
+            final keypadController = context.read<OverlayNumericKeypadController>();
+            if (keypadController.isOpen) {
+              keypadController.close();
+            }
+            
+            FocusManager.instance.primaryFocus?.unfocus();
+            
+            Navigator.of(context).popUntil((route) => route.settings.name == '/home' || route.isFirst);
+          },
           borderRadius: BorderRadius.circular(12),
           child: Container(
             margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4), // Reduced padding
             child: Row(
               children: [
-                Icon(Icons.add, color: brandColor),
-                const SizedBox(width: 4),
+                Icon(Icons.add, color: brandColor, size: 20), // Explicit size
+                const SizedBox(width: 2),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Nächste Übung',
-                      style: theme.textTheme.labelLarge?.copyWith(
+                      style: theme.textTheme.labelMedium?.copyWith( // Smaller text style
                         color: brandColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -226,7 +240,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // Keep min to allow centering if space permits
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
@@ -237,7 +251,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
                   sessionKey: _sessionKey,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8), // Reduced gap
               Flexible(
                 child: SessionRestTimer(
                   key: _restTimerKey,
@@ -542,51 +556,64 @@ class _SaveAllButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = theme.colorScheme.primary;
-    
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       child: Container(
+        height: 56,
+        width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(28),
+          gradient: canSave && !isSaving
+              ? LinearGradient(
+                  colors: [
+                    brandColor,
+                    brandColor.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: canSave ? null : Colors.white.withOpacity(0.05),
           boxShadow: canSave && !isSaving
               ? [
                   BoxShadow(
-                    color: brandColor.withOpacity(0.3),
+                    color: brandColor.withOpacity(0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ]
               : null,
         ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: FilledButton(
-            onPressed: !canSave || isSaving ? null : onPressed,
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: !canSave || isSaving ? null : onPressed,
+            borderRadius: BorderRadius.circular(28),
+             child: Center(
+              child: isSaving
+                  ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Training speichern', // More engaging text
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: canSave 
+                          ? Colors.white 
+                          : Colors.white.withOpacity(0.3),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
             ),
-            child: isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    'Speichern',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
           ),
         ),
       ),

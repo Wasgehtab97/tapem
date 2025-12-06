@@ -157,6 +157,11 @@ class FakeAuthRepository implements AuthRepository {
     }
     throw UnimplementedError('sendPasswordResetEmail handler not provided');
   }
+
+  @override
+  Future<void> setPublicKey(String userId, String publicKey) {
+    return Future.value();
+  }
 }
 
 class FakeFirebaseAuthManager implements FirebaseAuthManager {

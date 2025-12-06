@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
@@ -59,23 +60,41 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     : theme.textTheme.titleMedium) ??
                 theme.textTheme.bodyMedium ??
                 const TextStyle(fontSize: 14);
-            final content = BrandOutline(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              radiusOverride: borderRadius,
+            final content = Container(
+              padding: compact
+                  ? const EdgeInsets.symmetric(horizontal: 10, vertical: 6)
+                  : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                   BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                   ),
+                ],
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.timer_outlined,
                     size: iconSize,
-                    color: outlineColor,
+                    color: Colors.white.withOpacity(0.9),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
                     formatted,
                     style: baseTextStyle.copyWith(
-                      color: outlineColor,
+                      color: Colors.white.withOpacity(0.95),
                       fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      fontFeatures: [const FontFeature.tabularFigures()],
                     ),
                   ),
                 ],

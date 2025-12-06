@@ -51,7 +51,7 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
   Widget build(BuildContext context) {
     final friendsState = ref.watch(friendsProvider);
     final searchState = ref.watch(friendSearchProvider);
-    final chatSummaries = ref.watch(friendChatSummaryProvider);
+    final chatUnread = ref.watch(chatUnreadProvider);
     final presenceState = ref.watch(friendPresenceProvider);
     final authState = ref.watch(authViewStateProvider);
     final loc = AppLocalizations.of(context)!;
@@ -70,7 +70,7 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _friendsTab(friendsState, chatSummaries, presenceState, loc),
+          _friendsTab(friendsState, chatUnread, presenceState, loc),
           _requestsTab(friendsState, loc),
           _searchTab(friendsState, searchState, loc, authState),
         ],
@@ -80,7 +80,7 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
 
   Widget _friendsTab(
     FriendsState friends,
-    FriendChatSummaryState chats,
+    AsyncValue<ChatUnreadState> chatUnread,
     FriendPresenceState presence,
     AppLocalizations loc,
   ) {
@@ -109,8 +109,9 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
               if (profile == null) {
                 return _buildShimmerCard();
               }
-              final summary = chats.summaryFor(f.friendUid);
-              final hasUnread = summary?.hasUnread ?? false;
+              
+              final unreadCount = chatUnread.valueOrNull?.unreadByFriend[f.friendUid] ?? 0;
+              final hasUnread = unreadCount > 0;
               return _buildFriendCard(
                 profile: profile,
                 presence: presence.stateFor(f.friendUid),
@@ -361,7 +362,8 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
                   AppRouter.friendChat,
                   arguments: {'uid': uid, 'name': name},
                 );
-                ref.read(friendChatSummaryProvider.notifier).markRead(uid);
+                // TODO: Mark chat as read with new chat system
+                // ref.read(friendChatSummaryProvider.notifier).markRead(uid);
               },
             ),
             ListTile(

@@ -1,19 +1,19 @@
 import 'dart:math' as math;
-
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-
-import '../../../../core/providers/report_provider.dart';
-import '../../../../core/theme/design_tokens.dart';
-import '../../../../core/utils/chart_interval.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../domain/models/device_usage_stat.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
+import 'package:tapem/core/providers/report_provider.dart';
+import 'package:tapem/core/utils/chart_interval.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class DeviceUsageChart extends StatefulWidget {
   final List<DeviceUsageStat> usageData;
   final ReportState state;
   final String? errorMessage;
   final DeviceUsageRange usageRange;
-  final Future<void> Function(DeviceUsageRange range) onRangeSelected;
+  final ValueChanged<DeviceUsageRange> onRangeSelected;
 
   const DeviceUsageChart({
     super.key,
@@ -35,8 +35,33 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final entries = [...widget.usageData]
+    final brandTheme = theme.extension<AppBrandTheme>();
+
+    if (widget.state == ReportState.loading) {
+      return const SizedBox(
+        height: 250,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (widget.state == ReportState.error) {
+      return SizedBox(
+        height: 250,
+        child: Center(child: Text(widget.errorMessage ?? 'Ein Fehler ist aufgetreten')),
+      );
+    }
+
+    if (widget.usageData.isEmpty) {
+      return const SizedBox(
+        height: 250,
+        child: Center(child: Text('Keine Daten verfügbar')),
+      );
+    }
+
+    // Sort by sessions descending and take top 7 for the chart to avoid clutter
+    final entries = List<DeviceUsageStat>.from(widget.usageData)
       ..sort((a, b) => b.sessions.compareTo(a.sessions));
+
     final query = _filter.trim().toLowerCase();
     final filtered = query.isEmpty
         ? entries
@@ -88,7 +113,7 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
             prefixIcon: const Icon(Icons.search),
             hintText: loc.reportDeviceFilterHint,
             filled: true,
-            fillColor: theme.colorScheme.surfaceVariant
+            fillColor: theme.colorScheme.surfaceContainerHighest
                 .withOpacity(theme.brightness == Brightness.dark ? 0.24 : 0.12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.button),
@@ -198,7 +223,7 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
       nameStyle: textStyle,
       valueStyle: valueStyle,
       valueFormatter: loc.reportDeviceUsageSessions,
-      onBarTap: _handleBarTap,
+      onBarTap: (stat) => _handleBarTap(context, stat),
     );
   }
 
@@ -218,7 +243,7 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     return sorted;
   }
 
-  void _handleBarTap(DeviceUsageStat stat) {
+  void _handleBarTap(BuildContext context, DeviceUsageStat stat) {
     if (!mounted) {
       return;
     }

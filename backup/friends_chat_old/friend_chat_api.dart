@@ -4,14 +4,39 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/utils/friend_chat_id.dart';
 
+/// API for friend-to-friend chat messaging.
+///
+/// **Security Model:**
+/// - Requires friendship validation before sending messages
+/// - Client-side validation via [isFriendCallback]
+/// - Firestore security rules enforce conversation participant rules
+///
+/// **Error Handling:**
+/// - Throws [FriendChatApiException] for all errors
+/// - Common errors: [FriendChatApiError.permissionDenied] if not friends
 class FriendChatApi {
-  FriendChatApi({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FriendChatApi({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    required bool Function(String friendUid) isFriendCallback,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _isFriendCallback = isFriendCallback;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final bool Function(String friendUid) _isFriendCallback;
 
+  /// Sends a message to a friend.
+  ///
+  /// Validates friendship before attempting to send. Creates the conversation
+  /// if it doesn't exist yet (first message).
+  ///
+  /// Throws [FriendChatApiException] if:
+  /// - User is not authenticated ([FriendChatApiError.unauthenticated])
+  /// - [friendUid] is not in the user's friends list ([FriendChatApiError.permissionDenied])
+  /// - [text] is empty ([FriendChatApiError.invalidArgument])
+  /// - [friendUid] is the same as current user ([FriendChatApiError.invalidArgument])
   Future<void> sendMessage(String friendUid, String text) async {
     final meUid = _auth.currentUser?.uid;
     if (meUid == null) {
@@ -23,6 +48,25 @@ class FriendChatApi {
     }
     if (friendUid == meUid) {
       throw FriendChatApiException(FriendChatApiError.invalidArgument);
+    }
+
+    // Validate friendship before attempting to send
+    final isFriend = _isFriendCallback(friendUid);
+    if (kDebugMode) {
+      debugPrint(
+        '[FriendChatApi] friendship check: friendUid=$friendUid isFriend=$isFriend',
+      );
+    }
+    if (!isFriend) {
+      if (kDebugMode) {
+        debugPrint(
+          '[FriendChatApi] sendMessage rejected: $friendUid is not a friend of $meUid',
+        );
+      }
+      throw FriendChatApiException(
+        FriendChatApiError.permissionDenied,
+        'Can only send messages to friends',
+      );
     }
 
     final conversationId = buildFriendChatId(meUid, friendUid);
@@ -123,6 +167,11 @@ class FriendChatApi {
     }
   }
 
+  /// Marks a conversation as read.
+  ///
+  /// Updates the user's chat summary to indicate all messages have been read.
+  ///
+  /// Throws [FriendChatApiException] if user is not authenticated.
   Future<void> markConversationRead(String friendUid) async {
     final meUid = _auth.currentUser?.uid;
     if (meUid == null) {

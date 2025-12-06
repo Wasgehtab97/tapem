@@ -4,6 +4,9 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
+import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
@@ -14,22 +17,37 @@ class LoginForm extends StatefulWidget {
 
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  String _email = '';
-  String _password = '';
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
     final authProv = context.read<AuthProvider>();
     final loc = AppLocalizations.of(context)!;
+    
+    // Manual validation since we might use controllers
     if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+    
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    final result = await authProv.login(_email, _password);
+    final result = await authProv.login(email, password);
     if (!mounted) return;
 
     if (!result.success || authProv.error != null) {
       final message = authProv.error ?? '${loc.errorPrefix}: unknown';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red.withOpacity(0.8),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -55,48 +73,52 @@ class _LoginFormState extends State<LoginForm> {
     final authProv = context.watch<AuthProvider>();
     final loc = AppLocalizations.of(context)!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              decoration: InputDecoration(labelText: loc.emailFieldLabel),
-              keyboardType: TextInputType.emailAddress,
-              onSaved: (v) => _email = v!.trim(),
-              validator:
-                  (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              decoration: InputDecoration(labelText: loc.passwordFieldLabel),
-              obscureText: true,
-              onSaved: (v) => _password = v ?? '',
-              validator:
-                  (v) =>
-                      v != null && v.length >= 6 ? null : loc.passwordTooShort,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: authProv.isLoading ? null : _submit,
-              child:
-                  authProv.isLoading
-                      ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : Text(loc.loginButton),
-            ),
-            TextButton(
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PremiumTextField(
+            label: loc.emailFieldLabel,
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            textInputAction: TextInputAction.next,
+            validator: (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
+          ),
+          const SizedBox(height: AuthTheme.spacingM),
+          PremiumTextField(
+            label: loc.passwordFieldLabel,
+            controller: _passwordController,
+            obscureText: true,
+            prefixIcon: Icons.lock_outline,
+            textInputAction: TextInputAction.done,
+            validator: (v) => v != null && v.length >= 6 ? null : loc.passwordTooShort,
+          ),
+          const SizedBox(height: AuthTheme.spacingL),
+          
+          PremiumButton(
+            text: loc.loginButton,
+            isLoading: authProv.isLoading,
+            onPressed: authProv.isLoading ? null : _submit,
+          ),
+          
+          const SizedBox(height: AuthTheme.spacingS),
+          Center(
+            child: TextButton(
               onPressed: () => showPasswordResetDialog(context),
-              child: Text(loc.forgotPassword),
+              child: Text(
+                loc.forgotPassword,
+                style: AuthTheme.labelStyle.copyWith(
+                  color: Colors.white.withOpacity(0.6),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

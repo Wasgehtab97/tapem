@@ -1,0 +1,114 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/firebase_provider.dart';
+import '../domain/models/conversation.dart';
+
+/// State holding unread message counts.
+class ChatUnreadState {
+  const ChatUnreadState({
+    this.unreadByFriend = const {},
+    this.totalUnread = 0,
+  });
+
+  final Map<String, int> unreadByFriend; // friendUid -> count
+  final int totalUnread;
+
+  bool get hasUnread => totalUnread > 0;
+
+  ChatUnreadState copyWith({
+    Map<String, int>? unreadByFriend,
+    int? totalUnread,
+  }) {
+    return ChatUnreadState(
+      unreadByFriend: unreadByFriend ?? this.unreadByFriend,
+      totalUnread: totalUnread ?? this.totalUnread,
+    );
+  }
+}
+
+/// Provider that watches all conversations and calculates unread counts.
+class ChatUnreadNotifier extends StreamNotifier<ChatUnreadState> {
+  @override
+  Stream<ChatUnreadState> build() {
+    final firestore = ref.watch(firebaseFirestoreProvider);
+    final authState = ref.watch(authViewStateProvider);
+    final currentUserId = authState.userId;
+
+    if (currentUserId == null) {
+      if (kDebugMode) {
+        debugPrint('[ChatUnread] No authenticated user');
+      }
+      return Stream.value(const ChatUnreadState());
+    }
+
+    if (kDebugMode) {
+      debugPrint('[ChatUnread] Watching conversations for userId=$currentUserId');
+    }
+
+    // Watch all conversations where user is a member
+    return firestore
+        .collection('friendConversations')
+        .where('members', arrayContains: currentUserId)
+        .snapshots()
+        .map((snapshot) {
+      final unreadByFriend = <String, int>{};
+      int totalUnread = 0;
+
+      for (final doc in snapshot.docs) {
+        try {
+          final conversation = Conversation.fromFirestore(doc.id, doc.data());
+          
+          // Find the friend UID (the other member)
+          final friendUid = conversation.members.firstWhere(
+            (uid) => uid != currentUserId,
+            orElse: () => '',
+          );
+
+          if (friendUid.isEmpty) continue;
+
+          // Get when current user last read this conversation
+          final lastReadAt = conversation.lastReadAt?[currentUserId];
+          
+          // Get last message info
+          final lastMessage = conversation.lastMessage;
+          final lastMessageAt = lastMessage?.createdAt;
+          final lastSenderId = lastMessage?.senderId;
+
+          // If there's a last message 
+          // AND it's NOT from me (important!)
+          // AND I haven't read it yet (or never read)
+          if (lastMessageAt != null &&
+              lastSenderId != currentUserId &&
+              (lastReadAt == null || lastMessageAt.isAfter(lastReadAt))) {
+            // For now, just count as 1 unread (we could fetch actual count later)
+            unreadByFriend[friendUid] = 1;
+            totalUnread += 1;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ChatUnread] Error processing conversation: $e');
+          }
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint('[ChatUnread] Total unread: $totalUnread');
+      }
+
+      return ChatUnreadState(
+        unreadByFriend: unreadByFriend,
+        totalUnread: totalUnread,
+      );
+    });
+  }
+}
+
+/// Provider for chat unread state
+final chatUnreadProvider =
+    StreamNotifierProvider<ChatUnreadNotifier, ChatUnreadState>(
+  ChatUnreadNotifier.new,
+);
