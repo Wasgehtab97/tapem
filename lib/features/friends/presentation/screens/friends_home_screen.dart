@@ -100,26 +100,35 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
       itemCount: friendsList.length,
       itemBuilder: (_, i) {
         final f = friendsList[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: FutureBuilder<PublicProfile?>(
-            future: _fetchProfile(f.friendUid),
-            builder: (context, snapshot) {
-              final profile = snapshot.data;
-              if (profile == null) {
-                return _buildShimmerCard();
-              }
-              
-              final unreadCount = chatUnread.valueOrNull?.unreadByFriend[f.friendUid] ?? 0;
-              final hasUnread = unreadCount > 0;
-              return _buildFriendCard(
+        return FutureBuilder<PublicProfile?>(
+          future: _fetchProfile(f.friendUid),
+          builder: (context, snapshot) {
+            final profile = snapshot.data;
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildShimmerCard(),
+              );
+            }
+            if (profile == null) {
+              // Profil existiert nicht mehr (z.B. User in Firestore gelöscht).
+              // Zeile komplett ausblenden – inklusive Padding.
+              return const SizedBox.shrink();
+            }
+
+            final unreadCount =
+                chatUnread.valueOrNull?.unreadByFriend[f.friendUid] ?? 0;
+            final hasUnread = unreadCount > 0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildFriendCard(
                 profile: profile,
                 presence: presence.stateFor(f.friendUid),
                 hasUnread: hasUnread,
                 onTap: () => _showFriendActions(f.friendUid),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -193,8 +202,12 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
                               future: _fetchProfile(r.fromUserId),
                               builder: (context, snapshot) {
                                 final profile = snapshot.data;
-                                if (profile == null) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
                                   return _buildShimmerCard();
+                                }
+                                if (profile == null) {
+                                  return const SizedBox.shrink();
                                 }
                                 return _buildRequestCard(
                                   profile: profile,
@@ -301,8 +314,12 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
                               future: _fetchProfile(r.toUserId),
                               builder: (context, snapshot) {
                                 final profile = snapshot.data;
-                                if (profile == null) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
                                   return _buildShimmerCard();
+                                }
+                                if (profile == null) {
+                                  return const SizedBox.shrink();
                                 }
                                 return _buildRequestCard(
                                   profile: profile,

@@ -103,7 +103,7 @@
     "description": "Titelkarte für Gerätestatistik im Rank-Tab"
   },
 
-  "rankMuscleLevel": "Mucki level",
+  "rankMuscleLevel": "Muskel level",
   "@rankMuscleLevel": {
     "description": "Titelkarte für Muskelgruppenstatistik im Rank-Tab"
   },

@@ -111,6 +111,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               gymId: session.gymId,
               deviceId: session.deviceId,
               exerciseId: session.exerciseId,
+              exerciseName: session.exerciseName,
               userId: session.userId,
               sessionKey: session.key,
 

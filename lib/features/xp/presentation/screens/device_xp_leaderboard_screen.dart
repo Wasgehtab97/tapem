@@ -1,110 +1,101 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart' as legacy_provider;
+
+import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
-import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import '../../../../core/providers/auth_provider.dart';
 
-class LeaderboardEntry {
-  final PublicProfile profile;
-  final int xp;
-
-  const LeaderboardEntry({
-    required this.profile,
-    required this.xp,
+class DeviceXpLeaderboardScreen extends StatefulWidget {
+  const DeviceXpLeaderboardScreen({
+    super.key,
+    required this.gymId,
+    required this.deviceId,
+    required this.deviceName,
   });
-}
 
-enum _LeaderboardMode { gym, friends }
-
-class LeaderboardScreen extends riverpod.ConsumerStatefulWidget {
-  const LeaderboardScreen({super.key, required this.title});
-
-  final String title;
+  final String gymId;
+  final String deviceId;
+  final String deviceName;
 
   @override
-  riverpod.ConsumerState<LeaderboardScreen> createState() =>
-      _LeaderboardScreenState();
+  State<DeviceXpLeaderboardScreen> createState() =>
+      _DeviceXpLeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> {
-  _LeaderboardMode _mode = _LeaderboardMode.gym;
-  List<LeaderboardEntry>? _gymEntries;
-  List<LeaderboardEntry>? _friendEntries;
-  bool _loadingGym = false;
-  bool _loadingFriends = false;
-  AuthProvider? _authProvider;
+class _DeviceXpLeaderboardScreenState extends State<DeviceXpLeaderboardScreen> {
+  List<_DeviceLeaderboardEntry>? _entries;
+  bool _loading = false;
   int _selectedLevel = 1;
-
-  Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
-    if (gymIds.isEmpty) {
-      return 0;
-    }
-    final fs = FirebaseFirestore.instance;
-    final xpValues = await Future.wait(gymIds.map((gymId) async {
-      try {
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
-        return statsDoc.data()?['dailyXP'] as int? ?? 0;
-      } on FirebaseException catch (error, stack) {
-        debugPrint(
-          'Failed to load rank stats for user=$uid gym=$gymId: ${error.message}',
-        );
-        debugPrint('$stack');
-        return 0;
-      } catch (error, stack) {
-        debugPrint(
-          'Unexpected error loading rank stats for user=$uid gym=$gymId: $error',
-        );
-        debugPrint('$stack');
-        return 0;
-      }
-    }));
-    return xpValues.fold<int>(0, (total, value) => total + value);
-  }
 
   @override
   void initState() {
     super.initState();
-    // Ensure initial data is loaded even if the AuthProvider does not emit
-    // a change event while this screen is visible.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _refreshGym();
-      _refreshFriends();
+      _loadEntries();
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    if (!identical(auth, _authProvider)) {
-      _authProvider?.removeListener(_handleAuthChanged);
-      _authProvider = auth;
-      _authProvider?.addListener(_handleAuthChanged);
+  Future<void> _loadEntries() async {
+    if (widget.gymId.isEmpty) {
+      setState(() {
+        _entries = const [];
+      });
+      return;
     }
-  }
+    setState(() {
+      _loading = true;
+    });
+    try {
+      final fs = FirebaseFirestore.instance;
+      final snap = await fs
+          .collection('gyms')
+          .doc(widget.gymId)
+          .collection('devices')
+          .doc(widget.deviceId)
+          .collection('leaderboard')
+          .where('showInLeaderboard', isEqualTo: true)
+          .orderBy('xp', descending: true)
+          .get();
 
-  void _handleAuthChanged() {
-    _refreshGym();
-    _refreshFriends();
+      final entries = await Future.wait(
+        snap.docs.map((doc) async {
+          final userDoc = await fs.collection('users').doc(doc.id).get();
+          final userData = userDoc.data() ?? <String, dynamic>{};
+          final role = userData['role'] as String?;
+          if (role == 'admin') {
+            return null;
+          }
+          final profile = PublicProfile.fromMap(doc.id, userData);
+          final xp = (doc.data()['xp'] as num?)?.toInt() ?? 0;
+          return _DeviceLeaderboardEntry(profile: profile, xp: xp);
+        }),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _entries = entries.whereType<_DeviceLeaderboardEntry>().toList();
+      });
+    } catch (error, stack) {
+      debugPrint('Failed to load device leaderboard: $error');
+      debugPrint('$stack');
+      if (!mounted) return;
+      setState(() {
+        _entries = const [];
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   void _updateSelectedLevel(int level) {
@@ -120,172 +111,31 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     });
   }
 
-  Future<void> _refreshGym() async {
-    final auth = _authProvider ??
-        legacy_provider.Provider.of<AuthProvider>(
-          context,
-          listen: false,
-        );
-    final gymId = auth.gymCode ?? '';
-    if (gymId.isEmpty) {
-      if (!mounted) return;
-      setState(() => _gymEntries = const []);
-      return;
-    }
-    if (mounted) {
-      setState(() => _loadingGym = true);
-    }
-    try {
-      final fs = FirebaseFirestore.instance;
-      final snap = await fs.collection('gyms').doc(gymId).collection('users').get();
-      final futures = snap.docs.map((doc) async {
-        final uid = doc.id;
-        final userDoc = await fs.collection('users').doc(uid).get();
-        final userData = userDoc.data();
-        final showInLeaderboard =
-            userData?['showInLeaderboard'] as bool? ?? true;
-        final role = userData?['role'] as String?;
-        if (userData == null ||
-            !showInLeaderboard ||
-            role == 'admin') {
-          return null;
-        }
-        final profile = PublicProfile.fromMap(uid, userData);
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
-        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
-        return LeaderboardEntry(profile: profile, xp: xp);
-      });
-      final entries = (await Future.wait(futures))
-          .whereType<LeaderboardEntry>()
-          .toList()
-        ..sort((a, b) => b.xp.compareTo(a.xp));
-      if (!mounted) return;
-      setState(() => _gymEntries = entries);
-    } catch (error, stack) {
-      debugPrint('Failed to load gym leaderboard: $error');
-      debugPrint('$stack');
-      if (!mounted) return;
-      setState(() => _gymEntries = const []);
-    } finally {
-      if (mounted) {
-        setState(() => _loadingGym = false);
-      }
-    }
-  }
-
-  Future<void> _refreshFriends() async {
-    final auth = _authProvider ??
-        legacy_provider.Provider.of<AuthProvider>(
-          context,
-          listen: false,
-        );
-    final friendsState = ref.read(friendsProvider);
-    final userId = auth.userId;
-    if (userId == null) {
-      if (!mounted) return;
-      setState(() => _friendEntries = const []);
-      return;
-    }
-    if (mounted) {
-      setState(() => _loadingFriends = true);
-    }
-    try {
-      final fs = FirebaseFirestore.instance;
-      final friendIds = {
-        for (final f in friendsState.friends) f.friendUid,
-        userId,
-      };
-      final futures = friendIds.map((uid) async {
-        final userDoc = await fs.collection('users').doc(uid).get();
-        final userData = userDoc.data();
-        final showInLeaderboard =
-            userData?['showInLeaderboard'] as bool? ?? true;
-        final role = userData?['role'] as String?;
-        if (userData == null ||
-            !showInLeaderboard ||
-            role == 'admin') {
-          return null;
-        }
-        final profile = PublicProfile.fromMap(uid, userData);
-        final gymCodes = (userData['gymCodes'] as List<dynamic>? ?? const [])
-            .whereType<String>()
-            .where((code) => code.isNotEmpty);
-        final candidateGyms = <String>{
-          if ((profile.primaryGymCode ?? '').isNotEmpty) profile.primaryGymCode!,
-          ...gymCodes,
-        };
-        if (candidateGyms.isEmpty) {
-          final fallbackGym = auth.gymCode;
-          if (fallbackGym != null && fallbackGym.isNotEmpty) {
-            candidateGyms.add(fallbackGym);
-          }
-        }
-        final xp = await _loadDailyXpAcrossGyms(uid, candidateGyms);
-        return LeaderboardEntry(profile: profile, xp: xp);
-      });
-      final entries = (await Future.wait(futures))
-          .whereType<LeaderboardEntry>()
-          .toList()
-        ..sort((a, b) => b.xp.compareTo(a.xp));
-      if (!mounted) return;
-      setState(() => _friendEntries = entries);
-    } catch (error, stack) {
-      debugPrint('Failed to load friends leaderboard: $error');
-      debugPrint('$stack');
-      if (!mounted) return;
-      setState(() => _friendEntries = const []);
-    } finally {
-      if (mounted) {
-        setState(() => _loadingFriends = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.listen<FriendsState>(
-      friendsProvider,
-      (previous, next) {
-        final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
-        final nextIds = next.friends.map((f) => f.friendUid).toSet();
-        if (prevIds != nextIds) {
-          _refreshFriends();
-        }
-      },
-    );
-
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final progressColor =
         brandTheme?.gradient.colors.first ?? theme.colorScheme.primary;
-    final isGym = _mode == _LeaderboardMode.gym;
-    final entries = isGym ? _gymEntries : _friendEntries;
-    final isLoading = isGym ? _loadingGym : _loadingFriends;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = auth.userId;
+
+    final entries = _entries;
 
     Widget buildContent() {
-      if (isLoading) {
+      if (_loading && entries == null) {
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Center(child: CircularProgressIndicator()),
         );
       }
       if (entries == null || entries.isEmpty) {
-        final emptyText = isGym
-            ? loc.leaderboardEmptyGym
-            : loc.leaderboardEmptyFriends;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Center(
             child: Text(
-              emptyText,
+              loc.leaderboardEmptyGym,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
@@ -294,20 +144,20 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
           ),
         );
       }
-      return _LevelLeaderboardList(
+      return _DeviceLevelLeaderboard(
         entries: entries,
         progressColor: progressColor,
-        title: isGym ? loc.leaderboardGymCardTitle : loc.leaderboardFriendsCardTitle,
+        title: widget.deviceName,
         selectedLevel: _selectedLevel,
         onLevelChanged: _updateSelectedLevel,
-        currentUserId: _authProvider?.userId,
+        currentUserId: currentUserId,
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(title: Text(widget.deviceName)),
       body: RefreshIndicator(
-        onRefresh: isGym ? _refreshGym : _refreshFriends,
+        onRefresh: _loadEntries,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(
@@ -315,50 +165,16 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
             vertical: AppSpacing.md,
           ),
           children: [
-            Center(
-              child: ToggleButtons(
-                borderRadius: BorderRadius.circular(AppRadius.button),
-                onPressed: (index) {
-                  setState(() {
-                    _mode = index == 0
-                        ? _LeaderboardMode.gym
-                        : _LeaderboardMode.friends;
-                  });
-                },
-                isSelected: [isGym, !isGym],
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Text(loc.leaderboardGymTabLabel),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Text(loc.leaderboardFriendsTabLabel),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
             buildContent(),
           ],
         ),
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _authProvider?.removeListener(_handleAuthChanged);
-    super.dispose();
-  }
 }
 
-class _LevelLeaderboardList extends StatelessWidget {
-  const _LevelLeaderboardList({
+class _DeviceLevelLeaderboard extends StatelessWidget {
+  const _DeviceLevelLeaderboard({
     required this.entries,
     required this.progressColor,
     required this.title,
@@ -367,7 +183,7 @@ class _LevelLeaderboardList extends StatelessWidget {
     this.currentUserId,
   });
 
-  final List<LeaderboardEntry> entries;
+  final List<_DeviceLeaderboardEntry> entries;
   final Color progressColor;
   final String title;
   final int selectedLevel;
@@ -397,7 +213,8 @@ class _LevelLeaderboardList extends StatelessWidget {
       );
     }
 
-    final clampedSelectedLevel = selectedLevel.clamp(1, maxLevel) as int;
+    final clampedSelectedLevel =
+        selectedLevel.clamp(1, maxLevel).toInt();
     final currentLevelEntries =
         (levelEntries[clampedSelectedLevel] ?? const <_LevelledEntry>[])
             .toList()
@@ -456,8 +273,9 @@ class _LevelLeaderboardList extends StatelessWidget {
                         color: isSelected
                             ? theme.colorScheme.onPrimary
                             : theme.colorScheme.onSurface,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                       backgroundColor:
                           theme.colorScheme.onSurface.withOpacity(0.04),
@@ -496,8 +314,7 @@ class _LevelLeaderboardList extends StatelessWidget {
                 child: Text(
                   'Noch keine Ranglisten-Daten.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -595,15 +412,13 @@ class _LevelLeaderboardList extends StatelessWidget {
   }
 }
 
-class _LevelProgress {
-  final int level;
-  final int xpInLevel;
-  final double progress;
+class _DeviceLeaderboardEntry {
+  final PublicProfile profile;
+  final int xp;
 
-  const _LevelProgress({
-    required this.level,
-    required this.xpInLevel,
-    required this.progress,
+  const _DeviceLeaderboardEntry({
+    required this.profile,
+    required this.xp,
   });
 }
 
@@ -616,6 +431,18 @@ class _LevelledEntry {
     required this.profile,
     required this.level,
     required this.xpInLevel,
+  });
+}
+
+class _LevelProgress {
+  final int level;
+  final int xpInLevel;
+  final double progress;
+
+  const _LevelProgress({
+    required this.level,
+    required this.xpInLevel,
+    required this.progress,
   });
 }
 

@@ -108,7 +108,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rankDeviceLevel => 'Geräte level';
 
   @override
-  String get rankMuscleLevel => 'Mucki level';
+  String get rankMuscleLevel => 'Muskel level';
 
   @override
   String get leaderboardTitle => 'Leaderboard';

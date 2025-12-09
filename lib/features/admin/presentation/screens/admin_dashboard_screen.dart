@@ -95,6 +95,15 @@ class AdminDashboardScreen extends StatelessWidget {
                             .pushNamed(AppRouter.adminSymbols);
                       },
                     ),
+                    _AdminAction(
+                      icon: Icons.person_remove_alt_1,
+                      title: 'Nutzer entfernen',
+                      subtitle: 'Testnutzer & Daten bereinigen',
+                      onTap: () {
+                        Navigator.of(context)
+                            .pushNamed(AppRouter.adminRemoveUsers);
+                      },
+                    ),
                   ],
                 ),
               ],

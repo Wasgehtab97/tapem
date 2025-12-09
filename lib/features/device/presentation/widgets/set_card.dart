@@ -540,7 +540,7 @@ class SetCardState extends State<SetCard> {
             _openKeypad(
               _repsCtrl,
               _repsFocus,
-              allowDecimal: false,
+              allowDecimal: true,
               field: focusField,
               notifyFocus: false,
               targetKey: _repsFieldKey,
@@ -566,7 +566,7 @@ class SetCardState extends State<SetCard> {
               _openKeypad(
                 _dropRepsCtrls[dropIndex],
                 _dropRepsFocuses[dropIndex],
-                allowDecimal: false,
+                allowDecimal: true,
                 field: focusField,
                 notifyFocus: false,
                 dropIndex: dropIndex,
@@ -642,7 +642,7 @@ class SetCardState extends State<SetCard> {
               : () => _openKeypad(
                     _dropRepsCtrls[i],
                     _dropRepsFocuses[i],
-                    allowDecimal: false,
+                    allowDecimal: true,
                     field: DeviceSetFieldFocus.dropReps,
                     dropIndex: i,
                     targetKey: _dropRepsKeys[i],
@@ -699,16 +699,15 @@ class SetCardState extends State<SetCard> {
                     field: DeviceSetFieldFocus.weight,
                     targetKey: _weightFieldKey,
                   ),
-      onTapReps:
-          widget.readOnly
-              ? null
-              : () => _openKeypad(
-                    _repsCtrl,
-                    _repsFocus,
-                    allowDecimal: false,
-                    field: DeviceSetFieldFocus.reps,
-                    targetKey: _repsFieldKey,
-                  ),
+      onTapReps: widget.readOnly
+          ? null
+          : () => _openKeypad(
+                _repsCtrl,
+                _repsFocus,
+                allowDecimal: true,
+                field: DeviceSetFieldFocus.reps,
+                targetKey: _repsFieldKey,
+              ),
       dropRows: dropRows,
       padding: contentPadding,
     );
@@ -794,9 +793,8 @@ class SetRowContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final weightLabel = isBodyweightMode
-        ? loc.bodyweightFieldLabel(loc.tableHeaderKg)
-        : loc.weightFieldLabel(loc.tableHeaderKg);
+    // Platzhalter innerhalb der Inputs – bewusst kurz und klar.
+    final weightLabel = 'kg';
     final repsLabel = loc.tableHeaderReps;
     final showFieldHeaders = index == 0;
     final headerStyle = GoogleFonts.inter(
@@ -812,11 +810,8 @@ class SetRowContent extends StatelessWidget {
 
     final children = <Widget>[];
     if (showFieldHeaderRow && showFieldHeaders) {
-      // Remove (kg) from weight label for header
-      final weightHeaderLabel = isBodyweightMode
-          ? loc.bodyweightFieldLabel('').trim()
-          : 'Gewicht';
-      
+      // Header-Zeile exakt an die Feld-Spalten anlehnen:
+      // kein "Vorher"-Label, Gewicht-Label als "kg" direkt über dem KG-Feld.
       children.add(
         Padding(
           padding: EdgeInsets.only(bottom: dense ? 6 : 8),
@@ -824,20 +819,13 @@ class SetRowContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(width: leadingWidth),
-              // Header for "Vorher" field
               if (previousSet != null)
-                Flexible(
-                  flex: 2,
-                  child: Text(
-                    'Vorher',
-                    style: headerStyle,
-                  ),
-                ),
+                const Spacer(flex: 2),
               if (previousSet != null) SizedBox(width: dense ? 4 : 6),
               Flexible(
                 flex: 3,
                 child: Text(
-                  weightHeaderLabel,
+                  'kg',
                   style: headerStyle,
                 ),
               ),
@@ -865,18 +853,18 @@ class SetRowContent extends StatelessWidget {
             dense: dense,
           ),
           SizedBox(width: dense ? 6 : 8),
-          // Previous set compact display
-          if (previousSet != null)
-            Flexible(
-              flex: 2,
-              child: _CompactPreviousDisplay(
-                previous: previousSet!,
-                tokens: tokens,
-                dense: dense,
-                loc: loc,
-              ),
+          // Previous set compact display – immer sichtbar, bei fehlenden
+          // Werten zeigt das Feld einfach "-".
+          Flexible(
+            flex: 2,
+            child: _CompactPreviousDisplay(
+              previous: previousSet,
+              tokens: tokens,
+              dense: dense,
+              loc: loc,
             ),
-          if (previousSet != null) SizedBox(width: dense ? 4 : 6),
+          ),
+          SizedBox(width: dense ? 4 : 6),
           Flexible(
             flex: 3,
             child: KeyedSubtree(
@@ -1266,137 +1254,77 @@ class _InputPillState extends State<_InputPill> {
   @override
   Widget build(BuildContext context) {
     final showLabel = widget.showLabel;
-    final hasValue = _text.trim().isNotEmpty;
-    final hasFocus = _hasFocus;
-    final disabled = widget.readOnly;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final brandColor = colorScheme.primary;
     final tokens = widget.tokens;
     final dense = widget.dense;
+    final radius = BorderRadius.circular(dense ? 12 : 14);
 
-    // Premium Pill Design Constants
-    final radius = BorderRadius.circular(dense ? 16 : 20);
-    
-    // Darker, more solid fill for the "hole" effect
-    final fillColor = disabled 
-        ? Colors.white.withOpacity(0.05) 
-        : Colors.black.withOpacity(0.35); // Much darker
-    
-    // Border logic
-    final borderColor = hasFocus 
-        ? brandColor.withOpacity(0.5) 
-        : Colors.white.withOpacity(0.1); 
-        
-    final double borderWid = hasFocus ? 1.5 : 1.0;
+    final Color baseFill = tokens.inputFill.withOpacity(0.5);
+    final Color borderColor = tokens.chipBorder.withOpacity(0.2);
+    const double borderWid = 0.5;
 
-    // Typography
-    final valueColor = disabled
-        ? Colors.white.withOpacity(0.3)
-        : hasValue 
-            ? Colors.white 
-            : Colors.white.withOpacity(0.5); // Placeholder color
-
-    final fontSize = dense ? 16.0 : 18.0;
-    
-    final valueStyle = GoogleFonts.inter(
-      fontSize: fontSize,
+    final baseStyle = GoogleFonts.inter(
+      fontSize: dense ? 10 : 11,
       fontWeight: FontWeight.w600,
-      color: valueColor,
+      color: tokens.chipFg.withOpacity(0.75),
       height: 1.1,
     );
 
-    final placeholderStyle = valueStyle.copyWith(
-      color: Colors.white.withOpacity(0.2), // Faint placeholder
+    final textStyle = baseStyle;
+    final placeholderStyle = baseStyle.copyWith(
+      color: tokens.chipFg.withOpacity(0.35),
     );
 
-    final double horizontalPadding = dense ? 10 : 14;
-    final double verticalPadding = dense ? 8 : 12;
-    final double minHeight = dense ? 36 : 44;
+    final double horizontalPadding = dense ? 6 : 8;
+    final double verticalPadding = dense ? 6 : 8;
+    final double minHeight = dense ? 32 : 36;
 
-    final Widget textField = SizedBox(
-      width: double.infinity,
+    // Container + TextFormField so, dass das Editable den kompletten
+    // sichtbaren „Pill“-Bereich einnimmt. Damit stimmt die Tap‑Fläche
+    // exakt mit der optischen Fläche überein.
+    final Widget pill = Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      constraints: showLabel ? null : BoxConstraints(minHeight: minHeight),
+      decoration: BoxDecoration(
+        color: baseFill,
+        borderRadius: radius,
+        border: Border.all(
+          color: borderColor,
+          width: borderWid,
+        ),
+      ),
+      alignment: Alignment.center,
       child: TextFormField(
         controller: widget.controller,
         focusNode: widget.focusNode,
         enabled: !widget.readOnly,
+        // Inhalt kommt ausschließlich über die Overlay‑Tastatur,
+        // deshalb systemseitig „readOnly“, aber mit eigenem onTap.
         readOnly: true,
         showCursor: !widget.readOnly,
         onTap: widget.readOnly ? null : widget.onTap,
         keyboardType: TextInputType.none,
         validator: widget.validator,
-        style: valueStyle,
-        cursorColor: brandColor,
+        style: textStyle,
+        cursorColor: Colors.white,
         cursorOpacityAnimates: true,
         cursorWidth: 2.0,
         cursorRadius: const Radius.circular(20),
         enableInteractiveSelection: false,
         textAlignVertical: TextAlignVertical.center,
         textAlign: TextAlign.center,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
+          filled: false,
+          fillColor: Colors.transparent,
           isCollapsed: true,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           contentPadding: EdgeInsets.zero,
-        ),
-      ),
-    );
-
-    final Widget inputSurface = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.readOnly ? null : widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: verticalPadding,
-        ),
-        constraints: showLabel ? null : BoxConstraints(minHeight: minHeight),
-        decoration: BoxDecoration(
-          color: fillColor,
-          borderRadius: radius,
-          border: Border.all(
-            color: borderColor,
-            width: borderWid,
-          ),
-          // Inner shadow simulation for 'depth' or outer glow for focus
-          boxShadow: hasFocus && !disabled
-              ? [
-                  BoxShadow(
-                    color: brandColor.withOpacity(0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 0),
-                  ),
-                ]
-              : [
-                   // Subtle inner-like shadow (using inset would require custom painter or library, 
-                   // so we stick to a clean flat look with border)
-                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 2,
-                    offset: const Offset(0, 2),
-                   )
-              ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (!showLabel && !hasValue)
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  widget.placeholder ?? widget.label,
-                  style: placeholderStyle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
-                ),
-              ),
-            textField,
-          ],
+          hintText: widget.placeholder ?? widget.label,
+          hintStyle: placeholderStyle,
         ),
       ),
     );
@@ -1405,22 +1333,21 @@ class _InputPillState extends State<_InputPill> {
       fontSize: dense ? 10.5 : 11.5,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
-      color: tokens.chipFg.withOpacity(hasFocus ? 0.82 : 0.62),
+      color: tokens.chipFg.withOpacity(0.62),
     );
 
     if (showLabel) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(widget.label, style: labelStyle),
           SizedBox(height: widget.dense ? 2 : 4),
-          inputSurface,
+          pill,
         ],
       );
     }
 
-    return inputSurface;
+    return pill;
   }
 }
 
@@ -1521,7 +1448,7 @@ class _RoundButtonState extends State<_RoundButton> {
 
 // Compact previous set display for inline row layout
 class _CompactPreviousDisplay extends StatelessWidget {
-  final SessionSetVM previous;
+  final SessionSetVM? previous;
   final SetCardTheme tokens;
   final bool dense;
   final AppLocalizations loc;
@@ -1546,9 +1473,16 @@ class _CompactPreviousDisplay extends StatelessWidget {
       color: tokens.chipFg.withOpacity(0.75),
     );
 
-    final weightStr = previous.isBodyweight
-        ? (previous.kg == 0 ? 'BW' : 'BW+${_formatNumber(previous.kg)}')
-        : _formatNumber(previous.kg);
+    String display;
+    final prev = previous;
+    if (prev == null) {
+      display = '-';
+    } else {
+      final weightStr = prev.isBodyweight
+          ? (prev.kg == 0 ? 'BW' : 'BW+${_formatNumber(prev.kg)}')
+          : _formatNumber(prev.kg);
+      display = '$weightStr×${prev.reps}';
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1567,7 +1501,7 @@ class _CompactPreviousDisplay extends StatelessWidget {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
-            '$weightStr×${previous.reps}',
+            display,
             style: textStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

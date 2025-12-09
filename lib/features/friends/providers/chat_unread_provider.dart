@@ -32,6 +32,26 @@ class ChatUnreadState {
 
 /// Provider that watches all conversations and calculates unread counts.
 class ChatUnreadNotifier extends StreamNotifier<ChatUnreadState> {
+  /// Allows marking a conversation with [friendUid] as read on the client.
+  ///
+  /// This updates the local unread state immediately (for responsive UI),
+  /// while the Firestore-backed stream will keep things consistent once
+  /// `lastReadAt` has been written by the chat screen.
+  void markFriendAsRead(String friendUid) {
+    final currentValue = state.value ?? const ChatUnreadState();
+    if (!currentValue.unreadByFriend.containsKey(friendUid)) {
+      return;
+    }
+    final updated = Map<String, int>.from(currentValue.unreadByFriend)
+      ..remove(friendUid);
+    final newTotal = updated.values.fold<int>(0, (sum, value) => sum + value);
+    final updatedState = currentValue.copyWith(
+      unreadByFriend: updated,
+      totalUnread: newTotal,
+    );
+    state = AsyncValue.data(updatedState);
+  }
+
   @override
   Stream<ChatUnreadState> build() {
     final firestore = ref.watch(firebaseFirestoreProvider);

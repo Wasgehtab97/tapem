@@ -56,7 +56,9 @@ class TapemMaterialApp extends ConsumerWidget {
         final app = GlobalListenerHost(child: child ?? const SizedBox.shrink());
         return OverlayNumericKeypadHost(
           controller: keypad,
-          outsideTapMode: OutsideTapMode.closeAfterTap,
+          // Tastatur nur explizit schließen (z.B. über eigene Buttons),
+          // damit Taps auf die Set-Felder nicht sofort wieder zum Schließen führen.
+          outsideTapMode: OutsideTapMode.none,
           theme: NumericKeypadTheme.fromContext(context),
           child: app,
         );

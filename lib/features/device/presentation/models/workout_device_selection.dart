@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+class WorkoutDeviceSelection extends Equatable {
   const WorkoutDeviceSelection({
     required this.gymId,
     required this.deviceId,

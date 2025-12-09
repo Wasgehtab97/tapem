@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/auth_providers.dart';
 import '../../domain/models/chat_message.dart';
 import '../../providers/chat_providers.dart';
+import '../../providers/chat_unread_provider.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import '../widgets/sticker_picker.dart';
@@ -56,6 +57,11 @@ class _FriendChatScreenState extends ConsumerState<FriendChatScreen> {
         currentUserId: currentUserId,
         conversationId: conversationId,
       );
+
+      // Update local unread state immediately for responsive badge behaviour.
+      ref
+          .read(chatUnreadProvider.notifier)
+          .markFriendAsRead(widget.friendUid);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[FriendChatScreen] markAsRead failed: $e');
@@ -186,6 +192,15 @@ class _FriendChatScreenState extends ConsumerState<FriendChatScreen> {
                 // Get friend's last read timestamp
                 final conversation = conversationAsync.valueOrNull;
                 final friendLastReadAt = conversation?.lastReadAt?[widget.friendUid];
+
+                // Always keep the view scrolled to the latest message
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(
+                      _scrollController.position.maxScrollExtent,
+                    );
+                  }
+                });
 
                 return ListView.builder(
                   controller: _scrollController,

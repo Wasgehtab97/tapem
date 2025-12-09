@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_exercise.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_stats.dart';
 
 class FirestoreTrainingPlanSource {
   final FirebaseFirestore _firestore;
@@ -13,6 +14,16 @@ class FirestoreTrainingPlanSource {
         .collection('users')
         .doc(userId)
         .collection('training_plans');
+  }
+
+  DocumentReference<Map<String, dynamic>> _statsDoc(
+    String userId,
+    String planId,
+  ) {
+    return _userPlans(userId)
+        .doc(planId)
+        .collection('meta')
+        .doc('stats');
   }
 
   Future<List<TrainingPlan>> getPlans({
@@ -61,5 +72,55 @@ class FirestoreTrainingPlanSource {
     required String planId,
   }) async {
     await _userPlans(userId).doc(planId).delete();
+    await _statsDoc(userId, planId).delete().catchError((_) {});
+  }
+
+  Future<TrainingPlanStats> getStats({
+    required String userId,
+    required String planId,
+  }) async {
+    final snap = await _statsDoc(userId, planId).get();
+    if (!snap.exists) {
+      return TrainingPlanStats.empty();
+    }
+    final data = snap.data() ?? {};
+    if (data['firstCompletedAt'] is Timestamp) {
+      data['firstCompletedAt'] =
+          (data['firstCompletedAt'] as Timestamp).toDate().toIso8601String();
+    }
+    if (data['lastCompletedAt'] is Timestamp) {
+      data['lastCompletedAt'] =
+          (data['lastCompletedAt'] as Timestamp).toDate().toIso8601String();
+    }
+    return TrainingPlanStats.fromJson(data);
+  }
+
+  Future<void> incrementCompletion({
+    required String userId,
+    required String planId,
+  }) async {
+    final doc = _statsDoc(userId, planId);
+    await _firestore.runTransaction((trx) async {
+      final snap = await trx.get(doc);
+      final now = DateTime.now();
+      if (!snap.exists) {
+        trx.set(doc, {
+          'completions': 1,
+          'firstCompletedAt': Timestamp.fromDate(now),
+          'lastCompletedAt': Timestamp.fromDate(now),
+        });
+        return;
+      }
+      final data = snap.data() ?? {};
+      final completions = (data['completions'] as int? ?? 0) + 1;
+      final firstCompletedAt = data['firstCompletedAt'] is Timestamp
+          ? data['firstCompletedAt'] as Timestamp
+          : Timestamp.fromDate(now);
+      trx.update(doc, {
+        'completions': completions,
+        'firstCompletedAt': firstCompletedAt,
+        'lastCompletedAt': Timestamp.fromDate(now),
+      });
+    });
   }
 }

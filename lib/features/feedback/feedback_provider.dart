@@ -20,6 +20,8 @@ class FeedbackProvider extends ChangeNotifier
     with GymScopedResettableChangeNotifier {
   final FirebaseFirestore _firestore;
   final LogFn _log;
+  String? _currentGymId;
+  bool _hasLoadedOnce = false;
 
   FeedbackProvider({required FirebaseFirestore firestore, LogFn? log})
     : _firestore = firestore,
@@ -38,7 +40,18 @@ class FeedbackProvider extends ChangeNotifier
   List<FeedbackEntry> get doneEntries =>
       _entries.where((e) => e.isDone).toList();
 
-  Future<void> loadFeedback(String gymId) async {
+  Future<void> loadFeedback(String gymId, {bool force = false}) async {
+    if (gymId.isEmpty) {
+      return;
+    }
+    if (!force && _loading) {
+      return;
+    }
+    if (!force && _currentGymId == gymId && _hasLoadedOnce) {
+      return;
+    }
+
+    _currentGymId = gymId;
     _loading = true;
     _error = null;
     notifyListeners();
@@ -55,6 +68,7 @@ class FeedbackProvider extends ChangeNotifier
         ..addAll(
           snap.docs.map((d) => FeedbackEntry.fromMap(d.id, d.data(), gymId)),
         );
+      _hasLoadedOnce = true;
     } catch (e, st) {
       _log('FeedbackProvider.loadFeedback error: $e', st);
       _error = e.toString();
@@ -124,6 +138,8 @@ class FeedbackProvider extends ChangeNotifier
     _entries.clear();
     _loading = false;
     _error = null;
+    _currentGymId = null;
+    _hasLoadedOnce = false;
     notifyListeners();
   }
 

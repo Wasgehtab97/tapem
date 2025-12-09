@@ -121,60 +121,67 @@ class TrainingDetailsScreen extends ConsumerWidget {
                     : Scrollbar(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(AppSpacing.md),
-                          child: DaySessionsOverview(
-                            sessions: sessions,
-                            onSessionLongPress: (session) async {
-                              final confirmed = await showDialog<bool>(
-                                context: ctx,
-                                builder: (dialogCtx) => AlertDialog(
-                                  title: Text(
-                                    loc.trainingDetailsDeleteSessionTitle,
-                                  ),
-                                  content: Text(
-                                    loc.trainingDetailsDeleteSessionMessage,
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogCtx).pop(false),
-                                      child: Text(loc.commonCancel),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogCtx).pop(true),
-                                      style: TextButton.styleFrom(
-                                          foregroundColor: Colors.red),
-                                      child: Text(
-                                        loc.trainingDetailsDeleteSessionConfirm,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (prov.planName != null)
+                                _PlanTag(planName: prov.planName!),
+                              DaySessionsOverview(
+                                sessions: sessions,
+                                onSessionLongPress: (session) async {
+                                  final confirmed = await showDialog<bool>(
+                                    context: ctx,
+                                    builder: (dialogCtx) => AlertDialog(
+                                      title: Text(
+                                        loc.trainingDetailsDeleteSessionTitle,
                                       ),
+                                      content: Text(
+                                        loc.trainingDetailsDeleteSessionMessage,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogCtx).pop(false),
+                                          child: Text(loc.commonCancel),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogCtx).pop(true),
+                                          style: TextButton.styleFrom(
+                                              foregroundColor: Colors.red),
+                                          child: Text(
+                                            loc.trainingDetailsDeleteSessionConfirm,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                              if (confirmed != true) {
-                                return;
-                              }
-                              try {
-                                await prov.deleteSession(session);
-                                if (!ctx.mounted) return;
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      loc.trainingDetailsDeleteSessionSuccess,
-                                    ),
-                                  ),
-                                );
-                              } catch (_) {
-                                if (!ctx.mounted) return;
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      loc.trainingDetailsDeleteSessionError,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
+                                  );
+                                  if (confirmed != true) {
+                                    return;
+                                  }
+                                  try {
+                                    await prov.deleteSession(session);
+                                    if (!ctx.mounted) return;
+                                    ScaffoldMessenger.of(ctx).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          loc.trainingDetailsDeleteSessionSuccess,
+                                        ),
+                                      ),
+                                    );
+                                  } catch (_) {
+                                    if (!ctx.mounted) return;
+                                    ScaffoldMessenger.of(ctx).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          loc.trainingDetailsDeleteSessionError,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -242,4 +249,57 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _PlanTag extends StatelessWidget {
+  const _PlanTag({required this.planName});
+  final String planName;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color =
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: color.withOpacity(0.15),
+            child: Icon(Icons.bolt_rounded, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Training mit Plan',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  planName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_outward_rounded, color: color),
+        ],
+      ),
+    );
+  }
 }

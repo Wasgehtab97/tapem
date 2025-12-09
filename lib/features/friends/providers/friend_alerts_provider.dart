@@ -35,7 +35,6 @@ class FriendAlertsState {
 
 class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _pendingSub;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _unreadSub;
   late FirebaseFirestore _firestore;
 
   @override
@@ -43,7 +42,6 @@ class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
     _firestore = ref.watch(firebaseFirestoreProvider);
     ref.onDispose(() {
       _pendingSub?.cancel();
-      _unreadSub?.cancel();
     });
 
     // Defer listening until after build completes
@@ -56,9 +54,7 @@ class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
           final gymChanged = previous?.gymCode != next.gymCode;
           if (!next.isLoggedIn || uid == null || uid.isEmpty) {
             _pendingSub?.cancel();
-            _unreadSub?.cancel();
             _pendingSub = null;
-            _unreadSub = null;
             state = const FriendAlertsState();
             return;
           }
@@ -93,25 +89,6 @@ class FriendAlertsNotifier extends Notifier<FriendAlertsState> {
     }, onError: (Object error, StackTrace stackTrace) {
       if (kDebugMode) {
         debugPrint('[FriendAlerts] pending listen error: $error');
-      }
-    });
-
-    _unreadSub?.cancel();
-    _unreadSub = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('friendChats')
-        .where('hasUnread', isEqualTo: true)
-        .limit(1)
-        .snapshots()
-        .listen((snapshot) {
-      final hasUnread = snapshot.docs.isNotEmpty;
-      if (hasUnread != state.hasUnreadMessages) {
-        state = state.copyWith(hasUnreadMessages: hasUnread);
-      }
-    }, onError: (Object error, StackTrace stackTrace) {
-      if (kDebugMode) {
-        debugPrint('[FriendAlerts] unread listen error: $error');
       }
     });
   }

@@ -36,6 +36,7 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
   void addExercise({
     required String deviceId,
     required String exerciseId,
+    String? name,
   }) {
     final currentExercises = List<TrainingPlanExercise>.from(state.exercises);
     final newIndex = currentExercises.length;
@@ -43,10 +44,37 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     currentExercises.add(TrainingPlanExercise(
       deviceId: deviceId,
       exerciseId: exerciseId,
+      name: name,
       orderIndex: newIndex,
     ));
 
     state = state.copyWith(exercises: currentExercises, isDirty: true);
+  }
+
+  void applyResolvedNames(Map<String, String> namesByKey) {
+    if (namesByKey.isEmpty) return;
+    final updated = <TrainingPlanExercise>[];
+    var changed = false;
+    for (final ex in state.exercises) {
+      final key = _exerciseKey(ex.deviceId, ex.exerciseId);
+      final resolved = namesByKey[key];
+      if (resolved != null && resolved.isNotEmpty && ex.name != resolved) {
+        updated.add(ex.copyWith(name: resolved));
+        changed = true;
+      } else {
+        updated.add(ex);
+      }
+    }
+    if (changed) {
+      state = state.copyWith(
+        exercises: updated,
+        isDirty: state.isDirty || changed,
+      );
+    }
+  }
+
+  String _exerciseKey(String deviceId, String exerciseId) {
+    return '$deviceId::$exerciseId';
   }
 
   void removeExercise(int index) {
@@ -77,7 +105,7 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     state = state.copyWith(exercises: reIndexed, isDirty: true);
   }
 
-  Future<void> save() async {
+  Future<String> save() async {
     final authState = _ref.read(authViewStateProvider);
     final userId = authState.userId;
     final gymId = authState.gymCode;
@@ -106,12 +134,17 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     
     final repo = _ref.read(trainingPlanRepositoryProvider);
     await repo.savePlan(userId: userId, plan: plan);
-    
-    // Refresh the list
+
+    // Nach dem Speichern die Draft-ID aktualisieren, damit
+    // Plan-Stats und "Training starten" immer eine gültige planId haben.
+    state = state.copyWith(
+      originalId: planId,
+      isDirty: false,
+    );
+
+    // Liste neu laden
     _ref.invalidate(trainingPlansProvider);
-    
-    // Reset state?
-    // state = const DraftTrainingPlan(); 
-    // Or keep it until navigated away? Usually better to invoke this and then pop.
+
+    return planId;
   }
 }

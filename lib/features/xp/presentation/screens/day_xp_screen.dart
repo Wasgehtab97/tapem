@@ -9,6 +9,8 @@ import '../widgets/daily_xp_card.dart';
 import '../widgets/xp_time_series_chart.dart';
 import 'leaderboard_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
 
 class DayXpScreen extends StatefulWidget {
   const DayXpScreen({Key? key}) : super(key: key);
@@ -79,20 +81,122 @@ class _DayXpScreenState extends State<DayXpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erfahrung'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.leaderboard),
-            tooltip: 'Rangliste',
-            onPressed: _openLeaderboard,
-          ),
-        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-        children: [
-          const SizedBox(height: AppSpacing.sm),
-          buildCurrentUserCard(),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.sm,
+          right: AppSpacing.sm,
+          bottom: AppSpacing.lg,
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            buildCurrentUserCard(),
+            const Spacer(),
+            _LeaderboardCallToAction(onTap: _openLeaderboard),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardCallToAction extends StatelessWidget {
+  const _LeaderboardCallToAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final radius =
+        (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
+    final onSurface = theme.colorScheme.onSurface;
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final loc = AppLocalizations.of(context)!;
+
+    return BrandInteractiveCard(
+      onTap: onTap,
+      borderRadius: radius,
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              brandColor.withOpacity(0.08),
+              brandColor.withOpacity(0.02),
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.08),
+                ),
+              ),
+              child: const Icon(
+                Icons.leaderboard,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    loc.leaderboardTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    loc.profileStatsButtonSubtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: onSurface.withOpacity(0.6),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: brandColor,
+                size: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

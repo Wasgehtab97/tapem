@@ -22,6 +22,7 @@ class PlanExercisePickerScreen extends ConsumerWidget {
         ref.read(planBuilderProvider.notifier).addExercise(
           deviceId: selection.deviceId,
           exerciseId: selection.exerciseId,
+          name: selection.exerciseName,
         );
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

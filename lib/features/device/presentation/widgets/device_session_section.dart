@@ -45,6 +45,7 @@ class DeviceSessionSection extends StatelessWidget {
     required this.userId,
     this.displayIndex = 1,
     this.sessionKey,
+    this.exerciseName,
 
     this.onSessionSaved,
     this.onCloseRequested,
@@ -54,6 +55,7 @@ class DeviceSessionSection extends StatelessWidget {
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  final String? exerciseName;
   final String userId;
   final int displayIndex;
   final String? sessionKey;
@@ -72,6 +74,7 @@ class DeviceSessionSection extends StatelessWidget {
         userId: userId,
         displayIndex: displayIndex,
         sessionKey: sessionKey,
+        exerciseName: exerciseName,
 
         onSessionSaved: onSessionSaved,
         onCloseRequested: onCloseRequested,
@@ -88,6 +91,7 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
     required this.userId,
     required this.displayIndex,
     this.sessionKey,
+    this.exerciseName,
 
     this.onSessionSaved,
     this.onCloseRequested,
@@ -96,6 +100,7 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  final String? exerciseName;
   final String userId;
   final int displayIndex;
   final String? sessionKey;
@@ -205,8 +210,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     _focusSession();
     _closeKeyboard();
     final deviceProv = prov;
-    String? exerciseName;
-    if (deviceProv.device?.isMulti ?? false) {
+    String? exerciseName = widget.exerciseName;
+    if (exerciseName == null && (deviceProv.device?.isMulti ?? false)) {
       final exProv = context.read<ExerciseProvider>();
       exerciseName = exProv.exercises
           .firstWhere(
@@ -262,6 +267,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     }
     if (!device.isMulti) {
       return device.name;
+    }
+    if (widget.exerciseName != null && widget.exerciseName!.isNotEmpty) {
+      return widget.exerciseName;
     }
     final availableExercises =
         exercises ?? context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
@@ -568,7 +576,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   @override
   void dispose() {
     FocusManager.instance.primaryFocus?.unfocus();
-    _keypadController?.close();
+    // Das globale Keypad wird zentral verwaltet.
+    // Hier kein direktes close(), um Provider-Änderungen während dispose()
+    // und entsprechende Riverpod-Assertions zu vermeiden.
     super.dispose();
   }
 
@@ -577,13 +587,13 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final loc = AppLocalizations.of(context)!;
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
-
     final exercises = prov.device?.isMulti ?? false
         ? context.watch<ExerciseProvider>().exercises
         : null;
     final resolvedTitle =
         _resolveExerciseTitle(context, prov, exercises: exercises) ??
             loc.newSessionTitle;
+    final deviceDescription = prov.device?.description;
 
     final showClose = widget.onCloseRequested != null;
     final counts = prov.getSetCounts();
@@ -624,17 +634,35 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
             ),
           ),
           const SizedBox(width: 16),
-          // Title
+          // Title + optional description
           Expanded(
-            child: Text(
-              resolvedTitle,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  resolvedTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (deviceDescription != null &&
+                    deviceDescription.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    deviceDescription,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withOpacity(0.7),
+                      letterSpacing: 0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
           // Close Button
@@ -836,9 +864,8 @@ class _GroupedSetList extends StatelessWidget {
             tokens: tokens,
             dense: dense,
             dropActive: dropActiveFor(sets.first),
-            weightLabel: isBodyweightMode
-                ? loc.bodyweightFieldLabel(loc.tableHeaderKg)
-                : loc.weightFieldLabel(loc.tableHeaderKg),
+            // Nur "kg" als Spaltenbeschriftung, direkt über dem KG-Feld.
+            weightLabel: isBodyweightMode ? 'BW' : 'kg',
             repsLabel: loc.tableHeaderReps,
           );
 
@@ -934,8 +961,11 @@ class _SetListFieldHeader extends StatelessWidget {
       letterSpacing: 0.2,
       color: tokens.chipFg.withOpacity(0.78),
     );
-    final double leadingWidth =
-        (dense ? 28 : 32) + (dense ? 8 : 12) + (dropActive ? (dense ? 4 : 6) + (dense ? 24 : 28) : 0);
+    // Index-Badge (feste Breite) + Abstand.
+    final double indexBadgeWidth = dense ? 28.0 : 32.0;
+    final double indexBadgeGap = dense ? 6.0 : 9.0;
+    final double leadingWidth = indexBadgeWidth + indexBadgeGap;
+    final double colGap = dense ? 4.0 : 6.0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -948,19 +978,17 @@ class _SetListFieldHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           SizedBox(width: leadingWidth),
-          Expanded(
+          // Nur "Vorher" in der Kopfzeile – Spaltenlabels für kg/Wdh.
+          // entfallen, da die Felder eigene Platzhalter haben.
+          Flexible(
+            flex: 2,
             child: Text(
-              weightLabel,
+              'Vorher',
               style: headerStyle,
             ),
           ),
-          SizedBox(width: dense ? 8 : 12),
-          Expanded(
-            child: Text(
-              repsLabel,
-              style: headerStyle,
-            ),
-          ),
+          const Spacer(flex: 3),
+          const Spacer(flex: 3),
         ],
       ),
     );
@@ -1314,5 +1342,3 @@ class _ActionGridButton extends StatelessWidget {
     );
   }
 }
-
-

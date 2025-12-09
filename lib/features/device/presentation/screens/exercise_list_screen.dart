@@ -73,6 +73,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         gymId: widget.gymId,
         deviceId: widget.deviceId,
         exerciseId: result.id,
+        exerciseName: result.name,
       );
       final onSelect = widget.onSelect;
       if (onSelect != null) {

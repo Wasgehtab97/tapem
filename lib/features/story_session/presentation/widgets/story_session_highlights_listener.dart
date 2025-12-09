@@ -128,6 +128,17 @@ class _StorySessionHighlightsListenerState
     }
 
     try {
+      // Kurze Verzögerung, damit Navigation nach dem Speichern
+      // (z.B. zur Profilseite) zuerst sauber abgeschlossen wird.
+      // Dadurch erscheinen die Session Highlights stabil auf der
+      // Zielseite und nicht kurz auf der vorherigen Workout-Page.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!navigator.mounted) {
+        _isShowingDialog = false;
+        _pendingSummaries.clear();
+        return;
+      }
+
       await showDialog<void>(
         context: navigator.context,
         builder: (_) => StorySessionDialog(summary: summary),

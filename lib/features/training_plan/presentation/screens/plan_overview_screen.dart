@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 
@@ -51,18 +53,17 @@ class PlanOverviewScreen extends ConsumerWidget {
           }
           return ListView.builder(
             itemCount: plans.length,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemBuilder: (context, index) {
               final plan = plans[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${plan.exercises.length} Übungen'),
-                  trailing: Icon(Icons.chevron_right, color: brandColor),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _PlanCard(
+                  name: plan.name,
+                  exerciseCount: plan.exercises.length,
                   onTap: () {
                     Navigator.pushNamed(
-                      context, 
+                      context,
                       AppRouter.trainingPlanDetail,
                       arguments: plan,
                     );
@@ -120,5 +121,111 @@ class PlanOverviewScreen extends ConsumerWidget {
       // Navigate to Exercise Picker (Modified Gym Screen)
       Navigator.pushNamed(context, AppRouter.trainingPlanPicker);
     }
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.name,
+    required this.exerciseCount,
+    required this.onTap,
+  });
+
+  final String name;
+  final int exerciseCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final radius =
+        (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
+    final onSurface = theme.colorScheme.onSurface;
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
+    return BrandInteractiveCard(
+      onTap: onTap,
+      borderRadius: radius,
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              brandColor.withOpacity(0.08),
+              brandColor.withOpacity(0.02),
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.05),
+                ),
+              ),
+              child: Icon(
+                Icons.view_list_rounded,
+                color: brandColor,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: onSurface,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: onSurface.withOpacity(0.6),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: onSurface.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: brandColor,
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

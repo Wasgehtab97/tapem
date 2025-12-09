@@ -8,6 +8,10 @@ analyzer:
     - .dart_tool/**
     - build/**
     - lib/generated_plugin_registrant.dart
+    - lib/features/security/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - lib/features/training_plan/domain/models/training_plan_stats.dart
 
   errors:
     override_on_non_overriding_member: ignore

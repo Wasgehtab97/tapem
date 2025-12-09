@@ -32,6 +32,7 @@ import 'package:tapem/features/friends/presentation/screens/friend_training_cale
 import 'package:tapem/features/friends/presentation/screens/friend_chat_screen.dart';
 import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/admin_remove_users_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.dart';
 import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen.dart';
 import 'package:tapem/features/community/presentation/screens/community_screen.dart';
@@ -57,6 +58,7 @@ class AppRouter {
   static const report = '/report';
   static const admin = '/admin';
   static const adminDevices = '/admin_devices';
+  static const adminRemoveUsers = '/admin_remove_users';
   static const affiliate = '/affiliate';
   static const rank = '/rank';
   // Deprecated alias for backward compatibility
@@ -135,6 +137,12 @@ class AppRouter {
         final gymId = args['gymId']?.toString() ?? '';
         final deviceId = args['deviceId']?.toString() ?? '';
         final exerciseId = args['exerciseId']?.toString() ?? '';
+        final planId = args['planId']?.toString();
+        final planName = args['planName']?.toString();
+
+        debugPrint(
+          '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName',
+        );
         return MaterialPageRoute(
           settings: RouteSettings(
             name: workoutDay,
@@ -144,6 +152,8 @@ class AppRouter {
             gymId: gymId,
             deviceId: deviceId,
             exerciseId: exerciseId,
+            planId: planId,
+            planName: planName,
           ),
         );
 
@@ -203,6 +213,13 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const GymContextGuard(
             child: AdminDevicesScreen(),
+          ),
+        );
+
+      case adminRemoveUsers:
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminRemoveUsersScreen(),
           ),
         );
 

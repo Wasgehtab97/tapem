@@ -1,6 +1,7 @@
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/repositories/training_plan_repository.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_stats.dart';
 
 class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
   final FirestoreTrainingPlanSource _source;
@@ -29,5 +30,21 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
     required String planId,
   }) {
     return _source.deletePlan(userId: userId, planId: planId);
+  }
+
+  @override
+  Future<TrainingPlanStats> getStats({
+    required String userId,
+    required String planId,
+  }) {
+    return _source.getStats(userId: userId, planId: planId);
+  }
+
+  @override
+  Future<void> incrementCompletion({
+    required String userId,
+    required String planId,
+  }) {
+    return _source.incrementCompletion(userId: userId, planId: planId);
   }
 }

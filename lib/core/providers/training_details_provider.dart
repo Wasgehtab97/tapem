@@ -26,6 +26,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
   String? _error;
   List<Session> _sessions = [];
   int? _dayDurationMs;
+  String? _planName;
+  String? _planId;
   StreamSubscription<DayMetaSnapshot>? _dayMetaSubscription;
   bool _disposed = false;
   String? _lastMetaSignature;
@@ -35,6 +37,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
   List<Session> get sessions => List.unmodifiable(_sessions);
   int? get dayDurationMs => _dayDurationMs;
   String? get gymId => _gymId;
+  String? get planName => _planName;
+  String? get planId => _planId;
 
   TrainingDetailsProvider(
     DatabaseService databaseService,
@@ -179,7 +183,27 @@ class TrainingDetailsProvider extends ChangeNotifier {
       final sessionGymId = _sessions.first.gymId;
       await _updateGymId(sessionGymId);
       _dayDurationMs = _sessions.first.durationMs;
-      _lastMetaSignature = null;
+      if (_canAccessMeta) {
+        final dayKey = logicDayKey(date);
+        final meta = await _meta.getMetaByDayKey(
+          gymId: sessionGymId,
+          uid: userId,
+          dayKey: dayKey,
+          fromCacheOnly: fromCacheOnly,
+        );
+        debugPrint(
+            '📌 TrainingDetails meta (sessions>0) gym=$sessionGymId dayKey=$dayKey meta=$meta');
+        _planName = meta?['planName'] as String?;
+        _planId = meta?['planId'] as String?;
+        final newSignature = _buildMetaSignature(meta);
+        if (newSignature != _lastMetaSignature) {
+          _lastMetaSignature = newSignature;
+        }
+      } else {
+        _planName = null;
+        _planId = null;
+        _lastMetaSignature = null;
+      }
     } else {
       Map<String, dynamic>? meta;
       if (_canAccessMeta) {
@@ -193,8 +217,12 @@ class TrainingDetailsProvider extends ChangeNotifier {
             fromCacheOnly: fromCacheOnly,
           );
           _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+          _planName = meta?['planName'] as String?;
+          _planId = meta?['planId'] as String?;
         } else {
           _dayDurationMs = null;
+          _planName = null;
+          _planId = null;
           meta = null;
         }
         final newSignature = _buildMetaSignature(meta);
@@ -203,6 +231,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
         }
       } else {
         _dayDurationMs = null;
+        _planName = null;
+        _planId = null;
       }
     }
     if (!fromCacheOnly) {

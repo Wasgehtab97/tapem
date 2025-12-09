@@ -5,6 +5,7 @@ import 'package:tapem/features/training_plan/data/sources/firestore_training_pla
 import 'package:tapem/features/training_plan/data/repositories/training_plan_repository_impl.dart';
 import 'package:tapem/features/training_plan/domain/repositories/training_plan_repository.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_stats.dart';
 
 final trainingPlanRepositoryProvider = Provider<TrainingPlanRepository>((ref) {
   return TrainingPlanRepositoryImpl(
@@ -28,5 +29,20 @@ final trainingPlansProvider = FutureProvider<List<TrainingPlan>>((ref) async {
     //ignore: avoid_print
     print('🔴 Error loading training plans: $e');
     rethrow;
+  }
+});
+
+final trainingPlanStatsProvider =
+    FutureProvider.family<TrainingPlanStats, String>((ref, planId) async {
+  final authState = ref.watch(authViewStateProvider);
+  final userId = authState.userId;
+  if (userId == null) {
+    return TrainingPlanStats.empty();
+  }
+  final repo = ref.watch(trainingPlanRepositoryProvider);
+  try {
+    return await repo.getStats(userId: userId, planId: planId);
+  } catch (_) {
+    return TrainingPlanStats.empty();
   }
 });

@@ -20,13 +20,20 @@ class Conversation {
 
   /// Creates a Conversation from Firestore document
   factory Conversation.fromFirestore(String id, Map<String, dynamic> data) {
-    // Parse lastReadAt map
+    // Parse lastReadAt map defensively – older documents may contain nulls
+    // which would otherwise crash the cast to Timestamp.
     Map<String, DateTime>? lastReadAt;
-    if (data['lastReadAt'] != null) {
-      final raw = data['lastReadAt'] as Map<String, dynamic>;
-      lastReadAt = raw.map(
-        (key, value) => MapEntry(key, (value as Timestamp).toDate()),
-      );
+    final rawLastReadAt = data['lastReadAt'];
+    if (rawLastReadAt is Map<String, dynamic>) {
+      final parsed = <String, DateTime>{};
+      rawLastReadAt.forEach((key, value) {
+        if (value is Timestamp) {
+          parsed[key] = value.toDate();
+        }
+      });
+      if (parsed.isNotEmpty) {
+        lastReadAt = parsed;
+      }
     }
 
     return Conversation(

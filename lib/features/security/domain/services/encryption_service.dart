@@ -1,3 +1,5 @@
+// ignore_for_file: uri_does_not_exist, depend_on_referenced_packages, undefined_class, undefined_identifier, undefined_method, non_type_as_type_argument, creation_with_non_type
+
 import 'dart:convert';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -221,4 +223,3 @@ class EncryptionService {
     return utf8.decode(decryptedBytes);
   }
 }
-

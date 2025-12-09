@@ -14,6 +14,7 @@ import 'package:tapem/features/device/data/sources/firestore_device_source.dart'
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
+import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/services/membership_service.dart';
 
 @immutable
@@ -23,6 +24,7 @@ class WorkoutDaySession {
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
+    this.exerciseName,
     required this.userId,
     required this.provider,
     required this.canSave,
@@ -36,6 +38,7 @@ class WorkoutDaySession {
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  final String? exerciseName;
   final String userId;
   final DeviceProvider provider;
   final bool canSave;
@@ -48,12 +51,32 @@ class WorkoutDaySession {
 
   bool get hasValidationWarning => hasSessionToday || error != null;
 
+  WorkoutDaySession copyWith({
+    String? exerciseName,
+  }) {
+    return WorkoutDaySession(
+      key: key,
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      exerciseName: exerciseName ?? this.exerciseName,
+      userId: userId,
+      provider: provider,
+      canSave: canSave,
+      isSaving: isSaving,
+      isLoading: isLoading,
+      hasSessionToday: hasSessionToday,
+      error: error,
+    );
+  }
+
   @override
   int get hashCode => Object.hash(
         key,
         gymId,
         deviceId,
         exerciseId,
+        exerciseName,
         userId,
         provider,
         canSave,
@@ -70,6 +93,7 @@ class WorkoutDaySession {
         other.gymId == gymId &&
         other.deviceId == deviceId &&
         other.exerciseId == exerciseId &&
+        other.exerciseName == exerciseName &&
         other.userId == userId &&
         identical(other.provider, provider) &&
         other.canSave == canSave &&
@@ -133,9 +157,16 @@ class WorkoutDayController extends ChangeNotifier
   WorkoutSessionDurationService? _sessionDurationService;
 
   final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
+  final List<String> _sessionOrder = <String>[];
   String? _activeUserId;
   String? _focusedSessionKey;
   bool _isSavingAll = false;
+
+  // Optional Plan-Kontext für den aktuellen Trainingstag eines Users.
+  String? _activePlanId;
+  String? _activePlanName;
+  String? _activePlanGymId;
+  String? _activePlanDayKey;
 
   void setActiveUser(String? userId) {
     if (_activeUserId == userId) {
@@ -145,8 +176,10 @@ class WorkoutDayController extends ChangeNotifier
       entry.dispose();
     }
     _sessions.clear();
+    _sessionOrder.clear();
     _focusedSessionKey = null;
     _isSavingAll = false;
+    _clearPlanContext();
     _activeUserId = userId;
     notifyListeners();
   }
@@ -182,8 +215,10 @@ class WorkoutDayController extends ChangeNotifier
       entry.dispose();
     }
     _sessions.clear();
+    _sessionOrder.clear();
     _focusedSessionKey = null;
     _isSavingAll = false;
+    _clearPlanContext();
     notifyListeners();
   }
 
@@ -201,6 +236,7 @@ class WorkoutDayController extends ChangeNotifier
     required String deviceId,
     required String exerciseId,
     required String userId,
+    String? exerciseName,
     bool autoFinalizeEnabled = false,
   }) {
     final key = contextKey(
@@ -212,6 +248,11 @@ class WorkoutDayController extends ChangeNotifier
     final existing = _sessions[key];
     final previousFocus = _focusedSessionKey;
     if (existing != null) {
+      if (exerciseName != null &&
+          exerciseName.isNotEmpty &&
+          existing.updateExerciseName(exerciseName)) {
+        notifyListeners();
+      }
       _focusedSessionKey = key;
       final changed = existing.refresh();
       if (previousFocus != key || changed) {
@@ -234,12 +275,16 @@ class WorkoutDayController extends ChangeNotifier
       gymId: gymId,
       deviceId: deviceId,
       exerciseId: exerciseId,
+      exerciseName: exerciseName,
       userId: userId,
       provider: provider,
     );
     _attachServicesToProvider(provider);
     entry.attachListener(_onEntryChanged);
     _sessions[key] = entry;
+    _sessionOrder
+      ..remove(key)
+      ..add(key);
     _focusedSessionKey = key;
     notifyListeners();
     return entry.snapshot;
@@ -256,12 +301,25 @@ class WorkoutDayController extends ChangeNotifier
     if (userId.isEmpty || gymId.isEmpty) {
       return const <WorkoutDaySession>[];
     }
-    final matchingEntries = _sessions.values
-        .where((entry) => entry.userId == userId && entry.gymId == gymId)
-        .toList();
-    return List.unmodifiable(
-      matchingEntries.reversed.map((entry) => entry.snapshot),
-    );
+    if (_sessionOrder.isEmpty) {
+      final entries = _sessions.values
+          .where((entry) => entry.userId == userId && entry.gymId == gymId);
+      return List.unmodifiable(entries.map((entry) => entry.snapshot));
+    }
+    final orderedKeys = _sessionOrder.where((key) {
+      final entry = _sessions[key];
+      return entry != null &&
+          entry.userId == userId &&
+          entry.gymId == gymId;
+    });
+    final sessions = <WorkoutDaySession>[];
+    for (final key in orderedKeys) {
+      final entry = _sessions[key];
+      if (entry != null) {
+        sessions.add(entry.snapshot);
+      }
+    }
+    return List.unmodifiable(sessions);
   }
 
   WorkoutDaySession? sessionForKey(String key) {
@@ -311,13 +369,61 @@ class WorkoutDayController extends ChangeNotifier
     debugPrintStack(label: 'closeSession_stack');
     
     final entry = _sessions.remove(key);
+    _sessionOrder.remove(key);
     if (entry == null) {
       debugPrint('⚠️ [WorkoutDayController] closeSession: session not found for key=$key');
       return false;
     }
     entry.dispose();
     if (_focusedSessionKey == key) {
-      _focusedSessionKey = _sessions.isEmpty ? null : _sessions.keys.last;
+      _focusedSessionKey = _sessionOrder.isEmpty ? null : _sessionOrder.last;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  bool reorderSessions({
+    required String userId,
+    required String gymId,
+    required int oldIndex,
+    required int newIndex,
+  }) {
+    if (oldIndex == newIndex) return false;
+    var filtered = _sessionOrder.where((key) {
+      final entry = _sessions[key];
+      return entry != null &&
+          entry.userId == userId &&
+          entry.gymId == gymId;
+    }).toList();
+    if (oldIndex < 0 || oldIndex >= filtered.length) return false;
+    if (newIndex < 0) return false;
+    if (newIndex > filtered.length) {
+      newIndex = filtered.length;
+    }
+
+    final moved = filtered.removeAt(oldIndex);
+    filtered.insert(newIndex, moved);
+
+    final original = List<String>.from(_sessionOrder);
+    _sessionOrder.clear();
+    var filteredIdx = 0;
+    for (final key in original) {
+      final entry = _sessions[key];
+      final matches = entry != null &&
+          entry.userId == userId &&
+          entry.gymId == gymId;
+      if (matches) {
+        if (filteredIdx < filtered.length) {
+          _sessionOrder.add(filtered[filteredIdx]);
+          filteredIdx += 1;
+        }
+      } else {
+        _sessionOrder.add(key);
+      }
+    }
+    while (filteredIdx < filtered.length) {
+      _sessionOrder.add(filtered[filteredIdx]);
+      filteredIdx += 1;
     }
     notifyListeners();
     return true;
@@ -427,12 +533,77 @@ class WorkoutDayController extends ChangeNotifier
     return result;
   }
 
+  // --- Plan-Kontext ---------------------------------------------------------
+
+  void _clearPlanContext() {
+    _activePlanId = null;
+    _activePlanName = null;
+    _activePlanGymId = null;
+    _activePlanDayKey = null;
+  }
+
+  void setPlanContext({
+    required String gymId,
+    required String planId,
+    String? planName,
+    DateTime? date,
+  }) {
+    final dayKey = logicDayKey(date ?? DateTime.now());
+    _activePlanId = planId;
+    _activePlanName = planName;
+    _activePlanGymId = gymId;
+    _activePlanDayKey = dayKey;
+  }
+
+  /// Liefert den aktuellen Plan-Kontext für [gymId] und [date], falls vorhanden.
+  (String planId, String? planName)? getPlanContext({
+    required String gymId,
+    DateTime? date,
+  }) {
+    final dayKey = logicDayKey(date ?? DateTime.now());
+    if (_activePlanId == null ||
+        _activePlanGymId != gymId ||
+        _activePlanDayKey != dayKey) {
+      return null;
+    }
+    return (_activePlanId!, _activePlanName);
+  }
+
+  /// Bricht ein aktives Training für [userId]/[gymId] ab:
+  /// alle offenen Sessions werden geschlossen und der Plan-Kontext
+  /// für den aktuellen Tag zurückgesetzt.
+  void cancelActivePlan({
+    required String userId,
+    required String gymId,
+  }) {
+    final keysToClose = _sessions.values
+        .where((e) => e.userId == userId && e.gymId == gymId)
+        .map((e) => e.key)
+        .toList();
+    for (final key in keysToClose) {
+      closeSession(key);
+    }
+    clearPlanContextForDay(gymId: gymId);
+  }
+
+  /// Löscht den Plan-Kontext für [gymId] am aktuellen Tag (ohne Sessions zu verändern).
+  void clearPlanContextForDay({
+    required String gymId,
+    DateTime? date,
+  }) {
+    final dayKey = logicDayKey(date ?? DateTime.now());
+    if (_activePlanGymId == gymId && _activePlanDayKey == dayKey) {
+      _clearPlanContext();
+    }
+  }
+
   @override
   void dispose() {
     for (final entry in _sessions.values) {
       entry.dispose();
     }
     _sessions.clear();
+    _sessionOrder.clear();
     _focusedSessionKey = null;
     _isSavingAll = false;
     _activeUserId = null;
@@ -464,6 +635,7 @@ class _SessionEntry {
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
+    required this.exerciseName,
     required this.userId,
     required this.provider,
   }) : snapshot = WorkoutDaySession(
@@ -471,6 +643,7 @@ class _SessionEntry {
           gymId: gymId,
           deviceId: deviceId,
           exerciseId: exerciseId,
+          exerciseName: exerciseName,
           userId: userId,
           provider: provider,
           canSave: provider.hasActiveUnsavedSession,
@@ -484,6 +657,7 @@ class _SessionEntry {
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  String? exerciseName;
   final String userId;
   final DeviceProvider provider;
   WorkoutDaySession snapshot;
@@ -504,6 +678,7 @@ class _SessionEntry {
       gymId: gymId,
       deviceId: deviceId,
       exerciseId: exerciseId,
+      exerciseName: exerciseName,
       userId: userId,
       provider: provider,
       canSave: provider.hasActiveUnsavedSession,
@@ -516,6 +691,15 @@ class _SessionEntry {
       return false;
     }
     snapshot = next;
+    return true;
+  }
+
+  bool updateExerciseName(String? name) {
+    if (name == null || name.isEmpty || name == exerciseName) {
+      return false;
+    }
+    exerciseName = name;
+    snapshot = snapshot.copyWith(exerciseName: name);
     return true;
   }
 

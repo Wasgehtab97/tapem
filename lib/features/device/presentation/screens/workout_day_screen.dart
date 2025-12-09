@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
@@ -10,6 +11,10 @@ import 'package:tapem/features/device/presentation/models/workout_device_selecti
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
+import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
+import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
+import 'package:tapem/features/training_details/data/session_meta_source.dart';
+import 'package:tapem/core/time/logic_day.dart';
 
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
@@ -22,6 +27,8 @@ class WorkoutDayScreen extends StatefulWidget {
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
+    this.planId,
+    this.planName,
     this.sessionBuilder,
     this.closeSessionOnDispose = false,
   });
@@ -29,6 +36,8 @@ class WorkoutDayScreen extends StatefulWidget {
   final String gymId;
   final String deviceId;
   final String exerciseId;
+  final String? planId;
+  final String? planName;
   final Widget Function(
     BuildContext context,
     WorkoutDaySession session,
@@ -45,6 +54,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   String? _sessionKey;
   bool _isInitializing = true;
   bool _ownsSession = false;
+  String? _planId;
+  String? _planName;
   final GlobalKey<SessionRestTimerState> _restTimerKey =
       GlobalKey<SessionRestTimerState>();
 
@@ -57,6 +68,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       gymId: selection.gymId,
       deviceId: selection.deviceId,
       exerciseId: selection.exerciseId,
+      exerciseName: selection.exerciseName,
       userId: auth.userId!,
     );
     if (!mounted) return;
@@ -96,12 +108,32 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   @override
   void initState() {
     super.initState();
+    _planId = widget.planId;
+    _planName = widget.planName;
+    debugPrint(
+        '🏋️ WorkoutDayScreen init gymId=${widget.gymId} deviceId=${widget.deviceId} exerciseId=${widget.exerciseId} planId=$_planId planName=$_planName');
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensureSession());
   }
 
   Future<void> _ensureSession() async {
     final auth = context.read<AuthProvider>();
     final controller = context.read<WorkoutDayController>();
+    // Plan-Kontext ggf. im Controller hinterlegen oder von dort übernehmen
+    final existingPlan = controller.getPlanContext(
+      gymId: widget.gymId,
+    );
+    if (_planId != null) {
+      controller.setPlanContext(
+        gymId: widget.gymId,
+        planId: _planId!,
+        planName: _planName,
+      );
+    } else if (existingPlan != null) {
+      _planId ??= existingPlan.$1;
+      _planName ??= existingPlan.$2;
+      debugPrint(
+          '📎 WorkoutDayScreen adopted existing plan context planId=$_planId planName=$_planName');
+    }
     final contextKey = WorkoutDayController.contextKey(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
@@ -193,7 +225,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leadingWidth: 120, // Reduced from 130 to give more space/centering chance
+        leadingWidth: 110, // etwas kompakter für "< Übungen"
         leading: InkWell(
           onTap: () {
             // Robustly close keyboard and clear focus
@@ -206,8 +238,13 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
             }
             
             FocusManager.instance.primaryFocus?.unfocus();
-            
-            Navigator.of(context).popUntil((route) => route.settings.name == '/home' || route.isFirst);
+
+            // Immer zurück zur Gym-Page der Home-Tabs (Index 0).
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRouter.home,
+              (route) => false,
+              arguments: 0,
+            );
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -215,14 +252,14 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4), // Reduced padding
             child: Row(
               children: [
-                Icon(Icons.add, color: brandColor, size: 20), // Explicit size
+                Icon(Icons.chevron_left, color: brandColor, size: 20),
                 const SizedBox(width: 2),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Nächste Übung',
+                      'Übungen',
                       style: theme.textTheme.labelMedium?.copyWith( // Smaller text style
                         color: brandColor,
                         fontWeight: FontWeight.w600,
@@ -298,78 +335,134 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           ),
         ),
         child: SafeArea(
-          child: Scrollbar(
-            controller: _scrollController,
-            child: Consumer<OverlayNumericKeypadController>(
-              builder: (context, keypadController, _) {
-                final bottomSpacerHeight = keypadController.keypadContentHeight +
-                    MediaQuery.of(context).padding.bottom +
-                    12;
+          child: Consumer<OverlayNumericKeypadController>(
+            builder: (context, keypadController, _) {
+              final bottomSpacerHeight = keypadController.keypadContentHeight +
+                  MediaQuery.of(context).padding.bottom +
+                  24;
+
+              if (sessions.isEmpty) {
                 return CustomScrollView(
                   controller: _scrollController,
                   slivers: [
-                    if (sessions.isEmpty)
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Text(
-                            loc.multiDeviceNewExercise,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                      )
-                    else ...[
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 16),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.only(bottom: 24),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final session = sessions[index];
-                              final builder = widget.sessionBuilder;
-                              final displayIndex = sessions.length - index;
-                              if (builder != null) {
-                                return builder(
-                                  context,
-                                  session,
-                                );
-                              }
-                              return DeviceSessionSection(
-                                key: ValueKey(session.key),
-                                provider: session.provider,
-                                gymId: session.gymId,
-                                deviceId: session.deviceId,
-                                exerciseId: session.exerciseId,
-                                userId: session.userId,
-                                displayIndex: displayIndex,
-                                sessionKey: session.key,
-
-                                onCloseRequested: () => _handleCloseSession(session),
-                              );
-                            },
-                            childCount: sessions.length,
-                          ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Text(
+                          loc.multiDeviceNewExercise,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
-                      SliverToBoxAdapter(
-                        child: _SaveAllButton(
-                          isSaving: controller.isSaving,
-                          canSave: controller.canSave,
-                          onPressed: () => _handleSaveAllSessions(
-                            sessions,
-                          ),
-                        ),
-                      ),
-                    ],
-                    SliverToBoxAdapter(
-                      child: SizedBox(height: bottomSpacerHeight),
                     ),
                   ],
                 );
-              },
-            ),
+              }
+
+              return Scrollbar(
+                controller: _scrollController,
+                child: ReorderableListView.builder(
+                  scrollController: _scrollController,
+                  padding: const EdgeInsets.only(
+                    top: 16,
+                    bottom: 24,
+                  ),
+                  buildDefaultDragHandles: false,
+                  proxyDecorator: (child, index, animation) {
+                    // Deutlichere visuelle Rückmeldung während des Drag-Vorgangs.
+                    return Material(
+                      color: Colors.transparent,
+                      elevation: 12,
+                      shadowColor: brandColor.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(24),
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 1.0, end: 1.03)
+                            .animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  onReorder: (oldIndex, newIndex) {
+                    // Letztes Element ist der "Training speichern"-Button
+                    // und darf nicht als Ziel für Reordering verwendet werden.
+                    final userId = auth.userId;
+                    if (userId == null) return;
+                    if (oldIndex >= sessions.length ||
+                        newIndex > sessions.length) {
+                      return;
+                    }
+                    newIndex = newIndex.clamp(0, sessions.length - 1);
+                    controller.reorderSessions(
+                      userId: userId,
+                      gymId: activeGymId,
+                      oldIndex: oldIndex,
+                      newIndex: newIndex,
+                    );
+                    setState(() {});
+                  },
+                  itemCount: sessions.length + 1,
+                  itemBuilder: (context, index) {
+                    // Footer-Zeile: "Training speichern"-Button
+                    if (index == sessions.length) {
+                      return Padding(
+                        key: const ValueKey('save-button-footer'),
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          bottom: bottomSpacerHeight,
+                        ),
+                        child: _SaveAllButton(
+                          isSaving: controller.isSaving,
+                          canSave: controller.canSave,
+                          onPressed: () =>
+                              _handleSaveAllSessions(sessions),
+                        ),
+                      );
+                    }
+
+                    final session = sessions[index];
+                    final builder = widget.sessionBuilder;
+                    final displayIndex = index + 1;
+                    final key = ValueKey(session.key);
+
+                    Widget child;
+                    if (builder != null) {
+                      child = Container(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: builder(
+                          context,
+                          session,
+                        ),
+                      );
+                    } else {
+                      child = Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: DeviceSessionSection(
+                          provider: session.provider,
+                          gymId: session.gymId,
+                          deviceId: session.deviceId,
+                          exerciseId: session.exerciseId,
+                          exerciseName: session.exerciseName,
+                          userId: session.userId,
+                          displayIndex: displayIndex,
+                          sessionKey: session.key,
+                          onCloseRequested: () =>
+                              _handleCloseSession(session),
+                        ),
+                      );
+                    }
+
+                    return ReorderableDelayedDragStartListener(
+                      key: key,
+                      index: index,
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -468,9 +561,12 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
     await settings.load(auth.userId!);
 
-
-
-    final activeGymId = auth.gymCode ?? widget.gymId;
+    // Use the gymId from the current sessions if possible to ensure that
+    // session meta and XP are always written under the same gym that the
+    // TrainingDetails screen will later query.
+    final sessionGymId =
+        sessions.isNotEmpty ? sessions.first.gymId : null;
+    final activeGymId = sessionGymId ?? auth.gymCode ?? widget.gymId;
 
     final result = await controller.saveAllSessions(
       userId: auth.userId!,
@@ -485,6 +581,33 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     if (!mounted) return;
 
     if (result.saved > 0) {
+      if (_planId != null) {
+        debugPrint(
+            '📊 Updating training plan stats for planId=$_planId gym=$activeGymId (saved=${result.saved}/${result.attempted})');
+        try {
+          await FirestoreTrainingPlanSource().incrementCompletion(
+            userId: auth.userId!,
+            planId: _planId!,
+          );
+          riverpod.ProviderScope.containerOf(context, listen: false)
+              .refresh(trainingPlanStatsProvider(_planId!));
+          final dayKey = logicDayKey(DateTime.now());
+          await SessionMetaSource().upsertMeta(
+            gymId: activeGymId,
+            uid: auth.userId!,
+            sessionId: dayKey,
+            meta: {
+              'dayKey': dayKey,
+              'planId': _planId,
+              if (_planName != null) 'planName': _planName,
+            },
+          );
+        } catch (e, st) {
+          debugPrint('❌ Failed to update training plan meta for planId=$_planId gym=$activeGymId: $e');
+          debugPrint('$st');
+        }
+      }
+
       for (final key in result.savedSessionKeys) {
         final session = sessionsByKey[key];
         if (session == null) continue;
@@ -498,13 +621,20 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         userId: auth.userId!,
         gymId: activeGymId,
       );
+
+      // Wenn alle Sessions gespeichert wurden, gilt der Plan für diesen Tag als abgeschlossen.
+      if (_planId != null) {
+        controller.clearPlanContextForDay(gymId: activeGymId);
+      }
+
       if (remaining.isEmpty) {
         if (mounted) {
-          // Navigate to home/profile page after saving
-          Navigator.of(context).popUntil((route) {
-            final name = route.settings.name;
-            return name == AppRouter.home || route.isFirst;
-          });
+          // Nach dem Speichern immer zur Profil-Page (Home-Tab Index 1) navigieren.
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRouter.home,
+            (route) => false,
+            arguments: 1,
+          );
         }
       } else {
         setState(() {});

@@ -513,9 +513,10 @@ class OverlayNumericKeypad extends StatelessWidget {
           targetIndex = nextIndex;
           targetField = DeviceSetFieldFocus.weight;
         } else {
+          // Alle Sets erledigt: Fokus löschen, Tastatur aber offen lassen,
+          // bis der Nutzer sie explizit schließt.
           prov.clearFocus();
-          controller.close();
-          elogUi('OVERLAY_NAVIGATE_CLOSE', {'reason': 'all_sets_completed'});
+          elogUi('OVERLAY_NAVIGATE_CLOSE', {'reason': 'all_sets_completed_keep_open'});
           _haptic(context);
           return;
         }
