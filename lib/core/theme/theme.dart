@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
@@ -73,10 +74,14 @@ class AppTheme {
       extensions: const <ThemeExtension<dynamic>>[
         AvatarRingTheme.fallback,
       ],
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        backgroundColor: background,
+        foregroundColor: textPrimary,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surface,
@@ -210,6 +215,8 @@ class AppTheme {
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
       centerTitle: true,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
     ),
     tabBarTheme: const TabBarThemeData(
       labelColor: Colors.white,

@@ -327,10 +327,8 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(loc.challengeAdminFieldDevices), // "Geräte"
-        backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: brandColor,
         actions: [
@@ -342,19 +340,7 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.alphaBlend(
-                brandColor.withOpacity(0.08),
-                theme.scaffoldBackgroundColor,
-              ),
-            ],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

@@ -1,7 +1,5 @@
 // lib/features/profile/presentation/widgets/calendar.dart
 
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -144,39 +142,9 @@ class _CalendarState extends State<Calendar> {
         final rawSize = (usable - weekCount * margin * 2) / weekCount;
         final cellSize = rawSize.clamp(4.0, usable);
 
-        // Monats-Labels mit Kollisionserkennung
-        List<Widget> monthLabels = [];
-        double lastRightEdge = -double.infinity;
-        const labelBuffer = 4.0; // Mindestabstand zwischen Labels
-        
-        for (var m = 1; m <= 12; m++) {
-          final firstOfMonth = DateTime(_year, m, 1);
-          final offsetDays = firstOfMonth.difference(gridStart).inDays;
-          final colIndex = (offsetDays / 7).floor().clamp(0, weekCount - 1);
-          final leftPosition = hPad + colIndex * (cellSize + margin * 2);
-          
-          // Messe die Breite des Labels
-          final labelText = DateFormat.MMM(locale).format(firstOfMonth);
-          final textStyle = theme.textTheme.bodySmall?.copyWith(color: accentColor) ??
-              TextStyle(color: accentColor);
-          final textPainter = TextPainter(
-            text: TextSpan(text: labelText, style: textStyle),
-            textDirection: ui.TextDirection.ltr,
-          )..layout();
-          final labelWidth = textPainter.width;
-          final rightEdge = leftPosition + labelWidth;
-          
-          // Nur anzeigen, wenn kein Überlappen
-          if (leftPosition >= lastRightEdge + labelBuffer) {
-            monthLabels.add(
-              Positioned(
-                left: leftPosition,
-                child: Text(labelText, style: textStyle),
-              ),
-            );
-            lastRightEdge = rightEdge;
-          }
-        }
+        final monthLabelTextStyle =
+            theme.textTheme.bodySmall?.copyWith(color: accentColor) ??
+            TextStyle(color: accentColor);
 
 
         final header =
@@ -288,11 +256,25 @@ class _CalendarState extends State<Calendar> {
           ),
         );
 
+        final monthsRow = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: hPad),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(12, (index) {
+              final monthDate = DateTime(_year, index + 1, 1);
+              final fullLabel = DateFormat.MMM(locale).format(monthDate);
+              final shortLabel =
+                  fullLabel.length <= 2 ? fullLabel : fullLabel.substring(0, 2);
+              return Text(shortLabel, style: monthLabelTextStyle);
+            }),
+          ),
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             header,
-            SizedBox(height: 20, child: Stack(children: monthLabels)),
+            SizedBox(height: 20, child: monthsRow),
             const SizedBox(height: 4),
             grid,
           ],

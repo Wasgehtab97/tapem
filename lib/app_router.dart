@@ -16,6 +16,7 @@ import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
+import 'package:tapem/features/rank/presentation/screens/powerlifting_leaderboard_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:tapem/features/xp/presentation/screens/xp_overview_screen.dart';
@@ -79,6 +80,7 @@ class AppRouter {
   static const adminSymbols = '/admin_symbols';
   static const userSymbols = '/user_symbols';
   static const powerlifting = '/powerlifting';
+  static const powerliftingLeaderboard = '/powerlifting_leaderboard';
   static const feedbackOverview = '/feedback_overview';
   static const surveyOverview = '/survey_overview';
   static const surveyVote = '/survey_vote';
@@ -363,6 +365,11 @@ class AppRouter {
 
       case powerlifting:
         return MaterialPageRoute(builder: (_) => const PowerliftingScreen());
+
+      case powerliftingLeaderboard:
+        return MaterialPageRoute(
+          builder: (_) => const PowerliftingLeaderboardScreen(),
+        );
 
       default:
         // Wenn Route nicht gefunden → zur Login-Maske redirecten

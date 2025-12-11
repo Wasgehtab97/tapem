@@ -31,27 +31,13 @@ class AdminDashboardScreen extends StatelessWidget {
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(loc.adminDashboardTitle),
         foregroundColor: brandColor,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.alphaBlend(
-                brandColor.withOpacity(0.08),
-                theme.scaffoldBackgroundColor,
-              ),
-            ],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),

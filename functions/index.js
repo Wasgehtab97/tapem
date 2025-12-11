@@ -6,6 +6,7 @@ const avatars = require('./avatars');
 const xp = require('./xp');
 const activity = require('./activity');
 const gymCodes = require('./gymCodes');
+const powerlifting = require('./powerlifting');
 
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
@@ -15,6 +16,7 @@ exports.onChallengeState = avatars.onChallengeState;
 exports.onEventParticipation = avatars.onEventParticipation;
 exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
+exports.updatePowerliftingRankOnLog = powerlifting.updatePowerliftingRankOnLog;
 
 // Gym Code Functions (manual rotation only - works on Spark plan)
 exports.manuallyRotateGymCode = gymCodes.manuallyRotateGymCode;

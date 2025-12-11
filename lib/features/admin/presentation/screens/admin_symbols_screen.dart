@@ -35,7 +35,9 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
     final auth = context.watch<AuthProvider>();
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: Text(loc.admin_symbols_title)),
+        appBar: AppBar(
+          title: Text(loc.admin_symbols_title),
+        ),
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
@@ -45,6 +47,7 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
         .collection('users')
         .where('gymCodes', arrayContains: gymId)
         .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.admin_symbols_title),
@@ -57,73 +60,86 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: loc.admin_symbols_search_hint,
-                prefixIcon: const Icon(Icons.search),
+      body: Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: loc.admin_symbols_search_hint,
+                  prefixIcon: const Icon(Icons.search),
+                ),
+                onChanged: (v) {
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 350), () {
+                    setState(() => _query = v.toLowerCase());
+                  });
+                },
               ),
-              onChanged: (v) {
-                _debounce?.cancel();
-                _debounce = Timer(const Duration(milliseconds: 350), () {
-                  setState(() => _query = v.toLowerCase());
-                });
-              },
             ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: stream,
-              builder: (context, snapshot) {
-                final docs = snapshot.data?.docs ?? [];
-                final profiles = docs
-                    .map((d) =>
-                        PublicProfile.fromMap(d.id, d.data() as Map<String, dynamic>))
-                    .where((p) => p.safeLower.startsWith(_query))
-                    .toList();
-                if (profiles.isEmpty) {
-                  return Center(child: Text(loc.no_members_found));
-                }
-                return ListView.builder(
-                  itemCount: profiles.length,
-                  itemBuilder: (context, index) {
-                    final profile = profiles[index];
-                    final avatarKey = profile.avatarKey ?? 'default';
-                    final path = AvatarCatalog.instance.resolvePathOrFallback(
-                      avatarKey,
-                      gymId: gymId,
-                    );
-                    final image = Image.asset(path, errorBuilder:
-                        (_, __, ___) {
-                      if (kDebugMode) {
-                        debugPrint('[Avatar] failed to load $path');
-                      }
-                      return const Icon(Icons.person);
-                    });
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: image.image,
-                      ),
-                      title: Text(profile.username.isNotEmpty
-                          ? profile.username
-                          : profile.uid),
-                      onTap: () {
-                        debugPrint('[AdminSymbols] open uid=${profile.uid} gymId=$gymId');
-                        Navigator.of(context).pushNamed(
-                          AppRouter.userSymbols,
-                          arguments: profile.uid,
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  final docs = snapshot.data?.docs ?? [];
+                  final profiles = docs
+                      .map(
+                        (d) => PublicProfile.fromMap(
+                          d.id,
+                          d.data() as Map<String, dynamic>,
+                        ),
+                      )
+                      .where((p) => p.safeLower.startsWith(_query))
+                      .toList();
+                  if (profiles.isEmpty) {
+                    return Center(child: Text(loc.no_members_found));
+                  }
+                  return ListView.builder(
+                    itemCount: profiles.length,
+                    itemBuilder: (context, index) {
+                      final profile = profiles[index];
+                      final avatarKey = profile.avatarKey ?? 'default';
+                      final path = AvatarCatalog.instance.resolvePathOrFallback(
+                        avatarKey,
+                        gymId: gymId,
+                      );
+                      final image = Image.asset(
+                        path,
+                        errorBuilder: (_, __, ___) {
+                          if (kDebugMode) {
+                            debugPrint('[Avatar] failed to load $path');
+                          }
+                          return const Icon(Icons.person);
+                        },
+                      );
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: image.image,
+                        ),
+                        title: Text(
+                          profile.username.isNotEmpty
+                              ? profile.username
+                              : profile.uid,
+                        ),
+                        onTap: () {
+                          debugPrint(
+                            '[AdminSymbols] open uid=${profile.uid} gymId=$gymId',
+                          );
+                          Navigator.of(context).pushNamed(
+                            AppRouter.userSymbols,
+                            arguments: profile.uid,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -142,4 +158,3 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
     }
   }
 }
-

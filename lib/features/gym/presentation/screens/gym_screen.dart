@@ -161,22 +161,9 @@ class _GymScreenState extends State<GymScreen>
 
     return Scaffold(
       floatingActionButton: widget.floatingActionButton,
-      extendBodyBehindAppBar: true,
       appBar: appBar,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.alphaBlend(
-                brandColor.withOpacity(0.08),
-                theme.scaffoldBackgroundColor,
-              ),
-            ],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: DefaultTextStyle.merge(
           style: TextStyle(color: brandColor),
           child: SafeArea(

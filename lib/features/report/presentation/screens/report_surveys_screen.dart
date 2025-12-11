@@ -33,28 +33,14 @@ class ReportSurveysScreen extends ConsumerWidget {
     final closedCount = surveyState.closedSurveys.length;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(loc.reportSurveysTitle),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: brandColor,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.alphaBlend(
-                brandColor.withOpacity(0.05),
-                theme.scaffoldBackgroundColor,
-              ),
-            ],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.only(

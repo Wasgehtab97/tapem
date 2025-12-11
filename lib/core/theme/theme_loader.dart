@@ -208,7 +208,8 @@ class ThemeLoader extends ChangeNotifier {
     _currentTheme = AppTheme.customTheme(
       primary: primary,
       secondary: secondary,
-      background: background,
+      // Hintergrund und Flächen bleiben bewusst global neutral (schwarz),
+      // damit der App-Hintergrund über alle Gyms hinweg konsistent ist.
     );
     AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);
@@ -315,5 +316,4 @@ final themeLoaderProvider = ChangeNotifierProvider<ThemeLoader>((ref) {
   ref.onDispose(loader.dispose);
   return loader;
 });
-
 

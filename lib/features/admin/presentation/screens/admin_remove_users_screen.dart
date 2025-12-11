@@ -37,7 +37,9 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
     final auth = context.watch<AuthProvider>();
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Nutzer entfernen')),
+        appBar: AppBar(
+          title: const Text('Nutzer entfernen'),
+        ),
         body: const Center(child: Text('Kein Zugriff')),
       );
     }
@@ -52,113 +54,124 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
       appBar: AppBar(
         title: const Text('Nutzer entfernen'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Nutzer suchen (Name / UID)',
-                prefixIcon: Icon(Icons.search),
+      body: Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Nutzer suchen (Name / UID)',
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (value) {
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 300), () {
+                    setState(() => _query = value.toLowerCase());
+                  });
+                },
               ),
-              onChanged: (value) {
-                _debounce?.cancel();
-                _debounce = Timer(const Duration(milliseconds: 300), () {
-                  setState(() => _query = value.toLowerCase());
-                });
-              },
             ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final docs = snapshot.data?.docs ?? [];
-                final profiles = docs
-                    .map(
-                      (d) => PublicProfile.fromMap(
-                        d.id,
-                        d.data(),
-                      ),
-                    )
-                    .where(
-                      (p) =>
-                          _query.isEmpty ||
-                          p.safeLower.contains(_query) ||
-                          p.uid.toLowerCase().contains(_query),
-                    )
-                    .toList();
+            Expanded(
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final docs = snapshot.data?.docs ?? [];
+                  final profiles = docs
+                      .map(
+                        (d) => PublicProfile.fromMap(
+                          d.id,
+                          d.data(),
+                        ),
+                      )
+                      .where(
+                        (p) =>
+                            _query.isEmpty ||
+                            p.safeLower.contains(_query) ||
+                            p.uid.toLowerCase().contains(_query),
+                      )
+                      .toList();
 
-                if (profiles.isEmpty) {
-                  return Center(
-                    child: Text(
-                      loc.no_members_found,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                  if (profiles.isEmpty) {
+                    return Center(
+                      child: Text(
+                        loc.no_members_found,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: profiles.length,
+                    itemBuilder: (context, index) {
+                      final profile = profiles[index];
+                      final avatarKey = profile.avatarKey ?? 'default';
+                      final path = AvatarCatalog.instance.resolvePathOrFallback(
+                        avatarKey,
+                        gymId: gymId,
+                      );
+                      final image = Image.asset(
+                        path,
+                        errorBuilder: (_, __, ___) {
+                          if (kDebugMode) {
+                            debugPrint('[Avatar] failed to load $path');
+                          }
+                          return const Icon(Icons.person);
+                        },
+                      );
+                      final isDeleting = _deleting.contains(profile.uid);
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: image.image,
+                        ),
+                        title: Text(
+                          profile.username.isNotEmpty
+                              ? profile.username
+                              : profile.uid,
+                        ),
+                        subtitle: Text(
+                          profile.uid,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.6),
+                              ),
+                        ),
+                        trailing: isDeleting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.delete_forever),
+                                color: Theme.of(context).colorScheme.error,
+                                onPressed: () => _confirmAndDeleteUser(
+                                  context,
+                                  fs,
+                                  gymId,
+                                  profile,
+                                ),
+                              ),
+                      );
+                    },
                   );
-                }
-
-                return ListView.builder(
-                  itemCount: profiles.length,
-                  itemBuilder: (context, index) {
-                    final profile = profiles[index];
-                    final avatarKey = profile.avatarKey ?? 'default';
-                    final path = AvatarCatalog.instance.resolvePathOrFallback(
-                      avatarKey,
-                      gymId: gymId,
-                    );
-                    final image = Image.asset(path, errorBuilder:
-                        (_, __, ___) {
-                      if (kDebugMode) {
-                        debugPrint('[Avatar] failed to load $path');
-                      }
-                      return const Icon(Icons.person);
-                    });
-                    final isDeleting = _deleting.contains(profile.uid);
-
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: image.image,
-                      ),
-                      title: Text(
-                        profile.username.isNotEmpty
-                            ? profile.username
-                            : profile.uid,
-                      ),
-                      subtitle: Text(
-                        profile.uid,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
-                      ),
-                      trailing: isDeleting
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.delete_forever),
-                              color: Theme.of(context).colorScheme.error,
-                              onPressed: () =>
-                                  _confirmAndDeleteUser(context, fs, gymId, profile),
-                            ),
-                    );
-                  },
-                );
-              },
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

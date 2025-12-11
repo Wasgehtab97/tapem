@@ -47,9 +47,7 @@ class _RankScreenState extends ConsumerState<RankScreen>
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -102,16 +100,7 @@ class _RankScreenState extends ConsumerState<RankScreen>
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.lerp(theme.scaffoldBackgroundColor, accentColor, 0.05)!,
-            ],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: TabBarView(
             controller: _tabController,
@@ -146,6 +135,16 @@ class _RankScreenState extends ConsumerState<RankScreen>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
                     gradientStart: Colors.orange.withOpacity(0.1),
                     gradientEnd: Colors.orange.withOpacity(0.02),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _RankCard(
+                    title: loc.powerliftingTitle,
+                    icon: const Icon(Icons.auto_graph_rounded),
+                    subtitle: loc.profileStatsButtonSubtitle,
+                    onTap: () => Navigator.of(context)
+                        .pushNamed(AppRouter.powerliftingLeaderboard),
+                    gradientStart: accentColor.withOpacity(0.12),
+                    gradientEnd: accentColor.withOpacity(0.03),
                   ),
                 ],
               ),
