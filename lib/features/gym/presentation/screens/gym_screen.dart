@@ -9,6 +9,8 @@ import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
@@ -257,14 +259,41 @@ class _GymScreenState extends State<GymScreen>
                                               },
                                             );
                                           } else {
-                                            nav.pushNamed(
-                                              AppRouter.workoutDay,
-                                              arguments: {
-                                                'gymId': gymId,
-                                                'deviceId': idStr,
-                                                'exerciseId': idStr,
-                                              },
-                                            );
+                                            final timer = context
+                                                .read<WorkoutSessionDurationService>();
+                                            if (timer.isRunning) {
+                                              final authProv =
+                                                  context.read<AuthProvider>();
+                                              final userId = authProv.userId;
+                                              if (userId != null) {
+                                                try {
+                                                  final controller = context.read<
+                                                      WorkoutDayController>();
+                                                  controller.addOrFocusSession(
+                                                    gymId: gymId,
+                                                    deviceId: idStr,
+                                                    exerciseId: idStr,
+                                                    exerciseName: d.name,
+                                                    userId: userId,
+                                                  );
+                                                } catch (_) {
+                                                  // Fallback: Navigation erfolgt trotzdem.
+                                                }
+                                              }
+                                              nav.pushNamed(
+                                                AppRouter.home,
+                                                arguments: 2,
+                                              );
+                                            } else {
+                                              nav.pushNamed(
+                                                AppRouter.workoutDay,
+                                                arguments: {
+                                                  'gymId': gymId,
+                                                  'deviceId': idStr,
+                                                  'exerciseId': idStr,
+                                                },
+                                              );
+                                            }
                                           }
                                         },
                                       ),

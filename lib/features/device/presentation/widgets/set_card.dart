@@ -1250,6 +1250,16 @@ class _InputPillState extends State<_InputPill> {
     }
   }
 
+  void _handleTap() {
+    if (widget.readOnly) return;
+    // Sicherstellen, dass das Feld den Fokus erhält, auch wenn der Tap
+    // auf einen Bereich außerhalb des eigentlichen Textes geht.
+    if (!widget.focusNode.hasFocus) {
+      widget.focusNode.requestFocus();
+    }
+    widget.onTap?.call();
+  }
+
   @override
   @override
   Widget build(BuildContext context) {
@@ -1281,50 +1291,57 @@ class _InputPillState extends State<_InputPill> {
     // Container + TextFormField so, dass das Editable den kompletten
     // sichtbaren „Pill“-Bereich einnimmt. Damit stimmt die Tap‑Fläche
     // exakt mit der optischen Fläche überein.
-    final Widget pill = Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      constraints: showLabel ? null : BoxConstraints(minHeight: minHeight),
-      decoration: BoxDecoration(
-        color: baseFill,
-        borderRadius: radius,
-        border: Border.all(
-          color: borderColor,
-          width: borderWid,
+    final Widget pill = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _handleTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
         ),
-      ),
-      alignment: Alignment.center,
-      child: TextFormField(
-        controller: widget.controller,
-        focusNode: widget.focusNode,
-        enabled: !widget.readOnly,
-        // Inhalt kommt ausschließlich über die Overlay‑Tastatur,
-        // deshalb systemseitig „readOnly“, aber mit eigenem onTap.
-        readOnly: true,
-        showCursor: !widget.readOnly,
-        onTap: widget.readOnly ? null : widget.onTap,
-        keyboardType: TextInputType.none,
-        validator: widget.validator,
-        style: textStyle,
-        cursorColor: Colors.white,
-        cursorOpacityAnimates: true,
-        cursorWidth: 2.0,
-        cursorRadius: const Radius.circular(20),
-        enableInteractiveSelection: false,
-        textAlignVertical: TextAlignVertical.center,
-        textAlign: TextAlign.center,
-        decoration: InputDecoration(
-          filled: false,
-          fillColor: Colors.transparent,
-          isCollapsed: true,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          hintText: widget.placeholder ?? widget.label,
-          hintStyle: placeholderStyle,
+        constraints: BoxConstraints(
+          minHeight: minHeight,
+        ),
+        decoration: BoxDecoration(
+          color: baseFill,
+          borderRadius: radius,
+          border: Border.all(
+            color: borderColor,
+            width: borderWid,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: IgnorePointer(
+          // Pointer‑Events werden vom GestureDetector behandelt,
+          // das Textfeld dient nur zur Darstellung + Cursor.
+          child: TextFormField(
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            enabled: !widget.readOnly,
+            readOnly: true,
+            showCursor: !widget.readOnly,
+            keyboardType: TextInputType.none,
+            validator: widget.validator,
+            style: textStyle,
+            cursorColor: Colors.white,
+            cursorOpacityAnimates: true,
+            cursorWidth: 2.0,
+            cursorRadius: const Radius.circular(20),
+            enableInteractiveSelection: false,
+            textAlignVertical: TextAlignVertical.center,
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              filled: false,
+              fillColor: Colors.transparent,
+              isCollapsed: true,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              hintText: widget.placeholder ?? widget.label,
+              hintStyle: placeholderStyle,
+            ),
+          ),
         ),
       ),
     );

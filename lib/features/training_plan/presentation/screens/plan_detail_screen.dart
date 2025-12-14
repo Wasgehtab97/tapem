@@ -15,6 +15,11 @@ import 'package:tapem/features/device/providers/workout_day_controller_provider.
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_stats.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart' show workoutSessionDurationServiceProvider;
+import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 
 class PlanDetailScreen extends ConsumerStatefulWidget {
   const PlanDetailScreen({super.key, this.plan});
@@ -49,6 +54,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   void _openHistory(
     TrainingPlanExercise item,
     Map<String, Device> deviceMap,
+    String? ownerUserId,
   ) {
     final device = deviceMap[item.deviceId];
     final isMulti = device?.isMulti ?? false;
@@ -64,7 +70,27 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
         'isMulti': isMulti,
         if (isMulti) 'exerciseId': item.exerciseId,
         if (isMulti && exerciseName != null) 'exerciseName': exerciseName,
+        if (ownerUserId != null) 'userId': ownerUserId,
       },
+    );
+  }
+
+  Future<WorkoutDeviceSelection?> _openExerciseSwapPicker({
+    required BuildContext context,
+    required String initialDeviceId,
+    required String gymId,
+  }) async {
+    if (gymId.isEmpty) {
+      return null;
+    }
+    return Navigator.of(context).push<WorkoutDeviceSelection>(
+      MaterialPageRoute(
+        builder: (ctx) => GymScreen(
+          selectionMode: true,
+          onSelect: (selection) =>
+              Navigator.of(ctx).pop(selection),
+        ),
+      ),
     );
   }
 
@@ -73,6 +99,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     TrainingPlanStats stats,
     DraftTrainingPlan draft,
     Map<String, Device> deviceMap,
+    String? ownerUserId,
   ) {
     final plan = widget.plan;
     // Durchschnittliche Abschlüsse pro Woche:
@@ -181,7 +208,11 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       deviceMap[ex.deviceId]?.name ?? ex.deviceId,
                     ),
                     trailing: Icon(Icons.arrow_forward, color: brandColor),
-                    onTap: () => _openHistory(ex, deviceMap),
+                  onTap: () => _openHistory(
+                    ex,
+                    deviceMap,
+                    ownerUserId,
+                  ),
                   ),
                 ),
             ],
@@ -275,8 +306,17 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final planId = widget.plan?.id ?? draft.originalId;
-    final statsAsync =
-        planId != null ? ref.watch(trainingPlanStatsProvider(planId)) : null;
+
+    final authState = ref.watch(authViewStateProvider);
+    final ownerUserId = widget.plan?.clientId ?? authState.userId;
+
+    final statsAsync = (planId != null && ownerUserId != null)
+        ? ref.watch(
+            trainingPlanStatsForOwnerProvider(
+              PlanStatsOwnerKey(userId: ownerUserId, planId: planId),
+            ),
+          )
+        : null;
     final statsCount =
         statsAsync?.maybeWhen(data: (s) => s.completions, orElse: () => null);
 
@@ -306,6 +346,10 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
         _ensureExerciseNames(draft, deviceMap);
       });
     }
+
+    final paletteColors = PlanColorPalette.colors(theme);
+    final selectedColor =
+        PlanColorPalette.colorForIndex(draft.colorIndex, theme);
 
     return Scaffold(
       appBar: AppBar(
@@ -385,95 +429,306 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: draft.exercises.isEmpty
-                ? Center(
-                    child: Text(
-                      'Keine Übungen.\nFüge Übungen über "+" hinzu.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.hintColor,
-                      ),
-                    ),
-                  )
-                : ReorderableListView.builder(
-                    padding: const EdgeInsets.only(bottom: 100), // Space for FAB
-                    itemCount: draft.exercises.length,
-                    onReorder: (oldIndex, newIndex) {
-                      ref
-                          .read(planBuilderProvider.notifier)
-                          .reorderExercises(oldIndex, newIndex);
-                    },
-                    itemBuilder: (context, index) {
-                      final item = draft.exercises[index];
-                      final device = deviceMap[item.deviceId];
-                      final deviceName = device?.name ?? 'Unbekanntes Gerät (${item.deviceId})';
-                      final nameKey = _exerciseKey(item);
-                      final exerciseName = item.name?.isNotEmpty == true
-                          ? item.name
-                          : _resolvedNames[nameKey];
-                      final title = exerciseName ?? deviceName;
-                      
-                      // Identify Exercise Name if different?
-                      // Currently assuming single device selection mostly or handling implicitly.
-                      // If multi, exerciseId might help distinguish? 
-                      // Need access to Exercise definition? Not easily available in gymState (list of Devices).
-                      // The `Device` model has exercises? No, `Device` has sub-properties?
-                      // Assuming Device Name is sufficient for now, or "Squat Rack (Squats)".
-                       
-                      return Dismissible(
-                        key: ValueKey('${item.deviceId}_${item.exerciseId}_$index'), // Unique key
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          color: Colors.red,
-                          padding: const EdgeInsets.only(right: 16),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        onDismissed: (_) {
-                          ref.read(planBuilderProvider.notifier).removeExercise(index);
-                        },
-                        child: ListTile(
-                          key: ValueKey('${item.deviceId}_${item.exerciseId}_$index'),
-                          leading: CircleAvatar(
-                            backgroundColor: brandColor.withOpacity(0.1),
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(color: brandColor, fontWeight: FontWeight.bold),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              selectedColor.withOpacity(0.18),
+              Colors.black.withOpacity(0.85),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selectedColor.withOpacity(0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                selectedColor,
+                                selectedColor.withOpacity(0.7),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: (exerciseName != null && exerciseName != deviceName)
-                              ? Text(deviceName)
-                              : null,
-                          // Subtitle for exercise ID if needed?
-                          trailing: const Icon(Icons.drag_handle),
+                          child: const Icon(
+                            Icons.view_list_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            draft.name.isEmpty ? 'Neuer Trainingsplan' : draft.name,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '${draft.exercises.length} Übung${draft.exercises.length == 1 ? '' : 'en'}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Plan-Farbe',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (var i = 0; i < paletteColors.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () {
+                                ref
+                                    .read(planBuilderProvider.notifier)
+                                    .updateColorIndex(i);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: i == draft.colorIndex
+                                        ? Colors.white
+                                        : Colors.white.withOpacity(0.3),
+                                    width: i == draft.colorIndex ? 2 : 1,
+                                  ),
+                                  color: paletteColors[i],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: draft.exercises.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Keine Übungen.\nFüge Übungen über "+" hinzu.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      )
+                    : ReorderableListView.builder(
+                        padding: const EdgeInsets.only(bottom: 100),
+                        itemCount: draft.exercises.length,
+                        onReorder: (oldIndex, newIndex) {
+                          ref
+                              .read(planBuilderProvider.notifier)
+                              .reorderExercises(oldIndex, newIndex);
+                        },
+                        itemBuilder: (context, index) {
+                          final item = draft.exercises[index];
+                          final device = deviceMap[item.deviceId];
+                          final deviceName =
+                              device?.name ?? 'Unbekanntes Gerät (${item.deviceId})';
+                          final nameKey = _exerciseKey(item);
+                          final exerciseName = item.name?.isNotEmpty == true
+                              ? item.name
+                              : _resolvedNames[nameKey];
+                          final title = exerciseName ?? deviceName;
+
+                          return Dismissible(
+                            key: ValueKey(
+                              '${item.deviceId}_${item.exerciseId}_$index',
+                            ),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              color: Colors.red,
+                              padding: const EdgeInsets.only(right: 16),
+                              child:
+                                  const Icon(Icons.delete, color: Colors.white),
+                            ),
+                            onDismissed: (_) {
+                              ref
+                                  .read(planBuilderProvider.notifier)
+                                  .removeExercise(index);
+                            },
+                            child: Card(
+                              key: ValueKey(
+                                '${item.deviceId}_${item.exerciseId}_$index',
+                              ),
+                              elevation: 0,
+                              color: theme.cardColor.withOpacity(0.6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(
+                                  color:
+                                      theme.dividerColor.withOpacity(0.4),
+                                ),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      selectedColor.withOpacity(0.12),
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: selectedColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: (exerciseName != null &&
+                                        exerciseName != deviceName)
+                                    ? Text(deviceName)
+                                    : null,
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.swap_horiz_rounded,
+                                  ),
+                                  tooltip: 'Übung austauschen',
+                                  onPressed: () async {
+                                    final selection =
+                                        await _openExerciseSwapPicker(
+                                      context: context,
+                                      initialDeviceId: item.deviceId,
+                                      gymId: currentGymId,
+                                    );
+                                    if (selection == null) return;
+                                    ref
+                                        .read(
+                                          planBuilderProvider.notifier,
+                                        )
+                                        .replaceExercise(
+                                          index: index,
+                                          deviceId: selection.deviceId,
+                                          exerciseId:
+                                              selection.exerciseId,
+                                          name: selection.exerciseName,
+                                        );
+                                  },
+                                ),
+                                onTap: () async {
+                                  final action =
+                                      await showModalBottomSheet<String>(
+                                    context: context,
+                                    builder: (sheetCtx) => SafeArea(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ListTile(
+                                            leading: const Icon(
+                                              Icons.swap_horiz_rounded,
+                                            ),
+                                            title: const Text(
+                                              'Übung austauschen',
+                                            ),
+                                            onTap: () => Navigator.pop(
+                                              sheetCtx,
+                                              'swap',
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                  if (action != 'swap') return;
+                                  final selection =
+                                      await _openExerciseSwapPicker(
+                                    context: context,
+                                    initialDeviceId: item.deviceId,
+                                    gymId: currentGymId,
+                                  );
+                                  if (selection == null) return;
+                                  ref
+                                      .read(
+                                        planBuilderProvider.notifier,
+                                      )
+                                      .replaceExercise(
+                                        index: index,
+                                        deviceId: selection.deviceId,
+                                        exerciseId: selection.exerciseId,
+                                        name: selection.exerciseName,
+                                      );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Row(
           children: [
-            if (planId != null)
+            if (planId != null && ownerUserId != null)
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    final stats =
-                        ref.read(trainingPlanStatsProvider(planId!).future);
-                    stats.then((value) {
+                    final statsFuture = ref.read(
+                      trainingPlanStatsForOwnerProvider(
+                        PlanStatsOwnerKey(
+                          userId: ownerUserId,
+                          planId: planId!,
+                        ),
+                      ).future,
+                    );
+                    statsFuture.then((value) {
                       if (!mounted) return;
                       _openStats(
                         context,
                         value,
                         draft,
                         deviceMap,
+                        ownerUserId,
                       );
                     });
                   },
@@ -502,6 +757,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
                         final controller =
                             ref.read(workoutDayControllerProvider);
+                        final timer =
+                            ref.read(workoutSessionDurationServiceProvider);
 
                         if (isTodayPlanActive) {
                           // Training beenden: offene Sessions schließen und Plan-Kontext löschen.
@@ -554,17 +811,25 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                         );
 
                         if (firstItem != null) {
-                          Navigator.pushNamed(
-                            context,
-                            AppRouter.workoutDay,
-                            arguments: {
-                              'gymId': gymId,
-                              'deviceId': firstItem.deviceId,
-                              'exerciseId': firstItem.exerciseId,
-                              'planId': effectivePlanId,
-                              'planName': draft.name,
-                            },
-                          );
+                          if (timer.isRunning) {
+                            Navigator.pushNamed(
+                              context,
+                              AppRouter.home,
+                              arguments: 2,
+                            );
+                          } else {
+                            Navigator.pushNamed(
+                              context,
+                              AppRouter.workoutDay,
+                              arguments: {
+                                'gymId': gymId,
+                                'deviceId': firstItem.deviceId,
+                                'exerciseId': firstItem.exerciseId,
+                                'planId': effectivePlanId,
+                                'planName': draft.name,
+                              },
+                            );
+                          }
                         }
                       },
                 icon: Icon(isTodayPlanActive ? Icons.stop : Icons.play_arrow),

@@ -179,6 +179,7 @@ class AppRouter {
             isMulti: args['isMulti'] as bool? ?? false,
             exerciseId: args['exerciseId'] as String?,
             exerciseName: args['exerciseName'] as String?,
+            ownerUserId: args['userId'] as String?,
           ),
         );
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tapem/core/database/database_service.dart';
@@ -179,6 +180,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
     required bool fromCacheOnly,
   }) async {
     _sessions = sessions;
+    await _hydrateExerciseNamesIfNeeded();
     if (_sessions.isNotEmpty) {
       final sessionGymId = _sessions.first.gymId;
       await _updateGymId(sessionGymId);
@@ -238,6 +240,67 @@ class TrainingDetailsProvider extends ChangeNotifier {
     if (!fromCacheOnly) {
       _isLoading = false;
     }
+  }
+
+  Future<void> _hydrateExerciseNamesIfNeeded() async {
+    final gymId = _gymId;
+    if (gymId == null || gymId.isEmpty) {
+      return;
+    }
+
+    final pending = _sessions.where((s) {
+      final hasExerciseId = s.exerciseId != null && s.exerciseId!.isNotEmpty;
+      final hasName = s.exerciseName != null && s.exerciseName!.trim().isNotEmpty;
+      return s.isMulti && hasExerciseId && !hasName;
+    }).toList();
+
+    if (pending.isEmpty) {
+      return;
+    }
+
+    final firestore = FirebaseFirestore.instance;
+    final cache = <String, String>{}; // "$deviceId|$exerciseId" -> name
+
+    for (final session in pending) {
+      final exerciseId = session.exerciseId;
+      if (exerciseId == null || exerciseId.isEmpty) continue;
+      final key = '${session.deviceId}|$exerciseId';
+      if (cache.containsKey(key)) continue;
+      try {
+        final deviceRef = firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('devices')
+            .doc(session.deviceId);
+        final exerciseSnap =
+            await deviceRef.collection('exercises').doc(exerciseId).get();
+        final data = exerciseSnap.data();
+        final name = data != null ? data['name'] as String? : null;
+        if (name != null && name.trim().isNotEmpty) {
+          cache[key] = name.trim();
+        }
+      } catch (_) {
+        // Silent failure – we fallen back to deviceName later anyway.
+      }
+    }
+
+    if (cache.isEmpty) {
+      return;
+    }
+
+    _sessions = _sessions.map((s) {
+      if (!s.isMulti ||
+          s.exerciseId == null ||
+          (s.exerciseName != null && s.exerciseName!.trim().isNotEmpty)) {
+        return s;
+      }
+      final key = '${s.deviceId}|${s.exerciseId}';
+      final resolved = cache[key];
+      if (resolved == null || resolved.isEmpty) {
+        return s;
+      }
+      return s.copyWith(exerciseName: resolved);
+    }).toList();
   }
 
   Future<void> _updateGymId(String? newGymId) async {

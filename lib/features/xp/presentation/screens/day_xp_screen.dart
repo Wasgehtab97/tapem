@@ -184,15 +184,34 @@ class _LeaderboardCallToAction extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withOpacity(0.05),
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    brandColor.withOpacity(0.22),
+                    brandColor.withOpacity(0.02),
+                  ],
+                  center: Alignment.topLeft,
+                  radius: 1.0,
+                ),
+                border: Border.all(
+                  color: brandColor.withOpacity(0.4),
+                  width: 1.1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Icon(
-                Icons.arrow_forward_ios_rounded,
+                Icons.arrow_outward_rounded,
                 color: brandColor,
-                size: 16,
+                size: 18,
               ),
             ),
           ],

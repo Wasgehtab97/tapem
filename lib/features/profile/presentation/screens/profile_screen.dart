@@ -1,4 +1,9 @@
 import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
+import 'package:tapem/features/profile/presentation/widgets/profile_coaching_button.dart';
+import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/training_day_action_sheet.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_selection_sheet.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 // lib/features/profile/presentation/screens/profile_screen.dart
 
 import 'dart:ui';
@@ -12,6 +17,13 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/friends/providers/friends_riverpod.dart';
+import 'package:tapem/features/coaching/application/coaching_providers.dart'
+    as coaching;
+import 'package:tapem/features/coaching/application/coach_invite_providers.dart'
+    as coach_invites;
+import 'package:tapem/features/coaching/presentation/screens/select_coach_screen.dart';
+import 'package:tapem/features/coaching/presentation/screens/invite_external_coach_screen.dart';
+import 'package:tapem/features/coaching/domain/models/coach_client_relation.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -32,6 +44,9 @@ import 'package:tapem/features/friends/presentation/screens/friends_home_screen.
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
 import 'profile_stats_screen.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 
 const bool enableFriends = true;
 
@@ -59,19 +74,578 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     });
   }
 
-  void _openCalendarPopup(String userId, List<String> trainingDates) {
-    showDialog<void>(
+  Future<void> _openCalendarPopup(
+    String userId,
+    List<String> trainingDates,
+  ) async {
+    // Plan-Zuweisungen + Farben nur im Popup laden (nicht im Profil-Header).
+    final auth = context.read<AuthProvider>();
+    final gymId = auth.gymCode ?? '';
+    final uid = auth.userId;
+
+    List<String> scheduledDates = const [];
+    Map<String, Color> scheduledColorsByDate = const {};
+
+    if (uid != null && gymId.isNotEmpty) {
+      try {
+        final scheduleRepo = ref.read(trainingScheduleRepositoryProvider);
+        final planRepo = ref.read(trainingPlanRepositoryProvider);
+        final assignments = await scheduleRepo.getAssignmentsForYear(
+          userId: uid,
+          year: DateTime.now().year,
+        );
+        final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
+        final plansById = {
+          for (final p in plans) p.id: p,
+        };
+        final colors = <String, Color>{};
+        final dateKeys = <String>[];
+        for (final a in assignments) {
+          dateKeys.add(a.dateKey);
+          final plan = plansById[a.planId];
+          if (plan != null) {
+            colors[a.dateKey] = PlanColorPalette.colorForIndex(
+              plan.colorIndex,
+              Theme.of(context),
+            );
+          }
+        }
+        scheduledDates = dateKeys;
+        scheduledColorsByDate = colors;
+      } catch (_) {
+        // Falls etwas schiefgeht, einfach ohne Farbmarkierungen weitermachen.
+        scheduledDates = const [];
+        scheduledColorsByDate = const {};
+      }
+    }
+
+    final selected = await showDialog<DateTime>(
       context: context,
       barrierColor: Colors.black54,
-      builder:
-          (_) => CalendarPopup(
-            trainingDates: trainingDates,
-            initialYear: DateTime.now().year,
-            userId: userId,
-          ),
+      builder: (_) => CalendarPopup(
+        trainingDates: trainingDates,
+        initialYear: DateTime.now().year,
+        userId: userId,
+        navigateOnTap: false,
+        scheduledDates: scheduledDates,
+        scheduledColorsByDate: scheduledColorsByDate,
+      ),
+    );
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    if (uid == null) {
+      return;
+    }
+
+    final dateKey =
+        '${selected.year.toString().padLeft(4, '0')}-'
+        '${selected.month.toString().padLeft(2, '0')}-'
+        '${selected.day.toString().padLeft(2, '0')}';
+
+    String? assignedPlanName;
+    String? assignedPlanId;
+    try {
+      final scheduleRepo =
+          ref.read(trainingScheduleRepositoryProvider);
+      final assignment = await scheduleRepo.getAssignment(
+        userId: uid,
+        dateKey: dateKey,
+      );
+      if (assignment != null) {
+        assignedPlanId = assignment.planId;
+        final planRepo = ref.read(trainingPlanRepositoryProvider);
+        final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
+        final matchingPlan = plans
+            .where((p) => p.id == assignment.planId)
+            .toList()
+            .cast<TrainingPlan>();
+        if (matchingPlan.isNotEmpty) {
+          assignedPlanName = matchingPlan.first.name;
+        }
+      }
+    } catch (_) {
+      // Bei Fehlern einfach ohne Plan-Namen weitermachen.
+      assignedPlanName = null;
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => TrainingDayActionSheet(
+        date: selected,
+        assignedPlanName: assignedPlanName,
+        onOpenDetails: () {
+          final args = <String, dynamic>{
+            'userId': userId,
+            'date': selected,
+          };
+          if (gymId.isNotEmpty) {
+            args['gymId'] = gymId;
+          }
+          Navigator.of(context).pushNamed(
+            AppRouter.trainingDetails,
+            arguments: args,
+          );
+        },
+        onOpenPlanSelection: () async {
+          if (gymId.isEmpty) {
+            return;
+          }
+          try {
+            final planRepo = ref.read(trainingPlanRepositoryProvider);
+            final plans = await planRepo.getPlans(
+              gymId: gymId,
+              userId: uid,
+            );
+            if (!mounted) return;
+            showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => PlanSelectionSheet(
+                plans: plans,
+                currentUserId: uid,
+                selectedPlanId: assignedPlanId,
+                onClear: assignedPlanId == null
+                    ? null
+                    : () async {
+                        final scheduleRepo =
+                            ref.read(trainingScheduleRepositoryProvider);
+                        await scheduleRepo.clearAssignment(
+                          userId: uid,
+                          dateKey: dateKey,
+                        );
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('Plan-Zuweisung für diesen Tag entfernt.'),
+                          ),
+                        );
+                      },
+                onSelect: (plan) async {
+                  final scheduleRepo =
+                      ref.read(trainingScheduleRepositoryProvider);
+                  await scheduleRepo.setAssignment(
+                    userId: uid,
+                    dateKey: dateKey,
+                    planId: plan.id,
+                  );
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Plan "${plan.name}" für diesen Tag geplant.',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Fehler beim Laden der Pläne: $e'),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
+  Future<void> _handleStartTraining() async {
+    final auth = context.read<AuthProvider>();
+    final gymId = auth.gymCode;
+    final uid = auth.userId;
+    if (uid == null || gymId == null || gymId.isEmpty) {
+      return;
+    }
+
+    final timerService =
+        ref.read(workoutSessionDurationServiceProvider);
+    final isTimerRunning = timerService.isRunning;
+    WorkoutDayController? workoutController;
+    try {
+      workoutController = context.read<WorkoutDayController>();
+    } catch (_) {
+      workoutController = null;
+    }
+
+    // Wenn Timer läuft, biete explizites Stoppen / Abbrechen an.
+    if (isTimerRunning) {
+      final theme = Theme.of(context);
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Trainingstag abbrechen?'),
+          content: const Text(
+            'Der aktuelle Trainingstag wird verworfen. '
+            'Alle noch nicht gespeicherten Trainingsdaten gehen verloren.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Zurück'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+              ),
+              child: const Text('Training stoppen'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) {
+        return;
+      }
+
+      // 1) Timer verwerfen
+      await timerService.discard();
+
+      // 2) Alle offenen Sessions für diesen User/Gym schließen
+      if (workoutController != null) {
+        workoutController.cancelActivePlan(
+          userId: uid,
+          gymId: gymId,
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trainingstag wurde abgebrochen.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    final now = DateTime.now();
+    final dateKey =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final scheduleRepo = ref.read(trainingScheduleRepositoryProvider);
+    String? planId;
+    String? planName;
+    TrainingPlan? selectedPlan;
+    try {
+      final assignment = await scheduleRepo.getAssignment(
+        userId: uid,
+        dateKey: dateKey,
+      );
+      if (assignment != null) {
+        final planRepo =
+            ref.read(trainingPlanRepositoryProvider);
+        final plans = await planRepo.getPlans(
+          gymId: gymId,
+          userId: uid,
+        );
+        for (final p in plans) {
+          if (p.id == assignment.planId) {
+            selectedPlan = p;
+            planId = p.id;
+            planName = p.name;
+            break;
+          }
+        }
+      }
+    } catch (_) {
+      planId = null;
+      planName = null;
+    }
+
+    Future<void> startFreestyle() async {
+      final timer =
+          ref.read(workoutSessionDurationServiceProvider);
+      await timer.start(uid: uid, gymId: gymId);
+      if (!mounted) return;
+      Navigator.pushNamed(context, AppRouter.home, arguments: 0);
+    }
+
+    Future<void> startPlan(
+      TrainingPlan plan, {
+      required bool goToWorkoutTab,
+    }) async {
+      final controller =
+          workoutController ?? context.read<WorkoutDayController>();
+
+      if (plan.exercises.isNotEmpty) {
+        for (final item in plan.exercises) {
+          final exerciseName =
+              item.name?.isNotEmpty == true ? item.name : null;
+          controller.addOrFocusSession(
+            gymId: gymId,
+            deviceId: item.deviceId,
+            exerciseId: item.exerciseId,
+            exerciseName: exerciseName,
+            userId: uid,
+          );
+        }
+      }
+
+      final effectivePlanId = plan.id;
+      if (effectivePlanId == null || effectivePlanId.isEmpty) {
+        // Fallback: ohne gültige Plan-ID einfach Freestyle starten.
+        await startFreestyle();
+        return;
+      }
+
+      controller.setPlanContext(
+        gymId: gymId,
+        planId: effectivePlanId,
+        planName: plan.name,
+        date: now,
+      );
+
+      await timerService.start(uid: uid, gymId: gymId);
+      if (!mounted) return;
+
+      if (goToWorkoutTab) {
+        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
+      } else if (plan.exercises.isNotEmpty) {
+        final firstItem = plan.exercises.first;
+        Navigator.pushNamed(
+          context,
+          AppRouter.workoutDay,
+          arguments: {
+            'gymId': gymId,
+            'deviceId': firstItem.deviceId,
+            'exerciseId': firstItem.exerciseId,
+            'planId': effectivePlanId,
+            'planName': plan.name,
+          },
+        );
+      } else {
+        Navigator.pushNamed(context, AppRouter.home, arguments: 0);
+      }
+    }
+
+    Future<void> startPlanned() async {
+      if (planId == null || planName == null || selectedPlan == null) {
+        await startFreestyle();
+        return;
+      }
+      await startPlan(selectedPlan!, goToWorkoutTab: true);
+    }
+
+    Future<void> startOtherPlan() async {
+      try {
+        final planRepo = ref.read(trainingPlanRepositoryProvider);
+        final plans = await planRepo.getPlans(
+          gymId: gymId,
+          userId: uid,
+        );
+        if (!mounted) return;
+        if (plans.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Du hast aktuell keine Trainingspläne.'),
+            ),
+          );
+          return;
+        }
+
+        final theme = Theme.of(context);
+        final chosen = await showModalBottomSheet<TrainingPlan>(
+          context: context,
+          builder: (bottomCtx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'Anderen Plan auswählen',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                for (final p in plans)
+                  Builder(
+                    builder: (_) {
+                      final color = PlanColorPalette.colorForIndex(
+                        p.colorIndex,
+                        theme,
+                      );
+                      final isCoachPlan = p.coachId != null;
+                      final exerciseCount = p.exercises.length;
+                      final subtitle =
+                          '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}';
+                      return ListTile(
+                        leading: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                color,
+                                color.withOpacity(0.7),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.view_list_rounded,
+                            color: Colors.black,
+                            size: 18,
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                p.name,
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (isCoachPlan)
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Coach-Plan',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: color.withOpacity(0.9),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withOpacity(0.7),
+                          ),
+                        ),
+                        onTap: () => Navigator.pop(bottomCtx, p),
+                      );
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+
+        if (!mounted || chosen == null) {
+          return;
+        }
+
+        await startPlan(chosen, goToWorkoutTab: false);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Fehler beim Laden der Pläne: $e',
+            ),
+          ),
+        );
+      }
+    }
+
+    if (planId == null || planName == null) {
+      await startFreestyle();
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final accent = theme.colorScheme.primary;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16),
+                child: Card(
+                  color: accent.withOpacity(0.12),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.black,
+                      child:
+                          const Icon(Icons.play_arrow_rounded),
+                    ),
+                    title: Text(
+                      'Plan ($planName)',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: accent,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Geplanter Plan für heute',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface
+                            .withOpacity(0.7),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      startPlanned();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              ListTile(
+                leading:
+                    const Icon(Icons.swap_horiz_rounded),
+                title: const Text('Anderer Plan'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  startOtherPlan();
+                },
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.fitness_center_outlined),
+                title: const Text('Freestyle'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  startFreestyle();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _showAvatarPicker() {
     final auth = context.read<AuthProvider>();
@@ -161,6 +735,41 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showCoachingSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (bottomSheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: riverpod.Consumer(
+              builder: (context, ref, _) {
+                final relationsAsync =
+                    ref.watch(coaching.clientRelationsProvider);
+                return relationsAsync.maybeWhen(
+                  data: (relations) {
+                    final active = relations
+                        .where((r) => r.isActive)
+                        .toList(growable: false);
+                    final pending = relations
+                        .where((r) => r.isPending)
+                        .toList(growable: false);
+                    return _ProfileCoachingSection(
+                      activeRelations: active,
+                      pendingRelations: pending,
+                    );
+                  },
+                  orElse: () => const SizedBox.shrink(),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -343,7 +952,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 year: DateTime.now().year,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       );
@@ -451,34 +1060,432 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           style: TextStyle(color: brandColor),
           child: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: ProfileHubButton(
-              onStatsTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProfileStatsScreen(),
-                  ),
-                );
-              },
-              onCommunityTap: () {
-                Navigator.pushNamed(context, AppRouter.community);
-              },
-              onSurveysTap: () {
-                final gymId = context.read<GymProvider>().currentGymId;
-                final userId = context.read<AuthProvider>().userId ?? '';
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SurveyVoteScreen(
-                      gymId: gymId,
-                      userId: userId,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (context
+                    .watch<SettingsProvider>()
+                    .coachingProfileEnabled)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: ProfileCoachingButton(
+                      onTap: _showCoachingSheet,
                     ),
                   ),
-                );
-              },
+                ProfileHubButton(
+                  onStatsTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProfileStatsScreen(),
+                      ),
+                    );
+                  },
+                  onCommunityTap: () {
+                    Navigator.pushNamed(context, AppRouter.community);
+                  },
+                  onSurveysTap: () {
+                    final gymId =
+                        context.read<GymProvider>().currentGymId;
+                    final userId =
+                        context.read<AuthProvider>().userId ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SurveyVoteScreen(
+                          gymId: gymId,
+                          userId: userId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // Training starten / stoppen – immer ganz unten
+                Builder(
+                  builder: (context) {
+                    final timerService =
+                        ref.watch(workoutSessionDurationServiceProvider);
+                    final isActiveTraining = timerService.isRunning;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                      ),
+                      child: GestureDetector(
+                        onTap: _handleStartTraining,
+                        child: _TrainingStartCard(
+                          brandColor: brandColor,
+                          isActive: isActiveTraining,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TrainingStartCard extends StatelessWidget {
+  const _TrainingStartCard({
+    required this.brandColor,
+    required this.isActive,
+  });
+
+  final Color brandColor;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final title = isActive ? 'Training stoppen' : 'Training starten';
+    final subtitle = isActive
+        ? 'Aktiven Trainingstag abbrechen'
+        : 'Plan oder Freestyle-Training starten';
+
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            brandColor.withOpacity(0.10),
+            brandColor.withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.05),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: SweepGradient(
+                  colors: [
+                    brandColor.withOpacity(0.95),
+                    brandColor.withOpacity(0.4),
+                    brandColor.withOpacity(0.95),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                  center: Alignment.center,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: brandColor.withOpacity(0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withOpacity(0.85),
+                ),
+                child: Center(
+                  child: Icon(
+                    isActive ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                    size: 22,
+                    color: brandColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    brandColor.withOpacity(0.22),
+                    brandColor.withOpacity(0.02),
+                  ],
+                  center: Alignment.topLeft,
+                  radius: 1.0,
+                ),
+                border: Border.all(
+                  color: brandColor.withOpacity(0.4),
+                  width: 1.1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_outward_rounded,
+                color: brandColor,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileCoachingSection extends riverpod.ConsumerWidget {
+  const _ProfileCoachingSection({
+    required this.activeRelations,
+    required this.pendingRelations,
+  });
+
+  final List<CoachClientRelation> activeRelations;
+  final List<CoachClientRelation> pendingRelations;
+
+  @override
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final loc = AppLocalizations.of(context)!;
+
+    final active = activeRelations.isNotEmpty ? activeRelations.first : null;
+    final invitesAsync =
+        ref.watch(coach_invites.clientCoachInvitesProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.cardColor.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Coaching',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: brandColor,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (active != null)
+            FutureBuilder<String>(
+              future: ref
+                  .read(
+                    coaching.coachDisplayNameProvider(active.coachId)
+                        .future,
+                  )
+                  .catchError((_) => 'Coach'),
+              builder: (context, snapshot) {
+                final name = snapshot.data ?? 'Coach';
+                return Row(
+                  children: [
+                    Icon(
+                      Icons.school,
+                      color: brandColor,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Dein Coach',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            name,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            )
+          else
+            Row(
+              children: [
+                Icon(
+                  Icons.school_outlined,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Du hast aktuell keinen Coach.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (pendingRelations.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              pendingRelations.length == 1
+                  ? '1 ausstehende Coaching-Anfrage'
+                  : '${pendingRelations.length} ausstehende Coaching-Anfragen',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                children: [
+                  if (active == null)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SelectCoachScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.school_outlined),
+                      label: const Text('Coach auswählen'),
+                    ),
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const InviteExternalCoachScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.mail_outline),
+                    label: const Text('Externen Coach einladen'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          invitesAsync.when(
+            data: (invites) {
+              final pendingInvites =
+                  invites.where((i) => i.isPending).toList();
+              if (pendingInvites.isEmpty) {
+                return Text(
+                  loc.profileTrainingDaysHeading,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      ) ??
+                      TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        fontSize: 12,
+                      ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pendingInvites.length == 1
+                        ? '1 offene Einladung an einen externen Coach'
+                        : '${pendingInvites.length} offene Einladungen an externe Coaches',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color:
+                          theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    loc.profileTrainingDaysHeading,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withOpacity(0.5),
+                        ) ??
+                        TextStyle(
+                          color: theme.colorScheme.onSurface
+                              .withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                  ),
+                ],
+              );
+            },
+            loading: () => Text(
+              loc.profileTrainingDaysHeading,
+              style: theme.textTheme.bodySmall?.copyWith(
+                    color:
+                        theme.colorScheme.onSurface.withOpacity(0.5),
+                  ) ??
+                  TextStyle(
+                    color:
+                        theme.colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+            ),
+            error: (_, __) => Text(
+              loc.profileTrainingDaysHeading,
+              style: theme.textTheme.bodySmall?.copyWith(
+                    color:
+                        theme.colorScheme.onSurface.withOpacity(0.5),
+                  ) ??
+                  TextStyle(
+                    color:
+                        theme.colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

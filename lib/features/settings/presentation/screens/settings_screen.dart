@@ -176,6 +176,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _toggleCoachRole() async {
+    final authProv = context.read<AuthProvider>();
+    final loc = AppLocalizations.of(context)!;
+    final isCoach = authProv.isCoach;
+    final newValue = !isCoach;
+    try {
+      await authProv.setCoachEnabled(newValue);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newValue
+                ? 'Coaching-Rolle aktiviert – Coaching-Tab ist jetzt sichtbar.'
+                : 'Coaching-Rolle deaktiviert.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.commonSaveError)),
+      );
+    }
+  }
+
+  void _showCoachingSettingsSheet() {
+    final loc = AppLocalizations.of(context)!;
+    final authProv = context.read<AuthProvider>();
+    final settingsProv = context.read<SettingsProvider>();
+    final isCoach = authProv.isCoach;
+    final coachingProfileEnabled = settingsProv.coachingProfileEnabled;
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Coach Test-Option'),
+              subtitle: const Text(
+                'Aktiviert eine Coach-Rolle für diesen Account, '
+                'um das Coaching-Feature vor dem Livegang zu testen.',
+              ),
+              trailing: Switch(
+                value: isCoach,
+                onChanged: (_) => _toggleCoachRole(),
+              ),
+              onTap: () => _toggleCoachRole(),
+            ),
+            ListTile(
+              title: const Text('Coaching im Profil anzeigen'),
+              subtitle: const Text(
+                'Blendet auf der Profilseite den Coaching-Bereich '
+                'und den Coaching-Button ein oder aus.',
+              ),
+              trailing: Switch(
+                value: coachingProfileEnabled,
+                onChanged: (v) async {
+                  Navigator.pop(context);
+                  try {
+                    await settingsProv.setCoachingProfileEnabled(v);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          v
+                              ? 'Coaching-Bereich im Profil aktiviert.'
+                              : 'Coaching-Bereich im Profil ausgeblendet.',
+                        ),
+                      ),
+                    );
+                  } catch (_) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.commonSaveError)),
+                    );
+                  }
+                },
+              ),
+              onTap: () async {
+                final newValue = !coachingProfileEnabled;
+                Navigator.pop(context);
+                try {
+                  await settingsProv.setCoachingProfileEnabled(newValue);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        newValue
+                            ? 'Coaching-Bereich im Profil aktiviert.'
+                            : 'Coaching-Bereich im Profil ausgeblendet.',
+                      ),
+                    ),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.commonSaveError)),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCreatineSheet() {
     final loc = AppLocalizations.of(context)!;
     final settingsProv = context.read<SettingsProvider>();
@@ -762,6 +871,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsSection(
             title: loc.settingsSectionVisibilityAccount,
             children: [
+              _PremiumSettingsTile(
+                icon: Icons.school,
+                title: 'Coaching',
+                subtitle:
+                    'Coach-Test-Option und Sichtbarkeit des Coaching-Bereichs.',
+                onTap: _showCoachingSettingsSheet,
+              ),
               _PremiumSettingsTile(
                 icon: Icons.visibility,
                 title: loc.settingsOptionPublicProfile,

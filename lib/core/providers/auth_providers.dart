@@ -28,6 +28,7 @@ class AuthViewState {
     required this.isLoading,
     required this.isLoggedIn,
     required this.isAdmin,
+    required this.isCoach,
     required this.gymContextStatus,
     required this.gymCode,
     required this.userId,
@@ -37,6 +38,7 @@ class AuthViewState {
   final bool isLoading;
   final bool isLoggedIn;
   final bool isAdmin;
+  final bool isCoach;
   final GymContextStatus gymContextStatus;
   final String? gymCode;
   final String? userId;
@@ -49,6 +51,7 @@ class AuthViewState {
       isLoading: auth.isLoading,
       isLoggedIn: auth.isLoggedIn,
       isAdmin: auth.isAdmin,
+      isCoach: auth.isCoach,
       gymContextStatus: auth.gymContextStatus,
       gymCode: auth.gymCode,
       userId: auth.userId,

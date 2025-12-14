@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
@@ -17,6 +18,7 @@ class PlanOverviewScreen extends ConsumerWidget {
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     
     final plansAsync = ref.watch(trainingPlansProvider);
+    final authState = ref.watch(authViewStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -56,11 +58,14 @@ class PlanOverviewScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             itemBuilder: (context, index) {
               final plan = plans[index];
+              final isCoachPlan =
+                  plan.coachId != null && plan.coachId != authState.userId;
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _PlanCard(
                   name: plan.name,
                   exerciseCount: plan.exercises.length,
+                  isCoachPlan: isCoachPlan,
                   onTap: () {
                     Navigator.pushNamed(
                       context,
@@ -128,11 +133,13 @@ class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.name,
     required this.exerciseCount,
+    this.isCoachPlan = false,
     required this.onTap,
   });
 
   final String name;
   final int exerciseCount;
+  final bool isCoachPlan;
   final VoidCallback onTap;
 
   @override
@@ -201,26 +208,70 @@ class _PlanCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: onSurface.withOpacity(0.6),
-                      letterSpacing: 0.2,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: onSurface.withOpacity(0.6),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      if (isCoachPlan) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: brandColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Coach-Plan',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: brandColor.withOpacity(0.9),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: onSurface.withOpacity(0.05),
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    brandColor.withOpacity(0.22),
+                    brandColor.withOpacity(0.02),
+                  ],
+                  center: Alignment.topLeft,
+                  radius: 1.0,
+                ),
+                border: Border.all(
+                  color: brandColor.withOpacity(0.4),
+                  width: 1.1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Icon(
-                Icons.arrow_forward_ios_rounded,
+                Icons.arrow_outward_rounded,
                 color: brandColor,
-                size: 16,
+                size: 18,
               ),
             ),
           ],

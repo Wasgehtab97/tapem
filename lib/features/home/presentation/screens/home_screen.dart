@@ -11,12 +11,17 @@ import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
+import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
+import 'package:tapem/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -35,8 +40,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final devices = gymProv.devices.where((d) => !d.isMulti).toList();
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
     final loc = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
+    final timerService = context.watch<WorkoutSessionDurationService>();
 
-    return [
+    WorkoutDayController? workoutController;
+    try {
+      workoutController = context.watch<WorkoutDayController>();
+    } catch (_) {
+      workoutController = null;
+    }
+
+    WorkoutDaySession? activeWorkoutSession;
+    if (workoutController != null && auth.userId != null) {
+      final activeGymId = auth.gymCode ?? gymId;
+      if (activeGymId.isNotEmpty) {
+        final sessions = workoutController.sessionsFor(
+          userId: auth.userId!,
+          gymId: activeGymId,
+        );
+        if (sessions.isNotEmpty) {
+          activeWorkoutSession = sessions.last;
+        }
+      }
+    }
+
+    final tabs = <_TabInfo>[
       _TabInfo(
         id: _HomeTabId.gym,
         page: const GymScreen(key: PageStorageKey('Gym')),
@@ -97,6 +125,70 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     ];
+
+    // Workout-Tab anzeigen, sobald der globale Workout-Timer läuft.
+    // Wenn bereits Sessions existieren, wird die zuletzt aktive Session
+    // geöffnet. Andernfalls wird ein "leerer" Workout-Tag mit einem
+    // Fallback-Gerät gestartet (sofern vorhanden).
+    if (timerService.isRunning) {
+      Widget workoutPage;
+      if (activeWorkoutSession != null) {
+        final planContext = workoutController?.getPlanContext(
+          gymId: activeWorkoutSession.gymId,
+        );
+        workoutPage = WorkoutDayScreen(
+          key: const PageStorageKey('Workout'),
+          gymId: activeWorkoutSession.gymId,
+          deviceId: activeWorkoutSession.deviceId,
+          exerciseId: activeWorkoutSession.exerciseId,
+          planId: planContext?.$1,
+          planName: planContext?.$2,
+        );
+      } else if ((auth.gymCode ?? gymId).isNotEmpty && deviceId.isNotEmpty) {
+        final fallbackGymId = auth.gymCode ?? gymId;
+        workoutPage = WorkoutDayScreen(
+          key: const PageStorageKey('Workout'),
+          gymId: fallbackGymId,
+          deviceId: deviceId,
+          exerciseId: deviceId,
+        );
+      } else {
+        workoutPage = const _EmptyWorkoutScreen();
+      }
+
+      final workoutTab = _TabInfo(
+        id: _HomeTabId.workout,
+        page: workoutPage,
+        item: const BottomNavigationBarItem(
+          icon: Icon(Icons.play_circle_outline),
+          label: 'Workout',
+        ),
+      );
+
+      const insertIndex = 2; // Nach Gym & Profil
+      if (insertIndex >= 0 && insertIndex <= tabs.length) {
+        tabs.insert(insertIndex, workoutTab);
+      } else {
+        tabs.add(workoutTab);
+      }
+    }
+
+    if (auth.isCoach) {
+      tabs.add(
+        _TabInfo(
+          id: _HomeTabId.coaching,
+          page: const CoachingHomeScreen(
+            key: PageStorageKey('Coaching'),
+          ),
+          item: const BottomNavigationBarItem(
+            icon: Icon(Icons.school),
+            label: 'Coaching',
+          ),
+        ),
+      );
+    }
+
+    return tabs;
   }
 
   @override
@@ -125,8 +217,10 @@ class _HomeScreenState extends State<HomeScreen> {
     const restrictedTabIds = {
       _HomeTabId.gym,
       _HomeTabId.profile,
+      _HomeTabId.workout,
       _HomeTabId.rank,
       _HomeTabId.plan,
+      _HomeTabId.coaching,
     };
     final tabs = (FF.limitTabsForMembers && !isAdmin)
         ? allTabs
@@ -140,18 +234,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentLabel = currentTab.item.label ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        centerTitle: true,
-        leadingWidth: kToolbarHeight + 8,
-        leading: const SizedBox(width: kToolbarHeight + 8),
-        title: _buildAppBarTitle(context, currentLabel),
-        actions: const [
-          NfcScanButton(),
-          SizedBox(width: 8),
-        ],
-      ),
+      appBar: currentTab.id == _HomeTabId.workout
+          ? null
+          : AppBar(
+              automaticallyImplyLeading: false,
+              titleSpacing: 0,
+              centerTitle: true,
+              leadingWidth: kToolbarHeight + 8,
+              leading: const SizedBox(width: kToolbarHeight + 8),
+              title: _buildAppBarTitle(context, currentLabel),
+              actions: const [
+                NfcScanButton(),
+                SizedBox(width: 8),
+              ],
+            ),
       body: currentTab.page,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -203,11 +299,63 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-enum _HomeTabId { gym, profile, report, admin, rank, affiliate, plan }
+enum _HomeTabId {
+  gym,
+  profile,
+  workout,
+  report,
+  admin,
+  rank,
+  affiliate,
+  plan,
+  coaching,
+}
 
 class _TabInfo {
   final _HomeTabId id;
   final Widget page;
   final BottomNavigationBarItem item;
   const _TabInfo({required this.id, required this.page, required this.item});
+}
+
+/// Fallback-Screen für den Workout-Tab, wenn der Timer bereits läuft,
+/// aber noch keine Session existiert und kein geeignetes Gerät gefunden wurde.
+class _EmptyWorkoutScreen extends StatelessWidget {
+  const _EmptyWorkoutScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(loc.appTitle),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Der Trainingstag ist aktiv, aber es wurde noch kein Studio oder Gerät ausgewählt.\n\n'
+            'Wähle zuerst ein Gym aus, um dein Workout zu starten.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: SizedBox(
+          height: 48,
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pushNamed(AppRouter.selectGym);
+            },
+            child: const Text('Gym auswählen'),
+          ),
+        ),
+      ),
+    );
+  }
 }

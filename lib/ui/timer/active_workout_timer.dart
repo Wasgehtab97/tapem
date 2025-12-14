@@ -9,6 +9,7 @@ import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/app_router.dart';
 
 class ActiveWorkoutTimer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
@@ -192,27 +193,11 @@ class ActiveWorkoutTimer extends StatelessWidget {
                     if (!context.mounted) return;
 
                     if (action == 'goto') {
-                      // Navigate to WorkoutDayScreen with the last active session
-                      // Re-fetch to ensure non-null after async gap
-                      final controller = _maybeReadWorkoutDayController(context);
-                      final auth = context.read<AuthProvider>();
-                      final userId = auth.userId;
-                      final gymId = auth.gymCode;
-                      
-                      if (controller != null && userId != null && gymId != null) {
-                        final sessions = controller.sessionsFor(userId: userId, gymId: gymId);
-                        if (sessions.isNotEmpty) {
-                          final lastSession = sessions.last;
-                          Navigator.of(context).pushNamed(
-                            '/workout_day', // AppRouter.workoutDay
-                            arguments: {
-                              'gymId': lastSession.gymId,
-                              'deviceId': lastSession.deviceId,
-                              'exerciseId': lastSession.exerciseId,
-                            },
-                          );
-                        }
-                      }
+                      // In den Home-Screen wechseln und den Workout-Tab aktivieren.
+                      Navigator.of(context).pushNamed(
+                        AppRouter.home,
+                        arguments: 2,
+                      );
                     } else if (action == 'stop') {
                       final dialogResult = await service.confirmStop(
                         context,

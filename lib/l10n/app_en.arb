@@ -1441,6 +1441,8 @@
   ,"@reportMembersRoleMember": {"description": "Display value for the member role in the members report"}
   ,"reportMembersRoleAdmin": "Admin"
   ,"@reportMembersRoleAdmin": {"description": "Display value for the admin role in the members report"}
+  ,"reportMembersRoleCoach": "Coach"
+  ,"@reportMembersRoleCoach": {"description": "Display value for the coach role in the members report"}
   ,"reportDeviceFilterHint": "Search devices or descriptions"
   ,"@reportDeviceFilterHint": {"description": "Hint text for the device usage search field"}
   ,"reportUsageRange7Days": "Last 7 days"

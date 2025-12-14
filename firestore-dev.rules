@@ -25,6 +25,12 @@ service cloud.firestore {
       );
     }
 
+    // Coach if user has coachEnabled flag
+    function isCoach(gymId) {
+      return inGym(gymId) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coachEnabled == true;
+    }
+
     // Custom claim based gym admin
     function isGymAdmin(gymId) {
       return isAuthed() &&
@@ -352,11 +358,15 @@ service cloud.firestore {
           'avatarKey',
           'avatarUpdatedAt',
           'equippedAvatarRef',
-          'activeGymId'
+          'activeGymId',
+          'coachEnabled'
         ]);
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['avatarKey']) &&
         request.resource.data.avatarKey is string;
+      allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
+        request.resource.data.keys().hasOnly(['coachEnabled']) &&
+        request.resource.data.coachEnabled is bool;
 
       // Friends list (symmetrische Kante)
       match /friends/{fid} {
@@ -463,6 +473,36 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      // Training plan stats per user (owner or active coach)
+      match /training_plans/{planId}/meta/{docId} {
+        allow read: if isOwner(uid) ||
+          (isAuthed() && hasActiveCoaching(
+            get(/databases/$(database)/documents/users/$(uid)/training_plans/$(planId)).data.gymId,
+            uid
+          )) ||
+          (isAuthed() &&
+            activeGymId() is string &&
+            isAdmin(activeGymId()) &&
+            isMember(uid, activeGymId()));
+        allow write: if isOwner(uid);
+      }
+
+      // Training plans per user (owner or active coach)
+      match /training_plans/{planId} {
+        allow read: if isOwner(uid) ||
+          (isAuthed() &&
+            resource.data.gymId is string &&
+            hasActiveCoaching(resource.data.gymId, uid)) ||
+          (isAuthed() &&
+            activeGymId() is string &&
+            isAdmin(activeGymId()) &&
+            isMember(uid, activeGymId()));
+        allow create, update, delete: if isOwner(uid) ||
+          (isAuthed() &&
+            request.resource.data.gymId is string &&
+            hasActiveCoaching(request.resource.data.gymId, uid));
+      }
+
       // Fallback for other user subcollections (owner-only)
       match /trainingDayXP/{dayId} {
         // Owner, Global-Admin oder Admin des activeGymId, sofern Ziel-User dort Mitglied ist
@@ -476,9 +516,185 @@ service cloud.firestore {
         allow write: if isOwner(uid);
       }
 
+      // Training schedule per user (Plan-Zuweisung pro Tag)
+      match /training_schedule/{dateKey} {
+        allow read, get, list: if
+            isOwner(uid)
+            || isGlobalAdmin()
+            || (isAuthed()
+                && activeGymId() is string
+                && isAdmin(activeGymId())
+                && isMember(uid, activeGymId()))
+            || (isAuthed()
+                && activeGymId() is string
+                && hasActiveCoaching(activeGymId(), uid));
+
+        allow create, update: if
+            isOwner(uid)
+            || (isAuthed()
+                && activeGymId() is string
+                && hasActiveCoaching(activeGymId(), uid));
+
+        allow delete: if isOwner(uid)
+          || (isAuthed()
+              && activeGymId() is string
+              && isAdmin(activeGymId())
+              && isMember(uid, activeGymId()));
+
+        allow write: if request.resource.data.keys().hasOnly([
+              'dateKey',
+              'planId',
+              'createdAt',
+              'updatedAt'
+            ])
+            && request.resource.data.dateKey is string
+            && request.resource.data.planId is string;
+      }
+
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
+    }
+
+    // ─────────────────────────
+    // Coaching relations (top-level)
+    // ─────────────────────────
+    match /coachClientRelations/{relationId} {
+      allow read: if isAuthed() &&
+        (request.auth.uid == resource.data.clientId ||
+         request.auth.uid == resource.data.coachId);
+
+      allow create: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'gymId',
+          'coachId',
+          'clientId',
+          'status',
+          'createdAt',
+          'updatedAt',
+          'endedAt',
+          'endedReason',
+          'note'
+        ]) &&
+        request.resource.data.gymId is string &&
+        request.resource.data.coachId is string &&
+        request.resource.data.clientId is string &&
+        request.resource.data.status == 'pending' &&
+        relationId == request.resource.data.gymId + '_' +
+          request.resource.data.coachId + '_' +
+          request.resource.data.clientId &&
+        (request.auth.uid == request.resource.data.clientId ||
+         isAdmin(request.resource.data.gymId));
+
+      allow update: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'gymId',
+          'coachId',
+          'clientId',
+          'status',
+          'createdAt',
+          'updatedAt',
+          'endedAt',
+          'endedReason',
+          'note'
+        ]) &&
+        request.resource.data.gymId == resource.data.gymId &&
+        request.resource.data.coachId == resource.data.coachId &&
+        request.resource.data.clientId == resource.data.clientId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.status in ['pending', 'active', 'ended', 'rejected'] &&
+        (
+          request.auth.uid == resource.data.clientId ||
+          (resource.data.gymId is string && isAdmin(resource.data.gymId)) ||
+          (resource.data.gymId is string &&
+           request.auth.uid == resource.data.coachId &&
+           isCoach(resource.data.gymId))
+        );
+
+      allow delete: if isAuthed() &&
+        (request.auth.uid == resource.data.clientId ||
+         (resource.data.gymId is string && isAdmin(resource.data.gymId)));
+    }
+
+    // ─────────────────────────
+    // Coach invites (top-level)
+    // ─────────────────────────
+    match /coachInvites/{inviteId} {
+      allow read: if isAuthed() &&
+        (request.auth.uid == resource.data.clientId ||
+         (request.auth.token.email == resource.data.email) ||
+         (resource.data.gymId is string && isAdmin(resource.data.gymId)));
+
+      allow create: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'gymId',
+          'clientId',
+          'email',
+          'status',
+          'createdAt',
+          'acceptedAt',
+          'coachId'
+        ]) &&
+        request.resource.data.gymId is string &&
+        request.resource.data.clientId == request.auth.uid &&
+        request.resource.data.email is string &&
+        request.resource.data.status == 'pending';
+
+      allow update: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'gymId',
+          'clientId',
+          'email',
+          'status',
+          'createdAt',
+          'acceptedAt',
+          'coachId'
+        ]) &&
+        request.resource.data.gymId == resource.data.gymId &&
+        request.resource.data.clientId == resource.data.clientId &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.status in ['pending', 'accepted', 'canceled', 'rejected'] &&
+        (
+          request.auth.uid == resource.data.clientId ||
+          (resource.data.gymId is string && isAdmin(resource.data.gymId)) ||
+          (request.auth.token.email == resource.data.email)
+        );
+
+      allow delete: if isAuthed() &&
+        (request.auth.uid == resource.data.clientId ||
+         (resource.data.gymId is string && isAdmin(resource.data.gymId)));
+    }
+
+    // ─────────────────────────
+    // Coaching events / Audit-Log (top-level)
+    // ─────────────────────────
+    match /coachingEvents/{eventId} {
+      allow read: if isAuthed() &&
+        (
+          (resource.data.clientId == request.auth.uid) ||
+          (resource.data.coachId == request.auth.uid) ||
+          (resource.data.gymId is string && isAdmin(resource.data.gymId))
+        );
+
+      allow create: if isAuthed() &&
+        request.resource.data.keys().hasOnly([
+          'gymId',
+          'type',
+          'actorId',
+          'coachId',
+          'clientId',
+          'relationId',
+          'planId',
+          'inviteId',
+          'createdAt'
+        ]) &&
+        request.resource.data.gymId is string &&
+        request.resource.data.type is string &&
+        request.resource.data.actorId == request.auth.uid &&
+        request.resource.data.createdAt is string;
+
+      allow update, delete: if false;
     }
 
     // ─────────────────────────

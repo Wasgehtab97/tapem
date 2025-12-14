@@ -10,6 +10,7 @@ abstract class AuthRepository {
   Future<void> setPublicProfile(String userId, bool value);
   Future<void> setAvatarKey(String userId, String avatarKey);
   Future<void> setPublicKey(String userId, String publicKey);
+  Future<void> setCoachEnabled(String userId, bool value);
   Future<bool> isUsernameAvailable(String username);
   Future<void> sendPasswordResetEmail(String email);
 }

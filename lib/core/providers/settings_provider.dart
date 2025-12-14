@@ -9,6 +9,7 @@ class SettingsProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
 
   bool? _creatineEnabled;
+  bool? _coachingProfileEnabled;
   bool _isLoading = false;
   String? _error;
   String? _uid;
@@ -18,6 +19,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get creatineEnabled => _creatineEnabled ?? false;
+  bool get coachingProfileEnabled => _coachingProfileEnabled ?? false;
   String? get gender => _gender;
   double? get bodyWeightKg => _bodyWeightKg;
 
@@ -30,7 +32,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> load(String uid) async {
-    if (_uid == uid && _creatineEnabled != null) {
+    if (_uid == uid && _creatineEnabled != null && _coachingProfileEnabled != null) {
       return;
     }
     _uid = uid;
@@ -47,6 +49,12 @@ class SettingsProvider extends ChangeNotifier {
       } else {
         _creatineEnabled = false;
         updates['creatineEnabled'] = false;
+      }
+      if (data != null && data['coachingProfileEnabled'] != null) {
+        _coachingProfileEnabled = data['coachingProfileEnabled'] as bool;
+      } else {
+        _coachingProfileEnabled = false;
+        updates['coachingProfileEnabled'] = false;
       }
       _gender = data != null ? data['gender'] as String? : null;
       final bw = data != null ? data['bodyWeightKg'] : null;
@@ -72,6 +80,25 @@ class SettingsProvider extends ChangeNotifier {
       await _doc(uid).set({'creatineEnabled': value}, SetOptions(merge: true));
     } catch (e) {
       _creatineEnabled = old;
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> setCoachingProfileEnabled(bool value) async {
+    final uid = _uid;
+    if (uid == null) return;
+    final old = _coachingProfileEnabled;
+    _coachingProfileEnabled = value;
+    notifyListeners();
+    try {
+      await _doc(uid).set(
+        {'coachingProfileEnabled': value},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      _coachingProfileEnabled = old;
       _error = e.toString();
       notifyListeners();
       rethrow;

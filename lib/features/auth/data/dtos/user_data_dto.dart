@@ -13,6 +13,7 @@ class UserDataDto {
   final String role;
   final DateTime createdAt;
   final String avatarKey;
+  final bool coachEnabled;
 
   UserDataDto({
     required this.userId,
@@ -26,6 +27,7 @@ class UserDataDto {
     required this.role,
     required this.createdAt,
     this.avatarKey = 'default',
+    this.coachEnabled = false,
   });
 
   factory UserDataDto.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -44,6 +46,7 @@ class UserDataDto {
       role: data['role'] as String,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       avatarKey: data['avatarKey'] as String? ?? 'default',
+      coachEnabled: data['coachEnabled'] as bool? ?? false,
     );
   }
 
@@ -58,6 +61,7 @@ class UserDataDto {
     'role': role,
     'createdAt': Timestamp.fromDate(createdAt),
     'avatarKey': avatarKey,
+    'coachEnabled': coachEnabled,
   };
 
   UserData toModel() {
@@ -71,6 +75,7 @@ class UserDataDto {
       role: role,
       createdAt: createdAt,
       avatarKey: avatarKey,
+      coachEnabled: coachEnabled,
     );
   }
 }

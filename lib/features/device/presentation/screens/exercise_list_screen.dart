@@ -18,6 +18,8 @@ import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   final String gymId;
@@ -79,14 +81,38 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       if (onSelect != null) {
         onSelect(selection);
       } else {
-        Navigator.of(context).pushReplacementNamed(
-          AppRouter.workoutDay,
-          arguments: {
-            'gymId': widget.gymId,
-            'deviceId': widget.deviceId,
-            'exerciseId': result.id,
-          },
-        );
+        final timer = context.read<WorkoutSessionDurationService>();
+        if (timer.isRunning) {
+          final auth = context.read<AuthProvider>();
+          final userId = auth.userId;
+          if (userId != null) {
+            try {
+              final controller = context.read<WorkoutDayController>();
+              controller.addOrFocusSession(
+                gymId: widget.gymId,
+                deviceId: widget.deviceId,
+                exerciseId: result.id,
+                exerciseName: result.name,
+                userId: userId,
+              );
+            } catch (_) {
+              // Fallback: Navigation erfolgt trotzdem.
+            }
+          }
+          Navigator.of(context).pushReplacementNamed(
+            AppRouter.home,
+            arguments: 2,
+          );
+        } else {
+          Navigator.of(context).pushReplacementNamed(
+            AppRouter.workoutDay,
+            arguments: {
+              'gymId': widget.gymId,
+              'deviceId': widget.deviceId,
+              'exerciseId': result.id,
+            },
+          );
+        }
       }
     }
   }
@@ -274,14 +300,38 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
               if (onSelect != null) {
                 onSelect(selection);
               } else {
-                Navigator.of(context).pushNamed(
-                  AppRouter.workoutDay,
-                  arguments: {
-                    'gymId': widget.gymId,
-                    'deviceId': widget.deviceId,
-                    'exerciseId': ex.id,
-                  },
-                );
+                final timer = context.read<WorkoutSessionDurationService>();
+                if (timer.isRunning) {
+                  final auth = context.read<AuthProvider>();
+                  final userId = auth.userId;
+                  if (userId != null) {
+                    try {
+                      final controller = context.read<WorkoutDayController>();
+                      controller.addOrFocusSession(
+                        gymId: widget.gymId,
+                        deviceId: widget.deviceId,
+                        exerciseId: ex.id,
+                        exerciseName: ex.name,
+                        userId: userId,
+                      );
+                    } catch (_) {
+                      // Fallback: Navigation erfolgt trotzdem.
+                    }
+                  }
+                  Navigator.of(context).pushNamed(
+                    AppRouter.home,
+                    arguments: 2,
+                  );
+                } else {
+                  Navigator.of(context).pushNamed(
+                    AppRouter.workoutDay,
+                    arguments: {
+                      'gymId': widget.gymId,
+                      'deviceId': widget.deviceId,
+                      'exerciseId': ex.id,
+                    },
+                  );
+                }
               }
             },
             onEdit: () => _openAdd(ex),

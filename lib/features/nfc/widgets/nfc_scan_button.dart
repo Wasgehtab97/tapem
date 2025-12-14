@@ -10,6 +10,8 @@ import 'package:tapem/features/device/presentation/models/workout_device_selecti
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 
 class NfcScanButton extends StatelessWidget {
   const NfcScanButton({
@@ -131,14 +133,38 @@ class NfcScanButton extends StatelessWidget {
                 if (selectionHandler != null) {
                   await selectionHandler(selection);
                 } else {
-                  Navigator.of(context).pushNamed(
-                    AppRouter.workoutDay,
-                    arguments: {
-                      'gymId': gymId,
-                      'deviceId': resolvedDeviceId,
-                      'exerciseId': resolvedExerciseId,
-                    },
-                  );
+                  final timer =
+                      context.read<WorkoutSessionDurationService>();
+                  if (timer.isRunning) {
+                    final userId = authProv.userId;
+                    if (userId != null) {
+                      try {
+                        final controller =
+                            context.read<WorkoutDayController>();
+                        controller.addOrFocusSession(
+                          gymId: gymId,
+                          deviceId: resolvedDeviceId,
+                          exerciseId: resolvedExerciseId,
+                          userId: userId,
+                        );
+                      } catch (_) {
+                        // Fallback: trotzdem navigieren.
+                      }
+                    }
+                    Navigator.of(context).pushNamed(
+                      AppRouter.home,
+                      arguments: 2,
+                    );
+                  } else {
+                    Navigator.of(context).pushNamed(
+                      AppRouter.workoutDay,
+                      arguments: {
+                        'gymId': gymId,
+                        'deviceId': resolvedDeviceId,
+                        'exerciseId': resolvedExerciseId,
+                      },
+                    );
+                  }
                 }
               }
             },

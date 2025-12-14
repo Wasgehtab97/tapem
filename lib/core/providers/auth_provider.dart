@@ -21,6 +21,7 @@ import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
 import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
+import 'package:tapem/features/auth/domain/usecases/set_coach_enabled.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_key.dart';
 import 'package:tapem/features/security/domain/services/encryption_service.dart';
 import 'package:tapem/services/membership_service.dart';
@@ -237,7 +238,9 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
   String? get role => _user?.role;
+  bool get isMember => role == 'member';
   bool get isAdmin => role == 'admin';
+  bool get isCoach => (_user?.coachEnabled ?? false) || role == 'coach';
   DateTime? get createdAt => _user?.createdAt;
 
   /// Opt-out für Leaderboard
@@ -469,6 +472,22 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       _user = _user!.copyWith(avatarKey: previous);
       notifyListeners();
       rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> setCoachEnabled(bool value) async {
+    if (_user == null) return;
+    _setLoading(true);
+    _error = null;
+    try {
+      final useCase = SetCoachEnabledUseCase();
+      await useCase.execute(_user!.id, value);
+      _user = _user!.copyWith(coachEnabled: value);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _setLoading(false);
     }

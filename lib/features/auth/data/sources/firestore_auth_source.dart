@@ -141,6 +141,12 @@ class FirestoreAuthSource {
     });
   }
 
+  Future<void> setCoachEnabled(String userId, bool value) async {
+    await _firestore.collection('users').doc(userId).update({
+      'coachEnabled': value,
+    });
+  }
+
   Future<void> setAvatarKey(String userId, String avatarKey) async {
     await _firestore.collection('users').doc(userId).update({
       'avatarKey': avatarKey,

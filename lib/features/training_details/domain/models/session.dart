@@ -39,6 +39,42 @@ class Session {
     this.endTime,
     this.durationMs,
   });
+
+  Session copyWith({
+    String? sessionId,
+    String? gymId,
+    String? userId,
+    String? deviceId,
+    String? deviceName,
+    String? deviceDescription,
+    String? exerciseId,
+    String? exerciseName,
+    bool? isMulti,
+    DateTime? timestamp,
+    String? note,
+    List<SessionSet>? sets,
+    DateTime? startTime,
+    DateTime? endTime,
+    int? durationMs,
+  }) {
+    return Session(
+      sessionId: sessionId ?? this.sessionId,
+      gymId: gymId ?? this.gymId,
+      userId: userId ?? this.userId,
+      deviceId: deviceId ?? this.deviceId,
+      deviceName: deviceName ?? this.deviceName,
+      deviceDescription: deviceDescription ?? this.deviceDescription,
+      exerciseId: exerciseId ?? this.exerciseId,
+      exerciseName: exerciseName ?? this.exerciseName,
+      isMulti: isMulti ?? this.isMulti,
+      timestamp: timestamp ?? this.timestamp,
+      note: note ?? this.note,
+      sets: sets ?? List<SessionSet>.from(this.sets),
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      durationMs: durationMs ?? this.durationMs,
+    );
+  }
 }
 
 class SessionSet {

@@ -29,6 +29,9 @@ class NumericKeypadTheme {
   final Color railBg;
   final Color railIcon;
   final Color press;
+  final Color keyBorder;
+  final Color glowOuter;
+  final Color glowInner;
 
   const NumericKeypadTheme({
     this.gap = 12.0,
@@ -43,6 +46,9 @@ class NumericKeypadTheme {
     this.railBg = const Color(0xFF14171A),
     this.railIcon = Colors.white70,
     this.press = const Color(0xFF2A2E33),
+    this.keyBorder = const Color(0xFF2C2F33),
+    this.glowOuter = const Color(0x00000000),
+    this.glowInner = const Color(0x00000000),
   });
 
   factory NumericKeypadTheme.fromContext(BuildContext context) {
@@ -83,8 +89,11 @@ class NumericKeypadTheme {
 
     final keyFg = adjustForeground(accent, keyBg);
     final railIcon = adjustForeground(accent, railBg);
-    final press = brand?.pressedOverlay ??
-        accent.withOpacity(0.2);
+    final press = brand?.pressedOverlay ?? accent.withOpacity(0.24);
+
+    final keyBorder = accent.withOpacity(0.28);
+    final glowOuter = accent.withOpacity(0.14);
+    final glowInner = accent.withOpacity(0.35);
 
     return NumericKeypadTheme(
       sheetBg: sheetBg,
@@ -93,6 +102,9 @@ class NumericKeypadTheme {
       railBg: railBg,
       railIcon: railIcon,
       press: press,
+      keyBorder: keyBorder,
+      glowOuter: glowOuter,
+      glowInner: glowInner,
     );
   }
 }
@@ -1240,17 +1252,39 @@ class _KeyButtonState extends State<_KeyButton> {
                 : 'Taste')
           : widget.semanticsLabel,
       button: true,
-      child: GestureDetector(
-        onTapDown: (_) => _start(),
-        onTapUp: (_) => _stop(),
-        onTapCancel: _stop,
-        child: Container(
-          decoration: BoxDecoration(
-            color: disabled ? th.keyBg.withOpacity(0.5) : th.keyBg,
-            borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: disabled ? th.keyBg.withOpacity(0.6) : th.keyBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: disabled
+                ? th.keyBorder.withOpacity(0.35)
+                : th.keyBorder,
+            width: 1.0,
           ),
-          alignment: Alignment.center,
-          child: child,
+          boxShadow: disabled
+              ? null
+              : [
+                  BoxShadow(
+                    color: th.glowOuter,
+                    blurRadius: 16,
+                    offset: const Offset(0, -2),
+                  ),
+                  BoxShadow(
+                    color: th.glowInner,
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => _start(),
+          onTapUp: (_) => _stop(),
+          onTapCancel: _stop,
+          child: Center(child: child),
         ),
       ),
     );

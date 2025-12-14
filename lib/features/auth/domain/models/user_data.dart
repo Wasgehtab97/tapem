@@ -8,6 +8,7 @@ class UserData {
   final String role;
   final DateTime createdAt;
   final String avatarKey;
+  final bool coachEnabled;
 
   const UserData({
     required this.id,
@@ -19,6 +20,7 @@ class UserData {
     required this.role,
     required this.createdAt,
     this.avatarKey = 'default',
+    this.coachEnabled = false,
   });
 
   UserData copyWith({
@@ -31,6 +33,7 @@ class UserData {
     String? role,
     DateTime? createdAt,
     String? avatarKey,
+    bool? coachEnabled,
   }) {
     return UserData(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class UserData {
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       avatarKey: avatarKey ?? this.avatarKey,
+      coachEnabled: coachEnabled ?? this.coachEnabled,
     );
   }
 }

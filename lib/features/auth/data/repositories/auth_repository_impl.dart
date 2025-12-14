@@ -58,6 +58,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> setCoachEnabled(String userId, bool value) {
+    return _source.setCoachEnabled(userId, value);
+  }
+
+  @override
   Future<bool> isUsernameAvailable(String username) {
     return _source.isUsernameAvailable(username);
   }

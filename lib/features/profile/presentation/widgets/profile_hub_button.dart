@@ -65,9 +65,6 @@ class ProfileHubButton extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  // Removed circle background for icon to match others or keep it subtle?
-                  // The previous buttons had a 56x56 box for icon.
-                  // Let's keep the icon simple but brand colored.
                   decoration: BoxDecoration(
                     color: brandColor.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -84,7 +81,7 @@ class ProfileHubButton extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Entdecken', // Renamed from "Dashboard"
+                        'Entdecken',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onSurface,
@@ -92,7 +89,7 @@ class ProfileHubButton extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Insights & Community', // Renamed subtitle
+                        'Insights & Community',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
                         ),
@@ -103,15 +100,34 @@ class ProfileHubButton extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.05),
                     shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        brandColor.withOpacity(0.22),
+                        brandColor.withOpacity(0.02),
+                      ],
+                      center: Alignment.topLeft,
+                      radius: 1.0,
+                    ),
+                    border: Border.all(
+                      color: brandColor.withOpacity(0.4),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Icon(
-                    Icons.arrow_upward_rounded,
+                    Icons.arrow_outward_rounded,
                     color: brandColor,
-                    size: 16,
+                    size: 18,
                   ),
                 ),
               ],

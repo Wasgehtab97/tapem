@@ -26,6 +26,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
   final bool isMulti;
   final String? exerciseId;
   final String? exerciseName;
+  final String? ownerUserId;
   const HistoryScreen({
     Key? key,
     required this.deviceId,
@@ -34,6 +35,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
     this.isMulti = false,
     this.exerciseId,
     this.exerciseName,
+    this.ownerUserId,
   }) : super(key: key);
 
   @override
@@ -47,7 +49,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = ref.read(authViewStateProvider);
       final gymId = auth.gymCode;
-      final userId = auth.userId;
+      final userId = widget.ownerUserId ?? auth.userId;
       if (gymId == null || userId == null) {
         return;
       }
@@ -423,4 +425,3 @@ class _HistoryExpansionTileState extends State<_HistoryExpansionTile> {
     );
   }
 }
-

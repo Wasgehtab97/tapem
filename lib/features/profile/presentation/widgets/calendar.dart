@@ -12,6 +12,8 @@ class Calendar extends StatefulWidget {
   final bool showNavigation;
   final int year;
   final bool showDayNumbers;
+  final List<String> scheduledDates;
+  final Map<String, Color> scheduledColorsByDate;
   final int? minYear;
   final int? maxYear;
   final ValueChanged<int>? onYearChanged;
@@ -23,10 +25,14 @@ class Calendar extends StatefulWidget {
     this.showNavigation = true,
     this.showDayNumbers = false,
     int? year,
+    List<String>? scheduledDates,
+    Map<String, Color>? scheduledColorsByDate,
     this.minYear,
     this.maxYear,
     this.onYearChanged,
-  }) : year = year ?? DateTime.now().year,
+  })  : year = year ?? DateTime.now().year,
+        scheduledDates = scheduledDates ?? const [],
+        scheduledColorsByDate = scheduledColorsByDate ?? const {},
        super(key: key);
 
   @override
@@ -195,6 +201,9 @@ class _CalendarState extends State<Calendar> {
 
                   final key = DateFormat('yyyy-MM-dd').format(date);
                   final isTrain = widget.trainingDates.contains(key);
+                  final hasPlan = widget.scheduledDates.contains(key);
+                  final customBorderColor =
+                      widget.scheduledColorsByDate[key];
                   final isToday =
                       date.year == today.year &&
                       date.month == today.month &&
@@ -224,9 +233,11 @@ class _CalendarState extends State<Calendar> {
                               ? trainingFillColor
                               : Colors.transparent,
                       border: Border.all(
-                        color:
-                            isToday
-                                ? theme.colorScheme.error
+                        color: isToday
+                            ? theme.colorScheme.error
+                            : hasPlan
+                                ? (customBorderColor ??
+                                    accentColor.withOpacity(0.9))
                                 : theme.dividerColor,
                         width: isToday ? 2 : 1,
                       ),

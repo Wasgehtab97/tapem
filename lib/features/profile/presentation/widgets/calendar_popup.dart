@@ -15,6 +15,8 @@ class CalendarPopup extends StatefulWidget {
   final String userId;
   final bool navigateOnTap;
   final Map<String, String>? gymIdsByDate;
+  final List<String> scheduledDates;
+  final Map<String, Color> scheduledColorsByDate;
 
   const CalendarPopup({
     Key? key,
@@ -23,6 +25,8 @@ class CalendarPopup extends StatefulWidget {
     required this.userId,
     this.navigateOnTap = true,
     this.gymIdsByDate,
+    this.scheduledDates = const [],
+    this.scheduledColorsByDate = const {},
   }) : super(key: key);
 
   @override
@@ -176,6 +180,57 @@ class _CalendarPopupState extends State<CalendarPopup> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Absolviert',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: Colors.white70,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Geplanter Plan',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     SizedBox(
                       height: 300, // Fixed height for the calendar area
@@ -190,6 +245,9 @@ class _CalendarPopupState extends State<CalendarPopup> {
                             minYear: _firstSupportedYear,
                             onYearChanged: _handleYearChanged,
                             showDayNumbers: true,
+                            scheduledDates: widget.scheduledDates,
+                            scheduledColorsByDate:
+                                widget.scheduledColorsByDate,
                             onDayTap: (date) {
                               Navigator.of(context).pop(date);
                               if (widget.navigateOnTap) {

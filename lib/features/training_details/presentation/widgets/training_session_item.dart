@@ -82,23 +82,47 @@ class TrainingSessionItem extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    session.exerciseName ?? session.deviceName,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                      color: onSurface,
-                                    ),
+                                  Builder(
+                                    builder: (_) {
+                                      final hasExerciseName =
+                                          (session.exerciseName ?? '').isNotEmpty;
+                                      final isMulti = session.isMulti;
+                                      final title = isMulti && hasExerciseName
+                                          ? session.exerciseName!
+                                          : session.deviceName;
+                                      final subtitle =
+                                          isMulti && hasExerciseName
+                                              ? session.deviceName
+                                              : session.deviceDescription;
+
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            title,
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                              color: onSurface,
+                                            ),
+                                          ),
+                                          if (subtitle != null &&
+                                              subtitle.isNotEmpty)
+                                            Text(
+                                              subtitle,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: onSurface
+                                                    .withOpacity(0.5),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
                                   ),
-                                  if (session.deviceDescription != null &&
-                                      session.deviceDescription!.isNotEmpty)
-                                    Text(
-                                      session.deviceDescription!,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: onSurface.withOpacity(0.5),
-                                        fontSize: 11,
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),

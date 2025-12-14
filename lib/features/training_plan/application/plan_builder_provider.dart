@@ -6,6 +6,8 @@ import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_exercise.dart';
 import 'package:tapem/features/training_plan/application/draft_training_plan.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
+import 'package:tapem/features/coaching/data/sources/firestore_coaching_audit_source.dart';
+import 'package:tapem/features/coaching/application/coaching_providers.dart';
 
 final planBuilderProvider = StateNotifierProvider<PlanBuilderNotifier, DraftTrainingPlan>((ref) {
   return PlanBuilderNotifier(ref);
@@ -16,8 +18,20 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
 
   PlanBuilderNotifier(this._ref) : super(const DraftTrainingPlan());
 
-  void startNew() {
-    state = const DraftTrainingPlan(name: '', exercises: [], isDirty: false);
+  void startNew({
+    String? targetUserId,
+    String? coachId,
+    String? coachingRelationId,
+  }) {
+    state = DraftTrainingPlan(
+      name: '',
+      exercises: const [],
+      isDirty: false,
+      targetUserId: targetUserId,
+      coachId: coachId,
+      coachingRelationId: coachingRelationId,
+      colorIndex: 0,
+    );
   }
 
   void editExisting(TrainingPlan plan) {
@@ -26,11 +40,20 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       name: plan.name,
       exercises: plan.exercises,
       isDirty: false,
+      targetUserId: plan.clientId,
+      coachId: plan.coachId,
+      coachingRelationId: plan.coachingRelationId,
+      colorIndex: plan.colorIndex,
     );
   }
 
   void updateName(String name) {
     state = state.copyWith(name: name, isDirty: true);
+  }
+
+  void updateColorIndex(int index) {
+    if (index == state.colorIndex) return;
+    state = state.copyWith(colorIndex: index, isDirty: true);
   }
 
   void addExercise({
@@ -77,6 +100,29 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     return '$deviceId::$exerciseId';
   }
 
+  void replaceExercise({
+    required int index,
+    required String deviceId,
+    required String exerciseId,
+    String? name,
+  }) {
+    if (index < 0 || index >= state.exercises.length) {
+      return;
+    }
+    final currentExercises = List<TrainingPlanExercise>.from(state.exercises);
+    final existing = currentExercises[index];
+    currentExercises[index] = existing.copyWith(
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      name: name,
+    );
+
+    state = state.copyWith(
+      exercises: currentExercises,
+      isDirty: true,
+    );
+  }
+
   void removeExercise(int index) {
     final currentExercises = List<TrainingPlanExercise>.from(state.exercises);
     currentExercises.removeAt(index);
@@ -107,7 +153,8 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
 
   Future<String> save() async {
     final authState = _ref.read(authViewStateProvider);
-    final userId = authState.userId;
+    final targetUserId = state.targetUserId ?? authState.userId;
+    final userId = targetUserId;
     final gymId = authState.gymCode;
 
     if (userId == null || gymId == null) {
@@ -121,9 +168,13 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       id: planId,
       name: state.name,
       gymId: gymId,
+      coachId: state.coachId,
+      clientId: state.targetUserId,
+      coachingRelationId: state.coachingRelationId,
       exercises: state.exercises,
       createdAt: state.originalId == null ? now : now, // Should keep original createdAt if editing? ideally yes but for now simpler
       updatedAt: now,
+      colorIndex: state.colorIndex,
     );
     
     // If editing, we might want to preserve createdAt. 
@@ -142,8 +193,40 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       isDirty: false,
     );
 
-    // Liste neu laden
-    _ref.invalidate(trainingPlansProvider);
+    // Listen/Stats neu laden – sowohl für den aktuellen User als
+    // auch für Coach-Views auf Client-Pläne.
+    if (state.targetUserId == null) {
+      // Plan gehört dem aktuell eingeloggten Nutzer
+      _ref.invalidate(trainingPlansProvider);
+      _ref.invalidate(trainingPlanStatsProvider(planId));
+    } else {
+      // Plan wurde als Coach für einen Client gespeichert
+      final clientId = state.targetUserId!;
+      _ref.invalidate(clientTrainingPlansProvider(clientId));
+      _ref.invalidate(
+        clientTrainingPlanStatsProvider(
+          ClientPlanStatsKey(clientId: clientId, planId: planId),
+        ),
+      );
+      _ref.invalidate(clientCoachingAnalyticsProvider(clientId));
+    }
+
+    // Coaching-Audit: Plan durch Coach für Client erstellt/aktualisiert
+    final coachId = state.coachId;
+    if (coachId != null && userId != authState.userId && gymId != null) {
+      // Lazy import to avoid circular deps: use external source directly.
+      final audit = FirestoreCoachingAuditSource();
+      await audit.logEvent(
+        gymId: gymId,
+        type: state.originalId == null
+            ? 'plan_created_by_coach'
+            : 'plan_updated_by_coach',
+        coachId: coachId,
+        clientId: userId,
+        planId: planId,
+        relationId: state.coachingRelationId,
+      );
+    }
 
     return planId;
   }

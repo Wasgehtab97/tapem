@@ -5,6 +5,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart' as auth;
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 
 import '../../../bootstrap/navigation.dart';
@@ -63,14 +64,22 @@ class _GlobalNfcListenerState extends State<GlobalNfcListener> {
               // ignore missing controller
             }
           }
-          navigatorKey.currentState?.pushNamed(
-            AppRouter.workoutDay,
-            arguments: {
-              'gymId': gymId,
-              'deviceId': dev.uid,
-              'exerciseId': dev.uid,
-            },
-          );
+          final timer = navContext?.read<WorkoutSessionDurationService>();
+          if (timer != null && timer.isRunning) {
+            navigatorKey.currentState?.pushNamed(
+              AppRouter.home,
+              arguments: 2,
+            );
+          } else {
+            navigatorKey.currentState?.pushNamed(
+              AppRouter.workoutDay,
+              arguments: {
+                'gymId': gymId,
+                'deviceId': dev.uid,
+                'exerciseId': dev.uid,
+              },
+            );
+          }
         }
       });
     }
