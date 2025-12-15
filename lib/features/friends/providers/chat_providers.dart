@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/providers/firebase_provider.dart';
+import '../../../core/providers/auth_providers.dart';
 import '../data/repositories/chat_repository.dart';
 import '../application/services/chat_service.dart';
 import '../application/services/conversation_key_service.dart';
@@ -36,15 +37,17 @@ final conversationKeyServiceProvider = Provider.family<ConversationKeyService, S
 final chatServiceProvider = Provider<ChatService>((ref) {
   final repository = ref.watch(chatRepositoryProvider);
   final friendsState = ref.watch(friendsProvider);
-  
-  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final authState = ref.watch(authViewStateProvider);
+
+  final currentUserId = authState.userId;
   if (currentUserId == null) {
     throw StateError('Cannot create ChatService without authenticated user');
   }
-  
+
   final encryptionService = ref.watch(encryptionServiceProvider(currentUserId));
-  final conversationKeyService = ref.watch(conversationKeyServiceProvider(currentUserId));
-  
+  final conversationKeyService =
+      ref.watch(conversationKeyServiceProvider(currentUserId));
+
   return ChatService(
     repository: repository,
     auth: FirebaseAuth.instance,
@@ -70,10 +73,12 @@ final chatMessagesProvider = StreamProvider.family<List<ChatMessage>, String>(
 final chatConversationProvider = StreamProvider.family<Conversation?, String>(
   (ref, friendUid) {
     final repository = ref.watch(chatRepositoryProvider);
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final authState = ref.watch(authViewStateProvider);
+    final currentUserId = authState.userId;
     if (currentUserId == null) return Stream.value(null);
-    
-    final conversationId = repository.getConversationId(currentUserId, friendUid);
+
+    final conversationId =
+        repository.getConversationId(currentUserId, friendUid);
     return repository.watchConversation(conversationId);
   },
 );

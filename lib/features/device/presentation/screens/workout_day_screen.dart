@@ -498,6 +498,10 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     final auth = context.read<AuthProvider>();
     final settings = context.read<SettingsProvider>();
 
+    // Tastaturen sofort schließen, bevor Dialoge/Speichern starten.
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.read<OverlayNumericKeypadController>().close();
+
     final confirmFinish = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -568,6 +572,10 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         sessions.isNotEmpty ? sessions.first.gymId : null;
     final activeGymId = sessionGymId ?? auth.gymCode ?? widget.gymId;
 
+    debugPrint(
+      '[WorkoutDay] navigate home index=1 role=${auth.role} gym=$activeGymId',
+    );
+
     final result = await controller.saveAllSessions(
       userId: auth.userId!,
       gymId: activeGymId,
@@ -589,6 +597,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
             userId: auth.userId!,
             planId: _planId!,
           );
+          if (!mounted) return;
           riverpod.ProviderScope.containerOf(context, listen: false)
               .refresh(trainingPlanStatsProvider(_planId!));
           final dayKey = logicDayKey(DateTime.now());
@@ -627,18 +636,19 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         controller.clearPlanContextForDay(gymId: activeGymId);
       }
 
-      if (remaining.isEmpty) {
-        if (mounted) {
-          // Nach dem Speichern immer zur Profil-Page (Home-Tab Index 1) navigieren.
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRouter.home,
-            (route) => false,
-            arguments: 1,
-          );
-        }
-      } else {
-        setState(() {});
-      }
+      debugPrint(
+        '[WorkoutDay] saveAllSessions result.saved=${result.saved} remainingSessions=${remaining.length} → navigate to Home(Profile)',
+      );
+
+      if (!mounted) return;
+
+      // Nach dem Speichern immer zur Profil-Page (Home-Tab Index 1) navigieren,
+      // unabhängig davon, ob noch andere Sessions im Hintergrund existieren.
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.home,
+        (route) => false,
+        arguments: 1,
+      );
     }
 
       final message = () {
@@ -667,8 +677,10 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         return '$savedText\n$failureText';
       }();
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
     }
   }
 

@@ -1563,6 +1563,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportMembersRoleAdmin => 'Admin';
 
   @override
+  String get reportMembersRoleCoach => 'Coach';
+
+  @override
   String get reportDeviceFilterHint => 'Search devices or descriptions';
 
   @override

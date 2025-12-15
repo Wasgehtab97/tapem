@@ -61,14 +61,8 @@ class _GymScreenState extends State<GymScreen>
       viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<AuthProvider>();
-      final gym = context.read<GymProvider>();
       final groups = context.read<MuscleGroupProvider>();
-      final code = auth.gymCode;
-      if (code != null && code.isNotEmpty) {
-        gym.loadGymData(code);
-        groups.loadGroups(context);
-      }
+      groups.loadGroups(context);
     });
   }
 
@@ -213,9 +207,14 @@ class _GymScreenState extends State<GymScreen>
                                     controller: _scrollController,
                                     index: i,
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                      // Rechts zusätzlich Platz lassen, damit
+                                      // die AlphabetScrollbar nicht mit den
+                                      // DeviceCards überlappt.
+                                      padding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        8,
+                                        40, // 16px Inhalt + ~24px Scrollbar
+                                        8,
                                       ),
                                       child: DeviceCard(
                                         device: d,

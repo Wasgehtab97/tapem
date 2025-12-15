@@ -4,6 +4,8 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/app_error_card.dart';
+import 'package:tapem/core/widgets/app_loading_indicator.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
@@ -78,8 +80,11 @@ class PlanOverviewScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Fehler: $err')),
+        loading: () => const AppLoadingIndicator(),
+        error: (err, stack) => AppErrorCard(
+          message: 'Fehler beim Laden der Pläne:\n$err',
+          onRetry: () => ref.invalidate(trainingPlansProvider),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _createNewPlan(context, ref),

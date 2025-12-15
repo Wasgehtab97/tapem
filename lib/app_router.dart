@@ -117,6 +117,9 @@ class AppRouter {
 
       case home:
         final initialIndex = settings.arguments as int? ?? 0;
+        debugPrint(
+          '🔀 [Router] home initialIndex=$initialIndex (name=${settings.name})',
+        );
         return MaterialPageRoute(
           builder: (_) => GymContextGuard(
             child: HomeScreen(initialIndex: initialIndex),

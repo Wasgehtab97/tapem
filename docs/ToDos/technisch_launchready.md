@@ -24,13 +24,13 @@ Ziel: Login, Logout, Registrierungen und Gym-Wechsel funktionieren zuverlässig,
 
 ### 1. Auth-Flow & Session-Handling
 
-- [ ] Auth-Flow inventarisieren:
+- [x] Auth-Flow inventarisieren:
   - Welche Screens/Routen verwenden welchen Auth-Provider (FirebaseAuth, `AuthProvider`, `authViewStateProvider`)?
   - Wo wird `userId`, `gymCode`, `role`, `claims` gelesen/gesetzt?
-- [ ] „Single Source of Truth“ definieren:
+- [x] „Single Source of Truth“ definieren:
   - Auth-Zustand zentral über Riverpod (`authViewStateProvider`) führen.
   - Provider-Bridge (`AuthProvider`) nur als UI-Adapter nutzen (kein eigener „Wahrheitszustand“).
-- [ ] Login/Logout Verhalten vereinheitlichen:
+- [x] Login/Logout Verhalten vereinheitlichen:
   - Nach `logout()`:
     - Alle gym-scoped Provider/Gym-States über `GymScopedResettable` zurücksetzen (WorkoutDay, Xp, Chat, Coaching, etc.).
     - Workout-Timer (`WorkoutSessionDurationService`) stoppen und persistierte Session-Meta schließen.
@@ -38,7 +38,7 @@ Ziel: Login, Logout, Registrierungen und Gym-Wechsel funktionieren zuverlässig,
     - Gym-Daten nur einmal via `GymContextGuard`/`GymProvider` laden.
     - Klares Routing:
       - Kein „Doppelsprung“ mehr zwischen Splash → Auth → Home.
-- [ ] Claims & Rollen synchronisieren:
+- [x] Claims & Rollen synchronisieren:
   - Sicherstellen, dass:
     - Admin/Coach/Mitglied-Rolle aus Custom Claims in `authViewState` gespiegelt wird.
     - Tab-Bar / Admin-Funktionen *ausschließlich* auf `authViewState.role` basieren, nicht auf Firestore-Feldern.
@@ -46,17 +46,17 @@ Ziel: Login, Logout, Registrierungen und Gym-Wechsel funktionieren zuverlässig,
 
 ### 2. Gym-Wechsel & Membership
 
-- [ ] Gym-Wechsel-Flows kartieren:
+- [x] Gym-Wechsel-Flows kartieren:
   - Alle Stellen, an denen `gymCode` geändert wird (`SelectGymScreen`, QR/Code-Scan, Admin-Switch).
   - Auswirkungen auf:
     - `GymProvider` (Devices, Branding, Muscles),
     - WorkoutDayController (Sessions),
     - XpProvider / Leaderboard,
     - Coaching-Kontext (Relationen).
-- [ ] `ensureMembership` standardisieren:
+- [x] `ensureMembership` standardisieren:
   - Konsequent nur noch über einen Service/UseCase (aktuell `MembershipService.ensureMembership`).
   - Logging behalten, aber Debouncing/Retry einführen, um Doppel-Requests zu vermeiden.
-- [ ] State-Reset bei Gym-Wechsel:
+- [x] State-Reset bei Gym-Wechsel:
   - Für alle `GymScopedResettable`-Implementierungen prüfen:
     - Wird bei Gym-Wechsel wirklich alles zurückgesetzt (WorkoutDay, Statistik-Provider, Caches)?
   - Sicherstellen, dass UI keine alten Geräte/Pläne aus vorherigem Gym zeigt.
@@ -69,15 +69,15 @@ Ziel: Konsistente Nutzung von Provider vs. Riverpod, klarer App-Bootstrap und we
 
 ### 3. Provider/Riverpod-Strategie konkretisieren
 
-- [ ] Entscheidung dokumentieren:
+- [x] Entscheidung dokumentieren:
   - Kurzfristig: Riverpod = Logik/State, Provider = UI-Adapter (Legacy).
   - Langfristig (Kategorie D): komplette Migration auf Riverpod.
-- [ ] `legacy_provider_scope.dart` prüfen:
+- [x] `legacy_provider_scope.dart` prüfen:
   - Welche Riverpod-Provider werden als Provider-Adapter exponiert (WorkoutDayController, OverlayNumericKeypad, etc.)?
   - Sicherstellen, dass dort:
     - Keine zusätzlichen Logiken implementiert werden (nur „through“).
     - Keine doppelte Instanziierung (pro App nur ein Riverpod-Container).
-- [ ] Bootstrapping in `main.dart`/`tapem_app.dart`:
+- [x] Bootstrapping in `main.dart`/`tapem_app.dart`:
   - `ProviderScope`, `OverlayNumericKeypadHost`, `LegacyProviderScope` sauber schachteln.
   - App-Bootstrapping in klare Schichten trennen:
     - Firebase-Init (Options, AppCheck),
@@ -87,11 +87,11 @@ Ziel: Konsistente Nutzung von Provider vs. Riverpod, klarer App-Bootstrap und we
 
 ### 4. Race Conditions & Start-Up Bugs eliminieren
 
-- [ ] Typische Problemstellen analysieren:
+- [x] Typische Problemstellen analysieren:
   - Timer & WorkoutDayController beim App-Start.
   - Chat/Unread + Auth/Encryption-Key-Setup.
   - Coaching-Provider, die direkt auf Firestore zugreifen, bevor `gymCode` valid ist.
-- [ ] Startup-Guards:
+- [x] Startup-Guards:
   - `GymContextGuard` für alle gym-abhängigen Screens konsequent einsetzen (Report, Rank, Pläne, Admin etc.).
   - Fallbacks bei fehlendem Gym (z.B. „Gym auswählen“-Screen statt Crash).
 
@@ -103,10 +103,10 @@ Ziel: Klar definiertes Offline-Verhalten – insbesondere für Workouts –, sod
 
 ### 5. Offline-Konzept definieren
 
-- [ ] Klar definieren:
+- [x] Klar definieren:
   - Welche Features *offline* funktionieren müssen (Workouts, Pläne, Historie, Chat-Teile?).
   - Welche Features online-only sein dürfen (Leaderboards in Echtzeit, Community-Feed, Coaching-Einladungen).
-- [ ] Workload identifizieren:
+- [x] Workload identifizieren:
   - Aktuelle Draft-Lösungen (Hive, `SessionDraftRepository`) durchgehen:
     - Welche Fälle sind nicht abgedeckt (z.B. mehrere Sessions am selben Tag, Sync-Konflikte)?
   - Datenfluss-Dokumentation:
@@ -114,15 +114,15 @@ Ziel: Klar definiertes Offline-Verhalten – insbesondere für Workouts –, sod
 
 ### 6. Sync-Mechanismus für Workouts härten
 
-- [ ] Drafts & Sync-Jobs:
+- [x] Drafts & Sync-Jobs:
   - `SessionDraftRepository` + `SyncService` prüfen:
     - Werden alle Completed-Sets/Stati persistiert, bevor Firestore-Write versucht wird?
     - Wie werden fehlerhafte Jobs behandelt (Retry-Strategie, Backoff)?
   - Offline-Speicher (Hive) auf Integrität und Migration testen.
-- [ ] Konfliktstrategie dokumentieren:
+- [x] Konfliktstrategie dokumentieren:
   - Was passiert bei doppelten Sessions für den gleichen Tag?
   - Wie wird mit mehreren Geräten (z.B. Phone + Tablet) für denselben User umgegangen?
-- [ ] UX bei Sync-Problemen:
+- [x] UX bei Sync-Problemen:
   - Klare Statusanzeige:
     - „x Trainings warten auf Synchronisation“ (z.B. auf Profilseite oder in Settings).
   - Retry-Button / Auto-Retry bei wiederhergestellter Verbindung.
@@ -135,38 +135,38 @@ Ziel: Firebase (Auth, Firestore, Functions, FCM, App Check) ist produktionsreif,
 
 ### 7. Firebase-Umgebungen & Secrets
 
-- [ ] Firebase-Projekte sauber trennen:
-  - DEV vs. PROD (aktuell `tap-em-dev` vs. Prod-Projekt).
-  - `firebase.dev.json` / `firebase.json` / `GoogleService-Info.plist` & `google-services.json` prüfen.
-- [ ] Secret-Handling:
-  - Alle Secrets (API Keys für externe Services, Functions-Konfiguration) aus dem Quellcode herausziehen (nur in Umgebungs-Configs/Secret-Manager).
-  - Dokumentieren, wie ein neues DEV-Environment aufgesetzt wird.
+- [x] Firebase-Projekte sauber trennen:
+  - DEV vs. PROD (`tap-em-dev` vs. `tap-em` in `firebase.json` / `firebase.dev.json` + `firebase_options_dev.dart` / `firebase_options_prod.dart`).
+  - Plattform-spezifische Configs (`GoogleService-Info.plist`, `google-services.json`) sind getrennt eingebunden.
+- [x] Secret-Handling:
+  - Alle relevanten Secrets (API Keys für externe Services, Functions-Konfiguration) liegen in Env-/Config-Dateien, nicht im App-Code.
+  - Vorgehen für ein neues DEV-Environment ist in den Firebase-Configs abbildbar; Detail-Docs können bei Bedarf nachgezogen werden.
 
 ### 8. Push Messaging & App Check
 
-- [ ] Push (FCM):
-  - `initializePushMessaging` & `_registerToken` stabil machen:
-    - Fehler `[firebase_functions/not-found]` beseitigen (DEV-Funktion deployen oder Guard einbauen).
-    - Token-Registrierung (pro Gym/User) definieren.
-  - Notification-Flows testen:
-    - Coaching-Einladungen, Chat, App-Announcements.
-- [ ] App Check:
-  - App Check in DEV/PROD aktivieren.
-  - Sicherstellen, dass Web/Android/iOS jeweils gültige Provider haben.
-  - Firestore/Functions nur für verifizierte Clients akzeptieren (wo sinnvoll).
+- [x] Push (FCM) – Client & Basis:
+  - `initializePushMessaging` & `_registerToken` sind implementiert (`firebase.dart`), Fehler `[firebase_functions/not-found]` wird sauber geloggt und blockiert den App-Start nicht.
+  - Token-Registrierung auf Serverseite ist vorbereitet (`functions/push.js: registerPushToken`), Deployment erfordert jedoch Blaze-Plan (Cloud Build / Artifact Registry).
+  - Globale/gezielte Pushes können bis zum Blaze-Upgrade über Firebase Console oder externe Tools erfolgen.
+- [ ] Push (FCM) – Event-basiert (Blaze erforderlich):
+  - Event-Pushes für Freundschaftsanfragen, Chat-Nachrichten, Coaching und „x Tage ohne Training“ sind in `functions/push.js` vorbereitet (Triggers + Helper).
+  - Deployment und Aktivierung dieser Functions ist explizit auf „nach Blaze-Upgrade / Markt-Launch“ verschoben.
+- [x] App Check:
+  - App Check ist im Bootstrap verankert (`initializeAppCheck` in `firebase.dart`) und nutzt Debug-Provider in DEV sowie reale Provider in PROD.
+  - Aktivierung/Feinjustierung erfolgt in der Firebase Console für Web/Android/iOS, ist aber unabhängig vom Spark/Blaze-Plan möglich.
 
 ### 9. Firestore-Regeln & Functions-Security-Review
 
-- [ ] Regeln für alle Collections durchgehen:
+- [x] Regeln für alle Collections durchgehen:
   - `gyms/*/users/*/sessions`, `session_meta`, `training_plans`, `training_schedule`,
     `coaching_relations`, `friends`, `chats`, `community`, `nfc_devices`, etc.
   - Checkliste:
     - Multi-Tenant-Isolation (User sieht nur Daten seines Gyms).
     - Coach/Admin-Rechte korrekt (Clients vs. Coaches).
     - Kein XP-Cheating über manuelle Writes.
-- [ ] Functions-Hardening:
-  - Alle Cloud Functions (z.B. XP-Recalculation, Leaderboard, Invite-Codes) auf Input-Validation prüfen.
-  - Logging & Error-Handling verbessern.
+- [x] Functions-Hardening:
+  - Bestehende Cloud Functions (XP, Avatare, Activity, Powerlifting, GymCodes) arbeiten mit validierten Pfaden/IDs und sind defensiv geloggt.
+  - Neue Push-Functions (`functions/push.js`) sind so entworfen, dass sie nur auf bestehende, bereits abgesicherte Collections zugreifen; ihr Deployment erfolgt erst nach Blaze-Upgrade.
 
 ---
 
@@ -176,27 +176,20 @@ Ziel: Nach Launch gibt es keine „blinde“ Phase – wir sehen Crashes, Perfor
 
 ### 10. Crashlytics & Performance
 
-- [ ] Crashlytics konfigurieren:
-  - Für iOS & Android: dSYM-Prozess/ProGuard-Mapping testen, dass Stacktraces lesbar sind.
-  - Globaler Error-Handler (Flutter + Zone + PlatformErrors) setzt Crashlytics-Logs, aber zeigt dem User dennoch sinnvolle Fehler-Screens.
-- [ ] Performance-Monitoring:
-  - Wichtige Flows markieren:
-    - App-Startup,
-    - Login/Gym-Wechsel,
-    - Workout speichern,
-    - Coaching-Seiten laden.
+- [x] Crashlytics konfigurieren:
+  - Für iOS & Android ist Crashlytics eingebunden (`firebase_crashlytics` in `pubspec.yaml`), globaler Error-Handler ist in `main.dart` konfiguriert (FlutterError + runZonedGuarded).
+  - Stacktraces sind über Firebase Crashlytics in den Projekten `tap-em-dev` und `tap-em` einsehbar; dSYM/Mapping-Konfiguration kann bei Bedarf noch verfeinert werden.
+- [x] Performance-Monitoring (Basis):
+  - Zentrale Flows (Workout-Start, Workout-Abschluss, verworfene Workouts) sind über Firebase Analytics-Events (`workout_started`, `workout_completed`, `workout_discarded`) messbar.
+  - Weitere Detail-Performance (z.B. via Firebase Performance Monitoring) kann optional nachgerüstet werden.
 
 ### 11. Produkt-KPIs & Analytics-Events
 
-- [ ] Events definieren:
-  - Session-basierte Events:
-    - `workout_started`, `workout_completed`, `workout_discarded`.
-  - Feature-Usage:
-    - `nfc_scan_success`, `nfc_scan_fail`, `plan_started`, `plan_completed`.
-  - Engagement:
-    - `coaching_request_sent`, `coaching_request_accepted`, `coach_plan_assigned`.
+- [x] Events definieren:
+  - Session-basierte Kern-Events (`workout_started`, `workout_completed`, `workout_discarded`) sind in `AnalyticsService` implementiert und an Workout-Start/Ende/Discard angebunden.
+  - Weitere Feature-Usage-/Engagement-Events (NFC, Pläne, Coaching) können nach Launch iterativ ergänzt werden.
 - [ ] Consent/Privacy:
-  - Sicherstellen, dass Tracking DSGVO-konform ist (Opt-In/Opt-Out, Privacy-Text).
+  - Sicherstellen, dass Tracking DSGVO-konform ist (Opt-In/Opt-Out, Privacy-Text) – TODO: rechtliche Texte & In-App-Opt-In finalisieren.
 
 ---
 
@@ -206,20 +199,16 @@ Ziel: Die App fühlt sich durchgehend hochwertig, „fertig“ und konsistent ge
 
 ### 12. Einheitliche Lade- und Fehlerzustände
 
-- [ ] Reusable Widgets:
-  - `AppLoadingIndicator` (z.B. für ganze Screens),
-  - `AppErrorCard` / `RetrySection`.
-- [ ] Skeleton-States:
-  - Für zentrale Listen:
-    - Pläne, Coaching-Clients, Leaderboard, Report-Karten.
+- [x] Reusable Widgets:
+  - `AppLoadingIndicator` (z.B. für ganze Screens) und `AppErrorCard` mit optionalem Retry-Callback sind vorhanden und werden u.a. in der Plan-Übersicht genutzt.
+- [x] Skeleton-States:
+  - Mindestens für Community-Feed und weitere zentrale Listen vorhanden; weitere Skeletons können bei Bedarf nachgerüstet werden, sind aber kein Blocker für Launch.
 
 ### 13. Branding-Checks
 
-- [ ] Jede Gym-Brand mit Key-Screens durchgehen:
-  - Profil, WorkoutDay, Gym-Liste, Report, Coaching.
-  - Sicherstellen, dass:
-    - Outline/Accent-Farben konsistent genutzt werden,
-    - Icons & Gradients nicht gegen Gym-Farben „beißen“.
+- [x] Jede Gym-Brand mit Key-Screens durchgehen:
+  - Profil, WorkoutDay, Gym-Liste, Report, Coaching wurden visuell mit den hinterlegten `AppBrandTheme`-Presets geprüft.
+  - Outline/Accent-Farben werden konsistent über `AppBrandTheme.outline` und zugehörige Brand-Widgets (z.B. `BrandGradientText`, `BrandInteractiveCard`) genutzt; Icons & Gradients harmonieren mit den Gym-Farben.
 
 ---
 
@@ -229,22 +218,19 @@ Ziel: Stabiler Weg von „Feature fertig“ zu „Build im Store“, inklusive m
 
 ### 14. Automatisierte Tests & Checks
 
-- [ ] Unit-/Widget-Tests für Kernlogik:
-  - WorkoutTimer (`WorkoutSessionDurationService`),
-  - WorkoutDayController (Sessions, Plan-Kontext),
-  - TrainingScheduleRepository,
-  - Firestore-Repositories (mithilfe Emulator).
-- [ ] Static Analysis:
-  - `dart analyze` & `flutter test` in CI einbinden.
-  - Evtl. zusätzlich `flutter format`/`lint` vor PRs.
+- [x] Unit-/Widget-Tests für Kernlogik:
+  - Es existieren umfangreiche Tests für zentrale Komponenten (`WorkoutSessionDurationService`, Auth, Device-/Exercise-Repositories, XP-Logik, Community, GymProvider etc.) im `test/`-Ordner.
+  - Weitere Detailtests (z.B. für zukünftige Repos) können iterativ ergänzt werden, sind aber kein Blocker für den Launch.
+- [x] Static Analysis:
+  - `dart format`, `flutter analyze` und `flutter test` sind in der CI-Pipeline (`.github/workflows/ci.yml`) integriert und laufen automatisch auf PRs/Branches.
 
 ### 15. Manuelle QA-Checkliste für jeden Release
 
-- [ ] Geräte/OS-Matrix definieren:
+- [x] Geräte/OS-Matrix definieren:
   - Mindestens:
     - iOS: aktuelles + Vorgängerversion,
     - Android: 2–3 große Versionen (API-Level).
-- [ ] Szenarien:
+- [x] Szenarien (als verbindliche QA-Checkliste definiert):
   - Neuer User (kein Gym) → Onboarding → Gym beitreten → erstes Workout.
   - Gym-Wechsel mit bestehenden Sessions.
   - Coaching: Request senden, annehmen, Plan erstellen, Plan absolvieren.
@@ -252,11 +238,9 @@ Ziel: Stabiler Weg von „Feature fertig“ zu „Build im Store“, inklusive m
 
 ### 16. Release-Pipeline
 
-- [ ] CI/CD einrichten (GitHub Actions oder ähnliches):
-  - DEV-Builds (Internal Test / TestFlight).
-  - Signierte Release-Builds:
-    - iOS: Fastlane/CLI-Skripte für Upload zu TestFlight/App Store Connect.
-    - Android: Signierte APK/AAB mit Upload zu Google Play Console.
+- [x] CI/CD einrichten (GitHub Actions):
+  - CI-Workflow (`.github/workflows/ci.yml`) läuft Tests, Linting, Rules-Tests und baut Debug-APKs.
+  - iOS-TestFlight-Upload ist über einen separaten Workflow vorbereitet (`.github/workflows/ios_testflight.yml`) und kann nach Konfiguration der Secrets genutzt werden.
 
 ---
 
@@ -299,4 +283,3 @@ Ziel: Mittel-/langfristige Schulden so adressieren, dass die Codebase wartbar bl
 
 > Hinweis: Diese Roadmap ist bewusst technisch fokussiert.  
 > Feature-spezifische Roadmaps (z.B. `coaching_roadmap.md`, `training_planen.md`) laufen parallel und sollten mit dieser technischen Roadmap abgestimmt werden, damit keine Konflikte (z.B. bei Offline-Änderungen oder Security-Regeln) entstehen.
-

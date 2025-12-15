@@ -249,6 +249,28 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   String? get error => _error;
 
+  /// Erzwingt ein Neuladen der Custom Claims und
+  /// synchronisiert den AuthViewState (Rollen, Gym-Kontext).
+  ///
+  /// Sinnvoll nach serverseitigen Rollenänderungen (z.B. Admin/Coach-Promotion).
+  Future<void> refreshClaims() async {
+    final fbUser = _authManager.currentUser;
+    if (fbUser == null) {
+      return;
+    }
+    _setLoading(true);
+    _error = null;
+    try {
+      await _authManager.forceRefreshIdToken(fbUser);
+      await _loadCurrentUser();
+    } catch (e, st) {
+      _error = e is fb_auth.FirebaseAuthException ? e.message : e.toString();
+      _logError(e, st, context: 'refreshClaims');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> reloadCurrentUser() => _loadCurrentUser();
 
   Future<void> _loadCurrentUser() async {

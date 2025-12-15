@@ -370,10 +370,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       Navigator.pushNamed(context, AppRouter.home, arguments: 0);
     }
 
-    Future<void> startPlan(
-      TrainingPlan plan, {
-      required bool goToWorkoutTab,
-    }) async {
+    Future<void> startPlan(TrainingPlan plan) async {
       final controller =
           workoutController ?? context.read<WorkoutDayController>();
 
@@ -408,9 +405,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       await timerService.start(uid: uid, gymId: gymId);
       if (!mounted) return;
 
-      if (goToWorkoutTab) {
-        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
-      } else if (plan.exercises.isNotEmpty) {
+      if (plan.exercises.isNotEmpty) {
         final firstItem = plan.exercises.first;
         Navigator.pushNamed(
           context,
@@ -433,7 +428,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         await startFreestyle();
         return;
       }
-      await startPlan(selectedPlan!, goToWorkoutTab: true);
+      await startPlan(selectedPlan!);
     }
 
     Future<void> startOtherPlan() async {
@@ -555,7 +550,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           return;
         }
 
-        await startPlan(chosen, goToWorkoutTab: false);
+        await startPlan(chosen);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

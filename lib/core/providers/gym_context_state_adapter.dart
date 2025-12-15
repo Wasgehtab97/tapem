@@ -31,12 +31,15 @@ class GymContextStateAdapter extends ChangeNotifier implements GymContextState {
 final gymContextStateAdapterProvider =
     ChangeNotifierProvider<GymContextStateAdapter>((ref) {
   final adapter = GymContextStateAdapter();
-  void update() {
-    adapter.updateFrom(ref.read(authControllerProvider));
+  void update(AuthViewState state) {
+    adapter.updateFrom(state);
   }
 
   ref.onDispose(adapter.dispose);
-  update();
-  ref.listen<AuthProvider>(authControllerProvider, (_, __) => update());
+  update(ref.read(authViewStateProvider));
+  ref.listen<AuthViewState>(
+    authViewStateProvider,
+    (_, next) => update(next),
+  );
   return adapter;
 });

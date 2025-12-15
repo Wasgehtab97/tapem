@@ -7,6 +7,7 @@ const xp = require('./xp');
 const activity = require('./activity');
 const gymCodes = require('./gymCodes');
 const powerlifting = require('./powerlifting');
+const push = require('./push');
 
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
@@ -20,6 +21,11 @@ exports.updatePowerliftingRankOnLog = powerlifting.updatePowerliftingRankOnLog;
 
 // Gym Code Functions (manual rotation only - works on Spark plan)
 exports.manuallyRotateGymCode = gymCodes.manuallyRotateGymCode;
+
+// Push notification functions (event-based + token registration)
+exports.registerPushToken = push.registerPushToken;
+exports.onFriendRequestCreated = push.onFriendRequestCreated;
+exports.onFriendChatMessageCreated = push.onFriendChatMessageCreated;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')

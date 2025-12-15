@@ -23,7 +23,7 @@ final authControllerProvider = ChangeNotifierProvider<AuthProvider>((ref) {
   return auth;
 });
 
-class AuthViewState {
+class AuthViewState implements GymContextState {
   const AuthViewState({
     required this.isLoading,
     required this.isLoggedIn,
@@ -39,7 +39,9 @@ class AuthViewState {
   final bool isLoggedIn;
   final bool isAdmin;
   final bool isCoach;
+  @override
   final GymContextStatus gymContextStatus;
+  @override
   final String? gymCode;
   final String? userId;
   final String? error;

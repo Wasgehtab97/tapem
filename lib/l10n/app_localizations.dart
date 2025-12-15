@@ -2951,6 +2951,12 @@ abstract class AppLocalizations {
   /// **'Admin'**
   String get reportMembersRoleAdmin;
 
+  /// Display value for the coach role in the members report
+  ///
+  /// In en, this message translates to:
+  /// **'Coach'**
+  String get reportMembersRoleCoach;
+
   /// Hint text for the device usage search field
   ///
   /// In en, this message translates to:

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
+import '../analytics/analytics_service.dart';
 import '../providers/auth_providers.dart';
 import '../providers/firebase_provider.dart';
 import '../time/logic_day.dart';
@@ -196,6 +197,14 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     _startTicker();
     notifyListeners();
     _telemetry?.timerStart();
+
+     // Analytics: Workout gestartet
+    unawaited(
+      AnalyticsService.logWorkoutStarted(
+        gymId: gymId,
+        userId: uid,
+      ),
+    );
   }
 
   Future<void> registerSession({
@@ -361,6 +370,16 @@ class WorkoutSessionDurationService extends ChangeNotifier {
 
     await _clearLocal();
     _completionCtrl.add(completionEvent);
+
+    // Analytics: Workout abgeschlossen
+    unawaited(
+      AnalyticsService.logWorkoutCompleted(
+        gymId: gymId,
+        userId: uid,
+        sessionId: resolvedSessionId,
+        durationMs: durationMs,
+      ),
+    );
   }
 
   Future<void> discard() async {
@@ -370,7 +389,20 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final dayKey = logicDayKey(start);
     _telemetry?.timerStopDiscard(
         durationMs: durationMs, dayKey: dayKey, hasSets: false);
+    final uid = _uid;
+    final gymId = _gymId;
     await _clearLocal();
+
+    if (uid != null && gymId != null) {
+      // Analytics: Workout verworfen
+      unawaited(
+        AnalyticsService.logWorkoutDiscarded(
+          gymId: gymId,
+          userId: uid,
+          durationMs: durationMs,
+        ),
+      );
+    }
   }
 
   Future<void> _clearLocal({bool removePersisted = true}) async {
@@ -577,5 +609,4 @@ final workoutSessionDurationServiceProvider =
   ref.onDispose(service.dispose);
   return service;
 });
-
 

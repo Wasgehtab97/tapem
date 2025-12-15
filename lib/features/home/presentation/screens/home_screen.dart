@@ -195,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    debugPrint('[Home] initState initialIndex=${widget.initialIndex}');
     // Nach Login Gym laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = context.read<AuthProvider>();
@@ -227,6 +228,11 @@ class _HomeScreenState extends State<HomeScreen> {
             .where((tab) => restrictedTabIds.contains(tab.id))
             .toList(growable: false)
         : allTabs;
+
+    debugPrint(
+      '[Home] build currentIndex=$_currentIndex tabs=${tabs.map((t) => t.id).toList()}',
+    );
+
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;
     }
