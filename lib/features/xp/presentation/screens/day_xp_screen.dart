@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/auth_providers.dart';
 import '../../../../core/providers/xp_provider.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import '../widgets/daily_xp_card.dart';
@@ -12,14 +12,14 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 
-class DayXpScreen extends StatefulWidget {
+class DayXpScreen extends ConsumerStatefulWidget {
   const DayXpScreen({Key? key}) : super(key: key);
 
   @override
-  State<DayXpScreen> createState() => _DayXpScreenState();
+  ConsumerState<DayXpScreen> createState() => _DayXpScreenState();
 }
 
-class _DayXpScreenState extends State<DayXpScreen> {
+class _DayXpScreenState extends ConsumerState<DayXpScreen> {
   void _openLeaderboard() {
     final loc = AppLocalizations.of(context)!;
 
@@ -38,8 +38,8 @@ class _DayXpScreenState extends State<DayXpScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final auth = context.read<AuthProvider>();
-      final xpProv = context.read<XpProvider>();
+      final auth = ref.read(authControllerProvider);
+      final xpProv = ref.read(xpProvider);
       final uid = auth.userId;
       if (uid != null) {
         xpProv.watchTrainingDays(uid);
@@ -55,8 +55,8 @@ class _DayXpScreenState extends State<DayXpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final xpProv = context.watch<XpProvider>();
-    final auth = context.watch<AuthProvider>();
+    final xpProv = ref.watch(xpProvider);
+    final auth = ref.watch(authControllerProvider);
     final userLevel = xpProv.dailyLevel;
     final userXpInLevel = xpProv.dailyLevelXp;
     final locale = Localizations.localeOf(context).toString();

@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -14,6 +13,7 @@ import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_list_selector.dart';
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
   final String gymId;
@@ -81,7 +81,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     _initialPrimary = List.of(_primaryIds);
     _initialSecondary = List.of(_secondaryIds);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final prov = context.read<MuscleGroupProvider>();
+      final prov = riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(muscleGroupProvider);
       await prov.loadGroups(context);
       if (!mounted) return;
       final normalizedPrimary = prov.canonicalizeGroupIds(_primaryIds);
@@ -114,10 +115,11 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     FocusScope.of(context).unfocus();
     setState(() => _isSaving = true);
 
-    final auth = context.read<AuthProvider>();
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final auth = container.read(authControllerProvider);
     final userId = auth.userId!;
-    final exProv = context.read<ExerciseProvider>();
-    final muscleProv = context.read<MuscleGroupProvider>();
+    final exProv = container.read(exerciseProvider);
+    final muscleProv = container.read(muscleGroupProvider);
     final loc = AppLocalizations.of(context)!;
 
     final normalizedPrimary = muscleProv.canonicalizeGroupIds(_primaryIds);

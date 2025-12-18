@@ -46,6 +46,42 @@ class _RankScreenState extends ConsumerState<RankScreen>
     final accentColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final loc = AppLocalizations.of(context)!;
 
+    // Card-spezifische Gradients aus dem aktuellen Brand-Gradient und
+    // dem Screen-Hintergrund ableiten, damit jede Karte ein eigenes,
+    // aber Theme-abhängiges Design hat.
+    final baseGradient = brandTheme?.gradient ?? AppGradients.brandGradient;
+    final gradientColors = baseGradient.colors;
+    final primaryTone = gradientColors.first;
+    final secondaryTone =
+        gradientColors.length > 1 ? gradientColors.last : gradientColors.first;
+    final background = theme.scaffoldBackgroundColor;
+
+    Color _blend(Color c, double t) =>
+        Color.lerp(c, background, t) ?? c;
+
+    // Erfahrung (XP): stärkerer Brand-Fokus mit Verlauf von primary → secondary.
+    final experienceStart = _blend(primaryTone, 0.12);
+    final experienceEnd = _blend(secondaryTone, 0.70);
+
+    // Geräte-Level: technischer, kühler Look – stärkere Betonung des sekundären Tons.
+    final deviceStart = _blend(secondaryTone, 0.10);
+    final deviceEnd = _blend(secondaryTone, 0.75);
+
+    // Muskel-Level: warmes, energetisches Mid-Mix aus primary/secondary.
+    final midTone =
+        Color.lerp(primaryTone, secondaryTone, 0.5) ?? primaryTone;
+    final muscleStart = _blend(midTone, 0.10);
+    final muscleEnd = _blend(midTone, 0.78);
+
+    // Powerlifting: deutlich kühlerer, tieferer Verlauf, der sich klarer
+    // von "Erfahrung" absetzt, aber im Brand-Spektrum bleibt.
+    final powerBase =
+        Color.lerp(primaryTone, background, 0.35) ?? primaryTone;
+    final powerAccent =
+        Color.lerp(secondaryTone, background, 0.15) ?? secondaryTone;
+    final powerStart = _blend(powerBase, 0.42);
+    final powerEnd = _blend(powerAccent, 0.16);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -113,8 +149,8 @@ class _RankScreenState extends ConsumerState<RankScreen>
                     icon: const _XpMonogram(),
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () => Navigator.of(context).pushNamed(AppRouter.dayXp),
-                    gradientStart: accentColor.withOpacity(0.1),
-                    gradientEnd: accentColor.withOpacity(0.02),
+                    gradientStart: experienceStart,
+                    gradientEnd: experienceEnd,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _RankCard(
@@ -123,8 +159,8 @@ class _RankScreenState extends ConsumerState<RankScreen>
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.deviceXp),
-                    gradientStart: Colors.blue.withOpacity(0.1),
-                    gradientEnd: Colors.blue.withOpacity(0.02),
+                    gradientStart: deviceStart,
+                    gradientEnd: deviceEnd,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _RankCard(
@@ -133,8 +169,8 @@ class _RankScreenState extends ConsumerState<RankScreen>
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () =>
                         Navigator.of(context).pushNamed(AppRouter.xpOverview),
-                    gradientStart: Colors.orange.withOpacity(0.1),
-                    gradientEnd: Colors.orange.withOpacity(0.02),
+                    gradientStart: muscleStart,
+                    gradientEnd: muscleEnd,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _RankCard(
@@ -143,8 +179,8 @@ class _RankScreenState extends ConsumerState<RankScreen>
                     subtitle: loc.profileStatsButtonSubtitle,
                     onTap: () => Navigator.of(context)
                         .pushNamed(AppRouter.powerliftingLeaderboard),
-                    gradientStart: accentColor.withOpacity(0.12),
-                    gradientEnd: accentColor.withOpacity(0.03),
+                    gradientStart: powerStart,
+                    gradientEnd: powerEnd,
                   ),
                 ],
               ),
@@ -333,9 +369,22 @@ class _BicepsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      '💪',
-      style: TextStyle(fontSize: 24),
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final gradient = brandTheme?.gradient ??
+        LinearGradient(colors: [brandColor, brandColor]);
+
+    // Emoji in Brand-Farbe einfärben: wir legen einen Shader über das Emoji,
+    // sodass seine Form erhalten bleibt, aber die Farbe aus dem aktuellen
+    // Theme kommt.
+    return ShaderMask(
+      shaderCallback: (bounds) => gradient.createShader(bounds),
+      blendMode: BlendMode.srcATop,
+      child: const Text(
+        '💪',
+        style: TextStyle(fontSize: 24),
+      ),
     );
   }
 }

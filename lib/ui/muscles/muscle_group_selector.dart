@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -45,7 +45,8 @@ class _MuscleGroupSelectorState extends State<MuscleGroupSelector> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final prov = context.watch<MuscleGroupProvider>();
+    final prov = riverpod.ProviderScope.containerOf(context)
+        .read(muscleGroupProvider);
     final theme = Theme.of(context);
 
     if (prov.isLoading) {

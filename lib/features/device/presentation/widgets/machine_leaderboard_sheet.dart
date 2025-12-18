@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-
-import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../data/repositories/machine_attempt_repository_impl.dart';
@@ -11,7 +8,7 @@ import '../../domain/services/leaderboard_service.dart';
 import '../../domain/utils/leaderboard_time_utils.dart';
 import '../models/device_leaderboard_state.dart';
 
-class MachineLeaderboardSheet extends StatelessWidget {
+class MachineLeaderboardSheet extends StatefulWidget {
   final String gymId;
   final String machineId;
   final bool isMulti;
@@ -28,29 +25,45 @@ class MachineLeaderboardSheet extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    SettingsProvider? settings;
-    try {
-      settings = Provider.of<SettingsProvider>(context, listen: false);
-    } on ProviderNotFoundException {
-      settings = null;
-    }
-    final initialFilter = _resolveInitialGenderFilter(settings?.gender);
+  State<MachineLeaderboardSheet> createState() =>
+      _MachineLeaderboardSheetState();
+}
 
+class _MachineLeaderboardSheetState extends State<MachineLeaderboardSheet> {
+  late final DeviceLeaderboardNotifier _notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifier = DeviceLeaderboardNotifier(
+      service: widget.serviceOverride ??
+          LeaderboardService(
+            repository: MachineAttemptRepositoryImpl(),
+          ),
+      gymId: widget.gymId,
+      machineId: widget.machineId,
+      isMulti: widget.isMulti,
+      initialGenderFilter: LeaderboardGenderFilter.all,
+    )..ensureLoaded();
+  }
+
+  @override
+  void dispose() {
+    _notifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return FractionallySizedBox(
       heightFactor: 0.85,
-      child: ChangeNotifierProvider(
-        create: (_) => DeviceLeaderboardNotifier(
-          service: serviceOverride ??
-              LeaderboardService(
-                repository: MachineAttemptRepositoryImpl(),
-              ),
-          gymId: gymId,
-          machineId: machineId,
-          isMulti: isMulti,
-          initialGenderFilter: initialFilter,
-        )..ensureLoaded(),
-        child: _MachineLeaderboardContent(title: title, isMulti: isMulti),
+      child: AnimatedBuilder(
+        animation: _notifier,
+        builder: (context, _) => _MachineLeaderboardContent(
+          title: widget.title,
+          isMulti: widget.isMulti,
+          notifier: _notifier,
+        ),
       ),
     );
   }
@@ -59,10 +72,12 @@ class MachineLeaderboardSheet extends StatelessWidget {
 class _MachineLeaderboardContent extends StatelessWidget {
   final String title;
   final bool isMulti;
+  final DeviceLeaderboardNotifier notifier;
 
   const _MachineLeaderboardContent({
     required this.title,
     required this.isMulti,
+    required this.notifier,
   });
 
   @override
@@ -104,33 +119,31 @@ class _MachineLeaderboardContent extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Consumer<DeviceLeaderboardNotifier>(
-                    builder: (context, notifier, _) {
-                      final resolvedTitle = _resolveLeaderboardTitle(
-                        loc,
-                        title,
-                        notifier.genderFilter,
-                      );
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeIn,
-                        child: Text(
-                          resolvedTitle,
-                          key: ValueKey(resolvedTitle),
-                          style: textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ) ??
-                              TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    },
-                  ),
+                  Builder(builder: (context) {
+                    final resolvedTitle = _resolveLeaderboardTitle(
+                      loc,
+                      title,
+                      notifier.genderFilter,
+                    );
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: Text(
+                        resolvedTitle,
+                        key: ValueKey(resolvedTitle),
+                        style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ) ??
+                            TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 24),
                   if (isMulti)
                     Expanded(
@@ -156,13 +169,14 @@ class _MachineLeaderboardContent extends StatelessWidget {
                       ),
                     )
                   else ...[
-                    _LeaderboardTabs(onTabChanged: (index) {
-                      final notifier = context.read<DeviceLeaderboardNotifier>();
-                      final period = LeaderboardPeriod.values[index];
-                      notifier.setPeriod(period);
-                    }),
+                    _LeaderboardTabs(
+                      onTabChanged: (index) {
+                        final period = LeaderboardPeriod.values[index];
+                        notifier.setPeriod(period);
+                      },
+                    ),
                     const SizedBox(height: 18),
-                    const _LeaderboardFilters(),
+                    _LeaderboardFilters(notifier: notifier),
                     const SizedBox(height: 20),
                     Expanded(
                       child: TabBarView(
@@ -194,51 +208,47 @@ class _LeaderboardTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    return Consumer<DeviceLeaderboardNotifier>(
-      builder: (context, notifier, _) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.75),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.08),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.08),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: TabBar(
+        onTap: onTabChanged,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: theme.colorScheme.primary.withOpacity(0.16),
+        ),
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        labelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          child: TabBar(
-            onTap: onTabChanged,
-            indicatorSize: TabBarIndicatorSize.tab,
-            indicator: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: theme.colorScheme.primary.withOpacity(0.16),
-            ),
-            labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-            labelStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-            tabs: [
-              Tab(text: loc.deviceLeaderboardTabToday),
-              Tab(text: loc.deviceLeaderboardTabWeek),
-              Tab(text: loc.deviceLeaderboardTabMonth),
-            ],
-          ),
-        );
-      },
+        tabs: [
+          Tab(text: loc.deviceLeaderboardTabToday),
+          Tab(text: loc.deviceLeaderboardTabWeek),
+          Tab(text: loc.deviceLeaderboardTabMonth),
+        ],
+      ),
     );
   }
 }
 
 class _LeaderboardFilters extends StatelessWidget {
-  const _LeaderboardFilters();
+  final DeviceLeaderboardNotifier notifier;
+
+  const _LeaderboardFilters({required this.notifier});
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    return Consumer<DeviceLeaderboardNotifier>(
-      builder: (context, notifier, _) {
-        return Container(
+    return Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: theme.colorScheme.surface.withOpacity(0.78),
@@ -319,8 +329,6 @@ class _LeaderboardFilters extends StatelessWidget {
             ],
           ),
         );
-      },
-    );
   }
 }
 
@@ -383,35 +391,37 @@ class _LeaderboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<DeviceLeaderboardNotifier>(
-      builder: (context, notifier, _) {
-        final loc = AppLocalizations.of(context)!;
-        final state = notifier.stateFor(period);
-        switch (state.status) {
-          case DeviceLeaderboardStatus.initial:
-            notifier.ensureLoaded(period);
-            return const Center(child: CircularProgressIndicator());
-          case DeviceLeaderboardStatus.loading:
-            return const Center(child: CircularProgressIndicator());
-          case DeviceLeaderboardStatus.error:
-            return Center(
-              child: Text(
-                loc.deviceLeaderboardError,
-                textAlign: TextAlign.center,
-              ),
-            );
-          case DeviceLeaderboardStatus.empty:
-            return Center(
-              child: Text(
-                loc.deviceLeaderboardEmpty,
-                textAlign: TextAlign.center,
-              ),
-            );
-          case DeviceLeaderboardStatus.loaded:
-            return _LeaderboardEntries(entries: state.entries);
-        }
-      },
-    );
+    final loc = AppLocalizations.of(context)!;
+    final sheetState =
+        context.findAncestorStateOfType<_MachineLeaderboardSheetState>();
+    final notifier = sheetState?._notifier;
+    if (notifier == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final state = notifier.stateFor(period);
+    switch (state.status) {
+      case DeviceLeaderboardStatus.initial:
+        notifier.ensureLoaded(period);
+        return const Center(child: CircularProgressIndicator());
+      case DeviceLeaderboardStatus.loading:
+        return const Center(child: CircularProgressIndicator());
+      case DeviceLeaderboardStatus.error:
+        return Center(
+          child: Text(
+            loc.deviceLeaderboardError,
+            textAlign: TextAlign.center,
+          ),
+        );
+      case DeviceLeaderboardStatus.empty:
+        return Center(
+          child: Text(
+            loc.deviceLeaderboardEmpty,
+            textAlign: TextAlign.center,
+          ),
+        );
+      case DeviceLeaderboardStatus.loaded:
+        return _LeaderboardEntries(entries: state.entries);
+    }
   }
 }
 

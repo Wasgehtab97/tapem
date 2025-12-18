@@ -6,12 +6,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as legacy_provider;
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 
 void _klog(String m) => debugPrint('🔢 [Keypad] $m');
 
@@ -417,11 +416,10 @@ class OverlayNumericKeypad extends StatelessWidget {
                     gap: gap,
                     theme: theme,
                     onHide: () {
+                      final container =
+                          ProviderScope.containerOf(context, listen: false);
                       final dayController =
-                          legacy_provider.Provider.of<WorkoutDayController>(
-                        context,
-                        listen: false,
-                      );
+                          container.read(workoutDayControllerProvider);
                       dayController.focusedProvider?.clearFocus();
                       controller.close();
                     },
@@ -450,12 +448,8 @@ class OverlayNumericKeypad extends StatelessWidget {
   }
 
   static DeviceProvider? _activeProvider(BuildContext context) {
-    // TODO(legacy-state): Replace the legacy Provider lookup once
-    // WorkoutDayController is served through Riverpod.
-    final controller = legacy_provider.Provider.of<WorkoutDayController>(
-      context,
-      listen: false,
-    );
+    final container = ProviderScope.containerOf(context, listen: false);
+    final controller = container.read(workoutDayControllerProvider);
     return controller.focusedProvider;
   }
 

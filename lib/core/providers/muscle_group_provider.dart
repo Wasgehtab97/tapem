@@ -2,13 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as legacy_provider;
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../bootstrap/navigation.dart';
-import '../providers/auth_provider.dart';
-import '../providers/gym_provider.dart';
+import '../providers/auth_providers.dart';
 import '../../features/muscle_group/data/repositories/muscle_group_repository_impl.dart';
 import '../../features/muscle_group/data/sources/firestore_muscle_group_source.dart';
 import '../../features/muscle_group/domain/models/muscle_group.dart';
@@ -21,6 +19,7 @@ import '../../features/device/domain/usecases/update_device_muscle_groups_usecas
 import '../../features/device/domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../../features/device/data/repositories/device_repository_impl.dart';
 import '../../features/device/data/sources/firestore_device_source.dart';
+import '../../features/device/providers/workout_day_controller_provider.dart';
 import '../../features/history/data/sources/firestore_history_source.dart';
 import '../../features/history/data/repositories/history_repository_impl.dart';
 import '../../features/history/domain/usecases/get_history_for_device.dart';
@@ -96,22 +95,30 @@ class MuscleGroupProvider extends ChangeNotifier {
 
   Future<String?> ensureRegionGroup(
       BuildContext context, MuscleRegion region) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    String? gymId;
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final authState = container.read(authViewStateProvider);
+      gymId = authState.gymCode;
+    } catch (_) {
+      gymId = null;
+    }
     if (gymId == null) return null;
     return _ensureRegionGroup.execute(gymId, region);
   }
 
   Future<void> loadGroups(BuildContext context, {bool force = false}) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
-    final userId = auth.userId;
+    String? gymId;
+    String? userId;
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final authState = container.read(authViewStateProvider);
+      gymId = authState.gymCode;
+      userId = authState.userId;
+    } catch (_) {
+      gymId = null;
+      userId = null;
+    }
     if (gymId == null || userId == null) {
       _error = 'Benutzer nicht eingeloggt';
       notifyListeners();
@@ -198,15 +205,13 @@ class MuscleGroupProvider extends ChangeNotifier {
   }
 
   Future<void> saveGroup(BuildContext context, MuscleGroup group) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(context, listen: false);
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
     await _safeSaveGroup(gymId, group);
 
-    final devices = legacy_provider.Provider.of<GymProvider>(
-      context,
-      listen: false,
-    ).devices;
+    final devices = container.read(gymProvider).devices;
     for (final dId in group.primaryDeviceIds) {
       try {
         final dev = devices.firstWhere((d) => d.uid == dId);
@@ -233,11 +238,9 @@ class MuscleGroupProvider extends ChangeNotifier {
   }
 
   Future<void> deleteGroup(BuildContext context, String groupId) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
     await _deleteGroup.execute(gymId, groupId);
     await loadGroups(context, force: true);
@@ -268,11 +271,9 @@ class MuscleGroupProvider extends ChangeNotifier {
     String deviceId,
     List<String> groupIds,
   ) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
     final normalized = canonicalizeGroupIds(groupIds);
 
@@ -292,11 +293,9 @@ class MuscleGroupProvider extends ChangeNotifier {
     String exerciseId,
     List<String> groupIds,
   ) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
     final normalized = canonicalizeGroupIds(groupIds);
 
@@ -315,11 +314,9 @@ class MuscleGroupProvider extends ChangeNotifier {
     List<String> primaryGroupIds,
     List<String> secondaryGroupIds,
   ) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
     final normalizedPrimary = canonicalizeGroupIds(primaryGroupIds);
     final normalizedSecondary = canonicalizeGroupIds(secondaryGroupIds)
@@ -350,11 +347,9 @@ class MuscleGroupProvider extends ChangeNotifier {
     List<String> primaryGroupIds,
     List<String> secondaryGroupIds,
   ) async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    final gymId = auth.gymCode;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authState = container.read(authViewStateProvider);
+    final gymId = authState.gymCode;
     if (gymId == null) return;
 
     final normalizedPrimary = canonicalizeGroupIds(primaryGroupIds);
@@ -395,11 +390,10 @@ class MuscleGroupProvider extends ChangeNotifier {
     );
 
     try {
-      final deviceProv = legacy_provider.Provider.of<DeviceProvider>(
-        context,
-        listen: false,
-      );
-      deviceProv.applyMuscleAssignments(
+      final workoutController =
+          container.read(workoutDayControllerProvider);
+      final deviceProv = workoutController.focusedProvider;
+      deviceProv?.applyMuscleAssignments(
         deviceId,
         normalizedPrimary,
         normalizedSecondary,

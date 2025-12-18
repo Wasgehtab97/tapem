@@ -155,11 +155,42 @@ class ThemePreferenceProvider extends ChangeNotifier {
 
   List<BrandThemeId> availableForGym(String? gymId) {
     final defaultTheme = manualDefaultForGym(gymId);
-    final base = BrandThemeId.values.toList();
+    // Dynamische Themes, die visuell besonders hervorgehoben sind.
+    const dynamicIds = [
+      BrandThemeId.cyberpunkNeon,
+      BrandThemeId.animeBloom,
+      BrandThemeId.flameInferno,
+      BrandThemeId.waterTribe,
+      BrandThemeId.airNomads,
+      BrandThemeId.earthKingdom,
+    ];
+
+    final all = BrandThemeId.values.toList();
+
+    // Erst alle dynamischen Themes (in definierter Reihenfolge) …
+    final dynamicThemes = <BrandThemeId>[
+      for (final id in dynamicIds)
+        if (all.contains(id)) id,
+    ];
+
+    // … dann alle übrigen statischen Presets in ihrer bisherigen Reihenfolge.
+    final staticThemes = <BrandThemeId>[
+      for (final id in all)
+        if (!dynamicThemes.contains(id)) id,
+    ];
+
+    final ordered = <BrandThemeId>[
+      ...dynamicThemes,
+      ...staticThemes,
+    ];
+
     if (defaultTheme == null) {
-      return base;
+      return ordered;
     }
-    final others = base.where((e) => e != defaultTheme).toList();
+
+    // Das Studio-Default-Theme bleibt immer an erster Stelle,
+    // die übrigen Optionen folgen in der oben definierten Reihenfolge.
+    final others = ordered.where((e) => e != defaultTheme).toList();
     return [defaultTheme, ...others];
   }
 }

@@ -54,9 +54,11 @@ class _BrandOutlineState extends State<BrandOutline> {
       boxShadow: widget.isSelected ? brand.outlineShadow : null,
     );
 
+    final surfaceColor = brand.surfaceColor ?? theme.colorScheme.surface;
+
     Widget inner = DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: surfaceColor,
         borderRadius: innerRadius,
       ),
       child: Padding(

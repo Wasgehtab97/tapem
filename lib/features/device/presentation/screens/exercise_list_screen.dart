@@ -1,10 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
 import 'package:tapem/app_router.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -18,10 +17,13 @@ import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet
 import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart'
+    show workoutSessionDurationServiceProvider;
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 
-class ExerciseListScreen extends StatefulWidget {
+class ExerciseListScreen extends riverpod.ConsumerStatefulWidget {
   final String gymId;
   final String deviceId;
   final ValueChanged<WorkoutDeviceSelection>? onSelect;
@@ -34,10 +36,12 @@ class ExerciseListScreen extends StatefulWidget {
   });
 
   @override
-  State<ExerciseListScreen> createState() => _ExerciseListScreenState();
+  riverpod.ConsumerState<ExerciseListScreen> createState() =>
+      _ExerciseListScreenState();
 }
 
-class _ExerciseListScreenState extends State<ExerciseListScreen> {
+class _ExerciseListScreenState
+    extends riverpod.ConsumerState<ExerciseListScreen> {
   final _searchCtr = TextEditingController();
   String _query = '';
   final Set<String> _selectedGroups = {};
@@ -46,10 +50,15 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().userId!;
+    final userId = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider)
+        .userId!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExerciseProvider>().loadExercises(widget.gymId, widget.deviceId, userId);
-      context.read<MuscleGroupProvider>().loadGroups(context);
+      final container = riverpod.ProviderScope.containerOf(context);
+      container
+          .read(exerciseProvider)
+          .loadExercises(widget.gymId, widget.deviceId, userId);
+      container.read(muscleGroupProvider).loadGroups(context);
     });
   }
 
@@ -81,13 +90,16 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       if (onSelect != null) {
         onSelect(selection);
       } else {
-        final timer = context.read<WorkoutSessionDurationService>();
+        final container = riverpod.ProviderScope.containerOf(context);
+        final timer =
+            container.read(workoutSessionDurationServiceProvider);
         if (timer.isRunning) {
-          final auth = context.read<AuthProvider>();
+          final auth = container.read(authControllerProvider);
           final userId = auth.userId;
           if (userId != null) {
             try {
-              final controller = context.read<WorkoutDayController>();
+              final controller =
+                  container.read(workoutDayControllerProvider);
               controller.addOrFocusSession(
                 gymId: widget.gymId,
                 deviceId: widget.deviceId,
@@ -137,9 +149,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       ),
     );
     if (confirm != true) return;
-    final userId = context.read<AuthProvider>().userId!;
-    await context
-        .read<ExerciseProvider>()
+    final container = riverpod.ProviderScope.containerOf(context);
+    final userId = container.read(authControllerProvider).userId!;
+    await container
+        .read(exerciseProvider)
         .removeExercise(widget.gymId, widget.deviceId, ex.id, userId);
   }
 
@@ -237,8 +250,8 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     final brand = theme.extension<AppBrandTheme>();
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
 
-    final prov = context.watch<ExerciseProvider>();
-    final groups = context.watch<MuscleGroupProvider>().groups;
+    final prov = ref.watch(exerciseProvider);
+    final groups = ref.watch(muscleGroupProvider).groups;
 
     final exercises = _filteredExercises(prov.exercises);
 
@@ -300,13 +313,16 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
               if (onSelect != null) {
                 onSelect(selection);
               } else {
-                final timer = context.read<WorkoutSessionDurationService>();
+                final container = riverpod.ProviderScope.containerOf(context);
+                final timer =
+                    container.read(workoutSessionDurationServiceProvider);
                 if (timer.isRunning) {
-                  final auth = context.read<AuthProvider>();
+                  final auth = container.read(authControllerProvider);
                   final userId = auth.userId;
                   if (userId != null) {
                     try {
-                      final controller = context.read<WorkoutDayController>();
+                      final controller =
+                          container.read(workoutDayControllerProvider);
                       controller.addOrFocusSession(
                         gymId: widget.gymId,
                         deviceId: widget.deviceId,

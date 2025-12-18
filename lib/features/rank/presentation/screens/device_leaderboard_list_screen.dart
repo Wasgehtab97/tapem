@@ -1,7 +1,8 @@
 // lib/features/rank/presentation/screens/device_leaderboard_list_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/app_router.dart';
 
@@ -12,7 +13,8 @@ class DeviceLeaderboardListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gymProv = context.watch<GymProvider>();
+    final container = riverpod.ProviderScope.containerOf(context);
+    final gymProv = container.read(gymProvider);
     final devices = gymProv.devices.where((d) => d.isMulti == false).toList();
 
     return Scaffold(

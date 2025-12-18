@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/app_router.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
-import 'package:tapem/features/device/domain/models/exercise.dart';
 
-class DeviceScreen extends StatefulWidget {
+class DeviceScreen extends riverpod.ConsumerStatefulWidget {
   const DeviceScreen({
     super.key,
     required this.gymId,
@@ -24,10 +25,10 @@ class DeviceScreen extends StatefulWidget {
   final String exerciseId;
 
   @override
-  State<DeviceScreen> createState() => _DeviceScreenState();
+  riverpod.ConsumerState<DeviceScreen> createState() => _DeviceScreenState();
 }
 
-class _DeviceScreenState extends State<DeviceScreen> {
+class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
   String? _sessionKey;
   bool _isInitializing = true;
 
@@ -38,8 +39,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 
   Future<void> _ensureSession() async {
-    final auth = context.read<AuthProvider>();
-    final controller = context.read<WorkoutDayController>();
+    final auth = ref.read(authControllerProvider);
+    final controller = ref.read(workoutDayControllerProvider);
     final session = controller.addOrFocusSession(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
@@ -59,7 +60,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
   void dispose() {
     final key = _sessionKey;
     if (key != null) {
-      final controller = context.read<WorkoutDayController>();
+      final controller = ref.read(workoutDayControllerProvider);
       if (controller.sessionForKey(key) != null) {
         controller.closeSession(key);
       }
@@ -86,7 +87,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       );
     }
 
-    final controller = context.watch<WorkoutDayController>();
+    final controller = ref.watch(workoutDayControllerProvider);
     final key = _sessionKey;
     if (key == null) {
       return const Scaffold(
@@ -104,7 +105,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       animation: session.provider,
       builder: (context, _) {
         return Scaffold(
-          appBar: _buildAppBar(context, session),
+          appBar: _buildAppBar(context, ref, session),
           body: SafeArea(
             child: DeviceSessionSection(
               provider: session.provider,
@@ -126,6 +127,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
 
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
+    riverpod.WidgetRef ref,
     WorkoutDaySession session,
   ) {
     final theme = Theme.of(context);
@@ -133,7 +135,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
     final provider = session.provider;
     final device = provider.device;
     final exercises = (device?.isMulti ?? false)
-        ? context.watch<ExerciseProvider>().exercises
+        ? ref.watch(exerciseProvider).exercises
         : null;
     final resolvedTitle = _resolveExerciseTitle(
           provider,
@@ -195,8 +197,8 @@ class _DeviceScreenState extends State<DeviceScreen> {
             exerciseId: session.exerciseId,
             onBeforeOpen: () => FocusManager.instance.primaryFocus?.unfocus(),
             onSelection: (selection) async {
-              final auth = context.read<AuthProvider>();
-              final controller = context.read<WorkoutDayController>();
+              final auth = ref.read(authControllerProvider);
+              final controller = ref.read(workoutDayControllerProvider);
               controller.addOrFocusSession(
                 gymId: selection.gymId,
                 deviceId: selection.deviceId,

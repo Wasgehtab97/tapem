@@ -154,6 +154,12 @@ class ThemeLoader extends ChangeNotifier {
       focus: preset.focus,
       useMagenta: preset.useMagentaTokens,
       useClubAktiv: preset.useClubAktivTokens,
+      useCyberpunk: preset.useCyberpunkTokens,
+      useAnime: preset.useAnimeTokens,
+      useFlame: preset.useFlameTokens,
+      useWater: preset.useWaterTokens,
+      useAir: preset.useAirTokens,
+      useEarth: preset.useEarthTokens,
       onColors: preset.onColors,
       background: preset.background,
     );
@@ -202,14 +208,51 @@ class ThemeLoader extends ChangeNotifier {
     required Color focus,
     bool useMagenta = false,
     bool useClubAktiv = false,
+    bool useCyberpunk = false,
+    bool useAnime = false,
+    bool useFlame = false,
+    bool useWater = false,
+    bool useAir = false,
+    bool useEarth = false,
     BrandOnColors? onColors,
     Color? background,
   }) {
+    // Optional spezialisierte Flächen:
+    // - Cyberpunk: etwas hellerer, leicht cyan-getönter Hintergrund.
+    // - Anime: weicher, minimal aufgehellter Hintergrund mit Sakura-Tint.
+    // - Flame: dunkle Glut mit warmen Highlights.
+    // - Water/Air/Earth: leicht getönte Surfaces passend zum Element.
+    // Für alle anderen Themes bleiben Surface-Werte unverändert.
+    Color? resolvedBackground = background;
+    Color? resolvedSurface;
+    Color? resolvedSurface2;
+    if (useCyberpunk) {
+      resolvedBackground ??= const Color(0xFF050813);
+      resolvedSurface = Tone.color(resolvedBackground, 0.06);
+      resolvedSurface2 = Tone.color(resolvedBackground, 0.1);
+    } else if (useAnime) {
+      resolvedBackground ??= const Color(0xFF090813);
+      resolvedSurface = Tone.color(resolvedBackground, 0.05);
+      resolvedSurface2 = Tone.color(resolvedBackground, 0.08);
+    } else if (useFlame) {
+      resolvedBackground ??= const Color(0xFF120608);
+      resolvedSurface = Tone.color(resolvedBackground, 0.07);
+      resolvedSurface2 = Tone.color(resolvedBackground, 0.11);
+    } else if (useWater || useAir || useEarth) {
+      resolvedBackground ??= background ?? AppColors.background;
+      resolvedSurface = Tone.color(resolvedBackground, 0.04);
+      resolvedSurface2 = Tone.color(resolvedBackground, 0.07);
+    }
+
     _currentTheme = AppTheme.customTheme(
       primary: primary,
       secondary: secondary,
-      // Hintergrund und Flächen bleiben bewusst global neutral (schwarz),
-      // damit der App-Hintergrund über alle Gyms hinweg konsistent ist.
+      // Standardmäßig bleiben Hintergrund und Flächen global neutral (schwarz).
+      // Vollständig manuelle Themes (z. B. Cyberpunk) können optional einen
+      // eigenen Hintergrund + Flächentöne setzen.
+      background: resolvedBackground ?? background,
+      surface: resolvedSurface,
+      surface2: resolvedSurface2,
     );
     AppGradients.setBrandGradient(gradStart, gradEnd);
     AppGradients.setCtaGlow(focus);
@@ -232,6 +275,12 @@ class ThemeLoader extends ChangeNotifier {
       onColors: resolvedOnColors,
       useMagenta: useMagenta,
       useClubAktiv: useClubAktiv,
+      useCyberpunk: useCyberpunk,
+      useAnime: useAnime,
+      useFlame: useFlame,
+      useWater: useWater,
+      useAir: useAir,
+      useEarth: useEarth,
     );
 
     if (useMagenta) {
@@ -246,6 +295,12 @@ class ThemeLoader extends ChangeNotifier {
     required BrandOnColors onColors,
     bool useMagenta = false,
     bool useClubAktiv = false,
+    bool useCyberpunk = false,
+    bool useAnime = false,
+    bool useFlame = false,
+    bool useWater = false,
+    bool useAir = false,
+    bool useEarth = false,
     bool useNeutral = false,
   }) {
     final ext = useMagenta
@@ -280,12 +335,25 @@ class ThemeLoader extends ChangeNotifier {
                     focusRing: focus,
                     onBrand: onColors.onCta,
                   )
-                : AppBrandTheme.defaultTheme().copyWith(
-                    gradient: AppGradients.brandGradient,
-                    outlineGradient: AppGradients.brandGradient,
-                    focusRing: focus,
-                    onBrand: onColors.onCta,
-                  );
+                : useCyberpunk
+                    ? AppBrandTheme.cyberpunk()
+                    : useAnime
+                        ? AppBrandTheme.anime()
+                        : useFlame
+                            ? AppBrandTheme.flame()
+                            : useWater
+                                ? AppBrandTheme.water()
+                                : useAir
+                                    ? AppBrandTheme.air()
+                                    : useEarth
+                                        ? AppBrandTheme.earth()
+                                        : AppBrandTheme.defaultTheme().copyWith(
+                                            gradient: AppGradients.brandGradient,
+                                            outlineGradient:
+                                                AppGradients.brandGradient,
+                                            focusRing: focus,
+                                            onBrand: onColors.onCta,
+                                          );
     _currentTheme = _currentTheme.copyWith(extensions: [ext, onColors]);
   }
 }
@@ -316,4 +384,3 @@ final themeLoaderProvider = ChangeNotifierProvider<ThemeLoader>((ref) {
   ref.onDispose(loader.dispose);
   return loader;
 });
-

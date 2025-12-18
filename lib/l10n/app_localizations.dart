@@ -1535,6 +1535,42 @@ abstract class AppLocalizations {
   /// **'Citrus Punch'**
   String get settingsThemeCitrusPunch;
 
+  /// Name of the cyberpunk neon theme
+  ///
+  /// In en, this message translates to:
+  /// **'Cyberpunk Neon'**
+  String get settingsThemeCyberpunkNeon;
+
+  /// Name of the anime-inspired bloom theme
+  ///
+  /// In en, this message translates to:
+  /// **'Anime Bloom'**
+  String get settingsThemeAnimeBloom;
+
+  /// Name of the fire nation inspired theme
+  ///
+  /// In en, this message translates to:
+  /// **'Fire Nation'**
+  String get settingsThemeFlameInferno;
+
+  /// Name of the water tribe inspired theme
+  ///
+  /// In en, this message translates to:
+  /// **'Water Tribe'**
+  String get settingsThemeWaterTribe;
+
+  /// Name of the air nomads inspired theme
+  ///
+  /// In en, this message translates to:
+  /// **'Air Nomads'**
+  String get settingsThemeAirNomads;
+
+  /// Name of the earth kingdom inspired theme
+  ///
+  /// In en, this message translates to:
+  /// **'Earth Kingdom'**
+  String get settingsThemeEarthKingdom;
+
   /// Error shown when saving the theme failed
   ///
   /// In en, this message translates to:

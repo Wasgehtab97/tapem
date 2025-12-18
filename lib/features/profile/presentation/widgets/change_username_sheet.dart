@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 enum UsernameAvailability { idle, loading, available, taken, error }
@@ -32,7 +33,8 @@ bool canSubmitUsername({
 }
 Future<void> showChangeUsernameSheet(BuildContext context) async {
   final loc = AppLocalizations.of(context)!;
-  final auth = context.read<AuthProvider>();
+  final container = ProviderScope.containerOf(context, listen: false);
+  final AuthProvider auth = container.read(authControllerProvider);
   final ctr = TextEditingController();
   String? error;
   UsernameAvailability availability = UsernameAvailability.idle;

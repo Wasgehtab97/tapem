@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/public_profile.dart';
 import '../../providers/friend_presence_provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 
-class FriendListTile extends StatelessWidget {
+class FriendListTile extends ConsumerWidget {
   const FriendListTile({
     super.key,
     required this.profile,
@@ -27,16 +27,11 @@ class FriendListTile extends StatelessWidget {
   final VoidCallback? onAvatarTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final rawKey = profile.avatarKey ?? 'default';
-    AuthProvider? auth;
-    try {
-      auth = Provider.of<AuthProvider>(context, listen: false);
-    } catch (_) {
-      auth = null;
-    }
-    final currentGym = gymId ?? auth?.gymCode;
+    final authView = ref.watch(authViewStateProvider);
+    final currentGym = gymId ?? authView.gymCode;
     final path =
         AvatarCatalog.instance.resolvePathOrFallback(rawKey, gymId: currentGym);
     final image = Image.asset(path, errorBuilder: (_, __, ___) {

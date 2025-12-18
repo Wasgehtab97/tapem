@@ -1,44 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/gym_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/providers/auth_providers.dart';
+import '../../../../core/providers/challenge_provider.dart';
 import '../widgets/active_challenges_widget.dart';
 import '../widgets/completed_challenges_widget.dart';
-import '../../../../core/providers/challenge_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 
-class ChallengeTab extends StatefulWidget {
+class ChallengeTab extends ConsumerStatefulWidget {
   const ChallengeTab({Key? key}) : super(key: key);
 
   @override
-  State<ChallengeTab> createState() => _ChallengeTabState();
+  ConsumerState<ChallengeTab> createState() => _ChallengeTabState();
 }
 
-class _ChallengeTabState extends State<ChallengeTab>
+class _ChallengeTabState extends ConsumerState<ChallengeTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _didSetupListen = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+  }
 
-    final gymId = context.read<GymProvider>().currentGymId;
-    final userId = context.read<AuthProvider>().userId;
-    print('ChallengeTab init with gym: $gymId, user: $userId');
+  void _handleAuthChanged(AuthViewState? previous, AuthViewState next) {
+    final gymId = next.gymCode;
+    final userId = next.userId;
 
-    if (gymId.isNotEmpty && userId != null) {
-      context.read<ChallengeProvider>().watchChallenges(gymId, userId);
+    if (gymId == null || gymId.isEmpty || userId == null) {
+      return;
     }
-    if (userId != null) {
-      context.read<ChallengeProvider>().watchBadges(userId);
-    }
+
+    final challenges = ref.read(challengeProvider);
+    challenges.watchChallenges(gymId, userId);
+    challenges.watchBadges(userId);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Auf Auth‑Änderungen reagieren und Challenges initial laden.
+    if (!_didSetupListen) {
+      _didSetupListen = true;
+      // Initialer Aufruf für aktuellen Auth‑State.
+      _handleAuthChanged(null, ref.read(authViewStateProvider));
+      // Listener für spätere Änderungen.
+      ref.listen<AuthViewState>(
+        authViewStateProvider,
+        _handleAuthChanged,
+      );
+    }
+
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
@@ -66,16 +87,16 @@ class _ChallengeTabState extends State<ChallengeTab>
             labelStyle: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             dividerColor: Colors.transparent,
             splashBorderRadius: BorderRadius.circular(20),
-              tabs: [
-                _buildSizedTab(context, loc.challengeTabActive, [
-                  loc.challengeTabActive,
-                  loc.challengeTabCompleted,
-                ]),
-                _buildSizedTab(context, loc.challengeTabCompleted, [
-                  loc.challengeTabActive,
-                  loc.challengeTabCompleted,
-                ]),
-              ],
+            tabs: [
+              _buildSizedTab(context, loc.challengeTabActive, [
+                loc.challengeTabActive,
+                loc.challengeTabCompleted,
+              ]),
+              _buildSizedTab(context, loc.challengeTabCompleted, [
+                loc.challengeTabActive,
+                loc.challengeTabCompleted,
+              ]),
+            ],
           ),
         ),
         Expanded(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
@@ -36,7 +37,8 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
     if (!_formKey.currentState!.validate()) return;
     
     setState(() => _isLoading = true);
-    final authProv = context.read<AuthProvider>();
+    final container = ProviderScope.containerOf(context, listen: false);
+    final AuthProvider authProv = container.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     
     final email = _emailController.text.trim();

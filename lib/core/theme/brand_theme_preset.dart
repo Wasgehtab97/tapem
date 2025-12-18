@@ -19,6 +19,12 @@ enum BrandThemeId {
   emberInferno,
   cyberGrape,
   citrusPunch,
+  cyberpunkNeon,
+  animeBloom,
+  flameInferno,
+  waterTribe,
+  airNomads,
+  earthKingdom,
 }
 
 extension BrandThemeIdX on BrandThemeId {
@@ -52,6 +58,18 @@ extension BrandThemeIdX on BrandThemeId {
         return 'cyberGrape';
       case BrandThemeId.citrusPunch:
         return 'citrusPunch';
+      case BrandThemeId.cyberpunkNeon:
+        return 'cyberpunkNeon';
+      case BrandThemeId.animeBloom:
+        return 'animeBloom';
+      case BrandThemeId.flameInferno:
+        return 'flameInferno';
+      case BrandThemeId.waterTribe:
+        return 'waterTribe';
+      case BrandThemeId.airNomads:
+        return 'airNomads';
+      case BrandThemeId.earthKingdom:
+        return 'earthKingdom';
     }
   }
 
@@ -85,6 +103,18 @@ extension BrandThemeIdX on BrandThemeId {
         return BrandThemeId.cyberGrape;
       case 'citrusPunch':
         return BrandThemeId.citrusPunch;
+      case 'cyberpunkNeon':
+        return BrandThemeId.cyberpunkNeon;
+      case 'animeBloom':
+        return BrandThemeId.animeBloom;
+      case 'flameInferno':
+        return BrandThemeId.flameInferno;
+      case 'waterTribe':
+        return BrandThemeId.waterTribe;
+      case 'airNomads':
+        return BrandThemeId.airNomads;
+      case 'earthKingdom':
+        return BrandThemeId.earthKingdom;
     }
     return null;
   }
@@ -102,6 +132,12 @@ class BrandThemePreset {
     required this.focus,
     this.useMagentaTokens = false,
     this.useClubAktivTokens = false,
+    this.useCyberpunkTokens = false,
+    this.useAnimeTokens = false,
+    this.useFlameTokens = false,
+    this.useWaterTokens = false,
+    this.useAirTokens = false,
+    this.useEarthTokens = false,
     this.onColors,
     this.background,
   });
@@ -115,6 +151,12 @@ class BrandThemePreset {
   final Color focus;
   final bool useMagentaTokens;
   final bool useClubAktivTokens;
+  final bool useCyberpunkTokens;
+  final bool useAnimeTokens;
+  final bool useFlameTokens;
+  final bool useWaterTokens;
+  final bool useAirTokens;
+  final bool useEarthTokens;
   final BrandOnColors? onColors;
   final Color? background;
 }
@@ -288,6 +330,123 @@ class BrandThemePresets {
     ),
   );
 
+  /// High-energy neon cyberpunk palette.
+  static const BrandThemePreset cyberpunkNeon = BrandThemePreset(
+    id: BrandThemeId.cyberpunkNeon,
+    nameKey: 'settingsThemeCyberpunkNeon',
+    // Etwas dunkleres Cyan als Primärfarbe,
+    // damit der Verlauf mehr Tiefe bekommt.
+    primary: Color(0xFF00CFEA),
+    secondary: Color(0xFFFF2AA5), // neon magenta
+    gradientStart: Color(0xFF00E5FF),
+    // Leicht violetteres Ende für einen filmischeren Neon-Verlauf.
+    gradientEnd: Color(0xFFB300FF),
+    focus: Color(0xFF8CFBFF),
+    useCyberpunkTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+    background: Color(0xFF050813),
+  );
+
+  /// Soft, anime-inspired sakura & sky gradient.
+  static const BrandThemePreset animeBloom = BrandThemePreset(
+    id: BrandThemeId.animeBloom,
+    nameKey: 'settingsThemeAnimeBloom',
+    primary: PresetBrandColors.animePrimary,
+    secondary: PresetBrandColors.animeSecondary,
+    gradientStart: PresetBrandColors.animeGradientStart,
+    gradientEnd: PresetBrandColors.animeGradientEnd,
+    focus: PresetBrandColors.animeFocus,
+    useAnimeTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+    background: Color(0xFF090813),
+  );
+
+  /// Intense flame gradient with deep embers and bright highlights.
+  static const BrandThemePreset flameInferno = BrandThemePreset(
+    id: BrandThemeId.flameInferno,
+    nameKey: 'settingsThemeFlameInferno',
+    primary: PresetBrandColors.flamePrimary,
+    secondary: PresetBrandColors.flameSecondary,
+    gradientStart: PresetBrandColors.flameGradientStart,
+    gradientEnd: PresetBrandColors.flameGradientEnd,
+    focus: PresetBrandColors.flameFocus,
+    useFlameTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+    background: Color(0xFF120608),
+  );
+
+  /// Water Tribe-inspired deep ocean theme.
+  static const BrandThemePreset waterTribe = BrandThemePreset(
+    id: BrandThemeId.waterTribe,
+    nameKey: 'settingsThemeWaterTribe',
+    primary: PresetBrandColors.waterPrimary,
+    secondary: PresetBrandColors.waterSecondary,
+    gradientStart: PresetBrandColors.waterGradientStart,
+    gradientEnd: PresetBrandColors.waterGradientEnd,
+    focus: PresetBrandColors.waterFocus,
+    useWaterTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onGradient: Colors.white,
+      onCta: Colors.white,
+    ),
+    background: Color(0xFF020915),
+  );
+
+  /// Air Nomads-inspired light sky theme.
+  static const BrandThemePreset airNomads = BrandThemePreset(
+    id: BrandThemeId.airNomads,
+    nameKey: 'settingsThemeAirNomads',
+    primary: PresetBrandColors.airPrimary,
+    secondary: PresetBrandColors.airSecondary,
+    gradientStart: PresetBrandColors.airGradientStart,
+    gradientEnd: PresetBrandColors.airGradientEnd,
+    focus: PresetBrandColors.airFocus,
+    useAirTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+    background: Color(0xFF090A12),
+  );
+
+  /// Earth Kingdom-inspired deep green theme.
+  static const BrandThemePreset earthKingdom = BrandThemePreset(
+    id: BrandThemeId.earthKingdom,
+    nameKey: 'settingsThemeEarthKingdom',
+    primary: PresetBrandColors.earthPrimary,
+    secondary: PresetBrandColors.earthSecondary,
+    gradientStart: PresetBrandColors.earthGradientStart,
+    gradientEnd: PresetBrandColors.earthGradientEnd,
+    focus: PresetBrandColors.earthFocus,
+    useEarthTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onGradient: Colors.white,
+      onCta: Colors.white,
+    ),
+    background: Color(0xFF020B06),
+  );
+
   static const List<BrandThemePreset> all = [
     mintTurquoise,
     magentaViolet,
@@ -303,6 +462,12 @@ class BrandThemePresets {
     emberInferno,
     cyberGrape,
     citrusPunch,
+    cyberpunkNeon,
+    animeBloom,
+    flameInferno,
+    waterTribe,
+    airNomads,
+    earthKingdom,
   ];
 
   static BrandThemePreset of(BrandThemeId id) {
@@ -335,6 +500,18 @@ class BrandThemePresets {
         return cyberGrape;
       case BrandThemeId.citrusPunch:
         return citrusPunch;
+      case BrandThemeId.cyberpunkNeon:
+        return cyberpunkNeon;
+      case BrandThemeId.animeBloom:
+        return animeBloom;
+      case BrandThemeId.flameInferno:
+        return flameInferno;
+      case BrandThemeId.waterTribe:
+        return waterTribe;
+      case BrandThemeId.airNomads:
+        return airNomads;
+      case BrandThemeId.earthKingdom:
+        return earthKingdom;
     }
   }
 }

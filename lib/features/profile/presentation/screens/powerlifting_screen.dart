@@ -1,8 +1,8 @@
 // lib/features/profile/presentation/screens/powerlifting_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
@@ -12,18 +12,18 @@ import 'package:tapem/features/profile/domain/models/powerlifting_record.dart';
 import 'package:tapem/features/profile/presentation/providers/powerlifting_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class PowerliftingScreen extends StatefulWidget {
+class PowerliftingScreen extends ConsumerStatefulWidget {
   const PowerliftingScreen({super.key});
 
   @override
-  State<PowerliftingScreen> createState() => _PowerliftingScreenState();
+  ConsumerState<PowerliftingScreen> createState() => _PowerliftingScreenState();
 }
 
-class _PowerliftingScreenState extends State<PowerliftingScreen> {
+class _PowerliftingScreenState extends ConsumerState<PowerliftingScreen> {
   PowerliftingMetric _selectedMetric = PowerliftingMetric.heaviest;
 
   Future<void> _onAddPressed() async {
-    final provider = context.read<PowerliftingProvider>();
+    final provider = ref.read(powerliftingProvider);
     final loc = AppLocalizations.of(context)!;
     final gymId = provider.activeGymId;
 
@@ -119,7 +119,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
   }
 
   Future<void> _onClearPressed() async {
-    final provider = context.read<PowerliftingProvider>();
+    final provider = ref.read(powerliftingProvider);
     final loc = AppLocalizations.of(context)!;
 
     final shouldReset = await showDialog<bool>(
@@ -195,7 +195,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
     PowerliftingDiscipline discipline,
     List<Device> devices,
   ) async {
-    final provider = context.read<PowerliftingProvider>();
+    final provider = ref.read(powerliftingProvider);
     final theme = Theme.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -373,7 +373,7 @@ class _PowerliftingScreenState extends State<PowerliftingScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final provider = context.watch<PowerliftingProvider>();
+    final provider = ref.watch(powerliftingProvider);
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;

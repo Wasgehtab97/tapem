@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -11,15 +11,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/creatine_provider.dart';
 import '../../data/creatine_repository.dart';
 
-class CreatineScreen extends StatefulWidget {
+class CreatineScreen extends ConsumerStatefulWidget {
   final String? userId;
   const CreatineScreen({super.key, this.userId});
 
   @override
-  State<CreatineScreen> createState() => _CreatineScreenState();
+  ConsumerState<CreatineScreen> createState() => _CreatineScreenState();
 }
 
-class _CreatineScreenState extends State<CreatineScreen> {
+class _CreatineScreenState extends ConsumerState<CreatineScreen> {
   String _uid = '';
 
   Future<void> _openCalendar(CreatineProvider prov) async {
@@ -60,7 +60,7 @@ class _CreatineScreenState extends State<CreatineScreen> {
         _uid = (widget.userId?.trim().isNotEmpty == true)
             ? widget.userId!.trim()
             : currentUidOrFail();
-        final settingsProv = context.read<SettingsProvider>();
+        final settingsProv = ref.read(settingsProvider);
         await settingsProv.load(_uid);
         if (!settingsProv.creatineEnabled) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -69,8 +69,8 @@ class _CreatineScreenState extends State<CreatineScreen> {
           Navigator.pop(context);
           return;
         }
-        context
-            .read<CreatineProvider>()
+        await ref
+            .read(creatineProvider)
             .loadIntakeDates(_uid, DateTime.now().year);
         elogUi('creatine_open_screen', {});
       } catch (e) {
@@ -83,7 +83,7 @@ class _CreatineScreenState extends State<CreatineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<CreatineProvider>();
+    final prov = ref.watch(creatineProvider);
     final loc = AppLocalizations.of(context)!;
     final year = DateTime.now().year;
     final selected = prov.selectedDate;

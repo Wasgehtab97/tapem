@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/gym_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/auth_providers.dart';
 import '../../../../core/providers/xp_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -9,85 +8,80 @@ import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'device_xp_leaderboard_screen.dart';
 
-class DeviceXpScreen extends StatefulWidget {
+class DeviceXpScreen extends ConsumerStatefulWidget {
   const DeviceXpScreen({Key? key}) : super(key: key);
 
   @override
-  State<DeviceXpScreen> createState() => _DeviceXpScreenState();
+  ConsumerState<DeviceXpScreen> createState() => _DeviceXpScreenState();
 }
 
-class _DeviceXpScreenState extends State<DeviceXpScreen> {
-  late final GymProvider _gymProv;
-  late final XpProvider _xpProv;
-  late final AuthProvider _auth;
-
-  @override
-  void initState() {
-    super.initState();
-    _gymProv = context.read<GymProvider>();
-    _xpProv = context.read<XpProvider>();
-    _auth = context.read<AuthProvider>();
-    _gymProv.addListener(_syncWatchers);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncWatchers());
-  }
-
+class _DeviceXpScreenState extends ConsumerState<DeviceXpScreen> {
   void _syncWatchers() {
-    final uid = _auth.userId;
-    final gymId = _gymProv.currentGymId;
-    if (uid != null && gymId.isNotEmpty) {
-      final deviceIds = _gymProv.devices.map((d) => d.uid).toList();
-      _xpProv.watchDeviceXp(gymId, uid, deviceIds);
-    }
-  }
+    final auth = ref.read(authViewStateProvider);
+    final gymProv = ref.read(gymProvider);
+    final xpProv = ref.read(xpProvider);
 
-  @override
-  void dispose() {
-    _gymProv.removeListener(_syncWatchers);
-    final uid = _auth.userId;
-    final gymId = _gymProv.currentGymId;
-    if (uid != null && gymId.isNotEmpty) {
-      _xpProv.watchDeviceXp(gymId, uid, []);
+    final uid = auth.userId;
+    final gymId = gymProv.currentGymId;
+    if (uid == null || gymId.isEmpty) {
+      return;
     }
-    super.dispose();
+
+    final deviceIds = gymProv.devices.map((d) => d.uid).toList();
+    debugPrint(
+      '[DeviceXpScreen] syncWatchers gymId=$gymId uid=$uid deviceCount=${deviceIds.length}',
+    );
+    xpProv.watchDeviceXp(gymId, uid, deviceIds);
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[DeviceXpScreen] build()');
+    final auth = ref.watch(authViewStateProvider);
+    debugPrint(
+      '[DeviceXpScreen] auth userId=${auth.userId} gym=${auth.gymCode}',
+    );
+    // Bei jedem Build sicherstellen, dass die Watcher korrekt gesetzt sind.
+    _syncWatchers();
+
     final loc = AppLocalizations.of(context)!;
-    final gymProv = context.watch<GymProvider>();
-    final xpProv = context.watch<XpProvider>();
+    final gymProv = ref.watch(gymProvider);
+    final xpProv = ref.watch(xpProvider);
     final devices = gymProv.devices.toList();
+    debugPrint(
+      '[DeviceXpScreen] devices.length=${devices.length} deviceXpKeys=${xpProv.deviceXp.keys.toList()}',
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(loc.xpDeviceTitle)),
       body: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: devices.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (_, i) {
-          final d = devices[i];
-          final xp = xpProv.deviceXp[d.uid] ?? 0;
-          return _DeviceXpCard(
-            name: d.name,
-            xp: xp,
-            onTap: () {
-              final gymId = gymProv.currentGymId;
-              if (gymId.isEmpty) {
-                return;
-              }
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => DeviceXpLeaderboardScreen(
-                    gymId: gymId,
-                    deviceId: d.uid,
-                    deviceName: d.name,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              itemCount: devices.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+              itemBuilder: (_, i) {
+                final d = devices[i];
+                final xp = xpProv.deviceXp[d.uid] ?? 0;
+                return _DeviceXpCard(
+                  name: d.name,
+                  xp: xp,
+                  onTap: () {
+                    final gymId = gymProv.currentGymId;
+                    if (gymId.isEmpty) {
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DeviceXpLeaderboardScreen(
+                          gymId: gymId,
+                          deviceId: d.uid,
+                          deviceName: d.name,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }

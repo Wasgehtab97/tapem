@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 
 class BrandingScreen extends StatefulWidget {
   const BrandingScreen({Key? key}) : super(key: key);
@@ -46,7 +46,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
   Future<void> _save() async {
     final loc = AppLocalizations.of(context)!;
-    final gymId = context.read<AuthProvider>().gymCode;
+    final gymId = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider)
+        .gymCode;
     if (gymId == null) {
       setState(() => _error = loc.invalidGymSelectionError);
       return;

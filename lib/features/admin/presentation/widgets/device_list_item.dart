@@ -1,17 +1,19 @@
 // lib/features/admin/presentation/widgets/device_list_item.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/delete_device_usecase.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
+import 'package:tapem/features/nfc/providers/nfc_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class DeviceListItem extends StatelessWidget {
+class DeviceListItem extends ConsumerWidget {
   final Device device;
   final VoidCallback onDeleted;
 
@@ -22,10 +24,11 @@ class DeviceListItem extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final writeUC = context.read<WriteNfcTagUseCase>();
-    final deleteUC = context.read<DeleteDeviceUseCase>();
-    final gymId = context.read<AuthProvider>().gymCode;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final writeUC = container.read(writeNfcTagUseCaseProvider);
+    final deleteUC = container.read(deleteDeviceUseCaseProvider);
+    final gymId = ref.read(authControllerProvider).gymCode;
     if (gymId == null) {
       return const SizedBox.shrink();
     }

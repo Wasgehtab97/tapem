@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -11,7 +11,7 @@ import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dar
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class DeviceXpLeaderboardScreen extends StatefulWidget {
+class DeviceXpLeaderboardScreen extends ConsumerStatefulWidget {
   const DeviceXpLeaderboardScreen({
     super.key,
     required this.gymId,
@@ -24,11 +24,12 @@ class DeviceXpLeaderboardScreen extends StatefulWidget {
   final String deviceName;
 
   @override
-  State<DeviceXpLeaderboardScreen> createState() =>
+  ConsumerState<DeviceXpLeaderboardScreen> createState() =>
       _DeviceXpLeaderboardScreenState();
 }
 
-class _DeviceXpLeaderboardScreenState extends State<DeviceXpLeaderboardScreen> {
+class _DeviceXpLeaderboardScreenState
+    extends ConsumerState<DeviceXpLeaderboardScreen> {
   List<_DeviceLeaderboardEntry>? _entries;
   bool _loading = false;
   int _selectedLevel = 1;
@@ -118,8 +119,8 @@ class _DeviceXpLeaderboardScreenState extends State<DeviceXpLeaderboardScreen> {
     final brandTheme = theme.extension<AppBrandTheme>();
     final progressColor =
         brandTheme?.gradient.colors.first ?? theme.colorScheme.primary;
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = auth.userId;
+    final authView = ref.watch(authViewStateProvider);
+    final currentUserId = authView.userId;
 
     final entries = _entries;
 

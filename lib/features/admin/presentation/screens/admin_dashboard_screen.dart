@@ -1,9 +1,9 @@
 // lib/features/admin/presentation/screens/admin_dashboard_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/premium_action_card.dart';
@@ -11,12 +11,12 @@ import 'package:tapem/core/widgets/premium_leading_icon.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     
     if (!auth.isAdmin) {

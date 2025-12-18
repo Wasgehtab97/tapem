@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -7,12 +7,12 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 
 import '../../../../core/providers/challenge_provider.dart';
 
-class ActiveChallengesWidget extends StatelessWidget {
+class ActiveChallengesWidget extends ConsumerWidget {
   const ActiveChallengesWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final challenges = context.watch<ChallengeProvider>().challenges;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final challenges = ref.watch(challengeProvider).challenges;
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();

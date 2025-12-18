@@ -2,12 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:intl/intl.dart';
 
 import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
-import 'package:tapem/core/providers/branding_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
@@ -31,164 +30,163 @@ class TrainingDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fallbackGymId = gymId ?? context.read<BrandingProvider>().gymId;
-    final databaseService = ref.read(databaseServiceProvider);
-    final syncService = ref.read(syncServiceProvider);
+    final authView = ref.watch(authViewStateProvider);
+    final fallbackGymId = gymId ?? authView.gymCode;
 
-    return provider.ChangeNotifierProvider<TrainingDetailsProvider>(
-      create: (_) {
-        final prov = TrainingDetailsProvider(databaseService, syncService);
-        prov.loadSessions(userId: userId, date: date, gymId: fallbackGymId);
-        return prov;
-      },
-      child: provider.Consumer<TrainingDetailsProvider>(
-        builder: (ctx, prov, _) {
-          // Loading state
-          if (prov.isLoading) {
-            return const Scaffold(
-              appBar: _AppBar(titleDate: null),
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          // Error state
-          if (prov.error != null) {
-            return Scaffold(
-              appBar: _AppBar(titleDate: date),
-              body: Center(child: Text('Fehler: ${prov.error}')),
-            );
-          }
-          // Data state
-          final sessions = prov.sessions;
-          final duration = prov.dayDurationMs;
-          final loc = AppLocalizations.of(ctx)!;
-          Future<void> openStory() async {
-            final storyService = ctx.read<StorySessionService>();
-            final navigator = Navigator.of(ctx);
-            final messenger = ScaffoldMessenger.of(ctx);
-            final resolvedGymId = prov.gymId ?? fallbackGymId;
-            if (resolvedGymId == null) {
-              debugPrint('⚠️ storySession: missing gymId for summary');
-              return;
-            }
-            final summary = await storyService.getSummary(
-              gymId: resolvedGymId,
-              userId: userId,
-              date: date,
-              sessions: sessions,
-            );
-            if (summary == null || summary.achievements.isEmpty) {
-              messenger.showSnackBar(
-                SnackBar(content: Text(loc.storySessionEmptyMessage)),
-              );
-              return;
-            }
-            if (!navigator.mounted) return;
-            await showDialog<void>(
-              context: navigator.context,
-              builder: (_) => StorySessionDialog(summary: summary),
-            );
-          }
+    final request = TrainingDetailsRequest(
+      userId: userId,
+      date: date,
+      gymId: fallbackGymId,
+    );
+    final prov = ref.watch(trainingDetailsStateProvider(request));
 
-          return Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: _AppBar(
-              titleDate: date,
-              durationMs: duration,
-              onStoryPressed: sessions.isEmpty ||
-                      (prov.gymId ?? fallbackGymId) == null
-                  ? null
-                  : openStory,
-            ),
-            body: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Theme.of(ctx).scaffoldBackgroundColor,
-                    Color.alphaBlend(
-                      (Theme.of(ctx).extension<AppBrandTheme>()?.outline ??
-                              Theme.of(ctx).colorScheme.secondary)
-                          .withOpacity(0.05),
-                      Theme.of(ctx).scaffoldBackgroundColor,
-                    ),
-                  ],
-                ),
+    // Loading state
+    if (prov.isLoading) {
+      return const Scaffold(
+        appBar: _AppBar(titleDate: null),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Error state
+    if (prov.error != null) {
+      return Scaffold(
+        appBar: _AppBar(titleDate: date),
+        body: Center(child: Text('Fehler: ${prov.error}')),
+      );
+    }
+
+    // Data state
+    final sessions = prov.sessions;
+    final duration = prov.dayDurationMs;
+    final loc = AppLocalizations.of(context)!;
+
+    Future<void> openStory() async {
+      final storyService = ref.read(storySessionServiceProvider);
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      final resolvedGymId = prov.gymId ?? fallbackGymId;
+      if (resolvedGymId == null) {
+        debugPrint('⚠️ storySession: missing gymId for summary');
+        return;
+      }
+      final summary = await storyService.getSummary(
+        gymId: resolvedGymId,
+        userId: userId,
+        date: date,
+        sessions: sessions,
+      );
+      if (summary == null || summary.achievements.isEmpty) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(loc.storySessionEmptyMessage)),
+        );
+        return;
+      }
+      if (!navigator.mounted) return;
+      await showDialog<void>(
+        context: navigator.context,
+        builder: (_) => StorySessionDialog(summary: summary),
+      );
+    }
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: _AppBar(
+        titleDate: date,
+        durationMs: duration,
+        onStoryPressed:
+            sessions.isEmpty || (prov.gymId ?? fallbackGymId) == null
+                ? null
+                : openStory,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              Color.alphaBlend(
+                (Theme.of(context).extension<AppBrandTheme>()?.outline ??
+                        Theme.of(context).colorScheme.secondary)
+                    .withOpacity(0.05),
+                Theme.of(context).scaffoldBackgroundColor,
               ),
-              child: SafeArea(
-                child: sessions.isEmpty
-                    ? const Center(child: Text('Keine Trainingseinheiten'))
-                    : Scrollbar(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (prov.planName != null)
-                                _PlanTag(planName: prov.planName!),
-                              DaySessionsOverview(
-                                sessions: sessions,
-                                onSessionLongPress: (session) async {
-                                  final confirmed = await showDialog<bool>(
-                                    context: ctx,
-                                    builder: (dialogCtx) => AlertDialog(
-                                      title: Text(
-                                        loc.trainingDetailsDeleteSessionTitle,
-                                      ),
-                                      content: Text(
-                                        loc.trainingDetailsDeleteSessionMessage,
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogCtx).pop(false),
-                                          child: Text(loc.commonCancel),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogCtx).pop(true),
-                                          style: TextButton.styleFrom(
-                                              foregroundColor: Colors.red),
-                                          child: Text(
-                                            loc.trainingDetailsDeleteSessionConfirm,
-                                          ),
-                                        ),
-                                      ],
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: sessions.isEmpty
+              ? const Center(child: Text('Keine Trainingseinheiten'))
+              : Scrollbar(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (prov.planName != null)
+                          _PlanTag(planName: prov.planName!),
+                        DaySessionsOverview(
+                          sessions: sessions,
+                          onSessionLongPress: (session) async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                title: Text(
+                                  loc.trainingDetailsDeleteSessionTitle,
+                                ),
+                                content: Text(
+                                  loc.trainingDetailsDeleteSessionMessage,
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogCtx).pop(false),
+                                    child: Text(loc.commonCancel),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogCtx).pop(true),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
                                     ),
-                                  );
-                                  if (confirmed != true) {
-                                    return;
-                                  }
-                                  try {
-                                    await prov.deleteSession(session);
-                                    if (!ctx.mounted) return;
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          loc.trainingDetailsDeleteSessionSuccess,
-                                        ),
-                                      ),
-                                    );
-                                  } catch (_) {
-                                    if (!ctx.mounted) return;
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          loc.trainingDetailsDeleteSessionError,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
+                                    child: Text(
+                                      loc.trainingDetailsDeleteSessionConfirm,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            );
+                            if (confirmed != true) {
+                              return;
+                            }
+                            try {
+                              await prov.deleteSession(session);
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    loc.trainingDetailsDeleteSessionSuccess,
+                                  ),
+                                ),
+                              );
+                            } catch (_) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    loc.trainingDetailsDeleteSessionError,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         ),
-                      ),
-              ),
-            ),
-          );
-        },
+                      ],
+                    ),
+                  ),
+                ),
+        ),
       ),
     );
   }

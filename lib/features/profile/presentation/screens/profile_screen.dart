@@ -10,11 +10,10 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/providers/profile_provider.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/features/coaching/application/coaching_providers.dart'
@@ -46,6 +45,7 @@ import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.d
 import 'profile_stats_screen.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 
 const bool enableFriends = true;
@@ -64,12 +64,20 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ProfileProvider>().loadTrainingDates(context);
-      final uid = context.read<AuthProvider>().userId;
+      final profile = riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(profileProvider);
+      profile.loadTrainingDates(context);
+
+      final auth =
+          riverpod.ProviderScope.containerOf(context, listen: false)
+              .read(authControllerProvider);
+      final uid = auth.userId;
       if (uid != null) {
-        context.read<SettingsProvider>().load(uid);
-        final gymId = context.read<AuthProvider>().gymCode ?? '';
-        context.read<XpProvider>().watchStatsDailyXp(gymId, uid);
+        final container =
+            riverpod.ProviderScope.containerOf(context, listen: false);
+        container.read(settingsProvider).load(uid);
+        final gymId = auth.gymCode ?? '';
+        container.read(xpProvider).watchStatsDailyXp(gymId, uid);
       }
     });
   }
@@ -79,7 +87,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     List<String> trainingDates,
   ) async {
     // Plan-Zuweisungen + Farben nur im Popup laden (nicht im Profil-Header).
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authControllerProvider);
     final gymId = auth.gymCode ?? '';
     final uid = auth.userId;
 
@@ -257,7 +265,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleStartTraining() async {
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authControllerProvider);
     final gymId = auth.gymCode;
     final uid = auth.userId;
     if (uid == null || gymId == null || gymId.isEmpty) {
@@ -267,12 +275,8 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     final timerService =
         ref.read(workoutSessionDurationServiceProvider);
     final isTimerRunning = timerService.isRunning;
-    WorkoutDayController? workoutController;
-    try {
-      workoutController = context.read<WorkoutDayController>();
-    } catch (_) {
-      workoutController = null;
-    }
+    WorkoutDayController workoutController =
+        ref.read(workoutDayControllerProvider);
 
     // Wenn Timer läuft, biete explizites Stoppen / Abbrechen an.
     if (isTimerRunning) {
@@ -309,12 +313,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       await timerService.discard();
 
       // 2) Alle offenen Sessions für diesen User/Gym schließen
-      if (workoutController != null) {
-        workoutController.cancelActivePlan(
-          userId: uid,
-          gymId: gymId,
-        );
-      }
+      workoutController.cancelActivePlan(
+        userId: uid,
+        gymId: gymId,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -363,16 +365,28 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     }
 
     Future<void> startFreestyle() async {
-      final timer =
-          ref.read(workoutSessionDurationServiceProvider);
+      // Falls für heute ein Plan zugewiesen war, wird die Zuweisung
+      // beim Wechsel auf Freestyle entfernt, damit der Trainingstage-
+      // Kalender den Tag nicht länger als "geplant" markiert.
+      try {
+        await scheduleRepo.clearAssignment(
+          userId: uid,
+          dateKey: dateKey,
+        );
+      } catch (_) {
+        // Bei Fehlern Freestyle trotzdem starten; Kalendersync ist sekundär.
+      }
+
+      final timer = ref.read(workoutSessionDurationServiceProvider);
       await timer.start(uid: uid, gymId: gymId);
       if (!mounted) return;
+      // Freestyle-Start: Gym-Tab (Index 0) anzeigen, Workout-Tab ist
+      // dennoch sichtbar, aber zunächst ohne aktive Session.
       Navigator.pushNamed(context, AppRouter.home, arguments: 0);
     }
 
     Future<void> startPlan(TrainingPlan plan) async {
-      final controller =
-          workoutController ?? context.read<WorkoutDayController>();
+      final controller = workoutController;
 
       if (plan.exercises.isNotEmpty) {
         for (final item in plan.exercises) {
@@ -395,6 +409,15 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         return;
       }
 
+      // Plan-Zuweisung für HEUTE aktualisieren, damit der Trainingstage-
+      // Kalender sofort die richtige Farbe zeigt (auch wenn heute zuvor
+      // ein anderer Plan zugewiesen war oder gar keiner geplant war).
+      await scheduleRepo.setAssignment(
+        userId: uid,
+        dateKey: dateKey,
+        planId: effectivePlanId,
+      );
+
       controller.setPlanContext(
         gymId: gymId,
         planId: effectivePlanId,
@@ -406,20 +429,12 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       if (!mounted) return;
 
       if (plan.exercises.isNotEmpty) {
-        final firstItem = plan.exercises.first;
-        Navigator.pushNamed(
-          context,
-          AppRouter.workoutDay,
-          arguments: {
-            'gymId': gymId,
-            'deviceId': firstItem.deviceId,
-            'exerciseId': firstItem.exerciseId,
-            'planId': effectivePlanId,
-            'planName': plan.name,
-          },
-        );
+        // Plan-Sessions wurden im WorkoutDayController angelegt.
+        // Navigiere in den Home-Screen und aktiviere dort den Workout-Tab,
+        // der die zuletzt aktive Session öffnet.
+        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
       } else {
-        Navigator.pushNamed(context, AppRouter.home, arguments: 0);
+        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
       }
     }
 
@@ -550,6 +565,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           return;
         }
 
+        // Wenn der Nutzer explizit einen anderen Plan (B) für heute startet,
+        // überschreiben wir damit auch direkt die bestehende Tageszuweisung,
+        // sodass der Kalender unmittelbar Plan B (inkl. Farbe) zeigt.
         await startPlan(chosen);
       } catch (e) {
         if (!mounted) return;
@@ -563,75 +581,76 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       }
     }
 
-    if (planId == null || planName == null) {
-      await startFreestyle();
-      return;
-    }
-
+    // Bottom-Sheet je nach Situation:
+    // - mit geplantem Plan: "Plan (heute)", "Anderer Plan", "Freestyle"
+    // - ohne geplanten Plan: "Plan auswählen", "Freestyle"
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) {
         final theme = Theme.of(ctx);
         final accent = theme.colorScheme.primary;
+
+        final hasPlannedPlan =
+            planId != null && planName != null && selectedPlan != null;
+
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  color: accent.withOpacity(0.12),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: accent,
-                      foregroundColor: Colors.black,
-                      child:
-                          const Icon(Icons.play_arrow_rounded),
+              if (hasPlannedPlan)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Card(
+                    color: accent.withOpacity(0.12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    title: Text(
-                      'Plan ($planName)',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: accent,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.black,
+                        child: const Icon(Icons.play_arrow_rounded),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Geplanter Plan für heute',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withOpacity(0.7),
+                      title: Text(
+                        'Plan ($planName)',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                        ),
                       ),
+                      subtitle: Text(
+                        'Geplanter Plan für heute',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withOpacity(0.7),
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        startPlanned();
+                      },
                     ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      startPlanned();
-                    },
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
+              if (hasPlannedPlan) const SizedBox(height: 4),
               ListTile(
-                leading:
-                    const Icon(Icons.swap_horiz_rounded),
-                title: const Text('Anderer Plan'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  startOtherPlan();
-                },
-              ),
-              ListTile(
-                leading:
-                    const Icon(Icons.fitness_center_outlined),
+                leading: const Icon(Icons.fitness_center_outlined),
                 title: const Text('Freestyle'),
                 onTap: () {
                   Navigator.pop(ctx);
                   startFreestyle();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.view_list_rounded),
+                title: Text(
+                  hasPlannedPlan ? 'Anderer Plan' : 'Plan auswählen',
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  startOtherPlan();
                 },
               ),
               const SizedBox(height: 8),
@@ -643,7 +662,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
   }
 
   void _showAvatarPicker() {
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authControllerProvider);
     showDialog(
       context: context,
       barrierColor: Colors.black38,
@@ -661,7 +680,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
   }
 
   void _showProfileXpSheet(AuthProvider auth) {
-    final xpProvider = context.read<XpProvider>();
+    final xpProv = ref.read(xpProvider);
     final profile = PublicProfile(
       uid: auth.userId ?? '',
       username: auth.userName ?? auth.userEmail ?? 'Tapem',
@@ -717,9 +736,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 ),
                 child: DailyXpCard(
                   profile: profile,
-                  level: xpProvider.dailyLevel,
-                  xpInLevel: xpProvider.dailyLevelXp,
-                  totalXp: xpProvider.statsDailyXp,
+                  level: xpProv.dailyLevel,
+                  xpInLevel: xpProv.dailyLevelXp,
+                  totalXp: xpProv.statsDailyXp,
                   onAvatarTap: () {
                     Navigator.pop(dialogContext);
                     _showAvatarPicker();
@@ -841,8 +860,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          context.read<AuthProvider>().logout();
+                        onPressed: () async {
+                          await ref.read(authControllerProvider).logout();
+                          if (!mounted) return;
                           Navigator.of(context).pushNamedAndRemoveUntil(
                             AppRouter.auth,
                             (route) => false,
@@ -901,10 +921,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<ProfileProvider>();
+    final prov = ref.watch(profileProvider);
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
-    final xp = context.watch<XpProvider>();
+    final auth = ref.watch(authControllerProvider);
+    final xp = ref.watch(xpProvider);
     final userId = auth.userId ?? '';
     const avatarSize = 44.0;
 
@@ -971,7 +991,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 child: GestureDetector(
                   onTap: () => _showProfileXpSheet(auth),
                   child: Builder(builder: (context) {
-                    final gymId = context.read<AuthProvider>().gymCode;
+                    final gymId = auth.gymCode;
                     final path = AvatarCatalog.instance
                         .resolvePathOrFallback(auth.avatarKey,
                             gymId: gymId);
@@ -1024,7 +1044,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 );
               },
             ),
-          if (context.watch<SettingsProvider>().creatineEnabled)
+          if (ref.watch(settingsProvider).creatineEnabled)
             IconButton(
               icon: const BrandGradientIcon(Icons.medication),
               tooltip: loc.creatineTitle,
@@ -1055,12 +1075,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           style: TextStyle(color: brandColor),
           child: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (context
-                    .watch<SettingsProvider>()
-                    .coachingProfileEnabled)
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                if (ref.watch(settingsProvider).coachingProfileEnabled)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: ProfileCoachingButton(
@@ -1080,10 +1098,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     Navigator.pushNamed(context, AppRouter.community);
                   },
                   onSurveysTap: () {
-                    final gymId =
-                        context.read<GymProvider>().currentGymId;
+                    final gymId = ref.read(gymProvider).currentGymId;
                     final userId =
-                        context.read<AuthProvider>().userId ?? '';
+                        ref.read(authControllerProvider).userId ?? '';
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1904,8 +1921,11 @@ class AvatarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final inventory = context.watch<AvatarInventoryProvider>();
+    final auth = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider);
+    final inventory =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(avatarInventoryProvider);
     final theme = Theme.of(context);
     return StreamBuilder<List<AvatarInventoryEntry>>(
       stream: inventory.inventory(auth.userId ?? ''),
@@ -1974,7 +1994,7 @@ class AvatarPicker extends StatelessWidget {
                       ),
                     ),
                     child: Builder(builder: (context) {
-                      final gymId = context.read<AuthProvider>().gymCode;
+                      final gymId = auth.gymCode;
                       final path = AvatarCatalog.instance.resolvePathOrFallback(
                         key,
                         gymId: gymId,

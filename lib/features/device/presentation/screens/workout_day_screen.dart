@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/app_router.dart';
@@ -20,8 +19,9 @@ import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 
-class WorkoutDayScreen extends StatefulWidget {
+class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
   const WorkoutDayScreen({
     super.key,
     required this.gymId,
@@ -46,10 +46,11 @@ class WorkoutDayScreen extends StatefulWidget {
   final bool closeSessionOnDispose;
 
   @override
-  State<WorkoutDayScreen> createState() => _WorkoutDayScreenState();
+  riverpod.ConsumerState<WorkoutDayScreen> createState() =>
+      _WorkoutDayScreenState();
 }
 
-class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
+class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _sessionKey;
   bool _isInitializing = true;
@@ -62,8 +63,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
 
   void _handleSelection(WorkoutDeviceSelection selection) {
-    final auth = context.read<AuthProvider>();
-    final controller = context.read<WorkoutDayController>();
+    final auth = ref.read(authControllerProvider);
+    final controller = ref.read(workoutDayControllerProvider);
     final session = controller.addOrFocusSession(
       gymId: selection.gymId,
       deviceId: selection.deviceId,
@@ -75,7 +76,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     
     // Close keyboard before scrolling
     FocusManager.instance.primaryFocus?.unfocus();
-    final keypad = context.read<OverlayNumericKeypadController>();
+    final keypad = ref.read(overlayNumericKeypadControllerProvider);
     keypad.close();
     
     setState(() {});
@@ -116,8 +117,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   }
 
   Future<void> _ensureSession() async {
-    final auth = context.read<AuthProvider>();
-    final controller = context.read<WorkoutDayController>();
+    final auth = ref.read(authControllerProvider);
+    final controller = ref.read(workoutDayControllerProvider);
     // Plan-Kontext ggf. im Controller hinterlegen oder von dort übernehmen
     final existingPlan = controller.getPlanContext(
       gymId: widget.gymId,
@@ -164,7 +165,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     _scrollController.dispose();
     final key = _sessionKey;
     if (widget.closeSessionOnDispose && key != null && _ownsSession) {
-      final controller = context.read<WorkoutDayController>();
+      final controller = ref.read(workoutDayControllerProvider);
       if (controller.sessionForKey(key) != null) {
         controller.closeSession(key);
       }
@@ -173,7 +174,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
   }
 
   void _handleCloseSession(WorkoutDaySession session) {
-    final controller = context.read<WorkoutDayController>();
+    final controller = ref.read(workoutDayControllerProvider);
     final closed = controller.closeSession(session.key);
     if (closed && session.key == _sessionKey) {
       _sessionKey = null;
@@ -184,7 +185,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
       setState(() {});
       return;
     }
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authControllerProvider);
     final userId = auth.userId;
     final activeGymId = auth.gymCode ?? session.gymId;
     final remaining = (userId == null)
@@ -199,8 +200,8 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<WorkoutDayController>();
-    final auth = context.watch<AuthProvider>();
+    final controller = ref.watch(workoutDayControllerProvider);
+    final auth = ref.watch(authControllerProvider);
     final activeGymId = auth.gymCode ?? widget.gymId;
     final userId = auth.userId;
     final sessions = (userId == null)
@@ -229,10 +230,11 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
         leading: InkWell(
           onTap: () {
             // Robustly close keyboard and clear focus
-            final dayController = context.read<WorkoutDayController>();
+            final dayController = ref.read(workoutDayControllerProvider);
             dayController.focusedProvider?.clearFocus();
             
-            final keypadController = context.read<OverlayNumericKeypadController>();
+            final keypadController =
+                ref.read(overlayNumericKeypadControllerProvider);
             if (keypadController.isOpen) {
               keypadController.close();
             }
@@ -335,8 +337,10 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
           ),
         ),
         child: SafeArea(
-          child: Consumer<OverlayNumericKeypadController>(
-            builder: (context, keypadController, _) {
+          child: riverpod.Consumer(
+            builder: (context, ref, _) {
+              final keypadController =
+                  ref.watch(overlayNumericKeypadControllerProvider);
               final bottomSpacerHeight = keypadController.keypadContentHeight +
                   MediaQuery.of(context).padding.bottom +
                   24;
@@ -486,7 +490,7 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
 
   void _handleTimerInteraction() {
     FocusManager.instance.primaryFocus?.unfocus();
-    final keypad = context.read<OverlayNumericKeypadController>();
+    final keypad = ref.read(overlayNumericKeypadControllerProvider);
     keypad.close();
   }
 
@@ -494,13 +498,13 @@ class _WorkoutDayScreenState extends State<WorkoutDayScreen> {
     List<WorkoutDaySession> sessions,
   ) async {
     final loc = AppLocalizations.of(context)!;
-    final controller = context.read<WorkoutDayController>();
-    final auth = context.read<AuthProvider>();
-    final settings = context.read<SettingsProvider>();
+    final controller = ref.read(workoutDayControllerProvider);
+    final auth = ref.read(authControllerProvider);
+    final settings = ref.read(settingsProvider);
 
     // Tastaturen sofort schließen, bevor Dialoge/Speichern starten.
     FocusManager.instance.primaryFocus?.unfocus();
-    context.read<OverlayNumericKeypadController>().close();
+    ref.read(overlayNumericKeypadControllerProvider).close();
 
     final confirmFinish = await showDialog<bool>(
       context: context,
@@ -700,6 +704,53 @@ class _SaveAllButton extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
+    final background = theme.scaffoldBackgroundColor;
+
+    LinearGradient? activeGradient;
+    Color? activeShadowColor;
+
+    if (canSave && !isSaving) {
+      final baseGradient = brandTheme?.gradient;
+      if (baseGradient != null && baseGradient.colors.isNotEmpty) {
+        // Etwas gedämpfter, weniger greller Button: wir mischen die
+        // Brand-Farben ein Stück weit mit dem Hintergrund.
+        final start = Color.lerp(
+              baseGradient.colors.first,
+              background,
+              0.28,
+            ) ??
+            baseGradient.colors.first;
+        final end = Color.lerp(
+              baseGradient.colors.last,
+              background,
+              0.45,
+            ) ??
+            baseGradient.colors.last;
+
+        activeGradient = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [start, end],
+        );
+
+        activeShadowColor = Color.lerp(
+              baseGradient.colors.last,
+              Colors.black,
+              0.5,
+            )!
+            .withOpacity(0.28);
+      } else {
+        activeGradient = LinearGradient(
+          colors: [
+            brandColor.withOpacity(0.85),
+            brandColor.withOpacity(0.65),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        );
+        activeShadowColor = brandColor.withOpacity(0.28);
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
@@ -708,26 +759,17 @@ class _SaveAllButton extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: canSave && !isSaving
-              ? LinearGradient(
-                  colors: [
-                    brandColor,
-                    brandColor.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
+          gradient: activeGradient,
           color: canSave ? null : Colors.white.withOpacity(0.05),
-          boxShadow: canSave && !isSaving
+          boxShadow: canSave && !isSaving && activeShadowColor != null
               ? [
                   BoxShadow(
-                    color: brandColor.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: activeShadowColor,
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ]
-              : null,
+              : const [],
         ),
         child: Material(
           color: Colors.transparent,

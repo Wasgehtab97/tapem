@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
@@ -110,7 +110,8 @@ class _DeviceMuscleAssignmentSheetState
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final groups = context.watch<MuscleGroupProvider>().groups;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final groups = container.read(muscleGroupProvider).groups;
     final canon = _canonical(groups);
 
     if (!_initialized && groups.isNotEmpty) {
@@ -133,7 +134,7 @@ class _DeviceMuscleAssignmentSheetState
     };
 
     Future<void> save() async {
-      final prov = context.read<MuscleGroupProvider>();
+      final prov = container.read(muscleGroupProvider);
       final Set<String> all = {
         if (_selectedPrimaryId != null) _selectedPrimaryId!,
         ..._selectedSecondaryIds,
@@ -189,7 +190,7 @@ class _DeviceMuscleAssignmentSheetState
         ),
       );
       if (confirm == true) {
-        await context.read<MuscleGroupProvider>().updateDeviceAssignments(
+        await container.read(muscleGroupProvider).updateDeviceAssignments(
               context,
               widget.deviceId,
               const [],
@@ -451,4 +452,3 @@ class _EmptyTab extends StatelessWidget {
     );
   }
 }
-

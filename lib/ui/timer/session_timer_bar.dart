@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'session_timer_service.dart';
 
-class SessionTimerBar extends StatefulWidget {
+class SessionTimerBar extends ConsumerStatefulWidget {
   final Duration initialDuration;
   final ValueChanged<Duration>? onTick;
   final VoidCallback? onDone;
@@ -19,10 +19,10 @@ class SessionTimerBar extends StatefulWidget {
   });
 
   @override
-  State<SessionTimerBar> createState() => _SessionTimerBarState();
+  ConsumerState<SessionTimerBar> createState() => _SessionTimerBarState();
 }
 
-class _SessionTimerBarState extends State<SessionTimerBar> {
+class _SessionTimerBarState extends ConsumerState<SessionTimerBar> {
   late final ValueChanged<Duration> _tickListener;
   late final VoidCallback _doneListener;
   SessionTimerService? _service;
@@ -41,7 +41,7 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final nextService = context.read<SessionTimerService>();
+    final nextService = ref.read(sessionTimerServiceProvider);
     if (!identical(_service, nextService)) {
       _service?.removeTickListener(_tickListener);
       _service?.removeDoneListener(_doneListener);
@@ -68,7 +68,7 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
 
   @override
   Widget build(BuildContext context) {
-    final service = context.watch<SessionTimerService>();
+    final service = ref.watch(sessionTimerServiceProvider);
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
     final brand = theme.extension<AppBrandTheme>();
@@ -203,4 +203,3 @@ class _SessionTimerBarState extends State<SessionTimerBar> {
     );
   }
 }
-

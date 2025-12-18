@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 
-class LoginForm extends StatefulWidget {
+class LoginForm extends ConsumerStatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  ConsumerState<LoginForm> createState() => _LoginFormState();
 }
 
-class _LoginFormState extends State<LoginForm> {
+class _LoginFormState extends ConsumerState<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,7 +29,7 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   Future<void> _submit() async {
-    final authProv = context.read<AuthProvider>();
+    final authProv = ref.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     
     // Manual validation since we might use controllers
@@ -70,7 +71,7 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    final authProv = context.watch<AuthProvider>();
+    final authProv = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
 
     return Form(

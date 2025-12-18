@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -20,7 +20,9 @@ class MuscleChips extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final groups = context.watch<MuscleGroupProvider>().groups;
+    final groups = riverpod.ProviderScope.containerOf(context)
+        .read(muscleGroupProvider)
+        .groups;
     final loc = AppLocalizations.of(context)!;
 
     MuscleRegion regionFor(String id, MuscleGroup? g) {

@@ -4,9 +4,9 @@ import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/config/remote_config.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -32,8 +32,9 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   @override
   void initState() {
     super.initState();
-    _inventory = context.read<AvatarInventoryProvider>();
-    final auth = context.read<AuthProvider>();
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    _inventory = container.read(avatarInventoryProvider);
+    final auth = container.read(authControllerProvider);
     _gymId = auth.gymCode ?? '';
     _fs = widget.firestore ?? FirebaseFirestore.instance;
     _init();
@@ -52,7 +53,9 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     } catch (e) {
       debugPrint('[UserSymbols] membership fetch error: $e');
     }
-    _permitted = context.read<AuthProvider>().isAdmin;
+    _permitted = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider)
+        .isAdmin;
     if (_permitted) {
       try {
         final inv = await _inventory
@@ -78,7 +81,9 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       }
     });
     try {
-      final adminFlag = context.read<AuthProvider>().isAdmin;
+      final adminFlag = riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(authControllerProvider)
+          .isAdmin;
       debugPrint('[UserSymbols] toggle path=users/${widget.uid}/avatarInventory '
           'gymId=$_gymId uid=${widget.uid} key=$key has=$has isAdmin=$adminFlag');
       if (has) {
@@ -281,7 +286,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             unawaited(fn.call({'uid': widget.uid, 'key': k, 'gymId': _gymId}));
           }
         }
-        final adminFlag = context.read<AuthProvider>().isAdmin;
+        final adminFlag =
+            riverpod.ProviderScope.containerOf(context, listen: false)
+                .read(authControllerProvider)
+                .isAdmin;
         debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
             'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
             'isAdmin=$adminFlag success=true');
@@ -290,7 +298,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             .showSnackBar(SnackBar(content: Text(loc.adminSymbolsAddSuccess(selected.length))));
       } on FirebaseException catch (e) {
         setState(() => _keys.removeAll(selected));
-        final adminFlag = context.read<AuthProvider>().isAdmin;
+        final adminFlag =
+            riverpod.ProviderScope.containerOf(context, listen: false)
+                .read(authControllerProvider)
+                .isAdmin;
         debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
             'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
             'isAdmin=$adminFlag success=false e=$e');

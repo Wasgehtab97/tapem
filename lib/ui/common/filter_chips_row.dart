@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'search_and_filters.dart' show SortOrder;
@@ -43,8 +43,8 @@ class FilterChipsRow extends StatelessWidget {
   }
 
   Future<void> _showMuscleSheet(BuildContext context) async {
-    final prov = context.read<MuscleGroupProvider>();
-    final groups = prov.groups;
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final groups = container.read(muscleGroupProvider).groups;
     final selected = Set<String>.from(muscleFilterIds);
     await showModalBottomSheet(
       context: context,
@@ -126,4 +126,3 @@ class FilterChipsRow extends StatelessWidget {
     );
   }
 }
-

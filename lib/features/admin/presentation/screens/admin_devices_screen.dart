@@ -2,10 +2,10 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -14,18 +14,19 @@ import 'package:tapem/features/admin/presentation/widgets/device_list_item.dart'
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
-class AdminDevicesScreen extends StatefulWidget {
+class AdminDevicesScreen extends ConsumerStatefulWidget {
   const AdminDevicesScreen({super.key});
 
   @override
-  State<AdminDevicesScreen> createState() => _AdminDevicesScreenState();
+  ConsumerState<AdminDevicesScreen> createState() => _AdminDevicesScreenState();
 }
 
-class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
+class _AdminDevicesScreenState extends ConsumerState<AdminDevicesScreen> {
   static const Set<MuscleRegion> _allowedMuscleRegions = {
     MuscleRegion.brust,
     MuscleRegion.ruecken,
@@ -52,8 +53,9 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_dependenciesLoaded) {
-      _createUC = context.read<CreateDeviceUseCase>();
-      _getUC = context.read<GetDevicesForGym>();
+      final container = ProviderScope.containerOf(context, listen: false);
+      _createUC = container.read(createDeviceUseCaseProvider);
+      _getUC = container.read(getDevicesForGymProvider);
       _loadDevices();
       _dependenciesLoaded = true;
     }
@@ -62,7 +64,7 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
   Future<void> _loadDevices() async {
     if (!mounted) return;
     setState(() => _loading = true);
-    final gymId = context.read<AuthProvider>().gymCode;
+    final gymId = ref.read(authControllerProvider).gymCode;
     if (gymId == null) {
       if (!mounted) return;
       setState(() {
@@ -94,7 +96,7 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
 
   void _showCreateDialog() {
     final loc = AppLocalizations.of(context)!;
-    final gymId = context.read<AuthProvider>().gymCode;
+    final gymId = ref.read(authControllerProvider).gymCode;
     if (gymId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.invalidGymSelectionError)),
@@ -108,7 +110,7 @@ class _AdminDevicesScreenState extends State<AdminDevicesScreen> {
         _devices.isEmpty ? 1 : _devices.map((d) => d.id).reduce(max) + 1;
     bool isMulti = false;
     bool isSubmitting = false;
-    final muscleProv = context.read<MuscleGroupProvider>();
+    final muscleProv = ref.read(muscleGroupProvider);
     muscleProv.loadGroups(context);
     final selectedGroups = <String>{};
 

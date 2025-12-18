@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/providers/challenge_provider.dart';
 
-class CompletedChallengesWidget extends StatelessWidget {
+class CompletedChallengesWidget extends ConsumerWidget {
   const CompletedChallengesWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final completed = context.watch<ChallengeProvider>().completed;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final completed = ref.watch(challengeProvider).completed;
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 

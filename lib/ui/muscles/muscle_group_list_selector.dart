@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -125,7 +125,8 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     MuscleRegion region,
     String idOrRegionKey,
   ) async {
-    final prov = context.read<MuscleGroupProvider>();
+    final prov = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(muscleGroupProvider);
     if (prov.groups.any((g) => g.id == idOrRegionKey)) {
       return idOrRegionKey;
     }
@@ -206,7 +207,8 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final prov = context.watch<MuscleGroupProvider>();
+    final prov = riverpod.ProviderScope.containerOf(context)
+        .read(muscleGroupProvider);
     final theme = Theme.of(context);
 
     if (prov.isLoading) {
@@ -339,4 +341,3 @@ class _Entry {
 }
 
 enum _Category { chest, shoulders, arms, back, core, legs }
-

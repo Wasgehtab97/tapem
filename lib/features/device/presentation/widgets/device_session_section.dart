@@ -3,15 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/device_provider.dart';
-import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
-
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/time/logic_day.dart';
@@ -25,13 +22,15 @@ import 'package:tapem/features/device/presentation/widgets/note_button_widget.da
 import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_strip.dart';
 import 'package:tapem/features/device/presentation/widgets/set_card.dart';
-import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
-    show
-        showFeedbackDialog;
+import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/rank/presentation/device_level_style.dart';
 import 'package:tapem/features/rank/presentation/widgets/xp_info_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
+    show showFeedbackDialog;
 
 
 
@@ -65,26 +64,24 @@ class DeviceSessionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<DeviceProvider>.value(
-      value: provider,
-      child: _DeviceSessionSectionBody(
-        gymId: gymId,
-        deviceId: deviceId,
-        exerciseId: exerciseId,
-        userId: userId,
-        displayIndex: displayIndex,
-        sessionKey: sessionKey,
-        exerciseName: exerciseName,
-
-        onSessionSaved: onSessionSaved,
-        onCloseRequested: onCloseRequested,
-      ),
+    return _DeviceSessionSectionBody(
+      provider: provider,
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      userId: userId,
+      displayIndex: displayIndex,
+      sessionKey: sessionKey,
+      exerciseName: exerciseName,
+      onSessionSaved: onSessionSaved,
+      onCloseRequested: onCloseRequested,
     );
   }
 }
 
 class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
   const _DeviceSessionSectionBody({
+    required this.provider,
     required this.gymId,
     required this.deviceId,
     required this.exerciseId,
@@ -97,6 +94,7 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
     this.onCloseRequested,
   });
 
+  final DeviceProvider provider;
   final String gymId;
   final String deviceId;
   final String exerciseId;
@@ -118,28 +116,38 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   OverlayNumericKeypadController? _keypadController;
   bool _didLoad = false;
   OverlayNumericKeypadController get _overlayKeypad =>
-      _keypadController ?? context.read<OverlayNumericKeypadController>();
+      _keypadController ??
+      riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(overlayNumericKeypadControllerProvider);
 
   @override
   void initState() {
     super.initState();
+    widget.provider.addListener(_handleProviderChanged);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _keypadController ??= context.read<OverlayNumericKeypadController>();
+    _keypadController ??=
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(overlayNumericKeypadControllerProvider);
     _ensureSessionLoaded();
+  }
+
+  void _handleProviderChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _ensureSessionLoaded() async {
     if (_didLoad) return;
     _didLoad = true;
-    final auth = context.read<AuthProvider>();
-    final settings = context.read<SettingsProvider>();
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final auth = container.read(authControllerProvider);
+    final settings = container.read(settingsProvider);
     await settings.load(auth.userId!);
-    final provider = context.read<DeviceProvider>();
-    await provider.loadDevice(
+    await widget.provider.loadDevice(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
       exerciseId: widget.exerciseId,
@@ -157,7 +165,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 
   void _addSet() {
     _focusSession();
-    final prov = context.read<DeviceProvider>();
+    final prov = widget.provider;
     prov.addSet();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final index = prov.sets.length - 1;
@@ -185,7 +193,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   void _focusSession() {
     final key = widget.sessionKey;
     if (key != null) {
-      context.read<WorkoutDayController>().focusSession(key);
+      riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(workoutDayControllerProvider)
+          .focusSession(key);
     }
   }
 
@@ -212,7 +222,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final deviceProv = prov;
     String? exerciseName = widget.exerciseName;
     if (exerciseName == null && (deviceProv.device?.isMulti ?? false)) {
-      final exProv = context.read<ExerciseProvider>();
+      final exProv = riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(exerciseProvider);
       exerciseName = exProv.exercises
           .firstWhere(
             (e) => e.id == widget.exerciseId,
@@ -256,6 +267,70 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     );
   }
 
+  void _openNote(DeviceProvider prov) {
+    _focusSession();
+    _closeKeyboard();
+    final loc = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final textController = TextEditingController(text: prov.note);
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                loc.noteModalTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: loc.noteModalHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    tooltip: loc.noteDeleteTooltip,
+                    onPressed: () {
+                      prov.setNote('');
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      prov.setNote(textController.text.trim());
+                      Navigator.of(ctx).pop();
+                    },
+                    child: Text(loc.noteSaveButton),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   String? _resolveExerciseTitle(
     BuildContext context,
     DeviceProvider prov, {
@@ -272,7 +347,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       return widget.exerciseName;
     }
     final availableExercises =
-        exercises ?? context.select<ExerciseProvider, List<Exercise>>((p) => p.exercises);
+        exercises ??
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(exerciseProvider)
+            .exercises;
     final match = availableExercises.where((e) => e.id == widget.exerciseId);
     if (match.isNotEmpty) {
       return match.first.name;
@@ -291,7 +369,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final outlineColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
     final exercises = prov.device?.isMulti ?? false
-        ? context.watch<ExerciseProvider>().exercises
+        ? riverpod.ProviderScope.containerOf(context)
+            .read(exerciseProvider)
+            .exercises
         : null;
     final exerciseTitle = _resolveExerciseTitle(
       context,
@@ -333,7 +413,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           previousSets: lastSets,
           onRemove: (index, removed) {
             _focusSession();
-            context.read<DeviceProvider>().removeSet(index);
+            prov.removeSet(index);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(loc.setRemoved),
@@ -341,7 +421,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
                   label: loc.undo,
                   onPressed: () {
                     _focusSession();
-                    context.read<DeviceProvider>().insertSetAt(index, removed);
+                    prov.insertSetAt(index, removed);
                   },
                 ),
               ),
@@ -417,10 +497,12 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
                 onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
                 onToggleBodyweight: () => _toggleBodyweight(prov),
                 onFeedback: () => _handleFeedback(),
+                onOpenNote: () => _openNote(prov),
                 isBodyweightMode: prov.isBodyweightMode,
                 xp: prov.xp,
                 level: prov.level,
                 deviceId: widget.deviceId,
+                hasNote: prov.note.isNotEmpty,
               ),
             ),
           ],
@@ -434,7 +516,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     AppLocalizations loc,
   ) async {
     _focusSession();
-    final auth = context.read<AuthProvider>();
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final auth = container.read(authControllerProvider);
     final base = {
       'uid': auth.userId!,
       'gymId': widget.gymId,
@@ -495,7 +578,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       return;
     }
     elogUi('SAVE_STARTED', base);
-    final settingsProv = context.read<SettingsProvider>();
+    final settingsProv = container.read(settingsProvider);
     final ok = await prov.saveWorkoutSession(
       gymId: widget.gymId,
       userId: auth.userId!,
@@ -575,6 +658,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 
   @override
   void dispose() {
+    widget.provider.removeListener(_handleProviderChanged);
     FocusManager.instance.primaryFocus?.unfocus();
     // Das globale Keypad wird zentral verwaltet.
     // Hier kein direktes close(), um Provider-Änderungen während dispose()
@@ -588,7 +672,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
     final exercises = prov.device?.isMulti ?? false
-        ? context.watch<ExerciseProvider>().exercises
+        ? riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(exerciseProvider)
+            .exercises
         : null;
     final resolvedTitle =
         _resolveExerciseTitle(context, prov, exercises: exercises) ??
@@ -692,8 +778,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<DeviceProvider>();
-    final auth = context.watch<AuthProvider>();
+    final container = riverpod.ProviderScope.containerOf(context);
+    final prov = widget.provider;
+    final auth = container.read(authControllerProvider);
     prov.updateAutoSavePreference(auth.showInLeaderboard ?? true);
 
     final theme = Theme.of(context);
@@ -719,7 +806,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           end: Alignment.bottomRight,
           colors: [
             theme.canvasColor.withOpacity(0.9), // Darker base
-            Color.alphaBlend(brandColor.withOpacity(0.05), theme.canvasColor),
+            Color.alphaBlend(
+              brandColor.withOpacity(0.05),
+              theme.canvasColor,
+            ),
           ],
         ),
         border: Border.all(
@@ -827,7 +917,8 @@ class _GroupedSetList extends StatelessWidget {
   Widget build(BuildContext context) {
     final brand = Theme.of(context).extension<AppBrandTheme>();
     final loc = AppLocalizations.of(context)!;
-    final isBodyweightMode = context.watch<DeviceProvider>().isBodyweightMode;
+    final isBodyweightMode = sets.isNotEmpty &&
+        (sets.first['isBodyweight'] == true);
     var tokens = SetCardTheme.of(context);
     const dense = true;
     if (dense) {
@@ -1106,20 +1197,24 @@ class _StylishActionsGrid extends StatelessWidget {
     this.onOpenHistory,
     this.onToggleBodyweight,
     this.onFeedback,
+    this.onOpenNote,
     required this.isBodyweightMode,
     required this.xp,
     required this.level,
     required this.deviceId,
+    this.hasNote = false,
   });
 
   final VoidCallback? onOpenLeaderboard;
   final VoidCallback? onOpenHistory;
   final VoidCallback? onToggleBodyweight;
   final VoidCallback? onFeedback;
+  final VoidCallback? onOpenNote;
   final bool isBodyweightMode;
   final int xp;
   final int level;
   final String deviceId;
+  final bool hasNote;
 
   @override
   Widget build(BuildContext context) {
@@ -1180,31 +1275,8 @@ class _StylishActionsGrid extends StatelessWidget {
             icon: Icons.edit_note_rounded,
             label: 'Notiz',
             color: brandColor,
-            onTap: () {
-              // Show note dialog - using existing NoteButtonWidget functionality
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('Session Note'),
-                  content: const TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Add a note...',
-                    ),
-                    maxLines: 3,
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Save'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            isActive: hasNote,
+            onTap: onOpenNote ?? () {},
           ),
         ],
       ),

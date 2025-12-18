@@ -6,15 +6,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
@@ -210,7 +212,9 @@ class SetCardState extends State<SetCard> {
   void _focusSession() {
     final key = widget.sessionKey;
     if (key != null) {
-      context.read<WorkoutDayController>().focusSession(key);
+      riverpod.ProviderScope.containerOf(context, listen: false)
+          .read(workoutDayControllerProvider)
+          .focusSession(key);
     }
   }
 
@@ -243,11 +247,16 @@ class SetCardState extends State<SetCard> {
     final index = _dropWeightCtrls.indexOf(controller);
     if (index == -1) return;
     _slog(widget.index, 'dropWeight[$index] → "${controller.text}"');
-    context.read<DeviceProvider>().updateDrop(
-          widget.index,
-          index,
-          weight: controller.text,
-        );
+    final controllerProv =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(workoutDayControllerProvider);
+    final device =
+        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    device?.updateDrop(
+      widget.index,
+      index,
+      weight: controller.text,
+    );
   }
 
   void _handleDropRepsChanged(TextEditingController controller) {
@@ -255,11 +264,16 @@ class SetCardState extends State<SetCard> {
     final index = _dropRepsCtrls.indexOf(controller);
     if (index == -1) return;
     _slog(widget.index, 'dropReps[$index] → "${controller.text}"');
-    context.read<DeviceProvider>().updateDrop(
-          widget.index,
-          index,
-          reps: controller.text,
-        );
+    final controllerProv =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(workoutDayControllerProvider);
+    final device =
+        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    device?.updateDrop(
+      widget.index,
+      index,
+      reps: controller.text,
+    );
   }
 
   void _addDropController() {
@@ -342,8 +356,12 @@ class SetCardState extends State<SetCard> {
 
   void _handleAddDrop() {
     _focusSession();
-    final prov = context.read<DeviceProvider>();
-    final newIndex = prov.addDropToSet(widget.index);
+    final controllerProv =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(workoutDayControllerProvider);
+    final device =
+        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    final newIndex = device?.addDropToSet(widget.index) ?? 0;
     HapticFeedback.lightImpact();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -373,17 +391,27 @@ class SetCardState extends State<SetCard> {
       _weightCtrl.addListener(() {
         if (_muteCtrls) return;
         _slog(widget.index, 'weight → "${_weightCtrl.text}"');
-        final prov = context.read<DeviceProvider>();
-        prov.updateSet(
+        final controllerProv =
+            riverpod.ProviderScope.containerOf(context, listen: false)
+                .read(workoutDayControllerProvider);
+        final device =
+            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+        final isBw = device?.isBodyweightMode ?? false;
+        device?.updateSet(
           widget.index,
           weight: _weightCtrl.text,
-          isBodyweight: prov.isBodyweightMode,
+          isBodyweight: isBw,
         );
       });
       _repsCtrl.addListener(() {
         if (_muteCtrls) return;
         _slog(widget.index, 'reps → "${_repsCtrl.text}"');
-        context.read<DeviceProvider>().updateSet(
+        final controllerProv =
+            riverpod.ProviderScope.containerOf(context, listen: false)
+                .read(workoutDayControllerProvider);
+        final device =
+            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+        device?.updateSet(
           widget.index,
           reps: _repsCtrl.text,
         );
@@ -431,18 +459,24 @@ class SetCardState extends State<SetCard> {
       widget.index,
       'open keypad field=$field allowDecimal=$allowDecimal text="${controller.text}"',
     );
-    final prov = context.read<DeviceProvider>();
+    final controllerProv =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(workoutDayControllerProvider);
+    final prov =
+        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
     if (notifyFocus) {
       _focusSession();
-      _lastFocusRequestId = prov.requestFocus(
-        index: widget.index,
-        field: field,
-        dropIndex: dropIndex,
-      );
+      _lastFocusRequestId = prov?.requestFocus(
+            index: widget.index,
+            field: field,
+            dropIndex: dropIndex,
+          ) ??
+          _lastFocusRequestId;
     } else {
-      _lastFocusRequestId = prov.focusRequestId;
+      _lastFocusRequestId = prov?.focusRequestId ?? _lastFocusRequestId;
     }
-    final keypad = context.read<OverlayNumericKeypadController>();
+    final keypad = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(overlayNumericKeypadControllerProvider);
     keypad.openFor(
       controller,
       allowDecimal: allowDecimal,
@@ -494,7 +528,15 @@ class SetCardState extends State<SetCard> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<DeviceProvider>();
+    final dayController =
+        riverpod.ProviderScope.containerOf(context).read(
+      workoutDayControllerProvider,
+    );
+    final prov =
+        dayController.sessionForKey(widget.sessionKey!)?.provider;
+    if (prov == null) {
+      return const SizedBox.shrink();
+    }
     final loc = AppLocalizations.of(context)!;
     var tokens = SetCardTheme.of(context);
     final dense = widget.size == SetCardSize.dense;
@@ -589,7 +631,12 @@ class SetCardState extends State<SetCard> {
         setState(() => _showExtras = next);
         if (next && _dropWeightCtrls.isEmpty) {
           _focusSession();
-          context.read<DeviceProvider>().ensureDropSlot(widget.index);
+          final controllerProv =
+              riverpod.ProviderScope.containerOf(context, listen: false)
+                  .read(workoutDayControllerProvider);
+          final device =
+              controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+          device?.ensureDropSlot(widget.index);
         }
       };
     }
@@ -602,8 +649,12 @@ class SetCardState extends State<SetCard> {
           'tap: toggle done via provider',
         );
         _focusSession();
-        final prov = context.read<DeviceProvider>();
-        final ok = prov.toggleSetDone(widget.index);
+        final controllerProv =
+            riverpod.ProviderScope.containerOf(context, listen: false)
+                .read(workoutDayControllerProvider);
+        final device =
+            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+        final ok = device?.toggleSetDone(widget.index) ?? false;
         elogUi('SET_DONE_TAP', {
           'index': widget.index,
           'wasValid': ok,
@@ -612,7 +663,9 @@ class SetCardState extends State<SetCard> {
         HapticFeedback.lightImpact();
         if (ok) {
           prov.clearFocus();
-          context.read<OverlayNumericKeypadController>().close();
+          riverpod.ProviderScope.containerOf(context, listen: false)
+              .read(overlayNumericKeypadControllerProvider)
+              .close();
         }
       };
     }
@@ -678,7 +731,7 @@ class SetCardState extends State<SetCard> {
       done: done,
       readOnly: widget.readOnly,
       filled: filled,
-      isBodyweightMode: prov.isBodyweightMode,
+      isBodyweightMode: isBw,
       loc: loc,
       previousSet: widget.previousSet,
       weightController: _weightCtrl,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/ui_mutation_guard.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -67,7 +67,8 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
 
   Future<void> _showMuscleSheet() async {
     final loc = AppLocalizations.of(context)!;
-    final prov = context.read<MuscleGroupProvider>();
+    final container = ProviderScope.containerOf(context, listen: false);
+    final prov = container.read(muscleGroupProvider);
     final options = _buildMuscleFilterOptions(prov.groups);
     if (options.isEmpty) return;
 
@@ -473,4 +474,3 @@ class _MuscleFilterChip extends StatelessWidget {
     );
   }
 }
-

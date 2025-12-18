@@ -1,22 +1,23 @@
 // lib/features/device/presentation/widgets/note_button_widget.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/presentation/widgets/session_action_button_style.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class NoteButtonWidget extends StatelessWidget {
   final String deviceId;
+  final DeviceProvider provider;
   const NoteButtonWidget({
     Key? key,
     required this.deviceId,
+    required this.provider,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final prov = context.watch<DeviceProvider>();
+    final prov = provider;
     final hasNote = prov.note.isNotEmpty;
 
     return IconButton(

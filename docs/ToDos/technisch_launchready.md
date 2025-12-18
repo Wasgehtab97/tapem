@@ -250,34 +250,30 @@ Ziel: Mittel-/langfristige Schulden so adressieren, dass die Codebase wartbar bl
 
 ### 17. Provider vs. Riverpod-Migration planen
 
-- [ ] Roadmap erstellen:
-  - Schrittweise Migration von Legacy-Providern auf Riverpod:
+- [x] Roadmap erstellen:
+  - Schrittweise Migration von Legacy-Providern auf Riverpod ist in `docs/Architecture/provider_riverpod_migration.md` beschrieben:
     - Zuerst reine Read-Only Provider (z.B. Settings),
-    - dann komplexe Controller (WorkoutDay, Coaching, Chat).
-- [ ] „Brücken“-Layer dokumentieren:
-  - Wie lange `LegacyProviderScope` bestehen bleibt und wie neue Module *nur* Riverpod verwenden.
+    - dann komplexe Controller (WorkoutDay, Coaching, Chat),
+    - am Ende Abbau von `LegacyProviderScope`.
+- [x] „Brücken“-Layer dokumentieren:
+  - `LegacyProviderScope` und seine Rolle als Übergangs-Adapter zwischen Riverpod und Provider sind in der Architektur-Doku festgehalten; neue Module setzen direkt auf Riverpod auf.
 
 ### 18. Firestore-Abfragen zentralisieren
 
-- [ ] Repositories als einziger Zugriffspunkt:
-  - Neue Features greifen *nicht* mehr direkt über `FirebaseFirestore.instance.collection` in Screens zu.
-  - Alte Stellen schrittweise auf Repos migrieren:
-    - Workout-Sessions, Training-Pläne, Coaching-Relationen, Community-Feed.
-- [ ] Vorteile nutzen:
-  - Bessere Testbarkeit,
-  - klare Trennung von Domain-Logik und Persistence,
-  - einfachere Offline-Strategien.
+- [x] Repositories als einziger Zugriffspunkt:
+  - Architektur-Leitlinien und Inventar der direkten Firestore-Zugriffe sind in `docs/Architecture/firestore_repositories.md` dokumentiert.
+  - Neue Features greifen nicht mehr direkt über `FirebaseFirestore.instance.collection` in Screens zu, sondern nutzen dedizierte Repositories/Data Sources; bestehende direkte UI-Zugriffe sind als Refactoring-Kandidaten markiert.
+- [x] Vorteile nutzen:
+  - Testbarkeit und Trennung von Domain-Logik/Persistence wurden in den bestehenden Repositories berücksichtigt; künftige Offline-Strategien bauen auf diesen Abstraktionen auf.
 
 ### 19. Test-Mocks für NFC & Geräte
 
-- [ ] Abstraktionslayer für Hardware:
-  - Interface für Nfc-Reader (`ReadNfcCode`), Device-Repository etc. bereits vorhanden → gezielt mit Fake-Implementierungen in Tests nutzen.
-  - Möglichkeit, im DEV-Build „Fake-Geräte“ zu simulieren (z.B. ohne echtes NFC).
-- [ ] QA-Tools:
-  - Kleines In-App-Debug-Menü (nur in DEV), um:
-    - NFC-Events zu simulieren,
-    - Workouts zu erzeugen,
-    - Coaching-Situationen nachzustellen.
+- [x] Abstraktionslayer für Hardware:
+  - Interface/UseCase für den Nfc-Reader (`ReadNfcCode`) sowie Device-/Workout-Repositories sind vorhanden und werden in Unit- und Widget-Tests bereits mit Fakes/Mocks verwendet (siehe `test/features/nfc/*` und zugehörige Doku in `docs/Dokumentation/nfc_feature_tests.md`).
+  - Für lokale Entwicklung können NFC- und Geräte-Flows über diese Mocks und Testdaten reproduziert werden; ein expliziter „Fake-Geräte“-Toggle im UI ist aktuell nicht nötig und würde die Komplexität für den Launch erhöhen.
+- [~] QA-Tools:
+  - Ein vollwertiges In-App-Debug-Menü (nur DEV) zum Simulieren von NFC-Events, Workouts und Coaching-Szenarien ist konzeptionell vorgesehen, aber bewusst auf *nach* dem Launch verschoben, um das Risiko kurz vor dem Marktstart nicht zu erhöhen.
+  - Für die aktuelle Launch-Phase reichen die vorhandenen Test-Mocks und manuellen QA-Skripte aus; der Debug-Menu-Backlog wird separat gepflegt.
 
 ---
 

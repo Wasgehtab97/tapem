@@ -3,9 +3,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:tapem/core/providers/database_provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
@@ -55,7 +54,7 @@ class _StorySessionHighlightsListenerState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final service = context.read<WorkoutSessionDurationService>();
+    final service = ref.read(workoutSessionDurationServiceProvider);
     if (!identical(service, _durationService)) {
       _subscription?.cancel();
       _durationService = service;
@@ -67,12 +66,12 @@ class _StorySessionHighlightsListenerState
 
   Future<void> _handleCompletion(WorkoutSessionCompletionEvent event) async {
     if (!mounted) return;
-    final auth = context.read<AuthProvider>();
+    final auth = ref.read(authViewStateProvider);
     if (event.userId.isEmpty || auth.userId != event.userId) {
       return;
     }
 
-    final storyService = context.read<StorySessionService>();
+    final storyService = ref.read(storySessionServiceProvider);
 
     List<Session> sessions = const [];
     try {
@@ -105,6 +104,23 @@ class _StorySessionHighlightsListenerState
 
     if (!mounted || summary == null) {
       return;
+    }
+
+    // Wenn der globale Workout-Timer eine Dauer gemessen hat, verwenden wir
+    // diese als Obergrenze für die angezeigte Dauer in den Session Highlights.
+    // So spiegelt die „Dauer“ möglichst genau das erlebte Training wider,
+    // selbst wenn einzelne Sessions noch keine start/end-Timestamps besitzen.
+    if (event.durationMs > 0) {
+      final currentStats = summary.stats;
+      final resolvedDurationMs =
+          currentStats.durationMs > 0 && currentStats.durationMs > event.durationMs
+              ? currentStats.durationMs
+              : event.durationMs;
+      if (resolvedDurationMs != currentStats.durationMs) {
+        summary = summary.copyWith(
+          stats: currentStats.copyWith(durationMs: resolvedDurationMs),
+        );
+      }
     }
 
     _enqueueSummary(summary);

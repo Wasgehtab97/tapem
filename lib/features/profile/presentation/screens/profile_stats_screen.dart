@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart' as legacy_provider;
 
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
@@ -27,10 +26,7 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final prov = legacy_provider.Provider.of<ProfileProvider>(
-        context,
-        listen: false,
-      );
+      final prov = ref.read(profileProvider);
       if (!prov.isLoading && prov.trainingDates.isEmpty) {
         prov.loadTrainingDates(context);
       }
@@ -48,7 +44,7 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = legacy_provider.Provider.of<ProfileProvider>(context);
+    final prov = ref.watch(profileProvider);
     final restStatsProv = ref.watch(restStatsProvider);
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -235,8 +231,9 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return legacy_provider.Consumer<ProfileProvider>(
-          builder: (context, provider, _) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final provider = ref.watch(profileProvider);
             final isLoading = provider.isFavoriteExercisesLoading;
             final error = provider.favoriteExercisesError;
             final usages = provider.favoriteExerciseUsages;

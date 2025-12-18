@@ -8,9 +8,20 @@ import 'package:flutter/foundation.dart'; // mapEquals
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:tapem/core/config/feature_flags.dart';
+import 'package:tapem/core/drafts/session_draft.dart';
+import 'package:tapem/core/drafts/session_draft_repository.dart';
+import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
+import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/logging/xp_trace.dart';
+import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/core/recent_devices_store.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
@@ -19,26 +30,16 @@ import 'package:tapem/features/device/domain/models/device_session_snapshot.dart
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/utils/e1rm_utils.dart';
-import 'package:uuid/uuid.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/rank/domain/models/level_info.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
-import 'package:tapem/core/providers/xp_provider.dart';
-import 'package:tapem/core/providers/challenge_provider.dart';
-import 'package:tapem/features/xp/domain/device_xp_result.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:tapem/core/drafts/session_draft.dart';
-import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
-import 'package:tapem/features/training_details/domain/models/session.dart';
-import 'package:tapem/core/drafts/session_draft_repository.dart';
-import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
-import 'package:tapem/core/config/feature_flags.dart';
-import 'package:tapem/services/membership_service.dart';
-import 'package:tapem/core/logging/elog.dart';
-import 'package:tapem/core/logging/xp_trace.dart';
-import 'package:tapem/core/time/logic_day.dart';
-import 'package:tapem/core/recent_devices_store.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/rest_stats/data/rest_stats_service.dart';
+import 'package:tapem/features/training_details/domain/models/session.dart';
+import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
+import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/services/membership_service.dart';
+import 'package:uuid/uuid.dart';
+
 import '../../bootstrap/navigation.dart';
 
 enum DeviceSetFieldFocus {
@@ -1719,7 +1720,8 @@ class DeviceProvider extends ChangeNotifier {
     final ctx = navigatorKey.currentContext;
     if (ctx == null) return null;
     try {
-      return Provider.of<RestStatsService>(ctx, listen: false);
+      final container = ProviderScope.containerOf(ctx, listen: false);
+      return container.read(restStatsServiceProvider);
     } catch (_) {
       return null;
     }
@@ -1730,7 +1732,8 @@ class DeviceProvider extends ChangeNotifier {
     final ctx = navigatorKey.currentContext;
     if (ctx == null) return null;
     try {
-      final exProv = Provider.of<ExerciseProvider>(ctx, listen: false);
+      final container = ProviderScope.containerOf(ctx, listen: false);
+      final exProv = container.read(exerciseProvider);
       return exProv.exercises
           .firstWhereOrNull((e) => e.id == _currentExerciseId)
           ?.name;
@@ -1744,10 +1747,18 @@ class DeviceProvider extends ChangeNotifier {
     String? exerciseId,
   }) {
     final ctx = navigatorKey.currentContext;
+    ProviderContainer? container;
+    if (ctx != null) {
+      try {
+        container = ProviderScope.containerOf(ctx, listen: false);
+      } catch (_) {
+        container = null;
+      }
+    }
     final muscleProv =
-        ctx != null ? Provider.of<MuscleGroupProvider>(ctx, listen: false) : null;
+        container != null ? container.read(muscleGroupProvider) : null;
     final exerciseProv =
-        ctx != null ? Provider.of<ExerciseProvider>(ctx, listen: false) : null;
+        container != null ? container.read(exerciseProvider) : null;
 
     final groups = muscleProv?.groups ?? const [];
     final idLookup = {for (final g in groups) g.id: g.id};
@@ -2021,6 +2032,19 @@ class DeviceProvider extends ChangeNotifier {
     _isBodyweightMode = !_isBodyweightMode;
     _log('🏋️ [Provider] bodyweightMode=$_isBodyweightMode');
     notifyListeners();
+  }
+
+  /// Verwirft den aktuellen Draft und verhindert, dass beim Dispose
+  /// ein weiterer Draft gespeichert wird (z.B. beim Abbrechen eines Plans).
+  void discardDraftForCancellation() {
+    final key = _draftKey;
+    if (key != null) {
+      unawaited(_draftRepo.delete(key));
+    }
+    _draftKey = null;
+    _draftCreatedAt = null;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = null;
   }
 
   @override

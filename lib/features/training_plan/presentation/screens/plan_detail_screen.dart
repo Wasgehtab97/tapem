@@ -757,83 +757,14 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
                         final controller =
                             ref.read(workoutDayControllerProvider);
-                        final timer =
-                            ref.read(workoutSessionDurationServiceProvider);
-
-                        if (isTodayPlanActive) {
-                          // Training beenden: offene Sessions schließen und Plan-Kontext löschen.
-                          controller.cancelActivePlan(
-                            userId: userId,
-                            gymId: gymId,
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Training beendet'),
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        // Training starten
-                        final resolvedNames =
-                            await _ensureExerciseNames(draft, deviceMap);
-
-                        for (final item in draft.exercises) {
-                          final exerciseName =
-                              item.name?.isNotEmpty == true
-                                  ? item.name
-                                  : resolvedNames[_exerciseKey(item)];
-                          controller.addOrFocusSession(
-                            gymId: gymId,
-                            deviceId: item.deviceId,
-                            exerciseId: item.exerciseId,
-                            exerciseName: exerciseName,
-                            userId: userId,
-                          );
-                        }
-
-                        final firstItem = draft.exercises.firstOrNull;
-
-                        // Sicherstellen, dass es eine persistierte planId gibt.
-                        var effectivePlanId = planId;
-                        if (effectivePlanId == null) {
-                          effectivePlanId =
-                              await ref.read(planBuilderProvider.notifier).save();
-                        }
-
-                        // Plan-Kontext im Controller registrieren.
-                        controller.setPlanContext(
-                          gymId: gymId,
-                          planId: effectivePlanId,
-                          planName: draft.name,
-                        );
-
-                        if (firstItem != null) {
-                          if (timer.isRunning) {
-                            Navigator.pushNamed(
-                              context,
-                              AppRouter.home,
-                              arguments: 2,
-                            );
-                          } else {
-                            Navigator.pushNamed(
-                              context,
-                              AppRouter.workoutDay,
-                              arguments: {
-                                'gymId': gymId,
-                                'deviceId': firstItem.deviceId,
-                                'exerciseId': firstItem.exerciseId,
-                                'planId': effectivePlanId,
-                                'planName': draft.name,
-                              },
-                            );
-                          }
-                        }
+                        // Trainingsstart/-stopp erfolgt ausschließlich über den
+                        // „Training starten“-Button auf der Profilseite.
+                        // Diese Schaltfläche dient hier nur der Navigation
+                        // zum Profil / zur Planübersicht.
+                        Navigator.pop(context);
                       },
-                icon: Icon(isTodayPlanActive ? Icons.stop : Icons.play_arrow),
-                label: Text(isTodayPlanActive ? 'Training beenden' : 'Training starten'),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Zurück zum Profil'),
                 style: FilledButton.styleFrom(
                   backgroundColor: brandColor,
                   foregroundColor: Colors.white,

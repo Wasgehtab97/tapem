@@ -1,11 +1,12 @@
 // lib/features/settings/presentation/screens/settings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
@@ -14,7 +15,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/profile/presentation/widgets/change_username_sheet.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   static Route<dynamic> route() {
@@ -22,10 +23,10 @@ class SettingsScreen extends StatefulWidget {
   }
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final GlobalKey<FormState> _bodyMetricsFormKey = GlobalKey<FormState>();
   late final TextEditingController _bodyWeightCtrl;
   late final FocusNode _bodyWeightFocus;
@@ -41,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final provider = context.read<SettingsProvider>();
+    final provider = ref.read(settingsProvider);
     if (!identical(_settingsProvider, provider)) {
       _settingsProvider?.removeListener(_onSettingsChanged);
       _settingsProvider = provider;
@@ -82,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLanguageDialog() {
-    final appProv = context.read<app.AppProvider>();
+    final appProv = ref.read(app.appProvider);
     final loc = AppLocalizations.of(context)!;
     final currentLocale = appProv.locale ?? Localizations.localeOf(context);
     showDialog<void>(
@@ -132,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showPrivacyDialog() {
-    final authProv = context.read<AuthProvider>();
+    final authProv = ref.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     final current = authProv.showInLeaderboard ?? true;
     showDialog<void>(
@@ -177,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _toggleCoachRole() async {
-    final authProv = context.read<AuthProvider>();
+    final authProv = ref.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     final isCoach = authProv.isCoach;
     final newValue = !isCoach;
@@ -203,8 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showCoachingSettingsSheet() {
     final loc = AppLocalizations.of(context)!;
-    final authProv = context.read<AuthProvider>();
-    final settingsProv = context.read<SettingsProvider>();
+    final authProv = ref.read(authControllerProvider);
+    final settingsProv = ref.read(settingsProvider);
     final isCoach = authProv.isCoach;
     final coachingProfileEnabled = settingsProv.coachingProfileEnabled;
 
@@ -287,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showCreatineSheet() {
     final loc = AppLocalizations.of(context)!;
-    final settingsProv = context.read<SettingsProvider>();
+    final settingsProv = ref.read(settingsProvider);
     final enabled = settingsProv.creatineEnabled;
     showModalBottomSheet<void>(
       context: context,
@@ -371,6 +372,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return loc.settingsThemeCyberGrape;
       case BrandThemeId.citrusPunch:
         return loc.settingsThemeCitrusPunch;
+      case BrandThemeId.cyberpunkNeon:
+        return loc.settingsThemeCyberpunkNeon;
+      case BrandThemeId.animeBloom:
+        return loc.settingsThemeAnimeBloom;
+      case BrandThemeId.flameInferno:
+        return loc.settingsThemeFlameInferno;
+      case BrandThemeId.waterTribe:
+        return loc.settingsThemeWaterTribe;
+      case BrandThemeId.airNomads:
+        return loc.settingsThemeAirNomads;
+      case BrandThemeId.earthKingdom:
+        return loc.settingsThemeEarthKingdom;
     }
   }
 
@@ -392,196 +405,179 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showThemeDialog() {
     final loc = AppLocalizations.of(context)!;
-    final auth = context.read<AuthProvider>();
-    final themePref = context.read<ThemePreferenceProvider>();
+    final auth = ref.read(authControllerProvider);
+    final themePref = ref.read(themePreferenceProvider);
     final gymId = auth.gymCode;
     final manualDefault = themePref.manualDefaultForGym(gymId);
-    
-    // Get available IDs.
+
     final availableIds = themePref.availableForGym(gymId);
-    // Filter out manualDefault from explicit list if we want to avoid duplicates, 
-    // but usually "Default" is separate. 
-    // Logic from previous implementation:
-    // additionalOptions = availableForGym.where(id != manualDefault)
     final additionalOptions = availableIds
         .where((id) => manualDefault == null || id != manualDefault)
         .toList();
+    final selectedId = themePref.override;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) {
-        // Watch current selection to update UI instantly if needed, 
-        // or just read once if we close on tap.
-        // We probably want to visualize the *current* selection.
-        return Consumer<ThemePreferenceProvider>(
-          builder: (context, ref, _) {
-            final selectedId = ref.override;
-            
-            // Helper to build a Grid Item
-            Widget buildThemeCard({
-              required String label,
-              required BrandThemePreset? preset, // If null, maybe use a neutral style or manualDefault
-              required bool isSelected,
-              required VoidCallback onTap,
-            }) {
-              // Determine gradient colors
-              final gradient = preset != null
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [preset.gradientStart, preset.gradientEnd],
-                    )
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.grey.shade800,
-                        Colors.black,
-                      ],
-                    );
+        Widget buildThemeCard({
+          required String label,
+          required BrandThemePreset? preset,
+          required bool isSelected,
+          required VoidCallback onTap,
+        }) {
+          final gradient = preset != null
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [preset.gradientStart, preset.gradientEnd],
+                )
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.grey.shade800,
+                    Colors.black,
+                  ],
+                );
 
-              return GestureDetector(
-                onTap: onTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    gradient: gradient,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-                      width: isSelected ? 2 : 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: (preset?.gradientStart ?? Colors.white).withOpacity(0.4),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            )
-                          ]
-                        : null,
-                  ),
-                  child: Stack(
-                    children: [
-                      if (isSelected)
-                        Positioned(
-                          right: 12,
-                          top: 12,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.check,
-                              size: 14,
-                              color: preset?.gradientEnd ?? Colors.black,
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                             gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withOpacity(0.0),
-                                Colors.black.withOpacity(0.6),
-                              ],
-                            ),
-                          ),
-                          child: Text(
-                            label,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          return GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                gradient: gradient,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                  width: isSelected ? 2 : 1,
                 ),
-              );
-            }
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              minChildSize: 0.5,
-              maxChildSize: 0.9,
-              builder: (_, controller) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: Column(
-                    children: [
-                       Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 20),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: (preset?.gradientStart ?? Colors.white).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : null,
+              ),
+              child: Stack(
+                children: [
+                  if (isSelected)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.check,
+                          size: 14,
+                          color: preset?.gradientEnd ?? Colors.black,
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
-                        child: Text(
-                          loc.settingsThemeDialogTitle,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GridView(
-                          controller: controller,
-                          padding: const EdgeInsets.all(24),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.4,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          children: [
-                            // Default Option
-                            buildThemeCard(
-                              label: manualDefault != null
-                                  ? '${loc.settingsThemeDefault} (${_themeOptionLabel(loc, manualDefault)})'
-                                  : loc.settingsThemeDefault,
-                              preset: manualDefault != null ? BrandThemePresets.of(manualDefault) : null,
-                              isSelected: selectedId == null,
-                              onTap: () => _onThemeSelected(sheetContext, null),
-                            ),
-                            // explicit options
-                            for (final id in additionalOptions)
-                              buildThemeCard(
-                                label: _themeOptionLabel(loc, id),
-                                preset: BrandThemePresets.of(id),
-                                isSelected: selectedId == id,
-                                onTap: () => _onThemeSelected(sheetContext, id),
-                              ),
+                    ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.0),
+                            Colors.black.withOpacity(0.6),
                           ],
                         ),
                       ),
-                    ],
+                      child: Text(
+                        label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
-                );
-              },
+                ],
+              ),
+            ),
+          );
+        }
+
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          builder: (_, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 20),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+                    child: Text(
+                      loc.settingsThemeDialogTitle,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GridView(
+                      controller: controller,
+                      padding: const EdgeInsets.all(24),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 1.4,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      children: [
+                        buildThemeCard(
+                          label: manualDefault != null
+                              ? '${loc.settingsThemeDefault} (${_themeOptionLabel(loc, manualDefault)})'
+                              : loc.settingsThemeDefault,
+                          preset: manualDefault != null ? BrandThemePresets.of(manualDefault) : null,
+                          isSelected: selectedId == null,
+                          onTap: () => _onThemeSelected(sheetContext, null),
+                        ),
+                        for (final id in additionalOptions)
+                          buildThemeCard(
+                            label: _themeOptionLabel(loc, id),
+                            preset: BrandThemePresets.of(id),
+                            isSelected: selectedId == id,
+                            onTap: () => _onThemeSelected(sheetContext, id),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -595,7 +591,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) async {
     Navigator.pop(dialogContext);
     try {
-      await context.read<ThemePreferenceProvider>().setTheme(id);
+      await ref.read(themePreferenceProvider).setTheme(id);
     } catch (_) {
       if (!mounted) return;
       final loc = AppLocalizations.of(context)!;
@@ -618,7 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _bodyMetricsSummary(AppLocalizations loc) {
-    final settings = context.read<SettingsProvider>();
+    final settings = ref.read(settingsProvider);
     final labels = <String>[];
     final genderLabel = _genderLabel(loc, settings.gender);
     if (genderLabel != null) {
@@ -636,7 +632,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showBodyMetricsSheet() async {
     final loc = AppLocalizations.of(context)!;
-    final settingsProv = _settingsProvider ?? context.read<SettingsProvider>();
+    final SettingsProvider settingsProv =
+        _settingsProvider ?? ref.read(settingsProvider);
     _syncBodyMetricsFromSettings();
     _bodyMetricsFormKey.currentState?.reset();
 
@@ -804,10 +801,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final auth = context.watch<AuthProvider>();
-    final settings = context.watch<SettingsProvider>();
-    final themePref = context.watch<ThemePreferenceProvider>();
-    final appProv = context.watch<app.AppProvider>();
+    final auth = ref.watch(authControllerProvider);
+    final settings = ref.watch(settingsProvider);
+    final themePref = ref.watch(themePreferenceProvider);
+    final appProv = ref.watch(app.appProvider);
     final locale = appProv.locale ?? Localizations.localeOf(context);
     final languageLabel = _languageLabel(loc, appProv.locale, locale);
     final themeLabel = _currentThemeLabel(loc, themePref, auth.gymCode);

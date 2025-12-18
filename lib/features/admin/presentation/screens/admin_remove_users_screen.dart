@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -34,7 +34,9 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
+    final auth = riverpod.ProviderScope.containerOf(context).read(
+      authControllerProvider,
+    );
     if (!auth.isAdmin) {
       return Scaffold(
         appBar: AppBar(

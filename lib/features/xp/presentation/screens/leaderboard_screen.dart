@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart' as legacy_provider;
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -10,7 +9,7 @@ import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dar
 import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/auth_providers.dart';
 
 class LeaderboardEntry {
   final PublicProfile profile;
@@ -40,7 +39,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   List<LeaderboardEntry>? _friendEntries;
   bool _loadingGym = false;
   bool _loadingFriends = false;
-  AuthProvider? _authProvider;
   int _selectedLevel = 1;
 
   Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
@@ -88,25 +86,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
-    if (!identical(auth, _authProvider)) {
-      _authProvider?.removeListener(_handleAuthChanged);
-      _authProvider = auth;
-      _authProvider?.addListener(_handleAuthChanged);
-    }
-  }
-
-  void _handleAuthChanged() {
-    _refreshGym();
-    _refreshFriends();
-  }
-
   void _updateSelectedLevel(int level) {
     setState(() {
       final maxLevel = LevelService.maxLevel;
@@ -121,11 +100,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   }
 
   Future<void> _refreshGym() async {
-    final auth = _authProvider ??
-        legacy_provider.Provider.of<AuthProvider>(
-          context,
-          listen: false,
-        );
+    final auth = ref.read(authViewStateProvider);
     final gymId = auth.gymCode ?? '';
     if (gymId.isEmpty) {
       if (!mounted) return;
@@ -181,11 +156,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   }
 
   Future<void> _refreshFriends() async {
-    final auth = _authProvider ??
-        legacy_provider.Provider.of<AuthProvider>(
-          context,
-          listen: false,
-        );
+    final auth = ref.read(authViewStateProvider);
     final friendsState = ref.read(friendsProvider);
     final userId = auth.userId;
     if (userId == null) {
@@ -250,6 +221,13 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthViewState>(
+      authViewStateProvider,
+      (_, __) {
+        _refreshGym();
+        _refreshFriends();
+      },
+    );
     ref.listen<FriendsState>(
       friendsProvider,
       (previous, next) {
@@ -294,13 +272,15 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
           ),
         );
       }
+      final currentUserId =
+          ref.watch(authViewStateProvider).userId;
       return _LevelLeaderboardList(
         entries: entries,
         progressColor: progressColor,
         title: isGym ? loc.leaderboardGymCardTitle : loc.leaderboardFriendsCardTitle,
         selectedLevel: _selectedLevel,
         onLevelChanged: _updateSelectedLevel,
-        currentUserId: _authProvider?.userId,
+        currentUserId: currentUserId,
       );
     }
 
@@ -350,11 +330,6 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     );
   }
 
-  @override
-  void dispose() {
-    _authProvider?.removeListener(_handleAuthChanged);
-    super.dispose();
-  }
 }
 
 class _LevelLeaderboardList extends StatelessWidget {

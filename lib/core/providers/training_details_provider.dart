@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/database/database_service.dart';
 import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
@@ -12,6 +13,7 @@ import 'package:tapem/features/training_details/domain/usecases/delete_session.d
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'database_provider.dart';
 
 /// Notifier für den TrainingDetailsScreen.
 class TrainingDetailsProvider extends ChangeNotifier {
@@ -397,3 +399,50 @@ class TrainingDetailsProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// Parameterobjekt für den Riverpod-Provider.
+@immutable
+class TrainingDetailsRequest {
+  const TrainingDetailsRequest({
+    required this.userId,
+    required this.date,
+    this.gymId,
+  });
+
+  final String userId;
+  final DateTime date;
+  final String? gymId;
+
+   @override
+   bool operator ==(Object other) {
+     if (identical(this, other)) return true;
+     return other is TrainingDetailsRequest &&
+         other.userId == userId &&
+         other.gymId == gymId &&
+         other.date == date;
+   }
+
+   @override
+   int get hashCode => Object.hash(
+         userId,
+         gymId,
+         date.millisecondsSinceEpoch,
+       );
+}
+
+/// Riverpod-Provider für TrainingDetailsScreen.
+///
+/// Erzeugt einen [TrainingDetailsProvider] und lädt die Sessions für die
+/// angegebene Kombination aus User, Datum und Gym.
+final trainingDetailsStateProvider = ChangeNotifierProvider.autoDispose
+    .family<TrainingDetailsProvider, TrainingDetailsRequest>((ref, request) {
+  final databaseService = ref.watch(databaseServiceProvider);
+  final syncService = ref.watch(syncServiceProvider);
+  final provider = TrainingDetailsProvider(databaseService, syncService);
+  provider.loadSessions(
+    userId: request.userId,
+    date: request.date,
+    gymId: request.gymId,
+  );
+  return provider;
+});

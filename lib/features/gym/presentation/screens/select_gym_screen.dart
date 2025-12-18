@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class SelectGymScreen extends StatefulWidget {
+class SelectGymScreen extends ConsumerStatefulWidget {
   const SelectGymScreen({super.key});
 
   @override
-  State<SelectGymScreen> createState() => _SelectGymScreenState();
+  ConsumerState<SelectGymScreen> createState() => _SelectGymScreenState();
 }
 
-class _SelectGymScreenState extends State<SelectGymScreen> {
+class _SelectGymScreenState extends ConsumerState<SelectGymScreen> {
   String? _claimingGymCode;
   String? _localErrorMessage;
 
@@ -34,7 +35,9 @@ class _SelectGymScreenState extends State<SelectGymScreen> {
       _claimingGymCode = code;
       _localErrorMessage = null;
     });
-    final result = await context.read<AuthProvider>().switchGym(code);
+    final AuthProvider auth =
+        ref.read(authControllerProvider);
+    final result = await auth.switchGym(code);
     if (!mounted) return;
     if (result.success) {
       Navigator.of(context)
@@ -57,7 +60,7 @@ class _SelectGymScreenState extends State<SelectGymScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+    final auth = ref.watch(authControllerProvider);
     final gyms = auth.gymCodes ?? [];
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);

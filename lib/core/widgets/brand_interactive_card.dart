@@ -73,12 +73,18 @@ class BrandInteractiveCard extends StatefulWidget {
   State<BrandInteractiveCard> createState() => _BrandInteractiveCardState();
 }
 
-class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
+class _BrandInteractiveCardState extends State<BrandInteractiveCard>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
     if (widget.uiLogEvent != null) {
       elogUi(widget.uiLogEvent!, {'label': widget.semanticLabel});
     }
@@ -98,6 +104,12 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
@@ -114,14 +126,30 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
         widget.restingBorderColor ?? onSurface.withOpacity(0.12);
     final activeBorder =
         widget.activeBorderColor ?? brandColor.withOpacity(0.45);
-    final borderColor =
-        Color.lerp(restingBorder, activeBorder, _isPressed ? 1 : 0)!;
     final canTap = widget.onTap != null;
-    final shadowBase =
-        (widget.shadowColor ?? theme.shadowColor).withOpacity(_isPressed ? 0.08 : 0.16);
+    final flicker = brandTheme?.flickerIntensity ?? 0.0;
+    final hasFlicker = flicker > 0;
+
+    final t = hasFlicker
+        ? (1 - flicker) + _controller.value * 2 * flicker
+        : 1.0;
+    final shadowOpacityBase = _isPressed ? 0.12 : 0.20;
+    final animatedShadowOpacity =
+        hasFlicker ? shadowOpacityBase * (0.7 + 0.3 * t) : shadowOpacityBase;
+    final shadowBase = (widget.shadowColor ?? theme.shadowColor)
+        .withOpacity(animatedShadowOpacity);
+
+    final blurBase = _isPressed ? 10.0 : 20.0;
+    final blurRadius = hasFlicker ? blurBase * (0.9 + 0.25 * t) : blurBase;
+
+    final baseBorderT = _isPressed ? 1.0 : 0.0;
+    final animatedBorderT =
+        hasFlicker ? (baseBorderT + 0.25 * flicker * _controller.value) : baseBorderT;
+    final borderColor =
+        Color.lerp(restingBorder, activeBorder, animatedBorderT.clamp(0.0, 1.0))!;
 
     final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -131,7 +159,7 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
             ? [
                 BoxShadow(
                   color: shadowBase,
-                  blurRadius: _isPressed ? 10 : 20,
+                  blurRadius: blurRadius,
                   offset: Offset(0, _isPressed ? 6 : 14),
                 ),
               ]
@@ -164,10 +192,18 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard> {
       ),
     );
 
+    final basePressedScale = _isPressed ? 0.985 : 1.0;
+    final flickerAmplitude =
+        hasFlicker ? (0.02 + 0.06 * flicker) : 0.0; // 2–8 % je nach Theme
+    final flickerScale = hasFlicker
+        ? 1.0 +
+            flickerAmplitude * ((_controller.value - 0.5) * 2) // -amp .. +amp
+        : 1.0;
+
     final animated = widget.enableScaleAnimation
         ? AnimatedScale(
-            scale: _isPressed ? 0.985 : 1,
-            duration: const Duration(milliseconds: 160),
+            scale: basePressedScale * flickerScale,
+            duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             child: card,
           )

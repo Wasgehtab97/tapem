@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/auth_providers.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
 import '../../../rank/domain/services/level_service.dart';
@@ -13,21 +13,22 @@ import '../../domain/models/muscle_group.dart';
 import '../widgets/muscle_group_radar_chart.dart';
 import '../../../../ui/muscles/muscle_group_display.dart';
 
-class MuscleGroupScreenNew extends StatefulWidget {
+class MuscleGroupScreenNew extends ConsumerStatefulWidget {
   const MuscleGroupScreenNew({Key? key}) : super(key: key);
 
   @override
-  State<MuscleGroupScreenNew> createState() => _MuscleGroupScreenNewState();
+  ConsumerState<MuscleGroupScreenNew> createState() =>
+      _MuscleGroupScreenNewState();
 }
 
-class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
+class _MuscleGroupScreenNewState extends ConsumerState<MuscleGroupScreenNew> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final muscleProv = context.read<MuscleGroupProvider>();
-      final auth = context.read<AuthProvider>();
-      final xpProv = context.read<XpProvider>();
+      final muscleProv = ref.read(muscleGroupProvider);
+      final auth = ref.read(authControllerProvider);
+      final xpProv = ref.read(xpProvider);
       muscleProv.loadGroups(context);
       final uid = auth.userId;
       final gym = auth.gymCode;
@@ -39,7 +40,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
 
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<MuscleGroupProvider>();
+    final prov = ref.watch(muscleGroupProvider);
 
     if (prov.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -51,7 +52,7 @@ class _MuscleGroupScreenNewState extends State<MuscleGroupScreenNew> {
       );
     }
 
-    final xpProv = context.watch<XpProvider>();
+    final xpProv = ref.watch(xpProvider);
     final groups = prov.groups;
 
     const orderedRegions = [

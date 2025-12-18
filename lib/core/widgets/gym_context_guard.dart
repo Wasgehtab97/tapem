@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/gym_context_state_adapter.dart';
 
-class GymContextGuard extends StatefulWidget {
+class GymContextGuard extends ConsumerStatefulWidget {
   const GymContextGuard({super.key, required this.child, this.loadingFallback});
 
   final Widget child;
   final Widget? loadingFallback;
 
   @override
-  State<GymContextGuard> createState() => _GymContextGuardState();
+  ConsumerState<GymContextGuard> createState() => _GymContextGuardState();
 }
 
-class _GymContextGuardState extends State<GymContextGuard> {
+class _GymContextGuardState extends ConsumerState<GymContextGuard> {
   bool _redirectScheduled = false;
 
   @override
   Widget build(BuildContext context) {
-    final gymContext = context.watch<GymContextStateAdapter>();
+    final gymContext = ref.watch(gymContextStateAdapterProvider);
     final status = gymContext.gymContextStatus;
     _maybeRedirect(status);
 

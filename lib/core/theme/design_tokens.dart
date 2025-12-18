@@ -287,6 +287,41 @@ class PresetBrandColors {
   static const Color citrusGradientStart = Color(0xFFFFF176);
   static const Color citrusGradientEnd = Color(0xFFFFB74D);
   static const Color citrusFocus = Color(0xFFFFC107);
+
+  /// Soft anime-inspired sakura & sky palette.
+  static const Color animePrimary = Color(0xFFFF8AC9); // sakura pink
+  static const Color animeSecondary = Color(0xFF80D8FF); // sky blue
+  static const Color animeGradientStart = Color(0xFFFFC1E3); // soft sakura
+  static const Color animeGradientEnd = Color(0xFF80D8FF); // clear sky
+  static const Color animeFocus = Color(0xFFFFE4F3); // light cherry blossom glow
+
+  /// Fire Nation-inspired reds and golds.
+  static const Color flamePrimary = Color(0xFFD32F2F); // deep crimson
+  static const Color flameSecondary = Color(0xFFFFB300); // royal gold
+  static const Color flameGradientStart = Color(0xFF8B0000); // dark fire
+  static const Color flameGradientEnd = Color(0xFFFF6F00); // glowing ember
+  static const Color flameFocus = Color(0xFFFFE08A); // soft golden aura
+
+  /// Water Tribe-inspired deep ocean blues.
+  static const Color waterPrimary = Color(0xFF0D47A1);
+  static const Color waterSecondary = Color(0xFF26C6DA);
+  static const Color waterGradientStart = Color(0xFF0B3954);
+  static const Color waterGradientEnd = Color(0xFF26C6DA);
+  static const Color waterFocus = Color(0xFF81D4FA);
+
+  /// Air Nomads-inspired warm sky hues.
+  static const Color airPrimary = Color(0xFFFFB74D);
+  static const Color airSecondary = Color(0xFFFFF59D);
+  static const Color airGradientStart = Color(0xFFFFCC80);
+  static const Color airGradientEnd = Color(0xFFFFF9C4);
+  static const Color airFocus = Color(0xFFFFF9C4);
+
+  /// Earth Kingdom-inspired deep greens.
+  static const Color earthPrimary = Color(0xFF33691E);
+  static const Color earthSecondary = Color(0xFF8BC34A);
+  static const Color earthGradientStart = Color(0xFF1B5E20);
+  static const Color earthGradientEnd = Color(0xFFA5D6A7);
+  static const Color earthFocus = Color(0xFFC5E1A5);
 }
 
 /// Standard spacing values based on an 8px grid.

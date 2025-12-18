@@ -576,12 +576,14 @@ class WorkoutDayController extends ChangeNotifier
     required String userId,
     required String gymId,
   }) {
-    final keysToClose = _sessions.values
+    final entriesToClose = _sessions.values
         .where((e) => e.userId == userId && e.gymId == gymId)
-        .map((e) => e.key)
         .toList();
-    for (final key in keysToClose) {
-      closeSession(key);
+    for (final entry in entriesToClose) {
+      // Drafts explizit verwerfen, damit beim Abbruch eines Plans
+      // kein alter Zwischenstand in neue Sessions übernommen wird.
+      entry.provider.discardDraftForCancellation();
+      closeSession(entry.key);
     }
     clearPlanContextForDay(gymId: gymId);
   }

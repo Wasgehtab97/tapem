@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/auth_providers.dart';
 
 Future<void> showUsernameDialog(BuildContext context) async {
   final loc = AppLocalizations.of(context)!;
   final ctr = TextEditingController();
-  final auth = context.read<AuthProvider>();
+  final container = ProviderScope.containerOf(context, listen: false);
+  final AuthProvider auth = container.read(authControllerProvider);
   String? error;
   await showDialog(
     context: context,

@@ -1,25 +1,26 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 import 'package:tapem/features/gym/domain/models/gym_code_validation_result.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 
-class RegistrationForm extends StatefulWidget {
+class RegistrationForm extends ConsumerStatefulWidget {
   final ValidateGymCode? gymValidator;
 
   const RegistrationForm({Key? key, this.gymValidator}) : super(key: key);
 
   @override
-  State<RegistrationForm> createState() => _RegistrationFormState();
+  ConsumerState<RegistrationForm> createState() => _RegistrationFormState();
 }
 
-class _RegistrationFormState extends State<RegistrationForm> {
+class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   final _formKey = GlobalKey<FormState>();
   final _gymController = TextEditingController();
   final _emailController = TextEditingController();
@@ -82,7 +83,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
       }
 
       // Proceed with registration
-      final authProv = context.read<AuthProvider>();
+      final authProv = ref.read(authControllerProvider);
       final loc = AppLocalizations.of(context)!;
       final result = await authProv.register(email, password, gymCode);
       if (!mounted) return;
@@ -177,7 +178,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
 
   @override
   Widget build(BuildContext context) {
-    final authProv = context.watch<AuthProvider>();
+    final authProv = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
 
     return Form(

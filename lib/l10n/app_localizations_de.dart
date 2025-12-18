@@ -785,6 +785,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemeCitrusPunch => 'Zitrus-Punch';
 
   @override
+  String get settingsThemeCyberpunkNeon => 'Cyberpunk Neon';
+
+  @override
+  String get settingsThemeAnimeBloom => 'Anime Bloom';
+
+  @override
+  String get settingsThemeFlameInferno => 'Feuernation';
+
+  @override
+  String get settingsThemeWaterTribe => 'Wasserstamm';
+
+  @override
+  String get settingsThemeAirNomads => 'Luftnomaden';
+
+  @override
+  String get settingsThemeEarthKingdom => 'Erdkönigreich';
+
+  @override
   String get settingsThemeSaveError => 'Theme konnte nicht gespeichert werden.';
 
   @override

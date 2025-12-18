@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
 import 'package:tapem/features/auth/presentation/widgets/animated_tab_indicator.dart';
@@ -9,14 +9,14 @@ import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
 import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
 
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen>
+class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
@@ -34,7 +34,7 @@ class _AuthScreenState extends State<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authProv = context.watch<AuthProvider>();
+    final authProv = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
-import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/search_and_filters.dart';
 import 'package:tapem/ui/devices/device_card.dart';
@@ -19,7 +18,7 @@ import 'package:tapem/ui/common/alphabet_scrollbar.dart';
 
 import '../../../device/presentation/models/workout_device_selection.dart';
 
-class GymScreen extends StatefulWidget {
+class GymScreen extends ConsumerStatefulWidget {
   const GymScreen({
     super.key,
     this.onSelect,
@@ -34,10 +33,10 @@ class GymScreen extends StatefulWidget {
   final List<Widget>? actions;
 
   @override
-  State<GymScreen> createState() => _GymScreenState();
+  ConsumerState<GymScreen> createState() => _GymScreenState();
 }
 
-class _GymScreenState extends State<GymScreen>
+class _GymScreenState extends ConsumerState<GymScreen>
     with AutomaticKeepAliveClientMixin {
   String _query = '';
   Set<String> _muscles = {};
@@ -61,7 +60,7 @@ class _GymScreenState extends State<GymScreen>
       viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final groups = context.read<MuscleGroupProvider>();
+      final groups = ref.read(muscleGroupProvider);
       groups.loadGroups(context);
     });
   }
@@ -118,8 +117,8 @@ class _GymScreenState extends State<GymScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final loc = AppLocalizations.of(context)!;
-    final auth = context.read<AuthProvider>();
-    final gymProv = context.watch<GymProvider>();
+    final auth = ref.read(authControllerProvider);
+    final gymProv = ref.watch(gymProvider);
     final gymId = auth.gymCode ?? '';
     final theme = Theme.of(context);
     final brandColor =
@@ -258,16 +257,16 @@ class _GymScreenState extends State<GymScreen>
                                               },
                                             );
                                           } else {
-                                            final timer = context
-                                                .read<WorkoutSessionDurationService>();
+                                            final timer = ref
+                                                .read(workoutSessionDurationServiceProvider);
                                             if (timer.isRunning) {
                                               final authProv =
-                                                  context.read<AuthProvider>();
+                                                  ref.read(authControllerProvider);
                                               final userId = authProv.userId;
                                               if (userId != null) {
                                                 try {
-                                                  final controller = context.read<
-                                                      WorkoutDayController>();
+                                                  final controller = ref.read(
+                                                      workoutDayControllerProvider);
                                                   controller.addOrFocusSession(
                                                     gymId: gymId,
                                                     deviceId: idStr,

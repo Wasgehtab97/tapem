@@ -1,9 +1,8 @@
 // lib/features/home/presentation/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tapem/core/providers/auth_provider.dart';
-import 'package:tapem/core/providers/gym_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
@@ -19,39 +18,38 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart'
+    as wsds;
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/app_router.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
   const HomeScreen({Key? key, this.initialIndex = 0}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
 
   List<_TabInfo> _buildTabs(BuildContext context) {
-    final gymProv = context.watch<GymProvider>();
+    final gymProv = ref.watch(gymProvider);
     final gymId = gymProv.currentGymId;
     final devices = gymProv.devices.where((d) => !d.isMulti).toList();
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
-    final timerService = context.watch<WorkoutSessionDurationService>();
-
-    WorkoutDayController? workoutController;
-    try {
-      workoutController = context.watch<WorkoutDayController>();
-    } catch (_) {
-      workoutController = null;
-    }
+    final auth = ref.watch(authControllerProvider);
+    final wsds.WorkoutSessionDurationService timerService =
+        ref.watch(workoutSessionDurationServiceProvider);
+    final WorkoutDayController workoutController =
+        ref.read(workoutDayControllerProvider);
 
     WorkoutDaySession? activeWorkoutSession;
-    if (workoutController != null && auth.userId != null) {
+    if (auth.userId != null) {
       final activeGymId = auth.gymCode ?? gymId;
       if (activeGymId.isNotEmpty) {
         final sessions = workoutController.sessionsFor(
@@ -131,9 +129,12 @@ class _HomeScreenState extends State<HomeScreen> {
     // geöffnet. Andernfalls wird ein "leerer" Workout-Tag mit einem
     // Fallback-Gerät gestartet (sofern vorhanden).
     if (timerService.isRunning) {
+      // Wenn eine aktive Session existiert, diese im Workout-Tab öffnen.
+      // Ansonsten eine komplett leere Workout-Seite anzeigen, bis der Nutzer
+      // über Gym/NFC eine Übung auswählt.
       Widget workoutPage;
       if (activeWorkoutSession != null) {
-        final planContext = workoutController?.getPlanContext(
+        final planContext = workoutController.getPlanContext(
           gymId: activeWorkoutSession.gymId,
         );
         workoutPage = WorkoutDayScreen(
@@ -143,14 +144,6 @@ class _HomeScreenState extends State<HomeScreen> {
           exerciseId: activeWorkoutSession.exerciseId,
           planId: planContext?.$1,
           planName: planContext?.$2,
-        );
-      } else if ((auth.gymCode ?? gymId).isNotEmpty && deviceId.isNotEmpty) {
-        final fallbackGymId = auth.gymCode ?? gymId;
-        workoutPage = WorkoutDayScreen(
-          key: const PageStorageKey('Workout'),
-          gymId: fallbackGymId,
-          deviceId: deviceId,
-          exerciseId: deviceId,
         );
       } else {
         workoutPage = const _EmptyWorkoutScreen();
@@ -198,9 +191,9 @@ class _HomeScreenState extends State<HomeScreen> {
     debugPrint('[Home] initState initialIndex=${widget.initialIndex}');
     // Nach Login Gym laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProv = context.read<AuthProvider>();
+      final authProv = ref.read(authControllerProvider);
       debugPrint('[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}');
-      final gymProv = context.read<GymProvider>();
+      final gymProv = ref.read(gymProvider);
       final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
         gymProv.loadGymData(code);
@@ -213,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
+    final isAdmin = ref.watch(authControllerProvider.select((a) => a.isAdmin));
     final allTabs = _buildTabs(context);
     const restrictedTabIds = {
       _HomeTabId.gym,
@@ -266,8 +259,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppBarTitle(BuildContext context, String currentLabel) {
     final loc = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
-    final gymName = context.select<GymProvider, String?>((g) => g.gym?.name);
+    final auth = ref.watch(authControllerProvider);
+    final gymName = ref.watch(gymProvider.select((g) => g.gym?.name));
 
     switch (_currentIndex) {
       case 0:

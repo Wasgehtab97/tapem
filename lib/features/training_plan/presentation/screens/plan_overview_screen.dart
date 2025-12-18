@@ -7,6 +7,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/app_error_card.dart';
 import 'package:tapem/core/widgets/app_loading_indicator.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 
@@ -68,6 +69,7 @@ class PlanOverviewScreen extends ConsumerWidget {
                   name: plan.name,
                   exerciseCount: plan.exercises.length,
                   isCoachPlan: isCoachPlan,
+                  colorIndex: plan.colorIndex,
                   onTap: () {
                     Navigator.pushNamed(
                       context,
@@ -139,12 +141,14 @@ class _PlanCard extends StatelessWidget {
     required this.name,
     required this.exerciseCount,
     this.isCoachPlan = false,
+    required this.colorIndex,
     required this.onTap,
   });
 
   final String name;
   final int exerciseCount;
   final bool isCoachPlan;
+  final int colorIndex;
   final VoidCallback onTap;
 
   @override
@@ -154,7 +158,8 @@ class _PlanCard extends StatelessWidget {
     final radius =
         (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
     final onSurface = theme.colorScheme.onSurface;
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final brandColor =
+        PlanColorPalette.colorForIndex(colorIndex, theme);
 
     return BrandInteractiveCard(
       onTap: onTap,

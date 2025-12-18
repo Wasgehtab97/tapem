@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart' as legacy_provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
-import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -58,10 +58,8 @@ class _PowerliftingLeaderboardScreenState
   }
 
   Future<void> _refresh() async {
-    final auth = legacy_provider.Provider.of<AuthProvider>(
-      context,
-      listen: false,
-    );
+    final auth = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider);
     final gymId = auth.gymCode ?? '';
     final currentUserId = auth.userId;
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart'
+    show OverlayNumericKeypadController, overlayNumericKeypadControllerProvider;
 import 'package:tapem/l10n/app_localizations.dart';
 
-import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/gym_provider.dart';
+import '../../../../core/providers/auth_providers.dart';
 
 class ChallengeAdminScreen extends StatefulWidget {
   const ChallengeAdminScreen({Key? key}) : super(key: key);
@@ -60,7 +60,9 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
       return;
     }
 
-    final gymId = context.read<AuthProvider>().gymCode;
+    final gymId = riverpod.ProviderScope.containerOf(context, listen: false)
+        .read(authControllerProvider)
+        .gymCode;
     if (gymId == null) {
       setState(() => _error = loc.invalidGymSelectionError);
       return;
@@ -125,7 +127,8 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final devices = context.watch<GymProvider>().devices;
+    final container = riverpod.ProviderScope.containerOf(context);
+    final devices = container.read(gymProvider).devices;
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(loc.challengeAdminTitle)),
@@ -149,9 +152,13 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               keyboardType: TextInputType.none,
               readOnly: true,
               autofocus: false,
-              onTap: () => context
-                  .read<OverlayNumericKeypadController>()
-                  .openFor(_setCtrl, allowDecimal: false),
+              onTap: () {
+                final keypad = riverpod.ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(overlayNumericKeypadControllerProvider);
+                keypad.openFor(_setCtrl, allowDecimal: false);
+              },
               decoration: InputDecoration(labelText: loc.challengeAdminFieldRequiredSets),
             ),
             const SizedBox(height: 8),
@@ -160,9 +167,13 @@ class _ChallengeAdminScreenState extends State<ChallengeAdminScreen> {
               keyboardType: TextInputType.none,
               readOnly: true,
               autofocus: false,
-              onTap: () => context
-                  .read<OverlayNumericKeypadController>()
-                  .openFor(_xpCtrl, allowDecimal: false),
+              onTap: () {
+                final keypad = riverpod.ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(overlayNumericKeypadControllerProvider);
+                keypad.openFor(_xpCtrl, allowDecimal: false);
+              },
               decoration: InputDecoration(labelText: loc.challengeAdminFieldXpReward),
             ),
             const SizedBox(height: 8),
