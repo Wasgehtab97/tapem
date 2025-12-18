@@ -2,8 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
-import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
-import 'package:tapem/features/gym/domain/models/gym_config.dart';
+import 'package:tapem/features/gym/domain/exceptions/gym_code_exceptions.dart';
 
 import '../../helpers/fake_firestore.dart';
 import '../../helpers/fakes.dart';
@@ -12,20 +11,16 @@ void main() {
   group('FirestoreAuthSource', () {
     late FakeFirebaseAuth auth;
     late FakeFirebaseFirestore firestore;
-    late _FakeGymSource gymSource;
     late FirestoreAuthSource source;
 
     setUp(() {
       auth = FakeFirebaseAuth();
       firestore = FakeFirebaseFirestore();
-      gymSource = _FakeGymSource();
       source = FirestoreAuthSource(
         auth: auth,
         firestore: firestore,
         changeUsername: _changeUsername,
-        gymSource: gymSource,
       );
-      gymSource.reset();
     });
 
     test('login fetches user document and returns dto', () async {
@@ -55,9 +50,14 @@ void main() {
     });
 
     test('register creates Firestore document and gym membership with member number', () async {
-      gymSource.gyms['join-code'] = GymConfig(id: 'gym-42', code: 'join-code', name: 'Gym');
+      await _seedGymCode(
+        firestore: firestore,
+        gymId: 'gym-42',
+        gymName: 'Gym',
+        code: 'JOIN42',
+      );
 
-      final dto = await source.register('new@example.com', 'secret', 'join-code');
+      final dto = await source.register('new@example.com', 'secret', 'join42');
 
       final userDoc = await firestore.collection('users').doc(dto.userId).get();
       expect(userDoc.exists, isTrue);
@@ -77,10 +77,15 @@ void main() {
     });
 
     test('register increments member number sequentially for same gym', () async {
-      gymSource.gyms['join-code'] = GymConfig(id: 'gym-42', code: 'join-code', name: 'Gym');
+      await _seedGymCode(
+        firestore: firestore,
+        gymId: 'gym-42',
+        gymName: 'Gym',
+        code: 'JOIN42',
+      );
 
-      final first = await source.register('one@example.com', 'secret', 'join-code');
-      final second = await source.register('two@example.com', 'secret', 'join-code');
+      final first = await source.register('one@example.com', 'secret', 'JOIN42');
+      final second = await source.register('two@example.com', 'secret', 'JOIN42');
 
       final firstMembership = await firestore
           .collection('gyms')
@@ -104,8 +109,8 @@ void main() {
 
     test('register throws when gym code not found', () {
       expect(
-        () => source.register('user@example.com', 'secret', 'unknown'),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Gym code not found'))),
+        () => source.register('user@example.com', 'secret', 'UNKNWN'),
+        throwsA(isA<GymCodeNotFoundException>()),
       );
     });
 
@@ -164,7 +169,6 @@ void main() {
         auth: auth,
         firestore: firestore,
         changeUsername: runner,
-        gymSource: gymSource,
       );
 
       await testSource.setUsername('uid-1', 'name');
@@ -184,7 +188,6 @@ void main() {
         auth: auth,
         firestore: firestore,
         changeUsername: runner,
-        gymSource: gymSource,
       );
 
       expect(
@@ -239,15 +242,29 @@ Future<void> _changeUsername({
   await users.doc(uid).update({'username': newUsername});
 }
 
-class _FakeGymSource extends FirestoreGymSource {
-  _FakeGymSource() : super(firestore: FakeFirebaseFirestore());
+Future<void> _seedGymCode({
+  required FakeFirebaseFirestore firestore,
+  required String gymId,
+  required String gymName,
+  required String code,
+  bool isActive = true,
+  DateTime? createdAt,
+  DateTime? expiresAt,
+}) async {
+  final now = DateTime.now();
+  final created = createdAt ?? now.subtract(const Duration(days: 1));
+  final expires = expiresAt ?? now.add(const Duration(days: 30));
 
-  final Map<String, GymConfig> gyms = <String, GymConfig>{};
+  await firestore.seedDocument('gyms/$gymId', {
+    'name': gymName,
+  });
 
-  void reset() {
-    gyms.clear();
-  }
-
-  @override
-  Future<GymConfig?> getGymByCode(String code) async => gyms[code];
+  await firestore.seedDocument('gym_codes/$gymId/codes/code-1', {
+    'code': code.toUpperCase(),
+    'gymId': gymId,
+    'createdAt': Timestamp.fromDate(created),
+    'expiresAt': Timestamp.fromDate(expires),
+    'isActive': isActive,
+    'createdBy': 'test',
+  });
 }

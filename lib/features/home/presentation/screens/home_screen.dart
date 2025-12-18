@@ -23,6 +23,7 @@ import 'package:tapem/core/services/workout_session_duration_service.dart'
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
+import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/app_router.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -144,6 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           exerciseId: activeWorkoutSession.exerciseId,
           planId: planContext?.$1,
           planName: planContext?.$2,
+          sessionBuilder: buildWorkoutDayTableSessionCard,
         );
       } else {
         workoutPage = const _EmptyWorkoutScreen();

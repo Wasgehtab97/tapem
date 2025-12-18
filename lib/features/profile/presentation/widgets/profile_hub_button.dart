@@ -35,7 +35,6 @@ class ProfileHubButton extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final loc = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

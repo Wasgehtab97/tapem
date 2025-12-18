@@ -44,7 +44,8 @@ class ChatUnreadNotifier extends StreamNotifier<ChatUnreadState> {
     }
     final updated = Map<String, int>.from(currentValue.unreadByFriend)
       ..remove(friendUid);
-    final newTotal = updated.values.fold<int>(0, (sum, value) => sum + value);
+    final newTotal =
+        updated.values.fold<int>(0, (total, value) => total + value);
     final updatedState = currentValue.copyWith(
       unreadByFriend: updated,
       totalUnread: newTotal,

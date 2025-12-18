@@ -3,7 +3,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../lib/firebase_options_dev.dart';
+import 'package:tapem/firebase_options_dev.dart';
 
 Future<void> main() async {
   print('🚀 Adding Stahlwerk_dev code to Firebase...\n');

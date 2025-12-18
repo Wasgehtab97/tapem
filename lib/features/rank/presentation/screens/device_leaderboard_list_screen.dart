@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/gym_provider.dart';
 import 'package:tapem/app_router.dart';
 

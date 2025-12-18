@@ -14,6 +14,7 @@ import 'package:tapem/features/training_details/data/sources/firestore_session_s
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
+import 'package:tapem/app_router.dart';
 
 class StorySessionHighlightsListener extends ConsumerStatefulWidget {
   final Widget child;

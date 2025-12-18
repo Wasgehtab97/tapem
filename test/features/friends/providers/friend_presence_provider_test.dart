@@ -40,6 +40,7 @@ AuthViewState _authState(String gymId, String userId) {
     isLoading: false,
     isLoggedIn: true,
     isAdmin: false,
+    isCoach: false,
     gymContextStatus: GymContextStatus.ready,
     gymCode: gymId,
     userId: userId,

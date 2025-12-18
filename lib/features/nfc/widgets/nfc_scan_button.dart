@@ -14,7 +14,6 @@ import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/nfc/providers/nfc_providers.dart';
-import 'package:tapem/services/membership_service.dart';
 
 class NfcScanButton extends ConsumerWidget {
   const NfcScanButton({

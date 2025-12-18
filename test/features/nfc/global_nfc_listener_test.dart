@@ -23,6 +23,8 @@ class _FakeRoute extends Fake implements Route<dynamic> {}
 
 class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   String? _gymCode;
+  bool _coachEnabled = false;
+  final String _role = 'member';
 
   auth.GymContextStatus get _resolvedStatus {
     if (!isLoggedIn) {
@@ -73,6 +75,12 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   bool get isAdmin => false;
 
   @override
+  bool get isMember => _role == 'member';
+
+  @override
+  bool get isCoach => _coachEnabled || _role == 'coach';
+
+  @override
   DateTime? get createdAt => null;
 
   @override
@@ -118,6 +126,9 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   Future<void> reloadCurrentUser() async {}
 
   @override
+  Future<void> refreshClaims() async {}
+
+  @override
   Future<bool> setUsername(String username) async => true;
 
   @override
@@ -143,6 +154,12 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
 
   @override
   Future<auth.GymSwitchResult> selectGym(String code) => switchGym(code);
+
+  @override
+  Future<void> setCoachEnabled(bool value) async {
+    _coachEnabled = value;
+    notifyListeners();
+  }
 }
 
 void main() {

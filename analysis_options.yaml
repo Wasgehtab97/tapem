@@ -7,6 +7,7 @@ analyzer:
   exclude:
     - .dart_tool/**
     - build/**
+    - backup/**
     - lib/generated_plugin_registrant.dart
     - lib/features/security/**
     - "**/*.g.dart"

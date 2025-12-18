@@ -322,12 +322,6 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
     final auth = ref.watch(authViewStateProvider);
     final currentGymId = auth.gymCode ?? '';
-    final workoutController = ref.watch(workoutDayControllerProvider);
-    final activePlanContext = currentGymId.isNotEmpty
-        ? workoutController.getPlanContext(gymId: currentGymId)
-        : null;
-    final isTodayPlanActive =
-        planId != null && activePlanContext != null && activePlanContext.$1 == planId;
 
     // Helper map for device names
     final deviceMap = {
@@ -717,7 +711,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       trainingPlanStatsForOwnerProvider(
                         PlanStatsOwnerKey(
                           userId: ownerUserId,
-                          planId: planId!,
+                          planId: planId,
                         ),
                       ).future,
                     );
@@ -754,9 +748,6 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                         final userId = authState.userId;
                         final gymId = authState.gymCode ?? '';
                         if (userId == null || gymId.isEmpty) return;
-
-                        final controller =
-                            ref.read(workoutDayControllerProvider);
                         // Trainingsstart/-stopp erfolgt ausschließlich über den
                         // „Training starten“-Button auf der Profilseite.
                         // Diese Schaltfläche dient hier nur der Navigation

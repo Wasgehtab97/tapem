@@ -107,7 +107,7 @@ class FirestoreCoachingSource {
     required String clientId,
   }) async {
     final now = DateTime.now();
-    final relationId = '${gymId}_$coachId\_$clientId';
+    final relationId = '${gymId}_${coachId}_$clientId';
     // ignore: avoid_print
     print(
       '[CoachingSource] requestCoaching gymId=$gymId '

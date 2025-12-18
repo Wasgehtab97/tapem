@@ -23,7 +23,7 @@ Ziele: weniger Race Conditions, nachvollziehbarer Start der App.
 
 3. Richtiges Offline- & Sync-Konzept
 
-Weg von „nur Drafts“ hin zu klar definiertem Offline-Verhalten:
+Weg von „nur Drafts“ hin zu klar definiertem Offline-Verhalten
 
 Was geht offline?
 

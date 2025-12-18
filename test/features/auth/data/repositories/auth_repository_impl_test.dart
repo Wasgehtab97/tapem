@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/features/auth/data/dtos/user_data_dto.dart';
 import 'package:tapem/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:tapem/features/auth/data/sources/firestore_auth_source.dart';
-import 'package:tapem/features/gym/data/sources/firestore_gym_source.dart';
 import 'package:tapem/features/auth/domain/models/user_data.dart';
 
 import '../../helpers/fake_firestore.dart';
@@ -128,7 +127,6 @@ class _StubFirestoreAuthSource extends FirestoreAuthSource {
           auth: FakeFirebaseAuth(),
           firestore: FakeFirebaseFirestore(),
           changeUsername: ({required firestore, required uid, required newUsername}) async {},
-          gymSource: _FakeGymSource(),
         );
 
   Future<UserDataDto> Function(String email, String password)? loginHandler;
@@ -222,8 +220,4 @@ class _StubFirestoreAuthSource extends FirestoreAuthSource {
     }
     return super.sendPasswordResetEmail(email);
   }
-}
-
-class _FakeGymSource extends FirestoreGymSource {
-  _FakeGymSource() : super(firestore: FakeFirebaseFirestore());
 }

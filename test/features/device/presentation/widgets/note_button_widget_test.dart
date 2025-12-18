@@ -39,7 +39,7 @@ void main() {
     when(() => provider.note).thenReturn('initial');
 
     await tester.pumpWidget(
-      buildApp(const NoteButtonWidget(deviceId: 'd1')),
+      buildApp(NoteButtonWidget(deviceId: 'd1', provider: provider)),
     );
     await tester.pumpAndSettle();
 
@@ -57,7 +57,7 @@ void main() {
     when(() => provider.note).thenReturn('existing');
 
     await tester.pumpWidget(
-      buildApp(const NoteButtonWidget(deviceId: 'd1')),
+      buildApp(NoteButtonWidget(deviceId: 'd1', provider: provider)),
     );
     await tester.pumpAndSettle();
 
@@ -74,7 +74,7 @@ void main() {
     when(() => provider.note).thenReturn('');
 
     await tester.pumpWidget(
-      buildApp(const NoteButtonWidget(deviceId: 'device')),
+      buildApp(NoteButtonWidget(deviceId: 'device', provider: provider)),
     );
     await tester.pumpAndSettle();
 
@@ -89,7 +89,7 @@ void main() {
     when(() => provider.note).thenReturn('hello');
 
     await tester.pumpWidget(
-      buildApp(const NoteButtonWidget(deviceId: 'device')),
+      buildApp(NoteButtonWidget(deviceId: 'device', provider: provider)),
     );
     await tester.pumpAndSettle();
 

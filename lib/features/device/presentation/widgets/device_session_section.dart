@@ -1056,7 +1056,6 @@ class _SetListFieldHeader extends StatelessWidget {
     final double indexBadgeWidth = dense ? 28.0 : 32.0;
     final double indexBadgeGap = dense ? 6.0 : 9.0;
     final double leadingWidth = indexBadgeWidth + indexBadgeGap;
-    final double colGap = dense ? 4.0 : 6.0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -1219,9 +1218,8 @@ class _StylishActionsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = theme.extension<AppBrandTheme>()?.outline ?? 
+    final brandColor = theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.secondary;
-    final loc = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(8),

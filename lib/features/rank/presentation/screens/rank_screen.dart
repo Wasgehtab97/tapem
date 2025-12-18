@@ -56,22 +56,22 @@ class _RankScreenState extends ConsumerState<RankScreen>
         gradientColors.length > 1 ? gradientColors.last : gradientColors.first;
     final background = theme.scaffoldBackgroundColor;
 
-    Color _blend(Color c, double t) =>
+    Color blend(Color c, double t) =>
         Color.lerp(c, background, t) ?? c;
 
     // Erfahrung (XP): stärkerer Brand-Fokus mit Verlauf von primary → secondary.
-    final experienceStart = _blend(primaryTone, 0.12);
-    final experienceEnd = _blend(secondaryTone, 0.70);
+    final experienceStart = blend(primaryTone, 0.12);
+    final experienceEnd = blend(secondaryTone, 0.70);
 
     // Geräte-Level: technischer, kühler Look – stärkere Betonung des sekundären Tons.
-    final deviceStart = _blend(secondaryTone, 0.10);
-    final deviceEnd = _blend(secondaryTone, 0.75);
+    final deviceStart = blend(secondaryTone, 0.10);
+    final deviceEnd = blend(secondaryTone, 0.75);
 
     // Muskel-Level: warmes, energetisches Mid-Mix aus primary/secondary.
     final midTone =
         Color.lerp(primaryTone, secondaryTone, 0.5) ?? primaryTone;
-    final muscleStart = _blend(midTone, 0.10);
-    final muscleEnd = _blend(midTone, 0.78);
+    final muscleStart = blend(midTone, 0.10);
+    final muscleEnd = blend(midTone, 0.78);
 
     // Powerlifting: deutlich kühlerer, tieferer Verlauf, der sich klarer
     // von "Erfahrung" absetzt, aber im Brand-Spektrum bleibt.
@@ -79,8 +79,8 @@ class _RankScreenState extends ConsumerState<RankScreen>
         Color.lerp(primaryTone, background, 0.35) ?? primaryTone;
     final powerAccent =
         Color.lerp(secondaryTone, background, 0.15) ?? secondaryTone;
-    final powerStart = _blend(powerBase, 0.42);
-    final powerEnd = _blend(powerAccent, 0.16);
+    final powerStart = blend(powerBase, 0.42);
+    final powerEnd = blend(powerAccent, 0.16);
 
     return Scaffold(
       appBar: AppBar(

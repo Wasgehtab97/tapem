@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/report/domain/models/device_usage_stat.dart';
 import 'package:tapem/core/providers/report_provider.dart';
@@ -35,7 +34,6 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
 
     if (widget.state == ReportState.loading) {
       return const SizedBox(

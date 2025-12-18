@@ -587,7 +587,7 @@ class _ClientAnalyticsOverview extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final d = date.toLocal();
-    final two = (int v) => v.toString().padLeft(2, '0');
+    String two(int v) => v.toString().padLeft(2, '0');
     return '${two(d.day)}.${two(d.month)}.${d.year}';
   }
 }

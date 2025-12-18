@@ -17,14 +17,18 @@ class FirestoreAuthSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final ChangeUsernameRunner _changeUsername;
+  final GymCodeService _gymCodeService;
 
   FirestoreAuthSource({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     ChangeUsernameRunner? changeUsername,
+    GymCodeService? gymCodeService,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
-        _changeUsername = changeUsername ?? changeUsernameTransaction;
+        _changeUsername = changeUsername ?? changeUsernameTransaction,
+        _gymCodeService = gymCodeService ??
+            GymCodeService(firestore: firestore ?? FirebaseFirestore.instance);
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -50,8 +54,7 @@ class FirestoreAuthSource {
 
     // Validate gym code using new rotating code system
     // This will throw GymCodeExpiredException, GymCodeNotFoundException, etc.
-    final gymCodeService = GymCodeService();
-    final validation = await gymCodeService.validateCode(initialGymCode);
+    final validation = await _gymCodeService.validateCode(initialGymCode);
     final gymId = validation.gymId;
 
     final now = DateTime.now();

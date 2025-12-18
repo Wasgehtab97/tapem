@@ -194,7 +194,7 @@ class _MembersTableContentState extends State<_MembersTableContent> {
 
         final totalMembers = widget.members.length;
         final totalTrainingDays =
-            counts.values.fold<int>(0, (sum, value) => sum + value);
+            counts.values.fold<int>(0, (total, value) => total + value);
         final activeMembers =
             counts.values.where((value) => value > 0).length;
         final inactiveMembers = totalMembers - activeMembers;

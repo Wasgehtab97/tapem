@@ -4,13 +4,16 @@ import 'package:tapem/core/providers/settings_provider.dart';
 class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   FakeSettingsProvider({
     bool creatineEnabled = false,
+    bool coachingProfileEnabled = false,
     String? gender,
     double? bodyWeightKg,
   })  : _creatineEnabled = creatineEnabled,
+        _coachingProfileEnabled = coachingProfileEnabled,
         _gender = gender,
         _bodyWeightKg = bodyWeightKg;
 
   bool _creatineEnabled;
+  bool _coachingProfileEnabled;
   String? _gender;
   double? _bodyWeightKg;
   final bool _isLoading = false;
@@ -26,6 +29,9 @@ class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   bool get creatineEnabled => _creatineEnabled;
 
   @override
+  bool get coachingProfileEnabled => _coachingProfileEnabled;
+
+  @override
   String? get gender => _gender;
 
   @override
@@ -37,6 +43,12 @@ class FakeSettingsProvider extends ChangeNotifier implements SettingsProvider {
   @override
   Future<void> setCreatineEnabled(bool value) async {
     _creatineEnabled = value;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setCoachingProfileEnabled(bool value) async {
+    _coachingProfileEnabled = value;
     notifyListeners();
   }
 

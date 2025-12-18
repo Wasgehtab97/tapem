@@ -6,6 +6,7 @@ import 'package:tapem/features/admin/presentation/screens/admin_devices_screen.d
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
+import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
@@ -159,6 +160,7 @@ class AppRouter {
             exerciseId: exerciseId,
             planId: planId,
             planName: planName,
+            sessionBuilder: buildWorkoutDayTableSessionCard,
           ),
         );
 

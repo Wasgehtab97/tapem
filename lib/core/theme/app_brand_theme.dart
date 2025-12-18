@@ -46,6 +46,11 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
   /// [BrandPrimaryButton]. `0` disables any animation.
   final double flickerIntensity;
 
+  /// Whether the current brand theme is the "flame" preset.
+  ///
+  /// Used by widgets that opt into flame-specific visuals (e.g. `FlameBadge`).
+  final bool isFlame;
+
   const AppBrandTheme({
     required this.gradient,
     required this.radius,
@@ -66,6 +71,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     required this.outlineDisabledOpacity,
     this.surfaceColor,
     this.flickerIntensity = 0.0,
+    this.isFlame = false,
   });
 
   @override
@@ -89,6 +95,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     double? outlineDisabledOpacity,
     Color? surfaceColor,
     double? flickerIntensity,
+    bool? isFlame,
   }) {
     return AppBrandTheme(
       gradient: gradient ?? this.gradient,
@@ -111,6 +118,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
           outlineDisabledOpacity ?? this.outlineDisabledOpacity,
       surfaceColor: surfaceColor ?? this.surfaceColor,
       flickerIntensity: flickerIntensity ?? this.flickerIntensity,
+      isFlame: isFlame ?? this.isFlame,
     );
   }
 
@@ -171,6 +179,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       flickerIntensity:
           lerpDouble(flickerIntensity, other.flickerIntensity, t) ??
               flickerIntensity,
+      isFlame: t < 0.5 ? isFlame : other.isFlame,
     );
   }
 
@@ -455,6 +464,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       outlineDisabledOpacity: 0.38,
       surfaceColor: surface,
       flickerIntensity: 0.35,
+      isFlame: true,
     );
   }
 

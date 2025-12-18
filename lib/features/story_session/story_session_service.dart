@@ -603,20 +603,16 @@ class StorySessionService {
       // Fallback: Wenn keine explizite Startzeit vorhanden ist,
       // verwenden wir den Session-Timestamp als Approximation.
       final startTime = session.startTime ?? session.timestamp;
-      if (startTime != null) {
-        final currentEarliest = earliestStart;
-        if (currentEarliest == null || startTime.isBefore(currentEarliest)) {
-          earliestStart = startTime;
-        }
+      final currentEarliest = earliestStart;
+      if (currentEarliest == null || startTime.isBefore(currentEarliest)) {
+        earliestStart = startTime;
       }
       // Fallback: Wenn keine explizite Endzeit vorhanden ist,
       // verwenden wir ebenfalls den Session-Timestamp.
       final endTime = session.endTime ?? session.timestamp;
-      if (endTime != null) {
-        final currentLatest = latestEnd;
-        if (currentLatest == null || endTime.isAfter(currentLatest)) {
-          latestEnd = endTime;
-        }
+      final currentLatest = latestEnd;
+      if (currentLatest == null || endTime.isAfter(currentLatest)) {
+        latestEnd = endTime;
       }
 
       final deviceId = session.deviceId;

@@ -812,17 +812,6 @@ String _formatPrimaryScore(
   return loc.deviceLeaderboardRelativeScore(ratio.toStringAsFixed(2));
 }
 
-LeaderboardGenderFilter _resolveInitialGenderFilter(String? gender) {
-  switch (gender) {
-    case 'm':
-      return LeaderboardGenderFilter.male;
-    case 'w':
-      return LeaderboardGenderFilter.female;
-    default:
-      return LeaderboardGenderFilter.all;
-  }
-}
-
 String _resolveLeaderboardTitle(
   AppLocalizations loc,
   String device,

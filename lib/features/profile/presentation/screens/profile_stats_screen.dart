@@ -92,16 +92,12 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final isWide = width > 600;
-              final crossAxisCount = isWide ? 3 : 2;
               final gap = 12.0;
-              final itemWidth = (width - ((crossAxisCount - 1) * gap)) / crossAxisCount;
-              
+
               // We'll use a custom layout or just a straightforward Column of Rows for better control
               // or a Wrap that mimics a grid.
               // Let's go with a custom Bento-ish layout using column/rows for the specific items we have.
-              
+
               return Column(
                 children: [
                    // Top Row: Total Days (Large) + Avg Days

@@ -220,7 +220,6 @@ class DeviceProvider extends ChangeNotifier {
       'dropReps': '',
       'done': false,
       'isBodyweight': isBodyweight ?? _isBodyweightMode,
-      'isBodyweight': isBodyweight ?? _isBodyweightMode,
       'completedAtMs': null,
       'id': _uuid.v4(),
     });
@@ -1755,10 +1754,8 @@ class DeviceProvider extends ChangeNotifier {
         container = null;
       }
     }
-    final muscleProv =
-        container != null ? container.read(muscleGroupProvider) : null;
-    final exerciseProv =
-        container != null ? container.read(exerciseProvider) : null;
+    final muscleProv = container?.read(muscleGroupProvider);
+    final exerciseProv = container?.read(exerciseProvider);
 
     final groups = muscleProv?.groups ?? const [];
     final idLookup = {for (final g in groups) g.id: g.id};

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart'
-    show OverlayNumericKeypadController, overlayNumericKeypadControllerProvider;
+    show overlayNumericKeypadControllerProvider;
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../core/providers/auth_providers.dart';

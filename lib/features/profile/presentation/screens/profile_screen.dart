@@ -1,11 +1,3 @@
-import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
-import 'package:tapem/features/profile/presentation/widgets/profile_coaching_button.dart';
-import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
-import 'package:tapem/features/training_plan/presentation/widgets/training_day_action_sheet.dart';
-import 'package:tapem/features/training_plan/presentation/widgets/plan_selection_sheet.dart';
-import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
-// lib/features/profile/presentation/screens/profile_screen.dart
-
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -35,18 +27,23 @@ import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/presentation/widgets/daily_xp_card.dart';
+import 'package:tapem/features/profile/presentation/widgets/profile_coaching_button.dart';
+import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
+import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_selection_sheet.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/training_day_action_sheet.dart';
 import '../widgets/daily_xp_avatar.dart';
 import '../widgets/calendar.dart';
 import '../widgets/calendar_popup.dart';
 import '../../../survey/presentation/screens/survey_vote_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/app_router.dart';
-import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
-import 'profile_stats_screen.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
+import 'package:tapem/features/profile/presentation/screens/profile_stats_screen.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
-import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 
 const bool enableFriends = true;
 
@@ -403,7 +400,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       }
 
       final effectivePlanId = plan.id;
-      if (effectivePlanId == null || effectivePlanId.isEmpty) {
+      if (effectivePlanId.isEmpty) {
         // Fallback: ohne gültige Plan-ID einfach Freestyle starten.
         await startFreestyle();
         return;
@@ -443,7 +440,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         await startFreestyle();
         return;
       }
-      await startPlan(selectedPlan!);
+      await startPlan(selectedPlan);
     }
 
     Future<void> startOtherPlan() async {
@@ -1498,412 +1495,6 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProfileStatsLeadingIcon extends StatelessWidget {
-  const _ProfileStatsLeadingIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
-    final backgroundColor = theme.scaffoldBackgroundColor;
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: borderColor),
-      ),
-      child: Icon(
-        Icons.auto_graph,
-        size: 28,
-        color: brandColor,
-      ),
-    );
-  }
-}
-
-class _ProfileCommunityLeadingIcon extends StatelessWidget {
-  const _ProfileCommunityLeadingIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
-    final backgroundColor = theme.scaffoldBackgroundColor;
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: borderColor),
-        color: backgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(Icons.groups_2, color: brandColor, size: 28),
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: Icon(
-              Icons.celebration,
-              size: 16,
-              color: brandColor.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-const double _profileHighlightHeight = 40;
-const double _profileHighlightWidth = 44;
-
-class _ProfileCommunityHighlight extends StatelessWidget {
-  const _ProfileCommunityHighlight();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
-    final onBrand = brandTheme?.onBrand ?? theme.colorScheme.onPrimary;
-    final shadow = brandTheme?.shadow ??
-        const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-        ];
-    final capsulePadding = AppSpacing.xs * 0.5;
-    final accentInset = AppSpacing.xs / 4;
-    final loc = AppLocalizations.of(context)!;
-
-    return Semantics(
-      container: true,
-      label: '${loc.profileCommunityButtonTitle} highlight',
-      child: SizedBox(
-        height: _profileHighlightHeight,
-        width: _profileHighlightWidth,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            boxShadow: shadow,
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(capsulePadding),
-            child: ExcludeSemantics(
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.groups_3,
-                      size: 22,
-                      color: onBrand.withOpacity(0.9),
-                    ),
-                  ),
-                  Positioned(
-                    top: accentInset,
-                    right: accentInset,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 14,
-                      color: onBrand,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileSurveyHighlight extends StatelessWidget {
-  const _ProfileSurveyHighlight();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final gradient = brandTheme?.gradient ?? AppGradients.brandGradient;
-    final shadow = brandTheme?.shadow ??
-        const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-        ];
-    final capsulePadding = AppSpacing.xs * 0.5;
-    final strokePadding = AppSpacing.xs / 4;
-    final accentInset = AppSpacing.xs / 4;
-    final innerPadding = capsulePadding - strokePadding / 2;
-    final bubbleColor = theme.colorScheme.onSurface.withOpacity(0.75);
-    final loc = AppLocalizations.of(context)!;
-
-    return Semantics(
-      container: true,
-      label: '${loc.surveyListTitle} highlight',
-      child: SizedBox(
-        height: _profileHighlightHeight,
-        width: _profileHighlightWidth,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            boxShadow: shadow,
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(strokePadding),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(AppRadius.chip),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(innerPadding),
-                child: ExcludeSemantics(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.forum_outlined,
-                          size: 22,
-                          color: bubbleColor,
-                        ),
-                      ),
-                      Positioned(
-                        top: accentInset,
-                        right: accentInset,
-                        child: ShaderMask(
-                          shaderCallback: (rect) => gradient.createShader(rect),
-                          blendMode: BlendMode.srcIn,
-                          child: Icon(
-                            Icons.task_alt,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileSurveyLeadingIcon extends StatelessWidget {
-  const _ProfileSurveyLeadingIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final borderColor = theme.colorScheme.onSurface.withOpacity(0.05);
-    final backgroundColor = theme.scaffoldBackgroundColor;
-    return Container(
-      width: 56,
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.poll_outlined,
-        size: 28,
-        color: brandColor,
-      ),
-    );
-  }
-}
-
-class _ProfileStatsSparkline extends StatelessWidget {
-  const _ProfileStatsSparkline();
-
-  static const _bars = [10.0, 20.0, 14.0, 26.0, 18.0, 30.0];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final barColor = Color.lerp(brandColor, Colors.white, 0.15) ?? brandColor;
-
-    return SizedBox(
-      height: _profileHighlightHeight,
-      width: _profileHighlightWidth,
-      child: FittedBox(
-        fit: BoxFit.contain,
-        alignment: Alignment.bottomCenter,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(_bars.length, (index) {
-            final target = _bars[index];
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: target),
-              duration: Duration(milliseconds: 500 + index * 90),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: barColor.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(AppRadius.button),
-                    ),
-                    child: SizedBox(
-                      width: 6,
-                      height: value,
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileActionButton extends StatelessWidget {
-  const _ProfileActionButton({
-    required this.title,
-    required this.subtitle,
-    required this.leading,
-    required this.onTap,
-    this.trailing,
-    this.showChevron = true,
-    this.uiLogEvent,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget leading;
-  final Widget? trailing;
-  final bool showChevron;
-  final VoidCallback onTap;
-  final String? uiLogEvent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final radius =
-        (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
-    final onSurface = theme.colorScheme.onSurface;
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-
-    return BrandInteractiveCard(
-      onTap: onTap,
-      uiLogEvent: uiLogEvent,
-      borderRadius: radius,
-      semanticLabel: '$title, $subtitle',
-      padding: EdgeInsets.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              brandColor.withOpacity(0.08),
-              brandColor.withOpacity(0.02),
-            ],
-          ),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            leading,
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: onSurface,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: onSurface.withOpacity(0.6),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(width: AppSpacing.md),
-              trailing!,
-            ],
-            if (showChevron) ...[
-              const SizedBox(width: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: onSurface.withOpacity(0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: brandColor,
-                  size: 16,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }

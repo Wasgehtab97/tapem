@@ -21,6 +21,7 @@ class FakeAuthRepository implements AuthRepository {
     Future<void> Function(String userId, bool value)? onSetShowInLeaderboard,
     Future<void> Function(String userId, bool value)? onSetPublicProfile,
     Future<void> Function(String userId, String avatarKey)? onSetAvatarKey,
+    Future<void> Function(String userId, bool value)? onSetCoachEnabled,
     Future<bool> Function(String username)? onIsUsernameAvailable,
     Future<void> Function(String email)? onSendPasswordResetEmail,
   })  : _onLogin = onLogin,
@@ -31,6 +32,7 @@ class FakeAuthRepository implements AuthRepository {
         _onSetShowInLeaderboard = onSetShowInLeaderboard,
         _onSetPublicProfile = onSetPublicProfile,
         _onSetAvatarKey = onSetAvatarKey,
+        _onSetCoachEnabled = onSetCoachEnabled,
         _onIsUsernameAvailable = onIsUsernameAvailable,
         _onSendPasswordResetEmail = onSendPasswordResetEmail;
 
@@ -44,6 +46,7 @@ class FakeAuthRepository implements AuthRepository {
       _onSetShowInLeaderboard;
   final Future<void> Function(String userId, bool value)? _onSetPublicProfile;
   final Future<void> Function(String userId, String avatarKey)? _onSetAvatarKey;
+  final Future<void> Function(String userId, bool value)? _onSetCoachEnabled;
   final Future<bool> Function(String username)? _onIsUsernameAvailable;
   final Future<void> Function(String email)? _onSendPasswordResetEmail;
 
@@ -55,6 +58,7 @@ class FakeAuthRepository implements AuthRepository {
   int setShowInLeaderboardCalls = 0;
   int setPublicProfileCalls = 0;
   int setAvatarKeyCalls = 0;
+  int setCoachEnabledCalls = 0;
   int isUsernameAvailableCalls = 0;
   int sendPasswordResetEmailCalls = 0;
 
@@ -160,6 +164,16 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> setPublicKey(String userId, String publicKey) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> setCoachEnabled(String userId, bool value) {
+    setCoachEnabledCalls++;
+    final handler = _onSetCoachEnabled;
+    if (handler != null) {
+      return handler(userId, value);
+    }
     return Future.value();
   }
 }

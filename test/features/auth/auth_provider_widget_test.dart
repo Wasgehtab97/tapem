@@ -7,7 +7,6 @@ import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
 import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
-import 'package:tapem/features/gym/domain/models/gym_config.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -191,7 +190,12 @@ void main() {
       authProvider = _MockAuthProvider();
       validator = _MockValidateGymCode();
       when(() => validator.execute(any())).thenAnswer(
-        (_) async => GymConfig(id: 'gym', code: 'GYM', name: 'Gym'),
+        (_) async => GymCodeValidationResult(
+          gymId: 'gym',
+          gymName: 'Gym',
+          code: 'GYM123',
+          expiresAt: DateTime(2099, 1, 1),
+        ),
       );
     });
 

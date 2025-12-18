@@ -66,11 +66,8 @@ class SetCardTheme {
   factory SetCardTheme.of(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
      // Premium Colors
-    final surface = theme.canvasColor; // Very Dark
-    
     // Very dark pill background for inputs
     final inputFill = Colors.black.withOpacity(0.3); 
     

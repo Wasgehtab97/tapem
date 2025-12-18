@@ -41,7 +41,6 @@ class FirestoreTrainingScheduleSource {
     required String dateKey,
     required String planId,
   }) async {
-    final now = DateTime.now();
     await _doc(userId, dateKey).set(
       {
         'dateKey': dateKey,

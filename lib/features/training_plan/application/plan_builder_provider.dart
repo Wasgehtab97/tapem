@@ -213,7 +213,7 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
 
     // Coaching-Audit: Plan durch Coach für Client erstellt/aktualisiert
     final coachId = state.coachId;
-    if (coachId != null && userId != authState.userId && gymId != null) {
+    if (coachId != null && userId != authState.userId) {
       // Lazy import to avoid circular deps: use external source directly.
       final audit = FirestoreCoachingAuditSource();
       await audit.logEvent(

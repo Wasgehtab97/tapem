@@ -1,0 +1,1487 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/features/device/domain/models/exercise.dart';
+import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
+import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
+import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:intl/intl.dart';
+import 'package:tapem/core/widgets/brand_outline.dart';
+import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
+    show showFeedbackDialog;
+import 'package:tapem/app_router.dart';
+
+/// Builder function used by [WorkoutDayScreen.sessionBuilder] to render
+/// sessions with the new table-style UI that mirrors the marketing website.
+Widget buildWorkoutDayTableSessionCard(
+  BuildContext context,
+  WorkoutDaySession session,
+) {
+  return WorkoutDayTableCard(
+    session: session,
+  );
+}
+
+/// Workout-day specific session card with a compact, table-like layout.
+///
+/// This widget intentionally keeps all business logic in [DeviceProvider],
+/// [WorkoutDayController] and the global [OverlayNumericKeypadController].
+/// It focuses purely on:
+///  - loading the device once,
+///  - wiring taps to the numeric keypad + provider,
+///  - rendering the premium table layout used on the marketing website.
+class WorkoutDayTableCard extends riverpod.ConsumerStatefulWidget {
+  const WorkoutDayTableCard({
+    super.key,
+    required this.session,
+  });
+
+  final WorkoutDaySession session;
+
+  @override
+  riverpod.ConsumerState<WorkoutDayTableCard> createState() =>
+      _WorkoutDayTableCardState();
+}
+
+class _WorkoutDayTableCardState
+    extends riverpod.ConsumerState<WorkoutDayTableCard> {
+  bool _didLoad = false;
+  final List<TextEditingController> _weightCtrls = [];
+  final List<TextEditingController> _repsCtrls = [];
+  final List<FocusNode> _weightFocusNodes = [];
+  final List<FocusNode> _repsFocusNodes = [];
+  bool _muteCtrls = false;
+  int _lastFocusRequestId = -1;
+
+  DeviceProvider get _provider => widget.session.provider;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider.addListener(_handleProviderChanged);
+    _syncControllersFromProvider();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureSessionLoaded();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _weightCtrls) {
+      c.dispose();
+    }
+    for (final c in _repsCtrls) {
+      c.dispose();
+    }
+    for (final f in _weightFocusNodes) {
+      f.dispose();
+    }
+    for (final f in _repsFocusNodes) {
+      f.dispose();
+    }
+    _provider.removeListener(_handleProviderChanged);
+    super.dispose();
+  }
+
+  void _handleProviderChanged() {
+    if (!mounted) return;
+    _syncControllersFromProvider();
+    setState(() {});
+  }
+
+  void _syncControllersFromProvider() {
+    final sets = _provider.sets;
+
+    // Ensure controller lists match set count.
+    while (_weightCtrls.length < sets.length) {
+      final weightCtrl = TextEditingController();
+      final repsCtrl = TextEditingController();
+      final weightFocus = FocusNode();
+      final repsFocus = FocusNode();
+      _weightCtrls.add(weightCtrl);
+      _repsCtrls.add(repsCtrl);
+      _weightFocusNodes.add(weightFocus);
+      _repsFocusNodes.add(repsFocus);
+      weightCtrl.addListener(() => _handleWeightChanged(weightCtrl));
+      repsCtrl.addListener(() => _handleRepsChanged(repsCtrl));
+    }
+    while (_weightCtrls.length > sets.length) {
+      final wc = _weightCtrls.removeLast();
+      final rc = _repsCtrls.removeLast();
+      final wf = _weightFocusNodes.removeLast();
+      final rf = _repsFocusNodes.removeLast();
+      wc.dispose();
+      rc.dispose();
+      wf.dispose();
+      rf.dispose();
+    }
+
+    // Sync texts without triggering listeners.
+    _muteCtrls = true;
+    for (var i = 0; i < sets.length; i++) {
+      final set = sets[i];
+      final weight = (set['weight'] ?? '').toString();
+      final reps = (set['reps'] ?? '').toString();
+      if (_weightCtrls[i].text != weight) {
+        _weightCtrls[i].text = weight;
+        _weightCtrls[i].selection =
+            TextSelection.collapsed(offset: _weightCtrls[i].text.length);
+      }
+      if (_repsCtrls[i].text != reps) {
+        _repsCtrls[i].text = reps;
+        _repsCtrls[i].selection =
+            TextSelection.collapsed(offset: _repsCtrls[i].text.length);
+      }
+    }
+    _muteCtrls = false;
+  }
+
+  void _handleWeightChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final index = _weightCtrls.indexOf(controller);
+    if (index == -1) return;
+    if (index >= _provider.sets.length) return;
+    final set = _provider.sets[index];
+    final isBw = set['isBodyweight'] == true;
+    _provider.updateSet(
+      index,
+      weight: controller.text,
+      isBodyweight: isBw,
+    );
+  }
+
+  void _handleRepsChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final index = _repsCtrls.indexOf(controller);
+    if (index == -1) return;
+    if (index >= _provider.sets.length) return;
+    _provider.updateSet(index, reps: controller.text);
+  }
+
+  Future<void> _ensureSessionLoaded() async {
+    if (_didLoad) return;
+    _didLoad = true;
+
+    final container =
+        riverpod.ProviderScope.containerOf(context, listen: false);
+    final auth = container.read(authControllerProvider);
+    final settings = container.read(settingsProvider);
+
+    await settings.load(auth.userId!);
+
+    await _provider.loadDevice(
+      gymId: widget.session.gymId,
+      deviceId: widget.session.deviceId,
+      exerciseId: widget.session.exerciseId,
+      userId: widget.session.userId,
+    );
+
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _focusSession() {
+    final controller =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(workoutDayControllerProvider);
+    controller.focusSession(widget.session.key);
+  }
+
+  void _openKeypadForField({
+    required int setIndex,
+    required DeviceSetFieldFocus field,
+  }) {
+    _focusSession();
+
+    final container =
+        riverpod.ProviderScope.containerOf(context, listen: false);
+    final dayController = container.read(workoutDayControllerProvider);
+    final prov = dayController.providerForKey(widget.session.key);
+    if (prov == null) return;
+
+    if (setIndex < 0 || setIndex >= _weightCtrls.length) return;
+
+    TextEditingController controller;
+    FocusNode focusNode;
+    switch (field) {
+      case DeviceSetFieldFocus.weight:
+        controller = _weightCtrls[setIndex];
+        focusNode = _weightFocusNodes[setIndex];
+        break;
+      case DeviceSetFieldFocus.reps:
+        controller = _repsCtrls[setIndex];
+        focusNode = _repsFocusNodes[setIndex];
+        break;
+      default:
+        // Drops werden im aktuellen Table-Layout nicht direkt editiert.
+        return;
+    }
+
+    _lastFocusRequestId = prov.requestFocus(
+      index: setIndex,
+      field: field,
+    );
+
+    if (focusNode.canRequestFocus) {
+      focusNode.requestFocus();
+    }
+
+    final keypad =
+        container.read(overlayNumericKeypadControllerProvider);
+    keypad.openFor(controller, allowDecimal: true);
+  }
+
+  void _toggleDone(int index) {
+    _focusSession();
+    final container =
+        riverpod.ProviderScope.containerOf(context, listen: false);
+    final dayController = container.read(workoutDayControllerProvider);
+    final prov = dayController.providerForKey(widget.session.key);
+    if (prov == null) return;
+
+    final ok = prov.toggleSetDone(index);
+    if (!ok) {
+      return;
+    }
+
+    prov.clearFocus();
+    container.read(overlayNumericKeypadControllerProvider).close();
+  }
+
+  void _openDropEditor(int index) {
+    _focusSession();
+    final container =
+        riverpod.ProviderScope.containerOf(context, listen: false);
+    final dayController = container.read(workoutDayControllerProvider);
+    final prov = dayController.providerForKey(widget.session.key);
+    if (prov == null) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      builder: (ctx) {
+        final set = prov.sets[index];
+        final theme = Theme.of(ctx);
+
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              Text(
+                'Dropsätze',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Dropsätze kannst du aktuell direkt im Workout bearbeiten.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // For now we simply show a read-only summary; editing still
+              // happens through the keypad on WorkoutDay.
+              Text(
+                set.toString(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openLeaderboard(DeviceProvider prov, String? headerTitle) {
+    _focusSession();
+    final device = prov.device;
+    if (device == null) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => MachineLeaderboardSheet(
+        gymId: widget.session.gymId,
+        machineId: device.uid,
+        isMulti: device.isMulti,
+        title: headerTitle ?? device.name,
+      ),
+    );
+  }
+
+  void _openHistory(DeviceProvider prov) {
+    _focusSession();
+    final deviceProv = prov;
+
+    String? exerciseName = widget.session.exerciseName;
+    if (exerciseName == null && (deviceProv.device?.isMulti ?? false)) {
+      final exProv =
+          riverpod.ProviderScope.containerOf(context, listen: false)
+              .read(exerciseProvider);
+      exerciseName = exProv.exercises
+          .firstWhere(
+            (e) => e.id == widget.session.exerciseId,
+            orElse: () => Exercise(id: '', name: 'Unknown', userId: ''),
+          )
+          .name;
+    }
+
+    Navigator.of(context).pushNamed(
+      AppRouter.history,
+      arguments: {
+        'deviceId': widget.session.deviceId,
+        'deviceName': deviceProv.device?.name ?? widget.session.deviceId,
+        'deviceDescription': deviceProv.device?.description,
+        'isMulti': deviceProv.device?.isMulti ?? false,
+        if (deviceProv.device?.isMulti ?? false)
+          'exerciseId': widget.session.exerciseId,
+        if (deviceProv.device?.isMulti ?? false) 'exerciseName': exerciseName,
+      },
+    );
+  }
+
+  void _toggleBodyweight(DeviceProvider prov) {
+    _focusSession();
+    prov.toggleBodyweightMode();
+  }
+
+  void _handleFeedback() {
+    _focusSession();
+    // Use the same feedback dialog as on the device page.
+    showFeedbackDialog(
+      context,
+      ref,
+      gymId: widget.session.gymId,
+      deviceId: widget.session.deviceId,
+    );
+  }
+
+  void _openNote(DeviceProvider prov) {
+    _focusSession();
+    final loc = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final textController = TextEditingController(text: prov.note);
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                loc.noteModalTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: loc.noteModalHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    tooltip: loc.noteDeleteTooltip,
+                    onPressed: () {
+                      prov.setNote('');
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      prov.setNote(textController.text.trim());
+                      Navigator.of(ctx).pop();
+                    },
+                    child: Text(loc.noteSaveButton),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _resolveExerciseTitle(
+    DeviceProvider prov,
+    AppLocalizations loc,
+  ) {
+    final device = prov.device;
+    if (device == null) {
+      return loc.newSessionTitle;
+    }
+    if (!device.isMulti) {
+      return device.name;
+    }
+    if (widget.session.exerciseName != null &&
+        widget.session.exerciseName!.isNotEmpty) {
+      return widget.session.exerciseName!;
+    }
+    final availableExercises =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(exerciseProvider)
+            .exercises;
+    final match =
+        availableExercises.where((e) => e.id == widget.session.exerciseId);
+    if (match.isNotEmpty) {
+      return match.first.name;
+    }
+    return device.name;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final prov = _provider;
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
+
+    if (prov.isLoading || prov.device == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 96),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final title = _resolveExerciseTitle(prov, loc);
+    final deviceDescription = prov.device?.description;
+
+    final snapshot =
+        prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+    late final List<SessionSetVM> lastSets;
+    if (snapshot != null && snapshot.sets.isNotEmpty) {
+      lastSets = mapSnapshotToVM(snapshot);
+    } else {
+      lastSets = mapLegacySetsToVM(prov.lastSessionSets);
+    }
+
+    // Sicherstellen, dass Controller-Liste und Provider synchron sind.
+    _syncControllersFromProvider();
+
+    // Auf Fokus-Änderungen (Navigation über das Keypad) reagieren und den
+    // Keypad-Target-Controller passend umhängen.
+    final focusField = prov.focusedField;
+    final focusIndex = prov.focusedIndex;
+    final focusRequestId = prov.focusRequestId;
+    if (focusField != null &&
+        focusIndex != null &&
+        focusIndex >= 0 &&
+        focusIndex < _weightCtrls.length &&
+        focusRequestId != _lastFocusRequestId) {
+      _lastFocusRequestId = focusRequestId;
+      TextEditingController? controller;
+      FocusNode? focusNode;
+      switch (focusField) {
+        case DeviceSetFieldFocus.weight:
+          controller = _weightCtrls[focusIndex];
+          focusNode = _weightFocusNodes[focusIndex];
+          break;
+        case DeviceSetFieldFocus.reps:
+          controller = _repsCtrls[focusIndex];
+          focusNode = _repsFocusNodes[focusIndex];
+          break;
+        default:
+          controller = null;
+      }
+      if (controller != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (focusNode != null && focusNode.canRequestFocus) {
+            focusNode.requestFocus();
+          }
+          final keypad = riverpod.ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(overlayNumericKeypadControllerProvider);
+          keypad.openFor(controller!, allowDecimal: true);
+        });
+      }
+    }
+
+    final cardRadius = BorderRadius.circular(28);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: cardRadius,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header – liegt jetzt direkt auf dem Seiten-Hintergrund
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    if (deviceDescription != null &&
+                        deviceDescription.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          deviceDescription,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Close-Button wird vom WorkoutDayScreen gehandhabt.
+            ],
+          ),
+          const SizedBox(height: 18),
+          // Swipeable content: table + actions
+          _WorkoutSwipeableSessionContent(
+            setsPage: _buildTableSection(
+              context: context,
+              loc: loc,
+              prov: prov,
+              lastSets: lastSets,
+            ),
+            actionsPage: _WorkoutActionsGrid(
+              prov: prov,
+              onOpenLeaderboard: prov.device == null
+                  ? null
+                  : () => _openLeaderboard(prov, title),
+              onOpenHistory:
+                  prov.device == null ? null : () => _openHistory(prov),
+              onToggleBodyweight: () => _toggleBodyweight(prov),
+              onFeedback: _handleFeedback,
+              onOpenNote: () => _openNote(prov),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // "+ Set hinzufügen" link
+          Center(
+            child: GestureDetector(
+              onTap: () {
+                _focusSession();
+                final prov =
+                    ref.read(workoutDayControllerProvider).providerForKey(
+                          widget.session.key,
+                        );
+                if (prov == null) return;
+                prov.addSet();
+              },
+              child: Text(
+                '+ ${loc.addSetButton}',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: brandColor,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableSection({
+    required BuildContext context,
+    required AppLocalizations loc,
+    required DeviceProvider prov,
+    required List<SessionSetVM> lastSets,
+  }) {
+    final sets = prov.sets;
+    final theme = Theme.of(context);
+    final tableBaseColor =
+        theme.bottomNavigationBarTheme.backgroundColor ??
+        theme.colorScheme.surface;
+
+    if (sets.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: theme.cardColor.withOpacity(0.7),
+        ),
+        child: Text(
+          'Noch keine Sätze angelegt.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+      );
+    }
+
+    final headerStyle = GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: theme.colorScheme.onSurface.withOpacity(0.7),
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              tableBaseColor,
+              Color.lerp(tableBaseColor, Colors.black, 0.12)!,
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.04),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    child: Text(
+                      'Satz',
+                      style: headerStyle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Vorher',
+                        style: headerStyle,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'kg',
+                        style: headerStyle,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        loc.tableHeaderReps,
+                        style: headerStyle,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 56),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (var i = 0; i < sets.length; i++)
+              Dismissible(
+                key: ValueKey(sets[i]['id'] ?? 'set-$i'),
+                direction: DismissDirection.endToStart,
+                background: const SizedBox.shrink(),
+                secondaryBackground: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.red.withOpacity(0.18),
+                  child: const Icon(
+                    Icons.delete,
+                    semanticLabel: 'Löschen',
+                  ),
+                ),
+                onDismissed: (_) {
+                  final removed = Map<String, dynamic>.from(sets[i]);
+                  prov.removeSet(i);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(loc.setRemoved),
+                      action: SnackBarAction(
+                        label: loc.undo,
+                        onPressed: () {
+                          prov.insertSetAt(i, removed);
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: _WorkoutTableRow(
+                  index: i,
+                  set: sets[i],
+                  previous: i < lastSets.length ? lastSets[i] : null,
+                  isWeightFocused:
+                      prov.focusedField == DeviceSetFieldFocus.weight &&
+                          prov.focusedIndex == i,
+                  isRepsFocused:
+                      prov.focusedField == DeviceSetFieldFocus.reps &&
+                          prov.focusedIndex == i,
+                  onTapWeight: () {
+                    _openKeypadForField(
+                      setIndex: i,
+                      field: DeviceSetFieldFocus.weight,
+                    );
+                  },
+                  onTapReps: () {
+                    _openKeypadForField(
+                      setIndex: i,
+                      field: DeviceSetFieldFocus.reps,
+                    );
+                  },
+                  onToggleDone: () => _toggleDone(i),
+                  onOpenDrop: () => _openDropEditor(i),
+                  weightController: _weightCtrls[i],
+                  repsController: _repsCtrls[i],
+                  weightFocusNode: _weightFocusNodes[i],
+                  repsFocusNode: _repsFocusNodes[i],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TableInputCell extends StatefulWidget {
+  const _TableInputCell({
+    required this.controller,
+    required this.focusNode,
+    required this.isFocused,
+    required this.placeholder,
+    required this.textStyle,
+    required this.onTap,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isFocused;
+  final String placeholder;
+  final TextStyle textStyle;
+  final VoidCallback onTap;
+
+  @override
+  State<_TableInputCell> createState() => _TableInputCellState();
+}
+
+class _TableInputCellState extends State<_TableInputCell> {
+  bool _cursorOn = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isFocused) {
+      _startBlink();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TableInputCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isFocused != widget.isFocused) {
+      if (widget.isFocused) {
+        _startBlink();
+      } else {
+        _stopBlink();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopBlink();
+    super.dispose();
+  }
+
+  void _startBlink() {
+    _stopBlink();
+    _cursorOn = true;
+    _timer = Timer.periodic(const Duration(milliseconds: 550), (_) {
+      if (!mounted) return;
+      setState(() {
+        _cursorOn = !_cursorOn;
+      });
+    });
+  }
+
+  void _stopBlink() {
+    _timer?.cancel();
+    _timer = null;
+    _cursorOn = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final controller = widget.controller;
+    final display =
+        controller.text.trim().isEmpty ? widget.placeholder : controller.text.trim();
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      child: SizedBox(
+        height: 32,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (display.isNotEmpty)
+              Flexible(
+                child: Text(
+                  display,
+                  style: widget.textStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            if (widget.isFocused && _cursorOn)
+              Padding(
+                padding: const EdgeInsets.only(left: 1.5),
+                child: Container(
+                  width: 2.0,
+                  height: (widget.textStyle.fontSize ?? 13) * 1.25,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutTableRow extends StatelessWidget {
+  const _WorkoutTableRow({
+    required this.index,
+    required this.set,
+    required this.previous,
+    required this.isWeightFocused,
+    required this.isRepsFocused,
+    required this.onTapWeight,
+    required this.onTapReps,
+    required this.onToggleDone,
+    required this.onOpenDrop,
+    required this.weightController,
+    required this.repsController,
+    required this.weightFocusNode,
+    required this.repsFocusNode,
+  });
+
+  final int index;
+  final Map<String, dynamic> set;
+  final SessionSetVM? previous;
+  final bool isWeightFocused;
+  final bool isRepsFocused;
+  final VoidCallback onTapWeight;
+  final VoidCallback onTapReps;
+  final VoidCallback onToggleDone;
+  final VoidCallback onOpenDrop;
+  final TextEditingController weightController;
+  final TextEditingController repsController;
+  final FocusNode weightFocusNode;
+  final FocusNode repsFocusNode;
+
+  String _formatPrevious(SessionSetVM? prev) {
+    if (prev == null) return '-';
+    String formatNumber(num value) {
+      final formatter = NumberFormat('0.##');
+      return formatter.format(value);
+    }
+
+    final weightStr = prev.isBodyweight
+        ? (prev.kg == 0 ? 'BW' : 'BW+${formatNumber(prev.kg)}')
+        : formatNumber(prev.kg);
+    return '$weightStr×${prev.reps}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.primary;
+    final tableBaseColor =
+        theme.bottomNavigationBarTheme.backgroundColor ??
+        theme.colorScheme.surface;
+
+    final doneVal = set['done'];
+    final done = doneVal == true || doneVal == 'true';
+
+    final textStyle = GoogleFonts.inter(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: theme.colorScheme.onSurface.withOpacity(0.86),
+    );
+
+    final secondaryStyle = textStyle.copyWith(
+      color: theme.colorScheme.onSurface.withOpacity(0.7),
+    );
+
+    final rowBg = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        tableBaseColor.withOpacity(0.98),
+        Color.lerp(tableBaseColor, Colors.black, 0.08)!,
+      ],
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        gradient: rowBg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 7,
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${index + 1}',
+              style: secondaryStyle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              _formatPrevious(previous),
+              style: secondaryStyle,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: _TableInputCell(
+              controller: weightController,
+              focusNode: weightFocusNode,
+              isFocused: isWeightFocused,
+              // Keine horizontale Linie im Eingabefeld – leer lassen.
+              placeholder: '',
+              textStyle: textStyle,
+              onTap: onTapWeight,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: _TableInputCell(
+              controller: repsController,
+              focusNode: repsFocusNode,
+              isFocused: isRepsFocused,
+              placeholder: '',
+              textStyle: textStyle,
+              onTap: onTapReps,
+            ),
+          ),
+          const SizedBox(width: 6),
+          _WorkoutRoundButton(
+            icon: Icons.keyboard_arrow_down_rounded,
+            semantics: 'Dropsätze',
+            filled: false,
+            color: brandColor,
+            onTap: onOpenDrop,
+          ),
+          const SizedBox(width: 6),
+          _WorkoutRoundButton(
+            icon: Icons.check_rounded,
+            semantics: 'Satz erledigt',
+            filled: done,
+            color: brandColor,
+            onTap: onToggleDone,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkoutRoundButton extends StatefulWidget {
+  const _WorkoutRoundButton({
+    required this.icon,
+    required this.semantics,
+    required this.filled,
+    required this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String semantics;
+  final bool filled;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  State<_WorkoutRoundButton> createState() => _WorkoutRoundButtonState();
+}
+
+class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 32.0;
+    final scale = _pressed ? 0.95 : 1.0;
+
+    final isEnabled = widget.onTap != null;
+    final isFilled = widget.filled;
+
+    final bgColor = isFilled
+        ? widget.color
+        : (isEnabled
+            ? Colors.white.withOpacity(0.12)
+            : Colors.white.withOpacity(0.06));
+
+    final iconColor = isFilled
+        ? Colors.white
+        : (isEnabled
+            ? Colors.white
+            : Colors.white.withOpacity(0.4));
+
+    return Semantics(
+      label: widget.semantics,
+      button: true,
+      child: GestureDetector(
+        onTapDown: isEnabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: isEnabled ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel:
+            isEnabled ? () => setState(() => _pressed = false) : null,
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: scale,
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(size / 2),
+              color: bgColor,
+              boxShadow: isFilled
+                  ? [
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.5),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
+              border: isFilled
+                  ? null
+                  : Border.all(
+                      color: Colors.white.withOpacity(
+                        isEnabled ? 0.12 : 0.06,
+                      ),
+                    ),
+            ),
+            child: Icon(
+              widget.icon,
+              color: iconColor,
+              size: size * 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutSwipeableSessionContent extends StatefulWidget {
+  const _WorkoutSwipeableSessionContent({
+    required this.setsPage,
+    required this.actionsPage,
+  });
+
+  final Widget setsPage;
+  final Widget actionsPage;
+
+  @override
+  State<_WorkoutSwipeableSessionContent> createState() =>
+      _WorkoutSwipeableSessionContentState();
+}
+
+class _WorkoutSwipeableSessionContentState
+    extends State<_WorkoutSwipeableSessionContent> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _WorkoutPageIndicator(
+                isActive: _currentPage == 0,
+                color: brandColor,
+              ),
+              const SizedBox(width: 8),
+              _WorkoutPageIndicator(
+                isActive: _currentPage == 1,
+                color: brandColor,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: _currentPage == 0 ? 220 : 240,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            children: [
+              SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: widget.setsPage,
+              ),
+              SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: widget.actionsPage,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WorkoutPageIndicator extends StatelessWidget {
+  const _WorkoutPageIndicator({
+    required this.isActive,
+    required this.color,
+  });
+
+  final bool isActive;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: isActive ? 24 : 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: isActive ? color : color.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
+class _WorkoutActionsGrid extends StatelessWidget {
+  const _WorkoutActionsGrid({
+    required this.prov,
+    this.onOpenLeaderboard,
+    this.onOpenHistory,
+    this.onToggleBodyweight,
+    this.onFeedback,
+    this.onOpenNote,
+  });
+
+  final DeviceProvider prov;
+  final VoidCallback? onOpenLeaderboard;
+  final VoidCallback? onOpenHistory;
+  final VoidCallback? onToggleBodyweight;
+  final VoidCallback? onFeedback;
+  final VoidCallback? onOpenNote;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.0,
+        children: [
+          if (onOpenLeaderboard != null)
+            _WorkoutActionGridButton(
+              icon: Icons.emoji_events_rounded,
+              label: 'Bestenliste',
+              color: brandColor,
+              onTap: onOpenLeaderboard!,
+            ),
+          if (onOpenHistory != null)
+            _WorkoutActionGridButton(
+              icon: Icons.history_rounded,
+              label: 'Verlauf',
+              color: brandColor,
+              onTap: onOpenHistory!,
+            ),
+          if (onToggleBodyweight != null)
+            _WorkoutActionGridButton(
+              icon: Icons.accessibility_new_rounded,
+              label: 'Körpergewicht',
+              color: brandColor,
+              onTap: onToggleBodyweight!,
+              isActive: prov.isBodyweightMode,
+            ),
+          _WorkoutActionGridButton(
+            icon: Icons.military_tech_rounded,
+            label: 'Level ${prov.level}',
+            subtitle: '${prov.xp} XP',
+            color: brandColor,
+            onTap: () {},
+          ),
+          if (onFeedback != null)
+            _WorkoutActionGridButton(
+              icon: Icons.chat_bubble_outline_rounded,
+              label: 'Feedback',
+              color: brandColor,
+              onTap: onFeedback!,
+            ),
+          _WorkoutActionGridButton(
+            icon: Icons.edit_note_rounded,
+            label: 'Notiz',
+            color: brandColor,
+            isActive: prov.note.isNotEmpty,
+            onTap: onOpenNote ?? () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkoutActionGridButton extends StatelessWidget {
+  const _WorkoutActionGridButton({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.isActive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surfaceColor = Colors.black.withOpacity(0.4);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isActive ? color.withOpacity(0.2) : surfaceColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isActive
+                  ? color.withOpacity(0.6)
+                  : Colors.white.withOpacity(0.08),
+              width: 1,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isActive
+                  ? [
+                      color.withOpacity(0.3),
+                      color.withOpacity(0.1),
+                    ]
+                  : [
+                      Colors.white.withOpacity(0.05),
+                      Colors.white.withOpacity(0.02),
+                    ],
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? color
+                      : Colors.white.withOpacity(0.05),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.6),
+                            blurRadius: 12,
+                            offset: const Offset(0, 0),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isActive
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: isActive
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.7),
+                  fontWeight:
+                      isActive ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isActive
+                        ? Colors.white.withOpacity(0.9)
+                        : Colors.white.withOpacity(0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
