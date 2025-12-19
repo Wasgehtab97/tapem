@@ -14,12 +14,13 @@ class ChatRepository {
   }) : _firestore = firestore;
 
   final FirebaseFirestore _firestore;
+  static const bool _logChat = false;
 
   /// Watches messages in a conversation in real-time.
   ///
   /// Messages are ordered by creation time (oldest first).
   Stream<List<ChatMessage>> watchMessages(String conversationId) {
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint('[ChatRepository] watchMessages conversationId=$conversationId');
     }
 
@@ -29,8 +30,24 @@ class ChatRepository {
         .collection('messages')
         .orderBy('createdAt', descending: false)
         .snapshots()
+        .handleError((error, stackTrace) {
+          if (error is FirebaseException &&
+              error.code == 'permission-denied') {
+            if (kDebugMode && _logChat) {
+              debugPrint(
+                '[ChatRepository] watchMessages permission-denied conversationId=$conversationId',
+              );
+            }
+            return;
+          }
+          if (kDebugMode && _logChat) {
+            debugPrint(
+              '[ChatRepository] watchMessages error conversationId=$conversationId error=$error',
+            );
+          }
+        })
         .map((snapshot) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint(
           '[ChatRepository] watchMessages snapshot count=${snapshot.docs.length}',
         );
@@ -43,7 +60,7 @@ class ChatRepository {
 
   /// Watches a specific conversation in real-time.
   Stream<Conversation?> watchConversation(String conversationId) {
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint(
         '[ChatRepository] watchConversation conversationId=$conversationId',
       );
@@ -53,9 +70,25 @@ class ChatRepository {
         .collection('friendConversations')
         .doc(conversationId)
         .snapshots()
+        .handleError((error, stackTrace) {
+          if (error is FirebaseException &&
+              error.code == 'permission-denied') {
+            if (kDebugMode && _logChat) {
+              debugPrint(
+                '[ChatRepository] watchConversation permission-denied conversationId=$conversationId',
+              );
+            }
+            return;
+          }
+          if (kDebugMode && _logChat) {
+            debugPrint(
+              '[ChatRepository] watchConversation error conversationId=$conversationId error=$error',
+            );
+          }
+        })
         .map((doc) {
       if (!doc.exists) {
-        if (kDebugMode) {
+        if (kDebugMode && _logChat) {
           debugPrint('[ChatRepository] conversation does not exist');
         }
         return null;
@@ -82,7 +115,7 @@ class ChatRepository {
       throw ArgumentError('Message text cannot be empty');
     }
 
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint(
         '[ChatRepository] sendTextMessage conversationId=$conversationId text="${trimmed.substring(0, trimmed.length > 20 ? 20 : trimmed.length)}..."',
       );
@@ -125,7 +158,7 @@ class ChatRepository {
             lastMessage: lastMessage,
           );
           transaction.set(conversationRef, conversation.toFirestore());
-          if (kDebugMode) {
+          if (kDebugMode && _logChat) {
             debugPrint('[ChatRepository] created new conversation');
           }
         } else {
@@ -134,7 +167,7 @@ class ChatRepository {
             'updatedAt': Timestamp.fromDate(now),
             'lastMessage': lastMessage.toJson(),
           });
-          if (kDebugMode) {
+          if (kDebugMode && _logChat) {
             debugPrint('[ChatRepository] updated existing conversation');
           }
         }
@@ -142,16 +175,16 @@ class ChatRepository {
         // Add message
         final messageDoc = messagesRef.doc();
         transaction.set(messageDoc, message.toFirestore());
-        if (kDebugMode) {
+        if (kDebugMode && _logChat) {
           debugPrint('[ChatRepository] added message id=${messageDoc.id}');
         }
       });
 
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatRepository] sendTextMessage success');
       }
     } catch (e, stackTrace) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatRepository] sendTextMessage error: $e');
         debugPrint('Stack trace: $stackTrace');
       }
@@ -167,7 +200,7 @@ class ChatRepository {
   }) async {
     final conversationId = buildFriendChatId(currentUserId, friendUid);
 
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint(
         '[ChatRepository] sendStickerMessage conversationId=$conversationId stickerId=$stickerId',
       );
@@ -221,11 +254,11 @@ class ChatRepository {
         transaction.set(messageDoc, message.toFirestore());
       });
 
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatRepository] sendStickerMessage success');
       }
     } catch (e) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatRepository] sendStickerMessage error: $e');
       }
       rethrow;

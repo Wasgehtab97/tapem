@@ -231,11 +231,9 @@ service cloud.firestore {
     // Friend chat conversations
     // ─────────────────────────
     match /friendConversations/{conversationId} {
-      // Can read if conversationId contains your UID (works even if conversation doesn't exist yet)
-      // ConversationId format: "uid1_uid2" (sorted)
+      // Can read if you're a member of the conversation
       allow read: if isAuthed() &&
-        (conversationId.split('_')[0] == request.auth.uid ||
-         conversationId.split('_')[1] == request.auth.uid);
+        resource.data.members.hasAny([request.auth.uid]);
 
       // Anyone can create if they're one of the members
       allow create: if isAuthed() &&
@@ -261,17 +259,13 @@ service cloud.firestore {
       allow delete: if false;
 
       match /messages/{messageId} {
-        // Can read messages if conversationId contains your UID
-        // ConversationId format: "uid1_uid2" (sorted)
-        allow read: if isAuthed() &&
-          (conversationId.split('_')[0] == request.auth.uid ||
-           conversationId.split('_')[1] == request.auth.uid);
+        // Can read messages if you're a member of the conversation
+        allow read: if isAuthed() && isChatParticipant(conversationId);
 
-        // Can create message if you're the sender and conversationId contains your UID
+        // Can create message if you're the sender and a conversation member
         allow create: if isAuthed() &&
           request.resource.data.senderId == request.auth.uid &&
-          (conversationId.split('_')[0] == request.auth.uid ||
-           conversationId.split('_')[1] == request.auth.uid) &&
+          isChatParticipant(conversationId) &&
           request.resource.data.keys().hasOnly(['senderId', 'type', 'createdAt', 'text', 'highlightData', 'isEncrypted', 'nonce', 'stickerId']) &&
           request.resource.data.type is string &&
           request.resource.data.createdAt is timestamp &&
@@ -293,16 +287,25 @@ service cloud.firestore {
       
       // Can create if you're a participant in the conversation
       allow create: if isAuthed() &&
-        (conversationId.split('_')[0] == request.auth.uid ||
-         conversationId.split('_')[1] == request.auth.uid) &&
+        isChatParticipant(conversationId) &&
         request.resource.data.keys().hasOnly(['conversationId', 'userId', 'encryptedKey', 'createdAt', 'encryptedBy']) &&
         request.resource.data.conversationId is string &&
         request.resource.data.userId is string &&
         request.resource.data.encryptedKey is string &&
         request.resource.data.createdAt is timestamp &&
-        request.resource.data.encryptedBy is string;
+        request.resource.data.encryptedBy is string &&
+        request.resource.data.encryptedBy == request.auth.uid;
+      allow update: if isAuthed() &&
+        isChatParticipant(conversationId) &&
+        request.resource.data.keys().hasOnly(['conversationId', 'userId', 'encryptedKey', 'createdAt', 'encryptedBy']) &&
+        request.resource.data.conversationId is string &&
+        request.resource.data.userId is string &&
+        request.resource.data.encryptedKey is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.encryptedBy is string &&
+        request.resource.data.encryptedBy == request.auth.uid;
       
-      allow update, delete: if false;
+      allow delete: if false;
     }
 
     // ─────────────────────────
@@ -375,6 +378,7 @@ service cloud.firestore {
           'usernameLower',
           'showInLeaderboard',
           'publicProfile',
+          'publicKey',
           'avatarUrl',
           'avatarKey',
           'avatarUpdatedAt',
@@ -778,7 +782,8 @@ service cloud.firestore {
 
         // Leaderboard entries (owner/admin; allow markers)
         match /leaderboard/{userId} {
-          allow read: if ownerOrAdmin(gymId, userId);
+          allow read: if ownerOrAdmin(gymId, userId) ||
+                       (inGym(gymId) && resource.data.userId == request.auth.uid);
           allow create, update: if ownerOrAdmin(gymId, userId) &&
                                 request.resource.data.userId == userId;
           allow delete: if ownerOrAdmin(gymId, userId);

@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/brand_on_colors.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -29,10 +31,10 @@ class StorySessionDialog extends StatelessWidget {
         : summary.dayKey;
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth.clamp(320.0, 480.0).toDouble();
+          final maxWidth = constraints.maxWidth.clamp(320.0, 520.0).toDouble();
           return Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
@@ -77,14 +79,17 @@ class _StorySessionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = _StorySessionPalette.fromTheme(theme);
     final textTheme = theme.textTheme;
-    final headlineStyle = textTheme.headlineSmall?.copyWith(
+    final headlineStyle = GoogleFonts.spaceGrotesk(
+      textStyle: textTheme.headlineSmall,
       color: palette.onCardPrimary,
       fontWeight: FontWeight.w700,
-      letterSpacing: -0.4,
+      letterSpacing: -0.6,
     );
-    final subtitleStyle = textTheme.bodyMedium?.copyWith(
+    final subtitleStyle = GoogleFonts.spaceGrotesk(
+      textStyle: textTheme.bodyMedium,
       color: palette.onCardSecondary,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
     );
     final hasBreakdown = dailyXp.components.isNotEmpty || dailyXp.penalties.isNotEmpty;
     return ClipRRect(
@@ -187,7 +192,7 @@ class _StorySessionCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                padding: const EdgeInsets.fromLTRB(26, 26, 26, 22),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -201,33 +206,67 @@ class _StorySessionCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(headerTitle, style: headlineStyle),
-                                const SizedBox(height: 4),
-                                Text(headerSubtitle, style: subtitleStyle),
+                                const SizedBox(height: 8),
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999),
+                                    gradient: palette.datePillBackground,
+                                    border: Border.all(
+                                      color: palette.datePillBorder,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      headerSubtitle,
+                                      style: subtitleStyle,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          IconButton(
-                            tooltip: loc.commonClose,
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: IconButton.styleFrom(
-                              shape: const CircleBorder(),
-                              backgroundColor: palette.closeButtonBackground,
-                              foregroundColor: palette.onCardPrimary,
-                              padding: const EdgeInsets.all(10),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: palette.closeButtonGradient,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: palette.cardShadow.withOpacity(0.35),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                              border: Border.all(color: palette.cardBorder),
                             ),
-                            icon: const Icon(Icons.close_rounded),
+                            child: IconButton(
+                              tooltip: loc.commonClose,
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                                foregroundColor: palette.onCardPrimary,
+                                padding: const EdgeInsets.all(10),
+                              ),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      _XpBanner(dailyXp: dailyXp, palette: palette),
-                      const SizedBox(height: 16),
-                      _StoryStatsRow(stats: stats, palette: palette),
+                      const SizedBox(height: 18),
+                      _StoryHeroRow(
+                        dailyXp: dailyXp,
+                        stats: stats,
+                        palette: palette,
+                      ),
                       const SizedBox(height: 20),
                       if (achievements.isNotEmpty) ...[
                         Text(
                           loc.storySessionBadgesTitle,
-                          style: textTheme.titleMedium?.copyWith(
+                          style: GoogleFonts.spaceGrotesk(
+                            textStyle: textTheme.titleMedium,
                             color: palette.onCardPrimary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -241,7 +280,8 @@ class _StorySessionCard extends StatelessWidget {
                       ] else ...[
                         Text(
                           loc.storySessionEmptyMessage,
-                          style: textTheme.bodyMedium?.copyWith(
+                          style: GoogleFonts.spaceGrotesk(
+                            textStyle: textTheme.bodyMedium,
                             color: palette.emptyState,
                           ),
                         ),
@@ -260,9 +300,10 @@ class _StorySessionCard extends StatelessWidget {
                             onPressed: () => Navigator.of(context).pop(),
                             style: TextButton.styleFrom(
                               foregroundColor: palette.onCardSecondary,
-                              textStyle: textTheme.bodyMedium?.copyWith(
+                              textStyle: GoogleFonts.spaceGrotesk(
+                                textStyle: textTheme.bodyMedium,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 0.1,
+                                letterSpacing: 0.2,
                               ),
                             ),
                             child: Text(loc.commonClose),
@@ -290,7 +331,8 @@ class _StorySessionCard extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: palette.shareRadius,
                                 ),
-                                textStyle: textTheme.labelLarge?.copyWith(
+                                textStyle: GoogleFonts.spaceGrotesk(
+                                  textStyle: textTheme.labelLarge,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -323,6 +365,12 @@ class _XpBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final netDelta = dailyXp.xp + dailyXp.penaltySum;
     final netText = '${_formatSignedInt(netDelta, format)} XP';
+    final labelStyle = GoogleFonts.spaceGrotesk(
+      textStyle: theme.textTheme.labelLarge,
+      color: palette.onGradientMuted,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 1.4,
+    );
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: palette.xpRadius,
@@ -339,6 +387,14 @@ class _XpBanner extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: palette.xpRadius,
+                gradient: palette.xpInnerGlow,
+              ),
+            ),
+          ),
           Positioned(
             top: 22,
             left: 38,
@@ -367,25 +423,32 @@ class _XpBanner extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
+                  loc.storySessionDailyXpTitle.toUpperCase(),
+                  style: labelStyle,
+                ),
+                const SizedBox(height: 8),
+                Text(
                   netText,
-                  style: theme.textTheme.displaySmall?.copyWith(
+                  style: GoogleFonts.sora(
+                    textStyle: theme.textTheme.displaySmall,
                     color: palette.onGradientPrimary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
                   ),
                 ),
                 if (dailyXp.floorApplied) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     loc.storySessionDailyXpFloorAppliedNotice,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: GoogleFonts.spaceGrotesk(
+                      textStyle: theme.textTheme.bodySmall,
                       color: palette.onGradientMuted,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
@@ -396,6 +459,481 @@ class _XpBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StoryHeroRow extends StatelessWidget {
+  final StoryDailyXp dailyXp;
+  final StorySessionStats stats;
+  final _StorySessionPalette palette;
+
+  const _StoryHeroRow({
+    required this.dailyXp,
+    required this.stats,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final format = NumberFormat.decimalPattern(loc.localeName);
+    final netDelta = dailyXp.xp + dailyXp.penaltySum;
+    final netText = '${_formatSignedInt(netDelta, format)} XP';
+    final totalXp = _resolveTotalXp(dailyXp);
+    final safeTotal = totalXp < 0 ? 0 : totalXp;
+    var level = (safeTotal ~/ LevelService.xpPerLevel) + 1;
+    if (level > LevelService.maxLevel) {
+      level = LevelService.maxLevel;
+    }
+    final xpInLevel =
+        level >= LevelService.maxLevel ? 0 : safeTotal % LevelService.xpPerLevel;
+    final progress = level >= LevelService.maxLevel
+        ? 1.0
+        : (xpInLevel / LevelService.xpPerLevel).clamp(0.0, 1.0);
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _XpOrb(
+          value: netText,
+          palette: palette,
+          progress: progress,
+          level: level,
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Wrap(
+            runSpacing: 12,
+            spacing: 12,
+            children: [
+              _StatChip(
+                icon: Icons.fitness_center,
+                value: format.format(stats.exerciseCount),
+                label: loc.storySessionStatsExercisesTitle,
+                palette: palette,
+              ),
+              _StatChip(
+                icon: Icons.repeat,
+                value: format.format(stats.setCount),
+                label: loc.storySessionStatsSetsTitle,
+                palette: palette,
+              ),
+              _StatChip(
+                icon: Icons.timer_outlined,
+                value: _formatDuration(loc, stats.duration),
+                label: loc.storySessionStatsDurationTitle,
+                palette: palette,
+              ),
+              if (dailyXp.floorApplied)
+                _StatChip(
+                  icon: Icons.shield_outlined,
+                  value: loc.storySessionDailyXpFloorAppliedNotice,
+                  label: loc.storySessionDailyXpTitle,
+                  palette: palette,
+                  isCompact: true,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _resolveTotalXp(StoryDailyXp dailyXp) {
+    final total = dailyXp.totalXp ??
+        dailyXp.computedTotalXp ??
+        dailyXp.runningTotalXp ??
+        (dailyXp.previousTotalXp != null && dailyXp.netXpDelta != null
+            ? dailyXp.previousTotalXp! + dailyXp.netXpDelta!
+            : null);
+    if (total != null) {
+      return total;
+    }
+    return dailyXp.previousTotalXp ?? 0;
+  }
+
+  String _formatDuration(AppLocalizations loc, Duration duration) {
+    final totalMinutes = duration.inMinutes;
+    if (totalMinutes >= 60) {
+      final hours = totalMinutes ~/ 60;
+      final minutes = totalMinutes % 60;
+      if (minutes == 0) {
+        return loc.storySessionDurationHours(hours);
+      }
+      return loc.storySessionDurationHoursMinutes(hours, minutes);
+    }
+    if (totalMinutes > 0) {
+      return loc.storySessionDurationMinutes(totalMinutes);
+    }
+    if (duration.inSeconds > 0) {
+      return loc.storySessionDurationMinutes(1);
+    }
+    return loc.storySessionDurationMinutes(0);
+  }
+}
+
+class _XpOrb extends StatelessWidget {
+  final String value;
+  final _StorySessionPalette palette;
+  final double progress;
+  final int level;
+
+  const _XpOrb({
+    required this.value,
+    required this.palette,
+    required this.progress,
+    required this.level,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const outerSize = 176.0;
+    const innerSize = 160.0;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: palette.heroOuter,
+        boxShadow: [
+          BoxShadow(
+            color: palette.heroGlow,
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: outerSize,
+        height: outerSize,
+        child: CustomPaint(
+          painter: _XpProgressRing(
+            progress: progress,
+            baseColor: palette.heroRingBase,
+            glowColor: palette.heroRingGlow,
+            gradientColors: palette.heroRingGradient,
+          ),
+          child: Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: palette.heroInner,
+                border: Border.all(color: palette.heroBorder, width: 1.2),
+              ),
+              child: SizedBox(
+                width: innerSize,
+                height: innerSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      top: 18,
+                      right: 22,
+                      child: _FloatingStar(
+                        size: 16,
+                        opacity: 0.5,
+                        color: palette.onGradientPrimary,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      left: 18,
+                      child: _FloatingStar(
+                        size: 14,
+                        opacity: 0.4,
+                        color: palette.onGradientPrimary,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Center(
+                        child: SizedBox(
+                          width: innerSize * 0.72,
+                          height: innerSize * 0.72,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _toRoman(level),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cinzelDecorative(
+                                textStyle: theme.textTheme.displayLarge?.copyWith(
+                                  fontSize: 120,
+                                ),
+                                color: palette.onGradientPrimary.withOpacity(0.32),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      value,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.sora(
+                        textStyle: theme.textTheme.headlineMedium,
+                        color: palette.onGradientPrimary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _toRoman(int value) {
+  if (value <= 0) return '';
+  final numbers = [
+    1000,
+    900,
+    500,
+    400,
+    100,
+    90,
+    50,
+    40,
+    10,
+    9,
+    5,
+    4,
+    1,
+  ];
+  final symbols = [
+    'M',
+    'CM',
+    'D',
+    'CD',
+    'C',
+    'XC',
+    'L',
+    'XL',
+    'X',
+    'IX',
+    'V',
+    'IV',
+    'I',
+  ];
+  var remaining = value;
+  final buffer = StringBuffer();
+  for (var i = 0; i < numbers.length; i++) {
+    while (remaining >= numbers[i]) {
+      buffer.write(symbols[i]);
+      remaining -= numbers[i];
+    }
+  }
+  return buffer.toString();
+}
+
+class _XpProgressRing extends CustomPainter {
+  final double progress;
+  final Color baseColor;
+  final Color glowColor;
+  final List<Color> gradientColors;
+
+  _XpProgressRing({
+    required this.progress,
+    required this.baseColor,
+    required this.glowColor,
+    required this.gradientColors,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = 7.0;
+    final rect = Offset.zero & size;
+    final center = rect.center;
+    final radius = size.width / 2 - stroke / 2;
+
+    final basePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = baseColor;
+    canvas.drawCircle(center, radius, basePaint);
+
+    if (progress <= 0) return;
+
+    final sweep = SweepGradient(
+      startAngle: -pi / 2,
+      endAngle: (2 * pi * progress) - pi / 2,
+      colors: gradientColors,
+    );
+    final progressPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..shader = sweep.createShader(rect);
+
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke + 2
+      ..strokeCap = StrokeCap.round
+      ..color = glowColor.withOpacity(0.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final sweepAngle = 2 * pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      sweepAngle,
+      false,
+      glowPaint,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _XpProgressRing oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.baseColor != baseColor ||
+        oldDelegate.glowColor != glowColor ||
+        oldDelegate.gradientColors != gradientColors;
+  }
+}
+
+class _LevelPill extends StatelessWidget {
+  final int level;
+  final _StorySessionPalette palette;
+
+  const _LevelPill({
+    required this.level,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: palette.chipBackground,
+        border: Border.all(color: palette.chipBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              size: 16,
+              color: palette.onGradientPrimary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Level $level',
+              style: GoogleFonts.spaceGrotesk(
+                textStyle: theme.textTheme.bodySmall,
+                color: palette.onCardPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final _StorySessionPalette palette;
+  final bool isCompact;
+
+  const _StatChip({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.palette,
+    this.isCompact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final valueStyle = GoogleFonts.sora(
+      textStyle: theme.textTheme.titleMedium,
+      color: palette.onCardPrimary,
+      fontWeight: FontWeight.w700,
+    );
+    final labelStyle = GoogleFonts.spaceGrotesk(
+      textStyle: theme.textTheme.bodySmall,
+      color: palette.onCardMuted,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: palette.chipBackground,
+        border: Border.all(color: palette.chipBorder),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow.withOpacity(0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 14,
+          vertical: isCompact ? 10 : 12,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: palette.badgeIconBackground,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  icon,
+                  color: palette.onGradientPrimary,
+                  size: 16,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(value, style: valueStyle),
+                  if (!isCompact)
+                    Text(label, style: labelStyle)
+                  else
+                    Text(
+                      label,
+                      style: labelStyle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -834,145 +1372,7 @@ String? _penaltySubtitle(StoryXpPenalty penalty, AppLocalizations loc) {
   return null;
 }
 
-class _StoryStatsRow extends StatelessWidget {
-  final StorySessionStats stats;
-  final _StorySessionPalette palette;
-
-  const _StoryStatsRow({required this.stats, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final format = NumberFormat.decimalPattern(loc.localeName);
-    final exerciseValue = format.format(stats.exerciseCount);
-    final setsValue = format.format(stats.setCount);
-    final durationText = _formatDuration(loc, stats.duration);
-    final isCompactLayout = MediaQuery.sizeOf(context).width < 360;
-    final cards = [
-      _StoryStatCard(
-        title: loc.storySessionStatsExercisesTitle,
-        value: exerciseValue,
-        palette: palette,
-      ),
-      _StoryStatCard(
-        title: loc.storySessionStatsSetsTitle,
-        value: setsValue,
-        palette: palette,
-      ),
-      _StoryStatCard(
-        title: loc.storySessionStatsDurationTitle,
-        value: durationText,
-        palette: palette,
-      ),
-    ];
-    if (isCompactLayout) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < cards.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
-            cards[i],
-          ],
-        ],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: cards[0]),
-        const SizedBox(width: 12),
-        Expanded(child: cards[1]),
-        const SizedBox(width: 12),
-        Expanded(child: cards[2]),
-      ],
-    );
-  }
-
-  String _formatDuration(AppLocalizations loc, Duration duration) {
-    final totalMinutes = duration.inMinutes;
-    if (totalMinutes >= 60) {
-      final hours = totalMinutes ~/ 60;
-      final minutes = totalMinutes % 60;
-      if (minutes == 0) {
-        return loc.storySessionDurationHours(hours);
-      }
-      return loc.storySessionDurationHoursMinutes(hours, minutes);
-    }
-    if (totalMinutes > 0) {
-      return loc.storySessionDurationMinutes(totalMinutes);
-    }
-    if (duration.inSeconds > 0) {
-      return loc.storySessionDurationMinutes(1);
-    }
-    return loc.storySessionDurationMinutes(0);
-  }
-}
-
-class _StoryStatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final _StorySessionPalette palette;
-
-  const _StoryStatCard({required this.title, required this.value, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final titleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: palette.onCardMuted,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-    );
-    final valueStyle = theme.textTheme.titleLarge?.copyWith(
-      color: palette.onCardPrimary,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.3,
-    );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: palette.statRadius,
-        gradient: palette.statCardBackground,
-        border: Border.all(color: palette.statBorder),
-        boxShadow: [
-          BoxShadow(
-            color: palette.cardShadow.withOpacity(0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: valueStyle,
-                maxLines: 1,
-                softWrap: false,
-              ),
-            ),
-            const SizedBox(height: 10),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                style: titleStyle,
-                maxLines: 1,
-                softWrap: false,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// _StoryStatsRow and _StoryStatCard were replaced by _StoryHeroRow / _StatChip.
 
 class _BadgesSection extends StatefulWidget {
   final List<StoryAchievement> achievements;
@@ -1010,23 +1410,20 @@ class _BadgesSectionState extends State<_BadgesSection> {
     if (achievements.isEmpty) {
       return const SizedBox.shrink();
     }
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 280),
+    return SizedBox(
+      height: 132,
       child: Scrollbar(
         controller: _scrollController,
-        thumbVisibility: achievements.length > 6,
-        child: SingleChildScrollView(
+        thumbVisibility: achievements.length > 3,
+        child: ListView.separated(
           controller: _scrollController,
-          child: Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            children: achievements
-                .map((achievement) => _StoryBadgeChip(
-                      achievement: achievement,
-                      loc: widget.loc,
-                      palette: widget.palette,
-                    ))
-                .toList(),
+          scrollDirection: Axis.horizontal,
+          itemCount: achievements.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 14),
+          itemBuilder: (context, index) => _StoryBadgeChip(
+            achievement: achievements[index],
+            loc: widget.loc,
+            palette: widget.palette,
           ),
         ),
       ),
@@ -1053,7 +1450,7 @@ class _StoryBadgeChip extends StatelessWidget {
     final subtitle = _buildSubtitle();
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: palette.badgeRadius,
+        borderRadius: BorderRadius.circular(26),
         gradient: palette.badgeBackground,
         boxShadow: [
           BoxShadow(
@@ -1065,54 +1462,58 @@ class _StoryBadgeChip extends StatelessWidget {
         border: Border.all(color: palette.badgeBorder),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: palette.badgeIconBackground,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(
-                  icon,
-                  color: palette.onGradientPrimary,
-                  size: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        child: SizedBox(
+          width: 220,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: palette.badgeIconBackground,
+                  boxShadow: [
+                    BoxShadow(
+                      color: palette.xpShadow.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    icon,
+                    color: palette.onGradientPrimary,
+                    size: 20,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: palette.onCardPrimary,
-                      fontWeight: FontWeight.w600,
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: GoogleFonts.spaceGrotesk(
+                  textStyle: theme.textTheme.bodyMedium,
+                  color: palette.onCardPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+                softWrap: true,
+              ),
+              if (subtitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    subtitle,
+                    style: GoogleFonts.spaceGrotesk(
+                      textStyle: theme.textTheme.bodySmall,
+                      color: palette.onCardSecondary,
                     ),
                     softWrap: true,
                   ),
-                  if (subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: palette.onCardSecondary,
-                        ),
-                        softWrap: true,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1225,13 +1626,26 @@ class _GlowingBlob extends StatelessWidget {
 class _StorySessionPalette {
   final LinearGradient cardBackground;
   final LinearGradient xpBanner;
+  final LinearGradient xpInnerGlow;
+  final LinearGradient heroOuter;
+  final LinearGradient heroInner;
+  final LinearGradient chipBackground;
   final LinearGradient statCardBackground;
   final LinearGradient badgeBackground;
   final LinearGradient badgeIconBackground;
   final LinearGradient shareGradient;
+  final LinearGradient closeButtonGradient;
+  final LinearGradient datePillBackground;
   final Color cardBorder;
   final Color cardShadow;
   final Color closeButtonBackground;
+  final Color datePillBorder;
+  final Color heroBorder;
+  final Color heroGlow;
+  final Color chipBorder;
+  final Color heroRingBase;
+  final Color heroRingGlow;
+  final List<Color> heroRingGradient;
   final Color onCardPrimary;
   final Color onCardSecondary;
   final Color onCardMuted;
@@ -1251,13 +1665,26 @@ class _StorySessionPalette {
   const _StorySessionPalette({
     required this.cardBackground,
     required this.xpBanner,
+    required this.xpInnerGlow,
+    required this.heroOuter,
+    required this.heroInner,
+    required this.chipBackground,
     required this.statCardBackground,
     required this.badgeBackground,
     required this.badgeIconBackground,
     required this.shareGradient,
+    required this.closeButtonGradient,
+    required this.datePillBackground,
     required this.cardBorder,
     required this.cardShadow,
     required this.closeButtonBackground,
+    required this.datePillBorder,
+    required this.heroBorder,
+    required this.heroGlow,
+    required this.chipBorder,
+    required this.heroRingBase,
+    required this.heroRingGlow,
+    required this.heroRingGradient,
     required this.onCardPrimary,
     required this.onCardSecondary,
     required this.onCardMuted,
@@ -1295,20 +1722,32 @@ class _StorySessionPalette {
         Color.alphaBlend(color.withOpacity(opacity), surface);
 
     final cardBackground = LinearGradient(
-      begin: Alignment.topCenter,
+      begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        mix(surface, darken(start, 0.35), 0.75),
-        mix(surface, darken(end, 0.45), 0.8),
+        mix(surface, darken(start, 0.55), 0.88),
+        mix(surface, darken(end, 0.7), 0.9),
+        mix(surface, darken(mid, 0.8), 0.92),
       ],
+      stops: const [0.0, 0.55, 1.0],
     );
 
     final xpBanner = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        lighten(start, 0.12),
-        lighten(end, 0.12),
+        lighten(start, 0.26),
+        lighten(end, 0.18),
+        lighten(mid, 0.12),
+      ],
+    );
+
+    final xpInnerGlow = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.white.withOpacity(0.18),
+        Colors.transparent,
       ],
     );
 
@@ -1316,8 +1755,8 @@ class _StorySessionPalette {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        tintSurface(darken(start, 0.2), 0.35),
-        tintSurface(darken(end, 0.2), 0.4),
+        tintSurface(darken(start, 0.28), 0.35),
+        tintSurface(darken(end, 0.32), 0.4),
       ],
     );
 
@@ -1325,8 +1764,8 @@ class _StorySessionPalette {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        tintSurface(darken(start, 0.15), 0.45),
-        tintSurface(darken(end, 0.2), 0.55),
+        tintSurface(darken(start, 0.2), 0.45),
+        tintSurface(darken(end, 0.28), 0.55),
       ],
     );
 
@@ -1345,6 +1784,51 @@ class _StorySessionPalette {
       colors: [
         lighten(start, 0.05),
         lighten(end, 0.05),
+      ],
+    );
+
+    final closeButtonGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.15), 0.35),
+        tintSurface(darken(end, 0.2), 0.35),
+      ],
+    );
+
+    final datePillBackground = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.1), 0.35),
+        tintSurface(darken(end, 0.18), 0.35),
+      ],
+    );
+
+    final heroOuter = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        lighten(start, 0.08),
+        lighten(end, 0.18),
+      ],
+    );
+
+    final heroInner = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.35), 0.1),
+        tintSurface(darken(end, 0.42), 0.12),
+      ],
+    );
+
+    final chipBackground = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        tintSurface(darken(start, 0.3), 0.35),
+        tintSurface(darken(end, 0.35), 0.4),
       ],
     );
 
@@ -1373,13 +1857,30 @@ class _StorySessionPalette {
     return _StorySessionPalette(
       cardBackground: cardBackground,
       xpBanner: xpBanner,
+      xpInnerGlow: xpInnerGlow,
+      heroOuter: heroOuter,
+      heroInner: heroInner,
+      chipBackground: chipBackground,
       statCardBackground: statCardBackground,
       badgeBackground: badgeBackground,
       badgeIconBackground: badgeIconBackground,
       shareGradient: shareGradient,
-      cardBorder: tintSurface(onSurface, 0.08),
-      cardShadow: darken(end, 0.7).withOpacity(0.45),
+      closeButtonGradient: closeButtonGradient,
+      datePillBackground: datePillBackground,
+      cardBorder: tintSurface(onSurface, 0.12),
+      cardShadow: darken(end, 0.8).withOpacity(0.6),
       closeButtonBackground: tintSurface(mid, 0.5),
+      datePillBorder: tintSurface(onSurface, 0.12),
+      heroBorder: tintSurface(onSurface, 0.16),
+      heroGlow: lighten(end, 0.22).withOpacity(0.55),
+      chipBorder: tintSurface(onSurface, 0.14),
+      heroRingBase: tintSurface(onSurface, 0.22),
+      heroRingGlow: lighten(end, 0.35),
+      heroRingGradient: [
+        lighten(start, 0.32),
+        lighten(end, 0.34),
+        lighten(mid, 0.28),
+      ],
       onCardPrimary: onSurface,
       onCardSecondary: onCardSecondary,
       onCardMuted: onCardMuted,

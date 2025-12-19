@@ -36,11 +36,18 @@ class Conversation {
       }
     }
 
+    final createdAt = data['createdAt'];
+    final updatedAt = data['updatedAt'];
+
     return Conversation(
       id: id,
       members: List<String>.from(data['members'] as List),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: createdAt is Timestamp
+          ? createdAt.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: updatedAt is Timestamp
+          ? updatedAt.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0),
       lastMessage: data['lastMessage'] != null
           ? LastMessage.fromJson(
               data['lastMessage'] as Map<String, dynamic>,
@@ -85,10 +92,13 @@ class LastMessage {
   final String type;
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['createdAt'];
     return LastMessage(
       senderId: json['senderId'] as String,
       preview: json['preview'] as String,
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      createdAt: createdAt is Timestamp
+          ? createdAt.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0),
       type: json['type'] as String,
     );
   }

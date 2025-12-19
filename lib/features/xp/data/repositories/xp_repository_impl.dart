@@ -92,6 +92,19 @@ class XpRepositoryImpl implements XpRepository {
   }
 
   @override
+  Stream<Map<String, int>> watchDeviceXpBulk({
+    required String gymId,
+    required String userId,
+    required List<String> deviceIds,
+  }) {
+    return _source.watchDeviceXpBulk(
+      gymId: gymId,
+      userId: userId,
+      deviceIds: deviceIds,
+    );
+  }
+
+  @override
   Stream<int> watchStatsDailyXp({
     required String gymId,
     required String userId,

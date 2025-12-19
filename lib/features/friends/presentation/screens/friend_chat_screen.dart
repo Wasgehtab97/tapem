@@ -32,10 +32,22 @@ class _FriendChatScreenState extends ConsumerState<FriendChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
   bool _showStickerPicker = false;
+  static const bool _logChatUi = false;
 
   @override
   void initState() {
     super.initState();
+    if (kDebugMode && _logChatUi) {
+      final auth = ref.read(authViewStateProvider);
+      final currentUserId = auth.userId;
+      final repository = ref.read(chatRepositoryProvider);
+      final conversationId = currentUserId == null
+          ? 'unknown'
+          : repository.getConversationId(currentUserId, widget.friendUid);
+      debugPrint(
+        '[FriendChatScreen] open chat currentUser=$currentUserId friendUid=${widget.friendUid} conversationId=$conversationId',
+      );
+    }
     // Mark conversation as read when opening chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markConversationAsRead();
@@ -168,6 +180,14 @@ class _FriendChatScreenState extends ConsumerState<FriendChatScreen> {
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(chatMessagesProvider(widget.friendUid));
     final conversationAsync = ref.watch(chatConversationProvider(widget.friendUid));
+    if (kDebugMode && _logChatUi) {
+      final convo = conversationAsync.valueOrNull;
+      if (convo != null) {
+        debugPrint(
+          '[FriendChatScreen] convo members=${convo.members} lastReadAtKeys=${convo.lastReadAt?.keys.toList()}',
+        );
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(

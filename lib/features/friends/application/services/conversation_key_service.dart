@@ -21,6 +21,75 @@ class ConversationKeyService {
   final UserProfileService _userProfileService;
   final FirebaseFirestore _firestore;
   final _aes = AesGcm.with256bits();
+  static const bool _logChatCrypto = false;
+
+  Future<String?> _ensureLocalPublicKey(String userId) async {
+    var localPublicKey = await _encryptionService.getPublicKey();
+    if (localPublicKey == null) {
+      localPublicKey = await _encryptionService.generateAndStoreKeyPair();
+    }
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final storedKey = userDoc.data()?['publicKey'] as String?;
+      if (storedKey != localPublicKey) {
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .set({'publicKey': localPublicKey}, SetOptions(merge: true));
+      }
+    } catch (e) {
+      if (kDebugMode && _logChatCrypto) {
+        debugPrint('[ConversationKeyService] Failed to sync public key: $e');
+      }
+    }
+
+    return localPublicKey;
+  }
+
+  Future<SecretKey?> _reinitializeConversationKey({
+    required String conversationId,
+    required String userId,
+  }) async {
+    final convoDoc = await _firestore
+        .collection('friendConversations')
+        .doc(conversationId)
+        .get();
+    if (!convoDoc.exists) {
+      return null;
+    }
+    final members = List<String>.from(convoDoc.data()?['members'] ?? const []);
+    final friendUid = members.firstWhere(
+      (uid) => uid != userId,
+      orElse: () => '',
+    );
+    if (friendUid.isEmpty) {
+      return null;
+    }
+
+    final localPublicKey = await _ensureLocalPublicKey(userId);
+    if (localPublicKey == null) {
+      return null;
+    }
+
+    final friendProfile = await _userProfileService.getPublicProfile(friendUid);
+    if (friendProfile?.publicKey == null) {
+      return null;
+    }
+
+    await initializeConversationKey(
+      conversationId: conversationId,
+      creatorId: userId,
+      userAId: userId,
+      userBId: friendUid,
+    );
+
+    return getConversationKey(
+      conversationId: conversationId,
+      userId: userId,
+      allowReinit: false,
+    );
+  }
 
   /// Initialize a conversation key for two participants
   /// Generates a random AES key and encrypts it for both users WITH THEIR OWN PUBLIC KEYS
@@ -31,8 +100,8 @@ class ConversationKeyService {
     required String userAId,
     required String userBId,
   }) async {
-    if (kDebugMode) {
-     debugPrint('[ConversationKeyService] Initializing key for $conversationId');
+    if (kDebugMode && _logChatCrypto) {
+      debugPrint('[ConversationKeyService] Initializing key for $conversationId');
     }
 
     // Generate random conversation key (AES-256)
@@ -97,7 +166,7 @@ class ConversationKeyService {
 
     await batch.commit();
 
-    if (kDebugMode) {
+    if (kDebugMode && _logChatCrypto) {
       debugPrint('[ConversationKeyService] Key initialized successfully');
     }
   }
@@ -106,6 +175,7 @@ class ConversationKeyService {
   Future<SecretKey?> getConversationKey({
     required String conversationId,
     required String userId,
+    bool allowReinit = true,
   }) async {
     try {
       final doc = await _firestore
@@ -116,7 +186,13 @@ class ConversationKeyService {
           .get();
 
       if (!doc.exists) {
-        return null;
+        if (!allowReinit) {
+          return null;
+        }
+        return _reinitializeConversationKey(
+          conversationId: conversationId,
+          userId: userId,
+        );
       }
 
       final data = doc.data()!;
@@ -132,15 +208,33 @@ class ConversationKeyService {
       }
       
       // Decrypt the key using creator's public key
-      final decryptedKeyBase64 = await _encryptionService.decryptData(
-        conversationKey.encryptedKey,
-        creatorPublicKey,
-      );
+      String decryptedKeyBase64;
+      try {
+        decryptedKeyBase64 = await _encryptionService.decryptData(
+          conversationKey.encryptedKey,
+          creatorPublicKey,
+        );
+      } on SecretBoxAuthenticationError {
+        if (!allowReinit) {
+          return null;
+        }
+        return _reinitializeConversationKey(
+          conversationId: conversationId,
+          userId: userId,
+        );
+      }
       
       final keyBytes = base64Decode(decryptedKeyBase64);
       return SecretKey(keyBytes);
+    } on FirebaseException catch (e) {
+      if (kDebugMode && _logChatCrypto) {
+        debugPrint(
+          '[ConversationKeyService] getConversationKey failed code=${e.code} conversationId=$conversationId userId=$userId',
+        );
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChatCrypto) {
         debugPrint('[ConversationKeyService] Failed to get conversation key: $e');
       }
       return null;

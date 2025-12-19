@@ -11,6 +11,7 @@ import 'package:tapem/features/device/providers/workout_day_controller_provider.
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 
 class DeviceScreen extends riverpod.ConsumerStatefulWidget {
   const DeviceScreen({
@@ -69,10 +70,11 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
   }
 
   void _handleSessionSaved() {
-    Navigator.of(context).popUntil((route) {
-      final name = route.settings.name;
-      return name == AppRouter.home || route.isFirst;
-    });
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      AppRouter.home,
+      (route) => false,
+      arguments: 1,
+    );
   }
 
   void _handleCloseRequested() {

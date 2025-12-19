@@ -365,6 +365,26 @@ class StorySessionService {
         }
       }
 
+      if (isMulti && (exerciseId == null || exerciseId.isEmpty)) {
+        if (!newDevices.containsKey(deviceId)) {
+          final seenDevice =
+              await _historyStore.hasSeenDevice(gymId, userId, deviceId);
+          if (!seenDevice) {
+            final existedBefore = await _hasPriorUsage(
+              gymId: gymId,
+              userId: userId,
+              deviceId: deviceId,
+              exerciseId: null,
+              before: startOfDay,
+            );
+            final shouldAdd = existedBefore != true;
+            if (shouldAdd) {
+              newDevices[deviceId] = session;
+            }
+          }
+        }
+      }
+
       if (isMulti && exerciseId != null && exerciseId.isNotEmpty) {
         final resolvedExerciseId = exerciseId;
         final key = '$deviceId::$resolvedExerciseId';

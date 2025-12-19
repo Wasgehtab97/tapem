@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/logging/elog.dart';
@@ -32,7 +33,12 @@ class XpProvider extends ChangeNotifier {
   Map<String, int> _dayListXp = {};
   final Map<String, int> _deviceXp = {};
   StreamSubscription<Map<String, int>>? _dayListSub;
+  StreamSubscription<Map<String, int>>? _deviceSub;
   final Map<String, StreamSubscription<int>> _deviceSubs = {};
+  String? _deviceGymId;
+  String? _deviceUserId;
+  List<String> _deviceIds = const [];
+  bool _useBulkDeviceXp = true;
   int _statsDailyXp = 0;
   int _dailyLevel = 1;
   int _dailyLevelXp = 0;
@@ -245,42 +251,77 @@ class XpProvider extends ChangeNotifier {
   }
 
   void watchDeviceXp(String gymId, String userId, List<String> deviceIds) {
+    if (_deviceGymId == gymId &&
+        _deviceUserId == userId &&
+        listEquals(_deviceIds, deviceIds)) {
+      return;
+    }
+
+    _deviceGymId = gymId;
+    _deviceUserId = userId;
+    _deviceIds = List.of(deviceIds);
+
+    _deviceSub?.cancel();
+    for (final sub in _deviceSubs.values) {
+      sub.cancel();
+    }
+    _deviceSubs.clear();
+
     XpTrace.log('WATCH_INIT', {
-      'deviceCountBeforeAttach': _deviceSubs.length,
+      'deviceCount': deviceIds.length,
       'gymId': gymId,
       'uid': userId,
+      'mode': _useBulkDeviceXp ? 'bulk' : 'perDevice',
     });
-    final detached = <String>[];
-    for (final id in _deviceSubs.keys.toList()) {
-      if (!deviceIds.contains(id)) {
-        _deviceSubs[id]?.cancel();
-        _deviceSubs.remove(id);
-        _deviceXp.remove(id);
-        detached.add(id);
-      }
+
+    if (deviceIds.isEmpty) {
+      _deviceXp.clear();
+      notifyListeners();
+      return;
     }
-    final attached = <String>[];
+
+    if (_useBulkDeviceXp) {
+      _deviceSub = _repo
+          .watchDeviceXpBulk(
+            gymId: gymId,
+            userId: userId,
+            deviceIds: deviceIds,
+          )
+          .listen(
+            (map) {
+              _deviceXp
+                ..clear()
+                ..addAll(map);
+              notifyListeners();
+            },
+            onError: (Object error, StackTrace st) {
+              final isDenied =
+                  error is FirebaseException &&
+                  error.code == 'permission-denied';
+              if (isDenied) {
+                _useBulkDeviceXp = false;
+                _deviceGymId = null;
+                _deviceUserId = null;
+                _deviceIds = const [];
+                watchDeviceXp(gymId, userId, deviceIds);
+                return;
+              }
+              elogError('XP_DEVICE_BULK_FAILED', error, st, {
+                'gymId': gymId,
+                'uid': userId,
+              });
+            },
+          );
+      return;
+    }
+
     for (final id in deviceIds) {
-      if (_deviceSubs.containsKey(id)) continue;
-      attached.add(id);
       _deviceSubs[id] = _repo
           .watchDeviceXp(gymId: gymId, deviceId: id, userId: userId)
           .listen((xp) {
             _deviceXp[id] = xp;
-            final level = xp ~/ LevelService.xpPerLevel + 1;
-            XpTrace.log('WATCH_UPDATE', {
-              'deviceId': id,
-              'xp': xp,
-              'level': level,
-            });
             notifyListeners();
           });
-    }
-    if (attached.isNotEmpty || detached.isNotEmpty) {
-      XpTrace.log('WATCH_ATTACH', {
-        'attached': attached,
-        'detached': detached,
-      });
     }
   }
 
@@ -384,6 +425,7 @@ class XpProvider extends ChangeNotifier {
     _muscleDailySub?.cancel();
     _dayListSub?.cancel();
     _statsDailySub?.cancel();
+    _deviceSub?.cancel();
     for (final sub in _deviceSubs.values) {
       sub.cancel();
     }

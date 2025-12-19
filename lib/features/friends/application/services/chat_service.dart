@@ -29,6 +29,21 @@ class ChatService {
   final bool Function(String friendUid) _isFriendCallback;
   final EncryptionService _encryptionService;
   final ConversationKeyService _conversationKeyService;
+  static const bool _logChat = false;
+
+  ChatMessage _redactEncryptedMessage(ChatMessage msg) {
+    return ChatMessage(
+      id: msg.id,
+      senderId: msg.senderId,
+      type: msg.type,
+      createdAt: msg.createdAt,
+      text: msg.type == MessageType.text ? 'Verschluesselte Nachricht' : msg.text,
+      highlightData: msg.highlightData,
+      isEncrypted: true,
+      nonce: msg.nonce,
+      stickerId: msg.stickerId,
+    );
+  }
 
   /// Gets the current user ID.
   String? get _currentUserId => _auth.currentUser?.uid;
@@ -39,7 +54,7 @@ class ChatService {
   Stream<List<ChatMessage>> watchMessages(String friendUid) {
     final currentUserId = _currentUserId;
     if (currentUserId == null) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatService] watchMessages: user not authenticated');
       }
       return Stream.value([]);
@@ -56,7 +71,9 @@ class ChatService {
 
       if (conversationKey == null) {
         // No encryption key yet (might be first message)
-        return messages;
+        return messages
+            .map((msg) => msg.isEncrypted ? _redactEncryptedMessage(msg) : msg)
+            .toList();
       }
 
       // Decrypt encrypted messages
@@ -80,11 +97,10 @@ class ChatService {
               nonce: msg.nonce,
             );
           } catch (e) {
-            if (kDebugMode) {
+            if (kDebugMode && _logChat) {
               debugPrint('[ChatService] Decryption failed for msg ${msg.id}: $e');
             }
-            // Return message as-is if decryption fails
-            return msg;
+            return _redactEncryptedMessage(msg);
           }
         }
         return msg;
@@ -96,7 +112,7 @@ class ChatService {
   Stream<Conversation?> watchConversation(String friendUid) {
     final currentUserId = _currentUserId;
     if (currentUserId == null) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatService] watchConversation: user not authenticated');
       }
       return Stream.value(null);
@@ -136,7 +152,7 @@ class ChatService {
 
     // Validate friendship
     if (!_isFriendCallback(friendUid)) {
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint(
           '[ChatService] sendTextMessage rejected: $friendUid is not a friend',
         );
@@ -144,7 +160,7 @@ class ChatService {
       throw ArgumentError('Can only send messages to friends');
     }
 
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint(
         '[ChatService] sendTextMessage: friendUid=$friendUid textLength=${trimmed.length}',
       );
@@ -160,7 +176,7 @@ class ChatService {
 
     if (conversationKey == null) {
       // First message - create conversation key
-      if (kDebugMode) {
+      if (kDebugMode && _logChat) {
         debugPrint('[ChatService] Creating new conversation key');
       }
 
@@ -196,7 +212,7 @@ class ChatService {
       nonce: encrypted['nonce'],
     );
 
-    if (kDebugMode) {
+    if (kDebugMode && _logChat) {
       debugPrint('[ChatService] sendTextMessage: success (encrypted=true)');
     }
   }

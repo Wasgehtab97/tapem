@@ -114,12 +114,11 @@ void _applyDropsToSet(Map<String, dynamic> target, List<Map<String, String>> dro
     for (final drop in normalized)
       {'weight': drop['weight'] ?? '', 'reps': drop['reps'] ?? ''},
   ];
-  final firstWithValue = normalized.firstWhere(
-    _dropHasValue,
-    orElse: () => const {'weight': '', 'reps': ''},
-  );
-  target['dropWeight'] = firstWithValue['weight'] ?? '';
-  target['dropReps'] = firstWithValue['reps'] ?? '';
+  final first = normalized.isNotEmpty
+      ? normalized.first
+      : const {'weight': '', 'reps': ''};
+  target['dropWeight'] = first['weight'] ?? '';
+  target['dropReps'] = first['reps'] ?? '';
 }
 
 Map<String, dynamic> _withNormalizedDrops(Map<String, dynamic> set) {
@@ -686,6 +685,26 @@ class DeviceProvider extends ChangeNotifier {
     notifyListeners();
     _onSessionMutated();
     return drops.length - 1;
+  }
+
+  void removeDropFromSet(int setIndex, int dropIndex) {
+    if (setIndex < 0 || setIndex >= _sets.length) return;
+    final before = Map<String, dynamic>.from(_sets[setIndex]);
+    final drops = _cloneDrops(_dropsFromSet(before));
+    if (dropIndex < 0 || dropIndex >= drops.length) return;
+    drops.removeAt(dropIndex);
+    final after = Map<String, dynamic>.from(before);
+    _applyDropsToSet(after, drops);
+    after['number'] = '${setIndex + 1}';
+
+    if (mapEquals(before, after)) {
+      return;
+    }
+
+    _sets[setIndex] = after;
+    _log('🗑️ [Provider] removeDropFromSet($setIndex,$dropIndex) drops=${drops.length}');
+    notifyListeners();
+    _onSessionMutated();
   }
 
   void updateDrop(

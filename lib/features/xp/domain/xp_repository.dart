@@ -36,6 +36,12 @@ abstract class XpRepository {
     required String userId,
   });
 
+  Stream<Map<String, int>> watchDeviceXpBulk({
+    required String gymId,
+    required String userId,
+    required List<String> deviceIds,
+  });
+
   Stream<int> watchStatsDailyXp({
     required String gymId,
     required String userId,

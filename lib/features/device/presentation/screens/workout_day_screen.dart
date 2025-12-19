@@ -14,6 +14,7 @@ import 'package:tapem/features/training_plan/data/sources/firestore_training_pla
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
@@ -648,7 +649,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
 
       // Nach dem Speichern immer zur Profil-Page (Home-Tab Index 1) navigieren,
       // unabhängig davon, ob noch andere Sessions im Hintergrund existieren.
-      Navigator.of(context).pushNamedAndRemoveUntil(
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
         AppRouter.home,
         (route) => false,
         arguments: 1,

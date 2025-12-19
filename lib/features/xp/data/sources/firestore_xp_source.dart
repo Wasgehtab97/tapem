@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/logging/xp_trace.dart';
 import 'package:tapem/core/time/logic_day.dart';
@@ -13,6 +12,8 @@ import 'package:tapem/features/xp/domain/device_xp_result.dart';
 import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/session_xp_award.dart';
 import 'package:tapem/features/xp/domain/training_day_xp_engine.dart';
+
+const bool _logDeviceXpWatchers = false;
 
 class FirestoreXpSource {
   final FirebaseFirestore _firestore;
@@ -770,13 +771,55 @@ class FirestoreXpSource {
         .doc(deviceId)
         .collection('leaderboard')
         .doc(userId);
-    debugPrint(
-      '👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
-    );
+    if (kDebugMode && _logDeviceXpWatchers) {
+      debugPrint(
+        '👀 watchDeviceXp gymId=$gymId deviceId=$deviceId userId=$userId',
+      );
+    }
     return doc.snapshots().map((snap) {
       final xp = (snap.data()?['xp'] as int?) ?? 0;
-      debugPrint('📥 deviceXp snapshot $xp');
+      if (kDebugMode && _logDeviceXpWatchers) {
+        debugPrint('📥 deviceXp snapshot $xp');
+      }
       return xp;
+    });
+  }
+
+  Stream<Map<String, int>> watchDeviceXpBulk({
+    required String gymId,
+    required String userId,
+    required List<String> deviceIds,
+  }) {
+    if (deviceIds.isEmpty) {
+      return Stream.value(<String, int>{});
+    }
+    final deviceIdSet = deviceIds.toSet();
+    final query = _firestore
+        .collectionGroup('leaderboard')
+        .where('userId', isEqualTo: userId);
+    return query.snapshots().map((snap) {
+      final map = <String, int>{};
+      for (final id in deviceIds) {
+        map[id] = 0;
+      }
+      for (final doc in snap.docs) {
+        final deviceRef = doc.reference.parent.parent;
+        final gymRef = deviceRef?.parent.parent;
+        if (deviceRef == null || gymRef == null) {
+          continue;
+        }
+        if (gymRef.id != gymId) {
+          continue;
+        }
+        final deviceId = deviceRef.id;
+        if (!deviceIdSet.contains(deviceId)) {
+          continue;
+        }
+        final data = doc.data();
+        final xp = (data['xp'] as int?) ?? 0;
+        map[deviceId] = xp;
+      }
+      return map;
     });
   }
 

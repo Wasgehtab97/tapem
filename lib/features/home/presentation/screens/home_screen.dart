@@ -36,6 +36,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
+  _HomeTabId? _lastTabId;
 
   List<_TabInfo> _buildTabs(BuildContext context) {
     final gymProv = ref.watch(gymProvider);
@@ -231,8 +232,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;
     }
+    if (_lastTabId != null && tabs.every((tab) => tab.id != _lastTabId)) {
+      // Wenn der bisher aktive Tab entfernt wurde (z.B. Workout-Tab),
+      // immer auf Profil zurückfallen.
+      final profileIndex = tabs.indexWhere(
+        (tab) => tab.id == _HomeTabId.profile,
+      );
+      _currentIndex = profileIndex >= 0 ? profileIndex : 0;
+    }
     final currentTab = tabs[_currentIndex];
     final currentLabel = currentTab.item.label ?? '';
+    _lastTabId = currentTab.id;
 
     return Scaffold(
       appBar: currentTab.id == _HomeTabId.workout

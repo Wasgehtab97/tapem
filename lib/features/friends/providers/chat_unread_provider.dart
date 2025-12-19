@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -60,14 +59,7 @@ class ChatUnreadNotifier extends StreamNotifier<ChatUnreadState> {
     final currentUserId = authState.userId;
 
     if (currentUserId == null) {
-      if (kDebugMode) {
-        debugPrint('[ChatUnread] No authenticated user');
-      }
       return Stream.value(const ChatUnreadState());
-    }
-
-    if (kDebugMode) {
-      debugPrint('[ChatUnread] Watching conversations for userId=$currentUserId');
     }
 
     // Watch all conversations where user is a member
@@ -109,15 +101,7 @@ class ChatUnreadNotifier extends StreamNotifier<ChatUnreadState> {
             unreadByFriend[friendUid] = 1;
             totalUnread += 1;
           }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('[ChatUnread] Error processing conversation: $e');
-          }
-        }
-      }
-
-      if (kDebugMode) {
-        debugPrint('[ChatUnread] Total unread: $totalUnread');
+        } catch (_) {}
       }
 
       return ChatUnreadState(

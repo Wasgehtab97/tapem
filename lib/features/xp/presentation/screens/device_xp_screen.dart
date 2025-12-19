@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/auth_providers.dart';
@@ -15,8 +16,18 @@ class DeviceXpScreen extends ConsumerStatefulWidget {
   ConsumerState<DeviceXpScreen> createState() => _DeviceXpScreenState();
 }
 
+enum _DeviceXpSort {
+  xp,
+  id,
+}
+
 class _DeviceXpScreenState extends ConsumerState<DeviceXpScreen> {
-  void _syncWatchers() {
+  String? _lastGymId;
+  String? _lastUid;
+  List<String> _lastDeviceIds = const [];
+  _DeviceXpSort _sort = _DeviceXpSort.xp;
+
+  void _syncWatchers(List<String> deviceIds) {
     final auth = ref.read(authViewStateProvider);
     final gymProv = ref.read(gymProvider);
     final xpProv = ref.read(xpProvider);
@@ -27,33 +38,69 @@ class _DeviceXpScreenState extends ConsumerState<DeviceXpScreen> {
       return;
     }
 
-    final deviceIds = gymProv.devices.map((d) => d.uid).toList();
-    debugPrint(
-      '[DeviceXpScreen] syncWatchers gymId=$gymId uid=$uid deviceCount=${deviceIds.length}',
-    );
+    if (_lastGymId == gymId &&
+        _lastUid == uid &&
+        listEquals(_lastDeviceIds, deviceIds)) {
+      return;
+    }
+
+    _lastGymId = gymId;
+    _lastUid = uid;
+    _lastDeviceIds = List.of(deviceIds);
+
     xpProv.watchDeviceXp(gymId, uid, deviceIds);
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[DeviceXpScreen] build()');
     final auth = ref.watch(authViewStateProvider);
-    debugPrint(
-      '[DeviceXpScreen] auth userId=${auth.userId} gym=${auth.gymCode}',
-    );
-    // Bei jedem Build sicherstellen, dass die Watcher korrekt gesetzt sind.
-    _syncWatchers();
 
     final loc = AppLocalizations.of(context)!;
     final gymProv = ref.watch(gymProvider);
     final xpProv = ref.watch(xpProvider);
     final devices = gymProv.devices.toList();
-    debugPrint(
-      '[DeviceXpScreen] devices.length=${devices.length} deviceXpKeys=${xpProv.deviceXp.keys.toList()}',
-    );
+    final deviceIds = devices.map((d) => d.uid).toList();
+    // Bei jedem Build sicherstellen, dass die Watcher korrekt gesetzt sind.
+    _syncWatchers(deviceIds);
+
+    devices.sort((a, b) {
+      if (_sort == _DeviceXpSort.id) {
+        return a.uid.compareTo(b.uid);
+      }
+      final xpA = xpProv.deviceXp[a.uid] ?? 0;
+      final xpB = xpProv.deviceXp[b.uid] ?? 0;
+      final byXp = xpB.compareTo(xpA);
+      if (byXp != 0) {
+        return byXp;
+      }
+      return a.uid.compareTo(b.uid);
+    });
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.xpDeviceTitle)),
+      appBar: AppBar(
+        title: Text(loc.xpDeviceTitle),
+        actions: [
+          PopupMenuButton<_DeviceXpSort>(
+            icon: const Icon(Icons.sort),
+            initialValue: _sort,
+            onSelected: (value) {
+              setState(() {
+                _sort = value;
+              });
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _DeviceXpSort.xp,
+                child: Text('XP'),
+              ),
+              PopupMenuItem(
+                value: _DeviceXpSort.id,
+                child: Text('ID'),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: devices.length,

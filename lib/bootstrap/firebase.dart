@@ -18,6 +18,7 @@ import '../core/push/push_notification_handler.dart';
 import 'navigation.dart';
 
 const bool kEnablePush = true;
+const bool _logPush = false;
 
 Future<void> ensureFirebaseInitialized() async {
   try {
@@ -77,12 +78,16 @@ Future<void> initializePushMessaging() async {
         sound: true,
       );
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('[FCM] permission denied → skip');
+        if (_logPush && kReleaseMode == false) {
+          debugPrint('[FCM] permission denied -> skip');
+        }
         return;
       }
       final apns = await messaging.getAPNSToken();
       if (apns == null) {
-        debugPrint('[FCM] no APNs token (simulator?) → skip FCM token fetch');
+        if (_logPush && kReleaseMode == false) {
+          debugPrint('[FCM] no APNs token (simulator?) -> skip FCM token fetch');
+        }
         return;
       }
     }
@@ -93,19 +98,26 @@ Future<void> initializePushMessaging() async {
     }
 
     FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-      _registerToken(token)
-          .catchError((error) => debugPrint('[FCM] onTokenRefresh error: $error'));
+      _registerToken(token).catchError((error) {
+        if (_logPush && kReleaseMode == false) {
+          debugPrint('[FCM] onTokenRefresh error: $error');
+        }
+      });
     });
 
     // Foreground message handler - show in-app notification
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('[FCM] Foreground message received: ${message.messageId}');
+      if (_logPush && kReleaseMode == false) {
+        debugPrint('[FCM] Foreground message received: ${message.messageId}');
+      }
       PushNotificationHandler.handleForegroundMessage(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
   } catch (error, stackTrace) {
-    debugPrint('[FCM] init failed: $error\n$stackTrace');
+    if (_logPush && kReleaseMode == false) {
+      debugPrint('[FCM] init failed: $error\n$stackTrace');
+    }
   }
 }
 
@@ -117,7 +129,9 @@ Future<void> _registerToken(String token) async {
       'platform': platform,
     });
   } catch (error) {
-    debugPrint('[FCM] registerPushToken failed: $error');
+    if (_logPush && kReleaseMode == false) {
+      debugPrint('[FCM] registerPushToken failed: $error');
+    }
   }
 }
 

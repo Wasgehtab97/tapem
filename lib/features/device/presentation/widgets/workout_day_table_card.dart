@@ -60,8 +60,13 @@ class _WorkoutDayTableCardState
   final List<TextEditingController> _repsCtrls = [];
   final List<FocusNode> _weightFocusNodes = [];
   final List<FocusNode> _repsFocusNodes = [];
+  final List<List<TextEditingController>> _dropWeightCtrls = [];
+  final List<List<TextEditingController>> _dropRepsCtrls = [];
+  final List<List<FocusNode>> _dropWeightFocusNodes = [];
+  final List<List<FocusNode>> _dropRepsFocusNodes = [];
   bool _muteCtrls = false;
   int _lastFocusRequestId = -1;
+  final Set<int> _expandedDropRows = <int>{};
 
   DeviceProvider get _provider => widget.session.provider;
 
@@ -92,6 +97,26 @@ class _WorkoutDayTableCardState
     for (final f in _repsFocusNodes) {
       f.dispose();
     }
+    for (final row in _dropWeightCtrls) {
+      for (final c in row) {
+        c.dispose();
+      }
+    }
+    for (final row in _dropRepsCtrls) {
+      for (final c in row) {
+        c.dispose();
+      }
+    }
+    for (final row in _dropWeightFocusNodes) {
+      for (final f in row) {
+        f.dispose();
+      }
+    }
+    for (final row in _dropRepsFocusNodes) {
+      for (final f in row) {
+        f.dispose();
+      }
+    }
     _provider.removeListener(_handleProviderChanged);
     super.dispose();
   }
@@ -117,16 +142,36 @@ class _WorkoutDayTableCardState
       _repsFocusNodes.add(repsFocus);
       weightCtrl.addListener(() => _handleWeightChanged(weightCtrl));
       repsCtrl.addListener(() => _handleRepsChanged(repsCtrl));
+      _dropWeightCtrls.add(<TextEditingController>[]);
+      _dropRepsCtrls.add(<TextEditingController>[]);
+      _dropWeightFocusNodes.add(<FocusNode>[]);
+      _dropRepsFocusNodes.add(<FocusNode>[]);
     }
     while (_weightCtrls.length > sets.length) {
       final wc = _weightCtrls.removeLast();
       final rc = _repsCtrls.removeLast();
       final wf = _weightFocusNodes.removeLast();
       final rf = _repsFocusNodes.removeLast();
+      final dropWeights = _dropWeightCtrls.removeLast();
+      final dropReps = _dropRepsCtrls.removeLast();
+      final dropWeightFocus = _dropWeightFocusNodes.removeLast();
+      final dropRepsFocus = _dropRepsFocusNodes.removeLast();
       wc.dispose();
       rc.dispose();
       wf.dispose();
       rf.dispose();
+      for (final c in dropWeights) {
+        c.dispose();
+      }
+      for (final c in dropReps) {
+        c.dispose();
+      }
+      for (final f in dropWeightFocus) {
+        f.dispose();
+      }
+      for (final f in dropRepsFocus) {
+        f.dispose();
+      }
     }
 
     // Sync texts without triggering listeners.
@@ -135,6 +180,7 @@ class _WorkoutDayTableCardState
       final set = sets[i];
       final weight = (set['weight'] ?? '').toString();
       final reps = (set['reps'] ?? '').toString();
+      final drops = _dropsFromSet(set);
       if (_weightCtrls[i].text != weight) {
         _weightCtrls[i].text = weight;
         _weightCtrls[i].selection =
@@ -144,6 +190,48 @@ class _WorkoutDayTableCardState
         _repsCtrls[i].text = reps;
         _repsCtrls[i].selection =
             TextSelection.collapsed(offset: _repsCtrls[i].text.length);
+      }
+
+      final dropWeightRow = _dropWeightCtrls[i];
+      final dropRepsRow = _dropRepsCtrls[i];
+      final dropWeightFocusRow = _dropWeightFocusNodes[i];
+      final dropRepsFocusRow = _dropRepsFocusNodes[i];
+      while (dropWeightRow.length < drops.length) {
+        final c = TextEditingController();
+        final f = FocusNode();
+        dropWeightRow.add(c);
+        dropWeightFocusRow.add(f);
+        c.addListener(() => _handleDropWeightChanged(c));
+      }
+      while (dropRepsRow.length < drops.length) {
+        final c = TextEditingController();
+        final f = FocusNode();
+        dropRepsRow.add(c);
+        dropRepsFocusRow.add(f);
+        c.addListener(() => _handleDropRepsChanged(c));
+      }
+      while (dropWeightRow.length > drops.length) {
+        dropWeightRow.removeLast().dispose();
+        dropWeightFocusRow.removeLast().dispose();
+      }
+      while (dropRepsRow.length > drops.length) {
+        dropRepsRow.removeLast().dispose();
+        dropRepsFocusRow.removeLast().dispose();
+      }
+
+      for (var d = 0; d < drops.length; d++) {
+        final dropWeight = drops[d]['weight'] ?? '';
+        final dropReps = drops[d]['reps'] ?? '';
+        if (dropWeightRow[d].text != dropWeight) {
+          dropWeightRow[d].text = dropWeight;
+          dropWeightRow[d].selection =
+              TextSelection.collapsed(offset: dropWeightRow[d].text.length);
+        }
+        if (dropRepsRow[d].text != dropReps) {
+          dropRepsRow[d].text = dropReps;
+          dropRepsRow[d].selection =
+              TextSelection.collapsed(offset: dropRepsRow[d].text.length);
+        }
       }
     }
     _muteCtrls = false;
@@ -169,6 +257,34 @@ class _WorkoutDayTableCardState
     if (index == -1) return;
     if (index >= _provider.sets.length) return;
     _provider.updateSet(index, reps: controller.text);
+  }
+
+  void _handleDropWeightChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final indices = _findDropIndices(_dropWeightCtrls, controller);
+    if (indices == null) return;
+    final index = indices.$1;
+    final dropIndex = indices.$2;
+    if (index >= _provider.sets.length) return;
+    _provider.updateDrop(
+      index,
+      dropIndex,
+      weight: controller.text,
+    );
+  }
+
+  void _handleDropRepsChanged(TextEditingController controller) {
+    if (_muteCtrls) return;
+    final indices = _findDropIndices(_dropRepsCtrls, controller);
+    if (indices == null) return;
+    final index = indices.$1;
+    final dropIndex = indices.$2;
+    if (index >= _provider.sets.length) return;
+    _provider.updateDrop(
+      index,
+      dropIndex,
+      reps: controller.text,
+    );
   }
 
   Future<void> _ensureSessionLoaded() async {
@@ -200,9 +316,49 @@ class _WorkoutDayTableCardState
     controller.focusSession(widget.session.key);
   }
 
+  List<Map<String, String>> _dropsFromSet(Map<String, dynamic> set) {
+    final raw = set['drops'];
+    final drops = <Map<String, String>>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map) {
+          final map = Map<String, dynamic>.from(entry);
+          drops.add({
+            'weight': (map['weight'] ?? map['kg'] ?? '').toString(),
+            'reps': (map['reps'] ?? map['wdh'] ?? '').toString(),
+          });
+        }
+      }
+    }
+    if (drops.isEmpty) {
+      final legacyWeight = (set['dropWeight'] ?? '').toString();
+      final legacyReps = (set['dropReps'] ?? '').toString();
+      if (legacyWeight.isNotEmpty || legacyReps.isNotEmpty) {
+        drops.add({'weight': legacyWeight, 'reps': legacyReps});
+      }
+    }
+    return drops;
+  }
+
+  (int, int)? _findDropIndices(
+    List<List<TextEditingController>> controllerSets,
+    TextEditingController controller,
+  ) {
+    for (var i = 0; i < controllerSets.length; i++) {
+      final row = controllerSets[i];
+      for (var d = 0; d < row.length; d++) {
+        if (row[d] == controller) {
+          return (i, d);
+        }
+      }
+    }
+    return null;
+  }
+
   void _openKeypadForField({
     required int setIndex,
     required DeviceSetFieldFocus field,
+    int dropIndex = 0,
   }) {
     _focusSession();
 
@@ -212,27 +368,45 @@ class _WorkoutDayTableCardState
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
 
-    if (setIndex < 0 || setIndex >= _weightCtrls.length) return;
-
     TextEditingController controller;
     FocusNode focusNode;
     switch (field) {
       case DeviceSetFieldFocus.weight:
+        if (setIndex < 0 || setIndex >= _weightCtrls.length) return;
         controller = _weightCtrls[setIndex];
         focusNode = _weightFocusNodes[setIndex];
         break;
       case DeviceSetFieldFocus.reps:
+        if (setIndex < 0 || setIndex >= _repsCtrls.length) return;
         controller = _repsCtrls[setIndex];
         focusNode = _repsFocusNodes[setIndex];
         break;
-      default:
-        // Drops werden im aktuellen Table-Layout nicht direkt editiert.
-        return;
+      case DeviceSetFieldFocus.dropWeight:
+        if (setIndex < 0 || setIndex >= _dropWeightCtrls.length) return;
+        if (dropIndex < 0 ||
+            dropIndex >= _dropWeightCtrls[setIndex].length) {
+          return;
+        }
+        controller = _dropWeightCtrls[setIndex][dropIndex];
+        focusNode = _dropWeightFocusNodes[setIndex][dropIndex];
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        if (setIndex < 0 || setIndex >= _dropRepsCtrls.length) return;
+        if (dropIndex < 0 || dropIndex >= _dropRepsCtrls[setIndex].length) {
+          return;
+        }
+        controller = _dropRepsCtrls[setIndex][dropIndex];
+        focusNode = _dropRepsFocusNodes[setIndex][dropIndex];
+        break;
     }
 
     _lastFocusRequestId = prov.requestFocus(
       index: setIndex,
       field: field,
+      dropIndex: field == DeviceSetFieldFocus.dropWeight ||
+              field == DeviceSetFieldFocus.dropReps
+          ? dropIndex
+          : null,
     );
 
     if (focusNode.canRequestFocus) {
@@ -241,7 +415,9 @@ class _WorkoutDayTableCardState
 
     final keypad =
         container.read(overlayNumericKeypadControllerProvider);
-    keypad.openFor(controller, allowDecimal: true);
+    final allowDecimal = field == DeviceSetFieldFocus.weight ||
+        field == DeviceSetFieldFocus.dropWeight;
+    keypad.openFor(controller, allowDecimal: allowDecimal);
   }
 
   void _toggleDone(int index) {
@@ -269,52 +445,22 @@ class _WorkoutDayTableCardState
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
 
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.black,
-      builder: (ctx) {
-        final set = prov.sets[index];
-        final theme = Theme.of(ctx);
+    // Ensure there's at least one drop slot so edits map to a concrete drop.
+    prov.ensureDropSlot(index);
 
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              Text(
-                'Dropsätze',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Dropsätze kannst du aktuell direkt im Workout bearbeiten.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // For now we simply show a read-only summary; editing still
-              // happens through the keypad on WorkoutDay.
-              Text(
-                set.toString(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    setState(() {
+      if (_expandedDropRows.contains(index)) {
+        _expandedDropRows.remove(index);
+      } else {
+        _expandedDropRows.add(index);
+      }
+    });
+
+    // Focus the drop weight field when opening the editor.
+    _openKeypadForField(
+      setIndex: index,
+      field: DeviceSetFieldFocus.dropWeight,
+      dropIndex: 0,
     );
   }
 
@@ -512,22 +658,42 @@ class _WorkoutDayTableCardState
     if (focusField != null &&
         focusIndex != null &&
         focusIndex >= 0 &&
-        focusIndex < _weightCtrls.length &&
+        focusIndex < prov.sets.length &&
         focusRequestId != _lastFocusRequestId) {
       _lastFocusRequestId = focusRequestId;
       TextEditingController? controller;
       FocusNode? focusNode;
       switch (focusField) {
         case DeviceSetFieldFocus.weight:
-          controller = _weightCtrls[focusIndex];
-          focusNode = _weightFocusNodes[focusIndex];
+          if (focusIndex < _weightCtrls.length) {
+            controller = _weightCtrls[focusIndex];
+            focusNode = _weightFocusNodes[focusIndex];
+          }
           break;
         case DeviceSetFieldFocus.reps:
-          controller = _repsCtrls[focusIndex];
-          focusNode = _repsFocusNodes[focusIndex];
+          if (focusIndex < _repsCtrls.length) {
+            controller = _repsCtrls[focusIndex];
+            focusNode = _repsFocusNodes[focusIndex];
+          }
           break;
-        default:
-          controller = null;
+        case DeviceSetFieldFocus.dropWeight:
+          final dropIndex = prov.focusedDropIndex ?? 0;
+          if (focusIndex < _dropWeightCtrls.length &&
+              dropIndex >= 0 &&
+              dropIndex < _dropWeightCtrls[focusIndex].length) {
+            controller = _dropWeightCtrls[focusIndex][dropIndex];
+            focusNode = _dropWeightFocusNodes[focusIndex][dropIndex];
+          }
+          break;
+        case DeviceSetFieldFocus.dropReps:
+          final dropIndex = prov.focusedDropIndex ?? 0;
+          if (focusIndex < _dropRepsCtrls.length &&
+              dropIndex >= 0 &&
+              dropIndex < _dropRepsCtrls[focusIndex].length) {
+            controller = _dropRepsCtrls[focusIndex][dropIndex];
+            focusNode = _dropRepsFocusNodes[focusIndex][dropIndex];
+          }
+          break;
       }
       if (controller != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -539,7 +705,9 @@ class _WorkoutDayTableCardState
             context,
             listen: false,
           ).read(overlayNumericKeypadControllerProvider);
-          keypad.openFor(controller!, allowDecimal: true);
+          final allowDecimal = focusField == DeviceSetFieldFocus.weight ||
+              focusField == DeviceSetFieldFocus.dropWeight;
+          keypad.openFor(controller!, allowDecimal: allowDecimal);
         });
       }
     }
@@ -613,6 +781,15 @@ class _WorkoutDayTableCardState
               onFeedback: _handleFeedback,
               onOpenNote: () => _openNote(prov),
             ),
+            visibleRowCount: prov.sets.length +
+                prov.sets.asMap().entries.fold<int>(0, (count, entry) {
+                  final idx = entry.key;
+                  final drops = _dropsFromSet(entry.value);
+                  if (_expandedDropRows.contains(idx) || drops.isNotEmpty) {
+                    return count + (drops.isEmpty ? 1 : drops.length);
+                  }
+                  return count;
+                }),
           ),
           const SizedBox(height: 12),
           // "+ Set hinzufügen" link
@@ -755,64 +932,136 @@ class _WorkoutDayTableCardState
             ),
             const SizedBox(height: 4),
             for (var i = 0; i < sets.length; i++)
-              Dismissible(
-                key: ValueKey(sets[i]['id'] ?? 'set-$i'),
-                direction: DismissDirection.endToStart,
-                background: const SizedBox.shrink(),
-                secondaryBackground: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  color: Colors.red.withOpacity(0.18),
-                  child: const Icon(
-                    Icons.delete,
-                    semanticLabel: 'Löschen',
-                  ),
-                ),
-                onDismissed: (_) {
-                  final removed = Map<String, dynamic>.from(sets[i]);
-                  prov.removeSet(i);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(loc.setRemoved),
-                      action: SnackBarAction(
-                        label: loc.undo,
-                        onPressed: () {
-                          prov.insertSetAt(i, removed);
-                        },
-                      ),
+              () {
+                final dropsForSet = _dropsFromSet(sets[i]);
+                final dropExpanded = _expandedDropRows.contains(i) ||
+                    dropsForSet.isNotEmpty;
+                final dropRows = <_DropRowView>[
+                  for (var d = 0; d < dropsForSet.length; d++)
+                    _DropRowView(
+                      dropIndex: d,
+                      weightController: _dropWeightCtrls[i][d],
+                      repsController: _dropRepsCtrls[i][d],
+                      weightFocusNode: _dropWeightFocusNodes[i][d],
+                      repsFocusNode: _dropRepsFocusNodes[i][d],
+                      isWeightFocused:
+                          prov.focusedField == DeviceSetFieldFocus.dropWeight &&
+                              prov.focusedIndex == i &&
+                              (prov.focusedDropIndex ?? 0) == d,
+                      isRepsFocused:
+                          prov.focusedField == DeviceSetFieldFocus.dropReps &&
+                              prov.focusedIndex == i &&
+                              (prov.focusedDropIndex ?? 0) == d,
+                      onTapWeight: () {
+                        _openKeypadForField(
+                          setIndex: i,
+                          field: DeviceSetFieldFocus.dropWeight,
+                          dropIndex: d,
+                        );
+                      },
+                      onTapReps: () {
+                        _openKeypadForField(
+                          setIndex: i,
+                          field: DeviceSetFieldFocus.dropReps,
+                          dropIndex: d,
+                        );
+                      },
+                      onRemove: () {
+                        prov.removeDropFromSet(i, d);
+                        setState(() {
+                          final remaining = _dropsFromSet(prov.sets[i]);
+                          if (remaining.isEmpty) {
+                            _expandedDropRows.remove(i);
+                          }
+                        });
+                      },
+                      showAddButton: d == dropsForSet.length - 1,
+                      onAdd: () {
+                        final newIndex = prov.addDropToSet(i);
+                        setState(() {});
+                        _openKeypadForField(
+                          setIndex: i,
+                          field: DeviceSetFieldFocus.dropWeight,
+                          dropIndex: newIndex,
+                        );
+                      },
                     ),
-                  );
-                },
-                child: _WorkoutTableRow(
-                  index: i,
-                  set: sets[i],
-                  previous: i < lastSets.length ? lastSets[i] : null,
-                  isWeightFocused:
-                      prov.focusedField == DeviceSetFieldFocus.weight &&
-                          prov.focusedIndex == i,
-                  isRepsFocused:
-                      prov.focusedField == DeviceSetFieldFocus.reps &&
-                          prov.focusedIndex == i,
-                  onTapWeight: () {
-                    _openKeypadForField(
-                      setIndex: i,
-                      field: DeviceSetFieldFocus.weight,
+                ];
+
+                return Dismissible(
+                  key: ValueKey(sets[i]['id'] ?? 'set-$i'),
+                  direction: DismissDirection.endToStart,
+                  background: const SizedBox.shrink(),
+                  secondaryBackground: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    color: Colors.red.withOpacity(0.18),
+                    child: const Icon(
+                      Icons.delete,
+                      semanticLabel: 'Löschen',
+                    ),
+                  ),
+                  onDismissed: (_) {
+                    final removed = Map<String, dynamic>.from(sets[i]);
+                    setState(() {
+                      final updated = <int>{};
+                      for (final idx in _expandedDropRows) {
+                        if (idx < i) {
+                          updated.add(idx);
+                        } else if (idx > i) {
+                          updated.add(idx - 1);
+                        }
+                      }
+                      _expandedDropRows
+                        ..clear()
+                        ..addAll(updated);
+                    });
+                    prov.removeSet(i);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(loc.setRemoved),
+                        action: SnackBarAction(
+                          label: loc.undo,
+                          onPressed: () {
+                            prov.insertSetAt(i, removed);
+                          },
+                        ),
+                      ),
                     );
                   },
-                  onTapReps: () {
-                    _openKeypadForField(
-                      setIndex: i,
-                      field: DeviceSetFieldFocus.reps,
-                    );
-                  },
-                  onToggleDone: () => _toggleDone(i),
-                  onOpenDrop: () => _openDropEditor(i),
-                  weightController: _weightCtrls[i],
-                  repsController: _repsCtrls[i],
-                  weightFocusNode: _weightFocusNodes[i],
-                  repsFocusNode: _repsFocusNodes[i],
-                ),
-              ),
+                  child: _WorkoutTableRow(
+                    index: i,
+                    set: sets[i],
+                    previous: i < lastSets.length ? lastSets[i] : null,
+                    isWeightFocused:
+                        prov.focusedField == DeviceSetFieldFocus.weight &&
+                            prov.focusedIndex == i,
+                    isRepsFocused:
+                        prov.focusedField == DeviceSetFieldFocus.reps &&
+                            prov.focusedIndex == i,
+                    dropExpanded: dropExpanded,
+                    onTapWeight: () {
+                      _openKeypadForField(
+                        setIndex: i,
+                        field: DeviceSetFieldFocus.weight,
+                      );
+                    },
+                    onTapReps: () {
+                      _openKeypadForField(
+                        setIndex: i,
+                        field: DeviceSetFieldFocus.reps,
+                      );
+                    },
+                    onToggleDone: () => _toggleDone(i),
+                    onOpenDrop: () => _openDropEditor(i),
+                    weightController: _weightCtrls[i],
+                    repsController: _repsCtrls[i],
+                    weightFocusNode: _weightFocusNodes[i],
+                    repsFocusNode: _repsFocusNodes[i],
+                    dropRows: dropRows,
+                  ),
+                );
+              }(),
           ],
         ),
       ),
@@ -937,6 +1186,7 @@ class _WorkoutTableRow extends StatelessWidget {
     required this.previous,
     required this.isWeightFocused,
     required this.isRepsFocused,
+    required this.dropExpanded,
     required this.onTapWeight,
     required this.onTapReps,
     required this.onToggleDone,
@@ -945,6 +1195,7 @@ class _WorkoutTableRow extends StatelessWidget {
     required this.repsController,
     required this.weightFocusNode,
     required this.repsFocusNode,
+    required this.dropRows,
   });
 
   final int index;
@@ -952,6 +1203,7 @@ class _WorkoutTableRow extends StatelessWidget {
   final SessionSetVM? previous;
   final bool isWeightFocused;
   final bool isRepsFocused;
+  final bool dropExpanded;
   final VoidCallback onTapWeight;
   final VoidCallback onTapReps;
   final VoidCallback onToggleDone;
@@ -960,6 +1212,7 @@ class _WorkoutTableRow extends StatelessWidget {
   final TextEditingController repsController;
   final FocusNode weightFocusNode;
   final FocusNode repsFocusNode;
+  final List<_DropRowView> dropRows;
 
   String _formatPrevious(SessionSetVM? prev) {
     if (prev == null) return '-';
@@ -1016,12 +1269,119 @@ class _WorkoutTableRow extends StatelessWidget {
         horizontal: 8,
         vertical: 7,
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '${index + 1}',
+                  style: secondaryStyle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  _formatPrevious(previous),
+                  style: secondaryStyle,
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: _TableInputCell(
+                  controller: weightController,
+                  focusNode: weightFocusNode,
+                  isFocused: isWeightFocused,
+                  // Keine horizontale Linie im Eingabefeld – leer lassen.
+                  placeholder: '',
+                  textStyle: textStyle,
+                  onTap: onTapWeight,
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: _TableInputCell(
+                  controller: repsController,
+                  focusNode: repsFocusNode,
+                  isFocused: isRepsFocused,
+                  placeholder: '',
+                  textStyle: textStyle,
+                  onTap: onTapReps,
+                ),
+              ),
+              const SizedBox(width: 6),
+              _WorkoutRoundButton(
+                icon: dropExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                semantics: 'Dropsätze',
+                filled: false,
+                color: brandColor,
+                onTap: onOpenDrop,
+              ),
+              const SizedBox(width: 6),
+              _WorkoutRoundButton(
+                icon: Icons.check_rounded,
+                semantics: 'Satz erledigt',
+                filled: done,
+                color: brandColor,
+                onTap: onToggleDone,
+              ),
+            ],
+          ),
+          if (dropExpanded)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                children: [
+                  for (var i = 0; i < dropRows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 4),
+                    _buildDropRow(
+                      dropRows[i],
+                      index,
+                      secondaryStyle,
+                      textStyle,
+                      brandColor,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropRow(
+    _DropRowView drop,
+    int setIndex,
+    TextStyle secondaryStyle,
+    TextStyle textStyle,
+    Color brandColor,
+  ) {
+    return Dismissible(
+      key: ValueKey('drop-row-$setIndex-${drop.dropIndex}'),
+      direction: DismissDirection.endToStart,
+      background: const SizedBox.shrink(),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: Colors.red.withOpacity(0.18),
+        child: const Icon(
+          Icons.delete,
+          semanticLabel: 'Dropsatz löschen',
+        ),
+      ),
+      onDismissed: (_) => drop.onRemove(),
       child: Row(
         children: [
           SizedBox(
             width: 32,
             child: Text(
-              '${index + 1}',
+              '↘︎',
               style: secondaryStyle,
             ),
           ),
@@ -1029,53 +1389,79 @@ class _WorkoutTableRow extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              _formatPrevious(previous),
+              '-',
               style: secondaryStyle,
             ),
           ),
           Expanded(
             flex: 2,
             child: _TableInputCell(
-              controller: weightController,
-              focusNode: weightFocusNode,
-              isFocused: isWeightFocused,
-              // Keine horizontale Linie im Eingabefeld – leer lassen.
+              controller: drop.weightController,
+              focusNode: drop.weightFocusNode,
+              isFocused: drop.isWeightFocused,
               placeholder: '',
               textStyle: textStyle,
-              onTap: onTapWeight,
+              onTap: drop.onTapWeight,
             ),
           ),
           Expanded(
             flex: 2,
             child: _TableInputCell(
-              controller: repsController,
-              focusNode: repsFocusNode,
-              isFocused: isRepsFocused,
+              controller: drop.repsController,
+              focusNode: drop.repsFocusNode,
+              isFocused: drop.isRepsFocused,
               placeholder: '',
               textStyle: textStyle,
-              onTap: onTapReps,
+              onTap: drop.onTapReps,
             ),
           ),
           const SizedBox(width: 6),
-          _WorkoutRoundButton(
-            icon: Icons.keyboard_arrow_down_rounded,
-            semantics: 'Dropsätze',
-            filled: false,
-            color: brandColor,
-            onTap: onOpenDrop,
-          ),
+          if (drop.showAddButton)
+            _WorkoutRoundButton(
+              icon: Icons.add,
+              semantics: 'Dropsatz hinzufügen',
+              filled: false,
+              color: brandColor,
+              onTap: drop.onAdd,
+            )
+          else
+            const SizedBox(width: 32, height: 32),
           const SizedBox(width: 6),
-          _WorkoutRoundButton(
-            icon: Icons.check_rounded,
-            semantics: 'Satz erledigt',
-            filled: done,
-            color: brandColor,
-            onTap: onToggleDone,
-          ),
+          const SizedBox(width: 32, height: 32),
         ],
       ),
     );
   }
+}
+
+class _DropRowView {
+  const _DropRowView({
+    required this.dropIndex,
+    required this.weightController,
+    required this.repsController,
+    required this.weightFocusNode,
+    required this.repsFocusNode,
+    required this.isWeightFocused,
+    required this.isRepsFocused,
+    required this.onTapWeight,
+    required this.onTapReps,
+    required this.onRemove,
+    required this.showAddButton,
+    required this.onAdd,
+  });
+
+  final int dropIndex;
+  final TextEditingController weightController;
+  final TextEditingController repsController;
+  final FocusNode weightFocusNode;
+  final FocusNode repsFocusNode;
+  final bool isWeightFocused;
+  final bool isRepsFocused;
+  final VoidCallback onTapWeight;
+  final VoidCallback onTapReps;
+  final VoidCallback onRemove;
+  final bool showAddButton;
+  final VoidCallback onAdd;
 }
 
 class _WorkoutRoundButton extends StatefulWidget {
@@ -1173,10 +1559,12 @@ class _WorkoutSwipeableSessionContent extends StatefulWidget {
   const _WorkoutSwipeableSessionContent({
     required this.setsPage,
     required this.actionsPage,
+    required this.visibleRowCount,
   });
 
   final Widget setsPage;
   final Widget actionsPage;
+  final int visibleRowCount;
 
   @override
   State<_WorkoutSwipeableSessionContent> createState() =>
@@ -1201,6 +1589,11 @@ class _WorkoutSwipeableSessionContentState
         theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.secondary;
 
+    const rowHeight = 44.0;
+    const baseHeight = 110.0;
+    final setsHeight =
+        baseHeight + widget.visibleRowCount.clamp(1, 20) * rowHeight;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1222,7 +1615,7 @@ class _WorkoutSwipeableSessionContentState
           ),
         ),
         SizedBox(
-          height: _currentPage == 0 ? 220 : 240,
+          height: _currentPage == 0 ? setsHeight : 240,
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -1231,10 +1624,7 @@ class _WorkoutSwipeableSessionContentState
               });
             },
             children: [
-              SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: widget.setsPage,
-              ),
+              widget.setsPage,
               SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
                 child: widget.actionsPage,
